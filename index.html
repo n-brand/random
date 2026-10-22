@@ -156,7 +156,9 @@
   <script>
     // Hier neue Eintraege ergaenzen (siehe CLAUDE.md).
     // type: "sache" | "test"
-    const ENTRIES = [];
+    const ENTRIES = [
+      { type: "sache", title: "Iron Man Anzug 3D", desc: "Drehbares 3D-Modell eines Iron-Man-Anzugs mit leuchtendem Arc-Reaktor und klappbarer Maske.", href: "sachen/ironman/", date: "2026-10-22", tags: ["3d", "three.js"] }
+    ];
 
     const LABELS = { sache: "Sache", test: "Test" };
     const list = document.getElementById("list");
