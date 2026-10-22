@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>random</title>
+  <meta name="description" content="Uebersicht ueber zufaellige Sachen und Tests von Nicolas Brand.">
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    :root {
+      --bg: #f6f5f1;
+      --surface: #ffffff;
+      --text: #1d1d1b;
+      --muted: #6b6a65;
+      --line: #e3e1da;
+      --accent: #d9480f;
+      --accent-soft: #fdeee6;
+      --test: #1c7ed6;
+      --test-soft: #e7f2fc;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141413;
+        --surface: #1e1e1c;
+        --text: #ecebe6;
+        --muted: #9b9a94;
+        --line: #2e2e2b;
+        --accent: #ff8a4c;
+        --accent-soft: #3a2418;
+        --test: #6cb4f5;
+        --test-soft: #182a3b;
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+    }
+    .wrap { max-width: 880px; margin: 0 auto; padding-block: 40px 24px; }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 7vw, 3.4rem);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    header h1 span { color: var(--accent); }
+    header p { margin: 10px 0 0; color: var(--muted); max-width: 52ch; }
+
+    .stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 28px 0 20px; }
+    .stat {
+      flex: 1 1 140px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .stat b { display: block; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .stat small { color: var(--muted); }
+
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+    .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+    .tabs button {
+      border: 0; background: none; color: var(--muted);
+      font: inherit; font-size: 0.9rem; padding: 6px 12px; border-radius: 7px; cursor: pointer;
+    }
+    .tabs button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+    .search {
+      flex: 1 1 200px;
+      font: inherit; font-size: 0.95rem;
+      padding: 8px 12px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--surface); color: var(--text);
+    }
+    .search:focus, .tabs button:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .card {
+      display: flex; flex-direction: column; gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      color: inherit; text-decoration: none;
+      transition: transform .12s ease, border-color .12s ease;
+    }
+    .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .card h3 { margin: 0; font-size: 1.05rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.92rem; flex: 1; }
+    .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 0.78rem; color: var(--muted); }
+    .badge { padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+    .badge.sache { background: var(--accent-soft); color: var(--accent); }
+    .badge.test { background: var(--test-soft); color: var(--test); }
+
+    .empty {
+      border: 1.5px dashed var(--line);
+      border-radius: 14px;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty .dice { font-size: 2.4rem; display: inline-block; cursor: pointer; user-select: none; transition: transform .4s ease; }
+    .empty h2 { margin: 8px 0 4px; color: var(--text); font-size: 1.2rem; }
+    .empty p { margin: 0 auto; max-width: 44ch; }
+    .empty code { background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; font-size: 0.85em; }
+
+    footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted); font-size: 0.85rem;
+      display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    footer a { color: var(--accent); }
+    #install { border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 0.85rem; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>random<span>.</span></h1>
+      <p>Zufaellige Sachen und Tests an einem Ort: kleine Tools, Spielereien und Experimente.</p>
+    </header>
+
+    <section class="stats" aria-label="Statistik">
+      <div class="stat"><b id="count-all">0</b><small>Eintraege</small></div>
+      <div class="stat"><b id="count-sache">0</b><small>Sachen</small></div>
+      <div class="stat"><b id="count-test">0</b><small>Tests</small></div>
+    </section>
+
+    <div class="controls">
+      <div class="tabs" role="group" aria-label="Filter">
+        <button type="button" data-filter="all" aria-pressed="true">Alle</button>
+        <button type="button" data-filter="sache" aria-pressed="false">Sachen</button>
+        <button type="button" data-filter="test" aria-pressed="false">Tests</button>
+      </div>
+      <input class="search" id="search" type="search" placeholder="Suchen..." aria-label="Eintraege durchsuchen">
+    </div>
+
+    <main id="list"></main>
+
+    <footer>
+      <span>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></span>
+      <button id="install" type="button" hidden>App installieren</button>
+    </footer>
+  </div>
+
+  <script>
+    // Hier neue Eintraege ergaenzen (siehe CLAUDE.md).
+    // type: "sache" | "test"
+    const ENTRIES = [];
+
+    const LABELS = { sache: "Sache", test: "Test" };
+    const list = document.getElementById("list");
+    const search = document.getElementById("search");
+    let filter = "all";
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return isNaN(d) ? "" : d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+
+    function render() {
+      document.getElementById("count-all").textContent = ENTRIES.length;
+      document.getElementById("count-sache").textContent = ENTRIES.filter(e => e.type === "sache").length;
+      document.getElementById("count-test").textContent = ENTRIES.filter(e => e.type === "test").length;
+
+      if (!ENTRIES.length) {
+        list.innerHTML = `
+          <div class="empty">
+            <span class="dice" id="dice" role="img" aria-label="Wuerfel">🎲</span>
+            <h2>Noch nichts hier</h2>
+            <p>Sobald es die ersten Sachen und Tests gibt, erscheinen sie hier. Neue Eintraege kommen ins Array <code>ENTRIES</code> in <code>index.html</code>.</p>
+          </div>`;
+        let turns = 0;
+        document.getElementById("dice").addEventListener("click", e => {
+          turns += 1;
+          e.currentTarget.style.transform = `rotate(${turns * 360}deg)`;
+        });
+        return;
+      }
+
+      const q = search.value.trim().toLowerCase();
+      const items = ENTRIES
+        .filter(e => filter === "all" || e.type === filter)
+        .filter(e => !q || [e.title, e.desc, ...(e.tags || [])].join(" ").toLowerCase().includes(q))
+        .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+      if (!items.length) {
+        list.innerHTML = `<div class="empty"><h2>Keine Treffer</h2><p>Anderen Filter oder Suchbegriff probieren.</p></div>`;
+        return;
+      }
+
+      list.innerHTML = `<div class="grid">${items.map(e => `
+        <a class="card" href="${escapeHtml(e.href)}">
+          <div class="meta">
+            <span class="badge ${e.type}">${LABELS[e.type] || e.type}</span>
+            ${e.date ? `<span>${formatDate(e.date)}</span>` : ""}
+          </div>
+          <h3>${escapeHtml(e.title)}</h3>
+          <p>${escapeHtml(e.desc || "")}</p>
+          ${e.tags && e.tags.length ? `<div class="meta">${e.tags.map(t => `<span>#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+        </a>`).join("")}</div>`;
+    }
+
+    document.querySelectorAll(".tabs button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        filter = btn.dataset.filter;
+        document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+        render();
+      });
+    });
+    search.addEventListener("input", render);
+    render();
+
+    // PWA: Service Worker und Install-Button
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+    let installPrompt = null;
+    const installBtn = document.getElementById("install");
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      installPrompt = e;
+      installBtn.hidden = false;
+    });
+    installBtn.addEventListener("click", async () => {
+      if (!installPrompt) return;
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      installPrompt = null;
+      installBtn.hidden = true;
+    });
+  </script>
+</body>
+</html>
