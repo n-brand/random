@@ -1,6 +1,6 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
-const CACHE = "random-v2";
-const ASSETS = ["./", "index.html", "manifest.webmanifest", "icon.svg", "sachen/ironman/"];
+const CACHE = "random-v3";
+const ASSETS = ["./", "index.html", "manifest.webmanifest", "icon.svg", "sachen/ironman/", "sachen/ironman/ironman.glb"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

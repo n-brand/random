@@ -34,6 +34,7 @@
     }
     .controls button:hover { background: rgba(255, 255, 255, .07); }
     .controls button[aria-pressed="true"] { background: var(--text); color: #0b0d12; }
+    .controls button:disabled { opacity: .4; cursor: default; }
     .controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     footer {
       position: fixed; left: 0; right: 0; bottom: 0;
@@ -55,13 +56,17 @@
   <div id="loading">Lade 3D-Ansicht...</div>
 
   <div class="controls" role="group" aria-label="Steuerung">
+    <button type="button" id="btn-model" aria-pressed="false" disabled>Detail-Modell</button>
     <button type="button" id="btn-rotate" aria-pressed="true">Auto-Rotation</button>
     <button type="button" id="btn-power" aria-pressed="true">Energie</button>
     <button type="button" id="btn-mask" aria-pressed="false">Maske offen</button>
     <button type="button" id="btn-reset">Ansicht zuruecksetzen</button>
   </div>
 
-  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
+  <footer>
+    Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a>
+    <span id="credit" hidden> &middot; Detail-Modell: <a href="https://sketchfab.com/3d-models/tony-stark-iron-man-mark-vii-4059748f2f434478900405fb65418df9" target="_blank" rel="noopener noreferrer">Iron Man Mark VII</a> von Tigerar1 (Sketchfab Standard)</span>
+  </footer>
 
   <script type="importmap">
     {
@@ -75,6 +80,7 @@
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
     // Renderer, Szene, Kamera
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -241,6 +247,37 @@
       palms.push(palm);
     }
 
+    // Detail-Modell (GLB), auf Hoehe des Eigenbaus skaliert und auf den Boden gestellt
+    const btnModel = document.getElementById("btn-model");
+    const btnMask = document.getElementById("btn-mask");
+    let detail = null;
+
+    function showDetail(on) {
+      if (!detail) return;
+      detail.visible = on;
+      suit.visible = !on;
+      btnMask.disabled = on;
+      btnModel.setAttribute("aria-pressed", String(on));
+      document.getElementById("credit").hidden = !on;
+    }
+
+    new GLTFLoader().load("ironman.glb", gltf => {
+      detail = gltf.scene;
+      const box = new THREE.Box3().setFromObject(detail);
+      const size = box.getSize(new THREE.Vector3());
+      detail.scale.setScalar(1.9 / size.y);
+      box.setFromObject(detail);
+      const center = box.getCenter(new THREE.Vector3());
+      detail.position.set(-center.x, -box.min.y, -center.z);
+      detail.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      scene.add(detail);
+      btnModel.disabled = false;
+      showDetail(true);
+    }, undefined, () => {
+      btnModel.title = "Detail-Modell konnte nicht geladen werden";
+    });
+    btnModel.addEventListener("click", () => showDetail(!detail.visible));
+
     // Steuerung
     let power = true;
     let maskOpen = false;
@@ -285,8 +322,7 @@
       faceplate.rotation.x = -maskT * 0.9;
 
       // leichtes Schweben
-      suit.position.y = Math.sin(t * 1.5) * 0.01;
-      head.rotation.y = Math.sin(t * 0.5) * 0.15;
+      suit.position.y = Math.sin(t * 1.5) * 0.01;      head.rotation.y = Math.sin(t * 0.5) * 0.15;
 
       controls.update(dt);
       renderer.render(scene, camera);
