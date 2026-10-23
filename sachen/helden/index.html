@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Iron Man Anzug 3D – random</title>
+  <title>Superhelden 3D – random</title>
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="../../icon.svg" type="image/svg+xml">
   <style>
@@ -24,10 +24,14 @@
     .controls {
       position: fixed; left: 50%; transform: translateX(-50%);
       bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
-      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+      display: flex; flex-direction: column; gap: 4px;
       background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px;
       backdrop-filter: blur(8px); max-width: calc(100% - 32px);
     }
+    .controls .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .controls .heroes { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+    .controls .heroes button { white-space: nowrap; }
+    .controls .heroes { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
     .controls button {
       border: 0; background: none; color: var(--text); font: inherit; font-size: .88rem;
       padding: 7px 12px; border-radius: 8px; cursor: pointer;
@@ -44,28 +48,30 @@
     footer a { color: var(--accent); pointer-events: auto; }
     .hint { color: var(--muted); font-size: .8rem; }
     #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); }
+    body.busy canvas { opacity: .5; transition: opacity .2s; }
   </style>
 </head>
 <body>
   <div class="bar">
     <a href="../../">&larr; random<span>.</span></a>
-    <h1>Iron Man Anzug &middot; 3D</h1>
+    <h1 id="title">Superhelden &middot; 3D</h1>
     <span class="hint">Ziehen zum Drehen, Scrollen zum Zoomen</span>
   </div>
 
   <div id="loading">Lade 3D-Ansicht...</div>
 
-  <div class="controls" role="group" aria-label="Steuerung">
-    <button type="button" id="btn-model" aria-pressed="false" disabled>Detail-Modell</button>
-    <button type="button" id="btn-rotate" aria-pressed="true">Auto-Rotation</button>
-    <button type="button" id="btn-power" aria-pressed="true">Energie</button>
-    <button type="button" id="btn-mask" aria-pressed="false">Maske offen</button>
-    <button type="button" id="btn-reset">Ansicht zuruecksetzen</button>
+  <div class="controls">
+    <div class="row heroes" id="heroes" role="group" aria-label="Held waehlen"></div>
+    <div class="row" role="group" aria-label="Steuerung">
+      <button type="button" id="btn-rotate" aria-pressed="true">Auto-Rotation</button>
+      <button type="button" id="btn-power" aria-pressed="true">Energie</button>
+      <button type="button" id="btn-mask" aria-pressed="false">Maske offen</button>
+      <button type="button" id="btn-reset">Ansicht zuruecksetzen</button>
+    </div>
   </div>
 
   <footer>
-    Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a>
-    <span id="credit" hidden> &middot; Detail-Modell: <a href="https://sketchfab.com/3d-models/tony-stark-iron-man-mark-vii-4059748f2f434478900405fb65418df9" target="_blank" rel="noopener noreferrer">Iron Man Mark VII</a> von Tigerar1 (Sketchfab Standard)</span>
+    Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a><span id="credit"></span>
   </footer>
 
   <script type="importmap">
@@ -248,35 +254,79 @@
     }
 
     // Detail-Modell (GLB), auf Hoehe des Eigenbaus skaliert und auf den Boden gestellt
-    const btnModel = document.getElementById("btn-model");
+    // Heruntergeladene Modelle (GLB). Ohne file = Eigenbau oben.
+    const HEROES = [
+      { id: "ironman", name: "Iron Man", file: "models/ironman.glb", credit: ["Iron Man Mark VII", "Tigerar1", "https://sketchfab.com/3d-models/tony-stark-iron-man-mark-vii-4059748f2f434478900405fb65418df9", "Sketchfab Standard"] },
+      { id: "spiderman", name: "Spider-Man", file: "models/spiderman.glb", credit: ["Spiderman", "get3dmodels.com", "https://www.get3dmodels.com/characters/spiderman/", "keine Angabe"] },
+      { id: "spiderman-variant", name: "Spider-Man (Neo)", file: "models/spiderman-variant.glb", credit: ["Neo Spiderman with New Costume Design", "jcyork0412", "https://sketchfab.com/3d-models/neo-spiderman-with-new-costume-design-87c0f53751f14ddf982ccfb5657ea5e3", "CC BY 4.0"] },
+      { id: "hulk", name: "Hulk", file: "models/hulk.glb", credit: ["hulk", "PIXEN", "https://sketchfab.com/3d-models/hulk-e3adbe9eaf8549eb838e9f766194839e", "Sketchfab Standard"] },
+      { id: "batman", name: "Batman", file: "models/batman.glb", credit: ["Batman", "get3dmodels.com", "https://www.get3dmodels.com/characters/batman/", "Free Standard"] },
+      { id: "superman", name: "Superman", file: "models/superman.glb", credit: ["Clark Kent Superman", "Tigerar1", "https://sketchfab.com/3d-models/clark-kent-superman-dab9db3aa2624a3a94ea6e5f42eb6661", "Sketchfab Standard"] },
+      { id: "eigenbau", name: "Iron Man (Eigenbau)" }
+    ];
     const btnMask = document.getElementById("btn-mask");
-    let detail = null;
+    const heroBar = document.getElementById("heroes");
+    const credit = document.getElementById("credit");
+    const loaded = {};
+    const loader = new GLTFLoader();
+    let current = null;
 
-    function showDetail(on) {
-      if (!detail) return;
-      detail.visible = on;
-      suit.visible = !on;
-      btnMask.disabled = on;
-      btnModel.setAttribute("aria-pressed", String(on));
-      document.getElementById("credit").hidden = !on;
+    // Modell auf Hoehe des Eigenbaus skalieren und auf den Boden stellen
+    function fit(obj) {
+      const box = new THREE.Box3().setFromObject(obj);
+      obj.scale.setScalar(1.9 / box.getSize(new THREE.Vector3()).y);
+      box.setFromObject(obj);
+      const center = box.getCenter(new THREE.Vector3());
+      obj.position.set(-center.x, -box.min.y, -center.z);
+      obj.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     }
 
-    new GLTFLoader().load("ironman.glb", gltf => {
-      detail = gltf.scene;
-      const box = new THREE.Box3().setFromObject(detail);
-      const size = box.getSize(new THREE.Vector3());
-      detail.scale.setScalar(1.9 / size.y);
-      box.setFromObject(detail);
-      const center = box.getCenter(new THREE.Vector3());
-      detail.position.set(-center.x, -box.min.y, -center.z);
-      detail.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-      scene.add(detail);
-      btnModel.disabled = false;
-      showDetail(true);
-    }, undefined, () => {
-      btnModel.title = "Detail-Modell konnte nicht geladen werden";
-    });
-    btnModel.addEventListener("click", () => showDetail(!detail.visible));
+    function link(text, href) {
+      const a = document.createElement("a");
+      a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = text;
+      return a;
+    }
+
+    function select(id) {
+      const hero = HEROES.find(h => h.id === id) || HEROES[0];
+      current = hero.id;
+      heroBar.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === hero.id)));
+      document.getElementById("title").textContent = hero.name + " · 3D";
+      history.replaceState(null, "", "?held=" + hero.id);
+      btnMask.disabled = !!hero.file;
+      suit.visible = !hero.file;
+      Object.values(loaded).forEach(o => { o.visible = false; });
+
+      credit.replaceChildren();
+      if (hero.credit) {
+        const [title, author, url, license] = hero.credit;
+        credit.append(" · Modell: ", link(title, url), ` von ${author} (${license})`);
+      }
+      if (!hero.file) return;
+
+      if (loaded[hero.id]) { loaded[hero.id].visible = true; return; }
+      document.body.classList.add("busy");
+      loader.load(hero.file, gltf => {
+        fit(gltf.scene);
+        loaded[hero.id] = gltf.scene;
+        scene.add(gltf.scene);
+        gltf.scene.visible = current === hero.id;
+        document.body.classList.remove("busy");
+      }, undefined, () => {
+        document.body.classList.remove("busy");
+        credit.append(" · Modell konnte nicht geladen werden");
+      });
+    }
+
+    for (const hero of HEROES) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.id = hero.id;
+      b.textContent = hero.name;
+      b.addEventListener("click", () => select(hero.id));
+      heroBar.append(b);
+    }
+    select(new URLSearchParams(location.search).get("held"));
 
     // Steuerung
     let power = true;
@@ -322,7 +372,8 @@
       faceplate.rotation.x = -maskT * 0.9;
 
       // leichtes Schweben
-      suit.position.y = Math.sin(t * 1.5) * 0.01;      head.rotation.y = Math.sin(t * 0.5) * 0.15;
+      suit.position.y = Math.sin(t * 1.5) * 0.01;
+      head.rotation.y = Math.sin(t * 0.5) * 0.15;
 
       controls.update(dt);
       renderer.render(scene, camera);

@@ -94,6 +94,10 @@
       transition: transform .12s ease, border-color .12s ease;
     }
     .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .card .thumb {
+      display: block; width: calc(100% + 32px); max-width: none; aspect-ratio: 16 / 10; object-fit: cover;
+      margin: -16px -16px 6px; border-radius: 11px 11px 0 0; background: #0b0d12;
+    }
     .card h3 { margin: 0; font-size: 1.05rem; }
     .card p { margin: 0; color: var(--muted); font-size: 0.92rem; flex: 1; }
     .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 0.78rem; color: var(--muted); }
@@ -157,7 +161,7 @@
     // Hier neue Eintraege ergaenzen (siehe CLAUDE.md).
     // type: "sache" | "test"
     const ENTRIES = [
-      { type: "sache", title: "Iron Man Anzug 3D", desc: "Drehbares 3D-Modell eines Iron-Man-Anzugs mit leuchtendem Arc-Reaktor und klappbarer Maske.", href: "sachen/ironman/", date: "2026-10-22", tags: ["3d", "three.js"] }
+      { type: "sache", title: "Superhelden 3D", desc: "Iron Man, Spider-Man, Hulk, Batman und Superman als drehbare 3D-Modelle, dazu ein selbst gebauter Iron-Man-Anzug mit Arc-Reaktor und klappbarer Maske.", href: "sachen/helden/", img: "sachen/helden/vorschau.webp", date: "2026-10-23", tags: ["3d", "three.js", "marvel", "dc"] }
     ];
 
     const LABELS = { sache: "Sache", test: "Test" };
@@ -207,6 +211,7 @@
 
       list.innerHTML = `<div class="grid">${items.map(e => `
         <a class="card" href="${escapeHtml(e.href)}">
+          ${e.img ? `<img class="thumb" src="${escapeHtml(e.img)}" alt="" loading="lazy">` : ""}
           <div class="meta">
             <span class="badge ${e.type}">${LABELS[e.type] || e.type}</span>
             ${e.date ? `<span>${formatDate(e.date)}</span>` : ""}

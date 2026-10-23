@@ -1,6 +1,7 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
-const CACHE = "random-v3";
-const ASSETS = ["./", "index.html", "manifest.webmanifest", "icon.svg", "sachen/ironman/", "sachen/ironman/ironman.glb"];
+// Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
+const CACHE = "random-v4";
+const ASSETS = ["./", "index.html", "manifest.webmanifest", "icon.svg", "sachen/helden/", "sachen/helden/vorschau.webp"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
