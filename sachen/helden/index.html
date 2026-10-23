@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Superhelden 3D – random</title>
   <meta name="theme-color" content="#0b0d12">
-  <link rel="icon" href="../../icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Helden 3D">
   <style>
     :root { color-scheme: dark; --text: #ecebe6; --muted: #9b9a94; --accent: #ff8a4c; --line: #2a2d35; --panel: rgba(16, 18, 24, .72); }
     * { box-sizing: border-box; }
@@ -67,6 +71,7 @@
       <button type="button" id="btn-power" aria-pressed="true">Energie</button>
       <button type="button" id="btn-mask" aria-pressed="false">Maske offen</button>
       <button type="button" id="btn-reset">Ansicht zuruecksetzen</button>
+      <button type="button" id="btn-install" hidden>App installieren</button>
     </div>
   </div>
 
@@ -74,6 +79,27 @@
     Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a><span id="credit"></span>
   </footer>
 
+  <script>
+    // PWA: gemeinsamer Service Worker im Projekt-Root, eigener Install-Button.
+    // Bewusst kein Modul, damit es auch laeuft, wenn three.js nicht geladen werden kann.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("../../sw.js").catch(() => {});
+    }
+    let installPrompt = null;
+    const installBtn = document.getElementById("btn-install");
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      installPrompt = e;
+      installBtn.hidden = false;
+    });
+    installBtn.addEventListener("click", async () => {
+      if (!installPrompt) return;
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      installPrompt = null;
+      installBtn.hidden = true;
+    });
+  </script>
   <script type="importmap">
     {
       "imports": {
