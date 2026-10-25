@@ -1,12 +1,14 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v7";
+const CACHE = "random-v8";
 const THREE = "https://unpkg.com/three@0.160.0/";
+const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 const ASSETS = [
   "./", "index.html", "manifest.webmanifest", "icon.svg",
   "sachen/helden/", "sachen/helden/manifest.webmanifest", "sachen/helden/icon.svg", "sachen/helden/vorschau.webp",
   "blockbench/cowboyhut/", "blockbench/cowboyhut/cowboy_hat.json", "blockbench/cowboyhut/cowboy_hat.png",
   "blockbench/cowboyhut/skin.png", "blockbench/cowboyhut/vorschau.webp",
+  "blockbench/viewer/", JSZIP,
   THREE + "build/three.module.js",
   THREE + "examples/jsm/controls/OrbitControls.js",
   THREE + "examples/jsm/environments/RoomEnvironment.js",
@@ -32,7 +34,7 @@ self.addEventListener("activate", event => {
 // Network first, bei Offline aus dem Cache. Eigene Dateien und die fest versionierte three.js-Bibliothek.
 self.addEventListener("fetch", event => {
   const url = event.request.url;
-  if (event.request.method !== "GET" || !(new URL(url).origin === location.origin || url.startsWith(THREE))) return;
+  if (event.request.method !== "GET" || !(new URL(url).origin === location.origin || url.startsWith(THREE) || url === JSZIP)) return;
   event.respondWith(
     fetch(event.request)
       .then(res => {

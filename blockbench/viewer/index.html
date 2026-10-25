@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pack-Viewer – Blockbench – random</title>
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="../../icon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark; --text: #ecebe6; --muted: #9b9a94; --accent: #ff8a4c; --bb: #69db7c; --line: #2a2d35; --panel: rgba(16, 18, 24, .86); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #0b0d12; color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    canvas { display: block; touch-action: none; }
+    .bar {
+      position: fixed; left: 0; right: 0; top: 0;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px; pointer-events: none;
+    }
+    .bar > * { pointer-events: auto; }
+    .bar a { color: var(--text); text-decoration: none; font-weight: 600; }
+    .bar a span { color: var(--accent); }
+    .bar h1 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--muted); }
+
+    .side {
+      position: fixed; left: 16px; top: 60px; bottom: 44px; width: 300px;
+      display: flex; flex-direction: column; gap: 8px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px;
+      backdrop-filter: blur(8px);
+    }
+    .drop {
+      border: 1.5px dashed var(--line); border-radius: 10px; padding: 14px 10px; text-align: center;
+      color: var(--muted); font-size: .85rem; cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .drop strong { color: var(--text); display: block; font-size: .95rem; }
+    .drop.over, .drop:hover { border-color: var(--bb); background: rgba(105, 219, 124, .06); }
+    .drop input { display: none; }
+    .search {
+      font: inherit; font-size: .88rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px;
+      background: #14161c; color: var(--text);
+    }
+    .status { color: var(--muted); font-size: .8rem; margin: 0; }
+    .list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; min-height: 0; }
+    .list button {
+      width: 100%; text-align: left; border: 0; background: none; color: var(--text);
+      font: inherit; font-size: .85rem; padding: 6px 8px; border-radius: 7px; cursor: pointer;
+      display: flex; justify-content: space-between; gap: 8px;
+    }
+    .list button small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .list button:hover { background: rgba(255, 255, 255, .06); }
+    .list button[aria-pressed="true"] { background: var(--text); color: #0b0d12; }
+    .list button[aria-pressed="true"] small { color: #44454a; }
+    .note { color: var(--muted); font-size: .75rem; margin: 0; }
+
+    .controls {
+      position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 44px);
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px;
+      backdrop-filter: blur(8px); max-width: calc(100% - 348px);
+    }
+    .controls button, .controls label {
+      border: 0; background: none; color: var(--text); font: inherit; font-size: .85rem;
+      padding: 6px 10px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+    }
+    .controls label input { display: none; }
+    .controls button:hover, .controls label:hover { background: rgba(255, 255, 255, .07); }
+    .controls button[aria-pressed="true"] { background: var(--text); color: #0b0d12; }
+    button:focus-visible, .drop:focus-visible, .controls label:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    footer {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
+      font-size: .8rem; color: var(--muted); text-align: center; pointer-events: none;
+    }
+    footer a { color: var(--accent); pointer-events: auto; }
+
+    @media (max-width: 700px) {
+      .side { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); left: 16px; right: 16px; width: auto; height: 38vh; }
+      .controls { left: 16px; right: 16px; max-width: none; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <a href="../../">&larr; random<span>.</span></a>
+    <h1>Pack-Viewer &middot; Blockbench</h1>
+    <span></span>
+  </div>
+
+  <aside class="side">
+    <label class="drop" id="drop" tabindex="0">
+      <strong>Datei hier ablegen</strong>
+      Resource Pack (.zip), Blockbench (.bbmodel) oder Java-Modell (.json)
+      <input type="file" id="file" accept=".zip,.bbmodel,.json" multiple>
+    </label>
+    <input class="search" id="search" type="search" placeholder="Modelle filtern, z.B. hat" aria-label="Modelle filtern">
+    <p class="status" id="status">Noch nichts geladen. Beispiel: der eigene Cowboyhut.</p>
+    <ul class="list" id="list"></ul>
+    <p class="note">Dateien werden nur in deinem Browser geoeffnet und nirgends hochgeladen.</p>
+  </aside>
+
+  <div class="controls" role="group" aria-label="Ansicht">
+    <button type="button" data-figure="skin" aria-pressed="true">Mit Skin</button>
+    <button type="button" data-figure="none" aria-pressed="false">Nur Modell</button>
+    <label>Eigener Skin<input type="file" id="skin-file" accept="image/png"></label>
+    <button type="button" id="btn-flip" aria-pressed="false">Umdrehen</button>
+    <button type="button" id="btn-rotate" aria-pressed="true">Auto-Rotation</button>
+    <button type="button" id="btn-reset">Ansicht zuruecksetzen</button>
+  </div>
+
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    // --- Szene ---
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    document.body.prepend(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0d12);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+    sun.position.set(2, 4, -3);
+    scene.add(sun);
+
+    const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.minDistance = 1.5;
+    controls.maxDistance = 20;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.5;
+
+    // 1 Einheit = 1/16, Kopf = 16 Einheiten (1 Skin-Pixel = 2 Einheiten), Kopfunterkante bei y = 0
+    const world = new THREE.Group();
+    world.scale.setScalar(1 / 16);
+    scene.add(world);
+    const grid = new THREE.GridHelper(4, 64, 0x2a2d35, 0x1a1d24);
+    grid.position.y = -3;
+    scene.add(grid);
+
+    function pixelTexture(src) {
+      const tex = src instanceof HTMLCanvasElement ? new THREE.CanvasTexture(src) : new THREE.Texture(src);
+      tex.needsUpdate = true;
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.NearestFilter;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    async function loadImage(src) {
+      const img = new Image();
+      img.src = src;
+      await img.decode();
+      return img;
+    }
+
+    // Fehlende Textur wie in Minecraft: Magenta/Schwarz
+    const missing = (() => {
+      const c = document.createElement("canvas");
+      c.width = c.height = 2;
+      const g = c.getContext("2d");
+      g.fillStyle = "#f800f8"; g.fillRect(0, 0, 2, 2);
+      g.fillStyle = "#000"; g.fillRect(0, 0, 1, 1); g.fillRect(1, 1, 1, 1);
+      return pixelTexture(c);
+    })();
+
+    // --- Spieler aus 64x64-Skin ---
+    function boxUV(geo, u, v, w, h, d) {
+      const rects = [
+        [u, v + d, d, h], [u + d + w, v + d, d, h],
+        [u + d, v, w, d], [u + d + w, v, w, d],
+        [u + 2 * d + w, v + d, w, h], [u + d, v + d, w, h]
+      ];
+      const uvAttr = geo.attributes.uv;
+      rects.forEach(([x, y, rw, rh], f) => {
+        const [u1, v1, u2, v2] = [x / 64, 1 - y / 64, (x + rw) / 64, 1 - (y + rh) / 64];
+        [[u1, v1], [u2, v1], [u1, v2], [u2, v2]].forEach(([a, b], i) => uvAttr.setXY(f * 4 + i, a, b));
+      });
+    }
+
+    function skinPart(tex, size, uv, overlayUV, pos) {
+      const [w, h, d] = size;
+      const part = new THREE.Group();
+      part.position.set(...pos.map(p => p * 2));
+      const inner = new THREE.BoxGeometry(w * 2, h * 2, d * 2);
+      boxUV(inner, ...uv, w, h, d);
+      part.add(new THREE.Mesh(inner, new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5 })));
+      const outer = new THREE.BoxGeometry(w * 2 + 1, h * 2 + 1, d * 2 + 1);
+      boxUV(outer, ...overlayUV, w, h, d);
+      part.add(new THREE.Mesh(outer, new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide })));
+      return part;
+    }
+
+    let player = null;
+    async function setSkin(src) {
+      const image = await loadImage(src);
+      const c = document.createElement("canvas");
+      c.width = c.height = 64;
+      const g = c.getContext("2d");
+      g.drawImage(image, 0, 0);
+      const arm = g.getImageData(54, 20, 1, 1).data[3] === 0 ? 3 : 4;
+      const tex = pixelTexture(c);
+      const p = new THREE.Group();
+      p.add(skinPart(tex, [8, 8, 8], [0, 0], [32, 0], [0, 4, 0]));
+      p.add(skinPart(tex, [8, 12, 4], [16, 16], [16, 32], [0, -6, 0]));
+      p.add(skinPart(tex, [arm, 12, 4], [40, 16], [40, 32], [4 + arm / 2, -6, 0]));
+      p.add(skinPart(tex, [arm, 12, 4], [32, 48], [48, 48], [-4 - arm / 2, -6, 0]));
+      p.add(skinPart(tex, [4, 12, 4], [0, 16], [0, 32], [2, -18, 0]));
+      p.add(skinPart(tex, [4, 12, 4], [16, 48], [0, 48], [-2, -18, 0]));
+      if (player) world.remove(player);
+      player = p;
+      player.visible = figure === "skin";
+      world.add(player);
+    }
+
+    // --- Java-Modell (Elemente) in three.js ---
+    const FACE_ORDER = ["east", "west", "up", "down", "south", "north"];
+
+    // Standard-UV, wenn eine Seite keine eigene hat (wie in Minecraft)
+    function autoUV(face, f, t) {
+      switch (face) {
+        case "down": return [f[0], 16 - t[2], t[0], 16 - f[2]];
+        case "up": return [f[0], f[2], t[0], t[2]];
+        case "north": return [16 - t[0], 16 - t[1], 16 - f[0], 16 - f[1]];
+        case "south": return [f[0], 16 - t[1], t[0], 16 - f[1]];
+        case "west": return [f[2], 16 - t[1], t[2], 16 - f[1]];
+        default: return [16 - t[2], 16 - t[1], 16 - f[2], 16 - f[1]];
+      }
+    }
+
+    // elements: [{from, to, rotation: {axis, angle, origin}, faces: {north: {uv, rotation, texture: key}}}]
+    // textures: key -> THREE.Texture
+    function buildElements(elements, textures) {
+      const group = new THREE.Group();
+      const materials = new Map();
+      const mat = key => {
+        if (!materials.has(key)) {
+          materials.set(key, new THREE.MeshLambertMaterial({ map: textures[key] || missing, alphaTest: 0.1, side: THREE.DoubleSide }));
+        }
+        return materials.get(key);
+      };
+      const hidden = new THREE.MeshBasicMaterial({ visible: false });
+      for (const el of elements) {
+        const size = [0, 1, 2].map(i => Math.max(el.to[i] - el.from[i], 0.001));
+        const geo = new THREE.BoxGeometry(...size);
+        const uvAttr = geo.attributes.uv;
+        const faceMats = FACE_ORDER.map((name, f) => {
+          const face = el.faces && el.faces[name];
+          if (!face) return hidden;
+          const [u1, v1, u2, v2] = (face.uv || autoUV(name, el.from, el.to)).map(v => v / 16);
+          let corners = [[u1, 1 - v1], [u2, 1 - v1], [u1, 1 - v2], [u2, 1 - v2]];
+          // Drehung der Textur auf der Seite in 90-Grad-Schritten
+          const steps = ((face.rotation || 0) / 90) % 4;
+          for (let s = 0; s < steps; s++) corners = [corners[2], corners[0], corners[3], corners[1]];
+          corners.forEach(([u, v], i) => uvAttr.setXY(f * 4 + i, u, v));
+          return mat(face.texture);
+        });
+        const mesh = new THREE.Mesh(geo, faceMats);
+        const center = [0, 1, 2].map(i => (el.from[i] + el.to[i]) / 2);
+        const rot = el.rotation;
+        const origin = rot ? rot.origin : center;
+        const pivot = new THREE.Group();
+        pivot.position.set(...origin);
+        if (rot && rot.angle) pivot.rotation[rot.axis] = THREE.MathUtils.degToRad(rot.angle);
+        mesh.position.set(center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]);
+        pivot.add(mesh);
+        group.add(pivot);
+      }
+      return group;
+    }
+
+    // Modell wie im Kopf-Slot platzieren: Mitte (8,8,8) auf die Kopfmitte, 16 Einheiten = 10 Skin-Pixel,
+    // dazu die Angaben aus display.head (Drehung, Verschiebung, Skalierung)
+    function placeOnHead(obj, display) {
+      const head = (display && display.head) || {};
+      const s = head.scale || [1, 1, 1];
+      const t = head.translation || [0, 0, 0];
+      const r = head.rotation || [0, 0, 0];
+      const inner = new THREE.Group();
+      inner.add(obj);
+      obj.position.set(-8, -8, -8);
+      const outer = new THREE.Group();
+      outer.add(inner);
+      inner.scale.set(...s);
+      inner.rotation.set(...r.map(THREE.MathUtils.degToRad), "XYZ");
+      inner.position.set(...t);
+      outer.scale.setScalar(1.25);
+      outer.position.y = 8;
+      return outer;
+    }
+
+    // --- Dateien lesen ---
+    let models = [];       // {name, source, build: async () => Object3D}
+    let current = null;
+    let currentObj = null;
+
+    const list = document.getElementById("list");
+    const status = document.getElementById("status");
+    const search = document.getElementById("search");
+
+    function renderList() {
+      const q = search.value.trim().toLowerCase();
+      const shown = models.filter(m => !q || (m.name + " " + m.source).toLowerCase().includes(q));
+      list.replaceChildren(...shown.map(m => {
+        const li = document.createElement("li");
+        const b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(m === current));
+        const name = document.createElement("span");
+        name.textContent = m.name;
+        const src = document.createElement("small");
+        src.textContent = m.source;
+        b.append(name, src);
+        b.addEventListener("click", () => show(m));
+        li.append(b);
+        return li;
+      }));
+    }
+
+    async function show(m) {
+      current = m;
+      renderList();
+      if (currentObj) world.remove(currentObj);
+      try {
+        currentObj = await m.build();
+        currentObj.rotation.y = flipped ? Math.PI : 0;
+        world.add(currentObj);
+        status.textContent = `${m.name} – ${m.source}`;
+      } catch (e) {
+        currentObj = null;
+        status.textContent = `${m.name} konnte nicht angezeigt werden: ${e.message}`;
+      }
+    }
+
+    // Java-Modell-JSON aus einem Pack: Eltern (parent) und Textur-Variablen (#name) aufloesen
+    function packResolver(files) {
+      const norm = (ref, folder) => {
+        let [ns, path] = ref.includes(":") ? ref.split(":") : ["minecraft", ref];
+        return `assets/${ns}/${folder}/${path}`;
+      };
+      const json = path => files[path] ? files[path].async("string").then(t => JSON.parse(t.charCodeAt(0) === 0xFEFF ? t.slice(1) : t)) : null;
+      const textureCache = new Map();
+      async function texture(ref) {
+        const path = norm(ref, "textures") + ".png";
+        if (!files[path]) return null;
+        if (!textureCache.has(path)) {
+          textureCache.set(path, files[path].async("base64").then(b => loadImage("data:image/png;base64," + b)).then(pixelTexture));
+        }
+        return textureCache.get(path);
+      }
+      async function resolve(path) {
+        const chain = [];
+        let p = path, guard = 0;
+        while (p && guard++ < 10) {
+          const data = await json(p);
+          if (!data) break;
+          chain.unshift(data);
+          p = data.parent && !data.parent.startsWith("builtin/") ? norm(data.parent, "models") + ".json" : null;
+        }
+        const merged = { textures: {}, display: {} };
+        for (const d of chain) {
+          Object.assign(merged.textures, d.textures || {});
+          Object.assign(merged.display, d.display || {});
+          if (d.elements) merged.elements = d.elements;
+        }
+        return merged;
+      }
+      return { resolve, texture };
+    }
+
+    async function javaModelEntry(name, source, getModel, getTexture) {
+      return {
+        name, source,
+        async build() {
+          const model = await getModel();
+          if (!model.elements || !model.elements.length) throw new Error("keine 3D-Elemente (flaches Item)");
+          const textures = {};
+          const keyOf = ref => ref && ref.startsWith("#") ? ref.slice(1) : ref;
+          const lookup = (ref, depth = 0) => {
+            const key = keyOf(ref);
+            const val = model.textures[key];
+            if (val && val.startsWith("#") && depth < 8) return lookup(val, depth + 1);
+            return val || key;
+          };
+          const keys = new Set(model.elements.flatMap(e => Object.values(e.faces || {}).map(f => keyOf(f.texture))));
+          for (const key of keys) textures[key] = await getTexture(lookup("#" + key));
+          const elements = model.elements.map(e => ({
+            ...e, faces: Object.fromEntries(Object.entries(e.faces || {}).map(([k, f]) => [k, { ...f, texture: keyOf(f.texture) }]))
+          }));
+          return placeOnHead(buildElements(elements, textures), model.display);
+        }
+      };
+    }
+
+    async function readZip(file) {
+      const zip = await JSZip.loadAsync(file);
+      const files = {};
+      zip.forEach((path, entry) => { if (!entry.dir) files[path.replace(/^[^/]+\/(?=assets\/)/, "")] = entry; });
+      const { resolve, texture } = packResolver(files);
+      const found = [];
+      for (const path of Object.keys(files).sort()) {
+        const m = path.match(/^assets\/([^/]+)\/models\/(.+)\.json$/);
+        if (m) {
+          // Nur Modelle mit eigenen Elementen auflisten (keine flachen Items, keine reinen Verweise)
+          const raw = await files[path].async("string");
+          if (!raw.includes('"elements"')) continue;
+          found.push(await javaModelEntry(m[2].split("/").pop(), `${file.name} · ${m[1]}:${m[2]}`, () => resolve(path), texture));
+        } else if (path.endsWith(".bbmodel")) {
+          found.push(bbmodelEntry(JSON.parse(await files[path].async("string")), `${file.name} · ${path}`));
+        }
+      }
+      return found;
+    }
+
+    function bbmodelEntry(bb, source) {
+      return {
+        name: bb.name || source, source,
+        async build() {
+          const textures = {};
+          for (const [i, t] of (bb.textures || []).entries()) {
+            if (t.source) textures[i] = pixelTexture(await loadImage(t.source));
+          }
+          const elements = (bb.elements || []).filter(e => e.type !== "mesh" && e.from).map(e => {
+            const axis = (e.rotation || [0, 0, 0]).findIndex(a => a);
+            return {
+              from: e.from, to: e.to,
+              rotation: axis >= 0 ? { axis: "xyz"[axis], angle: e.rotation[axis], origin: e.origin } : null,
+              faces: Object.fromEntries(Object.entries(e.faces || {}).filter(([, f]) => f.texture !== null && f.texture !== undefined)
+                .map(([k, f]) => [k, { uv: f.uv, rotation: f.rotation, texture: f.texture }]))
+            };
+          });
+          if (!elements.length) throw new Error("keine Wuerfel-Elemente gefunden");
+          // UV in Blockbench bezieht sich auf uv_width/uv_height, Java-UV auf 16
+          const uvw = (bb.textures && bb.textures[0] && bb.textures[0].uv_width) || (bb.resolution && bb.resolution.width) || 16;
+          const uvh = (bb.textures && bb.textures[0] && bb.textures[0].uv_height) || (bb.resolution && bb.resolution.height) || 16;
+          for (const e of elements) for (const f of Object.values(e.faces)) {
+            if (f.uv) f.uv = [f.uv[0] * 16 / uvw, f.uv[1] * 16 / uvh, f.uv[2] * 16 / uvw, f.uv[3] * 16 / uvh];
+          }
+          return placeOnHead(buildElements(elements, textures), bb.display);
+        }
+      };
+    }
+
+    async function readFiles(fileList) {
+      const files = [...fileList];
+      if (!files.length) return;
+      status.textContent = "Lese " + files.map(f => f.name).join(", ") + " ...";
+      const loose = {};
+      const found = [];
+      for (const file of files) {
+        try {
+          if (/\.zip$/i.test(file.name)) found.push(...await readZip(file));
+          else if (/\.bbmodel$/i.test(file.name)) found.push(bbmodelEntry(JSON.parse(await file.text()), file.name));
+          else if (/\.json$/i.test(file.name)) {
+            const model = JSON.parse(await file.text());
+            found.push(await javaModelEntry(file.name.replace(/\.json$/i, ""), file.name, async () => ({ textures: {}, display: {}, ...model }),
+              async ref => loose[ref.split("/").pop()] || null));
+          } else if (/\.png$/i.test(file.name)) {
+            loose[file.name.replace(/\.png$/i, "")] = pixelTexture(await loadImage(URL.createObjectURL(file)));
+          }
+        } catch (e) {
+          status.textContent = `${file.name}: ${e.message}`;
+        }
+      }
+      models = [...found, ...models];
+      renderList();
+      status.textContent = found.length ? `${found.length} 3D-Modell(e) gefunden.` : "Keine 3D-Modelle gefunden (flache Items werden nicht angezeigt).";
+      if (found.length) show(found[0]);
+    }
+
+    // Ablegen per Drag & Drop oder Dateiauswahl
+    const drop = document.getElementById("drop");
+    document.getElementById("file").addEventListener("change", e => readFiles(e.target.files));
+    ["dragenter", "dragover"].forEach(t => window.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+    ["dragleave", "drop"].forEach(t => window.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+    window.addEventListener("drop", e => readFiles(e.dataTransfer.files));
+    drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); document.getElementById("file").click(); } });
+    search.addEventListener("input", renderList);
+
+    // --- Ansicht ---
+    let figure = "skin";
+    let flipped = false;
+    function resetView() {
+      const far = Math.max(1, 1.1 / camera.aspect) * (figure === "skin" ? 1.9 : 1);
+      camera.position.set(2.6 * far, 1.9 * far + (figure === "skin" ? -1 : 0.5), -3.4 * far);
+      controls.target.set(0, figure === "skin" ? -1 : 0.6, 0);
+    }
+    document.querySelectorAll("[data-figure]").forEach(b => b.addEventListener("click", () => {
+      figure = b.dataset.figure;
+      if (player) player.visible = figure === "skin";
+      document.querySelectorAll("[data-figure]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+      resetView();
+    }));
+    document.getElementById("skin-file").addEventListener("change", e => {
+      const f = e.target.files[0];
+      if (f) setSkin(URL.createObjectURL(f));
+    });
+    const btnFlip = document.getElementById("btn-flip");
+    btnFlip.addEventListener("click", () => {
+      flipped = !flipped;
+      btnFlip.setAttribute("aria-pressed", String(flipped));
+      if (currentObj) currentObj.rotation.y = flipped ? Math.PI : 0;
+    });
+    const btnRotate = document.getElementById("btn-rotate");
+    btnRotate.addEventListener("click", () => {
+      controls.autoRotate = !controls.autoRotate;
+      btnRotate.setAttribute("aria-pressed", String(controls.autoRotate));
+    });
+    document.getElementById("btn-reset").addEventListener("click", resetView);
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    resetView();
+    await setSkin("../cowboyhut/skin.png");
+
+    // Beispiel: eigener Cowboyhut, damit die Seite nicht leer startet
+    const exampleTex = pixelTexture(await loadImage("../cowboyhut/cowboy_hat.png"));
+    const example = await javaModelEntry("cowboy_hat", "Beispiel · eigener Cowboyhut",
+      async () => ({ textures: {}, display: {}, ...(await fetch("../cowboyhut/cowboy_hat.json").then(r => r.json())) }),
+      async () => exampleTex);
+    models = [example];
+    renderList();
+    show(example);
+
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => {
+      controls.update(Math.min(clock.getDelta(), 0.05));
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>

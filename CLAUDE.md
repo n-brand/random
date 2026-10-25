@@ -21,6 +21,7 @@ Ergaenzt die globalen Regeln in `C:\Source\CLAUDE.md` (Git-Identitaet, Footer-Cr
 - Pro Modell: `build.py` erzeugt `.bbmodel` (Blockbench-Projekt), Java-Modell `.json` und Textur `.png` (Aufruf `python build.py` im Ordner, keine Abhaengigkeiten). Modell nur in `build.py` aendern, nicht in den erzeugten Dateien.
 - Einheiten: Spielerkopf = 0..16 auf allen Achsen (1 Skin-Pixel = 2 Einheiten), vorne = Norden (-z). Java-Grenzen beachten: Koordinaten -16..32, Drehung nur um eine Achse in Schritten von 22.5 Grad.
 - `index.html` im Modellordner zeigt das Modell mit three.js (liest das Java-`.json`), wahlweise auf einem Skin (`skin.png`, 64x64, schmale Arme werden erkannt).
+- `blockbench/viewer/` – Pack-Viewer: liest Resource Packs (.zip, mit JSZip), .bbmodel und Java-Modell-.json im Browser (parent und `#textur`-Verweise werden aufgeloest, flache Items ausgelassen) und zeigt sie per `display.head` auf dem Kopf. Fremde Packs (z.B. von Planet Minecraft, meist "All rights reserved") nur so lokal anschauen, **nicht ins Repo legen**.
 
 ## Neuen Eintrag hinzufuegen
 
