@@ -72,9 +72,15 @@
     }
     footer a { color: var(--accent); pointer-events: auto; }
 
+    .embed .bar, .embed footer { display: none; }
+    .embed .side { top: 12px; bottom: 12px; }
+    .embed .controls { bottom: 12px; }
+
     @media (max-width: 700px) {
       .side { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); left: 16px; right: 16px; width: auto; height: 38vh; }
       .controls { left: 16px; right: 16px; max-width: none; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+      .embed .side { top: auto; bottom: 64px; height: 40%; }
+      .embed .side .drop, .embed .side .note { display: none; }
     }
   </style>
 </head>
@@ -120,6 +126,9 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    // ?embed=1: ohne Kopfzeile und Footer, zum Einbetten in andere Seiten (iframe)
+    if (new URLSearchParams(location.search).has("embed")) document.documentElement.classList.add("embed");
 
     // --- Szene ---
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -408,9 +417,28 @@
     async function readZip(file) {
       const zip = await JSZip.loadAsync(file);
       const files = {};
-      zip.forEach((path, entry) => { if (!entry.dir) files[path.replace(/^[^/]+\/(?=assets\/)/, "")] = entry; });
+      zip.forEach((path, entry) => {
+        // macOS-Reste (__MACOSX/, ._datei) sind keine echten Dateien
+        if (entry.dir || path.startsWith("__MACOSX/") || /(^|\/)\._/.test(path)) return;
+        files[path.replace(/^[^/]+\/(?=assets\/)/, "")] = entry;
+      });
       const { resolve, texture } = packResolver(files);
       const found = [];
+
+      // Kuerbisse: nur Texturen im Pack, das Modell (Wuerfel) bringt Minecraft selbst mit
+      for (const [block, title] of [["carved_pumpkin", "Geschnitzter Kuerbis"], ["jack_o_lantern", "Kuerbislaterne"]]) {
+        if (!files[`assets/minecraft/textures/block/${block}.png`]) continue;
+        const cube = {
+          textures: { front: `block/${block}`, side: "block/pumpkin_side", end: "block/pumpkin_top" },
+          display: {},
+          elements: [{ from: [0, 0, 0], to: [16, 16, 16], faces: {
+            north: { texture: "#front" }, south: { texture: "#side" }, east: { texture: "#side" },
+            west: { texture: "#side" }, up: { texture: "#end" }, down: { texture: "#end" }
+          } }]
+        };
+        found.push(await javaModelEntry(title, `${file.name} · Textur ${block}`, async () => cube, texture));
+      }
+
       for (const path of Object.keys(files).sort()) {
         const m = path.match(/^assets\/([^/]+)\/models\/(.+)\.json$/);
         if (m) {
@@ -556,7 +584,18 @@
         // kein lokaler Ordner, z.B. auf GitHub Pages
       }
     }
-    loadLocal();
+    // ?pack=<url> laedt ein Pack direkt (z.B. von der Halloween-Seite), sonst die lokalen Packs
+    const packUrls = new URLSearchParams(location.search).getAll("pack");
+    if (packUrls.length) {
+      try {
+        const files = await Promise.all(packUrls.map(async u => new File([await fetch(u).then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); })], u.split("/").pop())));
+        await readFiles(files);
+      } catch (e) {
+        status.textContent = "Pack konnte nicht geladen werden: " + e.message;
+      }
+    } else {
+      loadLocal();
+    }
 
     const clock = new THREE.Clock();
     renderer.setAnimationLoop(() => {

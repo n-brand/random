@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Halloween-Pack – Blockbench – random</title>
+  <meta name="theme-color" content="#141413">
+  <link rel="icon" href="pack.png" type="image/png">
+  <style>
+    :root {
+      --bg: #f6f5f1; --surface: #ffffff; --text: #1d1d1b; --muted: #6b6a65; --line: #e3e1da;
+      --accent: #d9480f; --accent-soft: #fdeee6; --bb: #2b8a3e;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141413; --surface: #1e1e1c; --text: #ecebe6; --muted: #9b9a94; --line: #2e2e2b;
+        --accent: #ff8a4c; --accent-soft: #3a2418; --bb: #69db7c;
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding-block: 24px; }
+    .back { color: var(--text); text-decoration: none; font-weight: 600; }
+    .back span { color: var(--accent); }
+    header { display: flex; gap: 18px; align-items: center; margin: 24px 0 8px; flex-wrap: wrap; }
+    header img { width: 72px; height: 72px; image-rendering: pixelated; border-radius: 14px; }
+    header h1 { margin: 0; font-size: clamp(1.8rem, 5vw, 2.6rem); letter-spacing: -0.03em; line-height: 1.1; }
+    header p { margin: 4px 0 0; color: var(--muted); }
+    .viewer {
+      width: 100%; height: min(72vh, 680px); border: 1px solid var(--line); border-radius: 14px;
+      background: #0b0d12; display: block; margin: 20px 0;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 14px; }
+    .box { min-width: 0; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+    .box h2 { margin: 0 0 8px; font-size: 1.1rem; }
+    .box ol, .box ul { margin: 0; padding-left: 20px; }
+    .box li { margin: 4px 0; }
+    code { background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-size: .85em; overflow-wrap: anywhere; }
+    .download {
+      display: inline-block; margin-top: 4px; padding: 9px 16px; border-radius: 10px;
+      background: var(--accent); color: #fff; text-decoration: none; font-weight: 700;
+    }
+    .files a { color: var(--accent); }
+    .muted { color: var(--muted); font-size: .9rem; }
+    footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../../">&larr; random<span>.</span></a>
+
+    <header>
+      <img src="pack.png" alt="">
+      <div>
+        <h1>Halloween-Pack</h1>
+        <p>Resource Pack fuer Minecraft Java: gruselige Kuerbis-Gesichter und zwei Huete zum Aufsetzen.</p>
+      </div>
+    </header>
+
+    <iframe class="viewer" src="../viewer/?embed=1&amp;pack=../halloween/halloween-pack.zip" title="3D-Vorschau des Halloween-Packs" loading="lazy"></iframe>
+
+    <div class="grid">
+      <section class="box">
+        <h2>Installieren</h2>
+        <ol>
+          <li><a class="download" href="halloween-pack.zip" download>halloween-pack.zip herunterladen</a></li>
+          <li>In Minecraft: <em>Optionen &rarr; Ressourcenpakete &rarr; Pack-Ordner oeffnen</em> und die Zip-Datei hineinlegen (nicht entpacken).</li>
+          <li>Pack aktivieren. Meldet Minecraft eine andere Version, trotzdem verwenden.</li>
+        </ol>
+      </section>
+
+      <section class="box">
+        <h2>Huete aufsetzen</h2>
+        <p class="muted">Die Huete sind geschnitzte Kuerbisse mit Custom Model Data. Im Kreativmodus oder mit Cheats:</p>
+        <ul>
+          <li>Hexenhut: <code>/give @s carved_pumpkin[custom_model_data={floats:[1001]}]</code></li>
+          <li>Teufelshoerner: <code>/give @s carved_pumpkin[custom_model_data={floats:[1002]}]</code></li>
+        </ul>
+        <p class="muted">Vor Version 1.21.4: <code>/give @s carved_pumpkin{CustomModelData:1001}</code> bzw. <code>1002</code>. Danach den Kuerbis in den Helm-Platz legen.</p>
+      </section>
+
+      <section class="box">
+        <h2>Was drin ist</h2>
+        <ul>
+          <li>Neues Gesicht fuer geschnitzten Kuerbis und Kuerbislaterne (leuchtet), dazu passende Kuerbis-Seiten und -Deckel</li>
+          <li>Hexenhut mit geknickter Spitze und orangem Band</li>
+          <li>Teufelshoerner</li>
+          <li>Kein Kuerbis-Rand mehr im Bild, wenn man einen Kuerbis traegt (gilt fuer alle Kuerbisse)</li>
+        </ul>
+      </section>
+
+      <section class="box files">
+        <h2>Fuer Blockbench</h2>
+        <ul>
+          <li><a href="hexenhut.bbmodel" download>hexenhut.bbmodel</a></li>
+          <li><a href="teufelshoerner.bbmodel" download>teufelshoerner.bbmodel</a></li>
+        </ul>
+        <p class="muted">Erzeugt mit <code>build.py</code>. Alles selbst gemacht, keine fremden Inhalte.</p>
+      </section>
+    </div>
+
+    <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
+  </div>
+</body>
+</html>
