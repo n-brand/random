@@ -21,6 +21,8 @@
       --accent-soft: #fdeee6;
       --test: #1c7ed6;
       --test-soft: #e7f2fc;
+      --bb: #2b8a3e;
+      --bb-soft: #e6f6e9;
       color-scheme: light;
     }
     @media (prefers-color-scheme: dark) {
@@ -34,6 +36,8 @@
         --accent-soft: #3a2418;
         --test: #6cb4f5;
         --test-soft: #182a3b;
+        --bb: #69db7c;
+        --bb-soft: #16301c;
         color-scheme: dark;
       }
     }
@@ -104,6 +108,11 @@
     .badge { padding: 1px 8px; border-radius: 999px; font-weight: 600; }
     .badge.sache { background: var(--accent-soft); color: var(--accent); }
     .badge.test { background: var(--test-soft); color: var(--test); }
+    .badge.blockbench { background: var(--bb-soft); color: var(--bb); }
+
+    .block-section { margin-top: 44px; padding-top: 28px; border-top: 2px dashed var(--line); }
+    .block-section h2 { margin: 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+    .block-section > p { margin: 4px 0 18px; color: var(--muted); }
 
     .empty {
       border: 1.5px dashed var(--line);
@@ -138,6 +147,7 @@
       <div class="stat"><b id="count-all">0</b><small>Eintraege</small></div>
       <div class="stat"><b id="count-sache">0</b><small>Sachen</small></div>
       <div class="stat"><b id="count-test">0</b><small>Tests</small></div>
+      <div class="stat"><b id="count-blockbench">0</b><small>Blockbench</small></div>
     </section>
 
     <div class="controls">
@@ -150,6 +160,12 @@
     </div>
 
     <main id="list"></main>
+
+    <section class="block-section" id="blockbench" aria-labelledby="blockbench-title">
+      <h2 id="blockbench-title">Blockbench</h2>
+      <p>Minecraft-Modelle zum Anschauen und Herunterladen, als Blockbench-Projekt und fertiges Java-Modell.</p>
+      <div id="bb-list"></div>
+    </section>
 
     <footer>
       <span>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></span>
@@ -164,8 +180,14 @@
       { type: "sache", title: "Superhelden 3D", desc: "Iron Man, Spider-Man, Hulk, Batman und Superman als drehbare 3D-Modelle, dazu ein selbst gebauter Iron-Man-Anzug mit Arc-Reaktor und klappbarer Maske.", href: "sachen/helden/", img: "sachen/helden/vorschau.webp", date: "2026-10-23", tags: ["3d", "three.js", "marvel", "dc"] }
     ];
 
-    const LABELS = { sache: "Sache", test: "Test" };
+    // Eigener Bereich "Blockbench" unter den Eintraegen
+    const BLOCKBENCH = [
+      { type: "blockbench", title: "Cowboyhut", desc: "Cowboyhut fuer Minecraft mit breiter, hochgebogener Krempe, fast doppelt so breit wie der Kopf. Als .bbmodel, Java-Modell und Textur.", href: "blockbench/cowboyhut/", img: "blockbench/cowboyhut/vorschau.webp", date: "2026-10-25", tags: ["minecraft", "hut", "java"] }
+    ];
+
+    const LABELS = { sache: "Sache", test: "Test", blockbench: "Blockbench" };
     const list = document.getElementById("list");
+    const bbList = document.getElementById("bb-list");
     const search = document.getElementById("search");
     let filter = "all";
 
@@ -178,10 +200,35 @@
       return isNaN(d) ? "" : d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" });
     }
 
+    function card(e) {
+      return `
+        <a class="card" href="${escapeHtml(e.href)}">
+          ${e.img ? `<img class="thumb" src="${escapeHtml(e.img)}" alt="" loading="lazy">` : ""}
+          <div class="meta">
+            <span class="badge ${e.type}">${LABELS[e.type] || e.type}</span>
+            ${e.date ? `<span>${formatDate(e.date)}</span>` : ""}
+          </div>
+          <h3>${escapeHtml(e.title)}</h3>
+          <p>${escapeHtml(e.desc || "")}</p>
+          ${e.tags && e.tags.length ? `<div class="meta">${e.tags.map(t => `<span>#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+        </a>`;
+    }
+
+    function matches(e, q) {
+      return !q || [e.title, e.desc, ...(e.tags || [])].join(" ").toLowerCase().includes(q);
+    }
+
     function render() {
-      document.getElementById("count-all").textContent = ENTRIES.length;
+      document.getElementById("count-all").textContent = ENTRIES.length + BLOCKBENCH.length;
       document.getElementById("count-sache").textContent = ENTRIES.filter(e => e.type === "sache").length;
       document.getElementById("count-test").textContent = ENTRIES.filter(e => e.type === "test").length;
+      document.getElementById("count-blockbench").textContent = BLOCKBENCH.length;
+
+      const q = search.value.trim().toLowerCase();
+      const models = BLOCKBENCH.filter(e => matches(e, q)).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      bbList.innerHTML = models.length
+        ? `<div class="grid">${models.map(card).join("")}</div>`
+        : `<div class="empty"><p>${BLOCKBENCH.length ? "Keine Treffer." : "Noch keine Modelle."}</p></div>`;
 
       if (!ENTRIES.length) {
         list.innerHTML = `
@@ -198,10 +245,9 @@
         return;
       }
 
-      const q = search.value.trim().toLowerCase();
       const items = ENTRIES
         .filter(e => filter === "all" || e.type === filter)
-        .filter(e => !q || [e.title, e.desc, ...(e.tags || [])].join(" ").toLowerCase().includes(q))
+        .filter(e => matches(e, q))
         .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
       if (!items.length) {
@@ -209,17 +255,7 @@
         return;
       }
 
-      list.innerHTML = `<div class="grid">${items.map(e => `
-        <a class="card" href="${escapeHtml(e.href)}">
-          ${e.img ? `<img class="thumb" src="${escapeHtml(e.img)}" alt="" loading="lazy">` : ""}
-          <div class="meta">
-            <span class="badge ${e.type}">${LABELS[e.type] || e.type}</span>
-            ${e.date ? `<span>${formatDate(e.date)}</span>` : ""}
-          </div>
-          <h3>${escapeHtml(e.title)}</h3>
-          <p>${escapeHtml(e.desc || "")}</p>
-          ${e.tags && e.tags.length ? `<div class="meta">${e.tags.map(t => `<span>#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
-        </a>`).join("")}</div>`;
+      list.innerHTML = `<div class="grid">${items.map(card).join("")}</div>`;
     }
 
     document.querySelectorAll(".tabs button").forEach(btn => {

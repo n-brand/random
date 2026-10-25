@@ -13,6 +13,14 @@ Ergaenzt die globalen Regeln in `C:\Source\CLAUDE.md` (Git-Identitaet, Footer-Cr
 - `icon.svg` – App-Icon
 - `sachen/<name>/index.html` – eine "Sache" (Mini-Tool, Spielerei)
 - `tests/<name>/index.html` – ein Test/Experiment
+- `blockbench/<name>/` – ein Minecraft-Modell (siehe unten)
+
+## Blockbench (eigener Bereich auf der Startseite)
+
+- Minecraft-Modelle liegen unter `blockbench/<name>/` und stehen im Array `BLOCKBENCH` in `index.html` (gleiche Felder wie `ENTRIES`, `type: "blockbench"`). Sie erscheinen im eigenen Abschnitt "Blockbench" unter den anderen Eintraegen.
+- Pro Modell: `build.py` erzeugt `.bbmodel` (Blockbench-Projekt), Java-Modell `.json` und Textur `.png` (Aufruf `python build.py` im Ordner, keine Abhaengigkeiten). Modell nur in `build.py` aendern, nicht in den erzeugten Dateien.
+- Einheiten: Spielerkopf = 0..16 auf allen Achsen (1 Skin-Pixel = 2 Einheiten), vorne = Norden (-z). Java-Grenzen beachten: Koordinaten -16..32, Drehung nur um eine Achse in Schritten von 22.5 Grad.
+- `index.html` im Modellordner zeigt das Modell mit three.js (liest das Java-`.json`), wahlweise auf einem Skin (`skin.png`, 64x64, schmale Arme werden erkannt).
 
 ## Neuen Eintrag hinzufuegen
 
