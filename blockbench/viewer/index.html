@@ -539,6 +539,25 @@
     renderList();
     show(example);
 
+    // Lokale Packs aus ../lokal/ automatisch laden. Der Ordner ist in .gitignore und existiert nur auf dem
+    // eigenen PC; der lokale Server (python -m http.server) liefert dort eine Dateiliste. Online: 404, nichts passiert.
+    async function loadLocal() {
+      try {
+        const res = await fetch("../lokal/", { cache: "no-store" });
+        if (!res.ok || !(res.headers.get("content-type") || "").includes("html")) return;
+        const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+        const names = [...doc.querySelectorAll("a")].map(a => decodeURIComponent(a.getAttribute("href")))
+          .filter(n => /^[^/?#]+\.(zip|bbmodel|json|png)$/i.test(n));
+        if (!names.length) return;
+        const files = await Promise.all(names.map(async n => new File([await fetch("../lokal/" + encodeURIComponent(n)).then(r => r.blob())], n)));
+        await readFiles(files);
+        status.textContent = `${models.length - 1} Modell(e) aus dem lokalen Ordner (${names.length} Datei(en)).`;
+      } catch {
+        // kein lokaler Ordner, z.B. auf GitHub Pages
+      }
+    }
+    loadLocal();
+
     const clock = new THREE.Clock();
     renderer.setAnimationLoop(() => {
       controls.update(Math.min(clock.getDelta(), 0.05));
