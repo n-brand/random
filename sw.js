@@ -1,6 +1,6 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v9";
+const CACHE = "random-v11";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 const ASSETS = [
@@ -8,6 +8,7 @@ const ASSETS = [
   "sachen/helden/", "sachen/helden/manifest.webmanifest", "sachen/helden/icon.svg", "sachen/helden/vorschau.webp",
   "blockbench/cowboyhut/", "blockbench/cowboyhut/cowboy_hat.json", "blockbench/cowboyhut/cowboy_hat.png",
   "blockbench/cowboyhut/skin.png", "blockbench/cowboyhut/vorschau.webp",
+  "pruefung/ui-design/", "pruefung/ui-design/inhalt.js",
   "blockbench/viewer/", JSZIP,
   "blockbench/halloween/", "blockbench/halloween/halloween-pack.zip", "blockbench/halloween/pack.png", "blockbench/halloween/vorschau.webp",
   THREE + "build/three.module.js",

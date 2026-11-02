@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>UI Designen – Prüfungsvorbereitung – random</title>
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="../../icon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #f6f5f1; --surface: #ffffff; --text: #1d1d1b; --muted: #6b6a65; --line: #e3e1da;
+      --accent: #7048e8; --accent-soft: #efebff; --ok: #2b8a3e; --ok-soft: #e6f6e9; --bad: #c92a2a; --bad-soft: #ffe9e9;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141413; --surface: #1e1e1c; --text: #ecebe6; --muted: #9b9a94; --line: #2e2e2b;
+        --accent: #b197fc; --accent-soft: #261d45; --ok: #69db7c; --ok-soft: #16301c; --bad: #ff8787; --bad-soft: #3b1a1a;
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+    }
+    .wrap { max-width: 880px; margin: 0 auto; padding-block: 24px; }
+    .back { color: var(--text); text-decoration: none; font-weight: 600; }
+    .back span { color: #d9480f; }
+    header { margin: 24px 0 18px; }
+    header small { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; }
+    header h1 { margin: 2px 0 4px; font-size: clamp(1.9rem, 6vw, 2.8rem); letter-spacing: -0.03em; line-height: 1.1; }
+    header p { margin: 0; color: var(--muted); }
+
+    .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; width: fit-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .tabs button { border: 0; background: none; color: var(--muted); font: inherit; font-size: .92rem; padding: 6px 14px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+    .tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .panel { margin-top: 18px; }
+
+    .box { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+    .box h2 { margin: 0 0 6px; font-size: 1.1rem; }
+    .box p { margin: 0 0 8px; }
+    .box ul { margin: 0; padding-left: 20px; }
+    .muted { color: var(--muted); }
+    .empty { border: 1.5px dashed var(--line); border-radius: 14px; padding: 36px 20px; text-align: center; color: var(--muted); }
+    .empty h2 { margin: 0 0 4px; color: var(--text); font-size: 1.15rem; }
+
+    .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; color: var(--muted); font-size: .9rem; }
+    .progress { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin-bottom: 14px; }
+    .progress div { height: 100%; background: var(--accent); width: 0; transition: width .25s ease; }
+
+    .flashcard {
+      min-height: 220px; display: grid; place-items: center; text-align: center; cursor: pointer;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; font-size: 1.15rem;
+      transition: border-color .15s ease;
+    }
+    .flashcard:hover { border-color: var(--accent); }
+    .flashcard .label { display: block; color: var(--accent); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .btn { border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: .92rem; padding: 8px 14px; border-radius: 9px; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.ok { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+    .btn.bad { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+
+    .options { display: grid; gap: 8px; margin-top: 12px; }
+    .option { text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; padding: 10px 14px; border-radius: 10px; cursor: pointer; }
+    .option:hover:not(:disabled) { border-color: var(--accent); }
+    .option.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .review-list { display: grid; gap: 12px; }
+    .verdict { font-weight: 800; margin-bottom: 4px; }
+    .verdict.ok { color: var(--ok); }
+    .verdict.bad { color: var(--bad); }
+    .mark { color: var(--ok); font-weight: 700; font-size: .85rem; }
+    .choice { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: .75rem; font-weight: 800; vertical-align: middle; }
+    .option { cursor: default; }
+    .option.wrong { text-decoration: line-through; text-decoration-color: var(--bad); }
+    .option.correct { background: var(--ok-soft); border-color: var(--ok); }
+    .option.wrong { background: var(--bad-soft); border-color: var(--bad); }
+    .option:disabled { cursor: default; }
+    .explain { margin-top: 10px; color: var(--muted); }
+
+    footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+    footer a { color: #d9480f; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="../../">&larr; random<span>.</span></a>
+
+    <header>
+      <small id="subtitle">Prüfungsvorbereitung</small>
+      <h1 id="title">UI Designen</h1>
+      <p id="exam"></p>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="Bereiche">
+      <button type="button" role="tab" data-tab="themen" aria-selected="true">Themen</button>
+      <button type="button" role="tab" data-tab="karten" aria-selected="false">Lernkarten</button>
+      <button type="button" role="tab" data-tab="quiz" aria-selected="false">Quiz</button>
+      <button type="button" role="tab" data-tab="pruefung" aria-selected="false">Prüfung</button>
+    </div>
+
+    <section class="panel" id="panel" role="tabpanel"></section>
+
+    <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
+  </div>
+
+  <script src="inhalt.js"></script>
+  <script>
+    const DATA = window.INHALT;
+    const panel = document.getElementById("panel");
+    const STORE = "pruefung-ui-design";
+
+    // Fortschritt nur in diesem Browser (gewusste Karten, bestes Quiz-Ergebnis)
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; }
+    }
+    function save(state) {
+      try { localStorage.setItem(STORE, JSON.stringify(state)); } catch { /* privater Modus */ }
+    }
+    const progress = Object.assign({ known: [], best: null }, load());
+
+    function el(tag, attrs = {}, ...children) {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === "class") node.className = v;
+        else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+        else node.setAttribute(k, v);
+      }
+      node.append(...children.flat().filter(c => c !== null && c !== undefined));
+      return node;
+    }
+
+    function empty(what) {
+      return el("div", { class: "empty" },
+        el("h2", {}, "Inhalte folgen"),
+        el("p", {}, `${what} werden ergänzt, sobald die Prüfungsinhalte da sind.`));
+    }
+
+    function shuffle(list) {
+      const a = [...list];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // --- Themen ---
+    function showThemen() {
+      if (!DATA.themen.length) return panel.replaceChildren(empty("Die Themen"));
+      panel.replaceChildren(...DATA.themen.map(t => el("article", { class: "box" },
+        el("h2", {}, t.titel),
+        t.text ? el("p", {}, t.text) : null,
+        t.punkte && t.punkte.length ? el("ul", {}, t.punkte.map(p => el("li", {}, p))) : null
+      )));
+    }
+
+    // --- Lernkarten ---
+    function showKarten() {
+      if (!DATA.karten.length) return panel.replaceChildren(empty("Die Lernkarten"));
+      let deck = shuffle(DATA.karten.map((k, i) => ({ ...k, i })).filter(k => !progress.known.includes(k.i)));
+      let pos = 0, flipped = false;
+
+      function draw() {
+        const knownCount = progress.known.length;
+        const total = DATA.karten.length;
+        if (!deck.length || pos >= deck.length) {
+          panel.replaceChildren(
+            el("div", { class: "empty" },
+              el("h2", {}, knownCount === total ? "Alle Karten gewusst" : "Durchgang fertig"),
+              el("p", {}, `${knownCount} von ${total} Karten als gewusst markiert.`)),
+            el("div", { class: "actions" },
+              el("button", { class: "btn primary", type: "button", onclick: () => { deck = shuffle(DATA.karten.map((k, i) => ({ ...k, i })).filter(k => !progress.known.includes(k.i))); pos = 0; draw(); } }, "Offene Karten wiederholen"),
+              el("button", { class: "btn", type: "button", onclick: () => { progress.known = []; save(progress); showKarten(); } }, "Fortschritt zurücksetzen")));
+          return;
+        }
+        const k = deck[pos];
+        panel.replaceChildren(
+          el("div", { class: "bar" }, el("span", {}, `Karte ${pos + 1} von ${deck.length}${k.thema ? " · " + k.thema : ""}`), el("span", {}, `${knownCount}/${total} gewusst`)),
+          el("div", { class: "progress" }, el("div", { style: `width:${(knownCount / total) * 100}%` })),
+          el("button", { class: "flashcard", type: "button", "aria-live": "polite", onclick: () => { flipped = !flipped; draw(); } },
+            el("span", {}, el("span", { class: "label" }, flipped ? "Antwort" : "Frage"), flipped ? k.antwort : k.frage)),
+          el("div", { class: "actions" },
+            flipped
+              ? [el("button", { class: "btn ok", type: "button", onclick: () => { progress.known.push(k.i); save(progress); pos++; flipped = false; draw(); } }, "Gewusst"),
+                 el("button", { class: "btn bad", type: "button", onclick: () => { deck.push(k); pos++; flipped = false; draw(); } }, "Nochmal")]
+              : el("button", { class: "btn primary", type: "button", onclick: () => { flipped = true; draw(); } }, "Antwort zeigen")));
+      }
+      draw();
+    }
+
+    // --- Quiz ---
+    function showQuiz() {
+      if (!DATA.quiz.length) return panel.replaceChildren(empty("Die Quizfragen"));
+      const fragen = shuffle(DATA.quiz);
+      let pos = 0, score = 0;
+
+      function draw() {
+        if (pos >= fragen.length) {
+          if (progress.best === null || score > progress.best) { progress.best = score; save(progress); }
+          panel.replaceChildren(
+            el("div", { class: "empty" },
+              el("h2", {}, `${score} von ${fragen.length} richtig`),
+              el("p", {}, `Bestes Ergebnis bisher: ${progress.best} von ${fragen.length}.`)),
+            el("div", { class: "actions" }, el("button", { class: "btn primary", type: "button", onclick: showQuiz }, "Nochmal")));
+          return;
+        }
+        const f = fragen[pos];
+        // richtig: Index oder Liste von Indizes; mehrere richtige Antworten = mehrfach
+        const korrekt = Array.isArray(f.richtig) ? f.richtig : [f.richtig];
+        const mehrfach = korrekt.length > 1;
+        const picked = new Set();
+        const explain = el("p", { class: "explain", "aria-live": "polite" });
+        const next = el("button", { class: "btn primary", type: "button", hidden: "", onclick: () => { pos++; draw(); } },
+          pos + 1 < fragen.length ? "Nächste Frage" : "Auswertung");
+        const check = mehrfach ? el("button", { class: "btn primary", type: "button", disabled: "", onclick: () => evaluate() }, "Prüfen") : null;
+        function evaluate() {
+          const ok = korrekt.every(i => picked.has(i)) && [...picked].every(i => korrekt.includes(i));
+          options.forEach((b, j) => {
+            b.disabled = true;
+            if (korrekt.includes(j)) b.classList.add("correct");
+            else if (picked.has(j)) b.classList.add("wrong");
+          });
+          if (ok) score++;
+          explain.textContent = (ok ? "Richtig. " : "Leider falsch. ") + (f.erklaerung || "");
+          next.hidden = false;
+          if (check) check.hidden = true;
+        }
+        const options = f.optionen.map((o, i) => el("button", { class: "option", type: "button", onclick: () => {
+          if (!mehrfach) { picked.add(i); evaluate(); return; }
+          if (picked.has(i)) picked.delete(i); else picked.add(i);
+          options[i].classList.toggle("selected", picked.has(i));
+          check.disabled = picked.size === 0;
+        } }, o));
+        panel.replaceChildren(
+          el("div", { class: "bar" }, el("span", {}, `Frage ${pos + 1} von ${fragen.length}${f.thema ? " · " + f.thema : ""}`), el("span", {}, `${score} richtig`)),
+          el("div", { class: "progress" }, el("div", { style: `width:${(pos / fragen.length) * 100}%` })),
+          el("div", { class: "box" }, el("h2", {}, f.frage), mehrfach ? el("p", { class: "muted" }, "Mehrere Antworten sind richtig.") : null, el("div", { class: "options" }, options), explain),
+          el("div", { class: "actions" }, check, next));
+      }
+      draw();
+    }
+
+    // --- Prüfung: Anzahl wählen, Fragen am Stück ohne Feedback, Punktzahl und Ergebnisse am Ende ---
+    function showPruefung() {
+      if (!DATA.quiz.length) return panel.replaceChildren(empty("Die Prüfungsfragen"));
+      const max = DATA.quiz.length;
+      const anzahl = el("input", { class: "search", type: "number", min: "1", max: String(max), value: String(max), "aria-label": "Anzahl Fragen" });
+      panel.replaceChildren(
+        el("div", { class: "box" }, el("h2", {}, "Prüfung starten"),
+          el("p", { class: "muted" }, `Wie viele Fragen sollen kommen? Standard sind alle ${max}.`), anzahl),
+        el("div", { class: "actions" }, el("button", { class: "btn primary", type: "button", onclick: () => {
+          starten(Math.min(max, Math.max(1, parseInt(anzahl.value, 10) || max)));
+        } }, "Starten")));
+    }
+
+    function starten(n) {
+      const fragen = shuffle(DATA.quiz).slice(0, n);
+      const antworten = [];
+      let pos = 0;
+      const korrekt = f => (Array.isArray(f.richtig) ? f.richtig : [f.richtig]);
+
+      function draw() {
+        if (pos >= fragen.length) return auswertung();
+        const f = fragen[pos];
+        const picked = new Set(antworten[pos] || []);
+        const mehrfach = korrekt(f).length > 1;
+        const next = el("button", { class: "btn primary", type: "button", onclick: () => { antworten[pos] = [...picked]; pos++; draw(); } },
+          pos + 1 < fragen.length ? "Weiter" : "Abgeben");
+        next.disabled = picked.size === 0;
+        const options = f.optionen.map((o, i) => el("button", { class: "option", type: "button", onclick: () => {
+          if (!mehrfach) picked.clear();
+          if (picked.has(i)) picked.delete(i); else picked.add(i);
+          options.forEach((b, j) => b.classList.toggle("selected", picked.has(j)));
+          next.disabled = picked.size === 0;
+        } }, o));
+        options.forEach((b, j) => b.classList.toggle("selected", picked.has(j)));
+        panel.replaceChildren(
+          el("div", { class: "bar" }, el("span", {}, `Frage ${pos + 1} von ${fragen.length}`), el("span", {}, "Feedback erst am Ende")),
+          el("div", { class: "progress" }, el("div", { style: `width:${(pos / fragen.length) * 100}%` })),
+          el("div", { class: "box" }, el("h2", {}, f.frage), mehrfach ? el("p", { class: "muted" }, "Mehrere Antworten sind richtig.") : null, el("div", { class: "options" }, options)),
+          el("div", { class: "actions" }, next));
+      }
+
+      // Eine Frage zaehlt nur, wenn genau die richtigen Antworten gewaehlt sind
+      const istRichtig = (f, ist = []) => {
+        const soll = korrekt(f).slice().sort((a, b) => a - b);
+        const gewaehlt = ist.slice().sort((a, b) => a - b);
+        return soll.length === gewaehlt.length && soll.every((v, k) => v === gewaehlt[k]);
+      };
+
+      function auswertung() {
+        const punkte = fragen.filter((f, i) => istRichtig(f, antworten[i])).length;
+        panel.replaceChildren(
+          el("div", { class: "empty" }, el("h2", {}, `${punkte} von ${n} Punkten`), el("p", {}, `${Math.round((punkte / n) * 100)} %`)),
+          el("div", { class: "actions" },
+            el("button", { class: "btn primary", type: "button", onclick: () => ergebnisse() }, "Ergebnisse ansehen"),
+            el("button", { class: "btn", type: "button", onclick: showPruefung }, "Neue Prüfung")));
+      }
+
+      // Wie in der Prüfung: alle Antworten sichtbar. Grün = richtig, rot = falsch gewählt, Haken = richtige Lösung
+      function ergebnisse() {
+        const zeilen = fragen.map((f, i) => {
+          const ok = istRichtig(f, antworten[i]);
+          const gewaehlt = new Set(antworten[i] || []);
+          const soll = new Set(korrekt(f));
+          return el("article", { class: "box" },
+            el("div", { class: ok ? "verdict ok" : "verdict bad" }, ok ? "✓ Richtig" : "✗ Falsch",
+              el("span", { class: "muted" }, `  Frage ${i + 1} von ${fragen.length}`)),
+            el("h2", {}, f.frage),
+            el("div", { class: "options" }, f.optionen.map((o, j) => el("div", {
+              class: "option" + (soll.has(j) ? " correct" : gewaehlt.has(j) ? " wrong" : "")
+            }, o, soll.has(j) ? el("span", { class: "mark" }, "  ✓ richtig") : null, gewaehlt.has(j) ? el("span", { class: "choice" }, "deine Wahl") : null))),
+            gewaehlt.size === 0 ? el("p", { class: "muted" }, "Keine Antwort gewählt.") : null);
+        });
+        panel.replaceChildren(
+          el("div", { class: "review-list" }, zeilen),
+          el("div", { class: "actions" },
+            el("button", { class: "btn", type: "button", onclick: () => auswertung() }, "Zurück zur Punktzahl"),
+            el("button", { class: "btn primary", type: "button", onclick: showPruefung }, "Neue Prüfung")));
+      }
+
+      draw();
+    }
+
+    const VIEWS = { themen: showThemen, karten: showKarten, quiz: showQuiz, pruefung: showPruefung };
+    const tabs = document.querySelectorAll("[data-tab]");
+    function open(name) {
+      tabs.forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+      history.replaceState(null, "", "#" + name);
+      VIEWS[name]();
+    }
+    tabs.forEach(t => t.addEventListener("click", () => open(t.dataset.tab)));
+
+    document.getElementById("title").textContent = DATA.titel;
+    document.getElementById("subtitle").textContent = DATA.untertitel;
+    document.getElementById("exam").textContent = DATA.pruefung || "Inhalte der Prüfung folgen.";
+    document.title = `${DATA.titel} – ${DATA.untertitel} – random`;
+    open(VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : "themen");
+  </script>
+</body>
+</html>
