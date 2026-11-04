@@ -43,13 +43,67 @@
     footer a { color: var(--accent); pointer-events: auto; }
     .hint { color: var(--muted); font-size: .8rem; }
     #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); }
+
+    /* --- Laufmodus --- */
+    body.walk .bar .hint, body.walk .bar h1, body.walk .controls, body.walk footer { display: none; }
+    .walk-ui { display: none; }
+    body.walk .walk-ui { display: block; }
+    .top-right {
+      position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); right: calc(env(safe-area-inset-right, 0px) + 12px);
+      display: flex; gap: 6px;
+    }
+    /* Im Rundumblick unter der Kopfzeile, damit der Hinweis frei bleibt */
+    body:not(.walk) .top-right { top: calc(env(safe-area-inset-top, 0px) + 52px); }
+    .pill {
+      border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-size: .85rem;
+      padding: 7px 12px; border-radius: 999px; cursor: pointer; backdrop-filter: blur(8px);
+    }
+    .pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .keys {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+      padding: 7px 14px; border-radius: 10px; background: var(--panel); color: var(--muted); font-size: .8rem;
+      text-align: center; max-width: calc(100% - 32px); pointer-events: none;
+    }
+    .crosshair {
+      position: fixed; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; pointer-events: none;
+      background: linear-gradient(var(--text), var(--text)) center / 2px 14px no-repeat,
+                  linear-gradient(var(--text), var(--text)) center / 14px 2px no-repeat;
+      opacity: .7;
+    }
+    /* Joysticks nur auf Touch-Geraeten */
+    .stick {
+      position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); width: 132px; height: 132px;
+      border-radius: 50%; background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .22);
+      touch-action: none;
+    }
+    .stick.left { left: calc(env(safe-area-inset-left, 0px) + 28px); }
+    .stick.right { right: calc(env(safe-area-inset-right, 0px) + 28px); }
+    .stick span {
+      position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px;
+      border-radius: 50%; background: rgba(236, 235, 230, .85); box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+    }
+    .stick.right span { background: rgba(255, 138, 76, .9); }
+    .jump {
+      position: fixed; right: calc(env(safe-area-inset-right, 0px) + 172px); bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
+      width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3);
+      background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; font-weight: 700;
+      touch-action: none;
+    }
+    .touch-only { display: none !important; }
+    body.touch.walk .touch-only { display: block !important; }
+    body.touch.walk .keys, body.touch.walk .crosshair { display: none; }
+    .turn {
+      position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 24px;
+      background: rgba(11, 13, 18, .92); color: var(--text); font-weight: 600;
+    }
+    @media (orientation: portrait) { body.touch.walk .turn { display: grid; } }
   </style>
 </head>
 <body>
   <div class="bar">
     <a href="../../">&larr; random<span>.</span></a>
     <h1>Haus &middot; 3D</h1>
-    <span class="hint">Ziehen zum Drehen, Scrollen zum Zoomen</span>
+    <span class="hint">Ziehen zum Drehen, Scrollen zum Zoomen, „Begehen“ zum Reinlaufen</span>
   </div>
 
   <div id="loading">Lade 3D-Ansicht...</div>
@@ -58,6 +112,21 @@
     <button type="button" id="btn-rotate" aria-pressed="true">Auto-Rotation</button>
     <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
     <button type="button" id="btn-reset">Ansicht zuruecksetzen</button>
+    <button type="button" id="btn-walk">Begehen</button>
+  </div>
+
+  <div class="top-right">
+    <button type="button" class="pill walk-ui" id="btn-exit">Rundumblick</button>
+    <button type="button" class="pill" id="btn-full">Vollbild</button>
+  </div>
+
+  <div class="walk-ui">
+    <div class="crosshair"></div>
+    <div class="keys" id="keys">Klicken zum Steuern &middot; WASD laufen &middot; Maus schauen &middot; Leertaste springen &middot; Shift rennen &middot; Esc Maus frei</div>
+    <div class="stick left touch-only" id="stick-move" aria-label="Laufen"><span></span></div>
+    <div class="stick right touch-only" id="stick-look" aria-label="Schauen"><span></span></div>
+    <button type="button" class="jump touch-only" id="btn-jump">Sprung</button>
+    <div class="turn">Handy quer drehen zum Laufen</div>
   </div>
 
   <footer>
@@ -324,7 +393,8 @@
     }
     // Decke, damit man nicht ins Haus schaut
     mesh(new THREE.BoxGeometry(W - 0.2, 0.1, D - 0.2), mat.plaster, walls, "Decke").position.y = H - 0.05;
-    mesh(new THREE.BoxGeometry(W - 0.2, 0.1, D - 0.2), mat.wood, walls, "Boden").position.y = PLINTH - 0.05;
+    // Holzboden knapp ueber der Sockel-Oberseite, sonst flimmern beide
+    mesh(metreUV(new THREE.BoxGeometry(W - 0.2, 0.1, D - 0.2)), mat.wood, walls, "Boden").position.y = PLINTH - 0.045;
 
     // Sockel aus Ziegeln
     mesh(metreUV(new THREE.BoxGeometry(W + 0.12, PLINTH, D + 0.12)), mat.bricks, house, "Sockel").position.y = PLINTH / 2;
@@ -360,11 +430,17 @@
     door.name = "Tuer";
     front.add(door);
     const [dx, dy, dw, dh] = FRONT[1];
-    const leaf = mesh(new THREE.BoxGeometry(dw - 0.08, dh - 0.04, 0.06), mat.wood, door, "Tuerblatt");
-    leaf.position.set(dx + dw / 2, dy + dh / 2, WALL * 0.35);
-    const handle = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 12), mat.metal, door, "Griff");
+    // Tuerblatt haengt am linken Rand und steht nach innen offen, damit man ins Haus kann
+    const hinge = new THREE.Group();
+    hinge.name = "Scharnier";
+    hinge.position.set(dx + 0.04, dy, WALL * 0.35);
+    hinge.rotation.y = THREE.MathUtils.degToRad(80);
+    door.add(hinge);
+    const leaf = mesh(new THREE.BoxGeometry(dw - 0.08, dh - 0.04, 0.06), mat.wood, hinge, "Tuerblatt");
+    leaf.position.set((dw - 0.08) / 2, dh / 2, 0);
+    const handle = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 12), mat.metal, hinge, "Griff");
     handle.rotation.z = Math.PI / 2;
-    handle.position.set(dx + dw - 0.18, dy + 1.05, WALL * 0.35 + 0.06);
+    handle.position.set(dw - 0.22, 1.05, 0.06);
     const lamp = mesh(new THREE.SphereGeometry(0.09, 20, 14), mat.lamp, door, "Lampe");
     lamp.position.set(dx + dw + 0.3, 2.25, WALL + 0.1);
     const lampLight = new THREE.PointLight(0xffc078, 0, 6, 2);
@@ -441,6 +517,58 @@
       bush.position.set(x, r * 0.6, z);
     }
 
+    // --- Innenraum: Boden liegt auf dem Sockel (y = PLINTH), Raum x -3.75..3.75, z -2.75..2.75 ---
+    const room = new THREE.Group();
+    room.name = "Einrichtung";
+    house.add(room);
+    const fabric = new THREE.MeshPhysicalMaterial({ color: 0x46607a, roughness: 0.9, sheen: 0.6, sheenColor: 0x9ab4cc });
+    const rugMat = new THREE.MeshPhysicalMaterial({ color: 0x8a3b2e, roughness: 1 });
+    // Feste Koerper fuer den Laufmodus: Rechtecke im Grundriss (x0, x1, z0, z1) und Kreise (x, z, r)
+    const solids = [];
+    const circles = [];
+    function block(w, h, d, x, y, z, material, name, solid = true) {
+      const m = mesh(metreUV(new THREE.BoxGeometry(w, h, d)), material, room, name);
+      m.position.set(x, PLINTH + y + h / 2, z);
+      if (solid) solids.push([x - w / 2, x + w / 2, z - d / 2, z + d / 2]);
+      return m;
+    }
+    block(3, 0.01, 2, 0, 0, 0.3, rugMat, "Teppich", false);
+    // Tisch mit zwei Stuehlen
+    block(1.4, 0.05, 0.8, -1.6, 0.72, -1.3, mat.wood, "Tischplatte");
+    for (const [lx, lz] of [[-0.62, -0.32], [0.62, -0.32], [-0.62, 0.32], [0.62, 0.32]]) {
+      block(0.06, 0.72, 0.06, -1.6 + lx, 0, -1.3 + lz, mat.wood, "Tischbein", false);
+    }
+    for (const sx of [-0.4, 0.4]) {
+      block(0.42, 0.05, 0.42, -1.6 + sx, 0.45, -0.55, mat.wood, "Stuhl");
+      block(0.42, 0.5, 0.05, -1.6 + sx, 0.5, -0.36, mat.wood, "Lehne", false);
+      for (const [lx, lz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) {
+        block(0.04, 0.45, 0.04, -1.6 + sx + lx, 0, -0.55 + lz, mat.wood, "Stuhlbein", false);
+      }
+    }
+    // Sofa an der Rueckwand, Regal an der linken Wand
+    block(2.2, 0.45, 0.9, 1.8, 0, -2.25, fabric, "Sofa");
+    block(2.2, 0.55, 0.22, 1.8, 0.45, -2.6, fabric, "Sofalehne", false);
+    for (const ax of [0.7, 2.9]) block(0.2, 0.25, 0.9, ax, 0.45, -2.25, fabric, "Armlehne", false);
+    block(0.4, 1.8, 1.2, -3.5, 0, 1.3, mat.wood, "Regal");
+    // Deckenlampe
+    const ceilingLamp = mesh(new THREE.SphereGeometry(0.16, 20, 14), mat.lamp, room, "Deckenlampe");
+    ceilingLamp.position.set(0, H - 0.3, 0);
+    ceilingLamp.castShadow = false;
+
+    // Waende als feste Koerper (Tueroeffnung vorne frei), Baum und Buesche als Kreise
+    const DOOR_X = dx - W / 2;
+    solids.push(
+      [-W / 2, DOOR_X, D / 2 - WALL, D / 2 + 0.06], [DOOR_X + dw, W / 2, D / 2 - WALL, D / 2 + 0.06],
+      [-W / 2, W / 2, -D / 2 - 0.06, -D / 2 + WALL],
+      [-W / 2 - 0.06, -W / 2 + WALL, -D / 2, D / 2], [W / 2 - WALL, W / 2 + 0.06, -D / 2, D / 2]
+    );
+    // Offenes Tuerblatt: Ecken aus der Welt-Lage berechnen und als Rechteck sperren
+    house.updateMatrixWorld(true);
+    const leafBox = new THREE.Box3().setFromObject(leaf);
+    solids.push([leafBox.min.x, leafBox.max.x, leafBox.min.z, leafBox.max.z]);
+    circles.push([tree.position.x, tree.position.z, 0.35]);
+    garden.children.filter(c => c.name === "Busch").forEach(b => circles.push([b.position.x, b.position.z, b.geometry.parameters.radius]));
+
     // --- Licht: Sonne (wirft als einziges Schatten), Himmel, Fuelllicht ---
     const hemi = new THREE.HemisphereLight(0xcfe2ff, 0x3a3020, 0.6);
     scene.add(hemi);
@@ -457,12 +585,13 @@
     scene.add(fill);
 
     // Innenlicht fuer die Nacht (leuchtet durch die Fenster)
-    const inside = new THREE.PointLight(0xffb45c, 0, 12, 1.5);
-    inside.position.set(0, 1.6, 0);
+    const inside = new THREE.PointLight(0xffb45c, 0, 7, 1.5);
+    inside.position.set(0, H - 0.5, 0);
     house.add(inside);
 
     // --- Tag / Nacht: weich ueberblenden ---
-    const DAY = { sun: 2.6, hemi: 0.6, fill: 0.5, env: 1, glow: 0, lamp: 0, inside: 0, exposure: 1.0 };
+    // Innen brennt auch tagsueber etwas Licht, sonst ist es unter dem Dach zu dunkel
+    const DAY = { sun: 2.6, hemi: 0.6, fill: 0.5, env: 1, glow: 0, lamp: 0, inside: 5, exposure: 1.0 };
     const NIGHT = { sun: 0.25, hemi: 0.08, fill: 0.15, env: 0.15, glow: 1.6, lamp: 3, inside: 6, exposure: 1.15 };
     let night = false, blend = 0;
     function applyBlend(b) {
@@ -476,6 +605,8 @@
       mat.lamp.emissiveIntensity = v("lamp");
       lampLight.intensity = v("lamp");
       inside.intensity = v("inside");
+      // Tagsueber neutrales Licht im Raum, nachts warmes Lampenlicht
+      inside.color.setHSL(0.09, 0.2 + b * 0.7, 0.85 - b * 0.25);
       renderer.toneMappingExposure = v("exposure");
     }
     applyBlend(0);
@@ -502,6 +633,191 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    // --- Laufmodus: Ich-Sicht, PC wie Minecraft (WASD, Maus, Leertaste, Shift), Handy mit zwei Joysticks ---
+    const touch = matchMedia("(pointer: coarse)").matches;
+    document.body.classList.toggle("touch", touch);
+    const EYE = 1.62, RADIUS = 0.3, WALK = 3.2, RUN = 5.6, JUMP = 6.6, GRAVITY = 22;
+    const player = { pos: new THREE.Vector3(), vy: 0, yaw: 0, pitch: 0, onGround: true, jump: false };
+    const keys = new Set();
+    let walking = false;
+    const orbitView = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
+
+    // Bodenhoehe: Haus und Sockel, die zwei Stufen vor der Tuer, sonst Rasen
+    const stepX = Math.abs(DOOR_X + dw / 2);
+    function groundAt(x, z) {
+      if (Math.abs(x) < W / 2 + 0.06 && Math.abs(z) < D / 2 + 0.06) return PLINTH;
+      if (Math.abs(x - stepX) < 0.8 && z < D / 2 + 0.3) return 0.34;
+      if (Math.abs(x - stepX) < 0.8 && z < D / 2 + 0.445) return 0.17;
+      return 0;
+    }
+
+    // Kreis (Spieler) aus Rechtecken und Kreisen herausschieben
+    function collide(p) {
+      for (const [x0, x1, z0, z1] of solids) {
+        const cx = Math.max(x0, Math.min(p.x, x1)), cz = Math.max(z0, Math.min(p.z, z1));
+        const dxp = p.x - cx, dzp = p.z - cz, d2 = dxp * dxp + dzp * dzp;
+        if (d2 >= RADIUS * RADIUS) continue;
+        if (d2 > 1e-8) {
+          const d = Math.sqrt(d2);
+          p.x = cx + dxp / d * RADIUS;
+          p.z = cz + dzp / d * RADIUS;
+        } else {
+          // Mitte steckt im Rechteck: zur naechsten Kante hinaus
+          const out = [[p.x - x0, -1, 0], [x1 - p.x, 1, 0], [p.z - z0, 0, -1], [z1 - p.z, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+          p.x += out[1] * (out[0] + RADIUS);
+          p.z += out[2] * (out[0] + RADIUS);
+        }
+      }
+      for (const [cx, cz, r] of circles) {
+        const dxp = p.x - cx, dzp = p.z - cz, d = Math.hypot(dxp, dzp), min = r + RADIUS;
+        if (d < min && d > 1e-6) { p.x = cx + dxp / d * min; p.z = cz + dzp / d * min; }
+      }
+      // Nicht vom Rasen fallen
+      const far = Math.hypot(p.x, p.z);
+      if (far > 14) { p.x *= 14 / far; p.z *= 14 / far; }
+    }
+
+    function updatePlayer(dt, moveX, moveZ, run) {
+      const len = Math.hypot(moveX, moveZ);
+      if (len > 1) { moveX /= len; moveZ /= len; }
+      const speed = run ? RUN : WALK;
+      const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+      // moveZ > 0 = vorwaerts (Blickrichtung -z bei yaw 0), moveX > 0 = rechts
+      const next = player.pos.clone();
+      next.x += (-sin * moveZ + cos * moveX) * speed * dt;
+      next.z += (-cos * moveZ - sin * moveX) * speed * dt;
+      collide(next);
+      // Hoehere Kanten als eine Stufe sind wie eine Wand
+      if (groundAt(next.x, next.z) - player.pos.y <= 0.4) { player.pos.x = next.x; player.pos.z = next.z; }
+
+      if (player.jump && player.onGround) { player.vy = JUMP; player.onGround = false; }
+      player.jump = false;
+      player.vy -= GRAVITY * dt;
+      player.pos.y += player.vy * dt;
+      const ground = groundAt(player.pos.x, player.pos.z);
+      if (player.pos.y <= ground) { player.pos.y = ground; player.vy = 0; player.onGround = true; }
+      // Drinnen stoesst der Kopf an die Decke
+      if (Math.abs(player.pos.x) < W / 2 && Math.abs(player.pos.z) < D / 2 && player.pos.y + 1.8 > H - 0.1) {
+        player.pos.y = H - 1.9;
+        player.vy = Math.min(player.vy, 0);
+      }
+
+      camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
+      camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
+    }
+
+    function look(dx, dy) {
+      player.yaw -= dx;
+      player.pitch = Math.max(-1.5, Math.min(1.5, player.pitch - dy));
+    }
+
+    // Vollbild und Querformat (iPhone-Safari kann kein Vollbild fuer Seiten, dort nur der Hinweis zum Drehen)
+    const fullBtn = document.getElementById("btn-full");
+    fullBtn.hidden = !document.fullscreenEnabled;
+    async function fullscreen(on) {
+      try {
+        if (on && !document.fullscreenElement) {
+          await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+          if (touch) await screen.orientation?.lock?.("landscape").catch(() => {});
+        } else if (!on && document.fullscreenElement) {
+          await document.exitFullscreen();
+        }
+      } catch (e) {}
+    }
+    fullBtn.addEventListener("click", () => fullscreen(!document.fullscreenElement));
+    document.addEventListener("fullscreenchange", () => {
+      fullBtn.textContent = document.fullscreenElement ? "Vollbild aus" : "Vollbild";
+    });
+
+    function setWalk(on) {
+      walking = on;
+      document.body.classList.toggle("walk", on);
+      controls.enabled = !on;
+      if (on) {
+        orbitView.pos.copy(camera.position);
+        orbitView.target.copy(controls.target);
+        // Start auf dem Weg vor dem Haus, Blick zur Tuer
+        player.pos.set(stepX, 0, D / 2 + 5.5);
+        player.vy = 0;
+        player.yaw = 0;
+        player.pitch = -0.05;
+        camera.fov = 70;
+        if (touch) fullscreen(true);
+      } else {
+        document.exitPointerLock?.();
+        camera.fov = 35;
+        camera.position.copy(orbitView.pos);
+        controls.target.copy(orbitView.target);
+        camera.lookAt(orbitView.target);
+      }
+      camera.updateProjectionMatrix();
+    }
+    document.getElementById("btn-walk").addEventListener("click", () => setWalk(true));
+    document.getElementById("btn-exit").addEventListener("click", () => setWalk(false));
+
+    // PC: Klick fängt die Maus, Esc gibt sie frei (macht der Browser)
+    renderer.domElement.addEventListener("click", () => {
+      if (walking && !touch && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock?.();
+    });
+    document.addEventListener("pointerlockchange", () => {
+      document.getElementById("keys").hidden = document.pointerLockElement === renderer.domElement;
+    });
+    document.addEventListener("mousemove", e => {
+      if (walking && document.pointerLockElement === renderer.domElement) look(e.movementX * 0.0022, e.movementY * 0.0022);
+    });
+    addEventListener("keydown", e => {
+      if (!walking) return;
+      keys.add(e.code);
+      if (e.code === "Space") { player.jump = true; e.preventDefault(); }
+    });
+    addEventListener("keyup", e => keys.delete(e.code));
+    addEventListener("blur", () => keys.clear());
+
+    // Handy: Joystick liefert x/y von -1 bis 1, Knopf folgt dem Finger
+    function joystick(el) {
+      const knob = el.querySelector("span");
+      const state = { x: 0, y: 0, id: null };
+      const move = e => {
+        const r = el.getBoundingClientRect(), max = r.width / 2 - 20;
+        let x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
+        const len = Math.hypot(x, y);
+        if (len > max) { x *= max / len; y *= max / len; }
+        state.x = x / max;
+        state.y = y / max;
+        knob.style.transform = `translate(${x}px, ${y}px)`;
+      };
+      el.addEventListener("pointerdown", e => {
+        state.id = e.pointerId;
+        try { el.setPointerCapture(e.pointerId); } catch (err) {}
+        move(e);
+      });
+      el.addEventListener("pointermove", e => { if (e.pointerId === state.id) move(e); });
+      const end = e => {
+        if (e.pointerId !== state.id) return;
+        state.id = null; state.x = 0; state.y = 0;
+        knob.style.transform = "";
+      };
+      el.addEventListener("pointerup", end);
+      el.addEventListener("pointercancel", end);
+      return state;
+    }
+    const moveStick = joystick(document.getElementById("stick-move"));
+    const lookStick = joystick(document.getElementById("stick-look"));
+    document.getElementById("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.jump = true; });
+
+    function walkStep(dt) {
+      let mx = 0, mz = 0;
+      if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;
+      if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1;
+      if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
+      if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
+      mx += moveStick.x;
+      mz -= moveStick.y;
+      // Rechter Joystick dreht stetig, je weiter gedrueckt desto schneller
+      look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
+      updatePlayer(dt, mx, mz, keys.has("ShiftLeft") || keys.has("ShiftRight"));
+    }
+
     // Shader vorab bauen, damit das erste Bild nicht ruckelt; nur rendern, solange der Tab sichtbar ist
     await renderer.compileAsync(scene, camera);
     document.getElementById("loading").remove();
@@ -514,11 +830,17 @@
         blend += Math.sign(goal - blend) * Math.min(Math.abs(goal - blend), dt * 1.5);
         applyBlend(blend);
       }
-      controls.update(dt);
-      // Nebel haengt am Kameraabstand: Haus bleibt klar, der Rasenrand laeuft immer ins Dunkel aus
-      const dist = camera.position.distanceTo(controls.target);
-      scene.fog.near = dist + 4;
-      scene.fog.far = dist + 16;
+      if (walking) {
+        walkStep(dt);
+        scene.fog.near = 9;
+        scene.fog.far = 24;
+      } else {
+        controls.update(dt);
+        // Nebel haengt am Kameraabstand: Haus bleibt klar, der Rasenrand laeuft immer ins Dunkel aus
+        const dist = camera.position.distanceTo(controls.target);
+        scene.fog.near = dist + 4;
+        scene.fog.far = dist + 16;
+      }
       renderer.render(scene, camera);
     };
     renderer.setAnimationLoop(loop);
