@@ -642,7 +642,7 @@
     // --- Laufmodus: Ich-Sicht, PC wie Minecraft (WASD, Maus, Leertaste, Shift), Handy mit zwei Joysticks ---
     const touch = matchMedia("(pointer: coarse)").matches;
     document.body.classList.toggle("touch", touch);
-    const EYE = 1.62, RADIUS = 0.3, WALK = 3.2, RUN = 5.6, JUMP = 6.6, GRAVITY = 22;
+    const EYE = 1.62, RADIUS = 0.3, WALK = 4.4, RUN = 7.2, JUMP = 6.6, GRAVITY = 22;
     const player = { pos: new THREE.Vector3(), vy: 0, yaw: 0, pitch: 0, onGround: true, jump: false };
     const keys = new Set();
     let walking = false;

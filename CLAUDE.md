@@ -88,6 +88,16 @@ Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen
 - **Begehen (Ich-Sicht):** PC wie Minecraft, aber Schauen nur mit gedrückter linker Maustaste: solange gehalten, ist die Maus das Fadenkreuz (Pointer Lock nur während des Haltens, Zeiger weg; loslassen gibt ihn frei, Wunsch von Nicolas), WASD/Pfeile, Leertaste springt, Shift rennt. Handy (`pointer: coarse`): Vollbild + Querformat (`screen.orientation.lock`, iPhone-Safari kann kein Seiten-Vollbild → nur Hinweis „Handy quer drehen“), linker Joystick läuft, rechter dreht die Sicht, Sprung-Knopf. Verlassen mit Esc (auch wenn dabei die Maus gehalten wird: Verlust des Pointer Locks beim Halten gilt als Esc) oder Knopf „× Verlassen“ oben rechts (am Handy grösser).
 - Kollision im Grundriss: Rechtecke (`solids`: Wände mit Türöffnung, Möbel, offenes Türblatt) und Kreise (Baum, Büsche), Spielerradius 0.3. Bodenhöhe aus `groundAt` (Sockel 0.35, zwei Stufen); höher als 0.4 = Wand. Innen Decke bei 2.7 m.
 - Innenraum: Tür steht 80° offen, Holzboden, Teppich, Tisch mit 2 Stühlen, Sofa, Regal, Deckenlampe; Innenlicht tagsüber neutral, nachts warm.
+- Laufgeschwindigkeit 4.4 m/s, rennen 7.2 (Nicolas wollte schneller, 2026-11-04).
+
+### Villa 3D (`sachen/villa/`)
+
+- Amerikanisches Haus aus Code (1 = 1 m): Keller (y -3..0, Waschmaschine, Trockner, Regal, Tischtennis, Sofa), Erdgeschoss ab 0.3 (Wohnzimmer, offene Küche mit Insel, Kühlschrank), Obergeschoss ab 3.3 (zwei Schlafzimmer, grosse Bodenfliesen mit Relief), Satteldach mit Giebeln, Veranda mit Säulen vorne. Garage rechts neben der Küche (Tür Küche→Garage, Tor offen, rotes Auto, Einfahrt). Hinten Terrasse und Pool (8 x 4 m, 1.5 m tief, drei Stufen, Liegen).
+- Gelände: Haus, Einfahrt und Garten flach (`FLAT`), nach aussen sanfte Hügel (`terrain()`); Rasen als Gitter mit Löchern für Haus und Pool. Pflanzen: ~35 Laub-/Nadelbäume, Büsche als InstancedMesh, Blumenbeete mit 520 Blüten (InstancedMesh mit Farben), Hecke an der Einfahrt.
+- Bauweise: `box(x0,y0,z0,x1,y1,z1)` in Weltkoordinaten (fest = `solids`), `wall()` zerlegt Wände in senkrechte Streifen an allen Lochkanten (Fenster im EG und OG übereinander), `slab()` mit einem Treppenloch, `windowIn()`. Danach werden alle Quader gleichen Materials zusammengefasst (Mehrfach-Materialien je Seite neu gruppiert): ~600 → ~180 Zeichenaufrufe. Zimmerlampen nur nachts an (Leistung); tagsüber heller Himmels-Bodenton und leicht leuchtende Decke.
+- Laufen in 3D: Quader blockieren seitlich zwischen Fuss+0.45 und Kopf; begehbar ist die höchste Quader-Oberseite bis 0.45 über den Füssen (Treppenstufen 0.19), Decke stoppt den Kopf. Im Pool: langsamer, wenig Schwerkraft, Leertaste/Sprung halten = nach oben schwimmen, unter Wasser blauer Nebel. Gehen 4.6 m/s, rennen 7.5.
+- Garagendach ohne Überstand zur Hausseite (ragte sonst ins Obergeschoss). Wasser kaum spiegelnd (Umgebungs-Spiegelung auf 0.25), sonst weisse Blendflecken.
+- `?debug` stellt `window.villa` bereit (Spieler, `update`, `setWalk`) zum Testen der Wege; geprüft: Haustür, Treppe hoch, Kellertreppe, Küche→Garage (Auto stoppt), in den Pool, hochschwimmen, über Stufen raus, Hang hinter der Einfahrt.
 
 ## Aktueller Stand – IMMER AKTUELL HALTEN
 
@@ -97,7 +107,7 @@ Stand: 2026-11-04
 
 Eintraege:
 - Pruefungsvorbereitung: UI Designen (`pruefung/ui-design/`) fuer den Test in **Modul 322 "Benutzerschnittstellen entwerfen und implementieren"** (Angabe von Nicolas, 2026-11-02). Geruest fertig, als einziges Thema die vier Handlungsziele des Moduls (aus gibb-Kursseite und Schullehrplan GB Chur, offizielle Modulidentifikation auf modulbaukasten.ch noch nicht geprueft). **Pruefungsinhalte fehlen noch** (kommen von Nicolas, dann in `inhalt.js` eintragen).
-- Sachen: Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht, begehbar mit WASD bzw. Joysticks; geprüft Desktop, 375px hoch und 740x360 quer mit Touch-Emulation. Echtes Handy-Vollbild nicht automatisch prüfbar), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
+- Sachen: Villa 3D (`sachen/villa/`, amerikanisches Haus mit Keller, Garage, Pool, Hügeln; geprüft Desktop und Wege per `?debug`. Leistung am echten Handy noch nicht geprüft), Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht, begehbar mit WASD bzw. Joysticks; geprüft Desktop, 375px hoch und 740x360 quer mit Touch-Emulation. Echtes Handy-Vollbild nicht automatisch prüfbar), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
 - Blockbench: Halloween-Pack, Pack-Viewer, Cowboyhut (mit Nicolas' Skin `blockbench/cowboyhut/skin.png`, auf seinen Wunsch im Repo).
 
 Offen:
