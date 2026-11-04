@@ -74,7 +74,7 @@ Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen
 - Texturen prozedural auf Canvas mit festem Zufall (Putz, Ziegeldach, Holz, Ziegelsteine, Rasen, Pflaster); UVs in Metern (`metreUV`), damit der Massstab stimmt.
 - three.js 0.160.0 wie die anderen Seiten (Service-Worker-Cache) – darum ACES-Tonemapping, `NeutralToneMapping` gibt es erst ab r162. Nur die Sonne wirft Schatten. Shader vorab mit `compileAsync`, Rendern pausiert bei verstecktem Tab. Nebel hängt am Kameraabstand (sonst verschwindet das Haus am Handy, wo die Kamera weiter weg steht).
 - Knöpfe: Auto-Rotation, Nacht (blendet über: Fenster und Türlampe leuchten, Innenlicht), Ansicht zurücksetzen, Begehen, Vollbild.
-- **Begehen (Ich-Sicht):** PC wie Minecraft (Klick fängt die Maus per Pointer Lock, WASD/Pfeile, Leertaste springt, Shift rennt, Esc gibt die Maus frei). Handy (`pointer: coarse`): Vollbild + Querformat (`screen.orientation.lock`, iPhone-Safari kann kein Seiten-Vollbild → nur Hinweis „Handy quer drehen“), linker Joystick läuft, rechter dreht die Sicht, Sprung-Knopf. „Rundumblick“ zurück zur Orbit-Ansicht.
+- **Begehen (Ich-Sicht):** PC wie Minecraft, aber Schauen nur mit gedrückter linker Maustaste (Wunsch von Nicolas, kein Pointer Lock), WASD/Pfeile, Leertaste springt, Shift rennt. Handy (`pointer: coarse`): Vollbild + Querformat (`screen.orientation.lock`, iPhone-Safari kann kein Seiten-Vollbild → nur Hinweis „Handy quer drehen“), linker Joystick läuft, rechter dreht die Sicht, Sprung-Knopf. „Rundumblick“ zurück zur Orbit-Ansicht.
 - Kollision im Grundriss: Rechtecke (`solids`: Wände mit Türöffnung, Möbel, offenes Türblatt) und Kreise (Baum, Büsche), Spielerradius 0.3. Bodenhöhe aus `groundAt` (Sockel 0.35, zwei Stufen); höher als 0.4 = Wand. Innen Decke bei 2.7 m.
 - Innenraum: Tür steht 80° offen, Holzboden, Teppich, Tisch mit 2 Stühlen, Sofa, Regal, Deckenlampe; Innenlicht tagsüber neutral, nachts warm.
 
@@ -85,7 +85,7 @@ Nach jeder Aenderung diesen Abschnitt nachziehen (was gemacht wurde, was offen i
 Stand: 2026-11-04
 
 Eintraege:
-- Sachen: Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht, begehbar mit WASD bzw. Joysticks; geprüft Desktop, 375px hoch und 740x360 quer mit Touch-Emulation. Pointer Lock und echtes Handy-Vollbild nicht automatisch prüfbar), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
+- Sachen: Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht, begehbar mit WASD bzw. Joysticks; geprüft Desktop, 375px hoch und 740x360 quer mit Touch-Emulation. Echtes Handy-Vollbild nicht automatisch prüfbar), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
 - Blockbench: Halloween-Pack, Pack-Viewer, Cowboyhut (mit Nicolas' Skin `blockbench/cowboyhut/skin.png`, auf seinen Wunsch im Repo).
 
 Offen:
