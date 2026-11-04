@@ -22,6 +22,8 @@ Ergaenzt die globalen Regeln in `C:\Source\CLAUDE.md` (Git-Identitaet, Footer-Cr
 - Pro Pruefung ein Ordner `pruefung/<name>/` mit `index.html` (Lernseite, Tabs Themen / Lernkarten / Quiz) und `inhalt.js` (nur Daten: `themen`, `karten`, `quiz`, Format steht oben in der Datei). **Inhalte kommen von Nicolas** – nichts dazuerfinden, nur seine Unterlagen uebernehmen.
 - Fortschritt (gewusste Karten, bestes Quiz-Ergebnis) liegt nur im Browser (`localStorage`).
 - Sichtbare Texte hier mit echten Umlauten (Nicolas' Bezeichnung "Pruefungsvorbereitung" mit ue nur im Code).
+- **Antworten gemischt:** Quiz und Prüfung mischen pro Durchgang auch die Antworten jeder Frage (`mitReihenfolge`: Feld `reihenfolge` = Original-Indizes in Anzeige-Reihenfolge). `richtig` in `inhalt.js` zeigt weiter auf die Original-Indizes. Die Lösungen nach der Prüfung zeigen die Antworten in derselben Reihenfolge wie beim Beantworten. Darum keine Antworten wie „alle oben genannten“ in `inhalt.js`.
+- **Offline:** Seite und `inhalt.js` stehen in `ASSETS` in `sw.js`; nach jeder Änderung `CACHE` hochzählen. Geprüft 2026-11-04 mit gestopptem Server: Prüfung, Quiz, Haus 3D und Startseite laufen aus dem Speicher.
 - **Kein Zoomen** auf Pruefungsseiten (Wunsch von Nicolas, 2026-11-04: in der PWA aus Versehen gezoomt): Viewport `maximum-scale=1, user-scalable=no` (Android), `touch-action: manipulation` auf `html` (kein Doppeltipp-Zoom) und ein kleines Skript gegen Kneif-Zoom auf iPhone/iPad (`gesturestart`/`gesturechange` und Zwei-Finger-`touchmove` abfangen; iOS ignoriert `user-scalable=no`). Neue Pruefungsseiten genauso.
 
 ## Blockbench (eigener Bereich auf der Startseite)

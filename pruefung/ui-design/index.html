@@ -160,6 +160,12 @@
       return a;
     }
 
+    // Fragen fuer einen Durchgang: Antworten gemischt, die Reihenfolge (Indizes ins Original) bleibt an der Frage,
+    // damit Auswertung und Loesungen sie genau so zeigen. "richtig" zeigt weiter auf die Original-Indizes.
+    function mitReihenfolge(fragen) {
+      return fragen.map(f => ({ ...f, reihenfolge: shuffle(f.optionen.map((_, i) => i)) }));
+    }
+
     // --- Themen ---
     function showThemen() {
       if (!DATA.themen.length) return panel.replaceChildren(empty("Die Themen"));
@@ -207,7 +213,7 @@
     // --- Quiz ---
     function showQuiz() {
       if (!DATA.quiz.length) return panel.replaceChildren(empty("Die Quizfragen"));
-      const fragen = shuffle(DATA.quiz);
+      const fragen = mitReihenfolge(shuffle(DATA.quiz));
       let pos = 0, score = 0;
 
       function draw() {
@@ -231,7 +237,8 @@
         const check = mehrfach ? el("button", { class: "btn primary", type: "button", disabled: "", onclick: () => evaluate() }, "Prüfen") : null;
         function evaluate() {
           const ok = korrekt.every(i => picked.has(i)) && [...picked].every(i => korrekt.includes(i));
-          options.forEach((b, j) => {
+          options.forEach(b => {
+            const j = b.index;
             b.disabled = true;
             if (korrekt.includes(j)) b.classList.add("correct");
             else if (picked.has(j)) b.classList.add("wrong");
@@ -241,12 +248,17 @@
           next.hidden = false;
           if (check) check.hidden = true;
         }
-        const options = f.optionen.map((o, i) => el("button", { class: "option", type: "button", onclick: () => {
-          if (!mehrfach) { picked.add(i); evaluate(); return; }
-          if (picked.has(i)) picked.delete(i); else picked.add(i);
-          options[i].classList.toggle("selected", picked.has(i));
-          check.disabled = picked.size === 0;
-        } }, o));
+        // In gemischter Reihenfolge anzeigen; jeder Knopf kennt seinen Original-Index
+        const options = f.reihenfolge.map(i => {
+          const b = el("button", { class: "option", type: "button", onclick: () => {
+            if (!mehrfach) { picked.add(i); evaluate(); return; }
+            if (picked.has(i)) picked.delete(i); else picked.add(i);
+            b.classList.toggle("selected", picked.has(i));
+            check.disabled = picked.size === 0;
+          } }, f.optionen[i]);
+          b.index = i;
+          return b;
+        });
         panel.replaceChildren(
           el("div", { class: "bar" }, el("span", {}, `Frage ${pos + 1} von ${fragen.length}${f.thema ? " · " + f.thema : ""}`), el("span", {}, `${score} richtig`)),
           el("div", { class: "progress" }, el("div", { style: `width:${(pos / fragen.length) * 100}%` })),
@@ -270,7 +282,7 @@
     }
 
     function starten(n) {
-      const fragen = shuffle(DATA.quiz).slice(0, n);
+      const fragen = mitReihenfolge(shuffle(DATA.quiz).slice(0, n));
       const antworten = [];
       let pos = 0;
       const korrekt = f => (Array.isArray(f.richtig) ? f.richtig : [f.richtig]);
@@ -283,13 +295,17 @@
         const next = el("button", { class: "btn primary", type: "button", onclick: () => { antworten[pos] = [...picked]; pos++; draw(); } },
           pos + 1 < fragen.length ? "Weiter" : "Abgeben");
         next.disabled = picked.size === 0;
-        const options = f.optionen.map((o, i) => el("button", { class: "option", type: "button", onclick: () => {
-          if (!mehrfach) picked.clear();
-          if (picked.has(i)) picked.delete(i); else picked.add(i);
-          options.forEach((b, j) => b.classList.toggle("selected", picked.has(j)));
-          next.disabled = picked.size === 0;
-        } }, o));
-        options.forEach((b, j) => b.classList.toggle("selected", picked.has(j)));
+        const options = f.reihenfolge.map(i => {
+          const b = el("button", { class: "option", type: "button", onclick: () => {
+            if (!mehrfach) picked.clear();
+            if (picked.has(i)) picked.delete(i); else picked.add(i);
+            options.forEach(o => o.classList.toggle("selected", picked.has(o.index)));
+            next.disabled = picked.size === 0;
+          } }, f.optionen[i]);
+          b.index = i;
+          return b;
+        });
+        options.forEach(o => o.classList.toggle("selected", picked.has(o.index)));
         panel.replaceChildren(
           el("div", { class: "bar" }, el("span", {}, `Frage ${pos + 1} von ${fragen.length}`), el("span", {}, "Feedback erst am Ende")),
           el("div", { class: "progress" }, el("div", { style: `width:${(pos / fragen.length) * 100}%` })),
@@ -323,9 +339,10 @@
             el("div", { class: ok ? "verdict ok" : "verdict bad" }, ok ? "✓ Richtig" : "✗ Falsch",
               el("span", { class: "muted" }, `  Frage ${i + 1} von ${fragen.length}`)),
             el("h2", {}, f.frage),
-            el("div", { class: "options" }, f.optionen.map((o, j) => el("div", {
+            // Gleiche Reihenfolge wie beim Beantworten
+            el("div", { class: "options" }, f.reihenfolge.map(j => el("div", {
               class: "option" + (soll.has(j) ? " correct" : gewaehlt.has(j) ? " wrong" : "")
-            }, o, soll.has(j) ? el("span", { class: "mark" }, "  ✓ richtig") : null, gewaehlt.has(j) ? el("span", { class: "choice" }, "deine Wahl") : null))),
+            }, f.optionen[j], soll.has(j) ? el("span", { class: "mark" }, "  ✓ richtig") : null, gewaehlt.has(j) ? el("span", { class: "choice" }, "deine Wahl") : null))),
             gewaehlt.size === 0 ? el("p", { class: "muted" }, "Keine Antwort gewählt.") : null);
         });
         panel.replaceChildren(
