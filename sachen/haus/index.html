@@ -11,8 +11,9 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: #0b0d12; color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
     canvas { display: block; touch-action: none; }
-    body.walk:not(.touch) canvas { cursor: grab; }
-    body.looking canvas { cursor: grabbing; }
+    /* PC: Fadenkreuz nur, solange die linke Maustaste gehalten wird */
+    body.walk:not(.touch):not(.looking) .crosshair { display: none; }
+    body.looking canvas { cursor: none; }
     .bar {
       position: fixed; left: 0; right: 0; top: 0;
       display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -124,7 +125,7 @@
 
   <div class="walk-ui">
     <div class="crosshair"></div>
-    <div class="keys" id="keys">WASD laufen &middot; Linke Maustaste halten und ziehen zum Schauen &middot; Leertaste springen &middot; Shift rennen</div>
+    <div class="keys" id="keys">WASD laufen &middot; Linke Maustaste halten = Fadenkreuz, Maus bewegen zum Schauen &middot; Leertaste springen &middot; Shift rennen</div>
     <div class="stick left touch-only" id="stick-move" aria-label="Laufen"><span></span></div>
     <div class="stick right touch-only" id="stick-look" aria-label="Schauen"><span></span></div>
     <button type="button" class="jump touch-only" id="btn-jump">Sprung</button>
@@ -757,20 +758,28 @@
     document.getElementById("btn-walk").addEventListener("click", () => setWalk(true));
     document.getElementById("btn-exit").addEventListener("click", () => setWalk(false));
 
-    // PC: Schauen, solange die linke Maustaste gedrueckt ist (auch wenn die Maus dabei das Fenster verlaesst)
+    // PC: Solange die linke Maustaste gedrueckt ist, wird die Maus zum Fadenkreuz (Pointer Lock, Zeiger weg);
+    // loslassen gibt den Zeiger wieder frei. Ohne Pointer Lock wird einfach gezogen.
     let dragging = false;
     renderer.domElement.addEventListener("mousedown", e => {
       if (!walking || touch || e.button !== 0) return;
       dragging = true;
       document.body.classList.add("looking");
+      renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
       e.preventDefault();
     });
-    const stopDrag = () => { dragging = false; document.body.classList.remove("looking"); };
+    const stopDrag = () => {
+      dragging = false;
+      document.body.classList.remove("looking");
+      if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
+    };
     addEventListener("mouseup", e => { if (e.button === 0) stopDrag(); });
+    // Esc beendet den Pointer Lock im Browser: dann auch nicht mehr schauen
+    document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && dragging) stopDrag(); });
     document.addEventListener("mousemove", e => {
       if (!dragging) return;
-      if (!(e.buttons & 1)) return stopDrag();
-      look(e.movementX * 0.004, e.movementY * 0.004);
+      if (!(e.buttons & 1) && document.pointerLockElement !== renderer.domElement) return stopDrag();
+      look(e.movementX * 0.0025, e.movementY * 0.0025);
     });
     addEventListener("keydown", e => {
       if (!walking) return;
