@@ -2,7 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Kein Zoomen: beim schnellen Tippen im Quiz zoomte die PWA aus Versehen (Wunsch von Nicolas) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>UI Designen – Prüfungsvorbereitung – random</title>
   <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
@@ -21,6 +22,8 @@
       }
     }
     * { box-sizing: border-box; }
+    /* Kein Doppeltipp-Zoom, Wischen zum Scrollen bleibt */
+    html { touch-action: manipulation; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     body {
       margin: 0; background: var(--bg); color: var(--text);
       font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -110,6 +113,13 @@
   </div>
 
   <script src="inhalt.js"></script>
+  <script>
+    // iPhone/iPad ignorieren user-scalable=no: Kneif-Zoom dort direkt abfangen
+    for (const type of ["gesturestart", "gesturechange"]) {
+      document.addEventListener(type, e => e.preventDefault(), { passive: false });
+    }
+    document.addEventListener("touchmove", e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  </script>
   <script>
     const DATA = window.INHALT;
     const panel = document.getElementById("panel");
