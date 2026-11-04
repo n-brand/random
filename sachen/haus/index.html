@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Haus 3D – random</title>
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="../../icon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark; --text: #ecebe6; --muted: #9b9a94; --accent: #ff8a4c; --line: #2a2d35; --panel: rgba(16, 18, 24, .72); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #0b0d12; color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    canvas { display: block; touch-action: none; }
+    .bar {
+      position: fixed; left: 0; right: 0; top: 0;
+      display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
+      pointer-events: none;
+    }
+    .bar > * { pointer-events: auto; }
+    .bar a { color: var(--text); text-decoration: none; font-weight: 600; }
+    .bar a span { color: var(--accent); }
+    .bar h1 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--muted); }
+    .controls {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px;
+      backdrop-filter: blur(8px); max-width: calc(100% - 32px);
+    }
+    .controls button {
+      border: 0; background: none; color: var(--text); font: inherit; font-size: .88rem;
+      padding: 7px 12px; border-radius: 8px; cursor: pointer;
+    }
+    .controls button:hover { background: rgba(255, 255, 255, .07); }
+    .controls button[aria-pressed="true"] { background: var(--text); color: #0b0d12; }
+    .controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    footer {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
+      font-size: .8rem; color: var(--muted); text-align: center; pointer-events: none;
+    }
+    footer a { color: var(--accent); pointer-events: auto; }
+    .hint { color: var(--muted); font-size: .8rem; }
+    #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <a href="../../">&larr; random<span>.</span></a>
+    <h1>Haus &middot; 3D</h1>
+    <span class="hint">Ziehen zum Drehen, Scrollen zum Zoomen</span>
+  </div>
+
+  <div id="loading">Lade 3D-Ansicht...</div>
+
+  <div class="controls" role="group" aria-label="Steuerung">
+    <button type="button" id="btn-rotate" aria-pressed="true">Auto-Rotation</button>
+    <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
+    <button type="button" id="btn-reset">Ansicht zuruecksetzen</button>
+  </div>
+
+  <footer>
+    Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a>
+  </footer>
+
+  <script>
+    // Gemeinsamer Service Worker im Projekt-Root (offline)
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("../../sw.js").catch(() => {});
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+    // Einheiten: 1 = 1 Meter. Haus 8 x 6 m, Wandhoehe 2.8 m, Satteldach mit First in x-Richtung, vorne = +z.
+    const W = 8, D = 6, H = 2.8, RISE = 2.2, WALL = 0.25;
+
+    // --- Renderer, Szene, Kamera ---
+    // ?vorschau: Bildpuffer behalten, damit sich das Vorschaubild (vorschau.webp) aus dem Canvas aufnehmen laesst
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: location.search.includes("vorschau") });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.prepend(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0d12);
+    // Rasenrand verschwindet im Dunkel
+    scene.fog = new THREE.Fog(0x0b0d12, 20, 34);
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+    const HOME_TARGET = new THREE.Vector3(0, 2, 0);
+    // Auf schmalen Bildschirmen weiter weg, damit das ganze Haus drauf ist
+    const homePos = () => new THREE.Vector3(11, 6, 15).multiplyScalar(Math.max(1, 0.9 / camera.aspect));
+    camera.position.copy(homePos());
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(HOME_TARGET);
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.minDistance = 7;
+    controls.maxDistance = 40;
+    controls.maxPolarAngle = Math.PI * 0.47;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.8;
+
+    // --- Prozedurale Texturen (fester Zufall, damit es immer gleich aussieht) ---
+    function rng(seed) {
+      return () => {
+        seed = (seed + 0x6d2b79f5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // size Pixel = metres Meter; draw(g, size, rnd) malt die Farbe, daraus entsteht eine Rauheits-Map
+    function canvasTexture(size, metres, seed, draw, color = true) {
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      const g = c.getContext("2d");
+      draw(g, size, rng(seed));
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(1 / metres, 1 / metres);
+      tex.anisotropy = 4;
+      if (color) tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    function speckle(g, size, rnd, count, colors, r = 1.5) {
+      for (let i = 0; i < count; i++) {
+        g.fillStyle = colors[Math.floor(rnd() * colors.length)];
+        g.globalAlpha = 0.25 + rnd() * 0.4;
+        g.fillRect(rnd() * size, rnd() * size, r * (0.5 + rnd()), r * (0.5 + rnd()));
+      }
+      g.globalAlpha = 1;
+    }
+
+    // Putz: warmes Weiss mit feinem Korn
+    const plaster = canvasTexture(256, 1, 1, (g, s, rnd) => {
+      g.fillStyle = "#e9e2d4"; g.fillRect(0, 0, s, s);
+      speckle(g, s, rnd, 5000, ["#d8cfbd", "#f4efe4", "#cfc5b1"], 1.6);
+    });
+    const plasterRough = canvasTexture(256, 1, 2, (g, s, rnd) => {
+      g.fillStyle = "#d0d0d0"; g.fillRect(0, 0, s, s);
+      speckle(g, s, rnd, 6000, ["#ffffff", "#9a9a9a"], 1.6);
+    }, false);
+
+    // Dachziegel: Reihen von Biberschwanz-Ziegeln, 0.3 m breit, 0.2 m hoch
+    const tiles = canvasTexture(512, 1.2, 3, (g, s, rnd) => {
+      const cols = 4, rows = 6, tw = s / cols, th = s / rows;
+      g.fillStyle = "#4a1a12"; g.fillRect(0, 0, s, s);
+      for (let r = 0; r < rows; r++) {
+        for (let c = -1; c <= cols; c++) {
+          const x = c * tw + (r % 2 ? tw / 2 : 0), y = r * th;
+          const l = 24 + rnd() * 9;
+          g.fillStyle = `hsl(${8 + rnd() * 8}, ${42 + rnd() * 12}%, ${l}%)`;
+          g.beginPath();
+          g.moveTo(x + 3, y);
+          g.lineTo(x + tw - 3, y);
+          g.lineTo(x + tw - 3, y + th * 0.75);
+          g.quadraticCurveTo(x + tw / 2, y + th + 6, x + 3, y + th * 0.75);
+          g.closePath();
+          g.fill();
+          g.fillStyle = "rgba(0,0,0,.25)";
+          g.fillRect(x + 3, y + th - 8, tw - 6, 4);
+        }
+      }
+      speckle(g, s, rnd, 3000, ["#2a0d08", "#7a3524"], 2);
+    });
+
+    // Holz: Bretter mit Maserung, 0.15 m breit
+    const wood = canvasTexture(256, 0.6, 4, (g, s, rnd) => {
+      const boards = 4, bw = s / boards;
+      for (let b = 0; b < boards; b++) {
+        g.fillStyle = `hsl(24, 45%, ${26 + rnd() * 6}%)`;
+        g.fillRect(b * bw, 0, bw, s);
+        for (let i = 0; i < 40; i++) {
+          g.strokeStyle = `rgba(30, 14, 6, ${0.15 + rnd() * 0.25})`;
+          g.lineWidth = 0.6 + rnd();
+          const x = b * bw + rnd() * bw;
+          g.beginPath();
+          g.moveTo(x, 0);
+          g.bezierCurveTo(x + rnd() * 6 - 3, s / 3, x + rnd() * 6 - 3, s * 2 / 3, x, s);
+          g.stroke();
+        }
+        g.fillStyle = "rgba(0,0,0,.45)";
+        g.fillRect(b * bw, 0, 2, s);
+      }
+    });
+
+    // Ziegelsteine (Kamin, Sockel): 0.24 x 0.07 m mit Fugen
+    const bricks = canvasTexture(256, 1, 5, (g, s, rnd) => {
+      g.fillStyle = "#b9b2a6"; g.fillRect(0, 0, s, s);
+      const rows = 14, bh = s / rows, bw = s / 4;
+      for (let r = 0; r < rows; r++) {
+        for (let c = -1; c < 5; c++) {
+          const x = c * bw + (r % 2 ? bw / 2 : 0);
+          g.fillStyle = `hsl(${8 + rnd() * 10}, ${40 + rnd() * 15}%, ${30 + rnd() * 10}%)`;
+          g.fillRect(x + 1.5, r * bh + 1.5, bw - 3, bh - 3);
+        }
+      }
+      speckle(g, s, rnd, 1500, ["#2b120b", "#8a4a36"], 1.5);
+    });
+
+    // Rasen und Gehweg
+    const grass = canvasTexture(256, 2, 6, (g, s, rnd) => {
+      g.fillStyle = "#2f5223"; g.fillRect(0, 0, s, s);
+      speckle(g, s, rnd, 9000, ["#24451b", "#3d6a2b", "#4a7633", "#1d3a16"], 2.2);
+    });
+    const stone = canvasTexture(256, 1.2, 7, (g, s, rnd) => {
+      g.fillStyle = "#6d6a64"; g.fillRect(0, 0, s, s);
+      const n = 3, p = s / n;
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+        g.fillStyle = `hsl(35, 6%, ${58 + rnd() * 10}%)`;
+        g.fillRect(x * p + 3, y * p + 3, p - 6, p - 6);
+      }
+      speckle(g, s, rnd, 2500, ["#4d4a45", "#8d8a83"], 1.6);
+    });
+
+    // --- Materialien ---
+    const mat = {
+      plaster: new THREE.MeshPhysicalMaterial({ map: plaster, roughnessMap: plasterRough, roughness: 0.95 }),
+      roof: new THREE.MeshPhysicalMaterial({ map: tiles, roughness: 0.75 }),
+      roofEdge: new THREE.MeshPhysicalMaterial({ color: 0x3a2a22, roughness: 0.7 }),
+      wood: new THREE.MeshPhysicalMaterial({ map: wood, roughness: 0.6, clearcoat: 0.2 }),
+      frame: new THREE.MeshPhysicalMaterial({ color: 0xf2f0ea, roughness: 0.35, clearcoat: 0.3 }),
+      glass: new THREE.MeshPhysicalMaterial({
+        color: 0x1d2a33, roughness: 0.05, metalness: 0, clearcoat: 1, envMapIntensity: 1.4,
+        emissive: 0xffb45c, emissiveIntensity: 0
+      }),
+      bricks: new THREE.MeshPhysicalMaterial({ map: bricks, roughness: 0.9 }),
+      metal: new THREE.MeshPhysicalMaterial({ color: 0x2c2f33, metalness: 0.8, roughness: 0.35 }),
+      grass: new THREE.MeshPhysicalMaterial({ map: grass, roughness: 1 }),
+      stone: new THREE.MeshPhysicalMaterial({ map: stone, roughness: 0.85 }),
+      bark: new THREE.MeshPhysicalMaterial({ color: 0x4b3424, roughness: 0.95 }),
+      leaves: new THREE.MeshPhysicalMaterial({ color: 0x2f5f2a, roughness: 0.85, sheen: 0.4, sheenColor: 0x6fae54 }),
+      lamp: new THREE.MeshPhysicalMaterial({ color: 0xfff1d6, emissive: 0xffc078, emissiveIntensity: 0 })
+    };
+
+    // UVs in Metern: jede Flaeche nimmt die zwei Achsen quer zu ihrer Normalen, so stimmt der Massstab der Textur
+    function metreUV(geo) {
+      const pos = geo.attributes.position, nrm = geo.attributes.normal, uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) {
+        const [x, y, z] = [pos.getX(i), pos.getY(i), pos.getZ(i)];
+        const [ax, ay, az] = [Math.abs(nrm.getX(i)), Math.abs(nrm.getY(i)), Math.abs(nrm.getZ(i))];
+        if (ay >= ax && ay >= az) uv.setXY(i, x, z);
+        else if (ax >= az) uv.setXY(i, z, y);
+        else uv.setXY(i, x, y);
+      }
+      return geo;
+    }
+
+    function mesh(geo, material, parent, name) {
+      const m = new THREE.Mesh(geo, material);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      if (name) m.name = name;
+      parent.add(m);
+      return m;
+    }
+
+    const house = new THREE.Group();
+    house.name = "Haus";
+    scene.add(house);
+
+    // --- Waende: Umriss mit Loechern fuer Tuer und Fenster, mit kleinem Bevel ---
+    // openings: [x links, y unten, Breite, Hoehe] in Wandkoordinaten (x 0..Breite)
+    function rect(shape, x, y, w, h) {
+      const p = new THREE.Path();
+      p.moveTo(x, y); p.lineTo(x, y + h); p.lineTo(x + w, y + h); p.lineTo(x + w, y); p.lineTo(x, y);
+      shape.holes.push(p);
+    }
+    function wall(width, gable, openings) {
+      const s = new THREE.Shape();
+      s.moveTo(0, 0);
+      s.lineTo(width, 0);
+      s.lineTo(width, H);
+      if (gable) s.lineTo(width / 2, H + RISE);
+      s.lineTo(0, H);
+      s.lineTo(0, 0);
+      openings.forEach(o => rect(s, ...o));
+      const geo = new THREE.ExtrudeGeometry(s, {
+        depth: WALL - 0.04, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2
+      });
+      return geo;
+    }
+
+    const walls = new THREE.Group();
+    walls.name = "Waende";
+    house.add(walls);
+    const WIN = [1.2, 1.3], SILL = 0.95;
+    // Tuer beginnt auf dem Sockel (0.35 m), dafuer zwei Stufen davor
+    const PLINTH = 0.35;
+    const FRONT = [[1.0, SILL, ...WIN], [3.45, PLINTH, 1.1, 2.1], [5.8, SILL, ...WIN]];
+    const BACK = [[1.4, SILL, ...WIN], [5.4, SILL, ...WIN]];
+    const SIDE = [[2.4, SILL, ...WIN], [2.6, H + 0.35, 0.8, 0.9]];
+
+    // Vorder- und Rueckwand laufen zwischen den Seitenwaenden
+    const front = mesh(wall(W, false, FRONT), mat.plaster, walls, "Vorderwand");
+    front.position.set(-W / 2, 0, D / 2 - WALL + 0.02);
+    const back = mesh(wall(W, false, BACK), mat.plaster, walls, "Rueckwand");
+    back.rotation.y = Math.PI;
+    back.position.set(W / 2, 0, -D / 2 + WALL - 0.02);
+    for (const side of [-1, 1]) {
+      const w = mesh(wall(D, true, SIDE), mat.plaster, walls, side < 0 ? "Giebel links" : "Giebel rechts");
+      w.rotation.y = side * Math.PI / 2;
+      w.position.set(side * (W / 2 - WALL + 0.02), 0, side * D / 2);
+    }
+    // Decke, damit man nicht ins Haus schaut
+    mesh(new THREE.BoxGeometry(W - 0.2, 0.1, D - 0.2), mat.plaster, walls, "Decke").position.y = H - 0.05;
+    mesh(new THREE.BoxGeometry(W - 0.2, 0.1, D - 0.2), mat.wood, walls, "Boden").position.y = PLINTH - 0.05;
+
+    // Sockel aus Ziegeln
+    mesh(metreUV(new THREE.BoxGeometry(W + 0.12, PLINTH, D + 0.12)), mat.bricks, house, "Sockel").position.y = PLINTH / 2;
+
+    // --- Fenster: Rahmen, Sprossen, Glas, Fensterbank ---
+    const windows = new THREE.Group();
+    windows.name = "Fenster";
+    house.add(windows);
+    function windowAt(wallObj, x, y, w, h) {
+      const g = new THREE.Group();
+      const t = 0.07;
+      const depth = WALL * 0.6;
+      const box = (bw, bh, bx, by) => mesh(new THREE.BoxGeometry(bw, bh, depth), mat.frame, g).position.set(bx, by, 0);
+      box(w, t, w / 2, t / 2); box(w, t, w / 2, h - t / 2);
+      box(t, h, t / 2, h / 2); box(t, h, w - t / 2, h / 2);
+      box(t * 0.6, h, w / 2, h / 2);
+      box(w, t * 0.6, w / 2, h * 0.62);
+      const glass = mesh(new THREE.PlaneGeometry(w - t, h - t), mat.glass, g, "Glas");
+      glass.position.set(w / 2, h / 2, -0.02);
+      glass.castShadow = false;
+      const sill = mesh(new THREE.BoxGeometry(w + 0.16, 0.05, 0.12), mat.frame, g, "Fensterbank");
+      sill.position.set(w / 2, 0, WALL * 0.5);
+      g.position.set(x, y, WALL * 0.5);
+      wallObj.add(g);
+      return g;
+    }
+    [FRONT[0], FRONT[2]].forEach(o => windowAt(front, ...o));
+    BACK.forEach(o => windowAt(back, ...o));
+    walls.children.filter(c => c.name.startsWith("Giebel")).forEach(w => SIDE.forEach(o => windowAt(w, ...o)));
+
+    // --- Tuer mit Rahmen, Griff und Lampe ---
+    const door = new THREE.Group();
+    door.name = "Tuer";
+    front.add(door);
+    const [dx, dy, dw, dh] = FRONT[1];
+    const leaf = mesh(new THREE.BoxGeometry(dw - 0.08, dh - 0.04, 0.06), mat.wood, door, "Tuerblatt");
+    leaf.position.set(dx + dw / 2, dy + dh / 2, WALL * 0.35);
+    const handle = mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 12), mat.metal, door, "Griff");
+    handle.rotation.z = Math.PI / 2;
+    handle.position.set(dx + dw - 0.18, dy + 1.05, WALL * 0.35 + 0.06);
+    const lamp = mesh(new THREE.SphereGeometry(0.09, 20, 14), mat.lamp, door, "Lampe");
+    lamp.position.set(dx + dw + 0.3, 2.25, WALL + 0.1);
+    const lampLight = new THREE.PointLight(0xffc078, 0, 6, 2);
+    lampLight.position.copy(lamp.position).add(new THREE.Vector3(0, 0, 0.2));
+    door.add(lampLight);
+
+    // Treppe vor der Tuer
+    for (let i = 0; i < 2; i++) {
+      const step = mesh(metreUV(new THREE.BoxGeometry(1.6 - i * 0.2, 0.17, 0.45 - i * 0.15)), mat.stone, house, "Stufe");
+      step.position.set(dx - W / 2 + dw / 2, 0.085 + i * 0.17, D / 2 + 0.22 - i * 0.07);
+    }
+
+    // --- Dach: zwei Flaechen mit Ueberstand, Firstbalken ---
+    const roof = new THREE.Group();
+    roof.name = "Dach";
+    house.add(roof);
+    const slope = Math.atan2(RISE, D / 2);
+    const OVER = 0.45, THICK = 0.16;
+    const slopeLen = Math.hypot(D / 2, RISE) + OVER;
+    for (const side of [-1, 1]) {
+      const geo = metreUV(new THREE.BoxGeometry(W + OVER * 2, THICK, slopeLen));
+      // Ziegelreihen laufen auf beiden Seiten vom First nach unten
+      const uv = geo.attributes.uv;
+      if (side < 0) for (let i = 0; i < uv.count; i++) uv.setY(i, -uv.getY(i));
+      const slab = mesh(geo, mat.roof, roof, side > 0 ? "Dach vorne" : "Dach hinten");
+      slab.rotation.x = side * slope;
+      // Mitte der Flaeche: halbe Laenge vom First nach aussen, auf der Wandoberkante aufliegend
+      const half = slopeLen / 2 - 0.02;
+      slab.position.set(0, H + RISE - Math.sin(slope) * half + THICK / 2 / Math.cos(slope), side * Math.cos(slope) * half);
+    }
+    const ridge = mesh(new THREE.CylinderGeometry(0.11, 0.11, W + OVER * 2, 16), mat.roofEdge, roof, "First");
+    ridge.rotation.z = Math.PI / 2;
+    ridge.position.y = H + RISE + 0.12;
+
+    // Kamin
+    const chimney = mesh(metreUV(new THREE.BoxGeometry(0.6, 1.6, 0.6)), mat.bricks, roof, "Kamin");
+    chimney.position.set(2.2, H + RISE - 0.1, -1.2);
+    mesh(new THREE.BoxGeometry(0.72, 0.08, 0.72), mat.stone, roof, "Kaminabdeckung").position.set(2.2, H + RISE + 0.72, -1.2);
+
+    // --- Garten: Rasen, Weg, Baum, Buesche ---
+    const garden = new THREE.Group();
+    garden.name = "Garten";
+    scene.add(garden);
+    const lawnGeo = new THREE.CircleGeometry(16, 72);
+    const lawnUv = lawnGeo.attributes.uv, lawnPos = lawnGeo.attributes.position;
+    for (let i = 0; i < lawnUv.count; i++) lawnUv.setXY(i, lawnPos.getX(i), lawnPos.getY(i));
+    const lawn = mesh(lawnGeo, mat.grass, garden, "Rasen");
+    lawn.rotation.x = -Math.PI / 2;
+    lawn.castShadow = false;
+
+    const pathGeo = new THREE.BoxGeometry(1.3, 0.04, 7);
+    const pUv = pathGeo.attributes.uv, pPos = pathGeo.attributes.position;
+    for (let i = 0; i < pUv.count; i++) pUv.setXY(i, pPos.getX(i), pPos.getZ(i));
+    const path = mesh(pathGeo, mat.stone, garden, "Weg");
+    path.position.set(dx - W / 2 + dw / 2, 0.02, D / 2 + 3.9);
+
+    // Baum: Stamm als Lathe, Krone aus mehreren Kugeln
+    const tree = new THREE.Group();
+    tree.name = "Baum";
+    garden.add(tree);
+    const trunkProfile = [[0.32, 0], [0.22, 0.4], [0.18, 1.6], [0.14, 2.6], [0, 2.7]].map(([x, y]) => new THREE.Vector2(x, y));
+    mesh(new THREE.LatheGeometry(trunkProfile, 16), mat.bark, tree, "Stamm");
+    const crown = rng(9);
+    for (let i = 0; i < 7; i++) {
+      const r = 0.9 + crown() * 0.6;
+      const ball = mesh(new THREE.IcosahedronGeometry(r, 2), mat.leaves, tree, "Krone");
+      ball.position.set((crown() - 0.5) * 1.6, 2.8 + crown() * 1.4, (crown() - 0.5) * 1.6);
+    }
+    tree.position.set(-7.2, 0, 3.5);
+
+    for (const [x, z, r] of [[3.6, 3.6, 0.55], [-1.2, 3.55, 0.45], [4.6, -3.7, 0.6], [-4.7, -2.2, 0.5]]) {
+      const bush = mesh(new THREE.IcosahedronGeometry(r, 2), mat.leaves, garden, "Busch");
+      bush.scale.y = 0.75;
+      bush.position.set(x, r * 0.6, z);
+    }
+
+    // --- Licht: Sonne (wirft als einziges Schatten), Himmel, Fuelllicht ---
+    const hemi = new THREE.HemisphereLight(0xcfe2ff, 0x3a3020, 0.6);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xfff1dc, 2.6);
+    sun.position.set(9, 14, 8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 40 });
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.02;
+    scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x9fc0ff, 0.5);
+    fill.position.set(-8, 6, -6);
+    scene.add(fill);
+
+    // Innenlicht fuer die Nacht (leuchtet durch die Fenster)
+    const inside = new THREE.PointLight(0xffb45c, 0, 12, 1.5);
+    inside.position.set(0, 1.6, 0);
+    house.add(inside);
+
+    // --- Tag / Nacht: weich ueberblenden ---
+    const DAY = { sun: 2.6, hemi: 0.6, fill: 0.5, env: 1, glow: 0, lamp: 0, inside: 0, exposure: 1.0 };
+    const NIGHT = { sun: 0.25, hemi: 0.08, fill: 0.15, env: 0.15, glow: 1.6, lamp: 3, inside: 6, exposure: 1.15 };
+    let night = false, blend = 0;
+    function applyBlend(b) {
+      const v = k => DAY[k] + (NIGHT[k] - DAY[k]) * b;
+      sun.intensity = v("sun");
+      sun.color.setHSL(0.1 - b * 0.5, 0.6 - b * 0.3, 0.9 - b * 0.1);
+      hemi.intensity = v("hemi");
+      fill.intensity = v("fill");
+      for (const m of Object.values(mat)) m.envMapIntensity = v("env") * (m === mat.glass ? 1.4 : 1);
+      mat.glass.emissiveIntensity = v("glow");
+      mat.lamp.emissiveIntensity = v("lamp");
+      lampLight.intensity = v("lamp");
+      inside.intensity = v("inside");
+      renderer.toneMappingExposure = v("exposure");
+    }
+    applyBlend(0);
+
+    // --- Bedienung ---
+    function bindToggle(id, onChange) {
+      const btn = document.getElementById(id);
+      btn.addEventListener("click", () => {
+        const next = btn.getAttribute("aria-pressed") !== "true";
+        btn.setAttribute("aria-pressed", String(next));
+        onChange(next);
+      });
+    }
+    bindToggle("btn-rotate", v => { controls.autoRotate = v; });
+    bindToggle("btn-night", v => { night = v; });
+    document.getElementById("btn-reset").addEventListener("click", () => {
+      camera.position.copy(homePos());
+      controls.target.copy(HOME_TARGET);
+    });
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Shader vorab bauen, damit das erste Bild nicht ruckelt; nur rendern, solange der Tab sichtbar ist
+    await renderer.compileAsync(scene, camera);
+    document.getElementById("loading").remove();
+
+    const clock = new THREE.Clock();
+    const loop = () => {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const goal = night ? 1 : 0;
+      if (blend !== goal) {
+        blend += Math.sign(goal - blend) * Math.min(Math.abs(goal - blend), dt * 1.5);
+        applyBlend(blend);
+      }
+      controls.update(dt);
+      // Nebel haengt am Kameraabstand: Haus bleibt klar, der Rasenrand laeuft immer ins Dunkel aus
+      const dist = camera.position.distanceTo(controls.target);
+      scene.fog.near = dist + 4;
+      scene.fog.far = dist + 16;
+      renderer.render(scene, camera);
+    };
+    renderer.setAnimationLoop(loop);
+    document.addEventListener("visibilitychange", () => {
+      renderer.setAnimationLoop(document.hidden ? null : loop);
+      clock.getDelta();
+    });
+  </script>
+</body>
+</html>

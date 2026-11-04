@@ -66,16 +66,23 @@ Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen
 - Hell/Dunkel ueber `prefers-color-scheme`, mobil zuerst (ab ca. 360px Breite).
 - Texte auf Deutsch.
 - Lokal testen: `python -m http.server 8080` im Projektordner (Service Worker braucht http, nicht `file://`), oder Eintrag `random` in `C:\Source\.claude\launch.json` (Port 4180).
-- Vorschaubilder (`vorschau.webp`) werden aus der 3D-Ansicht aufgenommen (Canvas als Bild, im Browser zu 960x600 zusammengesetzt).
+- Vorschaubilder (`vorschau.webp`) werden aus der 3D-Ansicht aufgenommen (Canvas als Bild, im Browser zu 960x600 zusammengesetzt). Beim Haus: Seite mit `?vorschau` öffnen (behält den WebGL-Bildpuffer), Fenster auf 960x600, Canvas per `toBlob('image/webp', 0.82)`. Das Vorschaufenster sperrt Anfragen an andere Ports – zum Speichern einen kleinen Node-Server nutzen, der die Seite selbst ausliefert und den POST als Datei schreibt.
+
+### Haus 3D (`sachen/haus/`)
+
+- Einfamilienhaus (8 x 6 m, 1 Einheit = 1 m) komplett aus Code: Wände als `ExtrudeGeometry` mit Löchern für Tür/Fenster (Giebelwände fünfeckig), Dach aus zwei Platten, Kamin, Sockel, Stufen, Baum (Stamm als `LatheGeometry`), Büsche, Weg, Rasen. Gruppen benannt (`Haus`, `Waende`, `Fenster`, `Tuer`, `Dach`, `Garten`).
+- Texturen prozedural auf Canvas mit festem Zufall (Putz, Ziegeldach, Holz, Ziegelsteine, Rasen, Pflaster); UVs in Metern (`metreUV`), damit der Massstab stimmt.
+- three.js 0.160.0 wie die anderen Seiten (Service-Worker-Cache) – darum ACES-Tonemapping, `NeutralToneMapping` gibt es erst ab r162. Nur die Sonne wirft Schatten. Shader vorab mit `compileAsync`, Rendern pausiert bei verstecktem Tab. Nebel hängt am Kameraabstand (sonst verschwindet das Haus am Handy, wo die Kamera weiter weg steht).
+- Knöpfe: Auto-Rotation, Nacht (blendet über: Fenster und Türlampe leuchten, Innenlicht), Ansicht zurücksetzen.
 
 ## Aktueller Stand – IMMER AKTUELL HALTEN
 
 Nach jeder Aenderung diesen Abschnitt nachziehen (was gemacht wurde, was offen ist).
 
-Stand: 2026-10-25
+Stand: 2026-11-04
 
 Eintraege:
-- Sachen: Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
+- Sachen: Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht; geprüft Desktop und 375px, keine Konsolenfehler), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
 - Blockbench: Halloween-Pack, Pack-Viewer, Cowboyhut (mit Nicolas' Skin `blockbench/cowboyhut/skin.png`, auf seinen Wunsch im Repo).
 
 Offen:
