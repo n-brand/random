@@ -23,6 +23,8 @@
       --test-soft: #e7f2fc;
       --bb: #2b8a3e;
       --bb-soft: #e6f6e9;
+      --exam: #7048e8;
+      --exam-soft: #efebff;
       color-scheme: light;
     }
     @media (prefers-color-scheme: dark) {
@@ -38,6 +40,8 @@
         --test-soft: #182a3b;
         --bb: #69db7c;
         --bb-soft: #16301c;
+        --exam: #b197fc;
+        --exam-soft: #261d45;
         color-scheme: dark;
       }
     }
@@ -109,6 +113,7 @@
     .badge.sache { background: var(--accent-soft); color: var(--accent); }
     .badge.test { background: var(--test-soft); color: var(--test); }
     .badge.blockbench { background: var(--bb-soft); color: var(--bb); }
+    .badge.pruefung { background: var(--exam-soft); color: var(--exam); }
 
     .block-section { margin-top: 44px; padding-top: 28px; border-top: 2px dashed var(--line); }
     .block-section h2 { margin: 0; font-size: 1.5rem; letter-spacing: -0.02em; }
@@ -147,6 +152,7 @@
       <div class="stat"><b id="count-all">0</b><small>Eintraege</small></div>
       <div class="stat"><b id="count-sache">0</b><small>Sachen</small></div>
       <div class="stat"><b id="count-test">0</b><small>Tests</small></div>
+      <div class="stat"><b id="count-pruefung">0</b><small>Prüfungen</small></div>
       <div class="stat"><b id="count-blockbench">0</b><small>Blockbench</small></div>
     </section>
 
@@ -160,6 +166,12 @@
     </div>
 
     <main id="list"></main>
+
+    <section class="block-section" id="pruefung" aria-labelledby="pruefung-title">
+      <h2 id="pruefung-title">Prüfungsvorbereitung</h2>
+      <p>Lernseiten für anstehende Prüfungen: Themen, Lernkarten und Quiz zum Üben.</p>
+      <div id="exam-list"></div>
+    </section>
 
     <section class="block-section" id="blockbench" aria-labelledby="blockbench-title">
       <h2 id="blockbench-title">Blockbench</h2>
@@ -181,6 +193,11 @@
       { type: "sache", title: "Superhelden 3D", desc: "Iron Man, Spider-Man, Hulk, Batman und Superman als drehbare 3D-Modelle, dazu ein selbst gebauter Iron-Man-Anzug mit Arc-Reaktor und klappbarer Maske.", href: "sachen/helden/", img: "sachen/helden/vorschau.webp", date: "2026-10-23", tags: ["3d", "three.js", "marvel", "dc"] }
     ];
 
+    // Eigener Bereich "Pruefungsvorbereitung" unter den Eintraegen
+    const PRUEFUNG = [
+      { type: "pruefung", title: "UI Designen", desc: "Test in Modul 322 „Benutzerschnittstellen entwerfen und implementieren“: Themen, Lernkarten und Quiz. Inhalte folgen.", href: "pruefung/ui-design/", date: "2026-11-02", tags: ["prüfung", "modul 322", "ui", "design"] }
+    ];
+
     // Eigener Bereich "Blockbench" unter den Eintraegen
     const BLOCKBENCH = [
       { type: "blockbench", title: "Halloween-Pack", desc: "Eigenes Resource Pack fuer Minecraft Java: gruselige Kuerbis-Gesichter, leuchtende Kuerbislaterne, Hexenhut und Teufelshoerner. Mit 3D-Vorschau und Download.", href: "blockbench/halloween/", img: "blockbench/halloween/vorschau.webp", date: "2026-10-25", tags: ["minecraft", "halloween", "resource pack"] },
@@ -188,9 +205,10 @@
       { type: "blockbench", title: "Cowboyhut", desc: "Cowboyhut fuer Minecraft mit breiter, hochgebogener Krempe, fast doppelt so breit wie der Kopf. Als .bbmodel, Java-Modell und Textur.", href: "blockbench/cowboyhut/", img: "blockbench/cowboyhut/vorschau.webp", date: "2026-10-25", tags: ["minecraft", "hut", "java"] }
     ];
 
-    const LABELS = { sache: "Sache", test: "Test", blockbench: "Blockbench" };
+    const LABELS = { sache: "Sache", test: "Test", blockbench: "Blockbench", pruefung: "Prüfung" };
     const list = document.getElementById("list");
     const bbList = document.getElementById("bb-list");
+    const examList = document.getElementById("exam-list");
     const search = document.getElementById("search");
     let filter = "all";
 
@@ -221,17 +239,24 @@
       return !q || [e.title, e.desc, ...(e.tags || [])].join(" ").toLowerCase().includes(q);
     }
 
+    // Eigene Bereiche (Pruefungsvorbereitung, Blockbench): Suche gilt, Filter-Tabs nicht
+    function renderSection(el, items, q, emptyText) {
+      const shown = items.filter(e => matches(e, q)).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+      el.innerHTML = shown.length
+        ? `<div class="grid">${shown.map(card).join("")}</div>`
+        : `<div class="empty"><p>${items.length ? "Keine Treffer." : emptyText}</p></div>`;
+    }
+
     function render() {
-      document.getElementById("count-all").textContent = ENTRIES.length + BLOCKBENCH.length;
+      document.getElementById("count-all").textContent = ENTRIES.length + PRUEFUNG.length + BLOCKBENCH.length;
       document.getElementById("count-sache").textContent = ENTRIES.filter(e => e.type === "sache").length;
       document.getElementById("count-test").textContent = ENTRIES.filter(e => e.type === "test").length;
+      document.getElementById("count-pruefung").textContent = PRUEFUNG.length;
       document.getElementById("count-blockbench").textContent = BLOCKBENCH.length;
 
       const q = search.value.trim().toLowerCase();
-      const models = BLOCKBENCH.filter(e => matches(e, q)).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-      bbList.innerHTML = models.length
-        ? `<div class="grid">${models.map(card).join("")}</div>`
-        : `<div class="empty"><p>${BLOCKBENCH.length ? "Keine Treffer." : "Noch keine Modelle."}</p></div>`;
+      renderSection(examList, PRUEFUNG, q, "Noch keine Prüfungen.");
+      renderSection(bbList, BLOCKBENCH, q, "Noch keine Modelle.");
 
       if (!ENTRIES.length) {
         list.innerHTML = `

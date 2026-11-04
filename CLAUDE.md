@@ -13,7 +13,15 @@ Ergaenzt die globalen Regeln in `C:\Source\CLAUDE.md` (Git-Identitaet, Footer-Cr
 - `icon.svg` – App-Icon
 - `sachen/<name>/index.html` – eine "Sache" (Mini-Tool, Spielerei)
 - `tests/<name>/index.html` – ein Test/Experiment
+- `pruefung/<name>/` – eine Pruefungsvorbereitung (siehe unten)
 - `blockbench/<name>/` – ein Minecraft-Modell oder Resource Pack (siehe unten): `cowboyhut/`, `halloween/`, `viewer/`, `lokal/` (nicht im Repo)
+
+## Pruefungsvorbereitung (eigener Bereich auf der Startseite)
+
+- Steht im Array `PRUEFUNG` in `index.html` (`type: "pruefung"`), eigener Abschnitt zwischen den Eintraegen und Blockbench. Suche gilt, Filter-Tabs nicht (wie Blockbench, `renderSection()`).
+- Pro Pruefung ein Ordner `pruefung/<name>/` mit `index.html` (Lernseite, Tabs Themen / Lernkarten / Quiz) und `inhalt.js` (nur Daten: `themen`, `karten`, `quiz`, Format steht oben in der Datei). **Inhalte kommen von Nicolas** – nichts dazuerfinden, nur seine Unterlagen uebernehmen.
+- Fortschritt (gewusste Karten, bestes Quiz-Ergebnis) liegt nur im Browser (`localStorage`).
+- Sichtbare Texte hier mit echten Umlauten (Nicolas' Bezeichnung "Pruefungsvorbereitung" mit ue nur im Code).
 
 ## Blockbench (eigener Bereich auf der Startseite)
 
@@ -85,6 +93,7 @@ Nach jeder Aenderung diesen Abschnitt nachziehen (was gemacht wurde, was offen i
 Stand: 2026-11-04
 
 Eintraege:
+- Pruefungsvorbereitung: UI Designen (`pruefung/ui-design/`) fuer den Test in **Modul 322 "Benutzerschnittstellen entwerfen und implementieren"** (Angabe von Nicolas, 2026-11-02). Geruest fertig, als einziges Thema die vier Handlungsziele des Moduls (aus gibb-Kursseite und Schullehrplan GB Chur, offizielle Modulidentifikation auf modulbaukasten.ch noch nicht geprueft). **Pruefungsinhalte fehlen noch** (kommen von Nicolas, dann in `inhalt.js` eintragen).
 - Sachen: Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht, begehbar mit WASD bzw. Joysticks; geprüft Desktop, 375px hoch und 740x360 quer mit Touch-Emulation. Echtes Handy-Vollbild nicht automatisch prüfbar), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
 - Blockbench: Halloween-Pack, Pack-Viewer, Cowboyhut (mit Nicolas' Skin `blockbench/cowboyhut/skin.png`, auf seinen Wunsch im Repo).
 
