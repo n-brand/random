@@ -525,13 +525,14 @@
     const BACK_OPEN = [[-2, 2, EG, 2.6], [-5, -3.4, 1.1, 2.4], [3.4, 5, 1.1, 2.4],
       [-5, -3.4, 4.1, 5.5], [2.2, 3.4, 4.6, 5.5], [3.8, 5.2, 4.1, 5.5]];
     // Seiten: vorne wie bisher, im Anbau je zwei Fenster pro Stockwerk
-    const SIDE_BACK = [[-7, -5.5, 1.1, 2.4], [-12, -10.5, 1.1, 2.4], [-7, -5.5, 4.1, 5.5], [-12, -10.5, 4.1, 5.5]];
+    const SIDE_BACK = [[-7, -5.5, 1.1, 2.4], [-13, -11.7, 1.1, 2.4], [-7, -5.5, 4.1, 5.5], [-12, -10.5, 4.1, 5.5]];
+    const EAST_EXIT = [-10.4, -9.3, EG, 2.4];   // Ausgang vom Familienzimmer nach Osten auf die Terrasse mit Whirlpool
     const LEFT_OPEN = [[-1, 1, 1.1, 2.4], [-1, 1, 4.1, 5.5], ...SIDE_BACK];
     const GARAGE_DOOR = [-1.0, -0.1, EG, 2.4];
     wall("x", -HX, HX, HZ - WALL / 2, KG, TOP, FRONT_OPEN, faces("+z", mat.siding, mat.plaster));
     wall("x", -HX, HX, BZ + WALL / 2, KG, TOP, BACK_OPEN, faces("-z", mat.siding, mat.plaster));
     wall("z", IBZ, IZ, -HX + WALL / 2, KG, TOP, LEFT_OPEN, faces("-x", mat.siding, mat.plaster));
-    wall("z", IBZ, IZ, HX - WALL / 2, KG, TOP, [[-3.2, -1.9, KG, KG + 2.1], GARAGE_DOOR, ...SIDE_BACK], faces("+x", mat.siding, mat.plaster));
+    wall("z", IBZ, IZ, HX - WALL / 2, KG, TOP, [[-3.2, -1.9, KG, KG + 2.1], GARAGE_DOOR, EAST_EXIT, ...SIDE_BACK], faces("+x", mat.siding, mat.plaster));
     for (const o of FRONT_OPEN.slice(1)) windowIn("x", HZ - WALL / 2, o[0], o[1], o[2], o[3], 1);
     for (const o of BACK_OPEN.slice(1)) windowIn("x", BZ + WALL / 2, o[0], o[1], o[2], o[3], -1);
     for (const o of LEFT_OPEN) windowIn("z", -HX + WALL / 2, o[0], o[1], o[2], o[3], -1);
@@ -1088,6 +1089,117 @@
       circles.push([9.9, -20.7, 0.25]);
     }
 
+    // --- Whirlpool (freistehend, ueber dem Boden) auf dem Sitzplatz im Westen und Aussendusche an der Nordwand der Garage ---
+    {
+      const spa = new THREE.Group();
+      spa.name = 'Whirlpool';
+      world.add(spa);
+      const sx = 8.3, sz = -10.0, R = 1.1, H = 0.85, WATER = 0.72;
+      spa.position.y = 0.22;                         // steht auf der Holzterrasse (nicht im Boden)
+      // Aussenhuelle: Holzverkleidung als 16-seitiger Zylinder, heller Rand oben
+      const shell = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 16, 1, true), mat.wood);   // oben offen, sonst deckt ein Deckel das Wasser zu
+      shell.position.set(sx, H / 2, sz);
+      shell.castShadow = shell.receiveShadow = true;
+      spa.add(shell);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(R - 0.08, 0.09, 8, 32), mat.white);
+      rim.rotation.x = Math.PI / 2;
+      rim.position.set(sx, H + 0.01, sz);
+      rim.castShadow = true;
+      spa.add(rim);
+      // Innenwanne (Fliesen) und Boden, darueber die Wasserflaeche
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(R - 0.17, R - 0.3, H - 0.1, 24, 1, true), mat.pool);
+      bowl.material = bowl.material.clone();
+      bowl.material.side = THREE.DoubleSide;
+      bowl.position.set(sx, (H - 0.1) / 2 + 0.1, sz);
+      spa.add(bowl);
+      const floor = new THREE.Mesh(new THREE.CircleGeometry(R - 0.3, 24), mat.pool);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(sx, 0.11, sz);
+      spa.add(floor);
+      const water = new THREE.Mesh(new THREE.CircleGeometry(R - 0.17, 32), mat.water);
+      water.rotation.x = -Math.PI / 2;
+      water.position.set(sx, WATER, sz);
+      spa.add(water);
+      // Duesen als kleine Scheiben im Wasser, Sitzbank (Halbring) an der Nordseite
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const jet = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.02, 10), mat.steel);
+        jet.rotation.z = Math.PI / 2;
+        jet.position.set(sx + Math.cos(a) * (R - 0.31), 0.45, sz + Math.sin(a) * (R - 0.31));
+        jet.rotation.y = -a;
+        spa.add(jet);
+      }
+      const seat = new THREE.Mesh(new THREE.CylinderGeometry(R - 0.2, R - 0.3, 0.3, 24, 1, false, Math.PI, Math.PI), mat.pool);
+      seat.position.set(sx, 0.25, sz);
+      spa.add(seat);
+      // Stufe aus Holz zur Platzmitte (Osten) und Bedienfeld
+      const step = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.4, 0.5), mat.wood);
+      step.position.set(sx, 0.2, sz - R - 0.25);
+      step.castShadow = step.receiveShadow = true;
+      spa.add(step);
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.18, 0.3), mat.dark);
+      panel.position.set(sx + R - 0.005, 0.62, sz + 0.55);
+      spa.add(panel);
+      // Handtuch auf der Stufe
+      const towel = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.015, 0.4), mat.markYellow);
+      towel.position.set(sx, 0.41, sz - R - 0.25);
+      spa.add(towel);
+      circles.push([sx, sz, R + 0.1], [sx, sz - R - 0.25, 0.45]);
+      // Terrasse aus Holz am Ausgang (Oberkante 0.22, Stufe vom Boden ist begehbar), Tuer steht 80 Grad offen
+      box(HX, 0, -12.0, 9.6, 0.22, -8.0, mat.wood, { name: "Ostterrasse" });
+      const hinge = new THREE.Group();
+      hinge.position.set(HX - WALL / 2, EG, EAST_EXIT[1]);
+      hinge.rotation.y = THREE.MathUtils.degToRad(10);   // 80 Grad offen: Blatt steht fast rechtwinklig nach aussen, Durchgang frei
+      world.add(hinge);
+      box(0, 0, -0.03, EAST_EXIT[1] - EAST_EXIT[0] - 0.05, 2.05, 0.03, mat.wood, { parent: hinge, solid: false });
+      const dh = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 10), mat.steel);
+      dh.rotation.z = Math.PI / 2;
+      dh.position.set(0.95, 1.0, 0.06);
+      hinge.add(dh);
+      world.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(hinge);
+      solids.push({ x0: bb.min.x, x1: bb.max.x, y0: bb.min.y, y1: bb.max.y, z0: bb.min.z, z1: bb.max.z });
+    }
+
+    {
+      // Aussendusche an der Nordwand der Garage (aussen, Norden = -z), neben der Hintertuer
+      const sh = new THREE.Group();
+      sh.name = 'Aussendusche';
+      world.add(sh);
+      const wx = 14.6, wz = GZ0;               // Wand-Aussenkante
+      const b = (x0, y0, x1, y1, z0, z1, m, solid = false) => box(Math.min(x0, x1), Math.min(y0, y1), Math.min(z0, z1), Math.max(x0, x1), Math.max(y0, y1), Math.max(z0, z1), m, { parent: sh, solid });   // Reihenfolge der Ecken egal
+      // Holzrost auf dem Boden mit Abfluss, seitlicher Sichtschutz aus Latten, Handtuchhaken
+      for (let i = 0; i < 7; i++) b(wx - 0.55, 0, wx + 0.55, 0.05, wz - 0.15 - i * 0.17, wz - 0.15 - i * 0.17 - 0.14, mat.wood);
+      b(wx - 0.6, 0, wx + 0.6, 0.02, wz - 0.1, wz - 1.4, mat.dark);
+      b(wx - 0.15, 0.052, wx + 0.15, 0.056, wz - 0.7, wz - 0.9, mat.steel);              // Abfluss
+      for (let i = 0; i < 9; i++) b(wx - 0.75, 0.1 + i * 0.2, wx - 0.7, 0.2 + i * 0.2, wz - 0.05, wz - 1.45, mat.wood, i === 0);   // Sichtschutz-Latten
+      b(wx - 0.77, 0, wx - 0.68, 2.0, wz - 0.1, wz - 0.18, mat.wood);                     // Pfosten an der Wand
+      b(wx - 0.77, 0, wx - 0.68, 2.0, wz - 1.4, wz - 1.48, mat.wood);                     // Pfosten vorne
+      solids.push({ x0: wx - 0.78, x1: wx - 0.67, y0: 0, y1: 1.9, z0: wz - 1.5, z1: wz });
+      // Rohr, Armatur und Brausekopf
+      const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 2.3, 10), mat.steel);
+      pipe.position.set(wx, 1.15, wz - 0.06);
+      pipe.castShadow = true;
+      sh.add(pipe);
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.4, 10), mat.steel);
+      arm.rotation.x = Math.PI / 2;
+      arm.position.set(wx, 2.3, wz - 0.26);
+      sh.add(arm);
+      const head = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.025, 20), mat.steel);
+      head.position.set(wx, 2.27, wz - 0.46);
+      sh.add(head);
+      const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 12), mat.steel);
+      valve.rotation.x = Math.PI / 2;
+      valve.position.set(wx, 1.15, wz - 0.1);
+      sh.add(valve);
+      const lever = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.1, 0.012), mat.dark);
+      lever.position.set(wx + 0.05, 1.15, wz - 0.13);
+      sh.add(lever);
+      // Handtuch am Haken
+      b(wx + 0.52, 1.5, wx + 0.55, 1.58, wz - 0.01, wz - 0.07, mat.dark);
+      b(wx + 0.47, 0.85, wx + 0.6, 1.58, wz - 0.07, wz - 0.1, mat.fabric);
+    }
+
     // Auto: Karosserie, Kabine mit Scheiben, Raeder
     {
       const car = new THREE.Group();
@@ -1317,7 +1429,7 @@
     // Vor der Veranda, Weg (x -2.6..-1.4) frei lassen
     for (let x = -5.6; x <= 0.8; x += 0.9) if (Math.abs(x + 2) > 1) bushSpots.push([x, HZ + 2.7, 0.45]);
     for (let z = -13; z <= 4; z += 1.1) bushSpots.push([-HX - 0.7, z, 0.5]);
-    for (let z = -13; z <= -3.8; z += 1.1) bushSpots.push([HX + 0.7, z, 0.5]);
+    for (let z = -13; z <= -3.8; z += 1.1) if (z < -12.6 || z > -7.4) bushSpots.push([HX + 0.7, z, 0.5]);
     for (let z = GZ0 + 0.5; z <= 4; z += 1.1) bushSpots.push([GX1 + 0.7, z, 0.5]);
     for (let z = 5.5; z <= 16; z += 1.0) bushSpots.push([18.7, z, 0.42]);
     for (let i = 0; i < 26; i++) {
