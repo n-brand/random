@@ -526,13 +526,13 @@
       [-5, -3.4, 4.1, 5.5], [2.2, 3.4, 4.6, 5.5], [3.8, 5.2, 4.1, 5.5]];
     // Seiten: vorne wie bisher, im Anbau je zwei Fenster pro Stockwerk
     const SIDE_BACK = [[-7, -5.5, 1.1, 2.4], [-13, -11.7, 1.1, 2.4], [-7, -5.5, 4.1, 5.5], [-12, -10.5, 4.1, 5.5]];
-    const EAST_EXIT = [-10.4, -9.3, EG, 2.4];   // Ausgang vom Familienzimmer nach Osten auf die Terrasse mit Whirlpool
+    const WEST_EXIT = [-10.4, -9.3, EG, 2.4];   // Ausgang vom Familienzimmer nach Westen auf die Terrasse mit Whirlpool
     const LEFT_OPEN = [[-1, 1, 1.1, 2.4], [-1, 1, 4.1, 5.5], ...SIDE_BACK];
     const GARAGE_DOOR = [-1.0, -0.1, EG, 2.4];
     wall("x", -HX, HX, HZ - WALL / 2, KG, TOP, FRONT_OPEN, faces("+z", mat.siding, mat.plaster));
     wall("x", -HX, HX, BZ + WALL / 2, KG, TOP, BACK_OPEN, faces("-z", mat.siding, mat.plaster));
-    wall("z", IBZ, IZ, -HX + WALL / 2, KG, TOP, LEFT_OPEN, faces("-x", mat.siding, mat.plaster));
-    wall("z", IBZ, IZ, HX - WALL / 2, KG, TOP, [[-3.2, -1.9, KG, KG + 2.1], GARAGE_DOOR, EAST_EXIT, ...SIDE_BACK], faces("+x", mat.siding, mat.plaster));
+    wall("z", IBZ, IZ, -HX + WALL / 2, KG, TOP, [...LEFT_OPEN, WEST_EXIT], faces("-x", mat.siding, mat.plaster));
+    wall("z", IBZ, IZ, HX - WALL / 2, KG, TOP, [[-3.2, -1.9, KG, KG + 2.1], GARAGE_DOOR, ...SIDE_BACK], faces("+x", mat.siding, mat.plaster));
     for (const o of FRONT_OPEN.slice(1)) windowIn("x", HZ - WALL / 2, o[0], o[1], o[2], o[3], 1);
     for (const o of BACK_OPEN.slice(1)) windowIn("x", BZ + WALL / 2, o[0], o[1], o[2], o[3], -1);
     for (const o of LEFT_OPEN) windowIn("z", -HX + WALL / 2, o[0], o[1], o[2], o[3], -1);
@@ -1094,7 +1094,7 @@
       const spa = new THREE.Group();
       spa.name = 'Whirlpool';
       world.add(spa);
-      const sx = 8.3, sz = -10.0, R = 1.1, H = 0.85, WATER = 0.72;
+      const sx = -8.3, sz = -10.0, R = 1.1, H = 0.85, WATER = 0.72;
       spa.position.y = 0.22;                         // steht auf der Holzterrasse (nicht im Boden)
       // Aussenhuelle: Holzverkleidung als 16-seitiger Zylinder, heller Rand oben
       const shell = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 16, 1, true), mat.wood);   // oben offen, sonst deckt ein Deckel das Wasser zu
@@ -1146,12 +1146,12 @@
       spa.add(towel);
       circles.push([sx, sz, R + 0.1], [sx, sz - R - 0.25, 0.45]);
       // Terrasse aus Holz am Ausgang (Oberkante 0.22, Stufe vom Boden ist begehbar), Tuer steht 80 Grad offen
-      box(HX, 0, -12.0, 9.6, 0.22, -8.0, mat.wood, { name: "Ostterrasse" });
+      box(-9.6, 0, -12.0, -HX, 0.22, -8.0, mat.wood, { name: "Westterrasse" });
       const hinge = new THREE.Group();
-      hinge.position.set(HX - WALL / 2, EG, EAST_EXIT[1]);
-      hinge.rotation.y = THREE.MathUtils.degToRad(10);   // 80 Grad offen: Blatt steht fast rechtwinklig nach aussen, Durchgang frei
+      hinge.position.set(-HX + WALL / 2, EG, WEST_EXIT[1]);
+      hinge.rotation.y = THREE.MathUtils.degToRad(170);   // 80 Grad offen: Blatt steht fast rechtwinklig nach aussen, Durchgang frei
       world.add(hinge);
-      box(0, 0, -0.03, EAST_EXIT[1] - EAST_EXIT[0] - 0.05, 2.05, 0.03, mat.wood, { parent: hinge, solid: false });
+      box(0, 0, -0.03, WEST_EXIT[1] - WEST_EXIT[0] - 0.05, 2.05, 0.03, mat.wood, { parent: hinge, solid: false });
       const dh = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 10), mat.steel);
       dh.rotation.z = Math.PI / 2;
       dh.position.set(0.95, 1.0, 0.06);
@@ -1198,6 +1198,91 @@
       // Handtuch am Haken
       b(wx + 0.52, 1.5, wx + 0.55, 1.58, wz - 0.01, wz - 0.07, mat.dark);
       b(wx + 0.47, 0.85, wx + 0.6, 1.58, wz - 0.07, wz - 0.1, mat.fabric);
+    }
+
+    // --- Solarpanels auf den Suedseiten (+z, Strassenseite) der Dachflaechen von Haus und Garage ---
+    {
+      // Zellenmuster: silberner Rahmen, dunkelblaue Zellen mit feinen Silberlinien
+      const cell = canvasTexture(256, 1, 21, (g, s) => {
+        g.fillStyle = '#b9bfc6'; g.fillRect(0, 0, s, s);
+        const m = 10, cols = 6, rows = 10, cw = (s - 2 * m) / cols, ch = (s - 2 * m) / rows;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          const x = m + c * cw, y = m + r * ch;
+          const grad = g.createLinearGradient(x, y, x + cw, y + ch);
+          grad.addColorStop(0, '#16284f'); grad.addColorStop(1, '#0c1730');
+          g.fillStyle = grad; g.fillRect(x + 1.2, y + 1.2, cw - 2.4, ch - 2.4);
+          g.strokeStyle = 'rgba(170,190,220,.35)'; g.lineWidth = 0.7;
+          for (const k of [1 / 3, 2 / 3]) { g.beginPath(); g.moveTo(x + 1.2, y + ch * k); g.lineTo(x + cw - 1.2, y + ch * k); g.stroke(); }
+        }
+      });
+      const solarMat = new THREE.MeshStandardMaterial({ map: cell, roughness: 0.25, metalness: 0.6 });
+      const PW = 1.8, PD = 1.0, PT = 0.05, PITCH_X = 1.9, PITCH_D = 1.05;
+      // Eine Dachseite (Suedhang): origin = Firstlinie auf der Plattenmitte, Gruppe um x geneigt wie die Platte
+      function solarArray(xc, zRidge, base, rise, depthHalf, cols, rows, d0) {
+        const slope = Math.atan2(rise, depthHalf);
+        const grp = new THREE.Group();
+        grp.position.set(xc, base + rise + 0.09 / Math.cos(slope), zRidge);
+        grp.rotation.x = slope;
+        world.add(grp);
+        const inst = new THREE.InstancedMesh(new THREE.BoxGeometry(PW, PT, PD), solarMat, cols * rows);
+        const m4 = new THREE.Matrix4();
+        let i = 0;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          m4.makeTranslation((c - (cols - 1) / 2) * PITCH_X, 0.08 + PT / 2 + 0.03, d0 + PD / 2 + r * PITCH_D);
+          inst.setMatrixAt(i++, m4);
+        }
+        inst.castShadow = inst.receiveShadow = true;
+        grp.add(inst);
+        // Montageschienen unter den Reihen (dunkles Aluminium, duenn)
+        for (let c = 0; c < cols; c++) {
+          const rail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, rows * PITCH_D), mat.dark);
+          rail.position.set((c - (cols - 1) / 2) * PITCH_X, 0.08 + 0.015, d0 + (rows * PITCH_D) / 2);
+          grp.add(rail);
+        }
+        return grp;
+      }
+      // Haus: Dachplatte reicht von -HX-0.5 bis HX+0.5, Mitte x = 0; Firstlinie bei zRidge = (BZ+HZ)/2
+      solarArray(0, (BZ + HZ) / 2, TOP, ROOF_RISE, (HZ - BZ) / 2, 6, 6, 0.9);
+      // Garage: Dachplatte von GX0 bis GX1+0.45 (ohne Ueberstand zur Hausseite), Mitte x = (GX0 + GX1 + 0.45) / 2
+      solarArray((GX0 + GX1 + 0.45) / 2, (GZ0 + GZ1) / 2, GH + 0.1, 2.0, (GZ1 - GZ0) / 2, 6, 3, 0.9);
+    }
+
+    // --- Sichtschutz um den Garten: Holzzaun im Westen (zur Seite mit Whirlpool und Sitzplatz), hohe Hecke im Norden und Osten ---
+    // Die Strassenseite (Sueden) bleibt offen; Zaun und Hecke enden am Buergersteig.
+    {
+      const fence = new THREE.Group();
+      fence.name = 'Zaun';
+      world.add(fence);
+      const FX = -14.6, FZ_START = ROAD.walk0 - 0.6, FZ_END = -31, HEDGE_X = 21.6, PANEL = 2.4, FH = 1.9;
+      const f = (x0, y0, x1, y1, z0, z1, m) => box(x0, y0, z0, x1, y1, z1, m, { parent: fence });
+      // Westzaun: Bretterfelder zwischen Pfosten, Deckleiste oben, Sockelbrett unten
+      const n = Math.ceil((FZ_START - FZ_END) / PANEL);
+      for (let i = 0; i < n; i++) {
+        const za = FZ_START - i * PANEL, zb = Math.max(FZ_END, za - PANEL);
+        f(FX - 0.04, 0.08, FX + 0.04, FH, zb, za, mat.wood);          // Bretter
+        f(FX - 0.07, FH, FX + 0.07, FH + 0.07, zb, za, mat.dark);      // Deckleiste
+        f(FX - 0.06, 0, FX + 0.06, 0.1, zb, za, mat.dark);             // Sockel
+        f(FX - 0.08, 0, FX + 0.08, FH + 0.12, za - 0.06, za + 0.06, mat.dark);   // Pfosten
+      }
+      f(FX - 0.08, 0, FX + 0.08, FH + 0.12, FZ_END - 0.06, FZ_END + 0.06, mat.dark);
+      // Hecke Nord (z = FZ_END, von FX bis HEDGE_X) und Ost (x = HEDGE_X, bis zum Buergersteig): Reihe hoher Buesche
+      const spots = [];
+      for (let x = FX; x <= HEDGE_X; x += 1.1) spots.push([x, FZ_END]);
+      for (let z = FZ_END + 1.1; z <= FZ_START; z += 1.1) spots.push([HEDGE_X, z]);
+      const hrng = rng(31);
+      const hedge = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), mat.leaves, spots.length);
+      const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+      spots.forEach(([x, z], i) => {
+        const r = 0.78 + hrng() * 0.18;
+        e.set(0, hrng() * 6, 0);
+        q.setFromEuler(e);
+        m4.compose(new THREE.Vector3(x, 1.0, z), q, new THREE.Vector3(r, 1.1 + hrng() * 0.2, r));
+        hedge.setMatrixAt(i, m4);
+        circles.push([x, z, 0.65]);
+      });
+      hedge.castShadow = hedge.receiveShadow = true;
+      hedge.name = 'Hecke';
+      fence.add(hedge);
     }
 
     // Auto: Karosserie, Kabine mit Scheiben, Raeder
@@ -1428,8 +1513,8 @@
     const bushSpots = [];
     // Vor der Veranda, Weg (x -2.6..-1.4) frei lassen
     for (let x = -5.6; x <= 0.8; x += 0.9) if (Math.abs(x + 2) > 1) bushSpots.push([x, HZ + 2.7, 0.45]);
-    for (let z = -13; z <= 4; z += 1.1) bushSpots.push([-HX - 0.7, z, 0.5]);
-    for (let z = -13; z <= -3.8; z += 1.1) if (z < -12.6 || z > -7.4) bushSpots.push([HX + 0.7, z, 0.5]);
+    for (let z = -13; z <= 4; z += 1.1) if (z < -12.6 || z > -7.4) bushSpots.push([-HX - 0.7, z, 0.5]);   // nicht ueber der Westterrasse
+    for (let z = -13; z <= -3.8; z += 1.1) bushSpots.push([HX + 0.7, z, 0.5]);
     for (let z = GZ0 + 0.5; z <= 4; z += 1.1) bushSpots.push([GX1 + 0.7, z, 0.5]);
     for (let z = 5.5; z <= 16; z += 1.0) bushSpots.push([18.7, z, 0.42]);
     for (let i = 0; i < 26; i++) {
@@ -1458,7 +1543,7 @@
     const beds = [
       [-5.6, -2.9, HZ + 2.2, HZ + 3.0], [-1.1, 1.0, HZ + 2.2, HZ + 3.0],
       [-3.6, -2.95, 8.0, 17.0], [-1.05, -0.4, 8.0, 17.0],
-      [-HX - 1.2, -HX - 0.35, -13, 4.5]
+      [-HX - 1.2, -HX - 0.35, -7.4, 4.5]
     ];
     for (const [x0, x1, z0, z1] of beds) {
       box(x0, 0, z0, x1, 0.07, z1, mat.soil, { solid: false, parent: plants, name: 'Beet' });
