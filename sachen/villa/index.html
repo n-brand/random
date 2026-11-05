@@ -1096,17 +1096,26 @@
     }
     // Baeume ausserhalb der flachen Flaeche, nicht auf Weg und Einfahrt
     const clear = (x, z, m) => !FLAT.some(([x0, x1, z0, z1]) => x > x0 - m && x < x1 + m && z > z0 - m && z < z1 + m);
+    // Mindestabstand: jede Pflanze belegt einen Kreis (Krone), neue muessen ausserhalb aller vorhandenen liegen
+    const crowns = [];
+    const free = (x, z, r, gap = 0.85) => crowns.every(([cx, cz, cr]) => Math.hypot(x - cx, z - cz) >= (r + cr) * gap);
+    const put = (kind, x, z, sc) => {
+      const r = (kind === conifer ? 1.5 : 2.0) * sc;
+      if (!free(x, z, r)) return false;
+      kind(x, z, sc);
+      crowns.push([x, z, r]);
+      return true;
+    };
+    // Zwei Baeume im Garten hinten zuerst, damit die zufaelligen Abstand halten
+    put(tree, -8.6, -19, 1.1);
+    put(tree, 8, -20, 0.95);
     let placed = 0;
-    for (let tries = 0; tries < 400 && placed < 34; tries++) {
+    for (let tries = 0; tries < 3000 && placed < 34; tries++) {
       const a = prng() * Math.PI * 2, r = 14 + prng() * 18;
       const x = 3 + Math.cos(a) * r, z = CENTER_Z + Math.sin(a) * r;
       if (!clear(x, z, 1.5) || Math.hypot(x - 3, z - CENTER_Z) > 31) continue;
-      (prng() < 0.45 ? conifer : tree)(x, z, 0.8 + prng() * 0.6);
-      placed++;
+      if (put(prng() < 0.45 ? conifer : tree, x, z, 0.8 + prng() * 0.6)) placed++;
     }
-    // Zwei Baeume im Garten hinten
-    tree(-8.6, -19, 1.1);
-    tree(8, -20, 0.95);
 
     // Buesche als InstancedMesh (viele, guenstig zu zeichnen)
     const bushSpots = [];
@@ -1119,7 +1128,8 @@
     for (let i = 0; i < 26; i++) {
       const a = prng() * Math.PI * 2, r = 12 + prng() * 14;
       const x = 3 + Math.cos(a) * r, z = CENTER_Z + Math.sin(a) * r;
-      if (clear(x, z, 0.8)) bushSpots.push([x, z, 0.4 + prng() * 0.5]);
+      const br = 0.4 + prng() * 0.5;
+      if (clear(x, z, 0.8) && crowns.every(([cx, cz, cr]) => Math.hypot(x - cx, z - cz) >= cr * 0.55 + br)) bushSpots.push([x, z, br]);
     }
     {
       const inst = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), mat.leaves, bushSpots.length);
