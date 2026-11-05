@@ -361,6 +361,7 @@
       greenGlass: M({ color: 0xbfe8e0, roughness: 0.05, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }),
       pot: M({ color: 0xb85c38, roughness: 0.9 }),
       fruit: M({ color: 0xd9352a, roughness: 0.5 }),
+      ember: M({ color: 0x331100, emissive: 0xff4a10, emissiveIntensity: 1.2, roughness: 0.9 }),
       redBox: M({ color: 0xb3262e, roughness: 0.5 }),
       steel: M({ color: 0xb8bcc0, metalness: 0.9, roughness: 0.3 }),
       dark: M({ color: 0x24262a, roughness: 0.6 }),
@@ -470,7 +471,7 @@
     }
 
     // --- Gelaende: flach um Haus, Einfahrt und Pool, nach aussen sanfte Huegel ---
-    const FLAT = [[-8.5, 22, -26.5, 17], [-34, 40, 16, 28.5]];
+    const FLAT = [[-16, 22, -33, 17], [-34, 40, 16, 28.5]];
     const HOLES = [[-HX, HX, BZ, HZ], [HX, 18.125, -5.0, HZ], [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]];
     const inRect = (x, z, [x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1;
     function terrain(x, z) {
@@ -779,11 +780,11 @@
       g(13.6, KG + 0.9, 15.4, KG + 0.95, 0.7, 2.3, mat.wood, false);
     }
 
-    // --- Gewaechshaus schraeg zum Haus (um 34 Grad gedreht), Tuer zum Pool hin, Plattenweg von der Garagen-Hintertuer ---
+    // --- Gewaechshaus schraeg zum Haus (um 34 Grad gedreht), hinter dem Pool, Tuer zum Pool hin, Plattenweg von der Garagen-Hintertuer ---
     {
       const gh = new THREE.Group();
       gh.name = 'Gewaechshaus';
-      gh.position.set(11.5, 0, -21.5);
+      gh.position.set(9.5, 0, -28);
       gh.rotation.y = -0.6;
       world.add(gh);
       const L = 2.2, W2 = 1.4, WH = 1.8, RISE2 = 0.95;           // halbe Laenge, halbe Breite, Wandhoehe, Dachhoehe
@@ -897,7 +898,128 @@
         }
       }
       stonePath([[10.55, GZ0 - 1.2], [10.55, -12], [8.0, -17.5], [4.6, -18.7]]);   // Garage -> Pool (Ostrand der Platten)
-      stonePath([[4.6, -20.2], [7.5, -20.4], [dx, dz]]);                           // Pool -> Gewaechshaus
+      stonePath([[4.6, -21.4], [6.0, -23.4], [dx, dz]]);                            // Pool -> Gewaechshaus
+    }
+
+    // --- Sitzplatz westlich des Pools: Platten, Esstisch mit Stuehlen und Sonnenschirm, Grillecke ---
+    {
+      const patio = new THREE.Group();
+      patio.name = 'Sitzplatz';
+      world.add(patio);
+      const P0 = { x0: -13.2, x1: -6.5, z0: -22.2, z1: -15.275 };
+      box(P0.x0, 0, P0.z0, P0.x1, 0.04, P0.z1, mat.stone, { parent: patio, name: 'Plattenflaeche' });
+
+      // Esstisch (rund) mit vier Stuehlen und Sonnenschirm
+      const tx = -9.4, tz = -18.4;
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.06, 28), mat.wood);
+      table.position.set(tx, 0.76, tz);
+      table.castShadow = table.receiveShadow = true;
+      patio.add(table);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.6, 10), mat.steel);
+      pole.position.set(tx, 1.3, tz);
+      pole.castShadow = true;
+      patio.add(pole);
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.7, 12), mat.steel);
+      foot.position.set(tx, 0.35, tz);
+      patio.add(foot);
+      const canopy = new THREE.Mesh(new THREE.ConeGeometry(1.9, 0.55, 8, 1, true), mat.redBox);
+      canopy.material = canopy.material.clone();
+      canopy.material.side = THREE.DoubleSide;
+      canopy.position.set(tx, 2.55, tz);
+      canopy.castShadow = true;
+      patio.add(canopy);
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), mat.steel);
+      tip.position.set(tx, 2.85, tz);
+      patio.add(tip);
+      // weisse Streifen auf dem Schirm: vier duenne Keile
+      for (let i = 0; i < 4; i++) {
+        const stripe = new THREE.Mesh(new THREE.ConeGeometry(1.905, 0.555, 8, 1, true, (i * Math.PI) / 2 + 0.2, Math.PI / 8), mat.white);
+        stripe.material = stripe.material.clone();
+        stripe.material.side = THREE.DoubleSide;
+        stripe.position.set(tx, 2.55, tz);
+        patio.add(stripe);
+      }
+      // Tischdeko: Glaeser und Krug
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2 + 0.4;
+        const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.1, 10), mat.greenGlass);
+        glass.position.set(tx + Math.cos(a) * 0.5, 0.84, tz + Math.sin(a) * 0.5);
+        patio.add(glass);
+      }
+      const jug = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.22, 12), mat.pot);
+      jug.position.set(tx + 0.12, 0.9, tz - 0.1);
+      patio.add(jug);
+      circles.push([tx, tz, 0.95]);
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2 + Math.PI / 4;
+        const cx = tx + Math.cos(a) * 1.35, cz = tz + Math.sin(a) * 1.35;
+        const chair = new THREE.Group();
+        chair.position.set(cx, 0, cz);
+        chair.rotation.y = Math.atan2(tx - cx, tz - cz);     // Blick zum Tisch
+        patio.add(chair);
+        const part = (w, h, d, x, y, z, m) => {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+          mesh.position.set(x, y, z);
+          mesh.castShadow = true;
+          chair.add(mesh);
+        };
+        part(0.46, 0.05, 0.46, 0, 0.46, 0, mat.wood);
+        part(0.46, 0.5, 0.05, 0, 0.74, -0.21, mat.wood);
+        for (const [lx, lz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) part(0.04, 0.44, 0.04, lx, 0.22, lz, mat.dark);
+        part(0.42, 0.04, 0.42, 0, 0.5, 0, mat.fabric);
+        circles.push([cx, cz, 0.3]);
+      }
+
+      // Grillecke hinten links: L-foermige Theke aus Stein mit Gasgrill, Seitenablage, Kuehlbox, zwei Barhockern
+      const g = (x0, y0, x1, y1, z0, z1, m, solid = false) => box(x0, y0, z0, x1, y1, z1, m, { parent: patio, solid });
+      const bz0 = P0.z0 + 0.4, bz1 = bz0 + 0.75;                 // Theke an der Rueckkante des Platzes
+      g(-13.0, 0, -9.8, 0.9, bz0, bz1, mat.stone, true);
+      g(-13.0, 0, -12.25, 0.9, bz1, bz1 + 2.2, mat.stone, true);  // Seitenfluegel
+      g(-13.08, 0.9, -9.72, 0.96, bz0 - 0.08, bz1 + 0.08, mat.dark);
+      g(-13.08, 0.9, -12.17, 0.96, bz1, bz1 + 2.28, mat.dark);
+      // Gasgrill: Korpus, Rost, Deckel (Halbzylinder), Seitenbrenner, Glut
+      const gx0 = -11.9, gx1 = -10.7;
+      g(gx0, 0.96, gx1, 1.2, bz0 + 0.05, bz1 - 0.05, mat.dark);
+      g(gx0 + 0.05, 1.2, gx1 - 0.05, 1.23, bz0 + 0.1, bz1 - 0.1, mat.ember);
+      for (let i = 0; i < 6; i++) g(gx0 + 0.08 + i * 0.185, 1.23, gx0 + 0.09 + i * 0.185, 1.26, bz0 + 0.1, bz1 - 0.1, mat.steel);
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, gx1 - gx0, 16, 1, false, 0, Math.PI), mat.steel);
+      lid.rotation.z = Math.PI / 2;
+      lid.rotation.y = 0;
+      lid.position.set((gx0 + gx1) / 2, 1.2, (bz0 + bz1) / 2);
+      lid.rotation.order = 'XYZ';
+      lid.rotation.x = -Math.PI / 2 * 0;
+      lid.castShadow = true;
+      patio.add(lid);
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.6, 8), mat.dark);
+      handle.rotation.z = Math.PI / 2;
+      handle.position.set((gx0 + gx1) / 2, 1.32, bz1 + 0.02);
+      patio.add(handle);
+      g(-12.1, 0.96, -11.95, 1.5, bz0 + 0.3, bz0 + 0.35, mat.dark);  // Spritzschutz an der Wand (duenn)
+      // Gasflasche, Kuehlbox, Teller und Zangen auf der Ablage
+      const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.55, 14), mat.steel);
+      bottle.position.set(-10.3, 0.28, bz0 + 0.38);
+      bottle.castShadow = true;
+      patio.add(bottle);
+      g(-10.0, 0.96, -9.5, 1.28, bz0 + 0.1, bz0 + 0.65, mat.pot);   // Kuehlbox
+      g(-12.9, 0.96, -12.4, 1.0, bz1 + 0.2, bz1 + 0.7, mat.white);   // Teller/Brett
+      g(-12.8, 1.0, -12.5, 1.05, bz1 + 1.0, bz1 + 1.5, mat.redBox);  // Schneidebrett
+      g(-12.7, 0.96, -12.62, 1.0, bz1 + 1.6, bz1 + 2.1, mat.steel);  // Grillzange
+      // Barhocker an der Theke
+      for (const x of [-12.0, -11.0]) {
+        const stool = new THREE.Group();
+        stool.position.set(x, 0, bz1 + 0.75);
+        patio.add(stool);
+        const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 14), mat.fabric);
+        seat.position.y = 0.78;
+        stool.add(seat);
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.78, 8), mat.steel);
+        leg.position.y = 0.39;
+        stool.add(leg);
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 12), mat.steel);
+        base.position.y = 0.015;
+        stool.add(base);
+        circles.push([x, bz1 + 0.75, 0.25]);
+      }
     }
 
     // Auto: Karosserie, Kabine mit Scheiben, Raeder
@@ -1118,7 +1240,7 @@
       return true;
     };
     // Zwei Baeume im Garten hinten zuerst, damit die zufaelligen Abstand halten
-    put(tree, -8.6, -19, 1.1);
+    put(tree, -15.5, -27.5, 1.1);
     put(tree, 17.5, -13, 0.95);
     let placed = 0;
     for (let tries = 0; tries < 3000 && placed < 34; tries++) {
