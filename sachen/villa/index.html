@@ -646,7 +646,8 @@
     const DOORS = [[6.7, 11.7], [12.5, 17.5]];
     const DRIVE = [6.6, 17.6];
     box(GX0, 0, GZ0, GX1, 0.1, GZ1, floorFaces(mat.concrete, mat.concrete), { name: 'Garagenboden' });
-    wall('x', GX0, GX1, GZ0 + WALL / 2, 0, GH, [], faces('-z', mat.siding, mat.plaster));
+    const BACK_DOOR = [10.0, 11.1];   // Hintertuer der Garage zum Garten
+    wall('x', GX0, GX1, GZ0 + WALL / 2, 0, GH, [[BACK_DOOR[0], BACK_DOOR[1], 0, 2.2]], faces('-z', mat.siding, mat.plaster));
     wall('z', GZ0 + WALL, GZ1, GX1 - WALL / 2, 0, GH, [], faces('+x', mat.siding, mat.plaster));
     wall('x', GX0, GX1, GZ1 - WALL / 2, 0, GH, DOORS.map(([a, b]) => [a, b, 0, 2.5]), faces('+z', mat.siding, mat.plaster));
     box(GX0, GH, GZ0, GX1, GH + 0.1, GZ1, floorFaces(mat.trim, mat.ceiling), { name: 'Garagendecke' });
@@ -693,11 +694,28 @@
       solids.push({ x0, x1, y0: 0, y1: 2.0, z0, z1 });
     }
     const BACK = GZ0 + WALL;
-    shelf(6.7, 9.9, BACK, BACK + 0.5);
-    shelf(10.4, 13.6, BACK, BACK + 0.5);
-    shelf(14.1, 17.3, BACK, BACK + 0.5);
+    shelf(6.7, 9.5, BACK, BACK + 0.5);
+    shelf(11.6, 14.6, BACK, BACK + 0.5);
+    shelf(15.0, 17.3, BACK, BACK + 0.5);
     shelf(GX0, GX0 + 0.5, -4.2, -1.6);
     shelf(GX1 - WALL - 0.5, GX1 - WALL, -4.2, -1.0);
+
+    // Hintertuer: Tuerblatt steht offen nach aussen, davor ein kleines Podest und ein Plattenweg zur Terrasse
+    {
+      const hinge = new THREE.Group();
+      hinge.position.set(BACK_DOOR[0], 0.1, GZ0 + WALL / 2);
+      hinge.rotation.y = THREE.MathUtils.degToRad(80);
+      garage.add(hinge);
+      box(0, 0, -0.03, BACK_DOOR[1] - BACK_DOOR[0], 2.1, 0.03, mat.wood, { parent: hinge, solid: false });
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 10), mat.steel);
+      handle.rotation.z = Math.PI / 2;
+      handle.position.set(BACK_DOOR[1] - BACK_DOOR[0] - 0.15, 1.0, 0.06);
+      hinge.add(handle);
+      world.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(hinge);
+      solids.push({ x0: b.min.x, x1: b.max.x, y0: b.min.y, y1: b.max.y, z0: b.min.z, z1: b.max.z });
+      box(BACK_DOOR[0] - 0.3, 0, GZ0 - 1.2, BACK_DOOR[1] + 0.3, 0.1, GZ0, mat.concrete, { parent: garage, name: "Podest" });
+    }
 
     // Motorrad im zweiten Stellplatz, Bug zur Garagenoeffnung (+z)
     {
