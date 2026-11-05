@@ -123,7 +123,7 @@
 
     const hemi = new THREE.HemisphereLight(0xdff1ff, 0x5a7a3a, 1.0);
     scene.add(hemi);
-    const cave = new THREE.AmbientLight(0x6f8fd0, 0);
+    const cave = new THREE.AmbientLight(0xdfe3ea, 0);
     scene.add(cave);
     const sun = new THREE.DirectionalLight(0xfff2d6, 2.4);
     const SUN_DIR = new THREE.Vector3(-0.4, 0.8, 0.5).normalize();
@@ -282,7 +282,7 @@
       { name: "Zufahrt", w: 7, kind: "road", pts: [[85, -200], [70, -110], [64, -41], [62, 0], [62, 41], [62, 74], [56, 120], [20, 165], [-30, 200], [-120, 240]] },
       { name: "Main Driveway Sued", w: 9, kind: "drive", pts: [...P([[445, 1040], [410, 1072], [380, 1110], [350, 1150], [322, 1202]]), [62, 41]] },
       { name: "Main Driveway Nord", w: 9, kind: "drive", pts: [...P([[555, 1040], [590, 1075], [625, 1115], [655, 1160], [680, 1202]]), [64, -41]] },
-      { name: "Garagen-Ausfahrt", w: 7, kind: "ramp", pts: [...P([[300, 1018], [270, 1070], [235, 1110], [200, 1150], [172, 1202]]), [62, 74]] },
+      { name: "Garagen-Ausfahrt", w: 7, kind: "ramp", pts: [...P([[337, 1018], [310, 1046], [270, 1075], [235, 1110], [200, 1150], [172, 1202]]), [62, 74]] },
       { name: "Garagen-Einfahrt", w: 7, kind: "ramp", pts: [...P([[337, 827], [337, 815], [315, 777], [275, 737], [220, 705], [150, 681], [50, 672]]), [-66.5, 112], [-60, 140], [-47, 170], [-30, 200]] }
     ];
     const roadHash = new Map();
@@ -294,6 +294,28 @@
         if (!roadHash.has(key)) roadHash.set(key, []);
         roadHash.get(key).push([p.x, p.z, r.w / 2]);
       }
+    }
+    // Garagenrampen: die ersten RAMP_D Meter ab der Hauswand fuehren hinunter auf die Tiefgarage (GY)
+    const GY = -4.0, RAMP_D = 42;
+    const rampY = d => GY * (1 - d / RAMP_D);
+    const RAMPS = ROADS.filter(r => r.kind === "ramp").map(r => {
+      const samples = [], box = [1e9, -1e9, 1e9, -1e9];
+      for (let d = 0; d <= RAMP_D + 2; d += 0.5) {
+        const p = r.curve.getPointAt(Math.min(1, d / r.len));
+        samples.push([p.x, p.z, d]);
+        box[0] = Math.min(box[0], p.x); box[1] = Math.max(box[1], p.x); box[2] = Math.min(box[2], p.z); box[3] = Math.max(box[3], p.z);
+      }
+      return { r, samples, box, hw: r.w / 2 };
+    });
+    function rampAt(x, z, extra = 0) {
+      for (const R of RAMPS) {
+        const m = R.hw + extra + 1;
+        if (x < R.box[0] - m || x > R.box[1] + m || z < R.box[2] - m || z > R.box[3] + m) continue;
+        let best = 1e9, bd = 0;
+        for (const [sx, sz, d] of R.samples) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < best) { best = q; bd = d; } }
+        if (best < (R.hw + extra) ** 2 && bd < RAMP_D) return { d: bd, y: rampY(bd) };
+      }
+      return null;
     }
     function nearRoad(x, z, extra) {
       const i = Math.floor(x / 25), j = Math.floor(z / 25);
@@ -356,14 +378,19 @@
       for (let j = 0, k = 0; j < TN1; j++) for (let i = 0; i < TN1; i++, k++) {
         pos.set([TX[i], TH[k], TX[j]], k * 3); uv.set([TX[i] / 10, -TX[j] / 10], k * 2);
       }
-      for (let j = 0, n = 0; j < T_N; j++) for (let i = 0; i < T_N; i++) {
+      // Rampengraeben: Dreiecke mit einer Ecke im Graben weglassen (der Rand wird von einem Steinband verdeckt)
+      const cut = new Uint8Array(TN1 * TN1);
+      for (let k = 0; k < TN1 * TN1; k++) { const ra = rampAt(pos[k * 3], pos[k * 3 + 2], 0.3); if (ra && ra.y < -0.1) cut[k] = 1; }
+      let n = 0;
+      for (let j = 0; j < T_N; j++) for (let i = 0; i < T_N; i++) {
         const a = j * TN1 + i, b = a + 1, c = a + TN1, d = c + 1;
-        idx.set([a, c, b, b, c, d], n); n += 6;
+        if (!(cut[a] || cut[b] || cut[c])) { idx.set([a, c, b], n); n += 3; }
+        if (!(cut[b] || cut[c] || cut[d])) { idx.set([b, c, d], n); n += 3; }
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
       g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-      g.setIndex(new THREE.BufferAttribute(idx, 1));
+      g.setIndex(new THREE.BufferAttribute(idx.subarray(0, n), 1));
       g.computeVertexNormals();
       // Farben: Wiese, gemaehter Rasen, Waldboden, Sand am Ufer, Seegrund, Fels an steilen Stellen, Schnee
       const nrm = g.attributes.normal.array, col = new Float32Array(TN1 * TN1 * 3);
@@ -534,6 +561,7 @@
       return out;
     }
     const stoneLight = M(0xdccdaa, { roughness: 0.85 });
+    const flatMat = (o) => M(0xffffff, { roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1, ...o });
     const facadeTex = lit => canvasTex(256, 200, (g, w, h) => {
       if (!lit) {
         g.fillStyle = "#cdb68c"; g.fillRect(0, 0, w, h);
@@ -566,11 +594,28 @@
       return axis === "z" ? { axis, line: x, a0: z - half, a1: z + half, h, porch } : { axis, line: z, a0: x - half, a1: x + half, h, porch };
     };
     const DOORS = [door("z", 500, 887, 2, 4.4, true), door("x", 581, 790, 2, 3.6), door("x", 197, 906, 2, 3.6), door("x", 638, 940, 2, 3.6)];
+    // Schritt 5: Obergeschosse nach der Karte "Auxiliary Floors" (Third Floor = 2. OG auf dem Dach, Fourth Floor = 3. OG).
+    // Third-Floor-Zeichnung -> Aussenkarte: px = 394 + (tx - 285) / 1,1, py = 689 + (ty - 460) / 1,1; Fourth Floor = gleiche Lage, 322 px tiefer gezeichnet.
+    const TF = ROOF_Y + 0.3, TF2 = TF + FLOOR_H + 0.3, HP = TF + FLOOR_H + 0.3;
+    const tmp = (tx, ty) => mp(394 + (tx - 285) / 1.1, 689 + (ty - 460) / 1.1);
+    const rectW = (a, b) => { const [xa, za] = a, [xb, zb] = b; return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: Math.min(za, zb), z1: Math.max(za, zb) }; };
+    const THEATRE = rectW(tmp(287.5, 532.5), tmp(467.5, 630));             // Theatre + Storage (2. OG), darueber Observatory (3. OG)
+    const PARLOR = rectW(tmp(122.5, 610), tmp(215, 782.5));                // Parlor II + Martha's Garden (2. OG), darauf der Landeplatz
+    const CORR = rectW(tmp(215, 610), tmp(315, 635));                      // Gang zwischen beiden
+    const THEATRE_DIV = tmp(385, 0)[1], GARDEN_X = tmp(0, 697.5)[0];
+    const TSTAIR = { x0: -37.4, x1: -31.3, z0: 8.9, z1: 13.1 };              // 1. OG -> 2. OG (rote Treppe im Theatre)
+    const OSTAIR = { x0: -37.4, x1: -31.3, z0: 13.5, z1: 17.7 };             // 2. OG -> Observatory
+    // Tiefgarage (Karte "Garage", gleiche Orientierung): SW-Eingang = Rampenende an der Westwand, SW-Ausgang = Rampe an der Ostwand
+    const gmp = (gx, gy) => mp(337 + (gx - 200) * 0.697, 827 + (gy - 166) * 0.697);
+    const GARAGE = [[102.5, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 217.5], [272.5, 217.5], [272.5, 282.5], [230, 282.5], [230, 316], [312.5, 316],
+      [312.5, 441], [102.5, 441], [102.5, 360], [37.5, 360], [37.5, 216], [102.5, 216]].map(([gx, gy]) => gmp(gx, gy));
+    const GSTAIR = { x0: -46.4, x1: -38.6, z0: 14.6, z1: 16.8 };             // Garage -> EG (gerade, steigt nach Westen)
+    const GHOLE = [GSTAIR.x0, -41.6, GSTAIR.z0, GSTAIR.z1];
     {
-      // Boden (EG), Decke/Boden 1. OG, Dach
-      for (const [x0, x1, z0, z1] of rectCover(HOUSE, [SHAFT_OUT])) B(x0, x1, 0, FL0, z0, z1, floorMat);
+      // Boden (EG), Decke/Boden 1. OG, Dach (begehbar, = Boden 2. OG)
+      for (const [x0, x1, z0, z1] of rectCover(HOUSE, [SHAFT_OUT, GHOLE])) B(x0, x1, 0, FL0, z0, z1, floorMat);
       for (const [x0, x1, z0, z1] of rectCover(HOUSE, HOLES_FL1)) B(x0, x1, FL1 - 0.3, FL1, z0, z1, floorMat);
-      for (const [x0, x1, z0, z1] of rectCover(HOUSE)) B(x0, x1, ROOF_Y, ROOF_Y + 0.3, z0, z1, mat.slate, false);
+      for (const [x0, x1, z0, z1] of rectCover(HOUSE, [SHAFT_OUT, [TSTAIR.x0, TSTAIR.x1, TSTAIR.z0, TSTAIR.z1]])) B(x0, x1, ROOF_Y, TF, z0, z1, mat.slate);
       // Aussenwaende entlang jeder Kante (Aussenseite genau auf der Kartenlinie), Sockel, Gurtgesims, Dachgesims
       const wallRects = [], posts = [], rails = [];
       const n = HOUSE.length;
@@ -594,6 +639,8 @@
         const bl = L + s * 0.15, nn = Math.max(1, Math.round((a1 - a0) / 0.9));
         for (let i = 0; i <= nn; i++) { const t = a0 + (a1 - a0) * i / nn; posts.push(axis === "x" ? [t, ROOF_Y + 0.5, bl] : [bl, ROOF_Y + 0.5, t]); }
         rails.push(axis === "x" ? [[a0, bl], [a1, bl], ROOF_Y + 0.5] : [[bl, a0], [bl, a1], ROOF_Y + 0.5]);
+        const q = [L, L + s * 0.4].sort((u, v) => u - v);                   // Dachrand: nicht hinunterfallen
+        if (axis === "x") S(a0, a1, TF, TF + 1.3, q[0], q[1]); else S(q[0], q[1], TF, TF + 1.3, a0, a1);
       }
       // Innenecken: fehlendes Wandquadrat an einspringenden Ecken ergaenzen
       for (const [vx, vz] of HOUSE) for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
@@ -607,7 +654,7 @@
       for (const [p0, p1, q0, q1] of TOWERS_PX) {
         const [xa, za] = mp(p0, q0), [xb, zb] = mp(p1, q1);
         const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb), z0 = Math.min(za, zb), z1 = Math.max(za, zb), top = ROOF_Y + FLOOR_H;
-        B(x0, x1, ROOF_Y, top, z0, z1, mat.facade, false);
+        B(x0, x1, ROOF_Y, top, z0, z1, mat.facade);
         B(x0 - 0.5, x1 + 0.5, top, top + 0.6, z0 - 0.5, z1 + 0.5, stoneLight, false);
         const w = Math.max(x1 - x0, z1 - z0), roof = new THREE.Mesh(new THREE.ConeGeometry(w / 2 * Math.SQRT2, 5, 4, 1).rotateY(Math.PI / 4), mat.slate);
         roof.scale.set((x1 - x0) / w, 1, (z1 - z0) / w); roof.position.set((x0 + x1) / 2, top + 0.6 + 2.5, (z0 + z1) / 2); roof.castShadow = true; world.add(roof);
@@ -618,11 +665,12 @@
         }
       }
       // Grosse Halle in der Mitte: Satteldach aus Glas (wie das Vorbild), Kamine auf dem Dach
-      { const [ga, gb] = [mp(470, 702), mp(534, 882)]; gableRoof(Math.min(ga[0], gb[0]), Math.max(ga[0], gb[0]), Math.min(ga[1], gb[1]), Math.max(ga[1], gb[1]), ROOF_Y + 0.3, 3.6, 0.2, M(0x9fc3d6, { roughness: 0.15, metalness: 0.4 })); }
+      { const [ga, gb] = [mp(470, 702), mp(534, 752)]; gableRoof(Math.min(ga[0], gb[0]), Math.max(ga[0], gb[0]), Math.min(ga[1], gb[1]), Math.max(ga[1], gb[1]), ROOF_Y + 0.3, 3.6, 0.2, M(0x9fc3d6, { roughness: 0.15, metalness: 0.4 })); }
       for (const [cx, cz] of [[-47, 30], [-30, 47], [-12, 37], [-15, 17], [-40, -11], [-55, -2], [-8, -20], [-35, 15], [-50, 42]]) {
         if (!inPoly(HOUSE, cx, cz) || !inPoly(HOUSE, cx + 3, cz + 1)) continue;
+        if ([THEATRE, PARLOR, CORR].some(r => cx > r.x0 - 4 && cx < r.x1 + 1 && cz > r.z0 - 1.5 && cz < r.z1 + 1.5)) continue;
         for (let k = 0; k < 3; k++) B(cx + k * 1.1 - 0.35, cx + k * 1.1 + 0.35, ROOF_Y + 0.3, ROOF_Y + 3 + (k % 2) * 0.6, cz - 0.35, cz + 0.35, stoneLight, false);
-        B(cx - 0.6, cx + 2.8, ROOF_Y + 0.3, ROOF_Y + 2.0, cz - 0.6, cz + 0.6, stoneLight, false);
+        B(cx - 0.6, cx + 2.8, ROOF_Y + 0.3, ROOF_Y + 2.0, cz - 0.6, cz + 0.6, stoneLight);
       }
       // Haupteingang: Vorbau mit Saeulen, Plattform und Stufen; Nebentueren mit drei Stufen
       for (const d of DOORS) {
@@ -669,18 +717,142 @@
       B(STAIR.x0, STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z0 - 0.08, STAIR.z0, mat.trim);
       B(STAIR.x0 - 0.08, STAIR.x0, FL1, FL1 + 1.0, STAIR.z0, STAIR.z1, mat.trim);
 
-      // Aufzugschacht (Waende bis unters Dach, Tueren nach Osten in jedem Geschoss)
-      const [sx0, sx1, sz0, sz1] = SHAFT_OUT, top = ROOF_Y;
-      B(sx0, sx1, 0, top, sz0, SHAFT.z0, mat.dark); B(sx0, sx1, 0, top, SHAFT.z1, sz1, mat.dark); B(sx0, SHAFT.x0, 0, top, SHAFT.z0, SHAFT.z1, mat.dark);
+      // Aufzugschacht (Tueren nach Osten in jedem Halt, ueber dem Dach ein Aufbau)
+      const STOP_Y = [FL0, FL1, TF], SH_TOP = TF + 3.5;
+      const [sx0, sx1, sz0, sz1] = SHAFT_OUT;
+      B(sx0, sx1, 0, SH_TOP, sz0, SHAFT.z0, mat.dark); B(sx0, sx1, 0, SH_TOP, SHAFT.z1, sz1, mat.dark); B(sx0, SHAFT.x0, 0, SH_TOP, SHAFT.z0, SHAFT.z1, mat.dark);
       const dz0 = SHAFT.cz - 1, dz1 = SHAFT.cz + 1;
-      B(SHAFT.x1, sx1, 0, top, SHAFT.z0, dz0, mat.dark); B(SHAFT.x1, sx1, 0, top, dz1, SHAFT.z1, mat.dark);
-      B(SHAFT.x1, sx1, 0, FL0, dz0, dz1, mat.dark);
-      B(SHAFT.x1, sx1, FL0 + 3, FL1, dz0, dz1, mat.dark); B(SHAFT.x1, sx1, FL1 + 3, top, dz0, dz1, mat.dark);
-      for (const y of [FL0, FL1]) B(sx1, sx1 + 0.06, y + 3.2, y + 3.6, SHAFT.cz - 0.6, SHAFT.cz + 0.6, mat.glow, false, world, false);
+      B(SHAFT.x1, sx1, 0, SH_TOP, SHAFT.z0, dz0, mat.dark); B(SHAFT.x1, sx1, 0, SH_TOP, dz1, SHAFT.z1, mat.dark);
+      let yy = 0;
+      for (const sy of STOP_Y) { B(SHAFT.x1, sx1, yy, sy, dz0, dz1, mat.dark); yy = sy + 3; }
+      B(SHAFT.x1, sx1, yy, SH_TOP, dz0, dz1, mat.dark);
+      B(sx0 - 0.2, sx1 + 0.2, SH_TOP, SH_TOP + 0.3, sz0 - 0.2, sz1 + 0.2, stoneLight, false);
+      for (const y of STOP_Y) B(sx1, sx1 + 0.06, y + 3.2, y + 3.4, SHAFT.cz - 0.6, SHAFT.cz + 0.6, mat.glow, false, world, false);
+
+      // U-Treppe (2 x 13 Stufen): Lauf A von x1 nach Westen, Podest, Lauf B zurueck; Gelaender oben ausser am Austritt (x1, Lauf B)
+      function stairU(St, yb, yt, rails = true) {
+        const r = (yt - yb) / 26, tr = 0.3, zA = [St.z0 + 0.1, St.z0 + 2.05], zB = [St.z0 + 2.15, St.z1];
+        for (let i = 0; i < 13; i++) {
+          B(St.x1 - (i + 1) * tr, St.x1 - i * tr, yb, yb + (i + 1) * r, zA[0], zA[1], mat.floorWood);
+          B(St.x1 - (13 - i) * tr, St.x1 - (12 - i) * tr, yb, yb + (14 + i) * r, zB[0], zB[1], mat.floorWood);
+        }
+        B(St.x0 + 0.2, St.x1 - 13 * tr, yb, yb + 13 * r, zA[0], zB[1], mat.floorWood);
+        B(St.x1 - 13 * tr, St.x1, yb, yb + 1.0, zA[1], zB[0], mat.trim);
+        if (!rails) return;
+        B(St.x1, St.x1 + 0.08, yt, yt + 1.0, St.z0, zA[1], mat.trim);
+        B(St.x0 - 0.08, St.x1 + 0.08, yt, yt + 1.0, St.z0 - 0.08, St.z0, mat.trim); B(St.x0 - 0.08, St.x1 + 0.08, yt, yt + 1.0, St.z1, St.z1 + 0.08, mat.trim);
+        B(St.x0 - 0.08, St.x0, yt, yt + 1.0, St.z0, St.z1, mat.trim);
+      }
+      const box4 = (R, holes = []) => rectCover([[R.x0, R.z0], [R.x1, R.z0], [R.x1, R.z1], [R.x0, R.z1]], holes);
+      // Raum: vier Waende (Aussenseite auf dem Rechteck), Oeffnungen je Seite [{ side: "x0"|"x1"|"z0"|"z1", a0, a1, h }]
+      function room(R, y0, y1, open, m, t = 0.5) {
+        const o = side => open.filter(p => p.side === side).map(p => [p.a0, p.a1, y0, y0 + p.h]);
+        wall("x", R.x0, R.x1, R.z0 + t / 2, y0, y1, o("z0"), m, t); wall("x", R.x0, R.x1, R.z1 - t / 2, y0, y1, o("z1"), m, t);
+        wall("z", R.z0 + t, R.z1 - t, R.x0 + t / 2, y0, y1, o("x0"), m, t); wall("z", R.z0 + t, R.z1 - t, R.x1 - t / 2, y0, y1, o("x1"), m, t);
+      }
+
+      // ===== Tiefgarage (Boden GY, Decke = EG-Boden; ausserhalb des Hauses eigene Decke unter dem Rasen) =====
+      for (const [x0, x1, z0, z1] of rectCover(GARAGE)) B(x0, x1, GY - 0.3, GY, z0, z1, mat.floorStone);
+      for (const [x0, x1, z0, z1] of rectCover(GARAGE, [GHOLE])) B(x0, x1, -0.3, -0.02, z0, z1, mat.concrete, false);
+      {
+        const gn = GARAGE.length, gIn = gmp(0, 165)[0], gOut = gmp(0, 441)[0], gz = [gmp(230, 0)[1], gmp(170, 0)[1]];
+        for (let k = 0; k < gn; k++) {
+          const [ax, az] = GARAGE[k], [bx, bz] = GARAGE[(k + 1) % gn];
+          const axis = Math.abs(az - bz) < 1e-6 ? "x" : "z";
+          const a0 = axis === "x" ? Math.min(ax, bx) : Math.min(az, bz), a1 = axis === "x" ? Math.max(ax, bx) : Math.max(az, bz);
+          const L = axis === "x" ? az : ax, mid = (a0 + a1) / 2;
+          const s = (axis === "x" ? inPoly(GARAGE, mid, L + 0.3) : inPoly(GARAGE, L + 0.3, mid)) ? 1 : -1;
+          const open = axis === "z" && (Math.abs(L - gIn) < 0.05 || Math.abs(L - gOut) < 0.05) ? [[gz[0], gz[1], GY, GY + 3.6]] : [];
+          wall(axis, a0, a1, L + s * 0.25, GY, -0.02, open, mat.concrete, 0.5);
+        }
+        // Stellplaetze 1-9 (Karte "Garage"), Linien, Nummern, einige Autos
+        const BAYS = [[1, 259, 390, 299, 412.5], [2, 257.5, 338.5, 297.5, 360], [3, 117.5, 387.5, 157.5, 410], [4, 115, 337.5, 155, 360], [5, 112.5, 279, 152.5, 301],
+          [6, 112.5, 225, 152.5, 247.5], [7, 112.5, 177.5, 152.5, 200], [8, 50, 307.5, 90, 330], [9, 52.5, 253.5, 92.5, 275]];
+        const paint = M(0xeeeeea, { roughness: 0.6 });
+        const carCols = { 1: 0x15171c, 3: 0x8c1d1d, 4: 0x2b4c7e, 6: 0xc9c9c4, 7: 0x1d3b2a, 9: 0x55585e };
+        for (const [no, g0, h0, g1, h1] of BAYS) {
+          const R = rectW(gmp(g0, h0), gmp(g1, h1)), y = GY + 0.005;
+          B(R.x0, R.x1, y, y + 0.01, R.z0, R.z0 + 0.1, paint, false, world, false); B(R.x0, R.x1, y, y + 0.01, R.z1 - 0.1, R.z1, paint, false, world, false);
+          B(R.x0, R.x0 + 0.1, y, y + 0.01, R.z0, R.z1, paint, false, world, false); B(R.x1 - 0.1, R.x1, y, y + 0.01, R.z0, R.z1, paint, false, world, false);
+          const t = canvasTex(64, 64, (g, w, h) => { g.fillStyle = "#3a3d44"; g.fillRect(0, 0, w, h); g.fillStyle = "#f2f2ee"; g.font = "800 48px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(String(no), w / 2, h / 2 + 3); });
+          t.repeat.set(1, 1);
+          const lab = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), flatMat({ map: t }));
+          lab.position.set((R.x0 + R.x1) / 2, GY + 0.02, R.z0 + 0.8); lab.userData.keep = true; world.add(lab);
+          const col = carCols[no];
+          if (col !== undefined) {
+            const cx = (R.x0 + R.x1) / 2, cz = (R.z0 + R.z1) / 2 + 0.2, body = M(col, { metalness: 0.5, roughness: 0.35 });
+            B(cx - 0.9, cx + 0.9, GY + 0.3, GY + 0.95, cz - 2.15, cz + 2.15, body);
+            B(cx - 0.8, cx + 0.8, GY + 0.95, GY + 1.42, cz - 1.0, cz + 0.9, mat.dark, false);
+            for (const sx of [-1, 1]) for (const sz of [-1.4, 1.4]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.24, 12).rotateZ(Math.PI / 2), mat.black); w.position.set(cx + sx * 0.84, GY + 0.33, cz + sz); world.add(w); }
+            B(cx - 0.75, cx - 0.45, GY + 0.6, GY + 0.75, cz + 2.14, cz + 2.17, mat.glow, false, world, false); B(cx + 0.45, cx + 0.75, GY + 0.6, GY + 0.75, cz + 2.14, cz + 2.17, mat.glow, false, world, false);
+          }
+        }
+        // Gym (Bank, Hantelstaender, Laufband), Werkstatt (Hebebuehne, Werkbank)
+        const GYM = rectW(gmp(307.5, 169), gmp(370, 217.5)), WS = rectW(gmp(222.5, 215), gmp(272.5, 282.5));
+        room(GYM, GY, -0.02, [{ side: "x0", a0: GYM.z0 + 1, a1: GYM.z0 + 2.6, h: 2.6 }], mat.concrete, 0.25);
+        { const cx = (GYM.x0 + GYM.x1) / 2, cz = (GYM.z0 + GYM.z1) / 2;
+          B(cx - 0.3, cx + 0.3, GY, GY + 0.5, cz - 1, cz + 1, mat.cloth); B(cx + 1.2, cx + 1.5, GY, GY + 1.8, cz - 1.2, cz + 1.2, mat.steel);
+          B(cx - 2.2, cx - 1.4, GY, GY + 0.3, cz - 1.5, cz + 1.5, mat.dark); }
+        { const cx = (WS.x0 + WS.x1) / 2, cz = (WS.z0 + WS.z1) / 2;
+          for (const sz of [-1.5, 1.5]) B(cx - 1.6, cx - 1.3, GY, GY + 2.2, cz + sz - 0.15, cz + sz + 0.15, mat.steel);
+          B(cx - 1.2, cx + 1.2, GY + 1.2, GY + 1.35, cz - 2.2, cz + 2.2, mat.steel, false);
+          B(WS.x1 - 0.9, WS.x1 - 0.3, GY, GY + 0.95, WS.z0 + 0.5, WS.z1 - 0.5, mat.wood);
+          B(WS.x1 - 0.32, WS.x1 - 0.28, GY + 1.2, GY + 2.4, WS.z0 + 0.5, WS.z1 - 0.5, M(0xb33b2e)); }
+        // Treppe Garage -> EG (26 Stufen, steigt nach Westen), Gelaender oben am Loch
+        const gr = (FL0 - GY) / 26;
+        for (let i = 0; i < 26; i++) B(GSTAIR.x1 - (i + 1) * 0.3, GSTAIR.x1 - i * 0.3, GY, GY + (i + 1) * gr, GSTAIR.z0, GSTAIR.z1, mat.floorStone);
+        B(GHOLE[0], GHOLE[1] + 0.08, FL0, FL0 + 1, GHOLE[2] - 0.08, GHOLE[2], mat.trim); B(GHOLE[0], GHOLE[1] + 0.08, FL0, FL0 + 1, GHOLE[3], GHOLE[3] + 0.08, mat.trim);
+        B(GHOLE[1], GHOLE[1] + 0.08, FL0, FL0 + 1, GHOLE[2], GHOLE[3], mat.trim);
+        // Deckenlampen
+        const ga = GARAGE.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
+        for (let x = ga[0] + 3; x < ga[1]; x += 6) for (let z = ga[2] + 3; z < ga[3]; z += 6) if (inPoly(GARAGE, x, z)) B(x - 0.8, x + 0.8, -0.36, -0.3, z - 0.1, z + 0.1, mat.glow, false, world, false);
+      }
+
+      // ===== 2. OG (Third Floor) und 3. OG (Fourth Floor) auf dem Dach =====
+      {
+        const T = THEATRE, PA = PARLOR, C = CORR, top2 = TF2 + FLOOR_H;
+        // Theatre/Storage, darueber Observatory: zwei Geschosse, Tuer nach Westen (zum Aufzug), Oeffnung zum Gang im Sueden
+        room(T, TF, top2, [{ side: "x0", a0: SHAFT.z0, a1: SHAFT.z1, h: 3 }, { side: "z1", a0: C.x0 + 0.5, a1: C.x1 - 0.5, h: 3 }], mat.facade);
+        for (const [x0, x1, z0, z1] of box4({ x0: T.x0 + 0.5, x1: T.x1 - 0.5, z0: T.z0 + 0.5, z1: T.z1 - 0.5 }, [[OSTAIR.x0, OSTAIR.x1, OSTAIR.z0, OSTAIR.z1]])) B(x0, x1, TF2 - 0.3, TF2, z0, z1, floorMat);
+        B(T.x0 - 0.3, T.x1 + 0.3, top2, top2 + 0.3, T.z0 - 0.3, T.z1 + 0.3, mat.slate);
+        B(T.x0 - 0.4, T.x1 + 0.4, top2 - 0.4, top2, T.z0 - 0.4, T.z1 + 0.4, stoneLight, false);
+        wall("x", T.x0 + 0.5, T.x1 - 0.5, THEATRE_DIV, TF, TF2 - 0.3, [[T.x0 + 3, T.x0 + 4.6, TF, TF + 2.6]], mat.white, 0.25);
+        stairU(TSTAIR, FL1, TF); stairU(OSTAIR, TF, TF2);
+        // Kinosaal: Leinwand an der Trennwand, Sitzreihen; Lager: Regale
+        B(T.x0 + 1, T.x0 + 9, TF + 0.8, TF + 3.6, THEATRE_DIV + 0.13, THEATRE_DIV + 0.18, new THREE.MeshBasicMaterial({ color: 0xe8ecf2 }), false, world, false);
+        for (let z = THEATRE_DIV + 4; z < T.z1 - 2; z += 1.6) B(T.x0 + 1, T.x0 + 9, TF, TF + 0.5 + (z - THEATRE_DIV) * 0.03, z, z + 0.7, mat.carpet, false);
+        for (let x = T.x0 + 1; x < T.x1 - 1; x += 3) { B(x, x + 1.6, TF, TF + 2.4, T.z0 + 0.6, T.z0 + 1.1, mat.wood); }
+        // Observatory: Teleskop, Kuppel auf dem Dach
+        const ox = (T.x0 + T.x1) / 2, oz = (T.z0 + THEATRE_DIV) / 2;
+        { const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 3.2, 14), mat.steel); tube.position.set(ox, TF2 + 1.9, oz); tube.rotation.z = 0.6; tube.castShadow = true; world.add(tube); }
+        cyl(0.3, 0.4, 1.2, mat.dark, ox, TF2 + 0.6, oz); circles.push([ox, oz, 0.5, TF2 + 1.2]);
+        cyl(6.2, 6.2, 1.0, stoneLight, ox, top2 + 0.8, oz, world, 32);
+        { const dome = new THREE.Mesh(new THREE.SphereGeometry(6, 32, 14, 0, Math.PI * 2, 0, Math.PI / 2), M(0xd8dde2, { metalness: 0.5, roughness: 0.35 })); dome.position.set(ox, top2 + 1.3, oz); dome.castShadow = true; world.add(dome); }
+        B(ox - 0.7, ox + 0.7, top2 + 1.3, top2 + 7.2, oz + 5.1, oz + 5.4, mat.dark, false);
+        // Gang zum Parlor
+        wall("z", T.z1, PA.z0, C.x0 + 0.25, TF, TF + FLOOR_H, [], mat.facade, 0.5); wall("z", T.z1, PA.z0, C.x1 - 0.25, TF, TF + FLOOR_H, [], mat.facade, 0.5);
+        B(C.x0 - 0.2, C.x1 + 0.2, TF + FLOOR_H, HP, T.z1, PA.z0, mat.slate);
+        // Parlor II (Stein) und Martha's Garden (Glashaus), Durchgang dazwischen; Dach = Hubschrauberlandeplatz
+        const PL = { x0: PA.x0, x1: GARDEN_X, z0: PA.z0, z1: PA.z1 }, GD = { x0: GARDEN_X, x1: PA.x1, z0: PA.z0, z1: PA.z1 }, mz = (PA.z0 + PA.z1) / 2;
+        room(PL, TF, TF + FLOOR_H, [{ side: "z0", a0: C.x0 + 0.5, a1: C.x1 - 0.5, h: 3 }, { side: "x1", a0: mz - 1, a1: mz + 1, h: 2.8 }], mat.facade);
+        room(GD, TF, TF + FLOOR_H, [{ side: "x0", a0: mz - 1, a1: mz + 1, h: 2.8 }], M(0xbfe3d2, { transparent: true, opacity: 0.35, roughness: 0.1 }), 0.12);
+        for (let x = GD.x0 + 1.5; x < GD.x1 - 1; x += 2.2) for (const z of [GD.z0 + 1.2, GD.z1 - 1.2]) { B(x - 0.5, x + 0.5, TF, TF + 0.6, z - 0.5, z + 0.5, mat.wood); const p = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6, 0), mat.leaves); p.position.set(x, TF + 1.1, z); world.add(p); }
+        B(PL.x0 + 2, PL.x0 + 3, TF, TF + 0.8, mz - 2, mz + 2, mat.cloth); B(PL.x0 + 5, PL.x0 + 6.5, TF, TF + 0.5, mz - 1, mz + 1, mat.wood);
+        B(PA.x0 - 0.2, PA.x1 + 0.2, TF + FLOOR_H, HP, PA.z0 - 0.2, PA.z1 + 0.2, mat.concrete);
+        const hx = (PA.x0 + PA.x1) / 2, hTex = canvasTex(256, 256, (g, w, h) => { g.fillStyle = "#3b3e44"; g.fillRect(0, 0, w, h); g.strokeStyle = "#f2d33b"; g.lineWidth = 10; g.beginPath(); g.arc(128, 128, 110, 0, 7); g.stroke(); g.fillStyle = "#f2f2ee"; g.font = "900 150px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("H", 128, 136); });
+        hTex.repeat.set(1, 1);
+        const pad = new THREE.Mesh(new THREE.PlaneGeometry(13, 13).rotateX(-Math.PI / 2).rotateY(Math.PI / 2), flatMat({ map: hTex })); pad.position.set(hx, HP + 0.02, mz); pad.userData.keep = true; world.add(pad);
+        // Treppe zum Landeplatz (aussen am Gang, steigt nach Sueden), Bruestung um den Landeplatz mit Luecke an der Treppe
+        const HS = { x0: C.x1 + 0.2, x1: C.x1 + 2.2, z1: PA.z0 }, nS = 29, hr = (HP - TF) / nS; HS.z0 = HS.z1 - nS * 0.3;
+        for (let i = 0; i < nS; i++) B(HS.x0, HS.x1, TF, TF + (i + 1) * hr, HS.z0 + i * 0.3, HS.z0 + (i + 1) * 0.3, stoneLight);
+        const par = (x0, x1, z0, z1) => B(x0, x1, HP, HP + 0.7, z0, z1, stoneLight);
+        par(PA.x0 - 0.2, HS.x0, PA.z0 - 0.2, PA.z0 + 0.1); par(HS.x1, PA.x1 + 0.2, PA.z0 - 0.2, PA.z0 + 0.1); par(PA.x0 - 0.2, PA.x1 + 0.2, PA.z1 - 0.1, PA.z1 + 0.2);
+        par(PA.x0 - 0.2, PA.x0 + 0.1, PA.z0, PA.z1); par(PA.x1 - 0.1, PA.x1 + 0.2, PA.z0, PA.z1);
+      }
     }
 
-    // ===================== Aufzug (Halte: EG, 1. OG; die Hoehle kommt in Schritt 8 dazu) =====================
-    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }];
+    // ===================== Aufzug (Halte: EG, 1. OG, Dach/2. OG; die Hoehle kommt in Schritt 8 dazu) =====================
+    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }, { name: "Dach / 2. Obergeschoss", y: TF }];
     const LIFT = { y: FL0, at: 0, target: 0, state: "idle", t: 0, from: FL0, to: FL0, open: STOPS.map((_, i) => i === 0 ? 1 : 0) };
     const car = new THREE.Group();
     car.position.set(SHAFT.cx, FL0, SHAFT.cz);
@@ -787,7 +959,6 @@
     }
 
     // ===================== Aussenanlage (Schritt 4) =====================
-    const flatMat = (o) => M(0xffffff, { roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1, ...o });
     // Strassenbelaege als Texturen: u = quer (0..1), v = laengs (eine Periode)
     const roadTex = {
       road: canvasTex(128, 128, (g, w, h) => {
@@ -812,11 +983,16 @@
     for (const t of Object.values(roadTex)) t.repeat.set(1, 1);
     const roadPeriod = { road: 6, drive: 2.6, ramp: 2.2 };
     // Band entlang einer Kurve, folgt dem Gelaende
-    function ribbon(curve, len, w, material, period, lift = 0.07) {
-      const n = Math.ceil(len / 2), pos = [], uv = [], idx = [];
+    // o.t0/o.t1 = Abschnitt (0..1), o.off = seitlicher Versatz, o.y(d) = feste Hoehe statt Gelaende (Rampe), o.wall = senkrechtes Band von o.y bis o.top
+    function ribbon(curve, len, w, material, period, lift = 0.07, o = {}) {
+      const t0 = o.t0 ?? 0, t1 = o.t1 ?? 1, off = o.off ?? 0, n = Math.max(1, Math.ceil((t1 - t0) * len)), pos = [], uv = [], idx = [];
       for (let i = 0; i <= n; i++) {
-        const t = i / n, p = curve.getPointAt(t), tg = curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z), nx = -tg.z / nl, nz = tg.x / nl;
-        for (const sd of [-1, 1]) { const x = p.x + nx * w / 2 * sd, z = p.z + nz * w / 2 * sd; pos.push(x, Math.max(terrainH(x, z), terrainH(p.x, p.z)) + lift, z); uv.push(sd < 0 ? 0 : 1, t * len / period); }
+        const t = t0 + (t1 - t0) * i / n, p = curve.getPointAt(t), tg = curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z), nx = -tg.z / nl, nz = tg.x / nl;
+        for (const sd of [-1, 1]) {
+          const lat = o.wall ? off : off + w / 2 * sd, x = p.x + nx * lat, z = p.z + nz * lat;
+          const y = o.wall ? (sd < 0 ? o.y(t * len) - 0.2 : o.top) : o.y ? o.y(t * len) + 0.02 : Math.max(terrainH(x, z), terrainH(p.x + nx * off, p.z + nz * off)) + lift;
+          pos.push(x, y, z); uv.push(sd < 0 ? 0 : 1, t * len / period);
+        }
         if (i) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
       }
       const g = new THREE.BufferGeometry();
@@ -828,8 +1004,23 @@
     }
     const lamps = [];
     for (const r of ROADS) {
-      ribbon(r.curve, r.len, r.w, flatMat({ map: roadTex[r.kind], side: THREE.DoubleSide }), roadPeriod[r.kind]);
-      if (r.kind === "ramp") ribbon(r.curve, r.len, r.w + 1.6, flatMat({ color: 0xd6d2c6, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5, side: THREE.DoubleSide }), 4, 0.05);
+      if (r.kind !== "ramp") ribbon(r.curve, r.len, r.w, flatMat({ map: roadTex[r.kind], side: THREE.DoubleSide }), roadPeriod[r.kind]);
+      else {
+        // Rampe: erste RAMP_D Meter fallen zur Tiefgarage ab, mit Stuetzmauern (0,9 m Bruestung) und Steinband ueber dem Grabenrand
+        const td = RAMP_D / r.len, hw = r.w / 2, roadM = flatMat({ map: roadTex.ramp, side: THREE.DoubleSide });
+        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.ramp, 0.07, { t0: 0, t1: td, y: rampY });
+        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.ramp, 0.07, { t0: td, t1: 1 });
+        ribbon(r.curve, r.len, r.w + 1.6, flatMat({ color: 0xd6d2c6, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5, side: THREE.DoubleSide }), 4, 0.05, { t0: td, t1: 1 });
+        const wallM = M(0x9a968c, { side: THREE.DoubleSide, roughness: 0.95 });
+        for (const sd of [-1, 1]) {
+          ribbon(r.curve, r.len, 0, wallM, 3, 0, { t0: 0, t1: td, off: sd * (hw + 0.15), wall: true, y: rampY, top: 0.9 });
+          ribbon(r.curve, r.len, 4.4, flatMat({ color: 0xbdb6a6, side: THREE.DoubleSide }), 4, 0.08, { t0: 0, t1: td, off: sd * (hw + 2.45) });
+          for (let d = 0; d <= RAMP_D; d += 0.6) {
+            const t = d / r.len, p = r.curve.getPointAt(t), tg = r.curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z);
+            circles.push([p.x - tg.z / nl * sd * (hw + 0.2), p.z + tg.x / nl * sd * (hw + 0.2), 0.22]);
+          }
+        }
+      }
       // Laternen beidseitig alle 18 m (wie die Quadrate auf der Karte)
       const n = Math.floor(r.len / 14);
       for (let i = 1; i < n; i++) {
@@ -847,11 +1038,6 @@
       lamps.forEach(([x, y, z], i) => { m4.makeTranslation(x, y, z); pole.setMatrixAt(i, m4); head.setMatrixAt(i, m4); circles.push([x, z, 0.15]); });
       pole.castShadow = true; pole.computeBoundingSphere(); head.computeBoundingSphere();
       scene.add(pole, head);
-    }
-    // Garagentore an den Rampenenden (die Rampen nach unten folgen in Schritt 5/8)
-    {
-      const gIn = mp(0, 827)[0], gInZ = mp(337, 0)[1], gOut = mp(0, 1018)[0], gOutZ = mp(300, 0)[1];
-      B(gIn - 0.25, gIn, FL0, FL0 + 3.8, gInZ - 3.3, gInZ + 3.3, mat.dark, false); B(gOut, gOut + 0.25, FL0, FL0 + 3.8, gOutZ - 3.3, gOutZ + 3.3, mat.dark, false);
     }
 
     // Rondell mit Brunnen, Vorplatz, zwei Baeume (Rondell-Mitte Karte 500 / 1000, aussen 70 px, Brunnen 30 px)
@@ -991,14 +1177,15 @@
     label("N", 0, -260, "#2b6cb0"); label("O", 260, 0, "#c05621"); label("S", 0, 260, "#2f855a"); label("W", -260, 0, "#6b46c1");
 
     // ===================== Tag und Nacht =====================
-    let night = 0, nightTarget = 0;
+    let night = 0, nightTarget = 0, under = 0;                                   // under: 1 = unter der Erde (Tiefgarage), Sonne/Himmel aus, Kunstlicht an
     const SUN_DAYC = new THREE.Color(0xfff2d6), SUN_NIGHTC = new THREE.Color(0x7f9ce8);
     function applyNight() {
       scene.background.copy(SKY_DAY).lerp(SKY_NIGHT, night);
       scene.fog.color.copy(scene.background);
       sun.color.copy(SUN_DAYC).lerp(SUN_NIGHTC, night);
-      sun.intensity = lerp(2.4, 0.5, night);
-      hemi.intensity = lerp(1.0, 0.16, night);
+      sun.intensity = lerp(2.4, 0.5, night) * (1 - under);
+      hemi.intensity = lerp(1.0, 0.16, night) * (1 - 0.8 * under);
+      cave.intensity = 1.1 * under;
       mat.facade.emissiveIntensity = night * 1.2;
       mat.lamp.emissiveIntensity = 0.2 + night * 2.5;
     }
@@ -1033,8 +1220,15 @@
       const far = Math.hypot(p.x, p.z);
       if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
     }
+    // Boden ohne Quader: Rampe, unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
+    function groundAt(x, z, feet = 0) {
+      const ra = rampAt(x, z);
+      if (ra) return ra.y;
+      if (feet < -1 && inPoly(GARAGE, x, z)) return GY - 20;
+      return terrainH(x, z);
+    }
     function supportAt(p, feet) {
-      let top = terrainH(p.x, p.z);
+      let top = groundAt(p.x, p.z, feet);
       for (const s of solids) {
         if (!s.on || s.y1 > feet + STEP || s.y1 <= top) continue;
         if (p.x > s.x0 - 0.05 && p.x < s.x1 + 0.05 && p.z > s.z0 - 0.05 && p.z < s.z1 + 0.05) top = s.y1;
@@ -1049,8 +1243,8 @@
       next.x += (-sin * moveZ + cos * moveX) * speed * dt;
       next.z += (-cos * moveZ - sin * moveX) * speed * dt;
       pushOut(next, player.pos.y);
-      if (supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }   // nicht in tiefes Wasser
-      const g0 = terrainH(player.pos.x, player.pos.z), g1 = terrainH(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
+      if (terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }   // nicht in tiefes Wasser
+      const g0 = groundAt(player.pos.x, player.pos.z, player.pos.y), g1 = groundAt(next.x, next.z, player.pos.y), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
       if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
       player.pos.x = next.x; player.pos.z = next.z;
       const wasGround = player.onGround;
@@ -1080,7 +1274,7 @@
       walking = true;
       document.body.classList.add("walk");
       controls.enabled = false;
-      player.pos.set(x, terrainH(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
+      player.pos.set(x, groundAt(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
       camera.fov = 70; camera.updateProjectionMatrix();
       updatePlayer(0.001, 0, 0, false);
     }
@@ -1160,6 +1354,8 @@
       else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (camera.position.y < gy) camera.position.y = gy; }
       updateLift(dt);
       if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
+      const ut = walking && player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z) ? 1 : 0;
+      if (ut !== under) { under = ut > under ? Math.min(1, under + dt * 2) : Math.max(0, under - dt * 2); applyNight(); }
       const rn = night < nightTarget ? Math.min(nightTarget, night + dt * 0.8) : Math.max(nightTarget, night - dt * 0.8);
       if (rn !== night) { night = rn; applyNight(); }
       const focus = walking ? player.pos : controls.target;
@@ -1201,7 +1397,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
