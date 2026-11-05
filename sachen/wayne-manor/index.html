@@ -63,6 +63,7 @@
   </div>
 
   <div class="hud">
+    <button type="button" id="btn-lift">Aufzug (E)</button>
     <button type="button" id="btn-exit">Beenden (Esc)</button>
   </div>
   <div id="cross"></div>
@@ -262,7 +263,7 @@
     const fbm = (x, z) => vnoise(x, z) * 0.53 + vnoise(x * 2.1 + 17, z * 2.1 + 5) * 0.29 + vnoise(x * 4.3 + 3, z * 4.3 + 41) * 0.18;
     const LAKES = [
       { name: "Northwest Lake", cx: -238, cz: -110, rx: 44, rz: 70, s: 1.0, depth: 4 },
-      { name: "Mideast Lake", cx: 180, cz: 187, rx: 52, rz: 55, s: 2.3, depth: 4 },
+      { name: "Mideast Lake", cx: 205, cz: 205, rx: 88, rz: 82, s: 2.3, depth: 5 },   // gross: hier kommt der Wasserweg der Hoehle heraus (Lake Exit)
       { name: "Wasserfall-Teich", cx: -198, cz: -251, rx: 16, rz: 12, s: 4.1, depth: 2.5 }
     ];
     const wob = (L, a) => 1 + 0.12 * Math.sin(3 * a + L.s) + 0.07 * Math.sin(5 * a + 2 * L.s) + 0.04 * Math.sin(8 * a + 3 * L.s);
@@ -419,6 +420,264 @@
       new THREE.MeshBasicMaterial({ map: mapTex, transparent: true, opacity: 0.9, depthWrite: false }));
     { const [cx, cz] = mp(MAP_W / 2, (MAP_Y0 + MAP_H) / 2); mapMesh.position.set(cx, 0.06, cz); }
     scene.add(mapMesh);
+
+    // ===================== Haus-Huelle (Schritt 3) =====================
+    // Umriss = rote Linie der Exterior-Grounds-Karte (Pixel px/py). Zwei Geschosse, Flachdach mit Balustrade,
+    // sechs Ecktuerme mit Pyramidendach, Glas-Satteldach ueber der Halle. Innen leer bis auf Aufzug und Treppe.
+    const HOUSE_PX = [[394, 689], [423, 689], [423, 703], [466, 703], [466, 696], [537, 696], [537, 703], [581, 703], [581, 689], [610, 689], [610, 722], [581, 722],
+      [581, 862], [607, 862], [607, 895], [638, 895], [638, 992], [643, 992], [643, 1022], [613, 1022], [613, 992], [597, 992], [597, 895], [580, 895], [580, 880],
+      [537, 880], [537, 887], [467, 887], [467, 878], [425, 878], [425, 893], [407, 893], [407, 993], [390, 993], [390, 1023], [362, 1023], [362, 1018], [228, 1018],
+      [228, 1023], [197, 1023], [197, 993], [203, 993], [203, 950], [197, 950], [197, 865], [203, 865], [203, 820], [195, 820], [195, 792], [223, 792], [223, 800],
+      [297, 800], [297, 827], [398, 827], [398, 722], [394, 722]];
+    const HOUSE = HOUSE_PX.map(([px, py]) => mp(px, py));                   // [x, z]
+    const TOWERS_PX = [[394, 423, 689, 722], [581, 610, 689, 722], [613, 643, 992, 1022], [197, 228, 993, 1023], [362, 390, 993, 1023], [195, 223, 792, 820]];
+    const FL0 = 0.6, FLOOR_H = 4.7, FL1 = FL0 + FLOOR_H, ROOF_Y = FL0 + 2 * FLOOR_H, WT = 0.8, TILE_W = 6.25;
+    function inPoly(poly, x, z) {
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, zi] = poly[i], [xj, zj] = poly[j];
+        if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside;
+      }
+      return inside;
+    }
+    // Flaeche in Rechtecke zerlegen (fuer Boeden/Decken als Kollisionsquader), Loecher [x0, x1, z0, z1]
+    function rectCover(poly, holes = []) {
+      const uniq = a => [...new Set(a.map(v => Math.round(v * 100) / 100))].sort((p, q) => p - q);
+      const xs = uniq([...poly.map(p => p[0]), ...holes.flatMap(h => [h[0], h[1]])]), zs = uniq([...poly.map(p => p[1]), ...holes.flatMap(h => [h[2], h[3]])]);
+      const rows = [];
+      for (let j = 0; j < zs.length - 1; j++) {
+        const cz = (zs[j] + zs[j + 1]) / 2, row = [];
+        let run = null;
+        for (let i = 0; i < xs.length - 1; i++) {
+          const cx = (xs[i] + xs[i + 1]) / 2, inside = inPoly(poly, cx, cz) && !holes.some(h => cx > h[0] && cx < h[1] && cz > h[2] && cz < h[3]);
+          if (inside) { if (run) run[1] = xs[i + 1]; else run = [xs[i], xs[i + 1], zs[j], zs[j + 1]]; }
+          else if (run) { row.push(run); run = null; }
+        }
+        if (run) row.push(run);
+        rows.push(row);
+      }
+      // gleiche Streifen untereinander zusammenlegen
+      const out = [];
+      let open = [];
+      for (const row of rows) {
+        const next = [];
+        for (const r of row) {
+          const prev = open.find(o => o[0] === r[0] && o[1] === r[1] && o[3] === r[2]);
+          if (prev) { prev[3] = r[3]; next.push(prev); } else { out.push(r); next.push(r); }
+        }
+        open = next;
+      }
+      return out;
+    }
+    const stoneLight = M(0xdccdaa, { roughness: 0.85 });
+    const facadeTex = lit => canvasTex(256, 200, (g, w, h) => {
+      if (!lit) {
+        g.fillStyle = "#cdb68c"; g.fillRect(0, 0, w, h);
+        g.strokeStyle = "rgba(90,70,40,.22)"; g.lineWidth = 1;
+        for (let y = 0; y < h; y += 19) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); for (let x = ((y / 19) % 2 ? 0 : 20); x < w; x += 40) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 19); g.stroke(); } }
+        for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(${100 + r1() * 60},${80 + r1() * 40},40,${r1() * 0.08})`; g.fillRect(r1() * w, r1() * h, 6 + r1() * 14, 3 + r1() * 8); }
+      } else { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); }
+      for (const cx of [64, 192]) {
+        const x0 = cx - 33, y0 = 45, ww = 66, hh = 111;
+        if (!lit) { g.fillStyle = "#e8dcc0"; g.fillRect(x0 - 6, y0 - 6, ww + 12, hh + 12); g.fillStyle = "#b9a67a"; g.fillRect(x0 - 6, y0 - 11, ww + 12, 5); }
+        g.fillStyle = lit ? "#ffcf7a" : "#1d2b3b"; g.fillRect(x0, y0, ww, hh);
+        g.fillStyle = lit ? "#000" : "#e1d4b4"; g.fillRect(cx - 1.5, y0, 3, hh); g.fillRect(x0, y0 + hh * 0.36, ww, 3); g.fillRect(x0, y0 + hh * 0.66, ww, 3);
+      }
+    }, 1 / TILE_W, 1 / FLOOR_H);
+    mat.facade = M(0xffffff, { map: facadeTex(false), emissiveMap: facadeTex(true), emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.9 });
+    const floorMat = M(0xb9ab92, { map: texClone(marbleTex, 1 / 2.4, 1 / 2.4), roughness: 0.45 });
+
+    // Aufzug und Treppe (Lage aus dem Hausumriss-Overlay der Hoehlenkarte "Upper Level": Westfluegel, suedoestlich vom Turm)
+    const SHAFT = { x0: -108.9, x1: -105.5, z0: 31.9, z1: 35.3 };
+    SHAFT.cx = (SHAFT.x0 + SHAFT.x1) / 2; SHAFT.cz = (SHAFT.z0 + SHAFT.z1) / 2;
+    const SHAFT_OUT = [SHAFT.x0 - 0.2, SHAFT.x1 + 0.2, SHAFT.z0 - 0.2, SHAFT.z1 + 0.2];
+    const STAIR = { x0: -109.1, x1: -103, z0: 35.7, z1: 40.0 };
+    const HOLES_FL1 = [[STAIR.x0, STAIR.x1, STAIR.z0, STAIR.z1], [SHAFT_OUT[0], SHAFT_OUT[1], SHAFT_OUT[2], STAIR.z0]];
+    // Tueren: Haupteingang (Osten, zum Rondell), Nordtuer (zur Veranda), Suedtuer (zum Pool)
+    const DOORS = [
+      { axis: "z", line: -43.2, a0: -2.5, a1: 2.5, h: 4.6, porch: true },
+      { axis: "x", line: -32.4, a0: -84, a1: -80, h: 3.6 },
+      { axis: "x", line: 121.2, a0: -37.5, a1: -33.5, h: 3.6 }
+    ];
+    {
+      // Boden (EG), Decke/Boden 1. OG, Dach
+      for (const [x0, x1, z0, z1] of rectCover(HOUSE, [SHAFT_OUT])) B(x0, x1, 0, FL0, z0, z1, floorMat);
+      for (const [x0, x1, z0, z1] of rectCover(HOUSE, HOLES_FL1)) B(x0, x1, FL1 - 0.3, FL1, z0, z1, floorMat);
+      for (const [x0, x1, z0, z1] of rectCover(HOUSE)) B(x0, x1, ROOF_Y, ROOF_Y + 0.3, z0, z1, mat.slate, false);
+      // Aussenwaende entlang jeder Kante (Aussenseite genau auf der Kartenlinie), Sockel, Gurtgesims, Dachgesims
+      const wallRects = [], posts = [], rails = [];
+      const n = HOUSE.length;
+      for (let k = 0; k < n; k++) {
+        const [ax, az] = HOUSE[k], [bx, bz] = HOUSE[(k + 1) % n];
+        const axis = Math.abs(az - bz) < 1e-6 ? "x" : "z";
+        const a0 = axis === "x" ? Math.min(ax, bx) : Math.min(az, bz), a1 = axis === "x" ? Math.max(ax, bx) : Math.max(az, bz);
+        const L = axis === "x" ? az : ax, mid = (a0 + a1) / 2;
+        const s = (axis === "x" ? inPoly(HOUSE, mid, L + 0.5) : inPoly(HOUSE, L + 0.5, mid)) ? 1 : -1;   // Richtung nach innen
+        const open = DOORS.filter(d => d.axis === axis && Math.abs(d.line - L) < 0.01 && d.a0 >= a0 && d.a1 <= a1).map(d => [d.a0, d.a1, FL0, FL0 + d.h]);
+        wall(axis, a0, a1, L + s * WT / 2, FL0, ROOF_Y, open, mat.facade, WT);
+        wallRects.push(axis === "x" ? [a0, a1, Math.min(L, L + s * WT), Math.max(L, L + s * WT)] : [Math.min(L, L + s * WT), Math.max(L, L + s * WT), a0, a1]);
+        const band = (out, y0, y1, ext) => {
+          const p = [L - s * out, L + s * WT].sort((u, v) => u - v);
+          if (axis === "x") B(a0 - ext, a1 + ext, y0, y1, p[0], p[1], stoneLight, false); else B(p[0], p[1], y0, y1, a0 - ext, a1 + ext, stoneLight, false);
+        };
+        band(0.12, 0, FL0, 0.12);
+        band(0.18, FL1 - 0.25, FL1 + 0.05, 0.18);
+        band(0.45, ROOF_Y, ROOF_Y + 0.5, 0.45);
+        // Balustrade auf dem Dachrand
+        const bl = L + s * 0.15, nn = Math.max(1, Math.round((a1 - a0) / 0.9));
+        for (let i = 0; i <= nn; i++) { const t = a0 + (a1 - a0) * i / nn; posts.push(axis === "x" ? [t, ROOF_Y + 0.5, bl] : [bl, ROOF_Y + 0.5, t]); }
+        rails.push(axis === "x" ? [[a0, bl], [a1, bl], ROOF_Y + 0.5] : [[bl, a0], [bl, a1], ROOF_Y + 0.5]);
+      }
+      // Innenecken: fehlendes Wandquadrat an einspringenden Ecken ergaenzen
+      for (const [vx, vz] of HOUSE) for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+        const cx = vx + sx * WT / 2, cz = vz + sz * WT / 2;
+        if (!inPoly(HOUSE, cx, cz) || wallRects.some(r => cx > r[0] && cx < r[1] && cz > r[2] && cz < r[3])) continue;
+        const near = [[vx + sx * 1.5, vz], [vx, vz + sz * 1.5]].every(([x, z]) => inPoly(HOUSE, x, z));
+        if (!near) continue;
+        B(Math.min(vx, vx + sx * WT), Math.max(vx, vx + sx * WT), FL0, ROOF_Y, Math.min(vz, vz + sz * WT), Math.max(vz, vz + sz * WT), mat.facade);
+      }
+      // Ecktuerme: ein Geschoss hoeher, Gesims, Pyramidendach mit Spitze, vier Tuermchen
+      for (const [p0, p1, q0, q1] of TOWERS_PX) {
+        const [xa, za] = mp(p0, q0), [xb, zb] = mp(p1, q1);
+        const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb), z0 = Math.min(za, zb), z1 = Math.max(za, zb), top = ROOF_Y + FLOOR_H;
+        B(x0, x1, ROOF_Y, top, z0, z1, mat.facade, false);
+        B(x0 - 0.5, x1 + 0.5, top, top + 0.6, z0 - 0.5, z1 + 0.5, stoneLight, false);
+        const w = Math.max(x1 - x0, z1 - z0), roof = new THREE.Mesh(new THREE.ConeGeometry(w / 2 * Math.SQRT2, 7, 4, 1).rotateY(Math.PI / 4), mat.slate);
+        roof.scale.set((x1 - x0) / w, 1, (z1 - z0) / w); roof.position.set((x0 + x1) / 2, top + 0.6 + 3.5, (z0 + z1) / 2); roof.castShadow = true; world.add(roof);
+        cyl(0.05, 0.25, 1.6, mat.gold, (x0 + x1) / 2, top + 7.9, (z0 + z1) / 2, world, 8);
+        for (const cx of [x0 + 0.3, x1 - 0.3]) for (const cz of [z0 + 0.3, z1 - 0.3]) {
+          cyl(0.6, 0.6, 2.6, stoneLight, cx, top + 1.9, cz, world, 10);
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.2, 10), mat.slate); cone.position.set(cx, top + 4.3, cz); cone.castShadow = true; world.add(cone);
+        }
+      }
+      // Grosse Halle in der Mitte: Satteldach aus Glas (wie das Vorbild), Kamine auf dem Dach
+      gableRoof(-116, -48, -12.5, 12.5, ROOF_Y + 0.3, 6, 0.3, M(0x9fc3d6, { roughness: 0.15, metalness: 0.4, emissive: 0xffd27a, emissiveIntensity: 0 }));
+      for (const [cx, cz] of [[-95, 60], [-60, 95], [-25, 75], [-30, 35], [-80, -22], [-110, -5], [-15, -40], [-70, 30], [-100, 85]]) {
+        if (!inPoly(HOUSE, cx, cz) || !inPoly(HOUSE, cx + 4, cz + 1)) continue;
+        for (let k = 0; k < 3; k++) B(cx + k * 1.4 - 0.45, cx + k * 1.4 + 0.45, ROOF_Y + 0.3, ROOF_Y + 4 + (k % 2), cz - 0.45, cz + 0.45, stoneLight, false);
+        B(cx - 0.7, cx + 3.5, ROOF_Y + 0.3, ROOF_Y + 2.6, cz - 0.7, cz + 0.7, stoneLight, false);
+      }
+      // Haupteingang: Vorbau mit Saeulen, Plattform und Stufen; Nebentueren mit drei Stufen
+      for (const d of DOORS) {
+        if (d.porch) {
+          const px0 = d.line, px1 = d.line + 7;
+          B(px0, px1, 0, FL0, -7, 7, stoneLight);
+          B(px1, px1 + 0.7, 0, 0.4, -7, 7, stoneLight); B(px1 + 0.7, px1 + 1.4, 0, 0.2, -7, 7, stoneLight);
+          for (const z of [-6.3, -2.9, 2.9, 6.3]) { cyl(0.42, 0.48, FL1 - 0.4 - FL0, stoneLight, px1 - 0.6, (FL0 + FL1 - 0.4) / 2, z, world, 14); circles.push([px1 - 0.6, z, 0.5]); }
+          B(px0, px1 + 0.2, FL1 - 0.4, FL1, -7.4, 7.4, stoneLight, false);
+          for (const [a, b] of [[[px0, -7.2], [px1, -7.2]], [[px1, -7.2], [px1, 7.2]], [[px0, 7.2], [px1, 7.2]]]) {
+            const len = Math.hypot(b[0] - a[0], b[1] - a[1]), nn = Math.round(len / 0.9);
+            for (let i = 0; i <= nn; i++) posts.push([a[0] + (b[0] - a[0]) * i / nn, FL1, a[1] + (b[1] - a[1]) * i / nn]);
+            rails.push([a, b, FL1]);
+          }
+          continue;
+        }
+        const out = -Math.sign(inPoly(HOUSE, d.a0 + 0.5, d.line + 0.5) ? 1 : -1);   // nach aussen (nur Achse x)
+        for (let k = 0; k < 3; k++) {
+          const z0 = d.line + out * k * 0.4, z1 = d.line + out * (k + 1) * 0.4;
+          B(d.a0 - 0.6, d.a1 + 0.6, 0, FL0 - k * 0.2, Math.min(z0, z1), Math.max(z0, z1), stoneLight);
+        }
+      }
+      // Balustraden als Instanzen
+      const postM = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.11, 0.13, 1.0, 6), stoneLight, posts.length);
+      const m4 = new THREE.Matrix4();
+      posts.forEach(([x, y, z], i) => { m4.makeTranslation(x, y + 0.5, z); postM.setMatrixAt(i, m4); });
+      const railM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.14, 0.26), stoneLight, rails.length);
+      const qq = new THREE.Quaternion(), vv = new THREE.Vector3(), ss = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+      rails.forEach(([a, b, y], i) => { const len = Math.hypot(b[0] - a[0], b[1] - a[1]); qq.setFromAxisAngle(up, -Math.atan2(b[1] - a[1], b[0] - a[0])); m4.compose(vv.set((a[0] + b[0]) / 2, y + 1.0, (a[1] + b[1]) / 2), qq, ss.set(len + 0.26, 1, 1)); railM.setMatrixAt(i, m4); });
+      postM.castShadow = railM.castShadow = true;
+      world.add(postM, railM);
+
+      // Treppe EG -> 1. OG (U-Form, 2 x 13 Stufen): Lauf 1 nach Westen, Podest, Lauf 2 zurueck nach Osten
+      const r = FLOOR_H / 26, tread = 0.3, zA = [STAIR.z0 + 0.1, STAIR.z0 + 2.05], zB = [STAIR.z0 + 2.15, STAIR.z1];
+      for (let i = 0; i < 13; i++) {
+        B(STAIR.x1 - (i + 1) * tread, STAIR.x1 - i * tread, FL0, FL0 + (i + 1) * r, zA[0], zA[1], mat.floorWood);
+        B(STAIR.x1 - (13 - i) * tread, STAIR.x1 - (12 - i) * tread, FL0, FL0 + (14 + i) * r, zB[0], zB[1], mat.floorWood);
+      }
+      B(STAIR.x0 + 0.2, STAIR.x1 - 13 * tread, FL0, FL0 + 13 * r, zA[0], zB[1], mat.floorWood);
+      B(STAIR.x1 - 13 * tread, STAIR.x1, FL0, FL0 + 1.0, zA[1], zB[0], mat.trim);                               // Wange zwischen den Laeufen
+      // Gelaender oben um das Treppenloch (ausser am Austritt)
+      B(STAIR.x1, STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z0, zA[1], mat.trim);
+      B(SHAFT_OUT[1], STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z0 - 0.08, STAIR.z0, mat.trim);
+      B(STAIR.x0 - 0.08, STAIR.x0, FL1, FL1 + 1.0, STAIR.z0, STAIR.z1, mat.trim);
+
+      // Aufzugschacht (Waende bis unters Dach, Tueren nach Osten in jedem Geschoss)
+      const [sx0, sx1, sz0, sz1] = SHAFT_OUT, top = ROOF_Y;
+      B(sx0, sx1, 0, top, sz0, SHAFT.z0, mat.dark); B(sx0, sx1, 0, top, SHAFT.z1, sz1, mat.dark); B(sx0, SHAFT.x0, 0, top, SHAFT.z0, SHAFT.z1, mat.dark);
+      const dz0 = SHAFT.cz - 1, dz1 = SHAFT.cz + 1;
+      B(SHAFT.x1, sx1, 0, top, SHAFT.z0, dz0, mat.dark); B(SHAFT.x1, sx1, 0, top, dz1, SHAFT.z1, mat.dark);
+      B(SHAFT.x1, sx1, 0, FL0, dz0, dz1, mat.dark);
+      B(SHAFT.x1, sx1, FL0 + 3, FL1, dz0, dz1, mat.dark); B(SHAFT.x1, sx1, FL1 + 3, top, dz0, dz1, mat.dark);
+      for (const y of [FL0, FL1]) B(sx1, sx1 + 0.06, y + 3.2, y + 3.6, SHAFT.cz - 0.6, SHAFT.cz + 0.6, mat.glow, false, world, false);
+    }
+
+    // ===================== Aufzug (Halte: EG, 1. OG; die Hoehle kommt in Schritt 8 dazu) =====================
+    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }];
+    const LIFT = { y: FL0, at: 0, target: 0, state: "idle", t: 0, from: FL0, to: FL0, open: STOPS.map((_, i) => i === 0 ? 1 : 0) };
+    const car = new THREE.Group();
+    car.position.set(SHAFT.cx, FL0, SHAFT.cz);
+    car.userData.dynamic = true;
+    world.add(car);
+    const carFloor = S(SHAFT.x0 + 0.05, SHAFT.x1 - 0.05, FL0 - 0.15, FL0, SHAFT.z0 + 0.05, SHAFT.z1 - 0.05);
+    {
+      const h = (SHAFT.x1 - SHAFT.x0) / 2 - 0.05;
+      B(-h, h, -0.15, 0, -h, h, mat.steel, false, car);
+      B(-h, -h + 0.08, 0, 2.9, -h, h, mat.glass, false, car, false); B(-h, h, 0, 2.9, -h, -h + 0.08, mat.glass, false, car, false); B(-h, h, 0, 2.9, h - 0.08, h, mat.glass, false, car, false);
+      for (const x of [-h, h - 0.1]) for (const z of [-h, h - 0.1]) B(x, x + 0.1, 0, 2.95, z, z + 0.1, mat.gold, false, car);
+      B(-h, h, 2.9, 3.05, -h, h, mat.dark, false, car); B(-0.9, 0.9, 2.86, 2.9, -0.9, 0.9, mat.glow, false, car, false);
+      B(-h + 0.08, -h + 0.16, 1.0, 1.1, -1.1, 1.1, mat.gold, false, car);
+    }
+    const doorG = new THREE.Group(); doorG.userData.dynamic = true; world.add(doorG);
+    const doorPanels = [], doorSolid = [];
+    STOPS.forEach((st, i) => {
+      doorPanels[i] = [-1, 1].map(s => {
+        const zc = SHAFT.cz + s * 0.5, m = B(SHAFT.x1 + 0.02, SHAFT.x1 + 0.16, st.y, st.y + 3, zc - 0.5, zc + 0.5, mat.steel, false, doorG);
+        m.userData.base = zc; m.userData.s = s;
+        return m;
+      });
+      doorSolid[i] = S(SHAFT.x1, SHAFT.x1 + 0.2, st.y, st.y + 3, SHAFT.cz - 1, SHAFT.cz + 1, i !== 0);
+    });
+    function applyLift() {
+      car.position.y = LIFT.y;
+      Object.assign(carFloor, { y0: LIFT.y - 0.15, y1: LIFT.y });
+      STOPS.forEach((_, i) => {
+        const o = LIFT.open[i];
+        for (const m of doorPanels[i]) m.position.z = m.userData.base + m.userData.s * o * 0.95;
+        doorSolid[i].on = o < 0.7;
+      });
+    }
+    function updateLift(dt) {
+      const L = LIFT;
+      if (L.state === "idle" && L.target !== L.at) L.state = "closing";
+      if (L.state === "closing") {
+        L.open[L.at] = Math.max(0, L.open[L.at] - dt / 0.9);
+        if (L.open[L.at] <= 0) { L.state = "moving"; L.t = 0; L.from = L.y; L.to = STOPS[L.target].y; }
+      } else if (L.state === "moving") {
+        L.t = Math.min(1, L.t + dt / Math.max(2.5, Math.abs(L.to - L.from) / 1.6));
+        L.y = lerp(L.from, L.to, sst(0, 1, L.t));
+        if (L.t >= 1) { L.at = L.target; L.state = "opening"; }
+      } else if (L.state === "opening") {
+        L.open[L.at] = Math.min(1, L.open[L.at] + dt / 0.9);
+        if (L.open[L.at] >= 1) L.state = "idle";
+      }
+      applyLift();
+    }
+    applyLift();
+    const inCar = p => p.x > SHAFT.x0 && p.x < SHAFT.x1 && p.z > SHAFT.z0 && p.z < SHAFT.z1 && Math.abs(p.y - LIFT.y) < 1.5;
+    let toastTimer = 0;
+    function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1800); }
+    // Bedienung: im Fahrstuhl = naechster Halt, davor = herrufen
+    function useLift() {
+      const L = LIFT;
+      if (L.state !== "idle") return toast("Aufzug ist unterwegs");
+      const p = player.pos;
+      if (!walking || inCar(p)) { L.target = (L.at + 1) % STOPS.length; return toast("Fahrt ins " + STOPS[L.target].name); }
+      const here = STOPS.findIndex(st => Math.abs(p.y - st.y) < 2.5);
+      if (here < 0 || Math.hypot(p.x - (SHAFT.x1 + 2), p.z - SHAFT.cz) > 7) return toast("Zu weit vom Aufzug entfernt");
+      if (L.at === here) return toast("Der Aufzug ist schon da");
+      L.target = here; toast("Der Aufzug kommt");
+    }
+
     // Himmelsrichtungen als Pfosten mit Schild (N = -z, O = +x, S = +z, W = -x), Nullpunkt rot
     function label(text, x, z, color) {
       const tex = canvasTex(128, 128, (g, w, h) => { g.fillStyle = color; g.beginPath(); g.arc(64, 64, 58, 0, 7); g.fill(); g.fillStyle = "#fff"; g.font = "800 72px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 64, 70); });
@@ -441,6 +700,7 @@
       sun.color.copy(SUN_DAYC).lerp(SUN_NIGHTC, night);
       sun.intensity = lerp(2.4, 0.5, night);
       hemi.intensity = lerp(1.0, 0.16, night);
+      mat.facade.emissiveIntensity = night * 1.2;
     }
     applyNight();
 
@@ -520,7 +780,7 @@
       walking = true;
       document.body.classList.add("walk");
       controls.enabled = false;
-      player.pos.set(x, terrainH(x, z), z); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
+      player.pos.set(x, terrainH(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
       camera.fov = 70; camera.updateProjectionMatrix();
       updatePlayer(0.001, 0, 0, false);
     }
@@ -536,6 +796,7 @@
     $("btn-walk-low").addEventListener("click", () => startWalk());
     $("btn-walk-top").addEventListener("click", e => { mapMesh.visible = !mapMesh.visible; e.currentTarget.setAttribute("aria-pressed", String(mapMesh.visible)); });
     $("btn-exit").addEventListener("click", () => setWalk(false));
+    $("btn-lift").addEventListener("click", useLift);
     renderer.domElement.addEventListener("mousedown", e => {
       if (!walking || touch || e.button !== 0) return;
       e.preventDefault();
@@ -549,6 +810,7 @@
     addEventListener("keydown", e => {
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
+      if (e.code === "KeyE" && !e.repeat) return useLift();
       keys.add(e.code);
       if (e.code === "Space") { player.jump = true; e.preventDefault(); }
     });
@@ -595,6 +857,8 @@
       const dt = Math.min(clock.getDelta(), 0.05);
       if (walking) walkStep(dt);
       else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (camera.position.y < gy) camera.position.y = gy; }
+      updateLift(dt);
+      if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const rn = night < nightTarget ? Math.min(nightTarget, night + dt * 0.8) : Math.max(nightTarget, night - dt * 0.8);
       if (rn !== night) { night = rn; applyNight(); }
       const focus = walking ? player.pos : controls.target;
@@ -604,12 +868,39 @@
       renderer.render(scene, camera);
       requestAnimationFrame(frame);
     }
+    // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
+    {
+      scene.updateMatrixWorld(true);
+      const groups = new Map(), gone = [];
+      scene.traverse(o => {
+        if (!o.isMesh || o.isInstancedMesh || o.userData.keep) return;
+        const m = o.material;
+        if (Array.isArray(m) || m.transparent || m.vertexColors) return;
+        for (let q = o.parent; q; q = q.parent) if (q.userData.dynamic) return;
+        const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        for (const k of Object.keys(g.attributes)) if (k !== "position" && k !== "normal" && k !== "uv") g.deleteAttribute(k);
+        if (!g.attributes.normal) g.computeVertexNormals();
+        if (!g.attributes.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+        g.applyMatrix4(o.matrixWorld);
+        const key = m.uuid + (o.castShadow ? "c" : "") + (o.receiveShadow ? "r" : "");
+        if (!groups.has(key)) groups.set(key, { m, cast: o.castShadow, recv: o.receiveShadow, list: [] });
+        groups.get(key).list.push(g);
+        gone.push(o);
+      });
+      for (const o of gone) { o.parent.remove(o); o.geometry.dispose(); }
+      for (const { m, cast, recv, list } of groups.values()) {
+        const merged = new THREE.Mesh(mergeGeometries(list, false), m);
+        merged.castShadow = cast; merged.receiveShadow = recv;
+        scene.add(merged);
+        list.forEach(g => g.dispose());
+      }
+    }
     requestAnimationFrame(() => { $("loading").remove(); });
     frame();
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
