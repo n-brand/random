@@ -11,7 +11,7 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: #0b0d12; color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
     canvas { display: block; touch-action: none; }
-    /* PC: Fadenkreuz nur, solange die linke Maustaste gehalten wird */
+    /* PC: Fadenkreuz nur, solange die Maus uebernommen ist (Linksklick an/aus) */
     body.walk:not(.touch):not(.looking) .crosshair { display: none; }
     body.looking canvas { cursor: none; }
     .bar {
@@ -95,6 +95,11 @@
       background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; font-weight: 700;
       touch-action: none;
     }
+    .toast {
+      position: fixed; left: 50%; top: 18%; transform: translateX(-50%); padding: 8px 16px; border-radius: 10px;
+      background: var(--panel); color: var(--text); font-weight: 600; pointer-events: none; opacity: 0; transition: opacity .2s;
+    }
+    .toast.show { opacity: 1; }
     .touch-only { display: none !important; }
     body.touch.walk .touch-only { display: block !important; }
     body.touch.walk .keys, body.touch.walk .crosshair { display: none; }
@@ -128,7 +133,8 @@
 
   <div class="walk-ui">
     <div class="crosshair"></div>
-    <div class="keys" id="keys">WASD laufen &middot; Linke Maustaste halten = Fadenkreuz, Maus bewegen zum Schauen &middot; Leertaste springen &middot; Shift rennen &middot; Esc verlassen</div>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="keys" id="keys">WASD laufen &middot; Linksklick = Maus übernehmen (nochmal Linksklick = frei) &middot; Leertaste springen &middot; Shift rennen &middot; E Mausempfindlichkeit &middot; Esc verlassen</div>
     <div class="stick left touch-only" id="stick-move" aria-label="Laufen"><span></span></div>
     <div class="stick right touch-only" id="stick-look" aria-label="Schauen"><span></span></div>
     <button type="button" class="jump touch-only" id="btn-jump">Sprung</button>
@@ -762,24 +768,38 @@
     document.getElementById("btn-walk").addEventListener("click", () => setWalk(true));
     document.getElementById("btn-exit").addEventListener("click", () => setWalk(false));
 
-    // PC: Solange die linke Maustaste gedrueckt ist, wird die Maus zum Fadenkreuz (Pointer Lock, Zeiger weg);
-    // loslassen gibt den Zeiger wieder frei. Ohne Pointer Lock wird einfach gezogen.
+    // PC: Linksklick uebernimmt die Maus (Pointer Lock, Fadenkreuz, Zeiger weg), erneuter Linksklick gibt sie frei
+    // Taste E: Mausempfindlichkeit durchschalten, Auswahl bleibt im Browser gespeichert
+    const SENS = [0.4, 0.6, 0.8, 1, 1.4, 2, 3];
+    let sensIndex = 3;
+    try { const saved = parseInt(localStorage.getItem("haus-sens"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
+    const sensitivity = () => SENS[sensIndex];
+    let toastTimer;
+    function cycleSens() {
+      sensIndex = (sensIndex + 1) % SENS.length;
+      try { localStorage.setItem("haus-sens", String(sensIndex)); } catch (e) {}
+      const toast = document.getElementById("toast");
+      toast.textContent = "Mausempfindlichkeit " + Math.round(SENS[sensIndex] * 100) + " % (E = weiter)";
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 1400);
+    }
     let dragging = false;
     renderer.domElement.addEventListener("mousedown", e => {
       if (!walking || touch || e.button !== 0) return;
+      e.preventDefault();
+      if (dragging) return stopDrag();
       dragging = true;
       document.body.classList.add("looking");
       renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
-      e.preventDefault();
     });
     const stopDrag = () => {
       dragging = false;
       document.body.classList.remove("looking");
       if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
     };
-    addEventListener("mouseup", e => { if (e.button === 0) stopDrag(); });
-    // Esc verlaesst den Laufmodus. Haelt man dabei die Maus, nimmt der Browser das Esc fuer den Pointer Lock:
-    // geht der Lock waehrend des Haltens verloren, war es Esc.
+    // Esc verlaesst den Laufmodus. Ist die Maus uebernommen, nimmt der Browser das Esc fuer den Pointer Lock:
+    // geht der Lock verloren, ohne dass wir ihn freigegeben haben, war es Esc.
     document.addEventListener("pointerlockchange", () => {
       if (!document.pointerLockElement && dragging) {
         stopDrag();
@@ -787,13 +807,12 @@
       }
     });
     document.addEventListener("mousemove", e => {
-      if (!dragging) return;
-      if (!(e.buttons & 1) && document.pointerLockElement !== renderer.domElement) return stopDrag();
-      look(e.movementX * 0.0025, e.movementY * 0.0025);
+      if (dragging) look(e.movementX * 0.0025 * sensitivity(), e.movementY * 0.0025 * sensitivity());
     });
     addEventListener("keydown", e => {
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
+      if (e.code === "KeyE" && !e.repeat) return cycleSens();
       keys.add(e.code);
       if (e.code === "Space") { player.jump = true; e.preventDefault(); }
     });

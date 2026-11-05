@@ -11,7 +11,7 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: #0b0d12; color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
     canvas { display: block; touch-action: none; }
-    /* PC: Fadenkreuz nur, solange die linke Maustaste gehalten wird */
+    /* PC: Fadenkreuz nur, solange die Maus uebernommen ist (Linksklick an/aus) */
     body.walk:not(.touch):not(.looking) .crosshair { display: none; }
     body.looking canvas { cursor: none; }
     .bar {
@@ -95,6 +95,11 @@
       background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; font-weight: 700;
       touch-action: none;
     }
+    .toast {
+      position: fixed; left: 50%; top: 18%; transform: translateX(-50%); padding: 8px 16px; border-radius: 10px;
+      background: var(--panel); color: var(--text); font-weight: 600; pointer-events: none; opacity: 0; transition: opacity .2s;
+    }
+    .toast.show { opacity: 1; }
     .touch-only { display: none !important; }
     body.touch.walk .touch-only { display: block !important; }
     body.touch.walk .keys, body.touch.walk .crosshair { display: none; }
@@ -128,7 +133,8 @@
 
   <div class="walk-ui">
     <div class="crosshair"></div>
-    <div class="keys" id="keys">WASD laufen &middot; Linke Maustaste halten = Fadenkreuz, Maus bewegen zum Schauen &middot; Leertaste springen (im Pool: halten zum Schwimmen) &middot; Shift rennen &middot; Esc verlassen</div>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="keys" id="keys">WASD laufen &middot; Linksklick = Maus übernehmen (nochmal Linksklick = frei) &middot; Leertaste springen (im Pool: halten zum Schwimmen) &middot; Shift rennen &middot; E Mausempfindlichkeit &middot; Esc verlassen</div>
     <div class="stick left touch-only" id="stick-move" aria-label="Laufen"><span></span></div>
     <div class="stick right touch-only" id="stick-look" aria-label="Schauen"><span></span></div>
     <button type="button" class="jump touch-only" id="btn-jump">Sprung</button>
@@ -160,10 +166,13 @@
     // Einheiten: 1 = 1 Meter, vorne = +z. Amerikanisches Haus: Keller (y -3..0), Erdgeschoss (0.3..3),
     // Obergeschoss (3.3..6), Garage rechts neben der Kueche, Pool hinten. Rundherum huegeliges Gelaende.
     const WALL = 0.25;
-    const HX = 6.125, HZ = 4.625;            // Aussenmasse Haupthaus (halbe Breite/Tiefe)
-    const IX = HX - WALL, IZ = HZ - WALL;    // Innenmasse
-    const EG = 0.3, OG = 3.3, TOP = 6.3, KG = -3.0, ROOF_RISE = 2.6;
-    const POOL = { x0: -5, x1: 3, z0: -10, z1: -6, floor: -1.5, water: -0.12 };
+    // Haupthaus: vorne bis HZ, hinten bis BZ (doppelte Tiefe: vorderer Teil bis zur alten Rueckwand bei -HZ, dahinter der Anbau)
+    const HX = 6.125, HZ = 4.625, BZ = -13.875;
+    const IX = HX - WALL, IZ = HZ - WALL, IBZ = BZ + WALL;   // Innenmasse
+    const MID = -HZ + WALL / 2;                              // alte Rueckwand, jetzt Innenwand
+    const EG = 0.3, OG = 3.3, TOP = 6.3, KG = -3.0, ROOF_RISE = 4.0;
+    const POOL = { x0: -5, x1: 3, z0: -21, z1: -17, floor: -1.5, water: -0.12 };
+    const CENTER_Z = -4;                                     // Mitte des Grundstuecks (Gelaende, Laufgrenze)
 
     // --- Renderer, Szene, Kamera ---
     // ?vorschau: Bildpuffer behalten, damit sich das Vorschaubild (vorschau.webp) aus dem Canvas aufnehmen laesst
@@ -184,8 +193,8 @@
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
     const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.05, 200);
-    const HOME_TARGET = new THREE.Vector3(2.5, 2.5, -1);
-    const homePos = () => new THREE.Vector3(24, 14, 28).multiplyScalar(Math.max(1, 0.9 / camera.aspect));
+    const HOME_TARGET = new THREE.Vector3(2.5, 2.5, -5);
+    const homePos = () => new THREE.Vector3(27, 16, 26).multiplyScalar(Math.max(1, 0.9 / camera.aspect));
     camera.position.copy(homePos());
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -446,8 +455,8 @@
     }
 
     // --- Gelaende: flach um Haus, Einfahrt und Pool, nach aussen sanfte Huegel ---
-    const FLAT = [[-8.5, 14, -12.5, 9.5], [6, 12.2, 9.5, 17]];
-    const HOLES = [[-HX, HX, -HZ, HZ], [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]];
+    const FLAT = [[-8.5, 14, -23.5, 9.5], [6, 12.2, 9.5, 17]];
+    const HOLES = [[-HX, HX, BZ, HZ], [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]];
     const inRect = (x, z, [x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1;
     function terrain(x, z) {
       let d = Infinity;
@@ -466,13 +475,14 @@
       const pos = [], uv = [], idx = [];
       const step = SIZE / SEG, half = SIZE / 2;
       for (let j = 0; j <= SEG; j++) for (let i = 0; i <= SEG; i++) {
-        const x = -half + i * step + 3, z = -half + j * step;
+        const x = -half + i * step + 3, z = -half + j * step + CENTER_Z;
         pos.push(x, terrain(x, z), z);
         uv.push(x, z);
       }
       for (let j = 0; j < SEG; j++) for (let i = 0; i < SEG; i++) {
-        const cx = -half + (i + 0.5) * step + 3, cz = -half + (j + 0.5) * step;
-        if (HOLES.some(h => inRect(cx, cz, h))) continue;
+        // Nur Felder ganz im Loch weglassen; Randfelder liegen unter den Waenden, so bleibt keine Luecke
+        const x0 = -half + i * step + 3, z0 = -half + j * step + CENTER_Z;
+        if (HOLES.some(h => [[x0, z0], [x0 + step, z0], [x0, z0 + step], [x0 + step, z0 + step]].every(([x, z]) => inRect(x, z, [h[0] - 1e-6, h[1] + 1e-6, h[2] - 1e-6, h[3] + 1e-6])))) continue;
         const a = j * (SEG + 1) + i, b = a + 1, c = a + SEG + 1, d = c + 1;
         idx.push(a, c, b, b, c, d);
       }
@@ -495,37 +505,61 @@
     // Aussenwaende vom Keller bis unters Dach; aussen Holzverkleidung, innen Putz
     const FRONT_OPEN = [[-2.6, -1.4, EG, 2.6], [-5.2, -3.4, 1.1, 2.4], [2.2, 4.6, 1.1, 2.4],
       [-5.2, -3.6, 4.1, 5.5], [-2.2, -0.6, 4.1, 5.5], [3.0, 4.6, 4.1, 5.5]];
-    const BACK_OPEN = [[-4.2, -1.6, EG, 2.6], [2.2, 4.2, 1.4, 2.4], [-5.0, -3.4, 4.1, 5.5], [3.2, 4.8, 4.1, 5.5]];
-    const LEFT_OPEN = [[-1, 1, 1.1, 2.4], [-1, 1, 4.1, 5.5]];
+    // Hinten: grosse Oeffnung vom Familienzimmer zur Terrasse, Fenster unten und oben (kleines Badfenster)
+    const BACK_OPEN = [[-2, 2, EG, 2.6], [-5, -3.4, 1.1, 2.4], [3.4, 5, 1.1, 2.4],
+      [-5, -3.4, 4.1, 5.5], [2.2, 3.4, 4.6, 5.5], [3.8, 5.2, 4.1, 5.5]];
+    // Seiten: vorne wie bisher, im Anbau je zwei Fenster pro Stockwerk
+    const SIDE_BACK = [[-7, -5.5, 1.1, 2.4], [-12, -10.5, 1.1, 2.4], [-7, -5.5, 4.1, 5.5], [-12, -10.5, 4.1, 5.5]];
+    const LEFT_OPEN = [[-1, 1, 1.1, 2.4], [-1, 1, 4.1, 5.5], ...SIDE_BACK];
     const GARAGE_DOOR = [-1.0, -0.1, EG, 2.4];
     wall("x", -HX, HX, HZ - WALL / 2, KG, TOP, FRONT_OPEN, faces("+z", mat.siding, mat.plaster));
-    wall("x", -HX, HX, -HZ + WALL / 2, KG, TOP, BACK_OPEN, faces("-z", mat.siding, mat.plaster));
-    wall("z", -IZ, IZ, -HX + WALL / 2, KG, TOP, LEFT_OPEN, faces("-x", mat.siding, mat.plaster));
-    wall("z", -IZ, IZ, HX - WALL / 2, KG, TOP, [GARAGE_DOOR], faces("+x", mat.siding, mat.plaster));
+    wall("x", -HX, HX, BZ + WALL / 2, KG, TOP, BACK_OPEN, faces("-z", mat.siding, mat.plaster));
+    wall("z", IBZ, IZ, -HX + WALL / 2, KG, TOP, LEFT_OPEN, faces("-x", mat.siding, mat.plaster));
+    wall("z", IBZ, IZ, HX - WALL / 2, KG, TOP, [GARAGE_DOOR, ...SIDE_BACK], faces("+x", mat.siding, mat.plaster));
     for (const o of FRONT_OPEN.slice(1)) windowIn("x", HZ - WALL / 2, o[0], o[1], o[2], o[3], 1);
-    for (const o of BACK_OPEN.slice(1)) windowIn("x", -HZ + WALL / 2, o[0], o[1], o[2], o[3], -1);
+    for (const o of BACK_OPEN.slice(1)) windowIn("x", BZ + WALL / 2, o[0], o[1], o[2], o[3], -1);
     for (const o of LEFT_OPEN) windowIn("z", -HX + WALL / 2, o[0], o[1], o[2], o[3], -1);
+    for (const o of SIDE_BACK) windowIn("z", HX - WALL / 2, o[0], o[1], o[2], o[3], 1);
 
-    // Boeden und Decken: Keller (Beton), Erdgeschoss (Holz), Obergeschoss (Teppich), Decke unterm Dach
-    const KG_STAIR = [-IX, -4.8, -IZ, 1.1];
+    // Alte Rueckwand bleibt als Innenwand: Durchgang Keller, Wohnzimmer -> Esszimmer, Treppenpodest -> Flur oben
+    wall("x", -IX, IX, MID, KG, TOP - 0.3,
+      [[-1, 1, KG, KG + 2.1], [-4.2, -1.6, EG, EG + 2.3], [-0.3, 0.9, OG, OG + 2.1]], mat.plaster);
+
+    // Boeden und Decken: Keller (Beton), Erdgeschoss (Holz), Obergeschoss (Fliesen), Decke unterm Dach
+    // Kellertreppe liegt genau unter der Treppe ins Obergeschoss (gleicher Grundriss x -0.25..0.85)
+    const KG_STAIR = [-0.25, 0.85, -3.9, 1.1];
     const OG_STAIR = [-0.3, 0.9, -3.5, 1.1];
-    slab(-IX, IX, -IZ, IZ, KG - 0.2, KG, floorFaces(mat.concrete, mat.concrete));
-    slab(-IX, IX, -IZ, IZ, 0, EG, floorFaces(mat.wood, mat.concreteWall), KG_STAIR);
-    slab(-IX, IX, -IZ, IZ, OG - 0.3, OG, floorFaces(mat.floorTiles, mat.ceiling), OG_STAIR);
-    slab(-IX, IX, -IZ, IZ, TOP - 0.3, TOP, floorFaces(mat.trim, mat.ceiling));
+    slab(-IX, IX, IBZ, IZ, KG - 0.2, KG, floorFaces(mat.concrete, mat.concrete));
+    slab(-IX, IX, IBZ, IZ, 0, EG, floorFaces(mat.wood, mat.concreteWall), KG_STAIR);
+    slab(-IX, IX, IBZ, IZ, OG - 0.3, OG, floorFaces(mat.floorTiles, mat.ceiling), OG_STAIR);
+    slab(-IX, IX, IBZ, IZ, TOP - 0.3, TOP, floorFaces(mat.trim, mat.ceiling));
+
+    // --- Anbau Erdgeschoss: Esszimmer links, Buero rechts, ganz hinten Familienzimmer ---
+    const IN = 0.12;   // Dicke der Innenwaende
+    const EG_TOP = OG - 0.3, OG_TOP = TOP - 0.3;
+    wall("z", MID - WALL / 2, -9.1, 0, EG, EG_TOP, [[-6.3, -5.3, EG, EG + 2.1]], mat.plaster, IN);
+    wall("x", -IX, IX, -9.1, EG, EG_TOP, [[-3.4, -2.4, EG, EG + 2.1], [2.4, 3.4, EG, EG + 2.1]], mat.plaster, IN);
+    // --- Anbau Obergeschoss: Flur von der Treppe nach hinten, links Eltern + Bad, rechts Kinder + Spielzimmer ---
+    wall("z", MID - WALL / 2, IBZ, -0.4, OG, OG_TOP, [[-6, -5, OG, OG + 2.1], [-11.5, -10.5, OG, OG + 2.1]], mat.plaster, IN);
+    wall("z", MID - WALL / 2, IBZ, 1.0, OG, OG_TOP, [[-6, -5, OG, OG + 2.1], [-11.5, -10.5, OG, OG + 2.1]], mat.plaster, IN);
+    wall("x", -IX, -0.4, -9.5, OG, OG_TOP, [], mat.plaster, IN);
+    wall("x", 1.0, IX, -9.5, OG, OG_TOP, [], mat.plaster, IN);
     // Kuechenfliesen auf dem Holzboden
     box(1, EG, -IZ, IX, EG + 0.006, IZ, mat.tiles, { solid: false, parent: house });
 
     // Treppe Erdgeschoss -> Obergeschoss (16 Stufen, nach hinten steigend)
     for (let i = 0; i < 16; i++) {
-      box(-0.25, EG, 1.1 - (i + 1) * 0.29, 0.85, EG + (i + 1) * 0.1875, 1.1 - i * 0.29, mat.wood, { parent: house });
+      box(-0.25, EG + i * 0.1875, 1.1 - (i + 1) * 0.29, 0.85, EG + (i + 1) * 0.1875, 1.1 - i * 0.29, mat.wood, { parent: house });
     }
-    // Kellertreppe (18 Stufen, nach hinten fallend)
+    // Kellertreppe (17 Stufen) genau unter der oberen Treppe, aber gegenlaeufig: oben im Erdgeschoss hinten, unten vorne
     for (let i = 0; i < 17; i++) {
-      box(-IX, KG, 1.1 - (i + 1) * 0.29, -4.8, EG - (i + 1) * (EG - KG) / 18, 1.1 - i * 0.29, mat.wood, { parent: house });
+      const top = EG - (i + 1) * (EG - KG) / 18;
+      box(-0.25, top - 0.1833, -3.9 + i * 0.29, 0.85, top, -3.9 + (i + 1) * 0.29, mat.wood, { parent: house });
     }
     // Gelaender: um die Kellertreppe im Erdgeschoss und ums Treppenloch oben
-    box(-4.8, EG, -IZ, -4.74, EG + 1.0, 1.1, mat.trim, { parent: house, name: "Gelaender" });
+    // Gelaender am Kellerloch (Erdgeschoss, beidseitig bis zum Treppenanfang)
+    box(-0.31, EG, -3.5, -0.25, EG + 1.0, 1.1, mat.trim, { parent: house, name: "Gelaender" });
+    box(0.85, EG, -3.5, 0.91, EG + 1.0, 1.1, mat.trim, { parent: house, name: "Gelaender" });
     box(-0.36, OG, -3.5, -0.3, OG + 1.0, 1.15, mat.trim, { parent: house, name: "Gelaender" });
     box(0.9, OG, -3.5, 0.96, OG + 1.0, 1.15, mat.trim, { parent: house, name: "Gelaender" });
     box(-0.36, OG, 1.1, 0.96, OG + 1.0, 1.16, mat.trim, { parent: house, name: "Gelaender" });
@@ -566,11 +600,9 @@
       m.castShadow = m.receiveShadow = true;
       parent.add(m);
     }
-    gableRoof(-HX, HX, -HZ, HZ, TOP, ROOF_RISE, 0.5, roof);
-    gable(-HX + WALL, -HZ, HZ, TOP, ROOF_RISE, roof);
-    gable(HX, -HZ, HZ, TOP, ROOF_RISE, roof);
-    // Kamin
-    box(-3.6, TOP, -1.8, -2.9, TOP + ROOF_RISE + 1.0, -1.1, mat.stone, { solid: false, parent: roof, name: "Kamin" });
+    gableRoof(-HX, HX, BZ, HZ, TOP, ROOF_RISE, 0.5, roof);
+    gable(-HX + WALL, BZ, HZ, TOP, ROOF_RISE, roof);
+    gable(HX, BZ, HZ, TOP, ROOF_RISE, roof);
 
     // --- Veranda vorne mit Saeulen, Weg ---
     box(-5.6, 0, HZ, 1.0, EG, HZ + 2.2, mat.wood, { name: "Veranda" });
@@ -664,25 +696,68 @@
     fur(4.0, KG, -IZ, 4.65, KG + 0.85, -3.75, mat.white);
     fur(4.75, KG, -IZ, 5.4, KG + 0.85, -3.75, mat.white);
     fur(IX - 0.45, KG, -1.5, IX, KG + 2.0, 2.5, mat.wood);
-    fur(-1.4, KG, -0.8, 1.34, KG + 0.76, 0.7, mat.table);
-    fur(-0.02, KG + 0.76, -0.8, 0.02, KG + 0.92, 0.7, mat.white, false);
+    fur(-5.2, KG, -0.8, -2.46, KG + 0.76, 0.7, mat.table);
+    fur(-3.85, KG + 0.76, -0.8, -3.81, KG + 0.92, 0.7, mat.white, false);
     fur(-3.2, KG, 2.6, -1.0, KG + 0.45, 3.5, mat.fabric);
 
+    // Anbau Erdgeschoss: Esszimmer (Tisch, sechs Stuehle, Sideboard), Buero (Schreibtisch, Stuhl, Regal)
+    const sofa = (x0, z0, x1, z1, backAtMinZ, y = EG) => {
+      fur(x0, y, z0, x1, y + 0.45, z1, mat.fabric);
+      if (backAtMinZ) fur(x0, y + 0.45, z0, x1, y + 0.95, z0 + 0.25, mat.fabric, false);
+      else fur(x0, y + 0.45, z1 - 0.25, x1, y + 0.95, z1, mat.fabric, false);
+    };
+    fur(-4.0, EG + 0.72, -7.4, -1.6, EG + 0.77, -6.0, mat.wood);
+    for (const [lx, lz] of [[-3.9, -7.3], [-1.7, -7.3], [-3.9, -6.1], [-1.7, -6.1]]) fur(lx - 0.04, EG, lz - 0.04, lx + 0.04, EG + 0.72, lz + 0.04, mat.wood, false);
+    for (const x of [-3.6, -2.8, -2.0]) {
+      fur(x - 0.2, EG, -8.0, x + 0.2, EG + 0.45, -7.6, mat.wood);
+      fur(x - 0.2, EG, -5.8, x + 0.2, EG + 0.45, -5.4, mat.wood);
+    }
+    fur(-IX, EG, -8.8, -5.4, EG + 0.8, -7.3, mat.wood);
+    fur(3.2, EG, -8.95, 5.4, EG + 0.75, -8.2, mat.wood);
+    fur(3.9, EG, -7.9, 4.5, EG + 0.45, -7.4, mat.dark);
+    fur(4.0, EG + 0.75, -8.9, 4.6, EG + 1.15, -8.85, mat.dark, false);
+    fur(0.06, EG, -8.8, 0.45, EG + 2.0, -6.6, mat.wood);
+    // Familienzimmer hinten: Sofa, Couchtisch, Fernseher an der Wand, Teppich
+    sofa(-3.4, -12.4, -0.4, -11.5, true);
+    fur(-2.5, EG, -11.1, -1.3, EG + 0.4, -10.5, mat.wood);
+    fur(-2.8, EG + 1.0, -9.22, -1.0, EG + 2.0, -9.16, mat.dark, false);
+    fur(-3.6, EG, -12.6, -0.2, EG + 0.01, -9.6, mat.blanket, false);
+    // Anbau Obergeschoss: Elternschlafzimmer, Bad, Kinderzimmer, Spielzimmer
+    bed(-4.0, -9.36);
+    fur(-5.5, OG, -5.2, -3.4, OG + 2.1, -4.63, mat.wood);
+    fur(-IX, OG, IBZ, -4.1, OG + 0.55, -12.8, mat.white);
+    fur(-3.2, OG, IBZ, -2.4, OG + 0.85, -13.15, mat.white);
+    fur(-1.6, OG, IBZ, -1.2, OG + 0.45, -12.9, mat.white);
+    bed(3.8, -9.36);
+    fur(1.2, OG, -5.2, 2.6, OG + 0.75, -4.7, mat.wood);
+    fur(3.8, OG, IBZ, 5.6, OG + 0.75, -12.9, mat.wood);
+    fur(4.2, OG + 0.75, -13.5, 5.2, OG + 1.3, -13.45, mat.dark, false);
+    fur(2.0, OG, -11.5, 2.8, OG + 0.4, -10.7, mat.fabric);
+    fur(3.0, OG, -11.0, 3.8, OG + 0.4, -10.2, mat.blanket);
+    // Anbau Keller: Heimkino (Leinwand, zwei Sofareihen) und Fitnessecke
+    fur(-3, KG + 0.5, IBZ, 3, KG + 2.2, IBZ + 0.02, mat.white, false);
+    sofa(-2.5, -10.5, 2.5, -9.6, false, KG);
+    sofa(-2.5, -8.2, 2.5, -7.3, false, KG);
+    fur(3.5, KG, -6.5, 5.0, KG + 0.45, -6.1, mat.dark);
+    fur(IX - 0.4, KG, -8.5, IX, KG + 1.6, -6.9, mat.steel);
+
     // --- Garten hinten: Terrasse, Pool mit Stufen, Liegen ---
-    box(-HX, 0, -6.0, 2.0, 0.22, -HZ, mat.wood, { name: "Terrasse" });
-    slab(-6.5, 4.6, -11.2, -6.0, 0, 0.04, mat.stone, [POOL.x0 - 0.2, POOL.x1 + 0.2, -10.2, -6.0]);
+    const TERRACE = BZ - 1.4;
+    box(-HX, 0, TERRACE, HX, 0.22, BZ, mat.wood, { name: "Terrasse" });
+    slab(-6.5, 4.6, POOL.z0 - 1.2, TERRACE, 0, 0.04, mat.stone, [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]);
     box(POOL.x0 - 0.2, POOL.floor, POOL.z0 - 0.2, POOL.x0, 0.04, POOL.z1 + 0.2, mat.pool, { name: "Poolwand" });
     box(POOL.x1, POOL.floor, POOL.z0 - 0.2, POOL.x1 + 0.2, 0.04, POOL.z1 + 0.2, mat.pool, { name: "Poolwand" });
     box(POOL.x0, POOL.floor, POOL.z0 - 0.2, POOL.x1, 0.04, POOL.z0, mat.pool, { name: "Poolwand" });
     box(POOL.x0, POOL.floor, POOL.z1, POOL.x1, 0.04, POOL.z1 + 0.2, mat.pool, { name: "Poolwand" });
     box(POOL.x0, POOL.floor - 0.2, POOL.z0, POOL.x1, POOL.floor, POOL.z1, mat.pool, { name: "Poolboden" });
-    [-0.4, -0.8, -1.2].forEach((top, i) => box(POOL.x0 + i * 0.4, POOL.floor, -9, POOL.x0 + (i + 1) * 0.4, top, -7, mat.pool, { name: "Poolstufe" }));
+    const STEPS_Z = (POOL.z0 + POOL.z1) / 2;
+    [-0.4, -0.8, -1.2].forEach((top, i) => box(POOL.x0 + i * 0.4, POOL.floor, STEPS_Z - 1, POOL.x0 + (i + 1) * 0.4, top, STEPS_Z + 1, mat.pool, { name: "Poolstufe" }));
     const water = new THREE.Mesh(new THREE.PlaneGeometry(POOL.x1 - POOL.x0, POOL.z1 - POOL.z0), mat.water);
     water.rotation.x = -Math.PI / 2;
     water.position.set((POOL.x0 + POOL.x1) / 2, POOL.water, (POOL.z0 + POOL.z1) / 2);
     water.name = "Wasser";
     world.add(water);
-    for (const z of [-9.4, -7.6]) {
+    for (const z of [STEPS_Z - 1.4, STEPS_Z + 0.4]) {
       box(3.5, 0.04, z, 4.4, 0.35, z + 0.7, mat.white, { name: "Liege" });
       box(3.5, 0.35, z, 3.75, 0.8, z + 0.7, mat.white, { solid: false });
     }
@@ -731,25 +806,26 @@
     let placed = 0;
     for (let tries = 0; tries < 400 && placed < 34; tries++) {
       const a = prng() * Math.PI * 2, r = 14 + prng() * 18;
-      const x = 3 + Math.cos(a) * r, z = Math.sin(a) * r;
-      if (!clear(x, z, 1.5) || Math.hypot(x - 3, z) > 31) continue;
+      const x = 3 + Math.cos(a) * r, z = CENTER_Z + Math.sin(a) * r;
+      if (!clear(x, z, 1.5) || Math.hypot(x - 3, z - CENTER_Z) > 31) continue;
       (prng() < 0.45 ? conifer : tree)(x, z, 0.8 + prng() * 0.6);
       placed++;
     }
     // Zwei Baeume im Garten hinten
-    tree(-8.0, -9.5, 1.1);
-    tree(7.5, -10.5, 0.95);
+    tree(-8.6, -19, 1.1);
+    tree(8, -20, 0.95);
 
     // Buesche als InstancedMesh (viele, guenstig zu zeichnen)
     const bushSpots = [];
     // Vor der Veranda, Weg (x -2.6..-1.4) frei lassen
     for (let x = -5.6; x <= 0.8; x += 0.9) if (Math.abs(x + 2) > 1) bushSpots.push([x, HZ + 2.7, 0.45]);
-    for (let z = -4; z <= 4; z += 1.1) bushSpots.push([-HX - 0.7, z, 0.5]);
+    for (let z = -13; z <= 4; z += 1.1) bushSpots.push([-HX - 0.7, z, 0.5]);
+    for (let z = -13; z <= -3.8; z += 1.1) bushSpots.push([HX + 0.7, z, 0.5]);
     for (let z = -2.5; z <= 4; z += 1.1) bushSpots.push([GX1 + 0.7, z, 0.5]);
     for (let z = 5.5; z <= 16; z += 1.0) bushSpots.push([12.3, z, 0.42]);
     for (let i = 0; i < 26; i++) {
       const a = prng() * Math.PI * 2, r = 12 + prng() * 14;
-      const x = 3 + Math.cos(a) * r, z = Math.sin(a) * r;
+      const x = 3 + Math.cos(a) * r, z = CENTER_Z + Math.sin(a) * r;
       if (clear(x, z, 0.8)) bushSpots.push([x, z, 0.4 + prng() * 0.5]);
     }
     {
@@ -768,7 +844,7 @@
     }
 
     // Blumenbeete: Erde und viele kleine Bluetenkugeln in Farben
-    const beds = [[-5.6, -2.8, HZ + 2.3, HZ + 3.1], [-1.2, 1.0, HZ + 2.3, HZ + 3.1], [-HX - 1.2, -HX - 0.15, -4, 4.5], [-1.2, -0.3, HZ + 2.3, 15.5], [-3.7, -2.8, HZ + 2.3, 15.5]];
+    const beds = [[-5.6, -2.8, HZ + 2.3, HZ + 3.1], [-1.2, 1.0, HZ + 2.3, HZ + 3.1], [-HX - 1.2, -HX - 0.15, -13, 4.5], [-1.2, -0.3, HZ + 2.3, 15.5], [-3.7, -2.8, HZ + 2.3, 15.5]];
     for (const [x0, x1, z0, z1] of beds) box(x0, 0, z0, x1, 0.05, z1, mat.soil, { solid: false, parent: plants, name: "Beet" });
     {
       const colors = [0xe03b5a, 0xf2c14e, 0xffffff, 0x9b5de5, 0xff7b39, 0xf15bb5];
@@ -849,18 +925,28 @@
     fill.position.set(-14, 10, -10);
     scene.add(fill);
     // Lampen innen (ohne Schatten), Pool-Licht unter Wasser, Verandalampe
-    const ROOM_LIGHTS = [[-3, 2.6, 0], [3.5, 2.6, 0], [-3, 5.6, -1], [4, 5.6, -1], [0, -0.6, 0], [9, 2.9, 1]];
-    const lights = ROOM_LIGHTS.map(([x, y, z]) => {
-      const l = new THREE.PointLight(0xfff0dc, 0, 8, 1.5);
-      l.position.set(x, y, z);
-      world.add(l);
+    // Lampen in jedem Raum; nachts leuchten davon nur die 6 naechsten zur Kamera (feste Anzahl Lichter = keine Shader-Neuberechnung)
+    const ROOM_LIGHTS = [
+      [-3, 2.6, 0], [3.5, 2.6, 0], [-2.5, 2.6, -6.8], [3, 2.6, -6.8], [0, 2.6, -11.3],
+      [-3, 5.6, -1], [4, 5.6, -1], [-3, 5.6, -7], [3.5, 5.6, -7], [-3, 5.6, -11.5], [3.5, 5.6, -11.5], [0.3, 5.6, -9],
+      [-3.5, -0.6, 0], [0, -0.6, -9], [9, 2.9, 1]
+    ].map(([x, y, z]) => new THREE.Vector3(x, y, z));
+    for (const p of ROOM_LIGHTS) {
       const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), mat.lamp);
-      bulb.position.set(x, y + 0.2, z);
+      bulb.position.copy(p).y += 0.2;
       world.add(bulb);
+    }
+    const lights = Array.from({ length: 6 }, () => {
+      const l = new THREE.PointLight(0xfff0dc, 0, 8, 1.5);
+      world.add(l);
       return l;
     });
+    function placeLights(from) {
+      const nearest = [...ROOM_LIGHTS].sort((a, b) => a.distanceToSquared(from) - b.distanceToSquared(from));
+      lights.forEach((l, i) => l.position.copy(nearest[i]));
+    }
     const poolLight = new THREE.PointLight(0x3fd0ff, 0, 9, 1.5);
-    poolLight.position.set(-1, -1.0, -8);
+    poolLight.position.set((POOL.x0 + POOL.x1) / 2, -1.0, (POOL.z0 + POOL.z1) / 2);
     world.add(poolLight);
     const porchLight = new THREE.PointLight(0xffc078, 0, 7, 2);
     porchLight.position.set(-2, 2.7, HZ + 1.2);
@@ -947,8 +1033,8 @@
         const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
         if (d < min && d > 1e-6) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
       }
-      const far = Math.hypot(p.x - 3, p.z);
-      if (far > LIMIT) { p.x = 3 + (p.x - 3) * LIMIT / far; p.z *= LIMIT / far; }
+      const far = Math.hypot(p.x - 3, p.z - CENTER_Z);
+      if (far > LIMIT) { p.x = 3 + (p.x - 3) * LIMIT / far; p.z = CENTER_Z + (p.z - CENTER_Z) * LIMIT / far; }
     }
 
     // Hoechste begehbare Flaeche unter den Fuessen (bis eine Stufe hoeher)
@@ -1022,6 +1108,21 @@
       fullBtn.textContent = document.fullscreenElement ? "Vollbild aus" : "Vollbild";
     });
 
+    // Taste E: Mausempfindlichkeit durchschalten, Auswahl bleibt im Browser gespeichert
+    const SENS = [0.4, 0.6, 0.8, 1, 1.4, 2, 3];
+    let sensIndex = 3;
+    try { const saved = parseInt(localStorage.getItem("haus-sens"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
+    const sensitivity = () => SENS[sensIndex];
+    let toastTimer;
+    function cycleSens() {
+      sensIndex = (sensIndex + 1) % SENS.length;
+      try { localStorage.setItem("haus-sens", String(sensIndex)); } catch (e) {}
+      const toast = document.getElementById("toast");
+      toast.textContent = "Mausempfindlichkeit " + Math.round(SENS[sensIndex] * 100) + " % (E = weiter)";
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 1400);
+    }
     let dragging = false;
     function setWalk(on) {
       walking = on;
@@ -1050,32 +1151,31 @@
     document.getElementById("btn-walk").addEventListener("click", () => setWalk(true));
     document.getElementById("btn-exit").addEventListener("click", () => setWalk(false));
 
-    // PC: Solange die linke Maustaste gedrueckt ist, wird die Maus zum Fadenkreuz; loslassen gibt den Zeiger frei
+    // PC: Linksklick uebernimmt die Maus (Pointer Lock, Fadenkreuz, Zeiger weg), erneuter Linksklick gibt sie frei
     renderer.domElement.addEventListener("mousedown", e => {
       if (!walking || touch || e.button !== 0) return;
+      e.preventDefault();
+      if (dragging) return stopDrag();
       dragging = true;
       document.body.classList.add("looking");
       renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
-      e.preventDefault();
     });
     function stopDrag() {
       dragging = false;
       document.body.classList.remove("looking");
       if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
     }
-    addEventListener("mouseup", e => { if (e.button === 0) stopDrag(); });
-    // Esc verlaesst den Laufmodus; geht der Pointer Lock beim Halten verloren, war es Esc
+    // Esc verlaesst den Laufmodus; geht der Pointer Lock verloren, ohne dass wir ihn freigegeben haben, war es Esc
     document.addEventListener("pointerlockchange", () => {
       if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); }
     });
     document.addEventListener("mousemove", e => {
-      if (!dragging) return;
-      if (!(e.buttons & 1) && document.pointerLockElement !== renderer.domElement) return stopDrag();
-      look(e.movementX * 0.0025, e.movementY * 0.0025);
+      if (dragging) look(e.movementX * 0.0025 * sensitivity(), e.movementY * 0.0025 * sensitivity());
     });
     addEventListener("keydown", e => {
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
+      if (e.code === "KeyE" && !e.repeat) return cycleSens();
       keys.add(e.code);
       if (e.code === "Space") { player.jump = true; e.preventDefault(); }
     });
@@ -1135,6 +1235,7 @@
     document.getElementById("loading").remove();
 
     const clock = new THREE.Clock();
+    let lightTimer = 0;
     const loop = () => {
       const dt = Math.min(clock.getDelta(), 0.05);
       const goal = night ? 1 : 0;
@@ -1156,6 +1257,9 @@
         scene.fog.near = dist + 8;
         scene.fog.far = dist + 34;
       }
+      // Nachts die Lampen zu den naechsten Raeumen schieben (alle halbe Sekunde reicht)
+      lightTimer -= dt;
+      if (blend > 0 && lightTimer <= 0) { placeLights(camera.position); lightTimer = 0.5; }
       renderer.render(scene, camera);
     };
     renderer.setAnimationLoop(loop);
