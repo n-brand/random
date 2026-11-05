@@ -113,9 +113,9 @@
     scene.background = SKY_DAY.clone();
     scene.fog = new THREE.Fog(SKY_DAY.clone(), 350, 1500);
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.15, 3000);
-    camera.position.set(190, 150, 120);
+    camera.position.set(95, 75, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(-50, 0, 20);
+    controls.target.set(-25, 0, 10);
     controls.enableDamping = true;
     controls.minDistance = 4;
     controls.maxDistance = 900;
@@ -247,13 +247,14 @@
     const pLight = (color, I, dist, x, y, z) => { const l = { color: new THREE.Color(color), I, dist, pos: new THREE.Vector3(x, y, z) }; lights.push(l); return l; };
 
     // ===================== Karte -> Welt =====================
-    const SC = 0.4, OX = 500, OY = 995, MAP_W = 861, MAP_H = 1202;
+    // Massstab 0,2 m pro Pixel (Rampe ca. 7 m breit, Haus ca. 65 x 90 m; vorher 0,4 war doppelt zu gross)
+    const SC = 0.2, OX = 500, OY = 995, MAP_W = 861, MAP_H = 1202;
     const mp = (px, py) => [(py - OY) * SC, -(px - OX) * SC];                 // Karten-Pixel -> [x, z]
 
     // ===================== Gelaende (Schritt 2) =====================
     // Lage aus der kleinen Uebersichtskarte oben links (Massstab dort ca. 2,8-mal kleiner, Rondell bei 222/252):
-    // Welt x = (py - 252) * 1,12, z = -(px - 222) * 1,12.
-    const SITE = { x0: -200, x1: 150, z0: -175, z1: 270 };               // Anwesen (Kartenbereich) bleibt flach (y 0)
+    // Welt x = (py - 252) * 0,56, z = -(px - 222) * 0,56.
+    const SITE = { x0: -100, x1: 60, z0: -90, z1: 120 };                 // Anwesen (Kartenbereich) bleibt flach (y 0)
     const WATER_Y = -0.35, LIMIT_WORLD = 700;
     const hash2 = (i, j) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
     function vnoise(x, z) {
@@ -262,34 +263,68 @@
     }
     const fbm = (x, z) => vnoise(x, z) * 0.53 + vnoise(x * 2.1 + 17, z * 2.1 + 5) * 0.29 + vnoise(x * 4.3 + 3, z * 4.3 + 41) * 0.18;
     const LAKES = [
-      { name: "Northwest Lake", cx: -238, cz: -110, rx: 44, rz: 70, s: 1.0, depth: 4 },
-      { name: "Mideast Lake", cx: 205, cz: 205, rx: 88, rz: 82, s: 2.3, depth: 5 },   // gross: hier kommt der Wasserweg der Hoehle heraus (Lake Exit)
-      { name: "Wasserfall-Teich", cx: -198, cz: -251, rx: 16, rz: 12, s: 4.1, depth: 2.5 }
+      { name: "Northwest Lake", cx: -119, cz: -55, rx: 24, rz: 36, s: 1.0, depth: 4 },
+      { name: "Wasserfall-Teich", cx: -99, cz: -126, rx: 11, rz: 8, s: 4.1, depth: 2.5 }
     ];
     const wob = (L, a) => 1 + 0.12 * Math.sin(3 * a + L.s) + 0.07 * Math.sin(5 * a + 2 * L.s) + 0.04 * Math.sin(8 * a + 3 * L.s);
     function lakeD(L, x, z) { const ux = (x - L.cx) / L.rx, uz = (z - L.cz) / L.rz; return Math.hypot(ux, uz) / wob(L, Math.atan2(uz, ux)); }
-    const LAWNS = [{ name: "West Lawn", cx: -185, cz: 40, rx: 50, rz: 80 }, { name: "South Lawn", cx: -40, cz: 228, rx: 65, rz: 42 }];
-    const WATERFALL = { x: -198, z: -264 };                                  // Felskante nördlich vom Teich (Ausgang der Hoehle folgt in Schritt 8)
-    const POLES = [[0, -260], [260, 0], [0, 260], [-260, 0]];
+    const LAWNS = [{ name: "West Lawn", cx: -92, cz: 20, rx: 26, rz: 40 }, { name: "South Lawn", cx: -20, cz: 114, rx: 34, rz: 22 }];
+    const WATERFALL = { x: -99, z: -135 };                                   // Felskante nördlich vom Teich (Ausgang der Hoehle folgt in Schritt 8)
+    const POLES = [[0, -160], [160, 0], [0, 160], [-160, 0]];
+    // Meer im Suedosten (Wunsch von Nicolas, statt Mideast Lake): s = Abstand Richtung Suedost, t = entlang der Kueste.
+    // Bucht dort, wo auf der Karte der Mideast Lake steht (Wasserweg der Hoehle, Lake Exit).
+    const R2 = Math.SQRT1_2;
+    const coastS = t => 200 - 45 * Math.exp(-(((t - 2) / 60) ** 2)) + 10 * Math.sin(t / 37) + 5 * Math.sin(t / 13 + 1);
+    const seaD = (x, z) => (x + z) * R2 - coastS((z - x) * R2);               // > 0 = im Meer
+    // Strassen und Wege (Mittellinien in Weltkoordinaten, aus der Karte; ausserhalb der Karte frei ergaenzt)
+    const P = list => list.map(([px, py]) => mp(px, py));                      // Kartenpunkte -> Welt
+    const ROADS = [
+      { name: "Zufahrt", w: 7, kind: "road", pts: [[85, -200], [70, -110], [64, -41], [62, 0], [62, 41], [62, 74], [56, 120], [20, 165], [-30, 200], [-120, 240]] },
+      { name: "Main Driveway Sued", w: 9, kind: "drive", pts: [...P([[445, 1040], [410, 1072], [380, 1110], [350, 1150], [322, 1202]]), [62, 41]] },
+      { name: "Main Driveway Nord", w: 9, kind: "drive", pts: [...P([[555, 1040], [590, 1075], [625, 1115], [655, 1160], [680, 1202]]), [64, -41]] },
+      { name: "Garagen-Ausfahrt", w: 7, kind: "ramp", pts: [...P([[300, 1018], [270, 1070], [235, 1110], [200, 1150], [172, 1202]]), [62, 74]] },
+      { name: "Garagen-Einfahrt", w: 7, kind: "ramp", pts: [...P([[337, 827], [337, 815], [315, 777], [275, 737], [220, 705], [150, 681], [50, 672]]), [-66.5, 112], [-60, 140], [-47, 170], [-30, 200]] }
+    ];
+    const roadHash = new Map();
+    for (const r of ROADS) {
+      r.curve = new THREE.CatmullRomCurve3(r.pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
+      r.len = r.curve.getLength();
+      for (const p of r.curve.getSpacedPoints(Math.ceil(r.len / 3))) {
+        const key = Math.floor(p.x / 25) + "," + Math.floor(p.z / 25);
+        if (!roadHash.has(key)) roadHash.set(key, []);
+        roadHash.get(key).push([p.x, p.z, r.w / 2]);
+      }
+    }
+    function nearRoad(x, z, extra) {
+      const i = Math.floor(x / 25), j = Math.floor(z / 25);
+      for (let a = i - 1; a <= i + 1; a++) for (let b = j - 1; b <= j + 1; b++) {
+        const l = roadHash.get(a + "," + b);
+        if (l) for (const [px, pz, hw] of l) if (Math.hypot(x - px, z - pz) < hw + extra) return true;
+      }
+      return false;
+    }
     const siteDist = (x, z) => Math.hypot(Math.max(SITE.x0 - x, 0, x - SITE.x1), Math.max(SITE.z0 - z, 0, z - SITE.z1));
     const inLawn = (x, z) => LAWNS.some(l => Math.hypot((x - l.cx) / l.rx, (z - l.cz) / l.rz) < 1);
     function genH(x, z) {
-      let h = sst(0, 140, siteDist(x, z)) * fbm(x / 170 + 3, z / 170 + 9) * 16;          // sanfte Huegel ausserhalb des Anwesens
-      h += 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2));   // Berge am Horizont
+      const sd = seaD(x, z);
+      let h = sst(0, 140, siteDist(x, z)) * fbm(x / 170 + 3, z / 170 + 9) * 16 * sst(0, -80, sd);   // sanfte Huegel ausserhalb des Anwesens
+      h += 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2)) * sst(-60, -320, sd);   // Berge am Horizont (nicht zum Meer hin)
+      h = h * (1 - sst(-25, 0, sd)) + 1.2 * sst(-30, -8, sd) - 10.2 * sst(-6, 18, sd);       // Felskueste: leicht erhoeht, dann steil ins Meer
       for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
       const w = sst(25, 140, Math.abs(x - WATERFALL.x));
-      h += 14 * sst(-262, -262 - lerp(14, 90, w), z) + 10 * sst(-300, -520, z);           // Nordhang, beim Wasserfall steil
+      const zc = WATERFALL.z + 2;
+      h += 14 * sst(zc, zc - lerp(14, 90, w), z) + 10 * sst(zc - 38, zc - 258, z);       // Nordhang, beim Wasserfall steil
       for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));
       return h;
     }
     // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
     function forestD(x, z) {
-      if (siteDist(x, z) < 8 || inLawn(x, z)) return 0;
+      if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || nearRoad(x, z, 4)) return 0;
       for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
-      if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z - 6) < 32) return 0;
+      if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z - 4) < 22) return 0;
       let d = 0.08 + 0.55 * sst(0.6, 0.75, vnoise(x / 60, z / 60));
-      if (z < -185 || (z < -150 && x > -260 && x < 40)) d = 0.9;
-      if (x < -235) d = Math.max(d, 0.85);
+      if (z < -100 || (z < -90 && x > -130 && x < 20)) d = 0.9;
+      if (x < -118) d = Math.max(d, 0.85);
       return d * sst(1000, 800, Math.hypot(x, z));
     }
 
@@ -341,6 +376,7 @@
         c.lerp(cForest, forestD(x, z) * 0.8);
         const dl = Math.min(...LAKES.map(L => lakeD(L, x, z)));
         if (dl < 1.15) c.lerp(cSand, sst(1.15, 1.0, dl));
+        c.lerp(cRock, sst(-26, -10, seaD(x, z)));
         if (h < WATER_Y) c.lerp(cBed, sst(WATER_Y, WATER_Y - 1, h));
         c.lerp(cRock, Math.max(sst(0.86, 0.7, nrm[k * 3 + 1]), sst(90, 160, h)));
         c.lerp(cSnow, sst(190, 240, h));
@@ -361,6 +397,34 @@
       const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), mat.water);
       m.position.y = WATER_Y; m.receiveShadow = true;
       scene.add(m);
+    }
+    // Meer: Flaeche von der Kuestenlinie bis weit hinter den Horizont
+    {
+      const sh = new THREE.Shape(), P = (s, t) => [(s - t) * R2, -(s + t) * R2];
+      sh.moveTo(...P(3200, -2600));
+      for (let t = -2600; t <= 2600; t += 25) sh.lineTo(...P(coastS(t) - 4, t));
+      sh.lineTo(...P(3200, 2600));
+      const sea = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), M(0x1d6188, { transparent: true, opacity: 0.88, roughness: 0.15, metalness: 0.2, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      sea.position.y = WATER_Y; sea.receiveShadow = true;
+      scene.add(sea);
+      // Eckige Felsbrocken entlang der Kueste (statt Strand)
+      const rr = rng(303), list = [];
+      for (let t = -1300; t <= 1300; t += 2.6) for (let k = 0; k < 2; k++) {
+        const off = -14 + rr() * 22, size = 0.8 + rr() ** 2 * 4.2, s = coastS(t) + off, x = (s - t) * R2, z = (s + t) * R2;
+        if (rr() < 0.25 || Math.hypot(x, z) > 1250) continue;
+        list.push([x, terrainH(x, z) - size * 0.35, z, size, rr(), rr(), rr(), rr()]);
+      }
+      const rockM = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), M(0xffffff, { map: rockTex, roughness: 1, flatShading: true }), list.length);
+      const o = new THREE.Object3D(), cc = new THREE.Color();
+      list.forEach(([x, y, z, s, a, b, c, d], i) => {
+        o.position.set(x, y, z); o.rotation.set(a * 6, b * 6, c * 6); o.scale.set(s * (0.8 + a * 0.6), s * (0.6 + b * 0.5), s * (0.8 + c * 0.6)); o.updateMatrix();
+        rockM.setMatrixAt(i, o.matrix);
+        rockM.setColorAt(i, cc.setRGB(0.75 + d * 0.3, 0.74 + d * 0.28, 0.72 + d * 0.26));
+        if (Math.hypot(x, z) < LIMIT_WORLD + 20 && y + s > WATER_Y) circles.push([x, z, s * 0.75, y + s * 0.9]);
+      });
+      rockM.castShadow = rockM.receiveShadow = true;
+      rockM.computeBoundingSphere();
+      scene.add(rockM);
     }
     // Wald: Nadel- und Laubbaeume als InstancedMesh, in 400-m-Felder geteilt (Sichtpruefung je Feld, auch fuer Schatten)
     {
@@ -488,17 +552,20 @@
     const floorMat = M(0xb9ab92, { map: texClone(marbleTex, 1 / 2.4, 1 / 2.4), roughness: 0.45 });
 
     // Aufzug und Treppe (Lage aus dem Hausumriss-Overlay der Hoehlenkarte "Upper Level": Westfluegel, suedoestlich vom Turm)
-    const SHAFT = { x0: -108.9, x1: -105.5, z0: 31.9, z1: 35.3 };
+    // Aufzug genau nach dem Hausumriss-Overlay der Karte "Upper Level" (Karte 415 / 727, Westfluegel). Dort ist nur der Aufzug
+    // unter dem Haus eingezeichnet: die Treppe der Hoehlenkarten verbindet nur die Hoehlenebenen (liegt im Fels, ausserhalb des Hauses).
+    // Die Haustreppe EG <-> 1. OG liegt noerdlich neben dem Schacht.
+    const SHAFT = { x0: -55.3, x1: -51.9, z0: 15.2, z1: 18.6 };
     SHAFT.cx = (SHAFT.x0 + SHAFT.x1) / 2; SHAFT.cz = (SHAFT.z0 + SHAFT.z1) / 2;
     const SHAFT_OUT = [SHAFT.x0 - 0.2, SHAFT.x1 + 0.2, SHAFT.z0 - 0.2, SHAFT.z1 + 0.2];
-    const STAIR = { x0: -109.1, x1: -103, z0: 35.7, z1: 40.0 };
-    const HOLES_FL1 = [[STAIR.x0, STAIR.x1, STAIR.z0, STAIR.z1], [SHAFT_OUT[0], SHAFT_OUT[1], SHAFT_OUT[2], STAIR.z0]];
-    // Tueren: Haupteingang (Osten, zum Rondell), Nordtuer (zur Veranda), Suedtuer (zum Pool)
-    const DOORS = [
-      { axis: "z", line: -43.2, a0: -2.5, a1: 2.5, h: 4.6, porch: true },
-      { axis: "x", line: -32.4, a0: -84, a1: -80, h: 3.6 },
-      { axis: "x", line: 121.2, a0: -37.5, a1: -33.5, h: 3.6 }
-    ];
+    const STAIR = { x0: -55.5, x1: -49.4, z0: 10.6, z1: 14.8 };
+    const HOLES_FL1 = [[STAIR.x0, STAIR.x1, STAIR.z0, STAIR.z1], [SHAFT_OUT[0], SHAFT_OUT[1], STAIR.z1, SHAFT_OUT[3]]];
+    // Tueren (Mitte nach der Karte, Breite fest): Haupteingang Osten zum Rondell, Nord (Veranda), Sued (Pool), Nordostfluegel (Wayne Gardens)
+    const door = (axis, px, py, half, h, porch = false) => {
+      const [x, z] = mp(px, py);
+      return axis === "z" ? { axis, line: x, a0: z - half, a1: z + half, h, porch } : { axis, line: z, a0: x - half, a1: x + half, h, porch };
+    };
+    const DOORS = [door("z", 500, 887, 2, 4.4, true), door("x", 581, 790, 2, 3.6), door("x", 197, 906, 2, 3.6), door("x", 638, 940, 2, 3.6)];
     {
       // Boden (EG), Decke/Boden 1. OG, Dach
       for (const [x0, x1, z0, z1] of rectCover(HOUSE, [SHAFT_OUT])) B(x0, x1, 0, FL0, z0, z1, floorMat);
@@ -542,30 +609,30 @@
         const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb), z0 = Math.min(za, zb), z1 = Math.max(za, zb), top = ROOF_Y + FLOOR_H;
         B(x0, x1, ROOF_Y, top, z0, z1, mat.facade, false);
         B(x0 - 0.5, x1 + 0.5, top, top + 0.6, z0 - 0.5, z1 + 0.5, stoneLight, false);
-        const w = Math.max(x1 - x0, z1 - z0), roof = new THREE.Mesh(new THREE.ConeGeometry(w / 2 * Math.SQRT2, 7, 4, 1).rotateY(Math.PI / 4), mat.slate);
-        roof.scale.set((x1 - x0) / w, 1, (z1 - z0) / w); roof.position.set((x0 + x1) / 2, top + 0.6 + 3.5, (z0 + z1) / 2); roof.castShadow = true; world.add(roof);
-        cyl(0.05, 0.25, 1.6, mat.gold, (x0 + x1) / 2, top + 7.9, (z0 + z1) / 2, world, 8);
-        for (const cx of [x0 + 0.3, x1 - 0.3]) for (const cz of [z0 + 0.3, z1 - 0.3]) {
-          cyl(0.6, 0.6, 2.6, stoneLight, cx, top + 1.9, cz, world, 10);
-          const cone = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.2, 10), mat.slate); cone.position.set(cx, top + 4.3, cz); cone.castShadow = true; world.add(cone);
+        const w = Math.max(x1 - x0, z1 - z0), roof = new THREE.Mesh(new THREE.ConeGeometry(w / 2 * Math.SQRT2, 5, 4, 1).rotateY(Math.PI / 4), mat.slate);
+        roof.scale.set((x1 - x0) / w, 1, (z1 - z0) / w); roof.position.set((x0 + x1) / 2, top + 0.6 + 2.5, (z0 + z1) / 2); roof.castShadow = true; world.add(roof);
+        cyl(0.04, 0.2, 1.2, mat.gold, (x0 + x1) / 2, top + 5.7, (z0 + z1) / 2, world, 8);
+        for (const cx of [x0 + 0.2, x1 - 0.2]) for (const cz of [z0 + 0.2, z1 - 0.2]) {
+          cyl(0.4, 0.4, 2.0, stoneLight, cx, top + 1.6, cz, world, 10);
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(0.58, 1.6, 10), mat.slate); cone.position.set(cx, top + 3.4, cz); cone.castShadow = true; world.add(cone);
         }
       }
       // Grosse Halle in der Mitte: Satteldach aus Glas (wie das Vorbild), Kamine auf dem Dach
-      gableRoof(-116, -48, -12.5, 12.5, ROOF_Y + 0.3, 6, 0.3, M(0x9fc3d6, { roughness: 0.15, metalness: 0.4, emissive: 0xffd27a, emissiveIntensity: 0 }));
-      for (const [cx, cz] of [[-95, 60], [-60, 95], [-25, 75], [-30, 35], [-80, -22], [-110, -5], [-15, -40], [-70, 30], [-100, 85]]) {
-        if (!inPoly(HOUSE, cx, cz) || !inPoly(HOUSE, cx + 4, cz + 1)) continue;
-        for (let k = 0; k < 3; k++) B(cx + k * 1.4 - 0.45, cx + k * 1.4 + 0.45, ROOF_Y + 0.3, ROOF_Y + 4 + (k % 2), cz - 0.45, cz + 0.45, stoneLight, false);
-        B(cx - 0.7, cx + 3.5, ROOF_Y + 0.3, ROOF_Y + 2.6, cz - 0.7, cz + 0.7, stoneLight, false);
+      { const [ga, gb] = [mp(470, 702), mp(534, 882)]; gableRoof(Math.min(ga[0], gb[0]), Math.max(ga[0], gb[0]), Math.min(ga[1], gb[1]), Math.max(ga[1], gb[1]), ROOF_Y + 0.3, 3.6, 0.2, M(0x9fc3d6, { roughness: 0.15, metalness: 0.4 })); }
+      for (const [cx, cz] of [[-47, 30], [-30, 47], [-12, 37], [-15, 17], [-40, -11], [-55, -2], [-8, -20], [-35, 15], [-50, 42]]) {
+        if (!inPoly(HOUSE, cx, cz) || !inPoly(HOUSE, cx + 3, cz + 1)) continue;
+        for (let k = 0; k < 3; k++) B(cx + k * 1.1 - 0.35, cx + k * 1.1 + 0.35, ROOF_Y + 0.3, ROOF_Y + 3 + (k % 2) * 0.6, cz - 0.35, cz + 0.35, stoneLight, false);
+        B(cx - 0.6, cx + 2.8, ROOF_Y + 0.3, ROOF_Y + 2.0, cz - 0.6, cz + 0.6, stoneLight, false);
       }
       // Haupteingang: Vorbau mit Saeulen, Plattform und Stufen; Nebentueren mit drei Stufen
       for (const d of DOORS) {
         if (d.porch) {
-          const px0 = d.line, px1 = d.line + 7;
-          B(px0, px1, 0, FL0, -7, 7, stoneLight);
-          B(px1, px1 + 0.7, 0, 0.4, -7, 7, stoneLight); B(px1 + 0.7, px1 + 1.4, 0, 0.2, -7, 7, stoneLight);
-          for (const z of [-6.3, -2.9, 2.9, 6.3]) { cyl(0.42, 0.48, FL1 - 0.4 - FL0, stoneLight, px1 - 0.6, (FL0 + FL1 - 0.4) / 2, z, world, 14); circles.push([px1 - 0.6, z, 0.5]); }
-          B(px0, px1 + 0.2, FL1 - 0.4, FL1, -7.4, 7.4, stoneLight, false);
-          for (const [a, b] of [[[px0, -7.2], [px1, -7.2]], [[px1, -7.2], [px1, 7.2]], [[px0, 7.2], [px1, 7.2]]]) {
+          const px0 = d.line, px1 = d.line + 4.5, W = 5;
+          B(px0, px1, 0, FL0, -W, W, stoneLight);
+          B(px1, px1 + 0.6, 0, 0.4, -W, W, stoneLight); B(px1 + 0.6, px1 + 1.2, 0, 0.2, -W, W, stoneLight);
+          for (const z of [-4.4, -1.8, 1.8, 4.4]) { cyl(0.32, 0.38, FL1 - 0.4 - FL0, stoneLight, px1 - 0.5, (FL0 + FL1 - 0.4) / 2, z, world, 14); circles.push([px1 - 0.5, z, 0.4]); }
+          B(px0, px1 + 0.2, FL1 - 0.4, FL1, -W - 0.3, W + 0.3, stoneLight, false);
+          for (const [a, b] of [[[px0, -W - 0.1], [px1, -W - 0.1]], [[px1, -W - 0.1], [px1, W + 0.1]], [[px0, W + 0.1], [px1, W + 0.1]]]) {
             const len = Math.hypot(b[0] - a[0], b[1] - a[1]), nn = Math.round(len / 0.9);
             for (let i = 0; i <= nn; i++) posts.push([a[0] + (b[0] - a[0]) * i / nn, FL1, a[1] + (b[1] - a[1]) * i / nn]);
             rails.push([a, b, FL1]);
@@ -598,7 +665,8 @@
       B(STAIR.x1 - 13 * tread, STAIR.x1, FL0, FL0 + 1.0, zA[1], zB[0], mat.trim);                               // Wange zwischen den Laeufen
       // Gelaender oben um das Treppenloch (ausser am Austritt)
       B(STAIR.x1, STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z0, zA[1], mat.trim);
-      B(SHAFT_OUT[1], STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z0 - 0.08, STAIR.z0, mat.trim);
+      B(SHAFT_OUT[1], STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z1, STAIR.z1 + 0.08, mat.trim);
+      B(STAIR.x0, STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z0 - 0.08, STAIR.z0, mat.trim);
       B(STAIR.x0 - 0.08, STAIR.x0, FL1, FL1 + 1.0, STAIR.z0, STAIR.z1, mat.trim);
 
       // Aufzugschacht (Waende bis unters Dach, Tueren nach Osten in jedem Geschoss)
@@ -678,6 +746,238 @@
       L.target = here; toast("Der Aufzug kommt");
     }
 
+    // ===================== Hoehlenkarten als Overlay (Knopf "Karte" schaltet durch) =====================
+    // Beide Hoehlenkarten haben denselben Rahmen. Bezug: Aufzug (Karte 352.5 / 276) = Aufzugschacht im Haus,
+    // Massstab ca. 0,27 m pro Pixel (aus dem kleinen Hausumriss-Overlay der Karte "Upper Level" geschaetzt).
+    const CAVE_SC = 0.27 * SC / 0.4, CAVE_W = 736, CAVE_H = 1042, CAVE_LIFT = [352.5, 276];
+    const caveMp = (px, py) => [SHAFT.cx + (py - CAVE_LIFT[1]) * CAVE_SC, SHAFT.cz - (px - CAVE_LIFT[0]) * CAVE_SC];
+    function caveOverlay(src, masks) {
+      const c = document.createElement("canvas"), tex = new THREE.CanvasTexture(c), img = new Image();
+      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+      img.onload = () => {
+        c.width = img.width; c.height = img.height;
+        const g = c.getContext("2d");
+        g.drawImage(img, 0, 0);
+        for (const [x0, y0, x1, y1] of masks) g.clearRect(x0, y0, x1 - x0, y1 - y0);
+        const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+        for (let i = 0; i < a.length; i += 4) a[i + 3] = Math.min(a[i + 3], clamp01((Math.max(a[i], a[i + 1], a[i + 2]) - 75) / 110) * 255);   // dunkler Grund wird durchsichtig
+        g.putImageData(d, 0, 0);
+        tex.needsUpdate = true;
+      };
+      img.src = src;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(CAVE_W * CAVE_SC, CAVE_H * CAVE_SC).rotateX(-Math.PI / 2).rotateY(Math.PI / 2),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, fog: false }));
+      const [cx, cz] = caveMp(CAVE_W / 2, CAVE_H / 2);
+      m.position.set(cx, 0.3, cz); m.renderOrder = 10; m.visible = false; m.userData.keep = true;
+      scene.add(m);
+      return m;
+    }
+    const MAPS = [
+      { name: "Außenanlage", mesh: mapMesh },
+      { name: "Höhle oben", mesh: caveOverlay("karten/hoehle-oberes-level.webp", [[0, 0, 736, 215], [425, 228, 705, 298], [452, 603, 695, 718], [372, 718, 736, 1000], [8, 862, 178, 1018]]) },
+      { name: "Höhle unten", mesh: caveOverlay("karten/hoehle-unteres-level.webp", [[0, 0, 736, 215], [18, 242, 218, 418], [438, 228, 708, 298], [488, 752, 668, 922]]) }
+    ];
+    let mapIdx = 0;
+    function showMap(i) {
+      mapIdx = i;
+      MAPS.forEach((m, k) => { m.mesh.visible = k === i; });
+      const b = $("btn-walk-top");
+      b.textContent = i < MAPS.length ? "Karte: " + MAPS[i].name : "Karte: aus";
+      b.setAttribute("aria-pressed", String(i < MAPS.length));
+    }
+
+    // ===================== Aussenanlage (Schritt 4) =====================
+    const flatMat = (o) => M(0xffffff, { roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1, ...o });
+    // Strassenbelaege als Texturen: u = quer (0..1), v = laengs (eine Periode)
+    const roadTex = {
+      road: canvasTex(128, 128, (g, w, h) => {
+        g.fillStyle = "#4a4c50"; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 900; i++) { const v = 60 + r1() * 40; g.fillStyle = `rgba(${v},${v},${v + 4},.5)`; g.fillRect(r1() * w, r1() * h, 1.5, 1.5); }
+        g.fillStyle = "#e8e4d8"; g.fillRect(4, 0, 3, h); g.fillRect(w - 7, 0, 3, h);
+        g.fillStyle = "#e0c341"; g.fillRect(w / 2 - 2, 0, 4, h * 0.55);
+      }),
+      drive: canvasTex(256, 64, (g, w, h) => {
+        g.fillStyle = "#55575b"; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 700; i++) { const v = 70 + r1() * 40; g.fillStyle = `rgba(${v},${v},${v + 4},.5)`; g.fillRect(r1() * w, r1() * h, 1.5, 1.5); }
+        g.fillStyle = "#ece8dc"; g.fillRect(0, 0, w * 0.34, 3); g.fillRect(w * 0.66, 0, w * 0.34, 3);   // Parkplatz-Linien beidseitig
+        g.fillRect(w * 0.34, 0, 3, h); g.fillRect(w * 0.66 - 3, 0, 3, h);
+      }),
+      ramp: canvasTex(128, 64, (g, w, h) => {
+        g.fillStyle = "#77787a"; g.fillRect(0, 0, w, h);
+        g.strokeStyle = "#a9a9a6"; g.lineWidth = 5;
+        for (let x = -h; x < w + h; x += 18) { g.beginPath(); g.moveTo(x, h); g.lineTo(x + h, 0); g.stroke(); }
+        g.fillStyle = "#d6d2c6"; g.fillRect(0, 0, 5, h); g.fillRect(w - 5, 0, 5, h);
+      })
+    };
+    for (const t of Object.values(roadTex)) t.repeat.set(1, 1);
+    const roadPeriod = { road: 6, drive: 2.6, ramp: 2.2 };
+    // Band entlang einer Kurve, folgt dem Gelaende
+    function ribbon(curve, len, w, material, period, lift = 0.07) {
+      const n = Math.ceil(len / 2), pos = [], uv = [], idx = [];
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, p = curve.getPointAt(t), tg = curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z), nx = -tg.z / nl, nz = tg.x / nl;
+        for (const sd of [-1, 1]) { const x = p.x + nx * w / 2 * sd, z = p.z + nz * w / 2 * sd; pos.push(x, Math.max(terrainH(x, z), terrainH(p.x, p.z)) + lift, z); uv.push(sd < 0 ? 0 : 1, t * len / period); }
+        if (i) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
+      g.computeVertexNormals();
+      const m = new THREE.Mesh(g, material); m.receiveShadow = true; m.userData.keep = true;
+      scene.add(m);
+      return m;
+    }
+    const lamps = [];
+    for (const r of ROADS) {
+      ribbon(r.curve, r.len, r.w, flatMat({ map: roadTex[r.kind], side: THREE.DoubleSide }), roadPeriod[r.kind]);
+      if (r.kind === "ramp") ribbon(r.curve, r.len, r.w + 1.6, flatMat({ color: 0xd6d2c6, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5, side: THREE.DoubleSide }), 4, 0.05);
+      // Laternen beidseitig alle 18 m (wie die Quadrate auf der Karte)
+      const n = Math.floor(r.len / 14);
+      for (let i = 1; i < n; i++) {
+        const t = i / n, p = r.curve.getPointAt(t), tg = r.curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z);
+        for (const sd of [-1, 1]) {
+          const x = p.x - tg.z / nl * (r.w / 2 + 1.2) * sd, z = p.z + tg.x / nl * (r.w / 2 + 1.2) * sd;
+          if (Math.hypot(x, z) < 600 && !inPoly(HOUSE, x, z)) lamps.push([x, terrainH(x, z), z]);
+        }
+      }
+    }
+    {
+      const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.08, 0.12, 4, 6).translate(0, 2, 0), mat.dark, lamps.length);
+      const head = new THREE.InstancedMesh(new THREE.SphereGeometry(0.28, 8, 6).translate(0, 4.1, 0), mat.lamp = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffd27a, emissiveIntensity: 0.2 }), lamps.length);
+      const m4 = new THREE.Matrix4();
+      lamps.forEach(([x, y, z], i) => { m4.makeTranslation(x, y, z); pole.setMatrixAt(i, m4); head.setMatrixAt(i, m4); circles.push([x, z, 0.15]); });
+      pole.castShadow = true; pole.computeBoundingSphere(); head.computeBoundingSphere();
+      scene.add(pole, head);
+    }
+    // Garagentore an den Rampenenden (die Rampen nach unten folgen in Schritt 5/8)
+    {
+      const gIn = mp(0, 827)[0], gInZ = mp(337, 0)[1], gOut = mp(0, 1018)[0], gOutZ = mp(300, 0)[1];
+      B(gIn - 0.25, gIn, FL0, FL0 + 3.8, gInZ - 3.3, gInZ + 3.3, mat.dark, false); B(gOut, gOut + 0.25, FL0, FL0 + 3.8, gOutZ - 3.3, gOutZ + 3.3, mat.dark, false);
+    }
+
+    // Rondell mit Brunnen, Vorplatz, zwei Baeume (Rondell-Mitte Karte 500 / 1000, aussen 70 px, Brunnen 30 px)
+    const [RX, RZ] = mp(500, 1000), RON = { x: RX, z: RZ, r: 70 * SC };
+    const gravelMat = flatMat({ color: 0xc9bc9c });
+    {
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(RON.r, 64).rotateX(-Math.PI / 2), gravelMat); disc.position.set(RON.x, 0.05, RON.z); disc.receiveShadow = true; scene.add(disc);
+      const [fx0] = mp(0, 893), [fx1] = mp(0, 965), fw = 140 * SC;
+      const fore = new THREE.Mesh(new THREE.PlaneGeometry(fx1 - fx0, fw).rotateX(-Math.PI / 2), gravelMat); fore.position.set((fx0 + fx1) / 2, 0.05, 0); fore.receiveShadow = true; scene.add(fore);
+      const fr = 30 * SC;                                                     // Brunnen-Radius ca. 6 m
+      const ring = new THREE.Mesh(new THREE.RingGeometry(fr + 0.4, fr + 0.8, 64).rotateX(-Math.PI / 2), flatMat({ color: 0x8c8676 })); ring.position.set(RON.x, 0.06, RON.z); scene.add(ring);
+      // Brunnen: Becken mit Rand, Wasser, Sockel und zwei Schalen
+      cyl(fr, fr, 0.6, stoneLight, RON.x, 0.3, RON.z, world, 40);
+      const water = new THREE.Mesh(new THREE.CircleGeometry(fr - 0.45, 40).rotateX(-Math.PI / 2), mat.water); water.position.set(RON.x, 0.62, RON.z); scene.add(water);
+      circles.push([RON.x, RON.z, fr, 0.6]);
+      cyl(1.0, 1.4, 1.2, stoneLight, RON.x, 1.0, RON.z, world, 20);
+      cyl(2.2, 0.8, 0.45, stoneLight, RON.x, 1.8, RON.z, world, 24);
+      cyl(0.35, 0.5, 1.2, stoneLight, RON.x, 2.5, RON.z, world, 12);
+      cyl(1.1, 0.4, 0.3, stoneLight, RON.x, 3.2, RON.z, world, 20);
+      const jet = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.6, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0xcfeaff, transparent: true, opacity: 0.45, roughness: 0.1 }));
+      jet.position.set(RON.x, 4.1, RON.z); jet.rotation.x = Math.PI; scene.add(jet);
+      for (const [x, z] of [mp(445, 940), mp(550, 942)]) {
+        cyl(0.25, 0.35, 3, mat.bark, x, 1.5, z, world, 8);
+        const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(2.6, 1), mat.leaves); crown.position.set(x, 4.6, z); crown.scale.set(1, 0.85, 1); crown.castShadow = true; world.add(crown);
+        circles.push([x, z, 0.4]);
+      }
+    }
+
+    // Veranda nordlich vom Westfluegel (Holzdeck, Pfosten, Dach) und Weg zur Nordtuer
+    {
+      const [vx0, vz1] = mp(642, 705), [vx1, vz0] = mp(688, 862);           // x -58..-26.6, z -28.4..-37.6
+      const x0 = Math.min(vx0, vx1), x1 = Math.max(vx0, vx1), z0 = Math.min(vz0, vz1), z1 = Math.max(vz0, vz1);
+      B(x0, x1, 0, 0.42, z0, z1, mat.floorWood);
+      const [, sz] = mp(706, 0);
+      B(x0 + 1, x1 - 1, 0, 0.21, sz, z0, mat.floorWood);                    // breite Stufe (Streifen auf der Karte)
+      for (let x = x0 + 0.4; x <= x1 - 0.3; x += (x1 - x0 - 0.8) / 8) for (const z of [z0 + 0.4, z1 - 0.4]) { cyl(0.15, 0.15, 3.4, mat.white, x, 0.42 + 1.7, z, world, 8); circles.push([x, z, 0.2]); }
+      B(x0 - 0.4, x1 + 0.4, 3.8, 4.1, z0 - 0.4, z1 + 0.4, mat.slate, false);
+      B(x0 - 0.4, x1 + 0.4, 3.6, 3.8, z0 - 0.4, z1 + 0.4, mat.white, false);
+      const dN = DOORS[1], pc = (dN.a0 + dN.a1) / 2, pz = dN.line - 1.2;
+      const path = new THREE.Mesh(new THREE.PlaneGeometry(3, pz - z1).rotateX(-Math.PI / 2), gravelMat); path.position.set(pc, 0.05, (z1 + pz) / 2); scene.add(path);
+      // Weg Veranda -> Wayne Gardens (Sued-Eingang des Labyrinths)
+      const gz = mp(725, 0)[1];
+      const p2 = new THREE.Mesh(new THREE.PlaneGeometry(3, sz - gz).rotateX(-Math.PI / 2), gravelMat); p2.position.set(pc, 0.05, (sz + gz) / 2); scene.add(p2);
+    }
+
+    // Wayne Gardens: Heckenlabyrinth (Zellen 4 m, Hecken 2,3 m hoch), Eingaenge Ost und West
+    {
+      const C = 2.6, HH = 2.3, T = 0.6, [GX0] = mp(0, 637), GZ0 = mp(810, 0)[1], NX = Math.round((mp(0, 905)[0] - GX0) / C), NZ = Math.round((mp(725, 0)[1] - GZ0) / C);
+      const SOUTH = Math.floor(((DOORS[1].a0 + DOORS[1].a1) / 2 - GX0) / C), MID = Math.floor(NZ / 2);
+      const hedge = M(0x2f6a32, { roughness: 1, map: texClone(grassTex, 1 / 2, 1 / 2) });
+      const mr = rng(2024), seen = new Uint8Array(NX * NZ), wallE = new Uint8Array(NX * NZ).fill(1), wallS = new Uint8Array(NX * NZ).fill(1);
+      const stack = [[SOUTH, NZ - 1]]; seen[(NZ - 1) * NX + SOUTH] = 1;
+      while (stack.length) {
+        const [cx, cz] = stack[stack.length - 1];
+        const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dz]) => [cx + dx, cz + dz, dx, dz]).filter(([x, z]) => x >= 0 && z >= 0 && x < NX && z < NZ && !seen[z * NX + x]);
+        if (!nb.length) { stack.pop(); continue; }
+        const [nx, nz, dx, dz] = nb[Math.floor(mr() * nb.length)];
+        if (dx === 1) wallE[cz * NX + cx] = 0; else if (dx === -1) wallE[nz * NX + nx] = 0; else if (dz === 1) wallS[cz * NX + cx] = 0; else wallS[nz * NX + nx] = 0;
+        seen[nz * NX + nx] = 1; stack.push([nx, nz]);
+      }
+      const hb = (x0, x1, z0, z1) => B(x0, x1, 0, HH, z0, z1, hedge);
+      // Rand; Eingaenge: Mitte Ost und West, Sued beim Weg von der Veranda
+      hb(GX0 - T / 2, GX0 + NX * C + T / 2, GZ0 - T / 2, GZ0 + T / 2);
+      hb(GX0 - T / 2, GX0 + SOUTH * C, GZ0 + NZ * C - T / 2, GZ0 + NZ * C + T / 2); hb(GX0 + (SOUTH + 1) * C, GX0 + NX * C + T / 2, GZ0 + NZ * C - T / 2, GZ0 + NZ * C + T / 2);
+      for (const x of [GX0, GX0 + NX * C]) { hb(x - T / 2, x + T / 2, GZ0, GZ0 + MID * C); hb(x - T / 2, x + T / 2, GZ0 + (MID + 1) * C, GZ0 + NZ * C); }
+      for (let z = 0; z < NZ; z++) for (let x = 0; x < NX; x++) {
+        const px = GX0 + x * C, pz = GZ0 + z * C;
+        if (x < NX - 1 && wallE[z * NX + x]) hb(px + C - T / 2, px + C + T / 2, pz - T / 2, pz + C + T / 2);
+        if (z < NZ - 1 && wallS[z * NX + x]) hb(px - T / 2, px + C + T / 2, pz + C - T / 2, pz + C + T / 2);
+      }
+      const lawn = new THREE.Mesh(new THREE.PlaneGeometry(NX * C, NZ * C).rotateX(-Math.PI / 2), gravelMat); lawn.position.set(GX0 + NX * C / 2, 0.04, GZ0 + NZ * C / 2); scene.add(lawn);
+    }
+
+    // Pool mit Steinterrasse, Poolhaus, Whirlpool
+    {
+      const [px0, pz1] = mp(90, 912), [px1, pz0] = mp(140, 985);            // Wasser ca. 15 x 10 m
+      const x0 = Math.min(px0, px1), x1 = Math.max(px0, px1), z0 = Math.min(pz0, pz1), z1 = Math.max(pz0, pz1), d = 1.5;
+      for (const [a, b, c, e] of [[x0 - d, x1 + d, z0 - d, z0], [x0 - d, x1 + d, z1, z1 + d], [x0 - d, x0, z0, z1], [x1, x1 + d, z0, z1]]) B(a, b, 0, 0.3, c, e, stoneLight);
+      B(x0, x1, 0, 0.04, z0, z1, M(0x3d9fc9, { roughness: 0.4 }), false);
+      B(x0, x1, 0, 0.2, z0, z1, mat.water, false);
+      S(x0, x1, 0, 2, z0, z1);                                               // nicht ins Becken laufen (kein Schwimmen)
+      // Poolhaus
+      const [hx0, hz1] = mp(58, 975), [hx1, hz0] = mp(83, 1015);
+      const ax0 = Math.min(hx0, hx1), ax1 = Math.max(hx0, hx1), az0 = Math.max(Math.min(hz0, hz1), z1 + d + 0.3), az1 = Math.max(hz0, hz1);
+      B(ax0, ax1, 0, 3.6, az0, az1, mat.facade);
+      B(ax0 - 0.3, ax1 + 0.3, 3.6, 3.9, az0 - 0.3, az1 + 0.3, stoneLight, false);
+      B((ax0 + ax1) / 2 - 0.6, (ax0 + ax1) / 2 + 0.6, 0, 2.3, az0 - 0.05, az0, mat.trim, false);
+      // Whirlpool (Kreis neben dem Poolhaus)
+      const [wx, wz] = mp(78, 1030);
+      cyl(1.6, 1.6, 0.8, mat.wood, wx, 0.4, wz, world, 24);
+      const ww = new THREE.Mesh(new THREE.CircleGeometry(1.35, 24).rotateX(-Math.PI / 2), mat.water); ww.position.set(wx, 0.78, wz); scene.add(ww);
+      circles.push([wx, wz, 1.6, 0.8]);
+    }
+
+    // Basketball- und Tennisplatz mit Zaun (Tor zur Seite des Wegs)
+    {
+      const [cx0, cz1] = mp(50, 812), [cx1, cz0] = mp(140, 893);            // ca. 16 x 18 m
+      const x0 = Math.min(cx0, cx1), x1 = Math.max(cx0, cx1), z0 = Math.min(cz0, cz1), z1 = Math.max(cz0, cz1), zm = mp(90, 0)[1];
+      const courtTex = (bg, draw) => { const t = canvasTex(512, 256, (g, w, h) => { g.fillStyle = bg; g.fillRect(0, 0, w, h); g.strokeStyle = "#f4f4f0"; g.lineWidth = 3; draw(g, w, h); }); t.repeat.set(1, 1); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t; };
+      const tennis = courtTex("#3f7d5a", (g, w, h) => { g.fillStyle = "#3a6ea8"; g.fillRect(70, 40, w - 140, h - 80); g.strokeRect(70, 40, w - 140, h - 80); g.strokeRect(70, 62, w - 140, h - 124); g.beginPath(); g.moveTo(w / 2, 40); g.lineTo(w / 2, h - 40); g.moveTo(150, h / 2); g.lineTo(w - 150, h / 2); g.moveTo(150, 62); g.lineTo(150, h - 62); g.moveTo(w - 150, 62); g.lineTo(w - 150, h - 62); g.stroke(); });
+      const bball = courtTex("#b5643a", (g, w, h) => { g.strokeRect(20, 20, w - 40, h - 40); g.beginPath(); g.moveTo(w / 2, 20); g.lineTo(w / 2, h - 20); g.stroke(); g.beginPath(); g.arc(w / 2, h / 2, 32, 0, 7); g.stroke(); for (const s of [0, 1]) { const x = s ? w - 20 : 20; g.strokeRect(s ? x - 90 : x, h / 2 - 34, 90, 68); g.beginPath(); g.arc(x, h / 2, 110, s ? Math.PI / 2 : -Math.PI / 2, s ? Math.PI * 1.5 : Math.PI / 2); g.stroke(); } });
+      const plate = (za, zb, tex) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, zb - za).rotateX(-Math.PI / 2), flatMat({ map: tex })); m.position.set((x0 + x1) / 2, 0.05, (za + zb) / 2); m.receiveShadow = true; scene.add(m); };
+      plate(zm, z1, tennis); plate(z0, zm, bball);
+      B((x0 + x1) / 2 - 0.05, (x0 + x1) / 2 + 0.05, 0, 1.0, zm + 0.8, z1 - 0.8, mat.dark, false);         // Netz
+      for (const s of [-1, 1]) {                                                                              // Koerbe
+        const x = s < 0 ? x0 + 1.2 : x1 - 1.2, z = (z0 + zm) / 2;
+        cyl(0.12, 0.12, 3.6, mat.dark, x, 1.8, z, world, 8); circles.push([x, z, 0.15]);
+        B(x + s * -0.6 - 0.05, x + s * -0.6 + 0.05, 2.9, 4.0, z - 0.9, z + 0.9, mat.white, false);
+        const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.02, 6, 16).rotateX(Math.PI / 2), mat.red); hoop.position.set(x + s * -0.95, 3.05, z); world.add(hoop);
+      }
+      // Zaun: Pfosten, Gitter (durchscheinend), Oeffnung an der Ostseite zum Weg
+      const fence = M(0x2b3a2e, { transparent: true, opacity: 0.35, side: THREE.DoubleSide, roughness: 0.6 });
+      const gx = mp(0, 872)[0];                                                                               // Tor an der Nordseite, wo der Weg ankommt
+      const fz = (a, b, z) => { B(a, b, 0, 3, z - 0.04, z + 0.04, fence, false); S(a, b, 0, 3, z - 0.1, z + 0.1); };
+      fz(x0, gx - 1.2, z0); fz(gx + 1.2, x1, z0); fz(x0, x1, z1);
+      for (const x of [x0, x1]) { B(x - 0.04, x + 0.04, 0, 3, z0, z1, fence, false); S(x - 0.1, x + 0.1, 0, 3, z0, z1); }
+      for (let x = x0; x <= x1 + 0.01; x += (x1 - x0) / 8) for (const z of [z0, z1]) cyl(0.06, 0.06, 3.1, mat.dark, x, 1.55, z, world, 6);
+    }
+    // Wege: Plaetze -> Suedtuer -> Pool (Kiesband)
+    {
+      const walk = (pts, w) => { const c = new THREE.CatmullRomCurve3(pts.map(([px, py]) => { const [x, z] = mp(px, py); return new THREE.Vector3(x, 0, z); })); ribbon(c, c.getLength(), w, gravelMat, 4, 0.06); };
+      walk([[140, 872], [158, 876], [163, 900], [163, 950], [156, 975], [142, 985]], 2);
+      walk([[163, 905], [180, 906], [197, 906]], 2);
+      walk([[638, 940], [655, 932], [700, 912], [760, 905], [810, 905], [818, 885]], 2);                        // Nordostfluegel -> Wayne Gardens
+    }
+
     // Himmelsrichtungen als Pfosten mit Schild (N = -z, O = +x, S = +z, W = -x), Nullpunkt rot
     function label(text, x, z, color) {
       const tex = canvasTex(128, 128, (g, w, h) => { g.fillStyle = color; g.beginPath(); g.arc(64, 64, 58, 0, 7); g.fill(); g.fillStyle = "#fff"; g.font = "800 72px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 64, 70); });
@@ -689,7 +989,6 @@
       cyl(0.4, 0.4, 14, M(color), x, gy + 7, z, scene, 8);
     }
     label("N", 0, -260, "#2b6cb0"); label("O", 260, 0, "#c05621"); label("S", 0, 260, "#2f855a"); label("W", -260, 0, "#6b46c1");
-    cyl(0.7, 0.7, 10, M(0xd13a2f), 0, 5, 0, scene, 10);
 
     // ===================== Tag und Nacht =====================
     let night = 0, nightTarget = 0;
@@ -701,6 +1000,7 @@
       sun.intensity = lerp(2.4, 0.5, night);
       hemi.intensity = lerp(1.0, 0.16, night);
       mat.facade.emissiveIntensity = night * 1.2;
+      mat.lamp.emissiveIntensity = 0.2 + night * 2.5;
     }
     applyNight();
 
@@ -708,7 +1008,7 @@
     const touch = matchMedia("(pointer: coarse)").matches;
     document.body.classList.toggle("touch", touch);
     const EYE = 1.62, BODY = 1.8, RADIUS = 0.3, STEP = 0.45, WALK = 4.6, RUN = 9, JUMP = 6.4, GRAVITY = 22, LIMIT = LIMIT_WORLD;
-    const START = { x: 70, z: 0, yaw: Math.PI / 2 };                          // Blick nach Westen auf das Rondell
+    const START = { x: 32, z: 0, yaw: Math.PI / 2 };                        // Blick nach Westen auf das Rondell
     const player = { pos: new THREE.Vector3(START.x, 0, START.z), vy: 0, yaw: START.yaw, pitch: 0.05, onGround: true, jump: false };
     const keys = new Set();
     let walking = false, dragging = false, jumpHeld = false;
@@ -794,7 +1094,8 @@
       camera.position.copy(orbitView.pos); controls.target.copy(orbitView.target); camera.lookAt(orbitView.target);
     }
     $("btn-walk-low").addEventListener("click", () => startWalk());
-    $("btn-walk-top").addEventListener("click", e => { mapMesh.visible = !mapMesh.visible; e.currentTarget.setAttribute("aria-pressed", String(mapMesh.visible)); });
+    $("btn-walk-top").addEventListener("click", () => showMap((mapIdx + 1) % (MAPS.length + 1)));
+    showMap(0);
     $("btn-exit").addEventListener("click", () => setWalk(false));
     $("btn-lift").addEventListener("click", useLift);
     renderer.domElement.addEventListener("mousedown", e => {
@@ -900,7 +1201,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
