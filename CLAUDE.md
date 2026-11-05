@@ -66,6 +66,11 @@ Modrinth (Suche "halloween", Resource Packs, nach Downloads), mit Lizenz:
 3. Die Seite des Eintrags in `ASSETS` in `sw.js` aufnehmen und `CACHE` hochzaehlen (`random-v2`, `random-v3`, ...), sonst sehen installierte Clients die Aenderung nicht.
    Grosse Dateien (z.B. GLB-Modelle) gehoeren in `LAZY`, sie werden nach der Aktivierung im Hintergrund geladen.
 
+### Retro Game Hub (Präsentationen, `sachen/retro-hub/`, `sachen/retro-hub-titel/`)
+
+- Zwei einzelne, unveränderte HTML-Dateien (alles eingebettet, einzige externe Abhängigkeit: Google Fonts "Press Start 2P" und "VT323"). Nicht anfassen; neue Fassung = Datei ersetzen und `CACHE` in `sw.js` hochzählen.
+- Offline: beide Seiten stehen in `LAZY` in `sw.js` (werden nach der Aktivierung im Hintergrund gespeichert). Die Schriften holt der Service Worker beim Aktivieren selbst (CSS lesen, genannte `.woff2`-Dateien speichern, `FONTS_CSS`); zusätzlich werden Fonts-Antworten bei jedem Abruf mitgespeichert, auch undurchsichtige (Stylesheet per `<link>`). Geprüft mit gestopptem Server: Seiten und Schriften laden.
+
 ## Eigene PWAs
 
 Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen/helden/`): eigenes `manifest.webmanifest` mit `scope`/`start_url` `./`, eigenes `icon.svg`, und die Seite registriert den gemeinsamen Service Worker `../../sw.js`. Externe Bibliotheken (three.js) sind fest versioniert und stehen in `ASSETS`, damit sie offline verfuegbar sind.
@@ -111,7 +116,7 @@ Stand: 2026-11-04
 
 Eintraege:
 - Pruefungsvorbereitung: UI Designen (`pruefung/ui-design/`) fuer den Test in **Modul 322 "Benutzerschnittstellen entwerfen und implementieren"** (Angabe von Nicolas, 2026-11-02). Geruest fertig, als einziges Thema die vier Handlungsziele des Moduls (aus gibb-Kursseite und Schullehrplan GB Chur, offizielle Modulidentifikation auf modulbaukasten.ch noch nicht geprueft). **Pruefungsinhalte fehlen noch** (kommen von Nicolas, dann in `inhalt.js` eintragen).
-- Sachen: Villa 3D (`sachen/villa/`, amerikanisches Haus mit Keller, Garage, Pool, Hügeln; geprüft Desktop und Wege per `?debug`. Leistung am echten Handy noch nicht geprüft), Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht, begehbar mit WASD bzw. Joysticks; geprüft Desktop, 375px hoch und 740x360 quer mit Touch-Emulation. Echtes Handy-Vollbild nicht automatisch prüfbar), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
+- Sachen: Retro Game Hub – Präsentation in zwei Fassungen (`sachen/retro-hub/` = mit Text, `sachen/retro-hub-titel/` = nur Kartentitel; Abschlusspräsentation Scrum-Experiment TBZ, Dateien unverändert aus Nicolas' Downloads `index.html` bzw. `index_final_version.html`, je ca. 1 MB mit eingebetteten Bildern, ohne Vorschaubild), Villa 3D (`sachen/villa/`, amerikanisches Haus mit Keller, Garage, Pool, Hügeln; geprüft Desktop und Wege per `?debug`. Leistung am echten Handy noch nicht geprüft), Haus 3D (`sachen/haus/`, aus Code gebaut, Tag/Nacht, begehbar mit WASD bzw. Joysticks; geprüft Desktop, 375px hoch und 740x360 quer mit Touch-Emulation. Echtes Handy-Vollbild nicht automatisch prüfbar), Superhelden 3D (`sachen/helden/`, eigene PWA, 6 GLB-Modelle von get3dmodels.com plus Iron-Man-Eigenbau; Lizenzen der Modelle teils unklar, siehe Footer der Seite).
 - Blockbench: Halloween-Pack, Pack-Viewer, Cowboyhut (mit Nicolas' Skin `blockbench/cowboyhut/skin.png`, auf seinen Wunsch im Repo).
 
 Offen:

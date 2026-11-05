@@ -1,8 +1,11 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v15";
+const CACHE = "random-v16";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+// Google Fonts der Retro-Game-Hub-Praesentationen (CSS und Schriftdateien werden mitgespeichert)
+const FONTS_CSS = "https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap";
+const isFont = url => url.startsWith("https://fonts.googleapis.com/") || url.startsWith("https://fonts.gstatic.com/");
 const ASSETS = [
   "./", "index.html", "manifest.webmanifest", "icon.svg",
   "sachen/helden/", "sachen/helden/manifest.webmanifest", "sachen/helden/icon.svg", "sachen/helden/vorschau.webp",
@@ -20,7 +23,9 @@ const ASSETS = [
   THREE + "examples/jsm/utils/BufferGeometryUtils.js"
 ];
 // Gross, darum erst nach der Aktivierung im Hintergrund laden
-const LAZY = ["ironman", "spiderman", "spiderman-variant", "hulk", "batman", "superman"].map(id => `sachen/helden/models/${id}.glb`);
+const LAZY = ["ironman", "spiderman", "spiderman-variant", "hulk", "batman", "superman"].map(id => `sachen/helden/models/${id}.glb`)
+  // Retro-Game-Hub-Praesentationen (je ca. 1 MB, alles eingebettet)
+  .concat(["sachen/retro-hub/", "sachen/retro-hub-titel/"]);
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
@@ -33,16 +38,24 @@ self.addEventListener("activate", event => {
   );
   self.clients.claim();
   caches.open(CACHE).then(cache => Promise.all(LAZY.map(url => cache.add(url).catch(() => {}))));
+  // Schriften vorab laden: CSS holen, die darin genannten Schriftdateien ebenfalls speichern
+  caches.open(CACHE).then(async cache => {
+    const css = await fetch(FONTS_CSS);
+    await cache.put(FONTS_CSS, css.clone());
+    const files = [...(await css.text()).matchAll(/url\((https:[^)]+)\)/g)].map(m => m[1]);
+    await Promise.all(files.map(u => cache.add(u).catch(() => {})));
+  }).catch(() => {});
 });
 
 // Network first, bei Offline aus dem Cache. Eigene Dateien und die fest versionierte three.js-Bibliothek.
 self.addEventListener("fetch", event => {
   const url = event.request.url;
-  if (event.request.method !== "GET" || !(new URL(url).origin === location.origin || url.startsWith(THREE) || url === JSZIP)) return;
+  if (event.request.method !== "GET" || !(new URL(url).origin === location.origin || url.startsWith(THREE) || url === JSZIP || isFont(url))) return;
   event.respondWith(
     fetch(event.request)
       .then(res => {
-        if (res.ok) {
+        // Auch undurchsichtige Antworten (Stylesheet per <link> ohne CORS) speichern, sonst fehlen die Schriften offline
+        if (res.ok || res.type === "opaque") {
           const copy = res.clone();
           caches.open(CACHE).then(cache => cache.put(event.request, copy));
         }
