@@ -780,12 +780,12 @@
       g(13.6, KG + 0.9, 15.4, KG + 0.95, 0.7, 2.3, mat.wood, false);
     }
 
-    // --- Gewaechshaus schraeg zum Haus (um 34 Grad gedreht), hinter dem Pool, Tuer zum Pool hin, Plattenweg von der Garagen-Hintertuer ---
+    // --- Gewaechshaus schraeg zum Haus (um 34 Grad gedreht), am Gartenweg, Tuer zum Weg hin, Plattenweg von der Garagen-Hintertuer ---
     {
       const gh = new THREE.Group();
       gh.name = 'Gewaechshaus';
-      gh.position.set(9.5, 0, -28);
-      gh.rotation.y = -0.6;
+      gh.position.set(15.3, 0, -13.2);
+      gh.rotation.y = -1.1;
       world.add(gh);
       const L = 2.2, W2 = 1.4, WH = 1.8, RISE2 = 0.95;           // halbe Laenge, halbe Breite, Wandhoehe, Dachhoehe
       const b = (x0, y0, x1, y1, z0, z1, m, shadow = true) => box(x0, y0, z0, x1, y1, z1, m, { parent: gh, solid: false, shadow });
@@ -909,7 +909,7 @@
         ribbon(pts, w, 0.03, mat.stone);
       }
       stonePath([[10.55, GZ0 - 1.2], [10.55, -12], [8.0, -17.5], [3.8, -18.8]]);   // Garage -> Pool (Ostrand der Platten)
-      stonePath([[3.8, -21.4], [6.0, -23.4], [dx, dz]]);                            // Pool -> Gewaechshaus
+      stonePath([[10.55, -11.7], [12.3, -12.1], [dx, dz]]);                         // Abzweig vom Gartenweg -> Gewaechshaus
     }
 
     // --- Sitzplatz westlich des Pools: Platten, Esstisch mit Stuehlen und Sonnenschirm, Grillecke ---
@@ -1031,6 +1031,48 @@
         stool.add(base);
         circles.push([x, bz1 + 0.75, 0.25]);
       }
+    }
+
+    // --- Sonnenliegen auf dem Rasen oestlich vom Pool (knapp 4 m vom Wasser), Fuesse zum Pool ---
+    {
+      const lounger = (cx, cz, towel) => {
+        const lg = new THREE.Group();
+        lg.position.set(cx, 0, cz);
+        world.add(lg);
+        const part = (w, h, d, x, y, z, m, rz = 0) => {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+          mesh.position.set(x, y, z);
+          mesh.rotation.z = rz;
+          mesh.castShadow = mesh.receiveShadow = true;
+          lg.add(mesh);
+          return mesh;
+        };
+        // Beine, Rahmen, Matratze (Fuss- und Mittelteil), schraege Rueckenlehne am Ostende
+        for (const [x, z] of [[-0.9, -0.28], [-0.9, 0.28], [0.3, -0.28], [0.3, 0.28]]) part(0.05, 0.22, 0.05, x, 0.11, z, mat.dark);
+        part(1.9, 0.05, 0.68, -0.25, 0.24, 0, mat.white);
+        part(1.9, 0.09, 0.62, -0.25, 0.31, 0, mat.fabric);
+        const a = 0.95;
+        part(0.8, 0.05, 0.68, 0.7 + 0.4 * Math.cos(a), 0.26 + 0.4 * Math.sin(a), 0, mat.white, a);
+        part(0.8, 0.09, 0.62, 0.7 + 0.4 * Math.cos(a) - 0.05 * Math.sin(a), 0.26 + 0.4 * Math.sin(a) + 0.05 * Math.cos(a), 0, mat.fabric, a);
+        part(0.04, 0.3, 0.04, 0.7 + 0.5, 0.15, 0, mat.dark, 0.5);   // Stuetze der Lehne
+        if (towel) part(0.5, 0.012, 0.58, -0.7, 0.36, 0, mat.markYellow);
+        // Kollision: Rechteck der Liege in Weltkoordinaten
+        solids.push({ x0: cx - 1.2, x1: cx + 1.3, y0: 0, y1: 0.5, z0: cz - 0.38, z1: cz + 0.38 });
+      };
+      lounger(7.9, -20.1, true);
+      lounger(7.9, -21.3, false);
+      // kleiner Beistelltisch zwischen den Liegen und dem Rand, mit Glas
+      const side = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 16), mat.wood);
+      side.position.set(9.9, 0.45, -20.7);
+      side.castShadow = true;
+      world.add(side);
+      const sideLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.45, 8), mat.steel);
+      sideLeg.position.set(9.9, 0.225, -20.7);
+      world.add(sideLeg);
+      const drink = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.1, 10), mat.greenGlass);
+      drink.position.set(9.9, 0.52, -20.7);
+      world.add(drink);
+      circles.push([9.9, -20.7, 0.25]);
     }
 
     // Auto: Karosserie, Kabine mit Scheiben, Raeder
@@ -1248,7 +1290,7 @@
     };
     // Zwei Baeume im Garten hinten zuerst, damit die zufaelligen Abstand halten
     put(tree, -15.5, -27.5, 1.1);
-    put(tree, 17.5, -13, 0.95);
+    put(tree, 19.5, -21, 0.95);
     let placed = 0;
     for (let tries = 0; tries < 3000 && placed < 34; tries++) {
       const a = prng() * Math.PI * 2, r = 14 + prng() * 18;
