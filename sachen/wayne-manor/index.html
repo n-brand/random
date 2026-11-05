@@ -597,6 +597,7 @@
     // Schritt 5: Obergeschosse nach der Karte "Auxiliary Floors" (Third Floor = 2. OG auf dem Dach, Fourth Floor = 3. OG).
     // Third-Floor-Zeichnung -> Aussenkarte: px = 394 + (tx - 285) / 1,1, py = 689 + (ty - 460) / 1,1; Fourth Floor = gleiche Lage, 322 px tiefer gezeichnet.
     const TF = ROOF_Y + 0.3, TF2 = TF + FLOOR_H + 0.3, HP = TF + FLOOR_H + 0.3;
+    const LY = -28, LH = 10;                                                  // Hoehle unten (Lower Level): Boden und Hoehe
     const tmp = (tx, ty) => mp(394 + (tx - 285) / 1.1, 689 + (ty - 460) / 1.1);
     const rectW = (a, b) => { const [xa, za] = a, [xb, zb] = b; return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: Math.min(za, zb), z1: Math.max(za, zb) }; };
     const THEATRE = rectW(tmp(287.5, 532.5), tmp(467.5, 630));             // Theatre + Storage (2. OG), darueber Observatory (3. OG)
@@ -718,12 +719,12 @@
       B(STAIR.x0 - 0.08, STAIR.x0, FL1, FL1 + 1.0, STAIR.z0, STAIR.z1, mat.trim);
 
       // Aufzugschacht (Tueren nach Osten in jedem Halt, ueber dem Dach ein Aufbau)
-      const STOP_Y = [FL0, FL1, TF], SH_TOP = TF + 3.5;
+      const STOP_Y = [LY, FL0, FL1, TF], SH_TOP = TF + 3.5, SH_BOT = LY - 0.3;
       const [sx0, sx1, sz0, sz1] = SHAFT_OUT;
-      B(sx0, sx1, 0, SH_TOP, sz0, SHAFT.z0, mat.dark); B(sx0, sx1, 0, SH_TOP, SHAFT.z1, sz1, mat.dark); B(sx0, SHAFT.x0, 0, SH_TOP, SHAFT.z0, SHAFT.z1, mat.dark);
+      B(sx0, sx1, SH_BOT, SH_TOP, sz0, SHAFT.z0, mat.dark); B(sx0, sx1, SH_BOT, SH_TOP, SHAFT.z1, sz1, mat.dark); B(sx0, SHAFT.x0, SH_BOT, SH_TOP, SHAFT.z0, SHAFT.z1, mat.dark);
       const dz0 = SHAFT.cz - 1, dz1 = SHAFT.cz + 1;
-      B(SHAFT.x1, sx1, 0, SH_TOP, SHAFT.z0, dz0, mat.dark); B(SHAFT.x1, sx1, 0, SH_TOP, dz1, SHAFT.z1, mat.dark);
-      let yy = 0;
+      B(SHAFT.x1, sx1, SH_BOT, SH_TOP, SHAFT.z0, dz0, mat.dark); B(SHAFT.x1, sx1, SH_BOT, SH_TOP, dz1, SHAFT.z1, mat.dark);
+      let yy = SH_BOT;
       for (const sy of STOP_Y) { B(SHAFT.x1, sx1, yy, sy, dz0, dz1, mat.dark); yy = sy + 3; }
       B(SHAFT.x1, sx1, yy, SH_TOP, dz0, dz1, mat.dark);
       B(sx0 - 0.2, sx1 + 0.2, SH_TOP, SH_TOP + 0.3, sz0 - 0.2, sz1 + 0.2, stoneLight, false);
@@ -852,7 +853,7 @@
     }
 
     // ===================== Aufzug (Halte: EG, 1. OG, Dach/2. OG; die Hoehle kommt in Schritt 8 dazu) =====================
-    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }, { name: "Dach / 2. Obergeschoss", y: TF }];
+    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }, { name: "Dach / 2. Obergeschoss", y: TF }, { name: "Höhle (Lower Level)", y: LY }];
     const LIFT = { y: FL0, at: 0, target: 0, state: "idle", t: 0, from: FL0, to: FL0, open: STOPS.map((_, i) => i === 0 ? 1 : 0) };
     const car = new THREE.Group();
     car.position.set(SHAFT.cx, FL0, SHAFT.cz);
@@ -893,7 +894,7 @@
         L.open[L.at] = Math.max(0, L.open[L.at] - dt / 0.9);
         if (L.open[L.at] <= 0) { L.state = "moving"; L.t = 0; L.from = L.y; L.to = STOPS[L.target].y; }
       } else if (L.state === "moving") {
-        L.t = Math.min(1, L.t + dt / Math.max(2.5, Math.abs(L.to - L.from) / 1.6));
+        L.t = Math.min(1, L.t + dt / Math.max(2.5, Math.abs(L.to - L.from) / 3.5));
         L.y = lerp(L.from, L.to, sst(0, 1, L.t));
         if (L.t >= 1) { L.at = L.target; L.state = "opening"; }
       } else if (L.state === "opening") {
@@ -911,11 +912,16 @@
       const L = LIFT;
       if (L.state !== "idle") return toast("Aufzug ist unterwegs");
       const p = player.pos;
-      if (!walking || inCar(p)) { L.target = (L.at + 1) % STOPS.length; return toast("Fahrt ins " + STOPS[L.target].name); }
+      if (!walking || inCar(p)) { L.target = (L.at + 1) % STOPS.length; return toast("Fahrt: " + STOPS[L.target].name + " (Tasten 1-4 wählen den Halt)"); }
       const here = STOPS.findIndex(st => Math.abs(p.y - st.y) < 2.5);
       if (here < 0 || Math.hypot(p.x - (SHAFT.x1 + 2), p.z - SHAFT.cz) > 7) return toast("Zu weit vom Aufzug entfernt");
       if (L.at === here) return toast("Der Aufzug ist schon da");
       L.target = here; toast("Der Aufzug kommt");
+    }
+    // Im Fahrstuhl: Taste 1-4 = Halt direkt waehlen
+    function pickStop(i) {
+      if (!walking || !inCar(player.pos) || LIFT.state !== "idle" || i === LIFT.at || !STOPS[i]) return;
+      LIFT.target = i; toast("Fahrt: " + STOPS[i].name);
     }
 
     // ===================== Hoehlenkarten als Overlay (Knopf "Karte" schaltet durch) =====================
@@ -1164,6 +1170,146 @@
       walk([[638, 940], [655, 932], [700, 912], [760, 905], [810, 905], [818, 885]], 2);                        // Nordostfluegel -> Wayne Gardens
     }
 
+    // ===================== Hoehle unten (Schritt 6, Karte "Lower Level") =====================
+    // Alles in Pixeln der Hoehlenkarte (caveMp). Raster aus 0,6-m-Zellen: 0 = Fels, 1 = Boden, 2 = Wasser.
+    // Boden y LY, Wasser WL, Kanalgrund BED, Decke LY + LH (unregelmaessig). Tunnel Sued (Gotham Exit) <-> Nord (Waterfall Exit).
+    const WL = LY - 0.7, BED = LY - 3.2;
+    const toCave = (x, z) => [CAVE_LIFT[0] - (z - SHAFT.cz) / CAVE_SC, CAVE_LIFT[1] + (x - SHAFT.cx) / CAVE_SC];
+    const LOW_FLOOR = [[0, 435], [212, 435], [220, 370], [250, 340], [280, 325], [295, 300], [300, 275], [320, 245], [380, 250], [395, 290], [410, 310], [450, 312], [500, 320],
+      [550, 325], [580, 365], [583, 395], [610, 435], [622, 460], [736, 460], [736, 505], [470, 505], [440, 472], [0, 472]];
+    const LOW_DOCK = [265, 350, 468, 525];
+    const CHANNELS = [
+      { w: 70, pts: [[100, 560], [130, 520], [200, 515], [300, 520], [400, 525], [500, 525], [605, 525]] },             // Wasserband unter dem Tunnel
+      { w: 65, pts: [[130, 520], [95, 580], [80, 640], [110, 700], [165, 735], [205, 760], [222, 790]] },               // Southeast Bay
+      { w: 65, pts: [[400, 525], [405, 600], [400, 660], [390, 720], [350, 770], [300, 795], [240, 795]] },             // Northeast Bay
+      { w: 60, pts: [[222, 790], [205, 850], [195, 910], [205, 960], [240, 1000], [250, 1042]] }                         // zum Lake Exit
+    ];
+    function plDist(pts, px, py) {
+      let m = 1e9;
+      for (let k = 0; k < pts.length - 1; k++) {
+        const [ax, ay] = pts[k], [bx, by] = pts[k + 1], dx = bx - ax, dy = by - ay, t = clamp01(((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy));
+        m = Math.min(m, Math.hypot(px - ax - dx * t, py - ay - dy * t));
+      }
+      return m;
+    }
+    function caveCell(x, z) {
+      const [px, py] = toCave(x, z);
+      if (px < 0 || px > 736 || py > 1042) return 0;
+      if (inPoly(LOW_FLOOR, px, py) || (px > LOW_DOCK[0] && px < LOW_DOCK[1] && py > LOW_DOCK[2] && py < LOW_DOCK[3])) return 1;
+      for (const c of CHANNELS) if (plDist(c.pts, px, py) < c.w / 2) return 2;
+      return 0;
+    }
+    const CELL = 0.6, CX0 = -60, CZ0 = -38, CNX = Math.ceil(112 / CELL), CNZ = Math.ceil(106 / CELL), CM = new Uint8Array(CNX * CNZ);
+    for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) CM[j * CNX + i] = caveCell(CX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL);
+    const cmAt = (i, j) => (i < 0 || j < 0 || i >= CNX || j >= CNZ) ? 0 : CM[j * CNX + i];
+    function caveAt(x, z) { return cmAt(Math.floor((x - CX0) / CELL), Math.floor((z - CZ0) / CELL)); }
+    const caveLights = [];
+    {
+      const jit = (x, z) => [x + (vnoise(x * 0.45 + 3, z * 0.45) - 0.5) * 0.7, z + (vnoise(x * 0.45, z * 0.45 + 7) - 0.5) * 0.7];
+      const ceilY = (x, z) => LY + LH - 2.6 * vnoise(x * 0.12, z * 0.12) - 1.2 * vnoise(x * 0.4 + 5, z * 0.4);
+      const inShaft = (x, z) => x > SHAFT_OUT[0] - 0.3 && x < SHAFT_OUT[1] + 0.3 && z > SHAFT_OUT[2] - 0.3 && z < SHAFT_OUT[3] + 0.3;
+      const G = { rock: [], floor: [], bed: [], water: [] };
+      const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
+      const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.25, z * 0.25];
+      const corner = (i, j) => jit(CX0 + i * CELL, CZ0 + j * CELL);
+      for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
+        const t = CM[j * CNX + i];
+        if (!t) continue;
+        const c = [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)];   // 00, 10, 11, 01
+        const fy = t === 1 ? LY : BED;
+        push(t === 1 ? G.floor : G.bed, c.map(([x, z]) => [x, fy, z]), uvFlat);
+        if (t === 2) push(G.water, c.map(([x, z]) => [x, WL, z]), uvFlat);
+        if (!inShaft(CX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL)) push(G.rock, c.map(([x, z]) => [x, ceilY(x, z), z]), uvWall);
+        for (const [di, dj, a, b] of [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]]) {
+          const nt = cmAt(i + di, j + dj), [ax, az] = c[a], [bx, bz] = c[b];
+          if (nt === 0) push(G.rock, [[ax, fy, az], [bx, fy, bz], [bx, ceilY(bx, bz), bz], [ax, ceilY(ax, az), az]], uvWall);
+          else if (t === 1 && nt === 2) push(G.rock, [[ax, BED, az], [bx, BED, bz], [bx, LY, bz], [ax, LY, az]], uvWall);
+        }
+      }
+      const mk = (arr, m) => {
+        const g = new THREE.BufferGeometry(), a = new Float32Array(arr), n = a.length / 5, pos = new Float32Array(n * 3), uv = new Float32Array(n * 2);
+        for (let k = 0; k < n; k++) { pos.set(a.subarray(k * 5, k * 5 + 3), k * 3); uv.set(a.subarray(k * 5 + 3, k * 5 + 5), k * 2); }
+        g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.computeVertexNormals();
+        const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; mesh.userData.keep = true; scene.add(mesh); return mesh;
+      };
+      mk(G.rock, M(0x77736c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true, side: THREE.DoubleSide }));
+      mk(G.floor, M(0x55575c, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 0.95, side: THREE.DoubleSide }));
+      mk(G.bed, M(0x2d3a40, { roughness: 1, side: THREE.DoubleSide }));
+      mk(G.water, M(0x1f5f7a, { transparent: true, opacity: 0.82, roughness: 0.1, metalness: 0.2, emissive: 0x0a2a3a, emissiveIntensity: 0.5 }));
+      // Kollision: Boden (Zeilen-Laeufe), Wasser gesperrt, Felswaende an jeder Kante zu Fels
+      const runs = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
+      const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
+      runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), LY - 0.5, LY, Z(j), Z(j + 1)));
+      runs((i, j) => CM[j * CNX + i] === 2, (a, b, j) => S(X(a), X(b), BED, LY + 1.0, Z(j), Z(j + 1)));
+      runs((i, j) => CM[j * CNX + i] > 0 && cmAt(i, j - 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j) - 0.3, Z(j)));
+      runs((i, j) => CM[j * CNX + i] > 0 && cmAt(i, j + 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j + 1), Z(j + 1) + 0.3));
+      for (let i = 0; i < CNX; i++) for (const d of [-1, 1]) {                // senkrechte Kanten spaltenweise
+        let s = -1;
+        for (let j = 0; j <= CNZ; j++) {
+          const ok = j < CNZ && CM[j * CNX + i] > 0 && cmAt(i + d, j) === 0;
+          if (ok && s < 0) s = j;
+          if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 : xl, d < 0 ? xl : xl + 0.3, BED, LY + LH, Z(s), Z(j)); s = -1; }
+        }
+      }
+
+      const C = (px, py) => caveMp(px, py);
+      // Tunnel: Fahrbahn mit Mittellinie, Haengelampen, Schilder an beiden Enden
+      const TUN = [[2, 453], [330, 453], [445, 456], [490, 482], [734, 482]].map(([px, py]) => { const [x, z] = C(px, py); return new THREE.Vector3(x, 0, z); });
+      const tc = new THREE.CatmullRomCurve3(TUN, false, "centripetal"), tl = tc.getLength();
+      ribbon(tc, tl, 4.6, flatMat({ map: roadTex.road, side: THREE.DoubleSide }), roadPeriod.road, 0, { y: () => LY });
+      for (let d = 4; d < tl; d += 8) { const p = tc.getPointAt(d / tl); B(p.x - 0.5, p.x + 0.5, LY + 6, LY + 6.15, p.z - 0.15, p.z + 0.15, mat.glow, false, world, false); B(p.x - 0.02, p.x + 0.02, LY + 6.15, LY + 8.5, p.z - 0.02, p.z + 0.02, mat.dark, false, world, false); }
+      const sign = (text, arrow, px, py, face) => {
+        const t = canvasTex(512, 128, (g, w, h) => { g.fillStyle = "#1b2a1f"; g.fillRect(0, 0, w, h); g.strokeStyle = "#7fbf7a"; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12); g.fillStyle = "#cfe8c8"; g.font = "800 54px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text + " " + arrow, w / 2, h / 2 + 2); });
+        t.repeat.set(1, 1);
+        const [x, z] = C(px, py), m = new THREE.Mesh(new THREE.PlaneGeometry(4, 1), new THREE.MeshBasicMaterial({ map: t }));
+        m.position.set(x, LY + 4, z); m.rotation.y = face; m.userData.keep = true; world.add(m);
+      };
+      sign("GOTHAM EXIT", "↓", 6, 453, Math.PI); sign("WATERFALL EXIT", "↑", 730, 482, 0);
+      // Drehende Tiefgarage: Scheibe mit 6 Feldern, 4 Wagen, dreht langsam
+      const [rx, rz] = C(385, 417), rr = 60 * CAVE_SC;
+      const turn = new THREE.Group(); turn.position.set(rx, LY, rz); turn.userData.dynamic = true; world.add(turn);
+      { const disc = new THREE.Mesh(new THREE.CylinderGeometry(rr, rr, 0.12, 48), M(0x2e3036, { metalness: 0.5, roughness: 0.4 })); disc.position.y = 0.06; turn.add(disc);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.12, 6, 64).rotateX(Math.PI / 2), mat.gold); ring.position.y = 0.1; turn.add(ring);
+        for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, l = new THREE.Mesh(new THREE.BoxGeometry(rr, 0.02, 0.08), M(0xd9c27a)); l.position.set(Math.cos(a) * rr / 2, 0.13, Math.sin(a) * rr / 2); l.rotation.y = -a; turn.add(l); }
+        for (const k of [0, 1, 3, 4]) {
+          const a = (k + 0.5) / 6 * Math.PI * 2, cg = new THREE.Group(); cg.position.set(Math.cos(a) * rr * 0.55, 0.12, Math.sin(a) * rr * 0.55); cg.rotation.y = -a + Math.PI / 2; turn.add(cg);
+          B(-0.95, 0.95, 0.25, 0.8, -2.3, 2.3, mat.bat, false, cg); B(-0.7, 0.7, 0.8, 1.2, -0.9, 0.6, mat.dark, false, cg); B(-0.15, 0.15, 0.8, 1.5, 1.3, 2.3, mat.bat, false, cg);
+          B(-0.9, -0.5, 0.45, 0.6, 2.28, 2.32, mat.glowRed, false, cg, false); B(0.5, 0.9, 0.45, 0.6, 2.28, 2.32, mat.glowRed, false, cg, false);
+          for (const sx of [-1, 1]) for (const sz of [-1.5, 1.5]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.3, 12).rotateZ(Math.PI / 2), mat.black); w.position.set(sx * 0.95, 0.38, sz); cg.add(w); }
+        }
+      }
+      world.userData.turntable = turn;
+      // Medical Bay (tuerkis): Boden getoent, OR/ICU als Glasraum, vier Betten
+      const tint = (pxs, color) => { const sh = new THREE.Shape(); pxs.forEach(([px, py], k) => { const [x, z] = C(px, py); if (k) sh.lineTo(x, -z); else sh.moveTo(x, -z); }); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), flatMat({ color, transparent: true, opacity: 0.35 })); m.position.y = LY + 0.02; m.userData.keep = true; world.add(m); };
+      tint([[452, 312], [500, 320], [550, 325], [580, 365], [583, 395], [610, 435], [620, 455], [560, 457], [450, 375]], 0x3fb7a5);
+      tint([[212, 435], [220, 370], [250, 340], [280, 325], [295, 300], [300, 292], [318, 340], [322, 435]], 0x8a5bc4);
+      const panel = ([ax, az], [bx, bz], y0, y1, m, th = 0.08) => { const len = Math.hypot(bx - ax, bz - az), p = new THREE.Mesh(new THREE.BoxGeometry(len, y1 - y0, th), m); p.position.set((ax + bx) / 2, (y0 + y1) / 2, (az + bz) / 2); p.rotation.y = -Math.atan2(bz - az, bx - ax); world.add(p); return p; };
+      const icu = [[505, 340], [530, 320], [582, 370], [560, 390]].map(([px, py]) => C(px, py)), glassW = M(0xcfeee8, { transparent: true, opacity: 0.3, roughness: 0.1 });
+      for (let k = 0; k < 4; k++) panel(icu[k], icu[(k + 1) % 4], LY, LY + 3, glassW);
+      { const [ax, az] = C(450, 375), [bx, bz] = C(560, 457), ang = -Math.atan2(bz - az, bx - ax);
+        for (const [px, py] of [[478, 372], [498, 388], [518, 404], [538, 420]]) { const [x, z] = C(px, py), bed = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.6, 1.0), mat.white); bed.position.set(x, LY + 0.3, z); bed.rotation.y = ang + Math.PI / 2; world.add(bed); circles.push([x, z, 0.6, LY + 0.6]); } }
+      // Auto Repair (lila): zwei Hebebuehnen, Werkzeugwagen
+      for (const py of [398, 414]) { const [x, z] = C(250, py); for (const sz of [-2, 2]) B(x - 0.15, x + 0.15, LY, LY + 2.4, z + sz - 0.15, z + sz + 0.15, mat.steel); B(x - 1.1, x + 1.1, LY + 1.0, LY + 1.12, z - 2.2, z + 2.2, mat.steel, false); }
+      { const [x, z] = C(240, 357); B(x - 0.4, x + 0.4, LY, LY + 1.0, z - 0.6, z + 0.6, M(0xb33b2e)); }
+      // Anlegestelle mit Boot, Stufen zum Wasser
+      { const [x, z] = C(300, 545); B(x - 1.1, x + 1.1, WL - 0.4, WL + 0.5, z - 3.2, z + 3.2, mat.bat, false); B(x - 0.8, x + 0.8, WL + 0.5, WL + 1.3, z - 1.2, z + 0.8, mat.dark, false); }
+      { const [x0, z0] = C(322, 512), [x1, z1] = C(348, 525), ax0 = Math.min(x0, x1), ax1 = Math.max(x0, x1), az0 = Math.min(z0, z1), az1 = Math.max(z0, z1);
+        for (let k = 0; k < 4; k++) B(ax0 + k * (ax1 - ax0) / 4, ax0 + (k + 1) * (ax1 - ax0) / 4, BED, LY - k * 0.25, az0, az1, mat.concrete, false); }
+      // Tore (SE und NE): Gitterstaebe quer ueber den Kanal, roter Rahmen
+      for (const [a, b] of [[[180, 770], [235, 745]], [[298, 768], [298, 832]]]) {
+        const A = C(...a), Bp = C(...b), len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]), n = Math.round(len / 0.35);
+        for (let k = 0; k <= n; k++) { const t = k / n, x = lerp(A[0], Bp[0], t), z = lerp(A[1], Bp[1], t); cyl(0.04, 0.04, LY + 3 - BED, mat.steel, x, (BED + LY + 3) / 2, z, world, 6); }
+        panel(A, Bp, LY + 3, LY + 3.3, mat.red, 0.25);
+      }
+      // Checkpoint I am Lake Exit
+      { const [x, z] = C(255, 1036); cyl(0.12, 0.12, 3, mat.dark, x, WL + 1.5, z, world, 8); const l = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), mat.glowRed); l.position.set(x, WL + 3.2, z); world.add(l); }
+      // Licht: einige echte Punktlichter (nur unter der Erde an, siehe applyNight), Wandlampen als Leuchtkoerper
+      for (const [px, py] of [[350, 300], [385, 417], [520, 400], [250, 390], [300, 520]]) {
+        const [x, z] = C(px, py), l = new THREE.PointLight(0xffe2b8, 0, 34, 1.6); l.position.set(x, LY + 6, z); l.userData.I = 55; scene.add(l); caveLights.push(l);
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), mat.glowOrange); f.position.copy(l.position); world.add(f);
+      }
+    }
+
     // Himmelsrichtungen als Pfosten mit Schild (N = -z, O = +x, S = +z, W = -x), Nullpunkt rot
     function label(text, x, z, color) {
       const tex = canvasTex(128, 128, (g, w, h) => { g.fillStyle = color; g.beginPath(); g.arc(64, 64, 58, 0, 7); g.fill(); g.fillStyle = "#fff"; g.font = "800 72px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 64, 70); });
@@ -1186,6 +1332,7 @@
       sun.intensity = lerp(2.4, 0.5, night) * (1 - under);
       hemi.intensity = lerp(1.0, 0.16, night) * (1 - 0.8 * under);
       cave.intensity = 1.1 * under;
+      for (const l of caveLights) l.intensity = l.userData.I * under;
       mat.facade.emissiveIntensity = night * 1.2;
       mat.lamp.emissiveIntensity = 0.2 + night * 2.5;
     }
@@ -1224,7 +1371,7 @@
     function groundAt(x, z, feet = 0) {
       const ra = rampAt(x, z);
       if (ra) return ra.y;
-      if (feet < -1 && inPoly(GARAGE, x, z)) return GY - 20;
+      if (feet < -1 && (inPoly(GARAGE, x, z) || caveAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
       return terrainH(x, z);
     }
     function supportAt(p, feet) {
@@ -1306,6 +1453,7 @@
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
       if (e.code === "KeyE" && !e.repeat) return useLift();
+      if (/^Digit[1-4]$/.test(e.code)) return pickStop(+e.code.slice(5) - 1);
       keys.add(e.code);
       if (e.code === "Space") { player.jump = true; e.preventDefault(); }
     });
@@ -1354,7 +1502,8 @@
       else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (camera.position.y < gy) camera.position.y = gy; }
       updateLift(dt);
       if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
-      const ut = walking && player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z) ? 1 : 0;
+      const ut = walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || player.pos.y < -8) ? 1 : 0;
+      world.userData.turntable.rotation.y += dt * 0.12;
       if (ut !== under) { under = ut > under ? Math.min(1, under + dt * 2) : Math.max(0, under - dt * 2); applyNight(); }
       const rn = night < nightTarget ? Math.min(nightTarget, night + dt * 0.8) : Math.max(nightTarget, night - dt * 0.8);
       if (rn !== night) { night = rn; applyNight(); }
@@ -1397,7 +1546,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, toCave, LY, pickStop, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
