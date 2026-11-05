@@ -314,7 +314,7 @@
       }
       const tg = new THREE.BufferGeometry();
       tg.setAttribute("position", new THREE.Float32BufferAttribute(keepP, 3)); tg.setAttribute("color", new THREE.Float32BufferAttribute(keepC, 3)); tg.computeVertexNormals();
-      const mesh = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true }));
+      const mesh = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true, side: THREE.DoubleSide }));   // von unten (Halle/Schacht) Erde statt Himmel sehen
       mesh.receiveShadow = true;
       mesh.userData.keep = true;
       scene.add(mesh);
