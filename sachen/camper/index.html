@@ -751,7 +751,7 @@
       const cushion = M(col);
       fb(g, 0, 1.0, 0.18, 0.26, -0.25, 0.25, cushion);
       const back = fb(g, 0, 0.7, 0, 0.08, -0.25, 0.25, cushion);
-      back.position.set(-0.28, 0.43, 0); back.rotation.z = 0.95;
+      back.position.set(-0.35 * Math.cos(1.0) + 0.04, 0.26 + 0.35 * Math.sin(1.0), 0); back.rotation.z = -1.0;   // am Kopfende angelenkt, nach hinten oben geneigt
       for (const [lx, lz] of [[0.05, -0.22], [0.05, 0.22], [0.95, -0.22], [0.95, 0.22]]) fb(g, lx - 0.025, lx + 0.025, 0, 0.18, lz - 0.025, lz + 0.025, mat.wood);
     }
     lounger(-2.4, -0.72, 0x24aea1);
