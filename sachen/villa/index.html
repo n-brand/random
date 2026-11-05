@@ -1035,9 +1035,10 @@
 
     // --- Sonnenliegen auf dem Rasen oestlich vom Pool (knapp 4 m vom Wasser), Fuesse zum Pool ---
     {
-      const lounger = (cx, cz, towel) => {
+      const lounger = (cx, cz, towel, rot = 0) => {
         const lg = new THREE.Group();
         lg.position.set(cx, 0, cz);
+        lg.rotation.y = rot;
         world.add(lg);
         const part = (w, h, d, x, y, z, m, rz = 0) => {
           const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
@@ -1057,10 +1058,22 @@
         part(0.04, 0.3, 0.04, 0.7 + 0.5, 0.15, 0, mat.dark, 0.5);   // Stuetze der Lehne
         if (towel) part(0.5, 0.012, 0.58, -0.7, 0.36, 0, mat.markYellow);
         // Kollision: Rechteck der Liege in Weltkoordinaten
-        solids.push({ x0: cx - 1.2, x1: cx + 1.3, y0: 0, y1: 0.5, z0: cz - 0.38, z1: cz + 0.38 });
+        if (rot) solids.push({ x0: cx - 0.38, x1: cx + 0.38, y0: 0, y1: 0.5, z0: cz - (rot > 0 ? 1.3 : 1.2), z1: cz + (rot > 0 ? 1.2 : 1.3) });   // quer (rot > 0: Kopf nach -z/Norden)
+        else solids.push({ x0: cx - 1.2, x1: cx + 1.3, y0: 0, y1: 0.5, z0: cz - 0.38, z1: cz + 0.38 });
       };
       lounger(7.9, -20.1, true);
       lounger(7.9, -21.3, false);
+      // zwei weitere Liegen im Norden hinter dem Pool (Norden = -z), quer, Kopf nach Norden, Fuesse zum Pool, ~3 m vom Wasser
+      lounger(-2.9, -25.6, true, Math.PI / 2);
+      lounger(-1.7, -25.6, false, Math.PI / 2);
+      const side2 = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 16), mat.wood);
+      side2.position.set(-0.7, 0.45, -25.0);
+      side2.castShadow = true;
+      world.add(side2);
+      const side2Leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.45, 8), mat.steel);
+      side2Leg.position.set(-0.7, 0.225, -25.0);
+      world.add(side2Leg);
+      circles.push([-0.7, -25.0, 0.25]);
       // kleiner Beistelltisch zwischen den Liegen und dem Rand, mit Glas
       const side = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 16), mat.wood);
       side.position.set(9.9, 0.45, -20.7);
