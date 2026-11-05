@@ -112,6 +112,12 @@ Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen
 - Garagendach ohne Überstand zur Hausseite (ragte sonst ins Obergeschoss). Wasser kaum spiegelnd (Umgebungs-Spiegelung auf 0.25), sonst weisse Blendflecken.
 - `?debug` stellt `window.villa` bereit (Spieler, `update`, `setWalk`) zum Testen der Wege; geprüft: Haustür, Treppe hoch, Kellertreppe, Küche→Garage (Auto stoppt), in den Pool, hochschwimmen, über Stufen raus, Hang hinter der Einfahrt.
 
+### Wayne Manor 3D (`sachen/wayne-manor/`, in Arbeit, schrittweise)
+- Neues Projekt nach den Karten in `karten/` (Exterior Grounds, Auxiliary Floors, Upper/Lower Level der Höhle, Fassadenfoto). Bauplan mit neun Schritten in `PLAN.md`; **jeder Schritt wird einzeln gebaut, getestet, committet und auf localhost angesehen** (Wunsch von Nicolas, wegen Tokens).
+- Orientierung nach dem Kompass der Karten: Norden = -z, Osten = +x (Hausfront und Hauptzufahrt zeigen nach Osten); Karte oben = Westen, rechts = Norden. Massstab 1 Kartenpixel = 0,4 m, Nullpunkt = Mitte des Rondells (Karte 500/995), `mp(px, py) -> [x, z]` im Code. Haus liegt ca. x -119..12, z -56..122.
+- Die Seite wird aus dem Wayne-Berg-Gerüst erzeugt (Kopf, Materialien, Hilfsfunktionen `B`, `wall`, `canvasTex`, Laufmodus); Hilfsskripte liegen nicht im Repo, die Seite ist von Hand weiterzupflegen.
+- Stand: **Schritt 1 fertig** (Gerüst, Karten-Overlay auf dem Boden, Himmelsrichtungs-Pfosten, Laufmodus, Tag/Nacht, `?debug` -> `window.manorDebug`). Nächster Schritt: 2 (Gelände, Seen, Wald). Nicht vergessen: Startseite (`ENTRIES`), `sw.js` (ASSETS, Cache hochzählen), Vorschaubild, wenn das Projekt vorzeigbar ist.
+
 ### Wayne-Berg 3D (`sachen/wayne-berg/`)
 - Kunst-Berg, ganz aus Code: Wayne Manor auf dem Gipfelplateau (y 46, um x 0 / z -70, Villa schaut nach Süden), Batcave als Halle unter dem Berg (Ellipse um (0, -44)). Der Berg ist rundum gleich sanft (`natH`, begehbar bis zur Villa, Zaun nur an der Südkante des Plateaus).
 - Höhleneingang im **Westen** (bewusst nicht parallel zur Villa): Felsvorsprung (Portal, 22 m breit, 12 m hoch) mit Rundbogen bei x -100, davor Teich und Steg, Wasserfall als Vorhang vor dem Portal. Tunnel 60 m lang nach Osten bis zur Halle. Der Bach kommt auf halber Höhe aus einem Quellfels (`SPRING_Z`), nicht vom Gipfel. Portal-Teile sind im lokalen Rahmen gebaut (`portalG`, `toL`/`toW`: lz = -x, lx = z - CZ; `SL`/`BL` erzeugen Kollision in Weltkoordinaten).
