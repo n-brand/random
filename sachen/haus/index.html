@@ -770,14 +770,14 @@
 
     // PC: Linksklick uebernimmt die Maus (Pointer Lock, Fadenkreuz, Zeiger weg), erneuter Linksklick gibt sie frei
     // Taste E: Mausempfindlichkeit durchschalten, Auswahl bleibt im Browser gespeichert
-    const SENS = [0.2, 0.4, 0.6, 0.8, 1, 1.4, 2, 3];
-    let sensIndex = 4;
-    try { const saved = parseInt(localStorage.getItem("haus-sens2"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
+    const SENS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.4, 2, 3];
+    let sensIndex = 5;
+    try { const saved = parseInt(localStorage.getItem("haus-sens3"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
     const sensitivity = () => SENS[sensIndex];
     let toastTimer;
     function cycleSens() {
       sensIndex = (sensIndex + 1) % SENS.length;
-      try { localStorage.setItem("haus-sens2", String(sensIndex)); } catch (e) {}
+      try { localStorage.setItem("haus-sens3", String(sensIndex)); } catch (e) {}
       const toast = document.getElementById("toast");
       toast.textContent = "Mausempfindlichkeit " + Math.round(SENS[sensIndex] * 100) + " % (E = weiter)";
       toast.classList.add("show");

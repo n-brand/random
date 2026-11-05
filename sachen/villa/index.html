@@ -358,6 +358,9 @@
       markYellow: M({ color: 0xe6b422, roughness: 0.8 }),
       curb: M({ color: 0x8f8d88, roughness: 0.9 }),
       bikePaint: P({ color: 0x1b4fa8, metalness: 0.6, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 }),
+      greenGlass: M({ color: 0xbfe8e0, roughness: 0.05, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }),
+      pot: M({ color: 0xb85c38, roughness: 0.9 }),
+      fruit: M({ color: 0xd9352a, roughness: 0.5 }),
       redBox: M({ color: 0xb3262e, roughness: 0.5 }),
       steel: M({ color: 0xb8bcc0, metalness: 0.9, roughness: 0.3 }),
       dark: M({ color: 0x24262a, roughness: 0.6 }),
@@ -468,7 +471,7 @@
 
     // --- Gelaende: flach um Haus, Einfahrt und Pool, nach aussen sanfte Huegel ---
     const FLAT = [[-8.5, 22, -23.5, 17], [-34, 40, 16, 28.5]];
-    const HOLES = [[-HX, HX, BZ, HZ], [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]];
+    const HOLES = [[-HX, HX, BZ, HZ], [HX, 18.125, -5.0, HZ], [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]];
     const inRect = (x, z, [x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1;
     function terrain(x, z) {
       let d = Infinity;
@@ -527,7 +530,7 @@
     wall("x", -HX, HX, HZ - WALL / 2, KG, TOP, FRONT_OPEN, faces("+z", mat.siding, mat.plaster));
     wall("x", -HX, HX, BZ + WALL / 2, KG, TOP, BACK_OPEN, faces("-z", mat.siding, mat.plaster));
     wall("z", IBZ, IZ, -HX + WALL / 2, KG, TOP, LEFT_OPEN, faces("-x", mat.siding, mat.plaster));
-    wall("z", IBZ, IZ, HX - WALL / 2, KG, TOP, [GARAGE_DOOR, ...SIDE_BACK], faces("+x", mat.siding, mat.plaster));
+    wall("z", IBZ, IZ, HX - WALL / 2, KG, TOP, [[-3.2, -1.9, KG, KG + 2.1], GARAGE_DOOR, ...SIDE_BACK], faces("+x", mat.siding, mat.plaster));
     for (const o of FRONT_OPEN.slice(1)) windowIn("x", HZ - WALL / 2, o[0], o[1], o[2], o[3], 1);
     for (const o of BACK_OPEN.slice(1)) windowIn("x", BZ + WALL / 2, o[0], o[1], o[2], o[3], -1);
     for (const o of LEFT_OPEN) windowIn("z", -HX + WALL / 2, o[0], o[1], o[2], o[3], -1);
@@ -671,18 +674,18 @@
     garage.name = 'Garage';
     world.add(garage);
     const grng = rng(77);
-    function shelf(x0, x1, z0, z1) {
+    function shelf(x0, x1, z0, z1, yb = 0) {
       const g = (a, y0, b, y1, c, d, m) => box(a, y0, c, b, y1, d, m, { parent: garage, solid: false });
       const alongX = x1 - x0 > z1 - z0;
       const n = Math.max(2, Math.round((alongX ? x1 - x0 : z1 - z0) / 1.1) + 1);
       for (let i = 0; i < n; i++) {
         const t = i / (n - 1);
-        if (alongX) { const x = x0 + 0.03 + t * (x1 - x0 - 0.06); g(x - 0.025, 0, x + 0.025, 2.0, z0, z1, mat.steel); }
-        else { const z = z0 + 0.03 + t * (z1 - z0 - 0.06); g(x0, 0, x1, 2.0, z - 0.025, z + 0.025, mat.steel); }
+        if (alongX) { const x = x0 + 0.03 + t * (x1 - x0 - 0.06); g(x - 0.025, yb, x + 0.025, yb + 2.0, z0, z1, mat.steel); }
+        else { const z = z0 + 0.03 + t * (z1 - z0 - 0.06); g(x0, yb, x1, yb + 2.0, z - 0.025, z + 0.025, mat.steel); }
       }
       const crates = [mat.redBox, mat.fabric, mat.dark, mat.carpet, mat.wood];
       for (let k = 0; k < 4; k++) {
-        const y = 0.35 + k * 0.5;
+        const y = yb + 0.35 + k * 0.5;
         g(x0, y, x1, y + 0.04, z0, z1, mat.wood);
         const len = alongX ? x1 - x0 : z1 - z0;
         for (let p = 0.15; p < len - 0.5; p += 0.45 + grng() * 0.35) {
@@ -691,7 +694,7 @@
           else g(x0 + 0.06, y + 0.04, x1 - 0.06, y + 0.04 + h, z0 + p, z0 + p + w, m);
         }
       }
-      solids.push({ x0, x1, y0: 0, y1: 2.0, z0, z1 });
+      solids.push({ x0, x1, y0: yb, y1: yb + 2.0, z0, z1 });
     }
     const BACK = GZ0 + WALL;
     shelf(6.7, 9.5, BACK, BACK + 0.5);
@@ -743,6 +746,147 @@
       lamp.position.set(bx, 0.88, (-1.72 + dz));
       garage.add(lamp);
       solids.push({ x0: bx - 0.3, x1: bx + 0.3, y0: 0, y1: 1.1, z0: (-3.55 + dz), z1: (-1.45 + dz) });
+    }
+
+    // --- Keller unter der Garage: Werkstatt links, Weinkeller rechts; Durchgang vom Hauskeller (x = HX, z -3.2..-1.9) ---
+    {
+      const g = (a, y0, b, y1, c, d, m, solid = true) => box(a, y0, c, b, y1, d, m, { parent: garage, solid });
+      g(IX, KG - 0.2, GX1, KG, GZ0, GZ1, floorFaces(mat.concrete, mat.concrete));
+      // Kellerwaende aus Beton (unter der Erde, von innen sichtbar)
+      g(IX, KG, GX1, 0, GZ0, GZ0 + WALL, mat.concreteWall);
+      g(IX, KG, GX1, 0, GZ1 - WALL, GZ1, mat.concreteWall);
+      g(GX1 - WALL, KG, GX1, 0, GZ0, GZ1, mat.concreteWall);
+      // Werkstatt: Werkbank mit Schraubstock, Werkzeugwand, Rollwagen
+      g(7.0, KG, 11.0, KG + 0.9, GZ0 + WALL, GZ0 + WALL + 0.65, mat.wood);
+      g(7.0, KG + 0.9, 11.0, KG + 0.95, GZ0 + WALL, GZ0 + WALL + 0.65, mat.dark, false);
+      g(7.4, KG + 0.95, 7.65, KG + 1.15, GZ0 + WALL + 0.1, GZ0 + WALL + 0.35, mat.steel, false);
+      g(7.0, KG + 1.3, 11.0, KG + 2.3, GZ0 + WALL, GZ0 + WALL + 0.03, mat.wood, false);
+      for (let i = 0; i < 9; i++) {
+        const y = KG + 1.5 + (i % 3) * 0.25;
+        g(7.2 + i * 0.42, y, 7.2 + i * 0.42 + 0.18, y + 0.15, GZ0 + WALL + 0.03, GZ0 + WALL + 0.08, i % 2 ? mat.steel : mat.redBox, false);
+      }
+      g(8.0, KG, 9.0, KG + 0.8, 0.3, 0.9, mat.redBox);
+      // Weinkeller: Regale mit Flaschen/Kisten an Rueckwand und rechter Wand, Fass mit Tisch
+      shelf(12.2, 15.2, GZ0 + WALL, GZ0 + WALL + 0.5, KG);
+      shelf(15.6, 17.3, GZ0 + WALL, GZ0 + WALL + 0.5, KG);
+      shelf(GX1 - WALL - 0.5, GX1 - WALL, -4.2, -0.6, KG);
+      shelf(GX1 - WALL - 0.5, GX1 - WALL, 0.2, 3.8, KG);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.9, 20), mat.wood);
+      barrel.position.set(14.5, KG + 0.45, 1.5);
+      barrel.castShadow = true;
+      garage.add(barrel);
+      circles.push([14.5, 1.5, 0.5]);
+      g(13.6, KG + 0.9, 15.4, KG + 0.95, 0.7, 2.3, mat.wood, false);
+    }
+
+    // --- Gewaechshaus schraeg zum Haus (um 32 Grad gedreht), Tuer zur Garage hin, Plattenweg von der Garagen-Hintertuer ---
+    {
+      const gh = new THREE.Group();
+      gh.name = 'Gewaechshaus';
+      gh.position.set(13.8, 0, -14.5);
+      gh.rotation.y = 0.55;
+      world.add(gh);
+      const L = 2.2, W2 = 1.4, WH = 1.8, RISE2 = 0.95;           // halbe Laenge, halbe Breite, Wandhoehe, Dachhoehe
+      const b = (x0, y0, x1, y1, z0, z1, m, shadow = true) => box(x0, y0, z0, x1, y1, z1, m, { parent: gh, solid: false, shadow });
+      const GAP = 0.55;                                            // halbe Tuerbreite (Vorderseite z = +W2)
+      const frame = mat.trim;
+      // Fundament aus Stein, Boden aus Platten
+      b(-L, 0, -GAP, 0.5, W2 - 0.1, W2, mat.stone);
+      b(GAP, 0, L, 0.5, W2 - 0.1, W2, mat.stone);
+      b(-L, 0, L, 0.5, -W2, -W2 + 0.1, mat.stone);
+      b(-L, 0, -L + 0.1, 0.5, -W2, W2, mat.stone);
+      b(L - 0.1, 0, L, 0.5, -W2, W2, mat.stone);
+      b(-L, 0, L, 0.015, -W2, W2, mat.stone, false);
+      // Pfosten, Traufbalken, Firstbalken, Giebelrahmen
+      for (let i = 0; i <= 4; i++) {
+        const x = -L + i * (2 * L / 4);
+        b(x - 0.03, 0.5, x + 0.03, WH, -W2 - 0.03, -W2 + 0.03, frame);
+        if (Math.abs(x) > GAP + 0.1) b(x - 0.03, 0.5, x + 0.03, WH, W2 - 0.03, W2 + 0.03, frame);
+      }
+      for (const z of [-W2, W2]) b(-L, WH - 0.04, L, WH + 0.04, z - 0.04, z + 0.04, frame);
+      b(-L, WH + RISE2 - 0.02, L, WH + RISE2 + 0.05, -0.04, 0.04, frame);
+      for (const x of [-L, L]) b(x - 0.04, 0.5, x + 0.04, WH, -W2, W2, frame);
+      // Tuerrahmen mit Sturz
+      b(-GAP - 0.04, 0.5, -GAP, 2.05, W2 - 0.03, W2 + 0.03, frame);
+      b(GAP, 0.5, GAP + 0.04, 2.05, W2 - 0.03, W2 + 0.03, frame);
+      b(-GAP - 0.04, 2.05, GAP + 0.04, 2.1, W2 - 0.03, W2 + 0.03, frame);
+      // Verglasung: Seiten, Giebel, Dach (zwei geneigte Scheiben)
+      b(-L, 0.5, L, WH, -W2 - 0.01, -W2 + 0.01, mat.greenGlass, false);
+      b(-L, 0.5, -GAP - 0.04, WH, W2 - 0.01, W2 + 0.01, mat.greenGlass, false);
+      b(GAP + 0.04, 0.5, L, WH, W2 - 0.01, W2 + 0.01, mat.greenGlass, false);
+      b(-GAP, 2.1, GAP, WH, W2 - 0.01, W2 + 0.01, mat.greenGlass, false);
+      for (const x of [-L, L]) {
+        b(x - 0.01, 0.5, x + 0.01, WH, -W2, W2, mat.greenGlass, false);
+        const tri = new THREE.Shape();
+        tri.moveTo(-W2, 0); tri.lineTo(W2, 0); tri.lineTo(0, RISE2); tri.lineTo(-W2, 0);
+        const tg = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: 0.02, bevelEnabled: false }), mat.greenGlass);
+        tg.rotation.y = -Math.PI / 2;
+        tg.position.set(x + 0.01, WH, 0);
+        gh.add(tg);
+      }
+      const slope = Math.atan2(RISE2, W2), len = Math.hypot(W2, RISE2) + 0.1;
+      for (const side of [-1, 1]) {
+        const pane = new THREE.Mesh(new THREE.BoxGeometry(2 * L + 0.2, 0.03, len), mat.greenGlass);
+        pane.rotation.x = side * slope;
+        const half = len / 2;
+        pane.position.set(0, WH + RISE2 - Math.sin(slope) * half, side * Math.cos(slope) * half);
+        gh.add(pane);
+      }
+      // Tische mit Topfpflanzen (Instanzen), Tomaten mit roten Fruechten
+      const tables = [[-2.0, 2.0, -1.2, -0.6], [-2.0, -1.4, -0.6, 1.1], [1.4, 2.0, -0.6, 1.1]];
+      for (const [x0, x1, z0, z1] of tables) {
+        b(x0, 0.78, x1, 0.82, z0, z1, mat.wood);
+        for (const [lx, lz] of [[x0 + 0.04, z0 + 0.04], [x1 - 0.08, z0 + 0.04], [x0 + 0.04, z1 - 0.08], [x1 - 0.08, z1 - 0.08]]) b(lx, 0, lx + 0.04, 0.78, lz, lz + 0.04, mat.wood);
+      }
+      const hrng = rng(99), spots = [];
+      for (const [x0, x1, z0, z1] of tables) {
+        const along = x1 - x0 > z1 - z0;
+        const n = Math.round((along ? x1 - x0 : z1 - z0) / 0.42);
+        for (let i = 0; i < n; i++) {
+          const t = (i + 0.5) / n;
+          spots.push(along ? [x0 + t * (x1 - x0), (z0 + z1) / 2] : [(x0 + x1) / 2, z0 + t * (z1 - z0)]);
+        }
+      }
+      const pots = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.09, 0.18, 12), mat.pot, spots.length);
+      const leaves = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.2, 1), mat.leaves, spots.length);
+      const fruits = new THREE.InstancedMesh(new THREE.SphereGeometry(0.045, 8, 6), mat.fruit, spots.length * 3);
+      const m4 = new THREE.Matrix4();
+      spots.forEach(([x, z], i) => {
+        const s2 = 0.8 + hrng() * 0.5;
+        m4.makeTranslation(x, 0.82 + 0.09, z); pots.setMatrixAt(i, m4);
+        m4.makeScale(s2, s2 * 1.2, s2).setPosition(x, 0.82 + 0.38, z); leaves.setMatrixAt(i, m4);
+        for (let k = 0; k < 3; k++) {
+          m4.makeTranslation(x + (hrng() - 0.5) * 0.28, 0.82 + 0.3 + hrng() * 0.2, z + (hrng() - 0.5) * 0.28);
+          fruits.setMatrixAt(i * 3 + k, m4);
+        }
+      });
+      pots.castShadow = leaves.castShadow = true;
+      gh.add(pots, leaves, fruits);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), mat.lamp);
+      bulb.position.set(0, WH + 0.5, 0);
+      gh.add(bulb);
+      // Kollision: Kreise entlang der Waende (Tuerluecke frei) und der Tische, in Weltkoordinaten
+      const toWorld = (lx, lz) => [gh.position.x + lx * Math.cos(gh.rotation.y) + lz * Math.sin(gh.rotation.y), gh.position.z - lx * Math.sin(gh.rotation.y) + lz * Math.cos(gh.rotation.y)];
+      const ring = (lx, lz, r) => circles.push([...toWorld(lx, lz), r]);
+      for (let x = -L; x <= L + 0.01; x += 0.45) {
+        ring(x, -W2, 0.25);
+        if (Math.abs(x) > GAP + 0.3) ring(x, W2, 0.25);
+      }
+      for (let z = -W2 + 0.45; z < W2 - 0.2; z += 0.45) { ring(-L, z, 0.25); ring(L, z, 0.25); }
+      for (const [x0, x1, z0, z1] of tables) {
+        for (let x = x0 + 0.2; x <= x1 - 0.1; x += 0.4) for (let z = z0 + 0.2; z <= z1 - 0.1; z += 0.4) ring(x, z, 0.3);
+      }
+      // Plattenweg vom Podest vor der Garagen-Hintertuer zur Gewaechshaustuer
+      const [dx, dz] = toWorld(0, W2 + 0.4);
+      const sx = 10.55, sz = GZ0 - 1.5, dist = Math.hypot(dx - sx, dz - sz), n = Math.round(dist / 0.7);
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, a = Math.atan2(dx - sx, dz - sz);
+        const slab2 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.03, 0.4), mat.stone);
+        slab2.position.set(sx + (dx - sx) * t, 0.015, sz + (dz - sz) * t);
+        slab2.rotation.y = a;
+        slab2.receiveShadow = true;
+        world.add(slab2);
+      }
     }
 
     // Auto: Karosserie, Kabine mit Scheiben, Raeder
@@ -1099,7 +1243,7 @@
     const ROOM_LIGHTS = [
       [-3, 2.6, 0], [3.5, 2.6, 0], [-2.5, 2.6, -6.8], [3, 2.6, -6.8], [0, 2.6, -11.3],
       [-3, 5.6, -1], [4, 5.6, -1], [-3, 5.6, -7], [3.5, 5.6, -7], [-3, 5.6, -11.5], [3.5, 5.6, -11.5], [0.3, 5.6, -9],
-      [-3.5, -0.6, 0], [0, -0.6, -9], [9, 2.9, 0], [15, 2.9, 0], [12, 2.9, -3]
+      [-3.5, -0.6, 0], [0, -0.6, -9], [9, -0.6, -1], [15, -0.6, -1], [12, -0.6, 2.5], [9, 2.9, 0], [15, 2.9, 0], [12, 2.9, -3]
     ].map(([x, y, z]) => new THREE.Vector3(x, y, z));
     for (const p of ROOM_LIGHTS) {
       const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), mat.lamp);
@@ -1279,14 +1423,14 @@
     });
 
     // Taste E: Mausempfindlichkeit durchschalten, Auswahl bleibt im Browser gespeichert
-    const SENS = [0.2, 0.4, 0.6, 0.8, 1, 1.4, 2, 3];
-    let sensIndex = 4;
-    try { const saved = parseInt(localStorage.getItem("haus-sens2"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
+    const SENS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.4, 2, 3];
+    let sensIndex = 5;
+    try { const saved = parseInt(localStorage.getItem("haus-sens3"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
     const sensitivity = () => SENS[sensIndex];
     let toastTimer;
     function cycleSens() {
       sensIndex = (sensIndex + 1) % SENS.length;
-      try { localStorage.setItem("haus-sens2", String(sensIndex)); } catch (e) {}
+      try { localStorage.setItem("haus-sens3", String(sensIndex)); } catch (e) {}
       const toast = document.getElementById("toast");
       toast.textContent = "Mausempfindlichkeit " + Math.round(SENS[sensIndex] * 100) + " % (E = weiter)";
       toast.classList.add("show");
