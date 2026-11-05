@@ -657,8 +657,8 @@
     box(DRIVE[0], 0, GZ1, DRIVE[1], 0.05, ROAD.walk0, mat.concrete, { name: 'Einfahrt' });
     box(DRIVE[0], 0, ROAD.walk0, DRIVE[1], 0.12, ROAD.z0 - 0.2, mat.concrete, { name: 'Einfahrt' });
     {
-      // Absenkung: schraege Platte vom Gehweg (0.12) zur Fahrbahn (0.03)
-      const len = 1.0, ramp = new THREE.Mesh(new THREE.BoxGeometry(DRIVE[1] - DRIVE[0], 0.05, len), mat.concrete);
+      // Absenkung im Randsteinbereich: schraege Platte vom Gehweg (0.12) zur Fahrbahn (0.03), endet vor der weissen Randlinie
+      const len = 0.5, ramp = new THREE.Mesh(metreUV(new THREE.BoxGeometry(DRIVE[1] - DRIVE[0], 0.05, len)), mat.concrete);
       ramp.rotation.x = Math.atan2(0.09, len);
       ramp.position.set((DRIVE[0] + DRIVE[1]) / 2, 0.075, ROAD.z0 - 0.2 + len / 2);
       ramp.receiveShadow = true;
@@ -702,8 +702,8 @@
     // Motorrad im zweiten Stellplatz, Bug zur Garagenoeffnung (+z)
     {
       const g = (a, y0, b, y1, c, d, m) => box(a, y0, c, b, y1, d, m, { parent: garage, solid: false });
-      const bx = 15.2;
-      for (const z of [-1.8, -3.15]) {
+      const bx = 15.2, dz = 3.5;   // Abstand nach vorne (+z), Richtung Garagentor
+      for (const z of [(-1.8 + dz), (-3.15 + dz)]) {
         const w = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.14, 24), mat.tire);
         w.rotation.z = Math.PI / 2;
         w.position.set(bx, 0.33, z);
@@ -714,17 +714,17 @@
         hub.position.set(bx, 0.33, z);
         garage.add(hub);
       }
-      g(bx - 0.04, 0.38, bx + 0.04, 0.62, -3.2, -1.9, mat.dark);          // Rahmen
-      g(bx - 0.14, 0.28, bx + 0.14, 0.55, -2.85, -2.3, mat.steel);        // Motor
-      g(bx - 0.17, 0.62, bx + 0.17, 0.9, -2.75, -2.0, mat.bikePaint);     // Tank
-      g(bx - 0.14, 0.62, bx + 0.14, 0.76, -3.35, -2.75, mat.dark);        // Sitz
-      g(bx - 0.03, 0.3, bx + 0.03, 1.02, -1.85, -1.75, mat.steel);        // Gabel
-      g(bx - 0.28, 1.0, bx + 0.28, 1.06, -1.88, -1.78, mat.dark);         // Lenker
-      g(bx + 0.14, 0.22, bx + 0.24, 0.34, -3.5, -2.4, mat.steel);         // Auspuff
+      g(bx - 0.04, 0.38, bx + 0.04, 0.62, (-3.2 + dz), (-1.9 + dz), mat.dark);          // Rahmen
+      g(bx - 0.14, 0.28, bx + 0.14, 0.55, (-2.85 + dz), (-2.3 + dz), mat.steel);        // Motor
+      g(bx - 0.17, 0.62, bx + 0.17, 0.9, (-2.75 + dz), (-2.0 + dz), mat.bikePaint);     // Tank
+      g(bx - 0.14, 0.62, bx + 0.14, 0.76, (-3.35 + dz), (-2.75 + dz), mat.dark);        // Sitz
+      g(bx - 0.03, 0.3, bx + 0.03, 1.02, (-1.85 + dz), (-1.75 + dz), mat.steel);        // Gabel
+      g(bx - 0.28, 1.0, bx + 0.28, 1.06, (-1.88 + dz), (-1.78 + dz), mat.dark);         // Lenker
+      g(bx + 0.14, 0.22, bx + 0.24, 0.34, (-3.5 + dz), (-2.4 + dz), mat.steel);         // Auspuff
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), mat.lamp);
-      lamp.position.set(bx, 0.88, -1.72);
+      lamp.position.set(bx, 0.88, (-1.72 + dz));
       garage.add(lamp);
-      solids.push({ x0: bx - 0.3, x1: bx + 0.3, y0: 0, y1: 1.1, z0: -3.55, z1: -1.45 });
+      solids.push({ x0: bx - 0.3, x1: bx + 0.3, y0: 0, y1: 1.1, z0: (-3.55 + dz), z1: (-1.45 + dz) });
     }
 
     // Auto: Karosserie, Kabine mit Scheiben, Raeder
@@ -868,8 +868,8 @@
       // Fahrbahnmarkierungen: gelbe gestrichelte Mittellinie, weisse Randlinien
       const mid = (z0 + z1) / 2;
       for (let x = x0 + 1; x < x1 - 2; x += 5) st(x, 0.03, x + 2.5, 0.035, mid - 0.1, mid + 0.1, mat.markYellow, false);
-      st(x0, 0.03, x1, 0.035, z0 + 0.35, z0 + 0.45, mat.markWhite, false);
-      st(x0, 0.03, x1, 0.035, z1 - 0.45, z1 - 0.35, mat.markWhite, false);
+      st(x0, 0.03, x1, 0.035, z0 + 0.6, z0 + 0.7, mat.markWhite, false);
+      st(x0, 0.03, x1, 0.035, z1 - 0.7, z1 - 0.6, mat.markWhite, false);
       // Strassenlampen auf dem Buergersteig, Leuchtkoerper nachts hell
       for (const x of [-20, -6, 22, 32]) {
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 5.2, 10), mat.dark);
