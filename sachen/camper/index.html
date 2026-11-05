@@ -319,11 +319,20 @@
       const grill = new THREE.Group();
       grill.position.set(-9.2, 0, -2.6);
       scene.add(grill);
-      for (let i = 0; i < 3; i++) { const a = i * 2.09, l = cyl(0.015, 0.015, 0.8, mat.steel, Math.cos(a) * 0.22, 0.4, Math.sin(a) * 0.22, grill, 5); l.rotation.set(Math.sin(a) * 0.12, 0, -Math.cos(a) * 0.12); }
-      const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0x2b2e33, { roughness: 0.4 }));
-      bowl.rotation.x = Math.PI; bowl.position.y = 0.95; bowl.castShadow = true; grill.add(bowl);
-      const lid = new THREE.Mesh(new THREE.SphereGeometry(0.39, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0xd1443c, { roughness: 0.35 }));
-      lid.position.set(0, 0.97, 0.28); lid.rotation.x = -0.9; lid.castShadow = true; grill.add(lid);
+      for (const [lx, lz] of [[0.2, 0.2], [-0.2, 0.2], [0, -0.26]]) {              // drei Beine, unten weiter auseinander
+        const leg = cyl(0.015, 0.015, 0.78, mat.steel, lx * 1.25, 0.39, lz * 1.25, grill, 5);
+        leg.rotation.set(lz * 0.3, 0, -lx * 0.3);
+      }
+      cyl(0.27, 0.27, 0.02, mat.steel, 0, 0.3, 0, grill, 14);                         // Ablageboden
+      const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.36, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M(0x23262b, { roughness: 0.45, side: THREE.DoubleSide }));
+      bowl.position.y = 0.95; bowl.castShadow = true; grill.add(bowl);                // Schale oben offen
+      cyl(0.34, 0.34, 0.02, mat.steel, 0, 0.93, 0, grill, 18);                        // Rost
+      cyl(0.3, 0.3, 0.04, M(0x1a1a1c), 0, 0.84, 0, grill, 14);                        // Kohle
+      const lidPivot = new THREE.Group();                                             // Deckel offen, am hinteren Rand angelenkt
+      lidPivot.position.set(0, 0.95, -0.36); lidPivot.rotation.x = -0.22; grill.add(lidPivot);
+      const lid = new THREE.Mesh(new THREE.SphereGeometry(0.37, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0xd1443c, { roughness: 0.35, side: THREE.DoubleSide }));
+      lid.position.z = 0.36; lid.castShadow = true; lidPivot.add(lid);
+      const grip = cyl(0.012, 0.012, 0.14, mat.steel, 0, 0.4, 0.36, lidPivot, 5); grip.rotation.z = Math.PI / 2;
       circles.push([-9.2, -2.6, 0.45]);
       // Kuehlbox und Brennholzstapel
       box(-8.5, -7.9, 0, 0.4, 2.0, 2.4, M(0x3f78c8), scene);
@@ -512,6 +521,41 @@
     fb(camper, 1.7, 2.5, FL, 1.15, -0.1, 0.4, mat.wood); S(1.7, 2.5, FL, 1.15, -0.1, 0.4);
     fb(camper, -3.1, -2.5, FL, 2.3, -1.1, -0.6, mat.wood); S(-3.1, -2.5, FL, 2.3, -1.1, -0.6);   // Schrank
     fb(camper, -3.1, -2.5, FL, 1.0, 0.7, 1.1, mat.white); S(-3.1, -2.5, FL, 1.0, 0.7, 1.1);      // Truhe
+    // Deko im Hauptraum: Teppich, Bild ueber der Sitzbank, Kissen, Obstschale, Pflanzen, Wasserkocher, Fliesenspiegel, Lampenschirm, Lichterkette
+    const plant = (g, x, y, z, s = 1) => {
+      cyl(0.09 * s, 0.07 * s, 0.14 * s, mat.red, x, y + 0.07 * s, z, g, 10);
+      const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.15 * s, 0), mat.green);
+      leaf.position.set(x, y + 0.26 * s, z);
+      g.add(leaf);
+    };
+    fb(camper, -1.9, 0.4, FL, FL + 0.012, -0.75, 0.75, mat.rug);
+    fb(camper, -1.8, 0.3, FL + 0.012, FL + 0.016, -0.65, 0.65, mat.cream);
+    const picTex = canvasTex(160, 110, (g, w, h) => {
+      const sky = g.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#9fd3f2"); sky.addColorStop(1, "#ffe7b0");
+      g.fillStyle = sky; g.fillRect(0, 0, w, h);
+      g.fillStyle = "#ffd43b"; g.beginPath(); g.arc(120, 30, 14, 0, 7); g.fill();
+      g.fillStyle = "#6f7f95"; g.beginPath(); g.moveTo(0, 80); g.lineTo(45, 30); g.lineTo(85, 70); g.lineTo(115, 45); g.lineTo(160, 85); g.lineTo(160, h); g.lineTo(0, h); g.fill();
+      g.fillStyle = "#4f9a3f"; g.fillRect(0, 88, w, 22);
+    });
+    fb(camper, 1.55, 2.65, 1.65, 2.3, 1.088, 1.1, mat.dark);
+    const pic = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.5), new THREE.MeshStandardMaterial({ map: picTex }));
+    pic.position.set(2.1, 1.98, 1.086); pic.rotation.y = Math.PI; camper.add(pic);
+    fb(camper, 1.2, 1.55, 1.1, 1.4, 0.7, 0.95, mat.fabric2);                      // Kissen
+    fb(camper, 2.6, 2.95, 1.1, 1.4, 0.7, 0.95, mat.rug);
+    cyl(0.14, 0.1, 0.07, mat.white, 2.1, 1.185, 0.15, camper, 14);                // Obstschale
+    [[0xd1443c, 2.07, 0.12], [0xffd43b, 2.14, 0.18], [0x8fcf4a, 2.12, 0.1]].forEach(([c, x, z]) => { const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), M(c)); f.position.set(x, 1.25, z); camper.add(f); });
+    cyl(0.05, 0.05, 0.08, mat.red, 1.9, 1.19, 0.3, camper, 8); cyl(0.05, 0.05, 0.08, mat.white, 2.3, 1.19, -0.02, camper, 8);   // Tassen
+    plant(camper, 1.2, 1.6, -0.8); plant(camper, -2.8, 2.3, -0.85, 0.9); plant(camper, -2.8, 1.0, 0.9, 1.1);
+    cyl(0.07, 0.09, 0.2, mat.steel, 2.55, 1.74, -0.8, camper, 10);                // Wasserkocher
+    fb(camper, 1.0, 3.0, 1.6, 1.95, -1.1, -1.09, M(0x7fc4c0));
+    cyl(0.02, 0.02, 0.35, mat.black, 0.3, 2.22, 0, camper, 5);
+    const shade = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.18, 14, 1, true), new THREE.MeshStandardMaterial({ color: 0xf4efe2, side: THREE.DoubleSide, emissive: 0xffd27a, emissiveIntensity: 0.15 }));
+    shade.position.set(0.3, 2.1, 0); camper.add(shade);
+    for (let i = 0; i < 8; i++) {                                                  // Lichterkette unter der Decke
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), mat.lamp);
+      b.position.set(-2.3 + i * 0.7, 2.3 - Math.sin(i / 7 * Math.PI) * 0.06, 1.0);
+      camper.add(b);
+    }
     const lampMain = new THREE.PointLight(0xffe2b0, 6, 9, 2);
     lampMain.position.set(0.3, 2.1, 0);
     camper.add(lampMain);
@@ -583,6 +627,11 @@
       fb(g, -2.1, -1.9, 1.1, 1.35, -0.4, -0.2, mat.lamp);
       fb(g, 0.15, 0.35, 1.1, 1.35, -0.4, -0.2, mat.lamp);
       fb(g, -2.3, -1.9, 0.65, 2.2, -2.7, -2.3, mat.wood);
+      fb(g, -2.3, 0.3, 0.652, 0.66, -2.2, -2.0, mat.rug);                             // Bettvorleger
+      fb(g, -1.2, -0.3, 0.652, 0.66, -2.55, -2.1, mat.rug);
+      plant(g, -2.0, 1.1, -0.3, 0.8); plant(g, 0.25, 1.1, -0.3, 0.8);                  // Pflanzen auf den Nachttischen
+      fb(g, -1.55, -0.1, 1.05, 1.1, -1.4, -0.9, mat.fabric);                           // Ueberwurf
+      for (let i = 0; i < 9; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), mat.lamp); b.position.set(-2.2 + i * 0.35, 2.3, -0.12); g.add(b); }   // Lichterkette
     });
     // -z-Zimmer: Wohnzimmer mit Fernseher, Sofa, Couchtisch, Teppich
     const wingLounge = makeWing(-1, g => {
@@ -593,6 +642,14 @@
       fb(g, -2.2, 0.4, 1.1, 1.65, -2.65, -2.45, mat.fabric2);
       fb(g, -1.4, -0.6, 0.65, 0.98, -1.5, -0.95, mat.wood);
       fb(g, -2.3, -2.0, 0.65, 1.3, -0.5, -0.2, mat.green);
+      fb(g, -2.0, -1.5, 1.1, 1.4, -2.55, -2.3, mat.rug);                                // Kissen auf dem Sofa
+      fb(g, -0.4, 0.1, 1.1, 1.4, -2.55, -2.3, mat.fabric);
+      cyl(0.02, 0.02, 1.5, mat.steel, 0.2, 1.4, -1.3, g, 5);                           // Stehlampe
+      const sh = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.25, 12, 1, true), new THREE.MeshStandardMaterial({ color: 0xf4efe2, side: THREE.DoubleSide, emissive: 0xffd27a, emissiveIntensity: 0.3 }));
+      sh.position.set(0.2, 2.0, -1.3); g.add(sh);
+      cyl(0.12, 0.12, 0.02, mat.dark, 0.2, 0.66, -1.3, g, 12);
+      plant(g, -1.0, 0.98, -1.25, 0.9);                                                // Pflanze auf dem Couchtisch
+      for (let i = 0; i < 9; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), mat.lamp); b.position.set(-2.2 + i * 0.35, 2.3, -0.12); g.add(b); }
     });
     const wings = [wingBed, wingLounge];
 
@@ -617,6 +674,11 @@
       fb(deckProps, -0.18, -0.14, 0, 0.4, z - 0.18, z - 0.14, mat.dark);
       fb(deckProps, 0.14, 0.18, 0, 0.4, z + 0.14, z + 0.18, mat.dark);
     }
+    fb(deckProps, -0.75, 0.75, 0, 0.012, -0.85, 0.85, mat.rug);                    // Outdoor-Teppich
+    fb(deckProps, -0.65, 0.65, 0.012, 0.016, -0.75, 0.75, mat.cream);
+    for (const [x, z] of [[-0.7, -1.0], [-0.7, 1.0], [0.7, -1.0], [0.7, 1.0]]) plant(deckProps, x, 0, z, 1.3);   // Kuebelpflanzen an den Ecken
+    for (const [x, z, c] of [[0.0, -0.65, 0xd1443c], [0.0, 0.65, 0xffd43b]]) { const cu = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), M(c)); cu.position.set(x - 0.05, 0.52, z); deckProps.add(cu); }   // Kissen auf den Stuehlen
+    for (let i = 0; i < 4; i++) cyl(0.03, 0.03, 0.08, i % 2 ? mat.red : mat.white, -0.1 + i * 0.1, 0.78, (i % 2 ? 0.1 : -0.1), deckProps, 8);   // Becher auf dem Tisch
     deckProps.rotation.z = 0;
     const deckClosed = S(-3.5, -3.2, FL - 0.05, 2.4, -1.2, 1.2);
     const deckFlat1 = S(-5.05, -3.3, 0.55, FL, -1.2, 1.2, false);
@@ -678,6 +740,30 @@
       const m = box(0, 1, 0, 1, 0, 1, mat.deck, camper);
       return { m, i, xa: 3.2 + (7 - i) * 0.3, xb: 3.5 + (7 - i) * 0.3, top: 0.32 * (i + 1), solid: S(0, 0, 0, 0, 0, 0, false) };
     });
+    // Dach-Lounge: zwei Liegen, Sonnenschirm, Tisch mit Getraenken, Kuebelpflanzen; waechst mit dem Dachgelaender
+    const roofProps = new THREE.Group();
+    roofProps.position.y = 2.62;
+    camper.add(roofProps);
+    function lounger(x, z, col) {
+      const g = new THREE.Group();
+      g.position.set(x, 0.07, z);
+      roofProps.add(g);
+      const cushion = M(col);
+      fb(g, 0, 1.0, 0.18, 0.26, -0.25, 0.25, cushion);
+      const back = fb(g, 0, 0.7, 0, 0.08, -0.25, 0.25, cushion);
+      back.position.set(-0.28, 0.43, 0); back.rotation.z = 0.95;
+      for (const [lx, lz] of [[0.05, -0.22], [0.05, 0.22], [0.95, -0.22], [0.95, 0.22]]) fb(g, lx - 0.025, lx + 0.025, 0, 0.18, lz - 0.025, lz + 0.025, mat.wood);
+    }
+    lounger(-2.4, -0.72, 0x24aea1);
+    lounger(-0.9, -0.72, 0xe0663b);
+    cyl(0.025, 0.025, 1.9, mat.steel, 0.9, 0.97, 0.45, roofProps, 8);
+    const parasol = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.4, 12, 1, true), mat.awning);
+    parasol.position.set(0.9, 1.95, 0.45); parasol.castShadow = true; roofProps.add(parasol);
+    cyl(0.14, 0.14, 0.07, mat.wood, 0.9, 0.04, 0.45, roofProps, 14);
+    fb(roofProps, 0.2, 0.7, 0.35, 0.4, 0.1, 0.55, mat.wood);                       // Beistelltisch
+    for (const [x, z] of [[0.22, 0.12], [0.68, 0.12], [0.22, 0.53], [0.68, 0.53]]) fb(roofProps, x - 0.02, x + 0.02, 0, 0.35, z - 0.02, z + 0.02, mat.dark);
+    cyl(0.035, 0.03, 0.12, mat.glass, 0.4, 0.46, 0.25, roofProps, 8); cyl(0.035, 0.03, 0.12, mat.red, 0.55, 0.46, 0.35, roofProps, 8);
+    plant(roofProps, -2.8, 0, 0.85, 1.8); plant(roofProps, -2.8, 0, -0.4, 1.5); plant(roofProps, 2.0, 0, 0.9, 1.5);
     const mast = cyl(0.05, 0.05, 1, mat.steel, -2.9, 0, -0.95, camper, 8);
     const flag = box(0, 0.9, -0.25, 0.25, -0.02, 0.02, mat.red, camper);
     const dishPivot = new THREE.Group();
@@ -762,6 +848,8 @@
       planks.position.y = 2.55 + 0.035 * ePl;
       railRoof.g.scale.y = Math.max(eRR, 0.001);
       railRoof.g.visible = eRR > 0.01;
+      roofProps.visible = eRR > 0.01;
+      roofProps.scale.setScalar(Math.max(eRR, 0.001));
       railRoof.segs.forEach(s => { s.on = eRR > 0.95; });
       for (const st of roofSteps) {
         const a = 0.68 + st.i * 0.025, e = stage(p, a, a + 0.07), h = Math.max(st.top * e, 0.001);
