@@ -100,6 +100,8 @@
       background: var(--panel); color: var(--text); font-weight: 600; pointer-events: none; opacity: 0; transition: opacity .2s;
     }
     .toast.show { opacity: 1; }
+    .door-hint { top: auto; bottom: 26%; }
+    body.touch .door-hint.show { pointer-events: auto; padding: 12px 20px; }
     .touch-only { display: none !important; }
     body.touch.walk .touch-only { display: block !important; }
     body.touch.walk .keys, body.touch.walk .crosshair { display: none; }
@@ -134,7 +136,8 @@
   <div class="walk-ui">
     <div class="crosshair"></div>
     <div class="toast" id="toast" role="status"></div>
-    <div class="keys" id="keys">WASD laufen &middot; Linksklick = Maus übernehmen (nochmal Linksklick = frei) &middot; Leertaste springen (im Pool: halten zum Schwimmen) &middot; Shift rennen &middot; E Mausempfindlichkeit &middot; Esc verlassen</div>
+    <div class="toast door-hint" id="door-hint" role="status"></div>
+    <div class="keys" id="keys">WASD laufen &middot; Linksklick = Maus übernehmen (nochmal Linksklick = frei) &middot; Rechtsklick = Tür öffnen/schließen &middot; Leertaste springen (im Pool: halten zum Schwimmen) &middot; Shift rennen &middot; E Mausempfindlichkeit &middot; Esc verlassen</div>
     <div class="stick left touch-only" id="stick-move" aria-label="Laufen"><span></span></div>
     <div class="stick right touch-only" id="stick-look" aria-label="Schauen"><span></span></div>
     <button type="button" class="jump touch-only" id="btn-jump">Sprung</button>
@@ -179,11 +182,16 @@
     // --- Renderer, Szene, Kamera ---
     // ?vorschau: Bildpuffer behalten, damit sich das Vorschaubild (vorschau.webp) aus dem Canvas aufnehmen laesst
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: location.search.includes("vorschau") });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Aufloesung begrenzen (Handy 1.25, sonst 1.5): kaum sichtbar, spart auf schwacher Grafik viel Fuellrate
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Sonne und Szene stehen still, nur Tuerblaetter bewegen sich: Schattenkarte nur bei Bedarf neu zeichnen
+    // (einmal beim Start, dann nur wenn eine Tuer sich bewegt)
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     document.body.prepend(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -544,8 +552,10 @@
 
     // Boeden und Decken: Keller (Beton), Erdgeschoss (Holz), Obergeschoss (Fliesen), Decke unterm Dach
     // Kellertreppe liegt genau unter der Treppe ins Obergeschoss (gleicher Grundriss x -0.25..0.85)
-    const KG_STAIR = [-0.25, 0.85, -3.9, 1.1];
-    const OG_STAIR = [-0.3, 0.9, -3.5, 1.1];
+    // Beide Treppen liegen links (Westen): x -5.6..-4.5
+    // Loecher enden buendig mit Treppe und Gelaender (kein Spalt vor der ersten Stufe)
+    const KG_STAIR = [-5.66, -4.44, -3.9, 1.1];
+    const OG_STAIR = [-5.66, -4.44, -3.5, 1.16];
     slab(-IX, IX, IBZ, IZ, KG - 0.2, KG, floorFaces(mat.concrete, mat.concrete));
     slab(-IX, IX, IBZ, IZ, 0, EG, floorFaces(mat.wood, mat.concreteWall), KG_STAIR);
     slab(-IX, IX, IBZ, IZ, OG - 0.3, OG, floorFaces(mat.floorTiles, mat.ceiling), OG_STAIR);
@@ -565,21 +575,22 @@
     box(1, EG, -IZ, IX, EG + 0.006, IZ, mat.tiles, { solid: false, parent: house });
 
     // Treppe Erdgeschoss -> Obergeschoss (16 Stufen, nach hinten steigend)
+    // Treppen liegen alle links (Westen): x -5.6..-4.5
+    const SW0 = -5.6, SW1 = -4.5;
     for (let i = 0; i < 16; i++) {
-      box(-0.25, EG + i * 0.1875, 1.1 - (i + 1) * 0.29, 0.85, EG + (i + 1) * 0.1875, 1.1 - i * 0.29, mat.wood, { parent: house });
+      box(SW0, EG + i * 0.1875, 1.1 - (i + 1) * 0.29, SW1, EG + (i + 1) * 0.1875, 1.1 - i * 0.29, mat.wood, { parent: house });
     }
     // Kellertreppe (17 Stufen) genau unter der oberen Treppe, aber gegenlaeufig: oben im Erdgeschoss hinten, unten vorne
     for (let i = 0; i < 17; i++) {
       const top = EG - (i + 1) * (EG - KG) / 18;
-      box(-0.25, top - 0.1833, -3.9 + i * 0.29, 0.85, top, -3.9 + (i + 1) * 0.29, mat.wood, { parent: house });
+      box(SW0, top - 0.1833, -3.9 + i * 0.29, SW1, top, -3.9 + (i + 1) * 0.29, mat.wood, { parent: house });
     }
-    // Gelaender: um die Kellertreppe im Erdgeschoss und ums Treppenloch oben
-    // Gelaender am Kellerloch (Erdgeschoss, beidseitig bis zum Treppenanfang)
-    box(-0.31, EG, -3.5, -0.25, EG + 1.0, 1.1, mat.trim, { parent: house, name: "Gelaender" });
-    box(0.85, EG, -3.5, 0.91, EG + 1.0, 1.1, mat.trim, { parent: house, name: "Gelaender" });
-    box(-0.36, OG, -3.5, -0.3, OG + 1.0, 1.15, mat.trim, { parent: house, name: "Gelaender" });
-    box(0.9, OG, -3.5, 0.96, OG + 1.0, 1.15, mat.trim, { parent: house, name: "Gelaender" });
-    box(-0.36, OG, 1.1, 0.96, OG + 1.0, 1.16, mat.trim, { parent: house, name: "Gelaender" });
+    // Gelaender: am Kellerloch im Erdgeschoss und am Treppenloch oben, beidseitig
+    box(SW0 - 0.06, EG, -3.5, SW0, EG + 1.0, 1.1, mat.trim, { parent: house, name: "Gelaender" });
+    box(SW1, EG, -3.5, SW1 + 0.06, EG + 1.0, 1.1, mat.trim, { parent: house, name: "Gelaender" });
+    box(SW0 - 0.06, OG, -3.5, SW0, OG + 1.0, 1.15, mat.trim, { parent: house, name: "Gelaender" });
+    box(SW1, OG, -3.5, SW1 + 0.06, OG + 1.0, 1.15, mat.trim, { parent: house, name: "Gelaender" });
+    box(SW0 - 0.06, OG, 1.1, SW1 + 0.06, OG + 1.0, 1.16, mat.trim, { parent: house, name: "Gelaender" });
 
     // Obergeschoss: Trennwand mit Tuer zwischen Flur und rechtem Schlafzimmer
     wall("z", -IZ, IZ, 2.5, OG, TOP - 0.3, [[2.0, 3.0, OG, OG + 2.1]], mat.plaster, 0.12);
@@ -633,16 +644,35 @@
     }
     box(-2.6, 0, HZ + 2.2, -1.4, 0.04, ROAD.walk0, mat.stone, { name: "Weg" });
 
-    // Haustuer offen nach innen
+    // --- Tueren: Rechtsklick oeffnet und schliesst (zielen und nah stehen), die Kollision folgt dem Tuerblatt ---
+    // Ein Scharnier (Gruppe) dreht das Blatt um y, geschlossen = closedDeg, offen = openDeg. Start: geschlossen.
+    const doors = [];
+    function setDoorAngle(d, t) {
+      d.t = t;
+      d.hinge.rotation[d.axis] = THREE.MathUtils.degToRad(d.closed + (d.open - d.closed) * t);
+      d.hinge.updateWorldMatrix(true, true);    // nur Scharnier und Blatt, nicht die ganze Szene
+      renderer.shadowMap.needsUpdate = true;
+      const b = new THREE.Box3().expandByObject(d.leaf);
+      Object.assign(d.solid, { x0: b.min.x, x1: b.max.x, y0: b.min.y, y1: b.max.y, z0: b.min.z, z1: b.max.z });
+    }
+    function makeDoor(name, hinge, closed, open, leaf, axis = "y") {
+      leaf.userData.merge = false;       // nicht mit den anderen Quadern zusammenfassen, es bewegt sich
+      const solid = { x0: 0, x1: 0, y0: 0, y1: 0, z0: 0, z1: 0 };
+      solids.push(solid);
+      const d = { name, hinge, closed, open, leaf, solid, axis, t: 0, target: 0 };
+      leaf.userData.door = d;
+      doors.push(d);
+      setDoorAngle(d, 0);
+      return d;
+    }
+
+    // Haustuer: Scharnier links, geht nach innen auf
     {
       const hinge = new THREE.Group();
-      hinge.position.set(-2.55, EG, HZ - WALL);
-      hinge.rotation.y = THREE.MathUtils.degToRad(80);
+      hinge.position.set(-2.6, EG, HZ - WALL / 2);
       world.add(hinge);
-      box(0, 0, -0.03, 1.1, 2.25, 0.03, mat.wood, { parent: hinge, solid: false });
-      world.updateMatrixWorld(true);
-      const b = new THREE.Box3().setFromObject(hinge);
-      solids.push({ x0: b.min.x, x1: b.max.x, y0: b.min.y, y1: b.max.y, z0: b.min.z, z1: b.max.z });
+      const leaf = box(0, 0, -0.03, 1.2, FRONT_OPEN[0][3] - EG, 0.03, mat.wood, { parent: hinge, solid: false });   // fuellt die Oeffnung (FRONT_OPEN) ganz aus
+      makeDoor("Haustür", hinge, 0, 80, leaf);
     }
 
     // --- Garage rechts, Tuer zur Kueche, Tor offen ---
@@ -653,10 +683,10 @@
     box(GX0, 0, GZ0, GX1, 0.1, GZ1, floorFaces(mat.concrete, mat.concrete), { name: 'Garagenboden' });
     const BACK_DOOR = [10.0, 11.1];   // Hintertuer der Garage zum Garten
     wall('x', GX0, GX1, GZ0 + WALL / 2, 0, GH, [[BACK_DOOR[0], BACK_DOOR[1], 0, 2.2]], faces('-z', mat.siding, mat.plaster));
-    wall('z', GZ0 + WALL, GZ1, GX1 - WALL / 2, 0, GH, [], faces('+x', mat.siding, mat.plaster));
+    const SAUNA_DOOR = [-1.9, -1.0];  // Direktzugang Garage -> Sauna in der Ostwand
+    wall('z', GZ0 + WALL, GZ1, GX1 - WALL / 2, 0, GH, [[SAUNA_DOOR[0], SAUNA_DOOR[1], 0, 2.2]], faces('+x', mat.siding, mat.plaster));
     wall('x', GX0, GX1, GZ1 - WALL / 2, 0, GH, DOORS.map(([a, b]) => [a, b, 0, 2.5]), faces('+z', mat.siding, mat.plaster));
     box(GX0, GH, GZ0, GX1, GH + 0.1, GZ1, floorFaces(mat.trim, mat.ceiling), { name: 'Garagendecke' });
-    for (const [a, b] of DOORS) box(a, 2.5, 1.6, b, 2.56, GZ1 - 0.1, mat.white, { name: 'Garagentor (offen)' });
     gableRoof(GX0, GX1, GZ0, GZ1, GH + 0.1, 2.0, 0.45, roof, 0);
     gable(GX1, GZ0, GZ1, GH + 0.1, 2.0, roof);
     // Einfahrt: vor der Garage auf Hoehe 0.05, ueber den Buergersteig durchgehend auf 0.12, am Randstein abgesenkt
@@ -675,6 +705,17 @@
     const garage = new THREE.Group();
     garage.name = 'Garage';
     world.add(garage);
+    // Garagentore: Sektionaltor, oben am Sturz gelagert, kippt nach hinten unter die Decke. Start: offen.
+    for (const [a, b] of DOORS) {
+      const hinge = new THREE.Group();
+      hinge.position.set(a, 2.5, GZ1 - WALL / 2);
+      garage.add(hinge);
+      const leaf = box(0, -2.4, -0.06, b - a, 0, 0, mat.white, { parent: hinge, solid: false, name: 'Garagentor' });
+      for (let i = 1; i < 4; i++) box(0, -0.6 * i - 0.02, 0.0, b - a, -0.6 * i + 0.02, 0.01, mat.trim, { parent: hinge, solid: false }).userData.merge = false;
+      const d = makeDoor("Garagentor", hinge, 0, 90, leaf, "x");
+      d.target = 1;
+      setDoorAngle(d, 1);
+    }
     const grng = rng(77);
     function shelf(x0, x1, z0, z1, yb = 0) {
       const g = (a, y0, b, y1, c, d, m) => box(a, y0, c, b, y1, d, m, { parent: garage, solid: false });
@@ -703,22 +744,30 @@
     shelf(11.6, 14.6, BACK, BACK + 0.5);
     shelf(15.0, 17.3, BACK, BACK + 0.5);
     shelf(GX0, GX0 + 0.5, -4.2, -1.6);
-    shelf(GX1 - WALL - 0.5, GX1 - WALL, -4.2, -1.0);
+    shelf(GX1 - WALL - 0.5, GX1 - WALL, -4.2, -2.1);
 
-    // Hintertuer: Tuerblatt steht offen nach aussen, davor ein kleines Podest und ein Plattenweg zur Terrasse
+    // Saunatuer in der Garagenwand: Scharnier an der Nordkante, geht in die Sauna auf
+    {
+      const hinge = new THREE.Group();
+      hinge.position.set(GX1 - WALL / 2, 0.1, SAUNA_DOOR[0]);
+      garage.add(hinge);
+      const leaf = box(-0.03, -0.02, -0.02, 0.06, 2.12, SAUNA_DOOR[1] - SAUNA_DOOR[0] + 0.02, mat.wood, { parent: hinge, solid: false });   // fuellt die Oeffnung ganz aus
+      const handle = box(0.06, 1.0, 0.7, 0.1, 1.1, 0.8, mat.steel, { parent: hinge, solid: false });
+      handle.userData.merge = false;
+      makeDoor("Saunatür (Garage)", hinge, 0, 80, leaf);
+    }
+
+    // Hintertuer: Tuerblatt geht nach aussen auf, davor ein kleines Podest und ein Plattenweg zur Terrasse
     {
       const hinge = new THREE.Group();
       hinge.position.set(BACK_DOOR[0], 0.1, GZ0 + WALL / 2);
-      hinge.rotation.y = THREE.MathUtils.degToRad(80);
       garage.add(hinge);
-      box(0, 0, -0.03, BACK_DOOR[1] - BACK_DOOR[0], 2.1, 0.03, mat.wood, { parent: hinge, solid: false });
+      const leaf = box(0, 0, -0.03, BACK_DOOR[1] - BACK_DOOR[0], 2.1, 0.03, mat.wood, { parent: hinge, solid: false });
       const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 10), mat.steel);
       handle.rotation.z = Math.PI / 2;
       handle.position.set(BACK_DOOR[1] - BACK_DOOR[0] - 0.15, 1.0, 0.06);
       hinge.add(handle);
-      world.updateMatrixWorld(true);
-      const b = new THREE.Box3().setFromObject(hinge);
-      solids.push({ x0: b.min.x, x1: b.max.x, y0: b.min.y, y1: b.max.y, z0: b.min.z, z1: b.max.z });
+      makeDoor("Hintertür", hinge, 0, 80, leaf);
       box(BACK_DOOR[0] - 0.3, 0, GZ0 - 1.2, BACK_DOOR[1] + 0.3, 0.1, GZ0, mat.concrete, { parent: garage, name: "Podest" });
     }
 
@@ -1145,20 +1194,17 @@
       towel.position.set(sx, 0.41, sz - R - 0.25);
       spa.add(towel);
       circles.push([sx, sz, R + 0.1], [sx, sz - R - 0.25, 0.45]);
-      // Terrasse aus Holz am Ausgang (Oberkante 0.22, Stufe vom Boden ist begehbar), Tuer steht 80 Grad offen
+      // Terrasse aus Holz am Ausgang (Oberkante 0.22, Stufe vom Boden ist begehbar); Tuer geschlossen 90 Grad, offen 170 Grad (nach aussen)
       box(-9.6, 0, -12.0, -HX, 0.22, -8.0, mat.wood, { name: "Westterrasse" });
       const hinge = new THREE.Group();
       hinge.position.set(-HX + WALL / 2, EG, WEST_EXIT[1]);
-      hinge.rotation.y = THREE.MathUtils.degToRad(170);   // 80 Grad offen: Blatt steht fast rechtwinklig nach aussen, Durchgang frei
       world.add(hinge);
-      box(0, 0, -0.03, WEST_EXIT[1] - WEST_EXIT[0] - 0.05, 2.05, 0.03, mat.wood, { parent: hinge, solid: false });
+      const leaf = box(0, 0, -0.03, WEST_EXIT[1] - WEST_EXIT[0], WEST_EXIT[3] - EG, 0.03, mat.wood, { parent: hinge, solid: false });
       const dh = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 10), mat.steel);
       dh.rotation.z = Math.PI / 2;
       dh.position.set(0.95, 1.0, 0.06);
       hinge.add(dh);
-      world.updateMatrixWorld(true);
-      const bb = new THREE.Box3().setFromObject(hinge);
-      solids.push({ x0: bb.min.x, x1: bb.max.x, y0: bb.min.y, y1: bb.max.y, z0: bb.min.z, z1: bb.max.z });
+      makeDoor("Terrassentür", hinge, 90, 170, leaf);
     }
 
     {
@@ -1300,12 +1346,86 @@
       const G0 = -10.7, G1 = -9.5;                // Gartentor
       run(FX, G0);
       run(G1, -HX);
-      f(G0, 0.08, G1, FH - 0.1, CZ - 0.05, CZ + 0.05, mat.wood);                  // Torblatt, Holz wie der Zaun
-      f(G0, FH - 0.1, G1, FH - 0.02, CZ - 0.06, CZ + 0.06, mat.dark);
-      f(G0, 0.35, G1, 0.42, CZ - 0.07, CZ + 0.07, mat.dark);                      // Querstreben
-      f(G0, 1.35, G1, 1.42, CZ - 0.07, CZ + 0.07, mat.dark);
-      f(G1 - 0.14, 0.95, G1 - 0.06, 1.05, CZ + 0.03, CZ + 0.1, mat.steel);        // Griff
-      run(GX1, HEDGE_X);
+      // Tore sind begehbar (keine Kollision): Torblatt wie der Zaun, Querstreben
+      const gate = (a, b) => {
+        box(a, 0.08, CZ - 0.05, b, FH - 0.1, CZ + 0.05, mat.wood, { parent: fence, solid: false });
+        box(a, FH - 0.1, CZ - 0.06, b, FH - 0.02, CZ + 0.06, mat.dark, { parent: fence, solid: false });
+        box(a, 0.35, CZ - 0.07, b, 0.42, CZ + 0.07, mat.dark, { parent: fence, solid: false });
+        box(a, 1.35, CZ - 0.07, b, 1.42, CZ + 0.07, mat.dark, { parent: fence, solid: false });
+      };
+      gate(G0, G1);
+      box(G1 - 0.14, 0.95, CZ + 0.03, G1 - 0.06, 1.05, CZ + 0.1, mat.steel, { parent: fence, solid: false });   // Griff
+      // Zweites Tor an der Ostseite, zwischen Garage und Hecke
+      const E0 = 19.3, E1 = 20.5;
+      run(GX1, E0);
+      gate(E0, E1);
+      run(E1, HEDGE_X);
+    }
+
+    // --- Sauna an der Ostseite der Garage: Holzhaus mit Glasfront zum Rasen, Holzterrasse davor, zwei Liegen ---
+    {
+      const SX0 = GX1 + 0.12, SX1 = 20.9, SZ0 = -3.0, SZ1 = -0.5, SH = 2.5, T = 0.12;
+      const sauna = new THREE.Group();
+      sauna.name = 'Sauna';
+      world.add(sauna);
+      const s = (x0, y0, z0, x1, y1, z1, m, solid = true) => box(x0, y0, z0, x1, y1, z1, m, { parent: sauna, solid });
+      // Boden und Terrasse aus Holz
+      s(SX0, 0, SZ0, SX1, 0.12, SZ1, mat.wood);
+      s(SX0, 0, SZ1, SX1, 0.1, SZ1 + 1.2, mat.wood, false);
+      // Schraegdach (Pultdach): hinten (Norden) hoeher als vorne (Sueden, Glasfront)
+      const YB = SH + 0.5, YF = SH;                                    // Wandoberkanten hinten und vorne
+      // Nordwand auf Hoehe YB; Seitenwaende (Osten, Westen an der Garage) als Keil, oben schraeg
+      s(SX0, 0.12, SZ0, SX1, YB, SZ0 + T, mat.siding);
+      const yTop = z => YB + (YF - YB) * (z - SZ0) / (SZ1 - SZ0);
+      const keil = (x0, za = SZ0, zb = SZ1, yl = 0.12) => {
+        const shape = new THREE.Shape([new THREE.Vector2(-za, yl), new THREE.Vector2(-zb, yl), new THREE.Vector2(-zb, yTop(zb)), new THREE.Vector2(-za, yTop(za))]);
+        const g = new THREE.ExtrudeGeometry(shape, { depth: T, bevelEnabled: false });
+        g.rotateY(Math.PI / 2);
+        g.computeBoundingBox();
+        const b = g.boundingBox;
+        const mesh = new THREE.Mesh(metreUV(g), mat.siding);
+        mesh.position.x = x0;
+        mesh.castShadow = mesh.receiveShadow = true;
+        sauna.add(mesh);
+        solids.push({ x0: x0 + b.min.x, x1: x0 + b.max.x, y0: b.min.y, y1: b.max.y, z0: b.min.z, z1: b.max.z });
+      };
+      keil(SX1 - T);
+      // Westwand mit Durchgang zur Garage (Tuer 0.9 m, Hoehe 2.2 m ab Boden)
+      keil(SX0, SZ0, SAUNA_DOOR[0]);
+      keil(SX0, SAUNA_DOOR[1], SZ1);
+      keil(SX0, SAUNA_DOOR[0], SAUNA_DOOR[1], 2.2);
+      s(GX1, 0, SAUNA_DOOR[0], SX0 + T, 0.12, SAUNA_DOOR[1], mat.wood, false);   // Schwelle ueber die Fuge
+      // Suedfront: Rahmen oben, Rahmen unten (ohne Tuerbereich), Glasscheibe rechts neben der Tuer, Holztuer links
+      s(SX0, SH - 0.15, SZ1 - T, SX1, SH, SZ1, mat.dark);
+      s(SX0 + 1.05, 0.12, SZ1 - T, SX1, 0.22, SZ1, mat.dark);
+      s(SX0 + 1.05, 0.22, SZ1 - 0.03, SX1 - T, SH - 0.15, SZ1 - 0.01, mat.glass);
+      {
+        // Saunatuer: Scharnier links, geht nach innen auf
+        const hinge = new THREE.Group();
+        hinge.position.set(SX0 + T, 0.12, SZ1 - 0.03);
+        sauna.add(hinge);
+        const leaf = box(0, 0, -0.03, 0.93, SH - 0.15 - 0.12, 0.03, mat.wood, { parent: hinge, solid: false });
+        const handle = box(0.78, 0.86, 0.03, 0.85, 0.96, 0.06, mat.steel, { parent: hinge, solid: false });
+        handle.userData.merge = false;
+        makeDoor("Saunatür", hinge, 0, 80, leaf);
+      }
+      // Dachplatte: liegt auf den Wandoberkanten, mit Ueberstand vorne und hinten
+      const a = Math.atan2(YB - YF, SZ1 - SZ0);
+      const roof = new THREE.Mesh(metreUV(new THREE.BoxGeometry(SX1 + 0.2 - (SX0 - 0.15), 0.12, Math.hypot(SZ1 - SZ0, YB - YF) + 0.4)), mat.dark);
+      roof.rotation.x = a;
+      roof.position.set((SX0 - 0.15 + SX1 + 0.2) / 2, (YB + YF) / 2 + 0.06 / Math.cos(a), (SZ0 + SZ1) / 2);
+      roof.castShadow = roof.receiveShadow = true;
+      sauna.add(roof);
+      // Innen: Liegebank an der Nordwand (unten und oben), Saunaofen mit Steinen in der Ostecke
+      s(SX0 + T, 0.12, SZ0 + T, SX1 - T, 0.35, SZ0 + 0.55, mat.wood, false);
+      s(SX0 + T, 0.45, SZ0 + T, SX1 - T, 0.7, SZ0 + 0.85, mat.wood, false);
+      s(SX1 - 0.75, 0.12, SZ0 + 0.25, SX1 - 0.3, 0.7, SZ0 + 0.7, mat.dark, false);
+      s(SX1 - 0.72, 0.7, SZ0 + 0.28, SX1 - 0.33, 0.78, SZ0 + 0.67, mat.stone, false);
+      // Zwei Liegen auf der Terrasse, Kopf zur Sauna, Fuesse zum Rasen
+      for (const x of [SX0 + 0.3, SX0 + 1.4]) {
+        s(x, 0.1, SZ1 + 0.3, x + 0.6, 0.3, SZ1 + 1.9, mat.white, false);
+        s(x, 0.3, SZ1 + 0.3, x + 0.6, 0.36, SZ1 + 1.9, mat.fabric, false);
+      }
     }
 
     // --- Ferrari (Vorlage: Ferrari 488 / F8 Tributo): flacher Keil, Mittelmotor, hohe Hueften, schmale LED-Scheinwerfer, seitliche Lufteinlaesse,
@@ -1500,7 +1620,7 @@
       fur(x0 + 0.2, OG + 0.62, z0 + 0.1, x0 + 1.6, OG + 0.75, z0 + 0.5, mat.bedding, false);
       fur(x0, OG, z0 - 0.08, x0 + 1.8, OG + 1.0, z0, mat.wood);
     };
-    bed(-5.4, -IZ + 0.08);
+    bed(-3.0, -IZ + 0.08);   // Platz fuer die Treppe links freihalten
     bed(3.6, -IZ + 0.08);
     fur(-IX, OG, 2.0, -5.2, OG + 2.1, 4.2, mat.wood);
     fur(3.4, OG, 3.6, 5.2, OG + 0.75, IZ, mat.wood);
@@ -1508,8 +1628,8 @@
     fur(4.0, KG, -IZ, 4.65, KG + 0.85, -3.75, mat.white);
     fur(4.75, KG, -IZ, 5.4, KG + 0.85, -3.75, mat.white);
     fur(IX - 0.45, KG, -1.5, IX, KG + 2.0, 2.5, mat.wood);
-    fur(-5.2, KG, -0.8, -2.46, KG + 0.76, 0.7, mat.table);
-    fur(-3.85, KG + 0.76, -0.8, -3.81, KG + 0.92, 0.7, mat.white, false);
+    fur(-2.9, KG, -0.8, -0.16, KG + 0.76, 0.7, mat.table);
+    fur(-1.55, KG + 0.76, -0.8, -1.51, KG + 0.92, 0.7, mat.white, false);
     fur(-3.2, KG, 2.6, -1.0, KG + 0.45, 3.5, mat.fabric);
 
     // Anbau Erdgeschoss: Esszimmer (Tisch, sechs Stuehle, Sideboard), Buero (Schreibtisch, Stuhl, Regal)
@@ -1622,14 +1742,17 @@
     function tree(x, z, s) {
       const g = new THREE.Group();
       const prof = [[0.32, 0], [0.22, 0.4], [0.18, 1.6], [0.14, 2.6], [0, 2.7]].map(([a, b]) => new THREE.Vector2(a, b));
+      // userData.merge: wird spaeter mit allen gleichen Teilen zu einem Mesh zusammengefasst (statt ~200 einzelner Zeichenaufrufe)
       const trunk = new THREE.Mesh(new THREE.LatheGeometry(prof, 12), mat.bark);
       trunk.castShadow = true;
+      trunk.userData.merge = true;
       g.add(trunk);
       for (let i = 0; i < 6; i++) {
         const r = 0.9 + prng() * 0.6;
         const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), mat.leaves);
         ball.position.set((prng() - 0.5) * 1.6, 2.8 + prng() * 1.4, (prng() - 0.5) * 1.6);
         ball.castShadow = true;
+        ball.userData.merge = true;
         g.add(ball);
       }
       g.scale.setScalar(s);
@@ -1641,11 +1764,13 @@
       const g = new THREE.Group();
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.2, 10), mat.bark);
       trunk.position.y = 0.6;
+      trunk.userData.merge = true;
       g.add(trunk);
       for (let i = 0; i < 4; i++) {
         const cone = new THREE.Mesh(new THREE.ConeGeometry(1.5 - i * 0.3, 1.8, 12), mat.needles);
         cone.position.y = 1.4 + i * 0.9;
         cone.castShadow = true;
+        cone.userData.merge = true;
         g.add(cone);
       }
       g.scale.setScalar(s);
@@ -1682,7 +1807,7 @@
     for (let x = -5.6; x <= 0.8; x += 0.9) if (Math.abs(x + 2) > 1) bushSpots.push([x, HZ + 2.7, 0.45]);
     for (let z = -13; z <= 4; z += 1.1) if (z < -12.6 || z > -7.4) bushSpots.push([-HX - 0.7, z, 0.5]);   // nicht ueber der Westterrasse
     for (let z = -13; z <= -3.8; z += 1.1) bushSpots.push([HX + 0.7, z, 0.5]);
-    for (let z = GZ0 + 0.5; z <= 4; z += 1.1) bushSpots.push([GX1 + 0.7, z, 0.5]);
+    for (let z = GZ0 + 0.5; z <= 4; z += 1.1) if (z < -3.7 || z > 1.4) bushSpots.push([GX1 + 0.7, z, 0.5]);   // nicht in der Sauna (z -3.1..0.7)
     for (let z = 5.5; z <= 16; z += 1.0) bushSpots.push([18.7, z, 0.42]);
     for (let i = 0; i < 26; i++) {
       const a = prng() * Math.PI * 2, r = 12 + prng() * 14;
@@ -1698,7 +1823,7 @@
         q.setFromEuler(e);
         m4.compose(new THREE.Vector3(x, terrain(x, z) + r * 0.55, z), q, new THREE.Vector3(r, r * 0.8, r));
         inst.setMatrixAt(i, m4);
-        circles.push([x, z, r * 0.8]);
+        circles.push([x, z, r * 0.8, terrain(x, z) + r * 1.1]);   // Oberkante knapp unter der Kuppe: Sprunghoehe ca. 1 m reicht
       });
       inst.castShadow = inst.receiveShadow = true;
       inst.name = "Buesche";
@@ -1887,6 +2012,34 @@
     let walking = false, jumpHeld = false;
     const orbitView = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
 
+    // Tuer-Interaktion: Zielstrahl aus der Bildmitte (Maus gesperrt, Touch) oder vom Mauszeiger, Reichweite 2.4 m
+    const doorLeaves = doors.map(d => d.leaf);
+    const doorRay = new THREE.Raycaster();
+    doorRay.far = 2.4;
+    const aim = new THREE.Vector2(0, 0), CENTER = new THREE.Vector2(0, 0);
+    const doorHint = document.getElementById("door-hint");
+    let doorTarget = null, lastHint = "";
+    renderer.domElement.addEventListener("mousemove", e => {
+      const r = renderer.domElement.getBoundingClientRect();
+      aim.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    });
+    function updateDoorTarget() {
+      doorTarget = null;
+      if (walking) {
+        doorRay.setFromCamera(dragging || touch ? CENTER : aim, camera);
+        const hit = doorRay.intersectObjects(doorLeaves, false)[0];
+        if (hit) doorTarget = hit.object.userData.door;
+      }
+      const text = doorTarget ? (touch ? "Tippen: " : "Rechtsklick: ") + (doorTarget.target ? "Tür schließen" : "Tür öffnen") : "";
+      if (text !== lastHint) {      // DOM nur bei Aenderung anfassen
+        lastHint = text;
+        doorHint.textContent = text;
+        doorHint.classList.toggle("show", !!text);
+      }
+    }
+    function toggleDoor(d) { d.target = d.target ? 0 : 1; }
+    doorHint.addEventListener("pointerdown", e => { if (touch && doorTarget) { e.preventDefault(); toggleDoor(doorTarget); } });
+
     const inPool = (x, z) => x > POOL.x0 && x < POOL.x1 && z > POOL.z0 && z < POOL.z1;
     // Boden ohne Quader: Gelaende; unter Haus und Pool tragen nur die Quader (Boeden, Treppen, Poolboden)
     const groundAt = (x, z) => (HOLES.some(h => inRect(x, z, h)) ? -100 : terrain(x, z));
@@ -1912,7 +2065,8 @@
           p.z += out[2] * (out[0] + RADIUS);
         }
       }
-      for (const [cx, cz, r] of circles) {
+      for (const [cx, cz, r, top] of circles) {
+        if (top !== undefined && feet >= top) continue;   // niedrige Hindernisse (Buesche) kann man ueberspringen
         const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
         if (d < min && d > 1e-6) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
       }
@@ -2035,8 +2189,15 @@
     document.getElementById("btn-exit").addEventListener("click", () => setWalk(false));
 
     // PC: Linksklick uebernimmt die Maus (Pointer Lock, Fadenkreuz, Zeiger weg), erneuter Linksklick gibt sie frei
+    renderer.domElement.addEventListener("contextmenu", e => e.preventDefault());
     renderer.domElement.addEventListener("mousedown", e => {
-      if (!walking || touch || e.button !== 0) return;
+      if (!walking || touch) return;
+      if (e.button === 2) {                            // Rechtsklick auf eine Tuer gezielt: oeffnen/schliessen
+        e.preventDefault();
+        if (doorTarget) toggleDoor(doorTarget);
+        return;
+      }
+      if (e.button !== 0) return;
       e.preventDefault();
       if (dragging) return stopDrag();
       dragging = true;
@@ -2111,7 +2272,7 @@
     }
 
     // ?debug: Spieler und Laufmodus von aussen steuerbar (fuer Tests im Browser)
-    if (location.search.includes("debug")) window.villa = { player, setWalk, keys, scene, renderer, sun, update: updatePlayer };
+    if (location.search.includes("debug")) window.villa = { player, setWalk, keys, scene, renderer, sun, update: updatePlayer, doors, toggleDoor, setDoorAngle, camera, hint: () => doorHint.textContent };
 
     // Shader vorab bauen; nur rendern, solange der Tab sichtbar ist
     await renderer.compileAsync(scene, camera);
@@ -2126,6 +2287,10 @@
         blend += Math.sign(goal - blend) * Math.min(Math.abs(goal - blend), dt * 1.5);
         applyBlend(blend);
       }
+      for (const d of doors) {
+        if (d.t !== d.target) setDoorAngle(d, d.t + Math.sign(d.target - d.t) * Math.min(Math.abs(d.target - d.t), dt / 0.7));
+      }
+      updateDoorTarget();
       if (walking) {
         walkStep(dt);
         // Unter Wasser: blauer, dichter Nebel
