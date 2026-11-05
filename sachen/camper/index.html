@@ -111,14 +111,14 @@
     const SKY_DAY = new THREE.Color(0x9fd3f2), SKY_NIGHT = new THREE.Color(0x0a1022);
     const scene = new THREE.Scene();
     scene.background = SKY_DAY.clone();
-    scene.fog = new THREE.Fog(SKY_DAY.clone(), 45, 120);
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
+    scene.fog = new THREE.Fog(SKY_DAY.clone(), 80, 330);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.15, 700);
     camera.position.set(12, 6.5, 14);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(-0.5, 1.4, 0);
     controls.enableDamping = true;
     controls.minDistance = 3;
-    controls.maxDistance = 45;
+    controls.maxDistance = 110;
     controls.maxPolarAngle = Math.PI * 0.495;
 
     const hemi = new THREE.HemisphereLight(0xdff1ff, 0x5a7a3a, 1.0);
@@ -185,18 +185,141 @@
     const setS = (s, x0, x1, y0, y1, z0, z1) => Object.assign(s, { x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0, y1, z0: Math.min(z0, z1), z1: Math.max(z0, z1) });
 
     // --- Gelaende: Wiese, Kiesplatz, Baeume, Feuerstelle ---
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(90, 64), mat.grass);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // Hoehenfeld: ebener Campingplatz (y = 0), Huegel, Berge im Norden und ringsum, geschwungene Hauptstrasse im Sueden mit Steigung nach Osten
+    const sst = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
+    const ROAD_W = 3.4, T_MAX = 145;
+    const roadZ = t => 34 + 11 * Math.sin(t * 0.055) + 4 * Math.sin(t * 0.14 + 1);
+    const roadY = t => 0.1 * t;                                   // 10 % Steigung
+    const roadPts = [];
+    for (let t = -T_MAX - 20; t <= T_MAX + 20; t += 2) roadPts.push([t, roadZ(t)]);
+    function roadNear(x, z) {
+      let best = 1e9, bt = 0;
+      for (let i = 0; i < roadPts.length - 1; i++) {
+        const [ax, az] = roadPts[i], [bx, bz] = roadPts[i + 1], dx = bx - ax, dz = bz - az;
+        const u = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz));
+        const d = Math.hypot(x - (ax + dx * u), z - (az + dz * u));
+        if (d < best) { best = d; bt = ax + dx * u; }
+      }
+      return { d: best, t: bt };
+    }
+    function terrainH(x, z) {
+      const r = Math.hypot(x, z);
+      let h = (6 * Math.sin(x * 0.05 + 1) * Math.cos(z * 0.06) + 3.5 * Math.sin(x * 0.11 + z * 0.09 + 2) + 1.6 * Math.sin(x * 0.23 - z * 0.19)) * sst(8, 45, r);
+      const peak = (cx, cz, a, s) => a * Math.exp(-((x - cx) ** 2 + (z - cz) ** 2) / (2 * s * s));
+      h += peak(-25, -125, 62, 42) + peak(60, -105, 44, 32) + peak(-105, -30, 38, 32) + peak(115, -25, 30, 30) + peak(-60, 115, 28, 30) + peak(90, 110, 26, 28);
+      h += 40 * sst(120, 170, r);
+      h *= sst(0, 16, Math.hypot(Math.max(Math.abs(x + 1.5) - 13.5, 0), Math.max(Math.abs(z) - 9, 0)));   // Platz bleibt eben
+      const rn = roadNear(x, z);
+      const w = 1 - sst(ROAD_W + 2, ROAD_W + 14, rn.d);
+      return h + (roadY(rn.t) - h) * w;
+    }
+    {
+      const N = 220, SIZE = 340, geo = new THREE.PlaneGeometry(SIZE, SIZE, N, N).rotateX(-Math.PI / 2);
+      const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
+      for (let i = 0; i < pos.count; i++) pos.setY(i, terrainH(pos.getX(i), pos.getZ(i)));
+      geo.computeVertexNormals();
+      const nor = geo.attributes.normal;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), ny = nor.getY(i), n = Math.sin(x * 0.7) * Math.cos(z * 0.6) * 0.5 + 0.5;
+        c.setHex(0x5f9a3f).lerp(new THREE.Color(0x4d8a38), n * 0.8);
+        if (y > 9) c.lerp(new THREE.Color(0x6f8a45), sst(9, 20, y));
+        c.lerp(new THREE.Color(0x8a8780), Math.max(sst(0.9, 0.72, ny), sst(24, 34, y) * 0.8));
+        c.lerp(new THREE.Color(0xf4f6fa), sst(36, 44, y + (n - 0.5) * 6) * sst(0.55, 0.85, ny + 0.2));
+        col.set([c.r, c.g, c.b], i * 3);
+      }
+      geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      const terrain = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }));
+      terrain.receiveShadow = true;
+      scene.add(terrain);
+    }
     box(-9, 9, 0, 0.03, -6, 6, mat.gravel, scene, false);
 
+    // Band entlang einer Linie, haengt am Gelaende (Strasse, Linien, Zufahrt)
+    function ribbon(pts, w, off, m, lift) {
+      const P = [], I = [];
+      pts.forEach(([x, z], i) => {
+        const a = pts[Math.max(i - 1, 0)], b = pts[Math.min(i + 1, pts.length - 1)];
+        const tx = b[0] - a[0], tz = b[1] - a[1], l = Math.hypot(tx, tz), nx = -tz / l, nz = tx / l;
+        for (const k of [off - w / 2, off + w / 2]) { const px = x + nx * k, pz = z + nz * k; P.push(px, terrainH(px, pz) + lift, pz); }
+        if (i) { const j = i * 2; I.push(j - 2, j - 1, j, j - 1, j + 1, j); }
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+      g.setIndex(I);
+      g.computeVertexNormals();
+      const mesh = new THREE.Mesh(g, m);
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    }
+    const roadLine = (t0, t1, step = 1.5) => { const a = []; for (let t = t0; t <= t1 + 1e-6; t += step) a.push([t, roadZ(t)]); return a; };
+    const asphalt = M(0x3a3d42, { roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const paint = M(0xf2f0e6, { roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const gravelRoad = M(0xb9b09c, { roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    ribbon(roadLine(-T_MAX, T_MAX), ROAD_W * 2, 0, asphalt, 0.05);
+    ribbon(roadLine(-T_MAX, T_MAX), 0.18, ROAD_W - 0.4, paint, 0.07);
+    ribbon(roadLine(-T_MAX, T_MAX), 0.18, -ROAD_W + 0.4, paint, 0.07);
+    for (let t = -T_MAX; t < T_MAX - 3; t += 7) ribbon(roadLine(t, t + 3, 1), 0.2, 0, paint, 0.07);
+    {                                                              // Zufahrt vom Camping-Schild zum Platz
+      const z0 = roadZ(6) - ROAD_W + 0.5, pts = [];
+      for (let i = 0; i <= 14; i++) { const u = i / 14; pts.push([6 - u * 1.5 + Math.sin(u * 3) * 0.6, z0 + (4 - z0) * u]); }
+      ribbon(pts, 4, 0, gravelRoad, 0.04);
+    }
+    {                                                              // Schild an der Einfahrt
+      const sign = new THREE.Group();
+      const sx = 9.2, sz = roadZ(6) - ROAD_W - 1.6;
+      sign.position.set(sx, terrainH(sx, sz), sz);
+      cyl(0.07, 0.07, 2.4, mat.bark, 0, 1.2, 0, sign, 8);
+      const tex = canvasTex(256, 96, (g, w, h) => {
+        g.fillStyle = "#1f6b3a"; g.fillRect(0, 0, w, h);
+        g.strokeStyle = "#f4efe2"; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12);
+        g.fillStyle = "#f4efe2"; g.font = "800 44px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("CAMPING", w / 2, h / 2 + 3);
+      });
+      const board = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.72, 0.06), [mat.bark, mat.bark, mat.bark, mat.bark, new THREE.MeshStandardMaterial({ map: tex }), mat.bark]);
+      board.position.set(0, 2.2, 0.04);
+      board.castShadow = true;
+      sign.add(board);
+      scene.add(sign);
+      circles.push([sx, sz, 0.2]);
+    }
+    // Zwei Zelte auf dem Platz
+    for (const [tx, tz, ty, col] of [[10.2, -5.2, 0.4, 0xe0663b], [10.6, -1.4, -0.3, 0x3f78c8]]) {
+      const tent = new THREE.Mesh(new THREE.ConeGeometry(1.7, 1.5, 4), M(col));
+      tent.rotation.y = Math.PI / 4 + ty;
+      tent.scale.set(1, 1, 0.8);
+      tent.position.set(tx, 0.75, tz);
+      tent.castShadow = true;
+      scene.add(tent);
+      circles.push([tx, tz, 1.2]);
+    }
+
     const R = rng(11);
+    // Wald: Nadelbaeume als Instanzen auf Huegeln und Hangen
+    {
+      const spots = [];
+      for (let tries = 0; tries < 900 && spots.length < 330; tries++) {
+        const x = (R() - 0.5) * 300, z = (R() - 0.5) * 300, r = Math.hypot(x, z);
+        if (r < 17 || roadNear(x, z).d < 8.5 || (Math.abs(x + 2) < 26 && z > -16 && z < 31)) continue;   // Wiese vor dem Platz und Zufahrt frei
+        const y = terrainH(x, z);
+        if (y > 30 || Math.abs(terrainH(x + 1.5, z) - y) > 1.2 || Math.abs(terrainH(x, z + 1.5) - y) > 1.2) continue;
+        spots.push([x, y, z, 0.9 + R() * 1.4]);
+      }
+      const trunkM = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.14, 0.2, 1.4, 6), mat.bark, spots.length);
+      const lowM = new THREE.InstancedMesh(new THREE.ConeGeometry(1.5, 2.2, 8), mat.leaves2, spots.length);
+      const topM = new THREE.InstancedMesh(new THREE.ConeGeometry(1.0, 2.0, 8), mat.leaves2, spots.length);
+      const m4 = new THREE.Matrix4();
+      spots.forEach(([x, y, z, s], i) => {
+        for (const [mesh, dy] of [[trunkM, 0.7], [lowM, 2.0], [topM, 3.3]]) { m4.makeScale(s, s, s).setPosition(x, y + dy * s, z); mesh.setMatrixAt(i, m4); }
+        if (Math.hypot(x, z) < 70) circles.push([x, z, 0.3 * s]);
+      });
+      for (const mesh of [trunkM, lowM, topM]) { mesh.castShadow = true; mesh.receiveShadow = true; scene.add(mesh); }
+    }
     for (let i = 0; i < 34; i++) {
       const a = R() * Math.PI * 2, r = 19 + R() * 14;
       const x = Math.cos(a) * r, z = Math.sin(a) * r, s = 0.8 + R() * 0.6;
+      if (roadNear(x, z).d < 9 || (Math.abs(x + 2) < 26 && z > -16 && z < 31)) { R(); continue; }
       const g = new THREE.Group();
-      g.position.set(x, 0, z);
+      g.position.set(x, terrainH(x, z), z);
       if (R() < 0.5) {
         cyl(0.14, 0.2, 1.2, mat.bark, 0, 0.6, 0, g, 8);
         for (let k = 0; k < 4; k++) {
@@ -603,7 +726,7 @@
     // --- Laufmodus: Ich-Sicht, Kollision mit Boden, Waenden, Stufen und beweglichen Teilen ---
     const touch = matchMedia("(pointer: coarse)").matches;
     document.body.classList.toggle("touch", touch);
-    const EYE = 1.55, BODY = 1.7, RADIUS = 0.3, STEP = 0.45, WALK = 4.2, RUN = 7, JUMP = 6.4, GRAVITY = 22, LIMIT = 30;
+    const EYE = 1.55, BODY = 1.7, RADIUS = 0.3, STEP = 0.45, WALK = 4.2, RUN = 7, JUMP = 6.4, GRAVITY = 22, LIMIT = 150;
     const player = { pos: new THREE.Vector3(8, 0, 7), vy: 0, yaw: 0.93, pitch: -0.05, onGround: true, jump: false };
     const keys = new Set();
     let walking = false, dragging = false, jumpHeld = false;
@@ -633,7 +756,7 @@
       if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
     }
     function supportAt(p, feet) {
-      let top = 0;
+      let top = terrainH(p.x, p.z);
       for (const s of solids) {
         if (!s.on || s.y1 > feet + STEP || s.y1 <= top) continue;
         if (p.x > s.x0 - 0.05 && p.x < s.x1 + 0.05 && p.z > s.z0 - 0.05 && p.z < s.z1 + 0.05) top = s.y1;
@@ -648,14 +771,19 @@
       next.x += (-sin * moveZ + cos * moveX) * speed * dt;
       next.z += (-cos * moveZ - sin * moveX) * speed * dt;
       pushOut(next, player.pos.y);
+      // Zu steile Haenge (ueber ca. 48 Grad) sind nicht begehbar
+      const g0 = terrainH(player.pos.x, player.pos.z), g1 = terrainH(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
+      if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
       player.pos.x = next.x;
       player.pos.z = next.z;
+      const wasGround = player.onGround;
       if (player.jump && player.onGround) { player.vy = JUMP; player.onGround = false; }
       player.vy -= GRAVITY * dt;
       player.jump = false;
       player.pos.y += player.vy * dt;
       const support = supportAt(player.pos, player.pos.y);
-      if (player.pos.y <= support) { player.pos.y = support; player.vy = 0; player.onGround = true; } else player.onGround = false;
+      // Bergab am Boden bleiben (kein Schweben ueber dem Hang)
+      if (player.pos.y <= support || (wasGround && player.vy <= 0 && player.pos.y - support < 0.35)) { player.pos.y = support; player.vy = 0; player.onGround = true; } else player.onGround = false;
       for (const s of solids) {                                    // Kopf an der Decke
         if (!s.on || s.y0 <= player.pos.y + STEP || s.y0 >= player.pos.y + BODY) continue;
         const cx = Math.max(s.x0, Math.min(player.pos.x, s.x1)), cz = Math.max(s.z0, Math.min(player.pos.z, s.z1));
@@ -804,7 +932,7 @@
 
     // ?debug: Spieler und Fortschritt von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.camperDebug = { player, update: updatePlayer, setWalk, setP: v => { p = v; target = null; applyFold(p); }, solids, camera, renderer, scene };
+      window.camperDebug = { player, update: updatePlayer, setWalk, setP: v => { p = v; target = null; applyFold(p); }, terrainH, solids, camera, renderer, scene };
     }
 
     await renderer.compileAsync(scene, camera);
@@ -827,7 +955,11 @@
       flag.rotation.y = Math.sin(flagT * 3) * 0.25;
       dishHead.parent.rotation.y += dt * 0.5 * stage(p, 0.9, 0.97);
       setLabel();
-      if (walking) walkStep(dt); else controls.update(dt);
+      if (walking) walkStep(dt); else {
+        controls.update(dt);
+        const gy = terrainH(camera.position.x, camera.position.z) + 1.2;   // Kamera nicht in den Hang
+        if (camera.position.y < gy) camera.position.y = gy;
+      }
       renderer.render(scene, camera);
     });
   </script>
