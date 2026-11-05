@@ -1806,7 +1806,7 @@
     // Vor der Veranda, Weg (x -2.6..-1.4) frei lassen
     for (let x = -5.6; x <= 0.8; x += 0.9) if (Math.abs(x + 2) > 1) bushSpots.push([x, HZ + 2.7, 0.45]);
     for (let z = -13; z <= 4; z += 1.1) if (z < -12.6 || z > -7.4) bushSpots.push([-HX - 0.7, z, 0.5]);   // nicht ueber der Westterrasse
-    for (let z = -13; z <= -3.8; z += 1.1) bushSpots.push([HX + 0.7, z, 0.5]);
+    for (let z = -13; z <= GZ0 - 0.5; z += 1.1) bushSpots.push([HX + 0.7, z, 0.5]);   // nicht in der Garage (z ab GZ0)
     for (let z = GZ0 + 0.5; z <= 4; z += 1.1) if (z < -3.7 || z > 1.4) bushSpots.push([GX1 + 0.7, z, 0.5]);   // nicht in der Sauna (z -3.1..0.7)
     for (let z = 5.5; z <= 16; z += 1.0) bushSpots.push([18.7, z, 0.42]);
     for (let i = 0; i < 26; i++) {
