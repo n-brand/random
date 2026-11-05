@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Wohnwagen 3D – random</title>
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="../../icon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: dark; --text: #ecebe6; --muted: #9b9a94; --accent: #ff8a4c; --line: #2a2d35; --panel: rgba(16, 18, 24, .78); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #0b0d12; color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    canvas { display: block; touch-action: none; }
+    .bar { position: fixed; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px; pointer-events: none; }
+    .bar > * { pointer-events: auto; }
+    .bar a { color: var(--text); text-decoration: none; font-weight: 600; text-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
+    .bar a span { color: var(--accent); }
+    .bar h1 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--text); text-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
+    .panel { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 44px); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px; backdrop-filter: blur(8px); max-width: calc(100% - 24px); }
+    .panel button, .hud button { border: 0; background: none; color: var(--text); font: inherit; font-size: .9rem; padding: 8px 14px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+    .panel button:hover, .hud button:hover { background: rgba(255, 255, 255, .08); }
+    .panel button[aria-pressed="true"] { background: var(--text); color: #0b0d12; }
+    .panel .big, .hud .big { background: var(--accent); color: #1a0f08; font-weight: 800; padding: 10px 20px; }
+    .panel .big:hover, .hud .big:hover { background: #ff9d68; }
+    .panel input[type="range"] { width: 150px; accent-color: var(--accent); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px); font-size: .8rem; color: var(--muted); text-align: center; pointer-events: none; }
+    footer a { color: var(--accent); pointer-events: auto; }
+
+    /* Laufmodus */
+    .hud { display: none; position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 12px; gap: 8px; z-index: 5; }
+    body.walk .hud { display: flex; }
+    body.walk .panel, body.walk footer, body.walk .bar h1 { display: none; }
+    .hud button { background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); }
+    #cross { display: none; position: fixed; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border: 2px solid rgba(255, 255, 255, .8); border-radius: 50%; pointer-events: none; }
+    body.walk.looking #cross { display: block; }
+    #hint { display: none; position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); transform: translateX(-50%); max-width: calc(100% - 24px); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; font-size: .78rem; color: var(--muted); text-align: center; pointer-events: none; }
+    body.walk #hint { display: block; }
+    #toast { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 16px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 6; }
+    #toast.show { opacity: 1; }
+    .stick { display: none; position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .25); touch-action: none; z-index: 5; }
+    .stick span { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px; border-radius: 50%; background: rgba(255, 255, 255, .35); }
+    #stick-move { left: 22px; }
+    #stick-look { right: 22px; }
+    #btn-jump { display: none; position: fixed; right: 160px; bottom: calc(env(safe-area-inset-bottom, 0px) + 44px); width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; touch-action: none; z-index: 5; }
+    body.touch.walk .stick, body.touch.walk #btn-jump { display: block; }
+    body.touch #hint { display: none !important; }
+    #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); background: #0b0d12; z-index: 9; }
+    @media (max-width: 600px) { .panel input[type="range"] { width: 110px; } .bar h1 { display: none; } }
+  </style>
+</head>
+<body>
+  <div id="loading">Lade Wohnwagen...</div>
+  <div class="bar">
+    <a href="../../">&larr; random<span>.</span></a>
+    <h1>Wohnwagen &middot; 3D</h1>
+    <span></span>
+  </div>
+
+  <div class="panel" role="group" aria-label="Steuerung">
+    <button type="button" id="btn-unfold" class="big">Ausklappen</button>
+    <input type="range" id="slider" min="0" max="100" value="0" aria-label="Ausklapp-Fortschritt">
+    <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
+    <button type="button" id="btn-walk">Begehen</button>
+  </div>
+
+  <div class="hud">
+    <button type="button" id="btn-unfold2" class="big">Ausklappen (F)</button>
+    <button type="button" id="btn-exit">Beenden (Esc)</button>
+  </div>
+  <div id="cross"></div>
+  <div id="hint">WASD gehen &middot; Linksklick Maus übernehmen &middot; Leertaste springen &middot; Shift rennen &middot; F aus-/einklappen &middot; Esc beenden</div>
+  <div id="toast"></div>
+  <div class="stick" id="stick-move"><span></span></div>
+  <div class="stick" id="stick-look"><span></span></div>
+  <button type="button" id="btn-jump">Sprung</button>
+
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
+
+  <script>
+    // PWA: gemeinsamer Service Worker im Projekt-Root
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("../../sw.js").catch(() => {});
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    // Einheiten: 1 = 1 Meter. Wohnwagen laengs der x-Achse (hinten = -x mit Klapp-Terrasse, vorne = +x mit Deichsel),
+    // Seiten +z und -z. Boden innen auf y = 0.65. Alles Ausklappbare haengt an der Fortschrittszahl p (0 = zu, 1 = ganz offen).
+    const $ = id => document.getElementById(id);
+    const clamp01 = v => Math.max(0, Math.min(1, v));
+    const stage = (p, a, b) => { const t = clamp01((p - a) / (b - a)); return t * t * (3 - 2 * t); };
+    const rng = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+    // --- Renderer, Szene, Kamera ---
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.prepend(renderer.domElement);
+
+    const SKY_DAY = new THREE.Color(0x9fd3f2), SKY_NIGHT = new THREE.Color(0x0a1022);
+    const scene = new THREE.Scene();
+    scene.background = SKY_DAY.clone();
+    scene.fog = new THREE.Fog(SKY_DAY.clone(), 45, 120);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
+    camera.position.set(12, 6.5, 14);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(-0.5, 1.4, 0);
+    controls.enableDamping = true;
+    controls.minDistance = 3;
+    controls.maxDistance = 45;
+    controls.maxPolarAngle = Math.PI * 0.495;
+
+    const hemi = new THREE.HemisphereLight(0xdff1ff, 0x5a7a3a, 1.0);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xfff2d6, 2.4);
+    sun.position.set(14, 22, 10);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 70 });
+    sun.shadow.bias = -0.0005;
+    scene.add(sun);
+
+    // --- Materialien ---
+    const M = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.75, ...o });
+    function canvasTex(w, h, draw, rx = 1, ry = 1) {
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      draw(c.getContext("2d"), w, h);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(rx, ry);
+      return t;
+    }
+    const awningTex = canvasTex(64, 64, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? "#f4efe2" : "#e0663b"; g.fillRect(i * 8, 0, 8, h); } });
+    const deckTex = canvasTex(64, 64, (g, w, h) => {
+      g.fillStyle = "#c08a4a"; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? "rgba(0,0,0,.07)" : "rgba(255,255,255,.05)"; g.fillRect(0, i * 8, w, 8); g.fillStyle = "rgba(60,30,10,.55)"; g.fillRect(0, i * 8, w, 1); }
+    });
+    const mat = {
+      grass: M(0x5f9a3f, { roughness: 1 }), gravel: M(0xb9b09c, { roughness: 1 }),
+      cream: M(0xf1ede2), stripe: M(0x24aea1), dark: M(0x2b2e33, { roughness: 0.6 }), tire: M(0x1b1c1e),
+      steel: M(0x9aa3ad, { metalness: 0.6, roughness: 0.35 }), wood: M(0xa06a3a), deck: M(0xffffff, { map: deckTex }),
+      floor: M(0xcdae82), inner: M(0xe9dcc2), white: M(0xf7f7f4), black: M(0x151617), tv: M(0x0f1113, { roughness: 0.2 }),
+      fabric: M(0x4f6f8f), fabric2: M(0x8a4a58), rug: M(0xb5533c), green: M(0x4a8a4a), roof: M(0xdedbd2),
+      glass: M(0x9fd0e6, { transparent: true, opacity: 0.35, roughness: 0.1 }), awning: M(0xffffff, { map: awningTex, side: THREE.DoubleSide }),
+      leaves: M(0x3f8a3f), leaves2: M(0x2f7a45), bark: M(0x6b4a2a), stone: M(0x8d8d8a), red: M(0xd1443c),
+      flame: M(0xffa62b, { emissive: 0xff7a10, emissiveIntensity: 2.2 }),
+      bulb: M(0xfff1c2, { emissive: 0xffd27a, emissiveIntensity: 0.25 }), lamp: M(0xfff1c2, { emissive: 0xffd27a, emissiveIntensity: 0.4 })
+    };
+
+    function box(x0, x1, y0, y1, z0, z1, m, parent = scene, shadow = true) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m);
+      mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+      mesh.castShadow = shadow;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+    // Einheitswuerfel (0..1 in z), wird per scale gestreckt
+    function cyl(r0, r1, h, m, x, y, z, parent = scene, seg = 16) {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), m);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    // Kollision: Quader mit "on"; bewegliche Teile aendern ihre Masse pro Bild
+    const solids = [];
+    const circles = [];
+    const S = (x0, x1, y0, y1, z0, z1, on = true) => { const s = { x0, x1, y0, y1, z0, z1, on }; solids.push(s); return s; };
+    const setS = (s, x0, x1, y0, y1, z0, z1) => Object.assign(s, { x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0, y1, z0: Math.min(z0, z1), z1: Math.max(z0, z1) });
+
+    // --- Gelaende: Wiese, Kiesplatz, Baeume, Feuerstelle ---
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(90, 64), mat.grass);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    box(-9, 9, 0, 0.03, -6, 6, mat.gravel, scene, false);
+
+    const R = rng(11);
+    for (let i = 0; i < 34; i++) {
+      const a = R() * Math.PI * 2, r = 19 + R() * 14;
+      const x = Math.cos(a) * r, z = Math.sin(a) * r, s = 0.8 + R() * 0.6;
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+      if (R() < 0.5) {
+        cyl(0.14, 0.2, 1.2, mat.bark, 0, 0.6, 0, g, 8);
+        for (let k = 0; k < 4; k++) {
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(1.5 - k * 0.3, 1.8, 10), mat.leaves2);
+          cone.position.y = 1.4 + k * 0.9;
+          cone.castShadow = true;
+          g.add(cone);
+        }
+      } else {
+        cyl(0.18, 0.26, 2.6, mat.bark, 0, 1.3, 0, g, 8);
+        for (let k = 0; k < 5; k++) {
+          const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9 + R() * 0.5, 1), mat.leaves);
+          ball.position.set((R() - 0.5) * 1.6, 2.8 + R() * 1.2, (R() - 0.5) * 1.6);
+          ball.castShadow = true;
+          g.add(ball);
+        }
+      }
+      g.scale.setScalar(s);
+      scene.add(g);
+      circles.push([x, z, 0.4 * s]);
+    }
+
+    // Feuerstelle mit Steinen, Holzstaemmen und flackernder Flamme; Sitzstaemme drumherum
+    const fire = new THREE.Group();
+    fire.position.set(-11, 0, 4.5);
+    scene.add(fire);
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      const st = box(-0.17, 0.17, 0, 0.22, -0.13, 0.13, mat.stone, fire);
+      st.position.set(Math.cos(a) * 0.62, 0.11, Math.sin(a) * 0.62);
+      st.rotation.y = -a;
+    }
+    for (let i = 0; i < 3; i++) {
+      const log = cyl(0.07, 0.07, 0.9, mat.bark, 0, 0.16, 0, fire, 8);
+      log.rotation.z = Math.PI / 2;
+      log.rotation.y = (i / 3) * Math.PI;
+    }
+    const flames = [0, 1, 2].map(i => {
+      const f = new THREE.Mesh(new THREE.ConeGeometry(0.2 - i * 0.03, 0.7 + i * 0.1, 8), mat.flame);
+      f.position.set((i - 1) * 0.12, 0.5, (i % 2) * 0.1);
+      fire.add(f);
+      return f;
+    });
+    const fireLight = new THREE.PointLight(0xff9a3c, 0, 9, 2);
+    fireLight.position.set(0, 0.9, 0);
+    fire.add(fireLight);
+    circles.push([-11, 4.5, 0.8]);
+    for (let i = 0; i < 4; i++) {
+      const a = 0.5 + i * 1.35;
+      const sx = -11 + Math.cos(a) * 1.7, sz = 4.5 + Math.sin(a) * 1.7;
+      const seat = cyl(0.22, 0.22, 0.45, mat.bark, sx, 0.225, sz, scene, 12);
+      seat.castShadow = true;
+      circles.push([sx, sz, 0.3]);
+    }
+
+    // --- Wohnwagen ---
+    const camper = new THREE.Group();
+    scene.add(camper);
+    const FL = 0.65, HW = 2.45;
+
+    // Fahrgestell, Boden, Waende (Seitenwaende mit Luecke fuer die Ausklappzimmer), Dach
+    box(-3.2, 3.2, 0.45, 0.57, -1.2, 1.2, mat.dark, camper);
+    box(-3.2, 3.2, 0.57, FL, -1.2, 1.2, mat.floor, camper);
+    S(-3.2, 3.2, 0.45, FL, -1.2, 1.2);
+    const wallBox = (x0, x1, y0, y1, z0, z1, m = mat.cream) => { S(x0, x1, y0, y1, z0, z1); return box(x0, x1, y0, y1, z0, z1, m, camper); };
+    for (const s of [-1, 1]) {
+      const [za, zb] = s > 0 ? [1.1, 1.2] : [-1.2, -1.1];
+      for (const [xa, xb] of [[-3.2, -2.4], [0.7, 3.2]]) {
+        wallBox(xa, xb, FL, HW, za, zb);
+        box(xa, xb, 1.15, 1.32, s > 0 ? zb : za - 0.012, s > 0 ? zb + 0.012 : za, mat.stripe, camper, false);
+      }
+      box(1.2, 2.7, 1.3, 1.95, s > 0 ? zb : za - 0.012, s > 0 ? zb + 0.012 : za, mat.glass, camper, false);
+    }
+    wallBox(3.1, 3.2, FL, HW, -1.2, 1.2);                               // Vorderwand
+    box(3.2, 3.212, 1.3, 1.95, -0.7, 0.7, mat.glass, camper, false);
+    wallBox(-3.2, -3.1, FL, HW, -1.2, -0.5);                            // Rueckwand mit Tuerluecke z -0.5..0.5
+    wallBox(-3.2, -3.1, FL, HW, 0.5, 1.2);
+    wallBox(-3.2, -3.1, 2.4, HW, -0.5, 0.5);                            // Sturz: Tuer 1.75 m hoch (Koerper 1.7 m)
+    box(-3.1, -2.9, 0.65, 2.4, -0.5, -0.46, mat.dark, camper, false);   // Tuerrahmen
+    box(-3.1, -2.9, 0.65, 2.4, 0.46, 0.5, mat.dark, camper, false);
+    box(-3.3, -3.2, FL - 0.08, FL, -0.5, 0.5, mat.floor, camper);       // Schwelle zur Klapp-Terrasse
+    box(-3.25, 3.25, HW, 2.55, -1.25, 1.25, mat.roof, camper);          // Dach mit Ueberstand
+    S(-3.25, 3.25, HW, 2.62, -1.25, 1.25);
+    box(-3.25, 3.25, 2.55, 2.57, -1.25, -1.2, mat.stripe, camper, false);
+
+    // Raeder mit Kotfluegeln, Deichsel mit Kupplung
+    const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.22, 28).rotateX(Math.PI / 2);
+    for (const s of [-1, 1]) {
+      const w = new THREE.Mesh(wheelGeo, mat.tire);
+      w.position.set(1.9, 0.42, s * 1.32);
+      w.castShadow = true;
+      camper.add(w);
+      const hub = cyl(0.2, 0.2, 0.26, mat.steel, 1.9, 0.42, s * 1.32, camper, 12);
+      hub.rotation.x = Math.PI / 2;
+      box(1.3, 2.5, 0.8, 0.9, s > 0 ? 1.17 : -1.5, s > 0 ? 1.5 : -1.17, mat.dark, camper);
+      S(1.48, 2.32, 0, 0.84, s > 0 ? 1.19 : -1.45, s > 0 ? 1.45 : -1.19);
+    }
+    box(3.2, 4.9, 0.45, 0.57, -0.08, 0.08, mat.dark, camper);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), mat.steel);
+    ball.position.set(4.9, 0.6, 0);
+    camper.add(ball);
+
+    // Stuetzen an den vier Ecken fahren beim Ausklappen aus
+    const jacks = [[-2.9, -1.35], [-2.9, 1.35], [2.9, -1.35], [2.9, 1.35]].map(([x, z]) => {
+      const leg = box(-0.05, 0.05, 0, 1, -0.05, 0.05, mat.steel, camper);
+      leg.position.set(x, 0.45, z);
+      const foot = box(-0.18, 0.18, 0, 0.04, -0.18, 0.18, mat.dark, camper);
+      foot.position.set(x, 0, z);
+      return { leg, foot, x, z };
+    });
+
+    // Einrichtung im Hauptraum: Kueche vorne an der -z-Wand, Sitzecke mit Tisch vorne an der +z-Wand, Schrank hinten
+    const fb = (g, x0, x1, y0, y1, z0, z1, m) => box(x0, x1, y0, y1, z0, z1, m, g);
+    fb(camper, 1.0, 3.0, FL, 1.55, -1.1, -0.55, mat.white); S(1.0, 3.0, FL, 1.55, -1.1, -0.55);
+    fb(camper, 1.0, 3.0, 1.55, 1.6, -1.1, -0.5, mat.wood);                       // Arbeitsplatte
+    fb(camper, 1.4, 2.0, 1.6, 1.62, -0.95, -0.7, mat.steel);                     // Spuele
+    fb(camper, 2.3, 2.8, 1.6, 1.64, -0.95, -0.7, mat.black);                     // Kochfeld
+    fb(camper, 1.0, 3.0, 1.95, 2.4, -1.1, -0.8, mat.wood);                       // Oberschraenke
+    fb(camper, 1.2, 3.0, FL, 1.1, 0.6, 1.1, mat.fabric); S(1.2, 3.0, FL, 1.1, 0.6, 1.1);
+    fb(camper, 1.2, 3.0, 1.1, 1.6, 0.95, 1.1, mat.fabric);                       // Lehne
+    fb(camper, 1.7, 2.5, FL, 1.15, -0.1, 0.4, mat.wood); S(1.7, 2.5, FL, 1.15, -0.1, 0.4);
+    fb(camper, -3.1, -2.5, FL, 2.3, -1.1, -0.6, mat.wood); S(-3.1, -2.5, FL, 2.3, -1.1, -0.6);   // Schrank
+    fb(camper, -3.1, -2.5, FL, 1.0, 0.7, 1.1, mat.white); S(-3.1, -2.5, FL, 1.0, 0.7, 1.1);      // Truhe
+    const lampMain = new THREE.PointLight(0xffe2b0, 6, 9, 2);
+    lampMain.position.set(0.3, 2.1, 0);
+    camper.add(lampMain);
+
+    // --- Ausklapp-Zimmer links und rechts: Boden, Decke, Seitenwaende wachsen mit der Tiefe D, Aussenwand faehrt nach aussen ---
+    const ZIN = 1.05, D0 = 0.1, DMAX = 2.7;
+    function makeWing(sgn, furnish) {
+      const g = new THREE.Group();
+      g.scale.z = sgn;                                   // -z-Seite spiegelt die +z-Seite
+      camper.add(g);
+      const stretch = new THREE.Group();
+      stretch.position.z = ZIN;
+      g.add(stretch);
+      box(-2.4, 0.7, 0.57, 0.652, 0, 1, mat.floor, stretch);
+      box(-2.4, 0.7, 2.38, 2.45, 0, 1, mat.white, stretch);
+      box(-2.5, 0.8, 2.45, 2.52, 0, 1, mat.roof, stretch);
+      box(-2.4, -2.3, 0.65, 2.45, 0, 1, mat.cream, stretch);
+      box(0.6, 0.7, 0.65, 2.45, 0, 1, mat.cream, stretch);
+      const outer = new THREE.Group();
+      g.add(outer);
+      box(-2.4, 0.7, 0.65, 1.1, -0.05, 0.05, mat.cream, outer);
+      box(-2.4, 0.7, 0.8, 0.95, 0.05, 0.062, mat.stripe, outer, false);
+      box(-2.4, 0.7, 1.95, 2.45, -0.05, 0.05, mat.cream, outer);
+      box(-2.4, -2.25, 1.1, 1.95, -0.05, 0.05, mat.cream, outer);
+      box(0.55, 0.7, 1.1, 1.95, -0.05, 0.05, mat.cream, outer);
+      box(-2.25, 0.55, 1.1, 1.95, -0.012, 0.012, mat.glass, outer, false);
+      box(-2.25, 0.55, 1.1, 1.13, -0.03, 0.06, mat.dark, outer, false);
+      box(-2.25, 0.55, 1.92, 1.95, -0.03, 0.06, mat.dark, outer, false);
+      box(-2.55, 0.85, 2.45, 2.52, -0.05, 0.3, mat.roof, outer);                // Dachueberstand
+      const flower = new THREE.Group();                                           // Blumenkasten unter dem Fenster
+      outer.add(flower);
+      box(-1.9, -0.1, 1.0, 1.12, 0.05, 0.26, mat.wood, flower);
+      for (let i = 0; i < 6; i++) {
+        const bush = new THREE.Mesh(new THREE.IcosahedronGeometry(0.1, 0), i % 2 ? mat.red : mat.green);
+        bush.position.set(-1.8 + i * 0.29, 1.18, 0.15);
+        flower.add(bush);
+      }
+      const stuff = new THREE.Group();                                            // Moebel, haengen an der Aussenwand
+      outer.add(stuff);
+      furnish(stuff);
+      const lamp = new THREE.PointLight(0xffd9a0, 0, 7, 2);
+      lamp.position.set(-0.9, 2.1, -1.4);
+      stuff.add(lamp);
+      const cols = {
+        floor: S(0, 0, 0, 0, 0, 0), outer: S(0, 0, 0, 0, 0, 0), endA: S(0, 0, 0, 0, 0, 0), endB: S(0, 0, 0, 0, 0, 0)
+      };
+      const zr = (a, b) => (sgn > 0 ? [a, b] : [-b, -a]);
+      return {
+        g, stuff, flower, lamp,
+        update(D) {
+          stretch.scale.z = D;
+          outer.position.z = ZIN + D;
+          setS(cols.floor, -2.4, 0.7, 0.57, 0.652, ...zr(ZIN, ZIN + D));
+          setS(cols.outer, -2.4, 0.7, 0.65, 2.45, ...zr(ZIN + D - 0.05, ZIN + D + 0.05));
+          setS(cols.endA, -2.4, -2.3, 0.65, 2.45, ...zr(ZIN, ZIN + D));
+          setS(cols.endB, 0.6, 0.7, 0.65, 2.45, ...zr(ZIN, ZIN + D));
+        }
+      };
+    }
+    // +z-Zimmer: Schlafzimmer (Doppelbett am Fenster, Nachttische mit Lampen)
+    const wingBed = makeWing(1, g => {
+      fb(g, -1.65, -0.05, 0.65, 0.9, -2.05, -0.1, mat.wood);
+      fb(g, -1.6, -0.1, 0.9, 1.04, -2.0, -0.12, mat.white);
+      fb(g, -1.6, -0.1, 1.04, 1.1, -1.95, -0.85, mat.fabric2);
+      fb(g, -1.55, -0.85, 1.04, 1.16, -0.55, -0.15, mat.white);
+      fb(g, -0.85, -0.15, 1.04, 1.16, -0.55, -0.15, mat.white);
+      fb(g, -2.25, -1.75, 0.65, 1.1, -0.5, -0.1, mat.wood);
+      fb(g, 0.0, 0.5, 0.65, 1.1, -0.5, -0.1, mat.wood);
+      fb(g, -2.1, -1.9, 1.1, 1.35, -0.4, -0.2, mat.lamp);
+      fb(g, 0.15, 0.35, 1.1, 1.35, -0.4, -0.2, mat.lamp);
+      fb(g, -2.3, -1.9, 0.65, 2.2, -2.7, -2.3, mat.wood);
+    });
+    // -z-Zimmer: Wohnzimmer mit Fernseher, Sofa, Couchtisch, Teppich
+    const wingLounge = makeWing(-1, g => {
+      fb(g, -1.6, -0.1, 0.65, 1.0, -0.55, -0.1, mat.wood);
+      fb(g, -1.5, -0.2, 1.25, 2.0, -0.1, -0.06, mat.tv);
+      fb(g, -2.2, 0.4, 0.652, 0.66, -1.8, -0.7, mat.rug);
+      fb(g, -2.2, 0.4, 0.65, 1.1, -2.6, -1.8, mat.fabric2);
+      fb(g, -2.2, 0.4, 1.1, 1.65, -2.65, -2.45, mat.fabric2);
+      fb(g, -1.4, -0.6, 0.65, 0.98, -1.5, -0.95, mat.wood);
+      fb(g, -2.3, -2.0, 0.65, 1.3, -0.5, -0.2, mat.green);
+    });
+    const wings = [wingBed, wingLounge];
+
+    // --- Klapp-Terrasse hinten (zwei Platten, wie ein Heckklappen-Z), Gelaender, Treppe, Markise ---
+    const hinge1 = new THREE.Group();
+    hinge1.position.set(-3.3, FL, 0);
+    camper.add(hinge1);
+    box(-1.75, 0, -0.1, 0, -1.2, 1.2, mat.deck, hinge1);              // jede Platte 1.75 m: zugeklappt so hoch wie die Tuer
+    const hinge2 = new THREE.Group();
+    hinge2.position.set(-1.75, 0, 0);
+    hinge1.add(hinge2);
+    box(-1.75, 0, -0.1, 0, -1.2, 1.2, mat.deck, hinge2);
+    const deckProps = new THREE.Group();            // Tisch, Stuehle, Laterne auf der offenen Terrasse
+    deckProps.position.set(-0.875, 0, 0);
+    hinge2.add(deckProps);
+    cyl(0.4, 0.4, 0.05, mat.wood, 0, 0.72, 0, deckProps, 20);
+    cyl(0.05, 0.05, 0.7, mat.steel, 0, 0.35, 0, deckProps, 8);
+    cyl(0.12, 0.12, 0.2, mat.lamp, 0, 0.84, 0, deckProps, 10);
+    for (const z of [-0.65, 0.65]) {
+      fb(deckProps, -0.2, 0.2, 0.4, 0.46, z - 0.2, z + 0.2, mat.fabric);
+      fb(deckProps, -0.2, 0.2, 0.46, 0.85, z + (z > 0 ? 0.14 : -0.2), z + (z > 0 ? 0.2 : -0.14), mat.fabric);
+      fb(deckProps, -0.18, -0.14, 0, 0.4, z - 0.18, z - 0.14, mat.dark);
+      fb(deckProps, 0.14, 0.18, 0, 0.4, z + 0.14, z + 0.18, mat.dark);
+    }
+    deckProps.rotation.z = 0;
+    const deckClosed = S(-3.5, -3.2, FL - 0.05, 2.4, -1.2, 1.2);
+    const deckFlat1 = S(-5.05, -3.3, 0.55, FL, -1.2, 1.2, false);
+    const deckFlat2 = S(-6.8, -5.05, 0.55, FL, -1.2, 1.2, false);
+    const deckLamp = new THREE.PointLight(0xffd9a0, 0, 8, 2);
+    deckLamp.position.set(-5.0, 1.6, 0);
+    camper.add(deckLamp);
+
+    // Gelaender aus Pfosten und zwei Latten; haengt an einer Linienfolge und waechst von unten
+    function makeRail(poly, base, h) {
+      const g = new THREE.Group();
+      g.position.y = base;
+      camper.add(g);
+      const segs = [];
+      for (let i = 0; i < poly.length - 1; i++) {
+        const [ax, az] = poly[i], [bx, bz] = poly[i + 1];
+        const len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.ceil(len / 1.2));
+        for (let k = 0; k <= n; k++) {
+          const x = ax + (bx - ax) * k / n, z = az + (bz - az) * k / n;
+          box(x - 0.04, x + 0.04, 0, h, z - 0.04, z + 0.04, mat.wood, g);
+        }
+        const x0 = Math.min(ax, bx), x1 = Math.max(ax, bx), z0 = Math.min(az, bz), z1 = Math.max(az, bz);
+        for (const y of [h * 0.5, h - 0.04]) box(x0 - 0.04, x1 + 0.04, y, y + 0.05, z0 - 0.03, z1 + 0.03, mat.wood, g);
+        segs.push(S(x0 - 0.05, x1 + 0.05, base, base + h, z0 - 0.05, z1 + 0.05, false));
+      }
+      return { g, segs };
+    }
+    const railDeck = makeRail([[-6.8, -0.7], [-6.8, -1.15], [-3.3, -1.15]], FL, 0.9);
+    const railDeck2 = makeRail([[-6.8, 0.7], [-6.8, 1.15], [-3.3, 1.15]], FL, 0.9);
+
+    // Treppe von der Terrasse zum Boden: zwei Stufen, die aus dem Boden fahren
+    const rearSteps = [[-7.4, -7.1, 0.22], [-7.1, -6.8, 0.43]].map(([xa, xb, top]) => {
+      const m = box(0, 1, 0, 1, 0, 1, mat.deck, camper);
+      return { m, xa, xb, top, solid: S(0, 0, 0, 0, 0, 0, false) };
+    });
+
+    // Markise: zwei Stuetzen fahren hoch, das Tuch rollt nach hinten aus
+    const poles = [-1.2, 1.2].map(z => {
+      const m = cyl(0.04, 0.04, 1, mat.steel, -6.7, 0, z, camper, 8);
+      return { m, z, solid: S(-6.76, -6.64, 0, 0, z - 0.06, z + 0.06, false) };
+    });
+    const canopy = new THREE.Group();
+    canopy.position.set(-3.3, 2.7, 0);
+    canopy.rotation.z = 0.1;
+    camper.add(canopy);
+    box(-3.5, 0, -0.04, 0.0, -1.4, 1.4, mat.awning, canopy);
+    const bulbsDeck = [];
+    for (let i = 0; i < 9; i++) {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), mat.bulb);
+      b.position.set(-3.5, -0.1, -1.3 + i * 0.325);
+      canopy.add(b);
+      bulbsDeck.push(b);
+    }
+
+    // --- Dachterrasse: Holzboden, Gelaender, Treppe von vorne, Mast mit Fahne, Satellitenschuessel ---
+    const planks = box(-3.0, 3.0, 0, 1, -1.1, 1.1, mat.deck, camper);
+    const railRoof = makeRail([[3.12, 0.1], [3.12, -1.12], [-3.12, -1.12], [-3.12, 1.12], [3.12, 1.12]], 2.62, 0.95);
+    const roofSteps = Array.from({ length: 8 }, (_, i) => {
+      const m = box(0, 1, 0, 1, 0, 1, mat.deck, camper);
+      return { m, i, xa: 3.2 + (7 - i) * 0.3, xb: 3.5 + (7 - i) * 0.3, top: 0.32 * (i + 1), solid: S(0, 0, 0, 0, 0, 0, false) };
+    });
+    const mast = cyl(0.05, 0.05, 1, mat.steel, -2.9, 0, -0.95, camper, 8);
+    const flag = box(0, 0.9, -0.25, 0.25, -0.02, 0.02, mat.red, camper);
+    const dishPivot = new THREE.Group();
+    dishPivot.position.set(2.7, 2.62, -0.9);
+    camper.add(dishPivot);
+    cyl(0.05, 0.05, 0.9, mat.steel, 0, 0.45, 0, dishPivot, 8);
+    const dishHead = new THREE.Group();
+    dishHead.position.set(0, 0.95, 0);
+    dishPivot.add(dishHead);
+    const dish = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2.6), new THREE.MeshStandardMaterial({ color: 0xe9e9e6, roughness: 0.4, side: THREE.DoubleSide }));
+    dish.castShadow = true;
+    dishHead.add(dish);
+    const bulbsRoof = [];
+    for (const [x, z] of [[-3.12, -1.12], [-3.12, 1.12], [3.12, -1.12], [3.12, 1.12], [0, -1.12], [0, 1.12]]) {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), mat.bulb);
+      b.position.set(x, 2.62 + 0.98, z);
+      camper.add(b);
+      bulbsRoof.push(b);
+    }
+
+    // --- Ausklappen: alles haengt an p (0..1), Reihenfolge ueber Zeitfenster ---
+    function applyFold(p) {
+      const eJ = stage(p, 0, 0.12);
+      for (const j of jacks) {
+        const h = Math.max(0.45 * eJ, 0.001);
+        j.leg.scale.y = h;
+        j.leg.position.y = 0.45 - h / 2;                 // Stuetze haengt vom Fahrgestell nach unten
+        j.foot.position.y = 0.45 - h;
+        j.foot.visible = h > 0.03;
+      }
+      const eW = stage(p, 0.10, 0.45), D = D0 + (DMAX - D0) * eW, eF = stage(p, 0.40, 0.50);
+      for (const w of wings) {
+        w.update(D);
+        w.stuff.visible = eF > 0.01;
+        w.stuff.scale.y = Math.max(eF, 0.001);
+        w.flower.scale.setScalar(Math.max(eF, 0.001));
+        w.lamp.userData.on = eF > 0.9;
+      }
+      // Heckklappe: Platte 1 klappt runter, Platte 2 entfaltet sich dahinter
+      const e1 = stage(p, 0.30, 0.52), e2 = stage(p, 0.50, 0.70);
+      hinge1.rotation.z = -(1 - e1) * Math.PI / 2;
+      hinge2.rotation.z = (1 - e2) * Math.PI;
+      deckProps.visible = e2 > 0.99;
+      deckClosed.on = e1 < 0.03;
+      deckFlat1.on = e1 > 0.995;
+      deckFlat2.on = e1 > 0.995 && e2 > 0.995;
+      deckLamp.userData.on = e2 > 0.99;
+      // Terrassengelaender, Stufen, Markise
+      const eR = stage(p, 0.66, 0.78);
+      for (const r of [railDeck, railDeck2]) { r.g.scale.y = Math.max(eR, 0.001); r.segs.forEach(s => { s.on = eR > 0.95; }); }
+      const eS = stage(p, 0.70, 0.80);
+      for (const s of rearSteps) {
+        const h = Math.max(s.top * eS, 0.001);
+        s.m.scale.set(s.xb - s.xa, h, 2.4);
+        s.m.position.set((s.xa + s.xb) / 2, h / 2, 0);
+        setS(s.solid, s.xa, s.xb, 0, h, -1.2, 1.2);
+        s.solid.on = eS > 0.2;
+      }
+      const eP = stage(p, 0.72, 0.82), eC = stage(p, 0.80, 0.90);
+      for (const pl of poles) {
+        const hh = Math.max(1.7 * eP, 0.001);
+        pl.m.scale.y = hh;
+        pl.m.position.y = FL + hh / 2;
+        setS(pl.solid, -6.76, -6.64, FL, FL + hh, pl.z - 0.06, pl.z + 0.06);
+        pl.solid.on = eP > 0.95;
+      }
+      canopy.scale.x = Math.max(eC, 0.001);
+      canopy.visible = eC > 0.01;
+      bulbsDeck.forEach(b => { b.visible = eC > 0.95; });
+      // Dachterrasse
+      const ePl = stage(p, 0.55, 0.66), eRR = stage(p, 0.64, 0.76);
+      planks.visible = ePl > 0.01;
+      planks.scale.y = Math.max(ePl * 0.07, 0.001);
+      planks.position.y = 2.55 + 0.035 * ePl;
+      railRoof.g.scale.y = Math.max(eRR, 0.001);
+      railRoof.segs.forEach(s => { s.on = eRR > 0.95; });
+      for (const st of roofSteps) {
+        const a = 0.68 + st.i * 0.025, e = stage(p, a, a + 0.07), h = Math.max(st.top * e, 0.001);
+        st.m.scale.set(st.xb - st.xa, h, 0.9);
+        st.m.position.set((st.xa + st.xb) / 2, h / 2, 0.6);
+        setS(st.solid, st.xa, st.xb, 0, h, 0.15, 1.05);
+        st.solid.on = e > 0.2;
+      }
+      bulbsRoof.forEach(b => { b.visible = eRR > 0.95; });
+      // Mast mit Fahne, Schuessel klappt auf
+      const eM = stage(p, 0.86, 0.95), eD = stage(p, 0.88, 0.97);
+      const mh = Math.max(3.2 * eM, 0.001);
+      mast.scale.y = mh;
+      mast.position.y = 2.62 + mh / 2;
+      flag.position.set(-2.9 + 0.45, 2.62 + mh - 0.3, -0.95);
+      flag.visible = eM > 0.9;
+      dishHead.rotation.x = Math.PI - (Math.PI - 0.55) * eD;
+      dishPivot.scale.y = Math.max(eD, 0.001);
+      return { eW, D };
+    }
+
+    // --- Tag und Nacht, Lichter ---
+    let night = 0, nightTarget = 0;
+    const lights = () => [
+      [lampMain, 6, 22, true], [wingBed.lamp, 3, 11, wingBed.lamp.userData.on], [wingLounge.lamp, 3, 11, wingLounge.lamp.userData.on],
+      [deckLamp, 2.5, 10, deckLamp.userData.on]
+    ];
+    function applyNight(n, t) {
+      scene.background.copy(SKY_DAY).lerp(SKY_NIGHT, n);
+      scene.fog.color.copy(scene.background);
+      hemi.intensity = 1.0 - 0.88 * n;
+      sun.intensity = 2.4 - 2.15 * n;
+      sun.color.set(n > 0.5 ? 0x9db6ff : 0xfff2d6);
+      mat.bulb.emissiveIntensity = 0.25 + 3.2 * n;
+      mat.lamp.emissiveIntensity = 0.4 + 2.5 * n;
+      for (const [l, day, nightV, on] of lights()) l.intensity = on ? day + (nightV - day) * n : 0;
+      fireLight.intensity = n > 0.05 ? (14 + Math.sin(t * 13) * 3 + Math.sin(t * 7.3) * 2) * n : 0;
+    }
+
+    // --- Laufmodus: Ich-Sicht, Kollision mit Boden, Waenden, Stufen und beweglichen Teilen ---
+    const touch = matchMedia("(pointer: coarse)").matches;
+    document.body.classList.toggle("touch", touch);
+    const EYE = 1.55, BODY = 1.7, RADIUS = 0.3, STEP = 0.45, WALK = 4.2, RUN = 7, JUMP = 6.4, GRAVITY = 22, LIMIT = 30;
+    const player = { pos: new THREE.Vector3(8, 0, 7), vy: 0, yaw: 0.93, pitch: -0.05, onGround: true, jump: false };
+    const keys = new Set();
+    let walking = false, dragging = false, jumpHeld = false;
+    const orbitView = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
+
+    function pushOut(p, feet) {
+      for (const s of solids) {
+        if (!s.on || s.y1 <= feet + STEP || s.y0 >= feet + BODY) continue;
+        const cx = Math.max(s.x0, Math.min(p.x, s.x1)), cz = Math.max(s.z0, Math.min(p.z, s.z1));
+        const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
+        if (d2 >= RADIUS * RADIUS) continue;
+        if (d2 > 1e-8) {
+          const d = Math.sqrt(d2);
+          p.x = cx + dx / d * RADIUS;
+          p.z = cz + dz / d * RADIUS;
+        } else {
+          const out = [[p.x - s.x0, -1, 0], [s.x1 - p.x, 1, 0], [p.z - s.z0, 0, -1], [s.z1 - p.z, 0, 1]].sort((a, b) => a[0] - b[0])[0];
+          p.x += out[1] * (out[0] + RADIUS);
+          p.z += out[2] * (out[0] + RADIUS);
+        }
+      }
+      for (const [cx, cz, r] of circles) {
+        const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
+        if (d < min && d > 1e-6) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
+      }
+      const far = Math.hypot(p.x, p.z);
+      if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
+    }
+    function supportAt(p, feet) {
+      let top = 0;
+      for (const s of solids) {
+        if (!s.on || s.y1 > feet + STEP || s.y1 <= top) continue;
+        if (p.x > s.x0 - 0.05 && p.x < s.x1 + 0.05 && p.z > s.z0 - 0.05 && p.z < s.z1 + 0.05) top = s.y1;
+      }
+      return top;
+    }
+    function updatePlayer(dt, moveX, moveZ, run) {
+      const len = Math.hypot(moveX, moveZ);
+      if (len > 1) { moveX /= len; moveZ /= len; }
+      const speed = run ? RUN : WALK, sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+      const next = player.pos.clone();
+      next.x += (-sin * moveZ + cos * moveX) * speed * dt;
+      next.z += (-cos * moveZ - sin * moveX) * speed * dt;
+      pushOut(next, player.pos.y);
+      player.pos.x = next.x;
+      player.pos.z = next.z;
+      if (player.jump && player.onGround) { player.vy = JUMP; player.onGround = false; }
+      player.vy -= GRAVITY * dt;
+      player.jump = false;
+      player.pos.y += player.vy * dt;
+      const support = supportAt(player.pos, player.pos.y);
+      if (player.pos.y <= support) { player.pos.y = support; player.vy = 0; player.onGround = true; } else player.onGround = false;
+      for (const s of solids) {                                    // Kopf an der Decke
+        if (!s.on || s.y0 <= player.pos.y + STEP || s.y0 >= player.pos.y + BODY) continue;
+        const cx = Math.max(s.x0, Math.min(player.pos.x, s.x1)), cz = Math.max(s.z0, Math.min(player.pos.z, s.z1));
+        if ((player.pos.x - cx) ** 2 + (player.pos.z - cz) ** 2 >= (RADIUS * 0.7) ** 2) continue;
+        player.pos.y = s.y0 - BODY;
+        player.vy = Math.min(player.vy, 0);
+      }
+      camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
+      camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
+    }
+    const look = (dx, dy) => { player.yaw -= dx; player.pitch = Math.max(-1.5, Math.min(1.5, player.pitch - dy)); };
+
+    function toast(text) {
+      const t = $("toast");
+      t.textContent = text;
+      t.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => t.classList.remove("show"), 1800);
+    }
+    // Einklappen nur, wenn niemand mehr im Wohnwagen oder auf der Terrasse steht
+    const insideCamper = () => walking && player.pos.y > 0.3 && player.pos.x > -8 && player.pos.x < 5.8 && Math.abs(player.pos.z) < 4.4;
+
+    function stopDrag() {
+      dragging = false;
+      document.body.classList.remove("looking");
+      if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
+    }
+    function setWalk(on) {
+      walking = on;
+      document.body.classList.toggle("walk", on);
+      controls.enabled = !on;
+      if (on) {
+        orbitView.pos.copy(camera.position);
+        orbitView.target.copy(controls.target);
+        player.pos.set(8, 0, 7);
+        player.vy = 0;
+        player.yaw = 0.93;
+        player.pitch = -0.05;
+        camera.fov = 70;
+        updatePlayer(0.001, 0, 0, false);
+      } else {
+        stopDrag();
+        keys.clear();
+        camera.fov = 45;
+        camera.position.copy(orbitView.pos);
+        controls.target.copy(orbitView.target);
+        camera.lookAt(orbitView.target);
+      }
+      camera.updateProjectionMatrix();
+    }
+    $("btn-walk").addEventListener("click", () => setWalk(true));
+    $("btn-exit").addEventListener("click", () => setWalk(false));
+    renderer.domElement.addEventListener("mousedown", e => {
+      if (!walking || touch || e.button !== 0) return;
+      e.preventDefault();
+      if (dragging) return stopDrag();
+      dragging = true;
+      document.body.classList.add("looking");
+      renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
+    });
+    document.addEventListener("pointerlockchange", () => {
+      if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); }
+    });
+    document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * 0.0025, e.movementY * 0.0025); });
+    addEventListener("keydown", e => {
+      if (!walking) return;
+      if (e.code === "Escape") return setWalk(false);
+      if (e.code === "KeyF" && !e.repeat) return toggleFold();
+      keys.add(e.code);
+      if (e.code === "Space") { player.jump = true; e.preventDefault(); }
+    });
+    addEventListener("keyup", e => keys.delete(e.code));
+    addEventListener("blur", () => keys.clear());
+
+    function joystick(el) {
+      const knob = el.querySelector("span"), state = { x: 0, y: 0, id: null };
+      const move = e => {
+        const r = el.getBoundingClientRect(), max = r.width / 2 - 20;
+        let x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
+        const len = Math.hypot(x, y);
+        if (len > max) { x *= max / len; y *= max / len; }
+        state.x = x / max; state.y = y / max;
+        knob.style.transform = `translate(${x}px, ${y}px)`;
+      };
+      el.addEventListener("pointerdown", e => { state.id = e.pointerId; try { el.setPointerCapture(e.pointerId); } catch (err) {} move(e); });
+      el.addEventListener("pointermove", e => { if (e.pointerId === state.id) move(e); });
+      const end = e => { if (e.pointerId !== state.id) return; state.id = null; state.x = 0; state.y = 0; knob.style.transform = ""; };
+      el.addEventListener("pointerup", end);
+      el.addEventListener("pointercancel", end);
+      return state;
+    }
+    const moveStick = joystick($("stick-move")), lookStick = joystick($("stick-look"));
+    $("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.jump = true; jumpHeld = true; });
+    for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
+
+    function walkStep(dt) {
+      let mx = 0, mz = 0;
+      if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;
+      if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1;
+      if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
+      if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
+      mx += moveStick.x;
+      mz -= moveStick.y;
+      look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
+      updatePlayer(dt, mx, mz, keys.has("ShiftLeft") || keys.has("ShiftRight"));
+    }
+
+    // --- Bedienung ---
+    const FOLD_TIME = 10;                                 // Sekunden fuer das ganze Ausklappen
+    let p = 0, target = 0;
+    const unfolded = () => target === 1 || (target === null && p > 0.5);
+    function setLabel() {
+      const label = unfolded() ? "Einklappen" : "Ausklappen";
+      $("btn-unfold").textContent = label;
+      $("btn-unfold2").textContent = label + " (F)";
+    }
+    function toggleFold() {
+      if (unfolded()) {
+        if (insideCamper()) return toast("Erst aussteigen, dann einklappen!");
+        target = 0;
+      } else target = 1;
+      setLabel();
+    }
+    $("btn-unfold").addEventListener("click", toggleFold);
+    $("btn-unfold2").addEventListener("click", toggleFold);
+    const slider = $("slider");
+    let sliding = false;
+    slider.addEventListener("input", () => {
+      const v = slider.value / 100;
+      if (v < p && insideCamper()) { slider.value = Math.round(p * 100); return toast("Erst aussteigen, dann einklappen!"); }
+      sliding = true;
+      p = v;
+      target = null;
+    });
+    slider.addEventListener("change", () => { sliding = false; });
+    $("btn-night").addEventListener("click", e => {
+      nightTarget = nightTarget ? 0 : 1;
+      e.currentTarget.setAttribute("aria-pressed", String(!!nightTarget));
+    });
+
+    addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ?debug: Spieler und Fortschritt von aussen steuerbar (fuer Tests im Browser)
+    if (location.search.includes("debug")) {
+      window.camperDebug = { player, update: updatePlayer, setWalk, setP: v => { p = v; target = null; applyFold(p); }, solids, camera, renderer, scene };
+    }
+
+    await renderer.compileAsync(scene, camera);
+    $("loading").remove();
+
+    const clock = new THREE.Clock();
+    let flagT = 0;
+    renderer.setAnimationLoop(() => {
+      const dt = Math.min(clock.getDelta(), 0.05);
+      flagT += dt;
+      if (target !== null) {
+        const d = target - p;
+        p += Math.sign(d) * Math.min(Math.abs(d), dt / FOLD_TIME);
+        if (!sliding) slider.value = Math.round(p * 100);
+      }
+      applyFold(p);
+      night += (nightTarget - night) * Math.min(1, dt * 2.5);
+      applyNight(night, flagT);
+      flames.forEach((f, i) => { f.scale.set(1, 0.85 + Math.sin(flagT * (9 + i * 3)) * 0.18, 1); f.visible = true; });
+      flag.rotation.y = Math.sin(flagT * 3) * 0.25;
+      dishHead.parent.rotation.y += dt * 0.5 * stage(p, 0.9, 0.97);
+      setLabel();
+      if (walking) walkStep(dt); else controls.update(dt);
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>
