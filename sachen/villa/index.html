@@ -1283,7 +1283,7 @@
       hedge.castShadow = hedge.receiveShadow = true;
       hedge.name = 'Hecke';
       fence.add(hedge);
-      // Querzaeune vor der Hausfront: West (zwischen Westzaun und Hausecke, mit weissem Gartentor) und Ost (zwischen Garage und Hecke),
+      // Querzaeune vor der Hausfront: West (zwischen Westzaun und Hausecke, mit Gartentor) und Ost (zwischen Garage und Hecke),
       // damit man von der Strasse (Suedwesten/Suedosten) nicht an Haus und Garage vorbei in den Garten sieht
       const CZ = HZ + 0.04;                       // direkt an der Hausfront (aussen z = HZ)
       const run = (xa, xb) => {
@@ -1300,7 +1300,7 @@
       const G0 = -10.7, G1 = -9.5;                // Gartentor
       run(FX, G0);
       run(G1, -HX);
-      f(G0, 0.08, G1, FH - 0.1, CZ - 0.05, CZ + 0.05, mat.white);                 // Torblatt, weiss
+      f(G0, 0.08, G1, FH - 0.1, CZ - 0.05, CZ + 0.05, mat.wood);                  // Torblatt, Holz wie der Zaun
       f(G0, FH - 0.1, G1, FH - 0.02, CZ - 0.06, CZ + 0.06, mat.dark);
       f(G0, 0.35, G1, 0.42, CZ - 0.07, CZ + 0.07, mat.dark);                      // Querstreben
       f(G0, 1.35, G1, 1.42, CZ - 0.07, CZ + 0.07, mat.dark);
