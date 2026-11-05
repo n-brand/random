@@ -466,7 +466,7 @@
     }
 
     // --- Gelaende: flach um Haus, Einfahrt und Pool, nach aussen sanfte Huegel ---
-    const FLAT = [[-8.5, 14, -23.5, 9.5], [6, 12.2, 9.5, 17], [-34, 40, 16, 28.5]];
+    const FLAT = [[-8.5, 14, -23.5, 17], [-34, 40, 16, 28.5]];
     const HOLES = [[-HX, HX, BZ, HZ], [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]];
     const inRect = (x, z, [x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1;
     function terrain(x, z) {
@@ -898,27 +898,48 @@
       plants.add(inst);
     }
 
-    // Blumenbeete: Erde und viele kleine Bluetenkugeln in Farben
-    const beds = [[-5.6, -2.8, HZ + 2.3, HZ + 3.1], [-1.2, 1.0, HZ + 2.3, HZ + 3.1], [-HX - 1.2, -HX - 0.15, -13, 4.5], [-1.2, -0.3, HZ + 2.3, 15.5], [-3.7, -2.8, HZ + 2.3, 15.5]];
-    for (const [x0, x1, z0, z1] of beds) box(x0, 0, z0, x1, 0.05, z1, mat.soil, { solid: false, parent: plants, name: "Beet" });
+    // Blumenbeete mit Randsteinen: Vorgarten (zwei Streifen vor der Veranda, zwei Streifen beidseits des Wegs bis zum Buergersteig)
+    // und ein Streifen an der linken Hauswand. Blumen stehen in versetzten Reihen mit Stiel, die Anzahl richtet sich nach der Flaeche.
+    const beds = [
+      [-5.6, -2.9, HZ + 2.2, HZ + 3.0], [-1.1, 1.0, HZ + 2.2, HZ + 3.0],
+      [-3.6, -2.95, 8.0, 17.0], [-1.05, -0.4, 8.0, 17.0],
+      [-HX - 1.2, -HX - 0.35, -13, 4.5]
+    ];
+    for (const [x0, x1, z0, z1] of beds) {
+      box(x0, 0, z0, x1, 0.07, z1, mat.soil, { solid: false, parent: plants, name: 'Beet' });
+      const e = 0.07;
+      box(x0 - e, 0, z0 - e, x1 + e, 0.1, z0, mat.curb, { solid: false, parent: plants, name: 'Beetrand' });
+      box(x0 - e, 0, z1, x1 + e, 0.1, z1 + e, mat.curb, { solid: false, parent: plants, name: 'Beetrand' });
+      box(x0 - e, 0, z0, x0, 0.1, z1, mat.curb, { solid: false, parent: plants, name: 'Beetrand' });
+      box(x1, 0, z0, x1 + e, 0.1, z1, mat.curb, { solid: false, parent: plants, name: 'Beetrand' });
+    }
     {
       const colors = [0xe03b5a, 0xf2c14e, 0xffffff, 0x9b5de5, 0xff7b39, 0xf15bb5];
-      const count = 520;
-      const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(0.07, 8, 6), M({ roughness: 0.6 }), count);
-      const stems = new THREE.InstancedMesh(new THREE.SphereGeometry(0.13, 6, 4), mat.leaves, count);
-      const m4 = new THREE.Matrix4(), c = new THREE.Color();
-      for (let i = 0; i < count; i++) {
-        const [x0, x1, z0, z1] = beds[i % beds.length];
-        const x = x0 + 0.1 + prng() * (x1 - x0 - 0.2), z = z0 + 0.1 + prng() * (z1 - z0 - 0.2);
-        const h = 0.2 + prng() * 0.2;
-        m4.makeTranslation(x, h, z);
-        inst.setMatrixAt(i, m4);
-        inst.setColorAt(i, c.setHex(colors[Math.floor(prng() * colors.length)]));
-        m4.makeScale(1, 0.8, 1).setPosition(x, 0.1, z);
-        stems.setMatrixAt(i, m4);
+      const spots = [];
+      for (const [x0, x1, z0, z1] of beds) {
+        const cols = Math.max(1, Math.round((x1 - x0) / 0.32)), rows = Math.max(1, Math.round((z1 - z0) / 0.32));
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          const x = x0 + ((c + 0.5 + (r % 2) * 0.25) / (cols + 0.25)) * (x1 - x0) + (prng() - 0.5) * 0.06;
+          const z = z0 + ((r + 0.5) / rows) * (z1 - z0) + (prng() - 0.5) * 0.06;
+          spots.push([x, z, 0.22 + prng() * 0.2]);
+        }
       }
-      inst.name = "Blumen";
-      plants.add(inst, stems);
+      const blooms = new THREE.InstancedMesh(new THREE.SphereGeometry(0.075, 8, 6), M({ roughness: 0.6 }), spots.length);
+      const stems = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 5), mat.leaves, spots.length);
+      const leaves = new THREE.InstancedMesh(new THREE.SphereGeometry(0.13, 6, 4), mat.leaves, spots.length);
+      const m4 = new THREE.Matrix4(), c = new THREE.Color();
+      spots.forEach(([x, z, h], i) => {
+        const y0 = 0.07;
+        m4.makeScale(1, h, 1).setPosition(x, y0 + h / 2, z);
+        stems.setMatrixAt(i, m4);
+        m4.makeTranslation(x, y0 + h, z);
+        blooms.setMatrixAt(i, m4);
+        blooms.setColorAt(i, c.setHex(colors[Math.floor(prng() * colors.length)]));
+        m4.makeScale(1, 0.55, 1).setPosition(x, y0 + 0.05, z);
+        leaves.setMatrixAt(i, m4);
+      });
+      blooms.name = 'Blumen';
+      plants.add(blooms, stems, leaves);
     }
 
     // --- Zusammenfassen: alle Quader mit gleichem Material zu einem Mesh (viel weniger Zeichenaufrufe) ---
