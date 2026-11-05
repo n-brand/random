@@ -252,7 +252,7 @@
     // Rundlicher Berg, ringsum gleich sanft abfallend. Der Hoehleneingang liegt im Westen (die Villa schaut nach Sueden):
     // ein Felsvorsprung (Portal) mit Rundbogen, dahinter ein langer Tunnel nach Osten in die Halle. Der Bach kommt weit
     // unterhalb des Gipfels aus dem Fels. Portal-Teile sind im lokalen Rahmen gebaut: lz = -x (zur Muendung hin), lx = z - CZ.
-    const SUM = [0, -70], H_TOP = 30;
+    const SUM = [0, -66], H_TOP = 30;
     const CZ = -44, BLK_H = 12, ARCH_W = 3.2, HALL_LZ = 30;
     const toL = (x, z) => [z - CZ, -x];
     const toW = (lx, lz) => [-lz, lx + CZ];
@@ -260,11 +260,11 @@
     // Bergkette: flacher Gipfel mit der Villa, dazu ein Kamm in Ost-West-Richtung mit mehreren Kuppen; alles mit sanften Haengen
     const smax = (a, b) => (a + b + Math.hypot(a - b, 3)) / 2;
     function natBase(x, z) {
-      const r = Math.hypot(x - SUM[0], z - SUM[1]);
-      const plateau = H_TOP * (1 - sst(34, 110, r));
+      const u = Math.hypot((x - SUM[0]) / 1.9, (z - SUM[1]) / 1.3);                // breites Plateau (Ellipse) fuer das Schloss
+      const plateau = H_TOP * (1 - sst(40, 100, u));
       const crest = 17 + 6 * Math.sin(x * 0.05 + 0.8) + 3.5 * Math.sin(x * 0.13 + 2.1) + 2 * Math.sin(x * 0.31);
       const ridge = crest * (1 - sst(0, 80, Math.abs(z - SUM[1] + 6 * Math.sin(x * 0.04)))) * (1 - sst(70, 160, Math.abs(x)));
-      return smax(plateau, ridge) * (1 - sst(50, 90, -x)) + 30 * sst(150, 215, Math.hypot(x, z + 70));   // im Westen faellt der Berg zur Ebene ab (dort liegt der Eingang)
+      return smax(plateau, ridge) * (1 - sst(58, 96, -x)) + 30 * sst(150, 215, Math.hypot(x, z + 70));   // im Westen faellt der Berg zur Ebene ab (dort liegt der Eingang)
     }
     // Muendung des Tunnels im Westen: dort, wo das Gelaende auf Portalhoehe abgefallen ist
     const ZM = (() => { for (let x = -36; x > -200; x -= 0.5) if (natBase(x, CZ) < 12.8) return -x; return 90; })();
@@ -272,7 +272,7 @@
     const SPRING_Z = ZM - 34;
     function natH(x, z) {
       const [lx, lz] = toL(x, z);
-      return natBase(x, z) + noise(x, z) * 0.45 * sst(34, 60, Math.hypot(x, z + 70)) * sst(14, 40, Math.hypot(lx, lz - ZM));
+      return natBase(x, z) + noise(x, z) * 0.45 * sst(40, 70, Math.hypot(x / 1.9, (z + 66) / 1.3)) * sst(14, 40, Math.hypot(lx, lz - ZM));
     }
     // Felskante an der Muendung: das Gelaende bricht auf ca. 2,5 m zur Mulde ab, die Mulde laeuft breit und sanft in den Hang aus
     const CLIFF_W = 2.5;
@@ -437,7 +437,7 @@
       const trees = [], rt = rng(7);
       for (let i = 0; i < 6000 && trees.length < 420; i++) {
         const x = (rt() - 0.5) * 400, z = (rt() - 0.5) * 400, h = terrainH(x, z);
-        if (h > H_TOP - 4 || h < 0.3 || (() => { const [lx, lz] = toL(x, z); return (Math.abs(lx) < 24 && lz > ZM - 45 && lz < ZM + 45) || (Math.abs(lx) < 10 && lz > SPRING_Z - 6 && lz < ZM) || (Math.abs(lx) < 12 && lz > HALL_LZ && lz < ZM + 20); })()) continue;
+        if (h > H_TOP - 4 || h < 0.3 || (() => { const [lx, lz] = toL(x, z); return (Math.abs(lx) < 24 && lz > ZM - 45 && lz < ZM + 45) || (Math.abs(lx) < 10 && lz > SPRING_Z - 6 && lz < ZM) || (Math.abs(lx) < 12 && lz > HALL_LZ && lz < ZM + 20) || (Math.abs(x) < 8 && z > -20 && z < 60) || (Math.abs(x) < 70 && z > -100 && z < -22 && h > 20); })()) continue;
         if (Math.abs(terrainH(x + 1.5, z) - h) > 2.4 || Math.abs(terrainH(x, z + 1.5) - h) > 2.4) continue;
         trees.push([x, h, z, 0.8 + rt() * 0.9]);
       }
@@ -453,101 +453,153 @@
       scene.add(cone, trunk);
     }
 
-    // ===================== Villa (Wayne Manor) auf dem Gipfel =====================
-    const F = H_TOP + 0.1, T = 0.8, MX0 = -14, MX1 = 14, MZ0 = -80, MZ1 = -56, MH = F + 11.4, WX1 = 30, WZ0 = -72, WZ1 = -52, WH = F + 8;
+    // ===================== Wayne Manor (gross; Vorbild: elisabethanisches Schloss mit Eckturmen) =====================
+    // Innen leer, nur die Aufzughalle zaehlt. Gebaeude x +-50, z -96..-56, drei Stockwerke; davor Terrasse mit Freitreppe,
+    // unten Vorfahrt mit Parkplaetzen, dahinter das Einfahrtstor am Plateaurand und die Strasse den Berg hinab.
+    const F = H_TOP + 2.5;                                     // Terrasse = Erdgeschossboden
+    const FLOOR_H = 4.7, H3 = FLOOR_H * 3, BX = 50, BZ0 = -96, BZ1 = -56, WT = 1.0, TER_X = 56, TER_Z1 = -50, TILE_W = 6.25;
+    const stoneLight = M(0xdccdaa, { roughness: 0.85 }), asphalt = M(0x35373c, { roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+    const paintW = M(0xf0efe6, { roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const facadeTex = lit => canvasTex(256, 200, (g, w, h) => {
+      if (!lit) {
+        g.fillStyle = "#cdb68c"; g.fillRect(0, 0, w, h);
+        g.strokeStyle = "rgba(90,70,40,.22)"; g.lineWidth = 1;
+        for (let y = 0; y < h; y += 19) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); for (let x = ((y / 19) % 2 ? 0 : 20); x < w; x += 40) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 19); g.stroke(); } }
+        for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(${100 + r1() * 60},${80 + r1() * 40},40,${r1() * 0.08})`; g.fillRect(r1() * w, r1() * h, 6 + r1() * 14, 3 + r1() * 8); }
+      } else { g.fillStyle = "#000"; g.fillRect(0, 0, w, h); }
+      for (const cx of [64, 192]) {
+        const x0 = cx - 33, y0 = 45, ww = 66, hh = 111;
+        if (!lit) { g.fillStyle = "#e8dcc0"; g.fillRect(x0 - 6, y0 - 6, ww + 12, hh + 12); g.fillStyle = "#b9a67a"; g.fillRect(x0 - 6, y0 - 11, ww + 12, 5); }
+        g.fillStyle = lit ? "#ffcf7a" : "#1d2b3b"; g.fillRect(x0, y0, ww, hh);
+        g.fillStyle = lit ? "#000" : "#e1d4b4"; g.fillRect(cx - 1.5, y0, 3, hh); g.fillRect(x0, y0 + hh * 0.36, ww, 3); g.fillRect(x0, y0 + hh * 0.66, ww, 3);
+      }
+    }, 1 / TILE_W, 1 / FLOOR_H);
+    mat.facade = M(0xffffff, { map: facadeTex(false), emissiveMap: facadeTex(true), emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.9 });
     {
-      // Boeden
-      B(MX0, MX1, F - 0.4, F, MZ0, MZ1, mat.floorWood);
-      const SH = { x0: 20.8, x1: 24.8, z0: -61.2, z1: -57.2 };   // Aufzugschacht (Loch im Ostfluegel-Boden)
-      B(14, 20.8, F - 0.4, F, WZ0, WZ1, mat.marble); B(SH.x1, WX1, F - 0.4, F, WZ0, WZ1, mat.marble);
-      B(SH.x0, SH.x1, F - 0.4, F, WZ0, SH.z0, mat.marble); B(SH.x0, SH.x1, F - 0.4, F, SH.z1, WZ1, mat.marble);
-      // Hauptgebaeude: Steinwaende, Fenster unten und oben
-      const win = (cs, y0, y1, w = 1.8) => cs.map(c => [c - w / 2, c + w / 2, F + y0, F + y1, "g"]);
-      const lowF = [1.2, 4.6], upF = [6.8, 10.2];
-      wall("x", MX0, MX1, MZ1 - T / 2, F, MH, [[-2.2, 2.2, F, F + 5.4], ...win([-8, -5, 5, 8], ...lowF), ...win([-8, -5, 5, 8, 0], ...upF)], mat.brick);
-      wall("x", MX0, MX1, MZ0 + T / 2, F, MH, [...win([-10, -6, -2, 2, 6, 10], ...lowF), ...win([-10, -6, -2, 2, 6, 10], ...upF)], mat.brick);
-      wall("z", MZ0, MZ1, MX0 + T / 2, F, MH, [...win([-77, -62], ...lowF), ...win([-77, -73, -63, -60], ...upF)], mat.brick);
-      wall("z", MZ0, MZ1, MX1 - T / 2, F, MH, [[-68, -60, F, F + 5.6], ...win([-77, -73], ...lowF), ...win([-77, -73, -64], ...upF)], mat.brick);
-      B(MX0, MX1, MH, MH + 0.4, MZ0, MZ1, mat.trim, false);
-      gableRoof(MX0, MX1, MZ0, MZ1, MH + 0.4, 9, 1.2, mat.slate);
-      for (const [cx, cz] of [[-8, -64], [8, -74]]) B(cx - 0.9, cx + 0.9, MH, MH + 12, cz - 0.9, cz + 0.9, mat.brick, false);
-      // Tuerme an drei Ecken
-      const brickTower = M(0xffffff, { map: texClone(brickTex, 9, 5), roughness: 0.95 });
-      for (const [cx, cz] of [[MX0, MZ0], [MX1, MZ0], [MX0, MZ1]]) {
-        cyl(3.6, 3.6, 18.5, brickTower, cx, F + 9.2, cz, world, 20);
-        const roof = new THREE.Mesh(new THREE.ConeGeometry(4.5, 8, 14), mat.slate); roof.position.set(cx, F + 22.4, cz); roof.castShadow = true; world.add(roof);
-        circles.push([cx, cz, 3.6]);
-        for (let k = 0; k < 7; k++) {
-          const a = k * 0.9 + 1.2, wy = F + 5 + (k % 3) * 4.5;
-          const wm = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2, 0.3), mat.glass); wm.position.set(cx + Math.cos(a) * 3.62, wy, cz + Math.sin(a) * 3.62); wm.rotation.y = -a + Math.PI / 2; world.add(wm);
+      const SH = { x0: 20.8, x1: 24.8, z0: -61.2, z1: -57.2 };   // Aufzugschacht (Loch im Boden)
+      const TB = H_TOP - 8;                                       // Sockel reicht tief ins Gelaende (Stuetzmauer)
+      for (const [x0, x1, z0, z1] of [[-TER_X, SH.x0, BZ0, TER_Z1], [SH.x1, TER_X, BZ0, TER_Z1], [SH.x0, SH.x1, BZ0, SH.z0], [SH.x0, SH.x1, SH.z1, TER_Z1]]) B(x0, x1, TB, F, z0, z1, stoneLight);
+      // Aussenwaende (Fassade mit Fenstern aus der Textur); Haupteingang 12,5 m breit und zwei Stockwerke hoch
+      wall("x", -BX, BX, BZ1 - WT / 2, F, F + H3, [[-TILE_W, TILE_W, F, F + 2 * FLOOR_H]], mat.facade, WT);
+      wall("x", -BX, BX, BZ0 + WT / 2, F, F + H3, [], mat.facade, WT);
+      wall("z", BZ0, BZ1, -BX + WT / 2, F, F + H3, [], mat.facade, WT);
+      wall("z", BZ0, BZ1, BX - WT / 2, F, F + H3, [], mat.facade, WT);
+      for (const x of [-3.1, 3.1]) { cyl(0.5, 0.5, 2 * FLOOR_H, stoneLight, x, F + FLOOR_H, BZ1 + 1.6, world, 16); circles.push([x, BZ1 + 1.6, 0.55]); B(x - 0.7, x + 0.7, F, F + 0.5, BZ1 + 0.9, BZ1 + 2.3, stoneLight, false); B(x - 0.7, x + 0.7, F + 2 * FLOOR_H - 0.5, F + 2 * FLOOR_H, BZ1 + 0.9, BZ1 + 2.3, stoneLight, false); }
+      // Decke/Dach: Gesims mit Ueberstand, flache Schieferdecke, drei kleine Satteldaecher
+      const roofY = F + H3;
+      B(-BX - 0.6, BX + 0.6, roofY, roofY + 0.5, BZ0 - 0.6, BZ1 + 0.6, stoneLight, false);
+      B(-BX, BX, roofY + 0.5, roofY + 0.9, BZ0, BZ1, mat.slate, false);
+      for (const [x0, x1] of [[-40, -24], [-8, 8], [24, 40]]) gableRoof(x0, x1, -84, -74, roofY + 0.9, 3.0, 0.3, mat.slate);
+      for (const [cx, cz] of [[-38, -64], [-12, -90], [14, -66], [40, -88], [-44, -86], [34, -62]]) for (let k = 0; k < 3; k++) B(cx + k * 1.6 - 0.45, cx + k * 1.6 + 0.45, roofY + 0.9, roofY + 5 + (k % 2), cz - 0.45, cz + 0.45, stoneLight, false);
+      // Eckturme mit Zinnenkranz, Tuermchen und geschweiftem Giebel (vier Turme an der Front)
+      const og = [[-3.4, 0], [3.4, 0], [3.4, 1.0], [2.4, 1.5], [2.5, 2.4], [1.5, 2.7], [1.2, 3.6], [0.6, 4.3], [0, 5.2], [-0.6, 4.3], [-1.2, 3.6], [-1.5, 2.7], [-2.5, 2.4], [-2.4, 1.5], [-3.4, 1.0]];
+      const gableShape = () => { const sh = new THREE.Shape(); og.forEach(([x, y], i) => i ? sh.lineTo(x, y) : sh.moveTo(x, y)); sh.closePath(); const hole = new THREE.Path(); hole.absarc(0, 1.9, 0.7, 0, Math.PI * 2, true); sh.holes.push(hole); return sh; };
+      const TH = 4 * FLOOR_H;
+      for (const tx of [-44, -16, 16, 44]) {
+        B(tx - 5, tx + 5, F, F + TH, BZ1 - 1.0, -52.5, mat.facade);
+        B(tx - 5.5, tx + 5.5, F + TH, F + TH + 0.8, -57.5, -52.0, stoneLight, false);
+        for (const cx of [tx - 4.9, tx + 4.9]) for (const cz of [-52.6, -56.9]) {
+          cyl(0.7, 0.7, 3.0, stoneLight, cx, F + TH + 2.3, cz, world, 10);
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(1.0, 2.6, 10), mat.slate); cone.position.set(cx, F + TH + 4.9, cz); cone.castShadow = true; world.add(cone);
+        }
+        for (const [gz, rot] of [[-52.5, 0], [-57.2, Math.PI]]) {
+          const g = new THREE.Mesh(new THREE.ExtrudeGeometry(gableShape(), { depth: 0.6, bevelEnabled: false }), stoneLight);
+          g.scale.set(1.35, 1.35, 1); g.position.set(tx, F + TH + 0.8, gz - (rot ? 0.3 : 0.0) + (rot ? 0 : -0.3)); g.rotation.y = rot; g.castShadow = true; world.add(g);
         }
       }
-      // Vorbau mit Saeulen
-      B(-5.2, 5.2, F - 0.3, F, MZ1, MZ1 + 4.5, mat.marble);
-      B(-5.2, 5.2, F + 6.6, F + 7.2, MZ1 - 0.4, MZ1 + 4.8, mat.trim, false);
-      gableRoof(-5.2, 5.2, MZ1 + 0.4, MZ1 + 4.8, F + 7.2, 2.2, 0.3, mat.slate).rotation.y = -Math.PI / 2;
-      for (const x of [-4.6, -1.7, 1.7, 4.6]) { cyl(0.42, 0.42, 6.6, mat.marble, x, F + 3.3, MZ1 + 4.2, world, 14); circles.push([x, MZ1 + 4.2, 0.5]); }
-      for (let i = 0; i < 3; i++) B(-5.2 + i * 0.4, 5.2 - i * 0.4, F - 0.3, F - 0.3 + 0.1 * (3 - i) * 0 , MZ1 + 4.5 + i * 0.6, MZ1 + 5.1 + i * 0.6, mat.marble, false);
-      // Ostfluegel: Aufzughalle
-      wall("x", 14, WX1, WZ1 - T / 2, F, WH, win([17.5, 21, 25, 28.5], 1.4, 5.4), mat.brick);
-      wall("x", 14, WX1, WZ0 + T / 2, F, WH, win([17.5, 21, 25, 28.5], 1.4, 5.4), mat.brick);
-      wall("z", WZ0, WZ1, WX1 - T / 2, F, WH, win([-68, -62, -56], 1.4, 5.4), mat.brick);
-      B(14, WX1, WH, WH + 0.4, WZ0, WZ1, mat.trim, false);
-      gableRoof(14, WX1, WZ0, WZ1, WH + 0.4, 5.5, 1.1, mat.slate);
-      // Gipfelplateau: Kiesrondell, Zaun mit Pfosten
-      const rond = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 0.06, 32), mat.gravel); rond.position.set(0, H_TOP + 0.03, -44); rond.receiveShadow = true; world.add(rond);
-      // Zaun nur an der steilen Seite (Wasserfall), auf den flachen Seiten kann man den Berg hinaufwandern
+      // Balustraden (Dach und Terrasse): Pfosten als Instanzen, Handlauf als Quader
+      const posts = [], rails = [];
+      const balustrade = (a, b, y, solid) => {
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(len / 0.9));
+        for (let i = 0; i <= n; i++) { const t = i / n; posts.push([a[0] + (b[0] - a[0]) * t, y, a[1] + (b[1] - a[1]) * t]); }
+        rails.push([a, b, y, len]);
+        if (solid) S(Math.min(a[0], b[0]) - 0.15, Math.max(a[0], b[0]) + 0.15, y + 0.9, y + 1.1, Math.min(a[1], b[1]) - 0.15, Math.max(a[1], b[1]) + 0.15);
+      };
+      const ry = roofY + 0.9;
+      balustrade([-BX - 0.3, BZ1 + 0.3], [BX + 0.3, BZ1 + 0.3], ry, false); balustrade([-BX - 0.3, BZ0 - 0.3], [BX + 0.3, BZ0 - 0.3], ry, false);
+      balustrade([-BX - 0.3, BZ0 - 0.3], [-BX - 0.3, BZ1 + 0.3], ry, false); balustrade([BX + 0.3, BZ0 - 0.3], [BX + 0.3, BZ1 + 0.3], ry, false);
+      balustrade([-TER_X + 0.2, TER_Z1 - 0.2], [-8.4, TER_Z1 - 0.2], F, true); balustrade([8.4, TER_Z1 - 0.2], [TER_X - 0.2, TER_Z1 - 0.2], F, true);
+      balustrade([-TER_X + 0.2, BZ0], [-TER_X + 0.2, TER_Z1 - 0.2], F, true); balustrade([TER_X - 0.2, BZ0], [TER_X - 0.2, TER_Z1 - 0.2], F, true);
+      const postM = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.11, 0.13, 1.0, 6), stoneLight, posts.length);
+      const m4 = new THREE.Matrix4();
+      posts.forEach(([x, y, z], i) => { m4.makeTranslation(x, y + 0.5, z); postM.setMatrixAt(i, m4); });
+      const railM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.14, 0.24), stoneLight, rails.length);
+      const qq = new THREE.Quaternion(), vv = new THREE.Vector3(), ss = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+      rails.forEach(([a, b, y, len], i) => { qq.setFromAxisAngle(up, -Math.atan2(b[1] - a[1], b[0] - a[0])); m4.compose(vv.set((a[0] + b[0]) / 2, y + 1.0, (a[1] + b[1]) / 2), qq, ss.set(len, 1, 1)); railM.setMatrixAt(i, m4); });
+      postM.castShadow = railM.castShadow = true;
+      world.add(postM, railM);
+      // Freitreppe vor dem Eingang: 16 Stufen von der Terrasse zum Rasen, seitlich Wangen
+      const rise = (F - H_TOP) / 16;
+      for (let i = 0; i < 16; i++) B(-7.3, 7.3, H_TOP - 0.3, F - (i + 1) * rise, TER_Z1 + i * 0.4, TER_Z1 + (i + 1) * 0.4, stoneLight);
+      for (const sx of [-1, 1]) { B(sx > 0 ? 7.3 : -8.0, sx > 0 ? 8.0 : -7.3, H_TOP - 0.5, F + 1.0, TER_Z1, TER_Z1 + 6.4, stoneLight); }
+    }
+
+    // --- Vorfahrt, Parkplaetze, Tor und Strasse ---
+    {
+      const g0 = H_TOP - 0.02, g1 = H_TOP + 0.07;
+      B(-48, 48, g0, g1, -43.4, -27, asphalt, false, world, false);
+      B(-5, 5, g0, g1, -27, -14.5, asphalt, false, world, false);
+      for (const sx of [-1, 1]) for (const [z0, z1] of [[-43.4, -37.9], [-33.4, -27.9]]) for (let i = 0; i <= 10; i++) {
+        const x = sx * (9.5 + i * 3.7); B(x - 0.06, x + 0.06, g1, g1 + 0.02, z0, z1, paintW, false, world, false);
+      }
+      B(-48, 48, g1, g1 + 0.02, -37.95, -37.85, paintW, false, world, false);
+      B(-48, 48, g1, g1 + 0.02, -33.45, -33.35, paintW, false, world, false);
+      // geparkte Wagen
+      const carCols = [0x7a1f1f, 0x1f3a6a, 0xd8d8d8, 0x2c2c30, 0x3a6a3a, 0xb08a2a, 0x555a64, 0x8a2a5a];
+      const car = (x, z, col, len = 4.2) => {
+        const y = H_TOP + 0.07, m = M(col, { metalness: 0.5, roughness: 0.35 });
+        B(x - 0.9, x + 0.9, y + 0.3, y + 0.95, z - len / 2, z + len / 2, m, false);
+        B(x - 0.78, x + 0.78, y + 0.95, y + 1.5, z - len * 0.2, z + len * 0.3, mat.glass, false, world, false);
+        for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const w = cyl(0.33, 0.33, 0.25, mat.black, x + sx * 0.88, y + 0.33, z + sz * len * 0.32, world, 12); w.rotation.z = Math.PI / 2; }
+        S(x - 1.0, x + 1.0, y, y + 1.6, z - len / 2, z + len / 2);
+      };
+      let ci = 0;
+      for (const [x, z] of [[-13.5, -40.6], [-17.2, -40.6], [-24.6, -40.6], [-31.9, -40.6], [-39.3, -40.6], [13.4, -40.6], [24.5, -40.6], [35.6, -40.6], [-20.9, -30.6], [-35.7, -30.6], [17.1, -30.6], [31.8, -30.6]]) car(x, z, carCols[ci++ % carCols.length]);
+      // Rondell mit Brunnen in der Vorfahrt (wie im Lageplan: Main Driveway)
+      const isl = new THREE.Mesh(new THREE.CylinderGeometry(5.5, 5.5, 0.14, 40), M(0x3f7a35, { roughness: 1 })); isl.position.set(0, H_TOP + 0.1, -35.2); isl.receiveShadow = true; world.add(isl);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.22, 6, 40), stoneLight); rim.rotation.x = Math.PI / 2; rim.position.set(0, H_TOP + 0.2, -35.2); world.add(rim);
+      cyl(3.4, 3.6, 0.8, stoneLight, 0, H_TOP + 0.5, -35.2, world, 28);
+      const basin = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.1, 0.1, 28), mat.water); basin.position.set(0, H_TOP + 0.88, -35.2); world.add(basin);
+      cyl(0.45, 0.6, 2.8, stoneLight, 0, H_TOP + 1.8, -35.2, world, 12); cyl(1.4, 0.5, 0.4, stoneLight, 0, H_TOP + 3.1, -35.2, world, 16);
+      circles.push([0, -35.2, 5.7]);
+      // Tor am Plateaurand mit Pfeilern und Laternen
+      for (const sx of [-1, 1]) {
+        B(sx * 5.2 - 0.6, sx * 5.2 + 0.6, H_TOP, H_TOP + 3.6, -16.4, -15.2, stoneLight);
+        B(sx * 5.2 - 0.8, sx * 5.2 + 0.8, H_TOP + 3.6, H_TOP + 3.9, -16.6, -15.0, stoneLight, false);
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), mat.glowOrange); lamp.position.set(sx * 5.2, H_TOP + 4.25, -15.8); world.add(lamp);
+        pLight(0xffd8a0, 40, 14, sx * 5.2, H_TOP + 4.4, -15.8);
+      }
+      // Zaun entlang der Suedkante des Plateaus (Ellipse), Lücke fuer das Tor
       const fence = new THREE.Group(); world.add(fence);
-      const FR = 33.4, A0 = 0.25, A1 = Math.PI - 0.25, NP = 34;
-      const pts = Array.from({ length: NP + 1 }, (_, i) => { const a = A0 + (A1 - A0) * i / NP; return [Math.cos(a) * FR + SUM[0], Math.sin(a) * FR + SUM[1]]; });
+      const FR = 39, pts = [];
+      for (let k = 0; k <= 56; k++) { const a = 0.16 + (Math.PI - 0.32) * k / 56; pts.push([Math.cos(a) * 1.9 * FR, SUM[1] + Math.sin(a) * 1.3 * FR]); }
+      const inGap = x => Math.abs(x) < 5.6;
       const postM = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.1, 1.2, 6), mat.steel, pts.length);
-      const railM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.06, 0.06), mat.steel, NP * 2);
-      const mm = new THREE.Matrix4(), qq = new THREE.Quaternion(), vv = new THREE.Vector3(), ss = new THREE.Vector3();
+      const railM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.06, 0.06), mat.steel, (pts.length - 1) * 2);
+      const mm = new THREE.Matrix4(), qq = new THREE.Quaternion(), vv = new THREE.Vector3(), ss = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
       pts.forEach(([x, z], i) => {
-        mm.makeTranslation(x, H_TOP + 0.6, z); postM.setMatrixAt(i, mm);
-        for (let k = 0; k < 4; k++) { const b = A0 + (A1 - A0) * (i + k / 4) / NP; circles.push([Math.cos(b) * (FR + 0.2) + SUM[0], Math.sin(b) * (FR + 0.2) + SUM[1], 0.5]); }
-        if (i < NP) {
-          const [x2, z2] = pts[i + 1], len = Math.hypot(x2 - x, z2 - z), ang = Math.atan2(z2 - z, x2 - x);
-          qq.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -ang);
-          [0.5, 1.1].forEach((y, j) => { mm.compose(vv.set((x + x2) / 2, H_TOP + y, (z + z2) / 2), qq, ss.set(len, 1, 1)); railM.setMatrixAt(i * 2 + j, mm); });
+        mm.makeTranslation(x, H_TOP + (inGap(x) ? -50 : 0.6), z); postM.setMatrixAt(i, mm);
+        if (i < pts.length - 1) {
+          const [x2, z2] = pts[i + 1], len = Math.hypot(x2 - x, z2 - z), skip = inGap(x) || inGap(x2);
+          qq.setFromAxisAngle(up, -Math.atan2(z2 - z, x2 - x));
+          [0.5, 1.1].forEach((y, j) => { mm.compose(vv.set((x + x2) / 2, H_TOP + (skip ? -50 : y), (z + z2) / 2), qq, ss.set(len, 1, 1)); railM.setMatrixAt(i * 2 + j, mm); });
+          if (!skip) for (let k = 0; k < 4; k++) circles.push([x + (x2 - x) * k / 4, z + (z2 - z) * k / 4, 0.5]);
         }
       });
       fence.add(postM, railM);
-    }
-
-    // --- Einrichtung Haupthalle ---
-    {
-      B(-3.2, 3.2, F, F + 0.03, MZ0 + 1, MZ1, mat.carpet, false);
-      B(MX0, MX1, MH - 0.4, MH, MZ0, MZ1, mat.trim, false);
-      for (let x = -12; x <= 12; x += 4) B(x - 0.25, x + 0.25, MH - 1.0, MH - 0.4, MZ0, MZ1, mat.trim, false);
-      // langer Tisch mit Stuehlen und Kerzen
-      B(-1.1, 1.1, F + 0.85, F + 0.97, -77, -63, mat.wood); for (const [x, z] of [[-0.9, -76.5], [0.9, -76.5], [-0.9, -63.5], [0.9, -63.5]]) B(x - 0.08, x + 0.08, F, F + 0.85, z - 0.08, z + 0.08, mat.wood, false);
-      for (let i = 0; i < 6; i++) for (const sx of [-1, 1]) {
-        const z = -75.5 + i * 2.2; B(sx * 1.7 - 0.28, sx * 1.7 + 0.28, F + 0.4, F + 0.5, z - 0.28, z + 0.28, mat.red, false); B(sx * 1.7 + sx * 0.22 - 0.04, sx * 1.7 + sx * 0.22 + 0.04, F + 0.5, F + 1.3, z - 0.28, z + 0.28, mat.trim, false);
+      // Strasse vom Tor den Hang hinab
+      {
+        const Pp = [], Ii = [], n = 60, z0 = -15.8, z1 = 52;
+        for (let i = 0; i <= n; i++) { const z = lerp(z0, z1, i / n); for (const k of [-3.6, 3.6]) Pp.push(k, terrainH(k, z) + 0.06, z); if (i) { const j = i * 2; Ii.push(j - 2, j - 1, j, j - 1, j + 1, j); } }
+        const rg = new THREE.BufferGeometry(); rg.setAttribute("position", new THREE.Float32BufferAttribute(Pp, 3)); rg.setIndex(Ii); rg.computeVertexNormals();
+        const road = new THREE.Mesh(rg, asphalt); road.receiveShadow = true; scene.add(road);
       }
-      for (const z of [-75, -70, -65]) { B(-0.04, 0.04, F + 0.97, F + 1.3, z - 0.04, z + 0.04, mat.white, false); const f = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 4), mat.glowOrange); f.position.set(0, F + 1.35, z); world.add(f); }
-      // Kamin an der Westwand
-      B(MX0 + T, MX0 + T + 1.3, F, F + 5.2, -71.2, -64.8, mat.brick);
-      B(MX0 + T + 1.3, MX0 + T + 1.45, F + 0.1, F + 2.4, -70, -66, mat.black, false);
-      B(MX0 + T + 0.2, MX0 + T + 1.6, F + 2.5, F + 2.7, -71.6, -64.4, mat.trim, false);
-      const fire = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), mat.glowOrange); fire.position.set(MX0 + T + 0.9, F + 0.6, -68); fire.scale.set(1, 0.7, 2.2); world.add(fire);
-      const fireL = pLight(0xff8a3a, 90, 22, MX0 + T + 2.5, F + 1.3, -68);
-      // Kronleuchter
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(2, 0.08, 6, 24), mat.gold); ring.rotation.x = Math.PI / 2; ring.position.set(0, F + 8.2, -68); world.add(ring);
-      cyl(0.03, 0.03, 3.2, mat.steel, 0, F + 9.9, -68, world, 4);
-      for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28, b = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 4), mat.glowOrange); b.position.set(Math.cos(a) * 2, F + 8.35, -68 + Math.sin(a) * 2); world.add(b); }
-      pLight(0xffe2b0, 200, 40, 0, F + 7.4, -68);
-      // Bilder an der Rueckwand, Standuhr
-      const paint = (x, w, h, col) => { B(x - w / 2 - 0.12, x + w / 2 + 0.12, F + 3.6 - 0.12, F + 3.6 + h + 0.12, MZ0 + T, MZ0 + T + 0.12, mat.gold, false); B(x - w / 2, x + w / 2, F + 3.6, F + 3.6 + h, MZ0 + T + 0.1, MZ0 + T + 0.16, M(col), false); };
-      paint(-8, 3, 4, 0x35507a); paint(-3.5, 2.4, 3.4, 0x7a5a35); paint(3.5, 2.4, 3.4, 0x4d6e45); paint(8, 3, 4, 0x6a3a50);
-      B(MX1 - T - 1.2, MX1 - T - 0.2, F, F + 3.4, -78, -76.6, mat.trim); B(MX1 - T - 1.1, MX1 - T - 0.3, F + 0.5, F + 3.2, -77.9, -77.85, mat.glowOrange, false);
-      B(MX1 - T - 1.5, MX1 - T - 0.1, F + 3.4, F + 3.8, -78.1, -76.5, mat.trim, false);
-      // Sessel am Kamin
-      for (const z of [-72.8, -63.2]) { B(MX0 + 2.6, MX0 + 3.9, F, F + 0.5, z - 0.6, z + 0.6, mat.cloth); B(MX0 + 3.5, MX0 + 3.9, F + 0.5, F + 1.4, z - 0.6, z + 0.6, mat.cloth, false); }
-      pLight(0xffe2b0, 60, 18, 0, F + 3, -58.4);
     }
 
-    // --- Ostfluegel: Aufzug-Schacht, Halle ---
+    // Hallen-Licht (Innenraum bleibt sonst leer)
+    for (const x of [-42, -21, 0, 21, 42]) for (const z of [-62, -88]) pLight(0xffe2b0, 260, 40, x, F + 9, z);
+
+    // --- Aufzug-Schacht in der Eingangshalle ---
     const SHAFT = { x0: 21.05, x1: 24.55, z0: -60.95, z1: -57.45, cx: 22.8, cz: -59.2 };
     const DOOR_Z = [-60.2, -58.2], DOOR_H = 3.0, BOT_Y = 0.1, SH_TOP = F + 6.9;
     const steelPanel = mat.dark;
@@ -558,17 +610,6 @@
       B(20.8, 21.05, BOT_Y + DOOR_H, F, DOOR_Z[0], DOOR_Z[1], steelPanel); B(20.8, 21.05, F + DOOR_H, SH_TOP, DOOR_Z[0], DOOR_Z[1], steelPanel);
       for (let y = 5; y < F; y += 6) { B(21.3, 24.3, y, y + 0.1, -60.95, -60.9, mat.glow, false); B(21.3, 24.3, y + 3, y + 3.1, -57.5, -57.45, mat.glow, false); }
       B(20.7, 21.3, F + DOOR_H + 0.3, F + DOOR_H + 0.9, -59.7, -58.7, mat.glow, false, world, false);
-      // Ostfluegel Deko: Teppich zum Aufzug, Baenke, Pflanzen, Tafel
-      B(15, 20.6, F, F + 0.03, -60.1, -58.3, mat.carpet, false);
-      for (const z of [-68.5, -54.4]) { B(17, 20, F + 0.45, F + 0.6, z - 0.4, z + 0.4, mat.trim); B(17, 20, F, F + 0.45, z - 0.3, z - 0.2, mat.trim, false); B(17, 20, F, F + 0.45, z + 0.2, z + 0.3, mat.trim, false); }
-      for (const [x, z] of [[16, -70], [16, -54], [28.5, -54], [28.5, -70]]) { cyl(0.45, 0.35, 0.7, mat.wood, x, F + 0.35, z, world, 10); const p = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 1), mat.green); p.position.set(x, F + 1.4, z); p.castShadow = true; world.add(p); circles.push([x, z, 0.5]); }
-      const sign = canvasTex(512, 128, (g, w, h) => { g.fillStyle = "#14181f"; g.fillRect(0, 0, w, h); g.strokeStyle = "#c9a24a"; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12); g.fillStyle = "#e6d6a0"; g.font = "800 46px Georgia, serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("WAYNE ENTERPRISES", w / 2, h / 2 + 3); });
-      sign.repeat.set(1, 1);
-      const sm = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.5), new THREE.MeshBasicMaterial({ map: sign }));
-      sm.position.set(WX1 - T - 0.02, F + 5, -62); sm.rotation.y = -Math.PI / 2; world.add(sm);
-      B(WX1 - T - 0.4, WX1 - T - 0.2, F + 0.9, F + 1.5, -64, -60, mat.trim, false);
-      pLight(0xffe2b0, 120, 30, 20, F + 6, -62);
-      B(14.5, 16, F, F + 0.3, -64.4, -63.6, mat.gold, false);
     }
 
     // ===================== Aufzug =====================
@@ -731,9 +772,15 @@
     // Aufzugstation unten ist die Westwand des Schachts: Schild und Rampe davor
     {
       B(14, 20.5, 0.02, 0.1, -60.2, -58.2, mat.floorStone, false, caveG);
-      const sign = canvasTex(256, 64, (g, w, h) => { g.fillStyle = "#101319"; g.fillRect(0, 0, w, h); g.fillStyle = "#ffd43b"; g.font = "800 34px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("AUFZUG ▲ WAYNE", w / 2, h / 2 + 2); });
+      const sign = canvasTex(512, 128, (g, w, h) => {
+        g.fillStyle = "#101319"; g.fillRect(0, 0, w, h); g.strokeStyle = "#ffd43b"; g.lineWidth = 6; g.strokeRect(5, 5, w - 10, h - 10);
+        g.fillStyle = "#ffd43b"; g.textAlign = "center"; g.textBaseline = "middle";
+        let fs = 72; g.font = `800 ${fs}px system-ui, sans-serif`;
+        while (g.measureText("AUFZUG ▲").width > w - 60 && fs > 20) { fs -= 2; g.font = `800 ${fs}px system-ui, sans-serif`; }
+        g.fillText("AUFZUG ▲", w / 2, h / 2 + 4);
+      });
       sign.repeat.set(1, 1);
-      const sm = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.8), new THREE.MeshBasicMaterial({ map: sign }));
+      const sm = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 0.75), new THREE.MeshBasicMaterial({ map: sign }));
       sm.position.set(20.78, 3.7, -59.2); sm.rotation.y = -Math.PI / 2; caveG.add(sm);
     }
     // Lichter der Halle und des Tunnels
@@ -781,7 +828,7 @@
       scene.background.copy(SKY_DAY).lerp(SKY_NIGHT, night);
       scene.fog.color.copy(scene.background);
       sun.color.copy(SUN_DAYC).lerp(SUN_NIGHTC, night);
-      mat.glass.emissiveIntensity = night * 0.9;
+      mat.glass.emissiveIntensity = night * 0.9; mat.facade.emissiveIntensity = night * 1.2;
       stars.material.opacity = night; signal.material.opacity = night; beam.material.opacity = night * 0.0;
       for (const c of clouds.children) c.material.color.setScalar(lerp(1, 0.18, night));
       applyLights();
@@ -881,7 +928,7 @@
       walking = true;
       document.body.classList.add("walk");
       controls.enabled = false;
-      if (top) player.pos.set(0, H_TOP, -48), player.yaw = 0, player.pitch = 0.05;
+      if (top) player.pos.set(0, H_TOP, -21), player.yaw = 0, player.pitch = 0.1;
       else player.pos.set(-(ZM + 34), 0.1, CZ), player.yaw = -Math.PI / 2, player.pitch = 0.22;
       player.vy = 0;
       camera.fov = 70;
