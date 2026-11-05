@@ -172,6 +172,8 @@
     const MID = -HZ + WALL / 2;                              // alte Rueckwand, jetzt Innenwand
     const EG = 0.3, OG = 3.3, TOP = 6.3, KG = -3.0, ROOF_RISE = 4.0;
     const POOL = { x0: -5, x1: 3, z0: -21, z1: -17, floor: -1.5, water: -0.12 };
+    // Strasse vor dem Haus: Buergersteig z 17..18.6, Randstein bis 18.8, Fahrbahn 18.8..25.2, Gegenseite bis 27
+    const ROAD = { z0: 18.8, z1: 25.2, walk0: 17, x0: -34, x1: 40 };
     const CENTER_Z = -4;                                     // Mitte des Grundstuecks (Gelaende, Laufgrenze)
 
     // --- Renderer, Szene, Kamera ---
@@ -193,8 +195,8 @@
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
     const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.05, 200);
-    const HOME_TARGET = new THREE.Vector3(2.5, 2.5, -5);
-    const homePos = () => new THREE.Vector3(27, 16, 26).multiplyScalar(Math.max(1, 0.9 / camera.aspect));
+    const HOME_TARGET = new THREE.Vector3(3, 1.5, 4);
+    const homePos = () => new THREE.Vector3(32, 19, 36).multiplyScalar(Math.max(1, 0.9 / camera.aspect));
     camera.position.copy(homePos());
 
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -202,7 +204,7 @@
     controls.enableDamping = true;
     controls.enablePan = false;
     controls.minDistance = 10;
-    controls.maxDistance = 75;
+    controls.maxDistance = 95;
     controls.maxPolarAngle = Math.PI * 0.47;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.6;
@@ -322,6 +324,10 @@
         g.fillStyle = "#3b2a1e"; g.fillRect(0, 0, s, s);
         speckle(g, s, rnd, 2500, ["#2a1d14", "#53402f"], 1.6);
       }),
+      asphalt: canvasTexture(256, 2, 13, (g, s, rnd) => {
+        g.fillStyle = "#3a3b3e"; g.fillRect(0, 0, s, s);
+        speckle(g, s, rnd, 9000, ["#2c2d30", "#4a4b4f", "#55565a", "#242528"], 1.6);
+      }),
       stone: canvasTexture(256, 1.2, 11, (g, s, rnd) => grid(g, s, 3, r => `hsl(35, 6%, ${58 + r() * 10}%)`, "#5d5a54", rnd))
     };
 
@@ -347,6 +353,11 @@
       grass: M({ map: TEX.grass, roughness: 1 }),
       soil: M({ map: TEX.soil, roughness: 1 }),
       stone: M({ map: TEX.stone, roughness: 0.85 }),
+      asphalt: M({ map: TEX.asphalt, roughness: 0.95 }),
+      markWhite: M({ color: 0xe8e8e2, roughness: 0.8 }),
+      markYellow: M({ color: 0xe6b422, roughness: 0.8 }),
+      curb: M({ color: 0x8f8d88, roughness: 0.9 }),
+      redBox: M({ color: 0xb3262e, roughness: 0.5 }),
       steel: M({ color: 0xb8bcc0, metalness: 0.9, roughness: 0.3 }),
       dark: M({ color: 0x24262a, roughness: 0.6 }),
       white: M({ color: 0xf0eee8, roughness: 0.5 }),
@@ -455,7 +466,7 @@
     }
 
     // --- Gelaende: flach um Haus, Einfahrt und Pool, nach aussen sanfte Huegel ---
-    const FLAT = [[-8.5, 14, -23.5, 9.5], [6, 12.2, 9.5, 17]];
+    const FLAT = [[-8.5, 14, -23.5, 9.5], [6, 12.2, 9.5, 17], [-34, 40, 16, 28.5]];
     const HOLES = [[-HX, HX, BZ, HZ], [POOL.x0 - 0.2, POOL.x1 + 0.2, POOL.z0 - 0.2, POOL.z1 + 0.2]];
     const inRect = (x, z, [x0, x1, z0, z1]) => x > x0 && x < x1 && z > z0 && z < z1;
     function terrain(x, z) {
@@ -614,7 +625,7 @@
       world.add(col);
       circles.push([x, HZ + 2.0, 0.15]);
     }
-    box(-2.6, 0, HZ + 2.2, -1.4, 0.04, 16, mat.stone, { name: "Weg" });
+    box(-2.6, 0, HZ + 2.2, -1.4, 0.04, ROAD.z0, mat.stone, { name: "Weg" });
 
     // Haustuer offen nach innen
     {
@@ -638,7 +649,7 @@
     box(6.6, 2.5, 1.6, 11.6, 2.56, GZ1 - 0.1, mat.white, { name: "Garagentor (offen)" });
     gableRoof(GX0, GX1, GZ0, GZ1, GH + 0.1, 1.5, 0.45, roof, 0);
     gable(GX1, GZ0, GZ1, GH + 0.1, 1.5, roof);
-    box(6.6, 0, GZ1, 11.6, 0.05, 17, mat.concrete, { name: "Einfahrt" });
+    box(6.6, 0, GZ1, 11.6, 0.05, ROAD.z0, mat.concrete, { name: "Einfahrt" });
 
     // Auto: Karosserie, Kabine mit Scheiben, Raeder
     {
@@ -760,6 +771,50 @@
     for (const z of [STEPS_Z - 1.4, STEPS_Z + 0.4]) {
       box(3.5, 0.04, z, 4.4, 0.35, z + 0.7, mat.white, { name: "Liege" });
       box(3.5, 0.35, z, 3.75, 0.8, z + 0.7, mat.white, { solid: false });
+    }
+
+    // --- Strasse mit Buergersteig, Randstein, Markierungen, Lampen, Briefkasten ---
+    {
+      const { z0, z1, walk0, x0, x1 } = ROAD;
+      const street = new THREE.Group();
+      street.name = "Strasse";
+      world.add(street);
+      const st = (a, y0, b, y1, c, d, m, solid = true) => box(a, y0, c, b, y1, d, m, { parent: street, solid });
+      st(x0, 0, x1, 0.03, z0, z1, mat.asphalt);
+      // Buergersteig vorne: Luecken fuer Weg (-2.6..-1.4) und Einfahrt (6.6..11.6), dort laeuft Pflaster/Beton durch
+      for (const [a, b] of [[x0, -2.6], [-1.4, 6.6], [11.6, x1]]) {
+        st(a, 0, b, 0.12, walk0, z0 - 0.2, mat.concrete);
+        st(a, 0, b, 0.12, z0 - 0.2, z0, mat.curb);
+      }
+      // Gegenseite
+      st(x0, 0, x1, 0.12, z1, z1 + 0.2, mat.curb);
+      st(x0, 0, x1, 0.12, z1 + 0.2, z1 + 1.8, mat.concrete);
+      // Fahrbahnmarkierungen: gelbe gestrichelte Mittellinie, weisse Randlinien
+      const mid = (z0 + z1) / 2;
+      for (let x = x0 + 1; x < x1 - 2; x += 5) st(x, 0.03, x + 2.5, 0.035, mid - 0.1, mid + 0.1, mat.markYellow, false);
+      st(x0, 0.03, x1, 0.035, z0 + 0.35, z0 + 0.45, mat.markWhite, false);
+      st(x0, 0.03, x1, 0.035, z1 - 0.45, z1 - 0.35, mat.markWhite, false);
+      // Strassenlampen auf dem Buergersteig, Leuchtkoerper nachts hell
+      for (const x of [-20, -6, 14, 28]) {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 5.2, 10), mat.dark);
+        pole.position.set(x, 2.7, walk0 + 0.4);
+        pole.castShadow = true;
+        street.add(pole);
+        st(x - 0.05, 5.2, x + 0.05, 5.28, walk0 + 0.4, walk0 + 1.3, mat.dark, false);
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), mat.lamp);
+        bulb.position.set(x, 5.2, walk0 + 1.3);
+        street.add(bulb);
+        circles.push([x, walk0 + 0.4, 0.12]);
+      }
+      // Briefkasten neben dem Weg
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, 0.08), mat.wood);
+      post.position.set(-3.4, 0.55, 17.4);
+      street.add(post);
+      const mailbox = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.28, 0.24), mat.redBox);
+      mailbox.position.set(-3.4, 1.2, 17.4);
+      mailbox.castShadow = true;
+      street.add(mailbox);
+      circles.push([-3.4, 17.4, 0.2]);
     }
 
     // --- Pflanzen: Laub- und Nadelbaeume, Buesche, Blumenbeete, Hecke ---
@@ -998,7 +1053,7 @@
     // --- Laufmodus: Ich-Sicht mit Stockwerken, Treppen und Pool ---
     const touch = matchMedia("(pointer: coarse)").matches;
     document.body.classList.toggle("touch", touch);
-    const EYE = 1.62, BODY = 1.8, RADIUS = 0.3, STEP = 0.45, WALK = 4.6, RUN = 7.5, JUMP = 6.6, GRAVITY = 22, LIMIT = 30;
+    const EYE = 1.62, BODY = 1.8, RADIUS = 0.3, STEP = 0.45, WALK = 4.6, RUN = 7.5, JUMP = 6.6, GRAVITY = 22, LIMIT = 34;
     const player = { pos: new THREE.Vector3(), vy: 0, yaw: 0, pitch: 0, onGround: true, jump: false };
     const keys = new Set();
     let walking = false, jumpHeld = false;
@@ -1109,14 +1164,14 @@
     });
 
     // Taste E: Mausempfindlichkeit durchschalten, Auswahl bleibt im Browser gespeichert
-    const SENS = [0.4, 0.6, 0.8, 1, 1.4, 2, 3];
-    let sensIndex = 3;
-    try { const saved = parseInt(localStorage.getItem("haus-sens"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
+    const SENS = [0.2, 0.4, 0.6, 0.8, 1, 1.4, 2, 3];
+    let sensIndex = 4;
+    try { const saved = parseInt(localStorage.getItem("haus-sens2"), 10); if (saved >= 0 && saved < SENS.length) sensIndex = saved; } catch (e) {}
     const sensitivity = () => SENS[sensIndex];
     let toastTimer;
     function cycleSens() {
       sensIndex = (sensIndex + 1) % SENS.length;
-      try { localStorage.setItem("haus-sens", String(sensIndex)); } catch (e) {}
+      try { localStorage.setItem("haus-sens2", String(sensIndex)); } catch (e) {}
       const toast = document.getElementById("toast");
       toast.textContent = "Mausempfindlichkeit " + Math.round(SENS[sensIndex] * 100) + " % (E = weiter)";
       toast.classList.add("show");
