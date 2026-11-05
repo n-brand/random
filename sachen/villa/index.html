@@ -1283,25 +1283,192 @@
       hedge.castShadow = hedge.receiveShadow = true;
       hedge.name = 'Hecke';
       fence.add(hedge);
+      // Querzaeune vor der Hausfront: West (zwischen Westzaun und Hausecke, mit weissem Gartentor) und Ost (zwischen Garage und Hecke),
+      // damit man von der Strasse (Suedwesten/Suedosten) nicht an Haus und Garage vorbei in den Garten sieht
+      const CZ = HZ + 0.04;                       // direkt an der Hausfront (aussen z = HZ)
+      const run = (xa, xb) => {
+        const k = Math.max(1, Math.ceil((xb - xa) / PANEL));
+        for (let i = 0; i < k; i++) {
+          const x0 = xa + (i * (xb - xa)) / k, x1 = xa + ((i + 1) * (xb - xa)) / k;
+          f(x0, 0.08, x1, FH, CZ - 0.04, CZ + 0.04, mat.wood);
+          f(x0, FH, x1, FH + 0.07, CZ - 0.07, CZ + 0.07, mat.dark);
+          f(x0, 0, x1, 0.1, CZ - 0.06, CZ + 0.06, mat.dark);
+          f(x1 - 0.06, 0, x1 + 0.06, FH + 0.12, CZ - 0.08, CZ + 0.08, mat.dark);
+        }
+        f(xa - 0.06, 0, xa + 0.06, FH + 0.12, CZ - 0.08, CZ + 0.08, mat.dark);
+      };
+      const G0 = -10.7, G1 = -9.5;                // Gartentor
+      run(FX, G0);
+      run(G1, -HX);
+      f(G0, 0.08, G1, FH - 0.1, CZ - 0.05, CZ + 0.05, mat.white);                 // Torblatt, weiss
+      f(G0, FH - 0.1, G1, FH - 0.02, CZ - 0.06, CZ + 0.06, mat.dark);
+      f(G0, 0.35, G1, 0.42, CZ - 0.07, CZ + 0.07, mat.dark);                      // Querstreben
+      f(G0, 1.35, G1, 1.42, CZ - 0.07, CZ + 0.07, mat.dark);
+      f(G1 - 0.14, 0.95, G1 - 0.06, 1.05, CZ + 0.03, CZ + 0.1, mat.steel);        // Griff
+      run(GX1, HEDGE_X);
     }
 
-    // Auto: Karosserie, Kabine mit Scheiben, Raeder
+    // --- Ferrari (Vorlage: Ferrari 488 / F8 Tributo): flacher Keil, Mittelmotor, hohe Hueften, schmale LED-Scheinwerfer, seitliche Lufteinlaesse,
+    //     vier runde Ruecklichter, gelbe Bremssaettel, Springendes Pferd auf Haube und Flanken, "Ferrari"-Schriftzug hinten ---
     {
       const car = new THREE.Group();
-      car.name = "Auto";
+      car.name = 'Ferrari';
+      car.position.set(9.2, 0, 0.5);               // Nase zeigt nach +z (Strasse), Heck zur Regalwand
       world.add(car);
-      const cx0 = 8.1, cx1 = 10.0, cz0 = -1.8, cz1 = 2.8;
-      box(cx0, 0.35, cz0, cx1, 1.0, cz1, mat.carPaint, { parent: car });
-      box(cx0 + 0.12, 1.0, cz0 + 0.9, cx1 - 0.12, 1.5, cz1 - 1.2, mat.glass, { parent: car });
-      box(cx0 + 0.14, 1.5, cz0 + 1.0, cx1 - 0.14, 1.56, cz1 - 1.3, mat.carPaint, { parent: car, solid: false });
-      for (const [x, z] of [[cx0, cz0 + 0.8], [cx1, cz0 + 0.8], [cx0, cz1 - 0.8], [cx1, cz1 - 0.8]]) {
-        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.25, 20), mat.tire);
-        w.rotation.z = Math.PI / 2;
-        w.position.set(x, 0.44, z);
-        w.castShadow = true;
-        car.add(w);
+      mat.carPaint.color.set(0xcf0a14);            // Rosso Corsa
+
+      // Springendes Pferd auf gelbem Schild (Canvas), schwarzes Pferd, Trikolore oben
+      const horse = (g, w, h) => {
+        g.fillStyle = '#f7d117';
+        g.beginPath(); g.moveTo(w * 0.1, h * 0.14); g.lineTo(w * 0.9, h * 0.14); g.lineTo(w * 0.9, h * 0.62);
+        g.quadraticCurveTo(w * 0.9, h * 0.92, w * 0.5, h * 0.97); g.quadraticCurveTo(w * 0.1, h * 0.92, w * 0.1, h * 0.62); g.closePath(); g.fill();
+        g.fillStyle = '#0f8a3c'; g.fillRect(w * 0.1, h * 0.03, w * 0.27, h * 0.11);
+        g.fillStyle = '#f2f2f2'; g.fillRect(w * 0.37, h * 0.03, w * 0.26, h * 0.11);
+        g.fillStyle = '#cf1920'; g.fillRect(w * 0.63, h * 0.03, w * 0.27, h * 0.11);
+        g.fillStyle = '#111';
+        g.beginPath();                                             // Pferd: Koerper, steigende Vorderbeine, Hinterbeine, Schweif, Kopf
+        g.moveTo(w * 0.34, h * 0.78);                             // hinterer Huf
+        g.lineTo(w * 0.40, h * 0.62); g.lineTo(w * 0.50, h * 0.56);
+        g.lineTo(w * 0.60, h * 0.78); g.lineTo(w * 0.65, h * 0.77);   // vorderer Huf unten
+        g.lineTo(w * 0.60, h * 0.55); g.lineTo(w * 0.66, h * 0.42);
+        g.lineTo(w * 0.78, h * 0.30); g.lineTo(w * 0.72, h * 0.28);   // Vorderbein hoch
+        g.lineTo(w * 0.66, h * 0.30); g.lineTo(w * 0.62, h * 0.24);   // Kopf
+        g.lineTo(w * 0.52, h * 0.22); g.lineTo(w * 0.50, h * 0.30);
+        g.lineTo(w * 0.40, h * 0.40); g.lineTo(w * 0.28, h * 0.50);
+        g.lineTo(w * 0.22, h * 0.62); g.lineTo(w * 0.30, h * 0.70);
+        g.lineTo(w * 0.26, h * 0.80); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(w * 0.26, h * 0.50); g.quadraticCurveTo(w * 0.12, h * 0.46, w * 0.16, h * 0.66); g.lineWidth = w * 0.03; g.strokeStyle = '#111'; g.stroke();
+      };
+      const badgeTex = canvasTexture(256, 1, 41, (g, s) => { g.clearRect(0, 0, s, s); horse(g, s, s); });
+      badgeTex.repeat.set(1, 1);
+      const badgeMat = new THREE.MeshStandardMaterial({ map: badgeTex, transparent: true, roughness: 0.4, metalness: 0.3 });
+      const nameTex = canvasTexture(256, 1, 42, (g, s) => {
+        g.fillStyle = '#0c0c0c'; g.fillRect(0, 0, s, s);
+        g.fillStyle = '#f2f2f2'; g.font = 'italic 700 78px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('Ferrari', s / 2, s / 2);
+      });
+      const nameMat = new THREE.MeshStandardMaterial({ map: nameTex, roughness: 0.4 });
+      const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x0b1118, roughness: 0.05, metalness: 0.2, clearcoat: 1 });
+      const tail = new THREE.MeshStandardMaterial({ color: 0x550000, emissive: 0xff1010, emissiveIntensity: 0.8 });
+
+      // Seitenprofil (s = Laenge, vorne +, y = Hoehe) zu einem Koerper mit abgerundeten Kanten
+      const extrudeSide = (pts, width, material, bevel = 0.06) => {
+        const shape = new THREE.Shape();
+        pts.forEach(([s, y], i) => (i ? shape.lineTo(s, y) : shape.moveTo(s, y)));
+        shape.closePath();
+        const depth = width - 2 * bevel;
+        const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3 });
+        geo.translate(0, 0, -depth / 2);
+        const mesh = new THREE.Mesh(geo, material);
+        mesh.rotation.y = -Math.PI / 2;                         // Profil-x wird zu Auto-z (vorne +z)
+        mesh.castShadow = mesh.receiveShadow = true;
+        car.add(mesh);
+        return mesh;
+      };
+      // Karosserie: niedrige Keilnase, hohe Hueften, abfallendes Heck mit Kante; darunter dunkle Schweller
+      extrudeSide([[-2.18, 0.28], [-2.22, 0.66], [-2.12, 0.9], [-1.5, 0.98], [-0.8, 0.96], [0.1, 0.9], [1.1, 0.76], [1.95, 0.56], [2.2, 0.46], [2.18, 0.28]], 1.84, mat.carPaint, 0.07);
+      extrudeSide([[-2.1, 0.12], [-2.1, 0.3], [2.1, 0.3], [2.1, 0.12]], 1.7, mat.dark, 0.02);
+      // Kabine: schmal, stark geneigte Frontscheibe, zurueckgesetzt (Mittelmotor); Dach in Wagenfarbe
+      extrudeSide([[-1.1, 0.92], [-0.7, 1.18], [-0.1, 1.22], [0.5, 1.1], [1.0, 0.9]], 1.4, glassMat, 0.05);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.03, 0.75), mat.carPaint);
+      roof.position.set(0, 1.275, -0.32);
+      roof.castShadow = true;
+      car.add(roof);
+      // Haubenwoelbung und Heckklappe: leicht erhoeht, damit die Konturen nicht flach wirken
+      const hood = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.05, 1.0), mat.carPaint);
+      hood.position.set(0, 0.86, 1.2);
+      hood.rotation.x = 0.26;
+      car.add(hood);
+      // Heckspoiler (Entenbuerzel) und Diffusor
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.05, 0.18), mat.carPaint);
+      lip.position.set(0, 0.98, -2.22);
+      lip.rotation.x = 0.15;
+      car.add(lip);
+      const diffuser = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.16, 0.1), mat.dark);
+      diffuser.position.set(0, 0.27, -2.2);
+      car.add(diffuser);
+      // Frontsplitter und Lufteinlass, schmale LED-Scheinwerfer mit Tagfahrlicht
+      const part = (w, h, d, x, y, z, m) => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+        mesh.position.set(x, y, z);
+        car.add(mesh);
+        return mesh;
+      };
+      part(1.6, 0.04, 0.2, 0, 0.17, 2.18, mat.dark);                    // Splitter
+      part(0.95, 0.12, 0.05, 0, 0.38, 2.21, mat.dark);                  // Grill
+      for (const sx of [-1, 1]) {
+        part(0.42, 0.06, 0.04, sx * 0.62, 0.55, 2.04, mat.lamp);        // LED-Scheinwerfer
+        part(0.2, 0.025, 0.04, sx * 0.62, 0.5, 2.06, mat.lamp);         // Tagfahrlicht
+        part(0.26, 0.1, 0.05, sx * 0.88, 0.4, 2.12, mat.dark);          // seitlicher Lufteinlass vorn
       }
-      for (const x of [cx0 + 0.25, cx1 - 0.25]) box(x - 0.15, 0.7, cz1, x + 0.15, 0.82, cz1 + 0.02, mat.lamp, { parent: car, solid: false });
+      // Seitliche Lufteinlaesse hinter den Tueren (Ferrari-typisch), Spiegel, Tuerfuge
+      for (const sx of [-1, 1]) {
+        part(0.05, 0.22, 0.7, sx * 0.93, 0.66, -0.9, mat.dark);
+        part(0.04, 0.28, 0.04, sx * 0.93, 0.78, 0.15, mat.dark);        // Tuerfuge
+        part(0.12, 0.07, 0.16, sx * 0.76, 0.98, 0.55, mat.carPaint);    // Spiegel
+      }
+      // Vier runde Ruecklichter (Signatur-Merkmal), Doppelauspuff mittig
+      for (const sx of [-1, 1]) for (const dx of [0.5, 0.8]) {
+        const light = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 20), tail);
+        light.rotation.x = Math.PI / 2;
+        light.position.set(sx * dx, 0.78, -2.23);
+        car.add(light);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.012, 8, 20), mat.dark);
+        ring.position.set(sx * dx, 0.78, -2.255);
+        car.add(ring);
+      }
+      for (const sx of [-1, 1]) {
+        const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.12, 16), mat.steel);
+        pipe.rotation.x = Math.PI / 2;
+        pipe.position.set(sx * 0.2, 0.42, -2.25);
+        car.add(pipe);
+      }
+      // Logos: Springendes Pferd auf der Haube (der Neigung folgend), gelbe Schilder auf den Flanken, "Ferrari" am Heck
+      const hoodBadge = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), badgeMat);
+      hoodBadge.rotation.x = -Math.PI / 2 + 0.26;
+      hoodBadge.position.set(0, 0.905, 1.5);
+      car.add(hoodBadge);
+      const nose = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.12), badgeMat);
+      nose.position.set(0, 0.52, 2.235);
+      car.add(nose);
+      for (const sx of [-1, 1]) {
+        const flank = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.13), badgeMat);
+        flank.rotation.y = sx * Math.PI / 2;
+        flank.position.set(sx * 0.925, 0.76, 0.95);
+        car.add(flank);
+      }
+      const name = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.1), nameMat);
+      name.rotation.y = Math.PI;
+      name.position.set(0, 0.62, -2.26);
+      car.add(name);
+      // Raeder: breite Reifen, silberne Felgen mit fuenf Speichen, gelbe Bremssaettel
+      for (const [x, z] of [[-0.97, 1.4], [0.97, 1.4], [-0.97, -1.32], [0.97, -1.32]]) {
+        const wheel = new THREE.Group();
+        wheel.position.set(x, 0.35, z);
+        car.add(wheel);
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, x === 0.97 || x === -0.97 ? 0.3 : 0.3, 28), mat.tire);
+        tire.rotation.z = Math.PI / 2;
+        tire.castShadow = true;
+        wheel.add(tire);
+        const side = Math.sign(x);
+        const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.245, 0.245, 0.31, 24), mat.steel);
+        rim.rotation.z = Math.PI / 2;
+        wheel.add(rim);
+        for (let k = 0; k < 5; k++) {
+          const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.045, 0.22), mat.dark);
+          spoke.position.set(side * 0.16, 0, 0);
+          const holder = new THREE.Group();
+          holder.rotation.x = (k / 5) * Math.PI * 2;
+          spoke.position.z = 0.12;
+          holder.add(spoke);
+          holder.position.set(0, 0, 0);
+          wheel.add(holder);
+        }
+        const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.16), mat.markYellow);
+        caliper.position.set(side * 0.1, 0.14, 0.1);
+        wheel.add(caliper);
+      }
+      solids.push({ x0: car.position.x - 1.15, x1: car.position.x + 1.15, y0: 0, y1: 1.3, z0: car.position.z - 2.3, z1: car.position.z + 2.3 });
     }
 
     // --- Einrichtung ---
