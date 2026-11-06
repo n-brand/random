@@ -37,6 +37,12 @@
     body.walk #hint { display: block; }
     #toast { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 16px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 6; }
     #toast.show { opacity: 1; }
+    #lift-panel { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; backdrop-filter: blur(8px); z-index: 6; }
+    #lift-panel[hidden] { display: none; }
+    #lift-panel .lp-title { font-size: .72rem; color: var(--muted); text-align: center; }
+    #lift-panel button { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 12px; border-radius: 8px; cursor: pointer; text-align: left; white-space: nowrap; }
+    #lift-panel button.here { background: var(--text); color: #0b0d12; font-weight: 800; }
+    #lift-panel button.target { background: var(--accent); color: #1a1405; font-weight: 800; }
     .stick { display: none; position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .25); touch-action: none; z-index: 5; }
     .stick span { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px; border-radius: 50%; background: rgba(255, 255, 255, .35); }
     #stick-move { left: 22px; }
@@ -70,6 +76,7 @@
   <div id="cross"></div>
   <div id="hint">WASD gehen &middot; Linksklick Maus übernehmen &middot; Leertaste springen &middot; Shift rennen &middot; Esc beenden</div>
   <div id="toast"></div>
+  <div id="lift-panel" hidden></div>
   <div class="stick" id="stick-move"><span></span></div>
   <div class="stick" id="stick-look"><span></span></div>
   <button type="button" id="btn-jump">Sprung</button>
@@ -256,7 +263,9 @@
     // Lage aus der kleinen Uebersichtskarte oben links (Massstab dort ca. 2,8-mal kleiner, Rondell bei 222/252):
     // Welt x = (py - 252) * 0,56, z = -(px - 222) * 0,56.
     const SITE = { x0: -100, x1: 60, z0: -90, z1: 120 };                 // Anwesen (Kartenbereich) bleibt flach (y 0)
-    const WATER_Y = -0.35, LIMIT_WORLD = 700;
+    const WATER_Y = -0.35, LIMIT_WORLD = 700;                               // WATER_Y = Seen im Inland
+    const LY = -28, LH = 10;                                                  // Hoehle unten (Lower Level): Boden und Hoehe
+    const SEA_Y = LY - 0.7;                                                   // Meer = Wasser in der Hoehle (Boot faehrt ohne Schleuse hinaus), Steilkueste ca. 30 m
     const hash2 = (i, j) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
     function vnoise(x, z) {
       const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
@@ -296,6 +305,16 @@
         roadHash.get(key).push([p.x, p.z, r.w / 2]);
       }
     }
+    // Wassertunnel vom Ende des Lake-Exit-Kanals (Hoehlenkarte 250/1042) bis zur Meereshoehle in der Bucht (Weltkoordinaten)
+    const SEA_TUNNEL = [[49.8, 30.7], [70, 58], [95, 92], [112, 115], [128, 131]], SEA_TUN_W = 9;
+    function seaTunDist(x, z) {
+      let m = 1e9;
+      for (let k = 0; k < SEA_TUNNEL.length - 1; k++) {
+        const [ax, az] = SEA_TUNNEL[k], [bx, bz] = SEA_TUNNEL[k + 1], dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz));
+        m = Math.min(m, Math.hypot(x - ax - dx * t, z - az - dz * t));
+      }
+      return m;
+    }
     // Garagenrampen: die ersten RAMP_D Meter ab der Hauswand fuehren hinunter auf die Tiefgarage (GY)
     const GY = -4.0, RAMP_D = 42;
     const rampY = d => GY * (1 - d / RAMP_D);
@@ -332,7 +351,8 @@
       const sd = seaD(x, z);
       let h = sst(0, 140, siteDist(x, z)) * fbm(x / 170 + 3, z / 170 + 9) * 16 * sst(0, -80, sd);   // sanfte Huegel ausserhalb des Anwesens
       h += 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2)) * sst(-60, -320, sd);   // Berge am Horizont (nicht zum Meer hin)
-      h = h * (1 - sst(-25, 0, sd)) + 1.2 * sst(-30, -8, sd) - 10.2 * sst(-6, 18, sd);       // Felskueste: leicht erhoeht, dann steil ins Meer
+      // Steilkueste: oben leicht erhoehte Felskante, dann ca. 32 m senkrecht hinab, am Fuss ein flacher Felssockel, weiter draussen tiefer
+      h = h * (1 - sst(-25, -3, sd)) + 1.0 * sst(-30, -8, sd) * (1 - sst(-3, -1, sd)) - 32 * sst(-2.5, 1.5, sd) - 9 * sst(14, 60, sd);
       for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
       const w = sst(25, 140, Math.abs(x - WATERFALL.x));
       const zc = WATERFALL.z + 2;
@@ -381,7 +401,10 @@
       }
       // Rampengraeben: Dreiecke mit einer Ecke im Graben weglassen (der Rand wird von einem Steinband verdeckt)
       const cut = new Uint8Array(TN1 * TN1);
-      for (let k = 0; k < TN1 * TN1; k++) { const ra = rampAt(pos[k * 3], pos[k * 3 + 2], 0.3); if (ra && ra.y < -0.1) cut[k] = 1; }
+      for (let k = 0; k < TN1 * TN1; k++) {
+        const ra = rampAt(pos[k * 3], pos[k * 3 + 2], 0.3);
+        if ((ra && ra.y < -0.1) || (pos[k * 3 + 1] < -8 && seaD(pos[k * 3], pos[k * 3 + 2]) < 5 && seaTunDist(pos[k * 3], pos[k * 3 + 2]) < SEA_TUN_W / 2 + 1.5)) cut[k] = 1;   // Rampen und Meereshoehle
+      }
       let n = 0;
       for (let j = 0; j < T_N; j++) for (let i = 0; i < T_N; i++) {
         const a = j * TN1 + i, b = a + 1, c = a + TN1, d = c + 1;
@@ -430,16 +453,17 @@
     {
       const sh = new THREE.Shape(), P = (s, t) => [(s - t) * R2, -(s + t) * R2];
       sh.moveTo(...P(3200, -2600));
-      for (let t = -2600; t <= 2600; t += 25) sh.lineTo(...P(coastS(t) - 4, t));
+      for (let t = -2600; t <= 2600; t += 25) sh.lineTo(...P(coastS(t) - 0.5, t));
       sh.lineTo(...P(3200, 2600));
       const sea = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), M(0x1d6188, { transparent: true, opacity: 0.88, roughness: 0.15, metalness: 0.2, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-      sea.position.y = WATER_Y; sea.receiveShadow = true;
+      sea.position.y = SEA_Y; sea.receiveShadow = true;
       scene.add(sea);
       // Eckige Felsbrocken entlang der Kueste (statt Strand)
       const rr = rng(303), list = [];
+      // oben an der Kante wenige kleine, unten am Klippenfuss grosse Brocken im Wasser
       for (let t = -1300; t <= 1300; t += 2.6) for (let k = 0; k < 2; k++) {
-        const off = -14 + rr() * 22, size = 0.8 + rr() ** 2 * 4.2, s = coastS(t) + off, x = (s - t) * R2, z = (s + t) * R2;
-        if (rr() < 0.25 || Math.hypot(x, z) > 1250) continue;
+        const top = k === 0, off = top ? -15 + rr() * 11 : 2 + rr() * 16, size = top ? 0.6 + rr() ** 2 * 1.8 : 1.5 + rr() ** 2 * 5, s = coastS(t) + off, x = (s - t) * R2, z = (s + t) * R2;
+        if (rr() < (top ? 0.6 : 0.2) || Math.hypot(x, z) > 1250 || seaTunDist(x, z) < 10) continue;
         list.push([x, terrainH(x, z) - size * 0.35, z, size, rr(), rr(), rr(), rr()]);
       }
       const rockM = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), M(0xffffff, { map: rockTex, roughness: 1, flatShading: true }), list.length);
@@ -598,7 +622,6 @@
     // Schritt 5: Obergeschosse nach der Karte "Auxiliary Floors" (Third Floor = 2. OG auf dem Dach, Fourth Floor = 3. OG).
     // Third-Floor-Zeichnung -> Aussenkarte: px = 394 + (tx - 285) / 1,1, py = 689 + (ty - 460) / 1,1; Fourth Floor = gleiche Lage, 322 px tiefer gezeichnet.
     const TF = ROOF_Y + 0.3, TF2 = TF + FLOOR_H + 0.3, HP = TF + FLOOR_H + 0.3;
-    const LY = -28, LH = 10;                                                  // Hoehle unten (Lower Level): Boden und Hoehe
     const UY = -16, UH = 8.5;                                                 // Hoehle oben (Upper Level)
     // Treppe zwischen den Hoehlenebenen (Karte: "Stairway" suedlich vom Aufzug): zwei Laeufe a 34 Stufen, unten und oben Ausgang nach Osten
     const STW = { x0: -60.2, x1: -47, z0: 19.2, z1: 23.4 };
@@ -616,7 +639,7 @@
     const GARAGE = [[102.5, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 217.5], [272.5, 217.5], [272.5, 282.5], [230, 282.5], [230, 316], [312.5, 316],
       [312.5, 441], [102.5, 441], [102.5, 360], [37.5, 360], [37.5, 216], [102.5, 216]].map(([gx, gy]) => gmp(gx, gy));
     const GSTAIR = { x0: -46.4, x1: -38.6, z0: 14.6, z1: 16.8 };             // Garage -> EG (gerade, steigt nach Westen)
-    const GHOLE = [GSTAIR.x0, -41.6, GSTAIR.z0, GSTAIR.z1];
+    const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deckenloch lang genug fuer Kopffreiheit (Koerper 1,8 m)
     {
       // Boden (EG), Decke/Boden 1. OG, Dach (begehbar, = Boden 2. OG)
       for (const [x0, x1, z0, z1] of rectCover(HOUSE, [SHAFT_OUT, GHOLE])) B(x0, x1, 0, FL0, z0, z1, floorMat);
@@ -917,16 +940,38 @@
       const L = LIFT;
       if (L.state !== "idle") return toast("Aufzug ist unterwegs");
       const p = player.pos;
-      if (!walking || inCar(p)) { L.target = (L.at + 1) % STOPS.length; return toast("Fahrt: " + STOPS[L.target].name + " (Tasten 1-5 wählen den Halt)"); }
+      if (!walking || inCar(p)) { L.target = (L.at + 1) % STOPS.length; return toast("Fahrt: " + STOPS[L.target].name + " (Pfeil hoch/runter oder 1-5)"); }
       const here = STOPS.findIndex(st => Math.abs(p.y - st.y) < 2.5);
       if (here < 0 || Math.hypot(p.x - (SHAFT.x1 + 2), p.z - SHAFT.cz) > 7) return toast("Zu weit vom Aufzug entfernt");
       if (L.at === here) return toast("Der Aufzug ist schon da");
       L.target = here; toast("Der Aufzug kommt");
     }
-    // Im Fahrstuhl: Taste 1-4 = Halt direkt waehlen
+    // Im Fahrstuhl: Pfeil hoch/runter = naechster Halt, Tasten 1-5 = Halt von unten nach oben, oder Knopf in der Anzeige rechts
+    const STOP_ORDER = STOPS.map((s, i) => i).sort((a, b) => STOPS[a].y - STOPS[b].y);   // von unten nach oben
     function pickStop(i) {
       if (!walking || !inCar(player.pos) || LIFT.state !== "idle" || i === LIFT.at || !STOPS[i]) return;
       LIFT.target = i; toast("Fahrt: " + STOPS[i].name);
+    }
+    function stepStop(dir) {
+      const k = STOP_ORDER.indexOf(LIFT.at) + dir;
+      if (k < 0 || k >= STOP_ORDER.length) return toast(dir > 0 ? "Ganz oben" : "Ganz unten");
+      pickStop(STOP_ORDER[k]);
+    }
+    const liftPanel = $("lift-panel");
+    liftPanel.innerHTML = '<div class="lp-title">Aufzug</div>' + [...STOP_ORDER].reverse().map(i => `<button type="button" data-stop="${i}">${STOP_ORDER.indexOf(i) + 1}&nbsp; ${STOPS[i].name}</button>`).join("");
+    liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (b) pickStop(+b.dataset.stop); });
+    let liftPanelKey = "";
+    function updateLiftPanel() {
+      const show = walking && inCar(player.pos);
+      if (liftPanel.hidden === show) { liftPanel.hidden = !show; if (show) toast("Aufzug: Pfeil hoch/runter oder Tasten 1-5"); }
+      const key = LIFT.at + "/" + LIFT.target + "/" + LIFT.state;
+      if (!show || key === liftPanelKey) return;
+      liftPanelKey = key;
+      for (const b of liftPanel.querySelectorAll("button")) {
+        const i = +b.dataset.stop;
+        b.classList.toggle("here", i === LIFT.at && LIFT.state === "idle");
+        b.classList.toggle("target", i === LIFT.target && LIFT.state !== "idle");
+      }
     }
 
     // ===================== Hoehlenkarten als Overlay (Knopf "Karte" schaltet durch) =====================
@@ -1197,15 +1242,17 @@
       }
       return m;
     }
+    // 3 = offen (Meer vor der Meereshoehle): keine Hoehlengeometrie, keine Wand dorthin
     function caveCell(x, z) {
       if (inRect(STW, x, z, 1.5)) return 1;
+      if (seaTunDist(x, z) < SEA_TUN_W / 2) { const sd = seaD(x, z); return sd > 6 ? 3 : sd > -1.5 ? 4 : 2; }   // 4 = vor der Klippe: nur Grund
       const [px, py] = toCave(x, z);
       if (px < 0 || px > 736 || py > 1042) return 0;
       if (inPoly(LOW_FLOOR, px, py) || (px > LOW_DOCK[0] && px < LOW_DOCK[1] && py > LOW_DOCK[2] && py < LOW_DOCK[3])) return 1;
       for (const c of CHANNELS) if (plDist(c.pts, px, py) < c.w / 2) return 2;
       return 0;
     }
-    const CELL = 0.6, CX0 = -60, CZ0 = -38, CNX = Math.ceil(112 / CELL), CNZ = Math.ceil(106 / CELL), CM = new Uint8Array(CNX * CNZ);
+    const CELL = 0.6, CX0 = -62, CZ0 = -38, CNX = Math.ceil(196 / CELL), CNZ = Math.ceil(175 / CELL), CM = new Uint8Array(CNX * CNZ);
     for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) CM[j * CNX + i] = caveCell(CX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL);
     const cmAt = (i, j) => (i < 0 || j < 0 || i >= CNX || j >= CNZ) ? 0 : CM[j * CNX + i];
     function caveAt(x, z) { return cmAt(Math.floor((x - CX0) / CELL), Math.floor((z - CZ0) / CELL)); }
@@ -1220,8 +1267,9 @@
       const corner = (i, j) => jit(CX0 + i * CELL, CZ0 + j * CELL);
       for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
         const t = CM[j * CNX + i];
-        if (!t) continue;
+        if (!t || t === 3) continue;
         const c = [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)];   // 00, 10, 11, 01
+        if (t === 4) { push(G.bed, c.map(([x, z]) => [x, BED, z]), uvFlat); continue; }
         const fy = t === 1 ? LY : BED;
         push(t === 1 ? G.floor : G.bed, c.map(([x, z]) => [x, fy, z]), uvFlat);
         if (t === 2) push(G.water, c.map(([x, z]) => [x, WL, z]), uvFlat);
@@ -1248,12 +1296,13 @@
       const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
       runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), LY - 0.5, LY, Z(j), Z(j + 1)));
       runs((i, j) => CM[j * CNX + i] === 2, (a, b, j) => S(X(a), X(b), BED, LY + 1.0, Z(j), Z(j + 1)));
-      runs((i, j) => CM[j * CNX + i] > 0 && cmAt(i, j - 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j) - 0.3, Z(j)));
-      runs((i, j) => CM[j * CNX + i] > 0 && cmAt(i, j + 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j + 1), Z(j + 1) + 0.3));
+      const isC = v => v === 1 || v === 2;
+      runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j - 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j) - 0.3, Z(j)));
+      runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j + 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j + 1), Z(j + 1) + 0.3));
       for (let i = 0; i < CNX; i++) for (const d of [-1, 1]) {                // senkrechte Kanten spaltenweise
         let s = -1;
         for (let j = 0; j <= CNZ; j++) {
-          const ok = j < CNZ && CM[j * CNX + i] > 0 && cmAt(i + d, j) === 0;
+          const ok = j < CNZ && isC(CM[j * CNX + i]) && cmAt(i + d, j) === 0;
           if (ok && s < 0) s = j;
           if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 : xl, d < 0 ? xl : xl + 0.3, BED, LY + LH, Z(s), Z(j)); s = -1; }
         }
@@ -1307,6 +1356,21 @@
         const A = C(...a), Bp = C(...b), len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]), n = Math.round(len / 0.35);
         for (let k = 0; k <= n; k++) { const t = k / n, x = lerp(A[0], Bp[0], t), z = lerp(A[1], Bp[1], t); cyl(0.04, 0.04, LY + 3 - BED, mat.steel, x, (BED + LY + 3) / 2, z, world, 6); }
         panel(A, Bp, LY + 3, LY + 3.3, mat.red, 0.25);
+      }
+      // Meereshoehle: Felsbogen in der Klippe ueber dem Ausgang des Wassertunnels (verdeckt den ausgeschnittenen Klippenrand)
+      {
+        let M0 = null;
+        for (let k = 0; k < SEA_TUNNEL.length - 1 && !M0; k++) for (let t = 0; t <= 1; t += 0.01) {
+          const x = lerp(SEA_TUNNEL[k][0], SEA_TUNNEL[k + 1][0], t), z = lerp(SEA_TUNNEL[k][1], SEA_TUNNEL[k + 1][1], t);
+          if (seaD(x, z) > -1.5) { M0 = [x, z]; break; }
+        }
+        const arch = new THREE.Group(); arch.position.set(M0[0], 0, M0[1]); arch.rotation.y = Math.PI / 4; world.add(arch);   // lokal: x entlang der Kueste, z zum Meer
+        const rk = M(0x85827c, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 1, flatShading: true }), hw = SEA_TUN_W / 2, top = 1.6, lint = LY + LH - 3.2;
+        const piece = (x0, x1, y0, y1) => { const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, 6), rk); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, -1.2); m.castShadow = m.receiveShadow = true; arch.add(m); };
+        piece(-hw - 7, -hw, SEA_Y - 3, top); piece(hw, hw + 7, SEA_Y - 3, top); piece(-hw, hw, lint, top);
+        const ar = rng(55);
+        for (let k = 0; k < 14; k++) { const s = 1.2 + ar() * 2.6, m = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), rk); m.position.set(-hw - 6 + ar() * (2 * hw + 12), top - 0.4 + ar() * 0.8, -2.5 + ar() * 3); m.rotation.set(ar() * 6, ar() * 6, ar() * 6); m.castShadow = true; arch.add(m); }
+        for (let k = 0; k < 10; k++) { const s = 1.0 + ar() * 2.2, m = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), rk); const side = k % 2 ? 1 : -1; m.position.set(side * (hw + 0.5 + ar() * 5), SEA_Y - 1 + ar() * 3, 2 + ar() * 4); m.rotation.set(ar() * 6, ar() * 6, ar() * 6); arch.add(m); }
       }
       // Checkpoint I am Lake Exit
       { const [x, z] = C(255, 1036); cyl(0.12, 0.12, 3, mat.dark, x, WL + 1.5, z, world, 8); const l = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), mat.glowRed); l.position.set(x, WL + 3.2, z); world.add(l); }
@@ -1514,6 +1578,7 @@
     function groundAt(x, z, feet = 0) {
       const ra = rampAt(x, z);
       if (ra) return ra.y;
+      if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
       if (feet < -1 && (inPoly(GARAGE, x, z) || caveAt(x, z) || caveUpAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
       return terrainH(x, z);
     }
@@ -1533,7 +1598,7 @@
       next.x += (-sin * moveZ + cos * moveX) * speed * dt;
       next.z += (-cos * moveZ - sin * moveX) * speed * dt;
       pushOut(next, player.pos.y);
-      if (terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }   // nicht in tiefes Wasser
+      if (player.pos.y > -3 && terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }   // nicht in tiefes Wasser
       const g0 = groundAt(player.pos.x, player.pos.z, player.pos.y), g1 = groundAt(next.x, next.z, player.pos.y), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
       if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
       player.pos.x = next.x; player.pos.z = next.z;
@@ -1564,7 +1629,7 @@
       walking = true;
       document.body.classList.add("walk");
       controls.enabled = false;
-      player.pos.set(x, groundAt(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
+      player.pos.set(x, terrainH(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
       camera.fov = 70; camera.updateProjectionMatrix();
       updatePlayer(0.001, 0, 0, false);
     }
@@ -1613,7 +1678,10 @@
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
       if (e.code === "KeyE" && !e.repeat) return useLift();
-      if (/^Digit[1-5]$/.test(e.code)) return pickStop(+e.code.slice(5) - 1);
+      if (inCar(player.pos)) {
+        if (/^(Digit|Numpad)[1-5]$/.test(e.code)) return pickStop(STOP_ORDER[+e.code.slice(-1) - 1]);
+        if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) stepStop(e.code === "ArrowUp" ? 1 : -1); return; }
+      }
       keys.add(e.code);
       if (e.code === "Space") { player.jump = true; e.preventDefault(); }
     });
@@ -1661,6 +1729,7 @@
       if (walking) walkStep(dt);
       else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (!belowView && camera.position.y < gy) camera.position.y = gy; }
       updateLift(dt);
+      updateLiftPanel();
       if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || player.pos.y < -8) ? 1 : 0;
       world.userData.turntable.rotation.y += dt * 0.12;
@@ -1706,7 +1775,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
