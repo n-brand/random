@@ -39,6 +39,8 @@
     #toast.show { opacity: 1; }
     #lift-panel { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; backdrop-filter: blur(8px); z-index: 6; }
     #lift-panel[hidden] { display: none; }
+    #teleport { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 10px; border-radius: 9px; cursor: pointer; }
+    #teleport option { color: #111; }
     #lift-panel .lp-title { font-size: .72rem; color: var(--muted); text-align: center; }
     #lift-panel button { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 12px; border-radius: 8px; cursor: pointer; text-align: left; white-space: nowrap; }
     #lift-panel button.here { background: var(--text); color: #0b0d12; font-weight: 800; }
@@ -67,6 +69,8 @@
     <button type="button" id="btn-walk-top" aria-pressed="true">Karte</button>
     <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
     <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
+    <!-- TEST: Teleport zum Testen, wird ganz am Ende entfernt -->
+    <select id="teleport" aria-label="Teleport (Test)"><option value="">Teleport (Test)…</option></select>
   </div>
 
   <div class="hud">
@@ -1647,6 +1651,34 @@
     showMap(0);
     $("btn-exit").addEventListener("click", () => setWalk(false));
     $("btn-lift").addEventListener("click", useLift);
+    // TEST: Teleport-Ziele zum Testen (wird ganz am Ende entfernt). [Name, x, y, z, Blickrichtung]
+    {
+      const cm = (px, py) => caveMp(px, py), W = Math.PI / 2, E = -Math.PI / 2, N = 0, S = Math.PI;
+      const TP = [
+        ["Rondell (vor dem Haus)", 25, 0, 0, W], ["Halle EG", -30, FL0, 0, W], ["Aufzug EG", -49, FL0, SHAFT.cz, W], ["1. Obergeschoss", -45, FL1, 3, W],
+        ["Dach / 2. OG", -45, TF, SHAFT.cz, E], ["Theater", -44, TF, 10, N], ["Observatorium", -40, TF2, 0, N], ["Landeplatz", -18, HP, 42, W],
+        ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
+        ["Tiefgarage", -28, GY, 32.7, E], ["Rampe Einfahrt (oben)", -60, 0, 140, N],
+        ["Höhle unten: Drehplattform", ...(([x, z]) => [x - 10, LY, z])(cm(385, 417)), E], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
+        ["Höhle unten: Anlegestelle", ...(([x, z]) => [x, LY, z])(cm(300, 490)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
+        ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
+        ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(300, 400)), W],
+        ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N]
+      ];
+      const sel = $("teleport");
+      TP.forEach(([name], i) => { const o = document.createElement("option"); o.value = String(i); o.textContent = name; sel.appendChild(o); });
+      sel.addEventListener("change", () => {
+        const t = TP[+sel.value]; sel.value = ""; sel.blur();
+        if (!t) return;
+        const [, x, y, z, yaw] = t;
+        if (belowView) $("btn-below").click();
+        startWalk(x, z, yaw);
+        player.pos.set(x, y + 0.3, z); player.pos.y = supportAt(player.pos, y + 0.3); player.vy = 0;
+        updatePlayer(0.001, 0, 0, false);
+        toast("Teleport: " + t[0]);
+      });
+    }
     // Ansicht von unten: Kamera darf unter das Gelaende (Gelaende ist von unten durchsichtig), Blick auf Garage und Hoehle
     let belowView = false;
     const belowSave = { pos: new THREE.Vector3(), target: new THREE.Vector3() };

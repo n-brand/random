@@ -132,6 +132,7 @@ Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen
 - **Aufzug-Steuerung** (Nicolas): im Fahrstuhl Pfeil hoch/runter = nächster Halt, Tasten 1-5 = Halt von unten nach oben (`STOP_ORDER`: 1 Höhle unten, 2 Höhle oben, 3 EG, 4 1. OG, 5 Dach), Anzeige rechts mit allen Halten zum Anklicken (`#lift-panel`, auch Touch).
 - Treppe Garage ↔ EG war gesperrt: `groundAt` gibt im Haus jetzt immer „kein Gelände“ zurück (vorher stand man unsichtbar auf y 0), Deckenloch `GHOLE` länger für Kopffreiheit.
 - Drehende Tiefgarage begehbar (Nicolas): dreht langsam (0,05 rad/s, ca. 2 min pro Runde) und nimmt den Spieler mit. Hindernis-Kreise mit Höhe (`circles` 4. Wert `top`) gelten nur auf ihrer Ebene (`feet < top - 8` wird übersprungen); vorher sperrten die Wandkreise der Forschungsstation (obere Höhle) die Plattform darunter.
+- **TEST-Teleport** (Nicolas, 2026-11-06): Auswahl „Teleport (Test)…“ in der Knopfleiste (`#teleport`, Liste `TP` mit 24 Zielen in Haus, Garage, beiden Höhlen, Klippe, Teich). **Ganz am Ende entfernen** (HTML-Select, CSS `#teleport`, JS-Block „TEST: Teleport“).
 - Nächster Schritt: 8 (Verbindungen: Tunnel-Ausgänge Gotham/Waterfall, Aircraft Exit, Garage ↔ Höhle). Nicht vergessen: Startseite (`ENTRIES`), `sw.js` (ASSETS, Cache hochzählen), Vorschaubild, wenn das Projekt vorzeigbar ist.
 
 ### Wayne-Berg 3D (`sachen/wayne-berg/`)
