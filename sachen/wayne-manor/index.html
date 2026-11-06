@@ -1521,8 +1521,10 @@
       { const a = C(187, 352), b = C(240, 298), len = Math.hypot(b[0] - a[0], b[1] - a[1]), d = new THREE.Mesh(new THREE.BoxGeometry(len, UH - 1.5, 0.5), mat.steel);
         d.position.set((a[0] + b[0]) / 2, UY + (UH - 1.5) / 2, (a[1] + b[1]) / 2); d.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]); world.add(d);
         for (let k = 1; k < 6; k++) { const s = d.clone(); s.geometry = new THREE.BoxGeometry(len, 0.12, 0.6); s.material = mat.glowOrange; s.position.y = UY + k * 1.1; world.add(s); } }
-      // Training Area: niedrige Waende mit abgeschraegten Ecken, Matten, Ziele
-      {
+      // Training Area: niedrige Waende mit abgeschraegten Ecken, Matten, Ziele.
+      // Vorlaeufig ausgeblendet (Nicolas, 2026-11-06): wird spaeter neu gestaltet, dann SHOW_TRAINING auf true.
+      const SHOW_TRAINING = false;
+      if (SHOW_TRAINING) {
         const pts = [[455, 450], [547, 450], [555, 460], [555, 495], [547, 505], [455, 505], [447, 495], [447, 460]].map(([px, py]) => C(px, py));
         for (let k = 0; k < pts.length; k++) {
           if (k === 3) continue;                                                    // Eingang auf der Ostseite
