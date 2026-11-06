@@ -60,6 +60,7 @@
     <button type="button" id="btn-walk-low" class="big">Begehen</button>
     <button type="button" id="btn-walk-top" aria-pressed="true">Karte</button>
     <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
+    <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
   </div>
 
   <div class="hud">
@@ -282,7 +283,7 @@
       { name: "Zufahrt", w: 7, kind: "road", pts: [[85, -200], [70, -110], [64, -41], [62, 0], [62, 41], [62, 74], [56, 120], [20, 165], [-30, 200], [-120, 240]] },
       { name: "Main Driveway Sued", w: 9, kind: "drive", pts: [...P([[445, 1040], [410, 1072], [380, 1110], [350, 1150], [322, 1202]]), [62, 41]] },
       { name: "Main Driveway Nord", w: 9, kind: "drive", pts: [...P([[555, 1040], [590, 1075], [625, 1115], [655, 1160], [680, 1202]]), [64, -41]] },
-      { name: "Garagen-Ausfahrt", w: 7, kind: "ramp", pts: [...P([[337, 1018], [310, 1046], [270, 1075], [235, 1110], [200, 1150], [172, 1202]]), [62, 74]] },
+      { name: "Garagen-Ausfahrt", w: 7, kind: "ramp", pts: [...P([[337, 1018], [337, 1034], [312, 1054], [270, 1078], [235, 1110], [200, 1150], [172, 1202]]), [62, 74]] },
       { name: "Garagen-Einfahrt", w: 7, kind: "ramp", pts: [...P([[337, 827], [337, 815], [315, 777], [275, 737], [220, 705], [150, 681], [50, 672]]), [-66.5, 112], [-60, 140], [-47, 170], [-30, 200]] }
     ];
     const roadHash = new Map();
@@ -598,6 +599,10 @@
     // Third-Floor-Zeichnung -> Aussenkarte: px = 394 + (tx - 285) / 1,1, py = 689 + (ty - 460) / 1,1; Fourth Floor = gleiche Lage, 322 px tiefer gezeichnet.
     const TF = ROOF_Y + 0.3, TF2 = TF + FLOOR_H + 0.3, HP = TF + FLOOR_H + 0.3;
     const LY = -28, LH = 10;                                                  // Hoehle unten (Lower Level): Boden und Hoehe
+    const UY = -16, UH = 8.5;                                                 // Hoehle oben (Upper Level)
+    // Treppe zwischen den Hoehlenebenen (Karte: "Stairway" suedlich vom Aufzug): zwei Laeufe a 34 Stufen, unten und oben Ausgang nach Osten
+    const STW = { x0: -60.2, x1: -47, z0: 19.2, z1: 23.4 };
+    const inRect = (R, x, z, m = 0) => x > R.x0 - m && x < R.x1 + m && z > R.z0 - m && z < R.z1 + m;
     const tmp = (tx, ty) => mp(394 + (tx - 285) / 1.1, 689 + (ty - 460) / 1.1);
     const rectW = (a, b) => { const [xa, za] = a, [xb, zb] = b; return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: Math.min(za, zb), z1: Math.max(za, zb) }; };
     const THEATRE = rectW(tmp(287.5, 532.5), tmp(467.5, 630));             // Theatre + Storage (2. OG), darueber Observatory (3. OG)
@@ -719,7 +724,7 @@
       B(STAIR.x0 - 0.08, STAIR.x0, FL1, FL1 + 1.0, STAIR.z0, STAIR.z1, mat.trim);
 
       // Aufzugschacht (Tueren nach Osten in jedem Halt, ueber dem Dach ein Aufbau)
-      const STOP_Y = [LY, FL0, FL1, TF], SH_TOP = TF + 3.5, SH_BOT = LY - 0.3;
+      const STOP_Y = [LY, UY, FL0, FL1, TF], SH_TOP = TF + 3.5, SH_BOT = LY - 0.3;
       const [sx0, sx1, sz0, sz1] = SHAFT_OUT;
       B(sx0, sx1, SH_BOT, SH_TOP, sz0, SHAFT.z0, mat.dark); B(sx0, sx1, SH_BOT, SH_TOP, SHAFT.z1, sz1, mat.dark); B(sx0, SHAFT.x0, SH_BOT, SH_TOP, SHAFT.z0, SHAFT.z1, mat.dark);
       const dz0 = SHAFT.cz - 1, dz1 = SHAFT.cz + 1;
@@ -853,7 +858,7 @@
     }
 
     // ===================== Aufzug (Halte: EG, 1. OG, Dach/2. OG; die Hoehle kommt in Schritt 8 dazu) =====================
-    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }, { name: "Dach / 2. Obergeschoss", y: TF }, { name: "Höhle (Lower Level)", y: LY }];
+    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }, { name: "Dach / 2. Obergeschoss", y: TF }, { name: "Höhle oben (Upper Level)", y: UY }, { name: "Höhle unten (Lower Level)", y: LY }];
     const LIFT = { y: FL0, at: 0, target: 0, state: "idle", t: 0, from: FL0, to: FL0, open: STOPS.map((_, i) => i === 0 ? 1 : 0) };
     const car = new THREE.Group();
     car.position.set(SHAFT.cx, FL0, SHAFT.cz);
@@ -912,7 +917,7 @@
       const L = LIFT;
       if (L.state !== "idle") return toast("Aufzug ist unterwegs");
       const p = player.pos;
-      if (!walking || inCar(p)) { L.target = (L.at + 1) % STOPS.length; return toast("Fahrt: " + STOPS[L.target].name + " (Tasten 1-4 wählen den Halt)"); }
+      if (!walking || inCar(p)) { L.target = (L.at + 1) % STOPS.length; return toast("Fahrt: " + STOPS[L.target].name + " (Tasten 1-5 wählen den Halt)"); }
       const here = STOPS.findIndex(st => Math.abs(p.y - st.y) < 2.5);
       if (here < 0 || Math.hypot(p.x - (SHAFT.x1 + 2), p.z - SHAFT.cz) > 7) return toast("Zu weit vom Aufzug entfernt");
       if (L.at === here) return toast("Der Aufzug ist schon da");
@@ -1193,6 +1198,7 @@
       return m;
     }
     function caveCell(x, z) {
+      if (inRect(STW, x, z, 1.5)) return 1;
       const [px, py] = toCave(x, z);
       if (px < 0 || px > 736 || py > 1042) return 0;
       if (inPoly(LOW_FLOOR, px, py) || (px > LOW_DOCK[0] && px < LOW_DOCK[1] && py > LOW_DOCK[2] && py < LOW_DOCK[3])) return 1;
@@ -1219,7 +1225,8 @@
         const fy = t === 1 ? LY : BED;
         push(t === 1 ? G.floor : G.bed, c.map(([x, z]) => [x, fy, z]), uvFlat);
         if (t === 2) push(G.water, c.map(([x, z]) => [x, WL, z]), uvFlat);
-        if (!inShaft(CX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL)) push(G.rock, c.map(([x, z]) => [x, ceilY(x, z), z]), uvWall);
+        const ccx = CX0 + (i + 0.5) * CELL, ccz = CZ0 + (j + 0.5) * CELL;
+        if (!inShaft(ccx, ccz) && !inRect(STW, ccx, ccz)) push(G.rock, c.map(([x, z]) => [x, ceilY(x, z), z]), uvWall);
         for (const [di, dj, a, b] of [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]]) {
           const nt = cmAt(i + di, j + dj), [ax, az] = c[a], [bx, bz] = c[b];
           if (nt === 0) push(G.rock, [[ax, fy, az], [bx, fy, bz], [bx, ceilY(bx, bz), bz], [ax, ceilY(ax, az), az]], uvWall);
@@ -1310,6 +1317,142 @@
       }
     }
 
+    // ===================== Hoehle oben (Schritt 7, Karte "Upper Level") =====================
+    // Gleicher Kartenrahmen wie unten. Ebene UY, Hoehe UH, Raster wie unten (0 = Fels, 1 = Boden), Gitterboden (Streifen auf der Karte).
+    const UP_FLOOR = [[0, 435], [215, 435], [215, 400], [230, 360], [255, 320], [285, 290], [300, 275], [320, 245], [350, 237], [375, 245], [395, 280], [395, 300],
+      [430, 310], [480, 315], [500, 322], [550, 320], [575, 335], [600, 370], [610, 410], [622, 450], [736, 450], [736, 495], [610, 495], [605, 530], [560, 540],
+      [480, 540], [400, 535], [320, 530], [260, 525], [200, 520], [185, 500], [190, 482], [0, 482]];
+    const AIR_EXIT = [[187, 352], [240, 298], [270, 322], [215, 375]];
+    function caveCellUp(x, z) {
+      if (inRect(STW, x, z, 1.5)) return 1;
+      const [px, py] = toCave(x, z);
+      if (px < 0 || px > 736) return 0;
+      return inPoly(UP_FLOOR, px, py) || inPoly(AIR_EXIT, px, py) ? 1 : 0;
+    }
+    const CMU = new Uint8Array(CNX * CNZ);
+    for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) CMU[j * CNX + i] = caveCellUp(CX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL);
+    const cmuAt = (i, j) => (i < 0 || j < 0 || i >= CNX || j >= CNZ) ? 0 : CMU[j * CNX + i];
+    function caveUpAt(x, z) { return cmuAt(Math.floor((x - CX0) / CELL), Math.floor((z - CZ0) / CELL)); }
+    {
+      const inShaft = (x, z) => x > SHAFT_OUT[0] - 0.3 && x < SHAFT_OUT[1] + 0.3 && z > SHAFT_OUT[2] - 0.3 && z < SHAFT_OUT[3] + 0.3;
+      const hole = (x, z) => inShaft(x, z) || inRect(STW, x, z);
+      const jit = (x, z) => [x + (vnoise(x * 0.45 + 13, z * 0.45) - 0.5) * 0.7, z + (vnoise(x * 0.45, z * 0.45 + 17) - 0.5) * 0.7];
+      const ceilY = (x, z) => UY + UH - 2.2 * vnoise(x * 0.12 + 40, z * 0.12) - 1.0 * vnoise(x * 0.4 + 9, z * 0.4);
+      const rock = [], floor = [];
+      const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
+      const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.5, z * 0.5];
+      const corner = (i, j) => jit(CX0 + i * CELL, CZ0 + j * CELL);
+      for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
+        if (!CMU[j * CNX + i]) continue;
+        const c = [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)], cx = CX0 + (i + 0.5) * CELL, cz = CZ0 + (j + 0.5) * CELL;
+        if (!hole(cx, cz)) push(floor, c.map(([x, z]) => [x, UY, z]), uvFlat);
+        if (!inShaft(cx, cz)) push(rock, c.map(([x, z]) => [x, ceilY(x, z), z]), uvWall);
+        for (const [di, dj, a, b] of [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]]) {
+          if (cmuAt(i + di, j + dj)) continue;
+          const [ax, az] = c[a], [bx, bz] = c[b];
+          push(rock, [[ax, UY, az], [bx, UY, bz], [bx, ceilY(bx, bz), bz], [ax, ceilY(ax, az), az]], uvWall);
+        }
+      }
+      const mk = (arr, m) => {
+        const g = new THREE.BufferGeometry(), a = new Float32Array(arr), n = a.length / 5, pos = new Float32Array(n * 3), uv = new Float32Array(n * 2);
+        for (let k = 0; k < n; k++) { pos.set(a.subarray(k * 5, k * 5 + 3), k * 3); uv.set(a.subarray(k * 5 + 3, k * 5 + 5), k * 2); }
+        g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.computeVertexNormals();
+        const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; mesh.userData.keep = true; scene.add(mesh); return mesh;
+      };
+      const grate = canvasTex(64, 64, (g, w, h) => { g.fillStyle = "#5d6168"; g.fillRect(0, 0, w, h); g.fillStyle = "#3b3e44"; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 3); });
+      grate.repeat.set(1, 1);
+      mk(rock, M(0x6f6b64, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true, side: THREE.DoubleSide }));
+      mk(floor, M(0xffffff, { map: grate, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide }));
+      // Kollision: Boden (ohne Treppen- und Schachtloch), Felswaende
+      const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
+      const rowRuns = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
+      rowRuns((i, j) => CMU[j * CNX + i] === 1 && !hole(X(i) + CELL / 2, Z(j) + CELL / 2), (a, b, j) => S(X(a), X(b), UY - 0.5, UY, Z(j), Z(j + 1)));
+      rowRuns((i, j) => CMU[j * CNX + i] && !cmuAt(i, j - 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j) - 0.3, Z(j)));
+      rowRuns((i, j) => CMU[j * CNX + i] && !cmuAt(i, j + 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j + 1), Z(j + 1) + 0.3));
+      for (let i = 0; i < CNX; i++) for (const d of [-1, 1]) {
+        let s = -1;
+        for (let j = 0; j <= CNZ; j++) {
+          const ok = j < CNZ && CMU[j * CNX + i] && !cmuAt(i + d, j);
+          if (ok && s < 0) s = j;
+          if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 : xl, d < 0 ? xl : xl + 0.3, UY, UY + UH, Z(s), Z(j)); s = -1; }
+        }
+      }
+
+      // Treppe zwischen den Ebenen: Lauf A (Spur Nord) unten im Osten hinein nach Westen, Podest, Lauf B (Spur Sued) zurueck nach Osten, oben Podest im Osten
+      {
+        const n = 34, r = (UY - LY) / 2 / n, tr = 0.3, xe = STW.x1 - 1.5, xw = STW.x0 + 1.5, zA = [STW.z0 + 0.1, STW.z0 + 2.05], zB = [STW.z0 + 2.15, STW.z1 - 0.1], ym = LY + (UY - LY) / 2;
+        for (let i = 0; i < n; i++) {
+          B(xe - (i + 1) * tr, xe - i * tr, LY, LY + (i + 1) * r, zA[0], zA[1], mat.floorStone);
+          B(xw + i * tr, xw + (i + 1) * tr, ym, ym + (i + 1) * r, zB[0], zB[1], mat.floorStone);
+        }
+        B(STW.x0, xw, LY, ym, STW.z0, STW.z1, mat.floorStone);
+        B(xe, STW.x1, UY - 0.3, UY, STW.z0, STW.z1, mat.floorStone);
+        // Schachtwaende des Treppenhauses zwischen den Ebenen (Fels), unten Eingang Spur A im Osten
+        const rk = M(0x6f6b64, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1 });
+        B(STW.x0 - 0.4, STW.x1, LY, UY, STW.z0 - 0.4, STW.z0, rk); B(STW.x0 - 0.4, STW.x1, LY, UY, STW.z1, STW.z1 + 0.4, rk); B(STW.x0 - 0.4, STW.x0, LY, UY, STW.z0, STW.z1, rk);
+        B(STW.x1, STW.x1 + 0.4, LY + 2.8, UY - 0.3, STW.z0, STW.z1, rk); B(STW.x1, STW.x1 + 0.4, LY, LY + 2.8, zA[1], STW.z1, rk);
+        // Gelaender oben am Loch
+        B(STW.x0, xe, UY, UY + 1, STW.z0, STW.z0 + 0.08, mat.trim); B(STW.x0, xe, UY, UY + 1, STW.z1 - 0.08, STW.z1, mat.trim);
+        B(STW.x0, STW.x0 + 0.08, UY, UY + 1, STW.z0, STW.z1, mat.trim); B(xe - 0.08, xe, UY, UY + 1, STW.z0, zA[1], mat.trim);
+        for (const y of [LY + 3, ym + 3, UY + 3]) B(xe - 0.6, xe + 0.6, y, y + 0.1, STW.z0 + 0.05, STW.z0 + 0.1, mat.glow, false, world, false);
+      }
+
+      const C = (px, py) => caveMp(px, py);
+      // Research and Development + Armory: runder Raum (rot), zwei Durchgaenge, Arbeitsring, drei Geraete, Waffenschraenke
+      {
+        const [cx, cz] = C(382.5, 422.5), R = 60 * CAVE_SC, segs = 48, red = M(0x7a1f22, { roughness: 0.5, metalness: 0.3 }), wallM = M(0x2c2f36, { roughness: 0.6, metalness: 0.4 });
+        for (let k = 0; k < segs; k++) {
+          const a0 = k / segs * Math.PI * 2, a1 = (k + 1) / segs * Math.PI * 2, am = (a0 + a1) / 2;
+          if (Math.abs(Math.cos(am)) > 0.97) continue;                              // Durchgaenge nach Osten (Tunnel) und Westen (Hangar)
+          const p0 = [cx + Math.cos(a0) * R, cz + Math.sin(a0) * R], p1 = [cx + Math.cos(a1) * R, cz + Math.sin(a1) * R];
+          const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), w = new THREE.Mesh(new THREE.BoxGeometry(len + 0.05, 4, 0.3), wallM);
+          w.position.set((p0[0] + p1[0]) / 2, UY + 2, (p0[1] + p1[1]) / 2); w.rotation.y = -Math.atan2(p1[1] - p0[1], p1[0] - p0[0]); world.add(w);
+          const t = new THREE.Mesh(new THREE.BoxGeometry(len + 0.05, 0.3, 0.45), red); t.position.set(w.position.x, UY + 4.1, w.position.z); t.rotation.y = w.rotation.y; world.add(t);
+          circles.push([cx + Math.cos(am) * R, cz + Math.sin(am) * R, 0.35, UY + 4]);
+          if (k % 4 === 1) { const rk = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 0.5), mat.dark); rk.position.set(cx + Math.cos(am) * (R - 0.5), UY + 1.2, cz + Math.sin(am) * (R - 0.5)); rk.rotation.y = w.rotation.y; world.add(rk);
+            const gl = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.05), mat.glowRed); gl.position.set(cx + Math.cos(am) * (R - 0.76), UY + 2.2, cz + Math.sin(am) * (R - 0.76)); gl.rotation.y = w.rotation.y; world.add(gl); }
+        }
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(25 * CAVE_SC, 0.35, 8, 40).rotateX(Math.PI / 2), mat.steel); ring.position.set(cx, UY + 0.9, cz); world.add(ring);
+        for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, s = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.06), mat.glow); s.position.set(cx + Math.cos(a) * 25 * CAVE_SC, UY + 1.5, cz + Math.sin(a) * 25 * CAVE_SC); s.rotation.y = -a + Math.PI / 2; world.add(s); }
+        for (const [px, py] of [[355, 424], [407.5, 410], [410, 424]]) { const [x, z] = C(px, py); cyl(0.5, 0.6, 1.4, mat.steel, x, UY + 0.7, z, world, 12); circles.push([x, z, 0.6, UY + 1.4]); }
+      }
+      // Flugzeug-Hangars (gruen) mit Batwing und Jets
+      const tint = (pxs, color) => { const sh = new THREE.Shape(); pxs.forEach(([px, py], k) => { const [x, z] = C(px, py); if (k) sh.lineTo(x, -z); else sh.moveTo(x, -z); }); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), flatMat({ color, transparent: true, opacity: 0.3 })); m.position.y = UY + 0.02; m.userData.keep = true; world.add(m); };
+      tint([[300, 275], [285, 290], [255, 320], [230, 360], [215, 400], [215, 437], [262, 440], [300, 425], [326, 390], [335, 345], [320, 300]], 0x5fae4a);
+      tint([[550, 320], [575, 335], [600, 370], [610, 410], [622, 452], [590, 452], [565, 420], [548, 372]], 0x5fae4a);
+      const batShape = () => { const p = [[0, 3.2], [0.7, 1.4], [3.9, 1.0], [3.3, 0.1], [2.5, 0.35], [1.8, -0.5], [1.0, -0.2], [0.4, -1.4], [0, -0.9]]; const sh = new THREE.Shape(); [...p, ...p.slice(0, -1).reverse().map(([x, y]) => [-x, y])].forEach(([x, y], k) => k ? sh.lineTo(x, y) : sh.moveTo(x, y)); return sh; };
+      const plane = (px, py, rot, scale, kind) => {
+        const [x, z] = C(px, py), g = new THREE.Group(); g.position.set(x, UY, z); g.rotation.y = rot; g.scale.setScalar(scale); world.add(g);
+        if (kind === "bat") { const w = new THREE.Mesh(new THREE.ExtrudeGeometry(batShape(), { depth: 0.25, bevelEnabled: false }).rotateX(-Math.PI / 2), mat.bat); w.position.y = 1.2; g.add(w); cyl(0.12, 0.12, 1.2, mat.dark, 0, 0.6, 0, g, 6); }
+        else { const f = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.55, 5, 10).rotateX(Math.PI / 2), mat.bat); f.position.y = 1.2; g.add(f);
+          const sh = new THREE.Shape(); sh.moveTo(0, 1.5); sh.lineTo(2.6, -1.2); sh.lineTo(-2.6, -1.2); sh.closePath(); const wg = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: false }).rotateX(-Math.PI / 2), mat.bat); wg.position.y = 1.1; g.add(wg);
+          B(-0.06, 0.06, 1.2, 2.4, -2.4, -1.4, mat.bat, false, g); for (const sx of [-1, 1]) cyl(0.08, 0.08, 1.0, mat.dark, sx * 0.9, 0.5, 0, g, 6); }
+        circles.push([x, z, 1.8 * scale, UY + 2]);
+      };
+      plane(255, 388, 0.8, 1.15, "bat"); plane(283, 360, 0.5, 1, "jet"); plane(312, 330, 0.3, 1, "jet"); plane(568, 372, -0.6, 0.9, "jet"); plane(585, 420, -0.9, 0.9, "bat");
+      // Aircraft Exit: Vorraum mit grossem Tor (oeffnet in Schritt 8)
+      { const a = C(187, 352), b = C(240, 298), len = Math.hypot(b[0] - a[0], b[1] - a[1]), d = new THREE.Mesh(new THREE.BoxGeometry(len, UH - 1.5, 0.5), mat.steel);
+        d.position.set((a[0] + b[0]) / 2, UY + (UH - 1.5) / 2, (a[1] + b[1]) / 2); d.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]); world.add(d);
+        for (let k = 1; k < 6; k++) { const s = d.clone(); s.geometry = new THREE.BoxGeometry(len, 0.12, 0.6); s.material = mat.glowOrange; s.position.y = UY + k * 1.1; world.add(s); } }
+      // Training Area: niedrige Waende mit abgeschraegten Ecken, Matten, Ziele
+      {
+        const pts = [[455, 450], [547, 450], [555, 460], [555, 495], [547, 505], [455, 505], [447, 495], [447, 460]].map(([px, py]) => C(px, py));
+        for (let k = 0; k < pts.length; k++) {
+          if (k === 3) continue;                                                    // Eingang auf der Ostseite
+          const p0 = pts[k], p1 = pts[(k + 1) % pts.length], len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), w = new THREE.Mesh(new THREE.BoxGeometry(len, 1.2, 0.2), M(0x8a8d93));
+          w.position.set((p0[0] + p1[0]) / 2, UY + 0.6, (p0[1] + p1[1]) / 2); w.rotation.y = -Math.atan2(p1[1] - p0[1], p1[0] - p0[0]); world.add(w);
+          for (let t = 0.1; t < 1; t += 0.2) circles.push([lerp(p0[0], p1[0], t), lerp(p0[1], p1[1], t), 0.25, UY + 1.2]);
+        }
+        const [mx, mz] = C(500, 478); B(mx - 3, mx + 3, UY, UY + 0.08, mz - 5, mz + 5, M(0x2f5f8f), false);
+        for (const px of [458, 466, 474]) { const [x, z] = C(px, 485); cyl(0.25, 0.3, 1.8, M(0xb08a5a), x, UY + 0.9, z, world, 10); circles.push([x, z, 0.3, UY + 1.8]); }
+      }
+      // Licht oben
+      for (const [px, py] of [[382, 422], [270, 370], [580, 400]]) {
+        const [x, z] = C(px, py), l = new THREE.PointLight(0xdfe8ff, 0, 30, 1.6); l.position.set(x, UY + 6, z); l.userData.I = 45; scene.add(l); caveLights.push(l);
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), mat.glow); f.position.copy(l.position); world.add(f);
+      }
+    }
+
     // Himmelsrichtungen als Pfosten mit Schild (N = -z, O = +x, S = +z, W = -x), Nullpunkt rot
     function label(text, x, z, color) {
       const tex = canvasTex(128, 128, (g, w, h) => { g.fillStyle = color; g.beginPath(); g.arc(64, 64, 58, 0, 7); g.fill(); g.fillStyle = "#fff"; g.font = "800 72px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, 64, 70); });
@@ -1371,7 +1514,7 @@
     function groundAt(x, z, feet = 0) {
       const ra = rampAt(x, z);
       if (ra) return ra.y;
-      if (feet < -1 && (inPoly(GARAGE, x, z) || caveAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
+      if (feet < -1 && (inPoly(GARAGE, x, z) || caveAt(x, z) || caveUpAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
       return terrainH(x, z);
     }
     function supportAt(p, feet) {
@@ -1439,6 +1582,23 @@
     showMap(0);
     $("btn-exit").addEventListener("click", () => setWalk(false));
     $("btn-lift").addEventListener("click", useLift);
+    // Ansicht von unten: Kamera darf unter das Gelaende (Gelaende ist von unten durchsichtig), Blick auf Garage und Hoehle
+    let belowView = false;
+    const belowSave = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
+    $("btn-below").addEventListener("click", e => {
+      if (walking) setWalk(false);
+      belowView = !belowView;
+      e.currentTarget.setAttribute("aria-pressed", String(belowView));
+      if (belowView) {
+        belowSave.pos.copy(camera.position); belowSave.target.copy(controls.target);
+        controls.maxPolarAngle = Math.PI;
+        controls.target.set(-30, -18, 18); camera.position.set(40, -75, 70);
+      } else {
+        controls.maxPolarAngle = Math.PI * 0.495;
+        camera.position.copy(belowSave.pos); controls.target.copy(belowSave.target);
+      }
+      controls.update();
+    });
     renderer.domElement.addEventListener("mousedown", e => {
       if (!walking || touch || e.button !== 0) return;
       e.preventDefault();
@@ -1453,7 +1613,7 @@
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
       if (e.code === "KeyE" && !e.repeat) return useLift();
-      if (/^Digit[1-4]$/.test(e.code)) return pickStop(+e.code.slice(5) - 1);
+      if (/^Digit[1-5]$/.test(e.code)) return pickStop(+e.code.slice(5) - 1);
       keys.add(e.code);
       if (e.code === "Space") { player.jump = true; e.preventDefault(); }
     });
@@ -1499,12 +1659,12 @@
     function frame() {
       const dt = Math.min(clock.getDelta(), 0.05);
       if (walking) walkStep(dt);
-      else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (camera.position.y < gy) camera.position.y = gy; }
+      else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (!belowView && camera.position.y < gy) camera.position.y = gy; }
       updateLift(dt);
       if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
-      const ut = walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || player.pos.y < -8) ? 1 : 0;
+      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || player.pos.y < -8) ? 1 : 0;
       world.userData.turntable.rotation.y += dt * 0.12;
-      if (ut !== under) { under = ut > under ? Math.min(1, under + dt * 2) : Math.max(0, under - dt * 2); applyNight(); }
+      if (ut !== under) { under = ut > under ? Math.min(ut, under + dt * 2) : Math.max(ut, under - dt * 2); applyNight(); }
       const rn = night < nightTarget ? Math.min(nightTarget, night + dt * 0.8) : Math.max(nightTarget, night - dt * 0.8);
       if (rn !== night) { night = rn; applyNight(); }
       const focus = walking ? player.pos : controls.target;
@@ -1546,7 +1706,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, toCave, LY, pickStop, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
