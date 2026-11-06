@@ -39,6 +39,8 @@
     #toast.show { opacity: 1; }
     #lift-panel { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; backdrop-filter: blur(8px); z-index: 6; }
     #lift-panel[hidden] { display: none; }
+    #door-hint { position: fixed; left: 50%; top: 58%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 7px 14px; color: var(--text); font: inherit; font-size: .85rem; backdrop-filter: blur(8px); z-index: 6; cursor: pointer; }
+    #door-hint[hidden] { display: none; }
     #teleport { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 10px; border-radius: 9px; cursor: pointer; }
     #teleport { color-scheme: dark; }
     #teleport option { color: #f2f4f8; background: #1f232b; }
@@ -88,6 +90,7 @@
   <div id="hint">WASD gehen &middot; Linksklick Maus übernehmen &middot; Leertaste springen &middot; Shift rennen &middot; Esc beenden</div>
   <div id="toast"></div>
   <div id="lift-panel" hidden></div>
+  <button type="button" id="door-hint" hidden></button>
   <!-- TEST: Teleport-Menue (Taste T), wird ganz am Ende entfernt -->
   <div id="tp-menu" hidden><div class="tp-head">Teleport (Test) &middot; T oder Esc schließt</div><div class="tp-list"></div></div>
   <div class="stick" id="stick-move"><span></span></div>
@@ -1271,7 +1274,7 @@
     for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) CM[j * CNX + i] = caveCell(CX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL);
     const cmAt = (i, j) => (i < 0 || j < 0 || i >= CNX || j >= CNZ) ? 0 : CM[j * CNX + i];
     function caveAt(x, z) { return cmAt(Math.floor((x - CX0) / CELL), Math.floor((z - CZ0) / CELL)); }
-    const caveLights = [];
+    const caveLights = [], gates = [];
     {
       const jit = (x, z) => [x + (vnoise(x * 0.45 + 3, z * 0.45) - 0.5) * 0.7, z + (vnoise(x * 0.45, z * 0.45 + 7) - 0.5) * 0.7];
       const ceilY = (x, z) => LY + LH - 2.6 * vnoise(x * 0.12, z * 0.12) - 1.2 * vnoise(x * 0.4 + 5, z * 0.4);
@@ -1374,11 +1377,20 @@
       { const [x, z] = C(300, 545); B(x - 1.1, x + 1.1, WL - 0.4, WL + 0.5, z - 3.2, z + 3.2, mat.bat, false); B(x - 0.8, x + 0.8, WL + 0.5, WL + 1.3, z - 1.2, z + 0.8, mat.dark, false); }
       { const [x0, z0] = C(322, 512), [x1, z1] = C(348, 525), ax0 = Math.min(x0, x1), ax1 = Math.max(x0, x1), az0 = Math.min(z0, z1), az1 = Math.max(z0, z1);
         for (let k = 0; k < 4; k++) B(ax0 + k * (ax1 - ax0) / 4, ax0 + (k + 1) * (ax1 - ax0) / 4, BED, LY - k * 0.25, az0, az1, mat.concrete, false); }
-      // Tore (SE und NE): Gitterstaebe quer ueber den Kanal, roter Rahmen
-      for (const [a, b] of [[[180, 770], [235, 745]], [[298, 768], [298, 832]]]) {
-        const A = C(...a), Bp = C(...b), len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]), n = Math.round(len / 0.35);
-        for (let k = 0; k <= n; k++) { const t = k / n, x = lerp(A[0], Bp[0], t), z = lerp(A[1], Bp[1], t); cyl(0.04, 0.04, LY + 3 - BED, mat.steel, x, (BED + LY + 3) / 2, z, world, 6); }
-        panel(A, Bp, LY + 3, LY + 3.3, mat.red, 0.25);
+      // Tore (SE und NE Gate): getarnte Felswaende quer ueber den Kanal; von beiden Seiten sieht es aus, als ende die Hoehle.
+      // Rechtsklick (wie die Tueren der Villa) faehrt die Wand nach oben in die Decke.
+      for (const [name, a, b] of [["SE Gate", [180, 770], [235, 745]], ["NE Gate", [298, 768], [298, 832]]]) {
+        const A = C(...a), Bp = C(...b), len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]) + 3.2, h = LY + LH + 1 - BED;
+        const g = new THREE.Group(); g.position.set((A[0] + Bp[0]) / 2, BED, (A[1] + Bp[1]) / 2); g.rotation.y = -Math.atan2(Bp[1] - A[1], Bp[0] - A[0]);
+        g.userData.dynamic = true; world.add(g);
+        const rockM = M(0x77736c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true });
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(len, h, 1.4), rockM); slab.position.y = h / 2; slab.castShadow = slab.receiveShadow = true; g.add(slab);
+        const gr = rng(name.length * 97);
+        for (let k = 0; k < 26; k++) {                                            // Felsbrocken auf beiden Seiten (natuerlicher Abschluss)
+          const s = 0.8 + gr() * 1.8, m = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), rockM);
+          m.position.set((gr() - 0.5) * (len - 1), 0.5 + gr() * (h - 1), (k % 2 ? 1 : -1) * (0.5 + gr() * 0.4)); m.rotation.set(gr() * 6, gr() * 6, gr() * 6); m.scale.set(1, 1, 0.55); g.add(m);
+        }
+        gates.push({ name, g, open: 0, target: 0, lift: h + 0.5 });
       }
       // Meereshoehle: Felsbogen in der Klippe ueber dem Ausgang des Wassertunnels (verdeckt den ausgeschnittenen Klippenrand)
       {
@@ -1713,6 +1725,34 @@
       };
       window.tpMenuOpen = () => !menu.hidden;
     }
+    // Tore in der Hoehle: zielen (Fadenkreuz bzw. Bildmitte) und nah genug (60 m, die Kanaele sind nur vom Ufer aus zu sehen) -> Hinweis, Rechtsklick oder Tipp darauf schaltet
+    const gateRay = new THREE.Raycaster(), gateCenter = new THREE.Vector2(0, 0);
+    let aimedGate = null, gateHintClock = 0;
+    function findAimedGate() {
+      if (!walking) return null;
+      gateRay.setFromCamera(gateCenter, camera); gateRay.far = 60;
+      const hit = gateRay.intersectObjects(gates.map(t => t.g), true)[0];
+      return hit ? gates.find(t => { for (let o = hit.object; o; o = o.parent) if (o === t.g) return true; return false; }) : null;
+    }
+    function toggleGate(t) {
+      if (!t) return;
+      t.target = t.target ? 0 : 1;
+      toast(t.name + (t.target ? " öffnet sich" : " schließt sich"));
+    }
+    renderer.domElement.addEventListener("contextmenu", e => { if (!walking) return; e.preventDefault(); toggleGate(findAimedGate()); });
+    $("door-hint").addEventListener("click", () => toggleGate(aimedGate));
+    function updateGates(dt) {
+      for (const t of gates) {
+        if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / 4) : Math.max(0, t.open - dt / 4); t.g.position.y = BED + sst(0, 1, t.open) * t.lift; }
+      }
+      gateHintClock += dt;
+      if (gateHintClock < 0.15) return;
+      gateHintClock = 0;
+      aimedGate = findAimedGate();
+      const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : "Rechtsklick: ") + aimedGate.name + (aimedGate.target ? " schließen" : " öffnen") : "";
+      if (hint.hidden !== !aimedGate) hint.hidden = !aimedGate;
+      if (aimedGate && hint.textContent !== txt) hint.textContent = txt;
+    }
     // Ansicht von unten: Kamera darf unter das Gelaende (Gelaende ist von unten durchsichtig), Blick auf Garage und Hoehle
     let belowView = false;
     const belowSave = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
@@ -1798,6 +1838,7 @@
       else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (!belowView && camera.position.y < gy) camera.position.y = gy; }
       updateLift(dt);
       updateLiftPanel();
+      updateGates(dt);
       if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || player.pos.y < -8) ? 1 : 0;
       // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
@@ -1854,7 +1895,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
