@@ -461,13 +461,15 @@
       m.position.y = WATER_Y; m.receiveShadow = true;
       scene.add(m);
     }
+    // Ein gemeinsames Wasser fuer Meer, Meereshoehle und Hoehlenkanaele (gleiche Hoehe SEA_Y, undurchsichtig: keine sichtbaren Kanten)
+    mat.sea = M(0x1d5f80, { roughness: 0.15, metalness: 0.2, side: THREE.DoubleSide });
     // Meer: Flaeche von der Kuestenlinie bis weit hinter den Horizont
     {
       const sh = new THREE.Shape(), P = (s, t) => [(s - t) * R2, -(s + t) * R2];
       sh.moveTo(...P(3200, -2600));
       for (let t = -2600; t <= 2600; t += 25) sh.lineTo(...P(coastS(t) - 0.5, t));
       sh.lineTo(...P(3200, 2600));
-      const sea = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), M(0x1d6188, { transparent: true, opacity: 0.88, roughness: 0.15, metalness: 0.2, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      const sea = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), mat.sea);
       sea.position.y = SEA_Y; sea.receiveShadow = true;
       scene.add(sea);
       // Eckige Felsbrocken entlang der Kueste (statt Strand)
@@ -1282,9 +1284,10 @@
         if (!t || t === 3) continue;
         const c = [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)];   // 00, 10, 11, 01
         if (t === 4) { push(G.bed, c.map(([x, z]) => [x, BED, z]), uvFlat); continue; }
+        const ccx0 = CX0 + (i + 0.5) * CELL, ccz0 = CZ0 + (j + 0.5) * CELL;
         const fy = t === 1 ? LY : BED;
         push(t === 1 ? G.floor : G.bed, c.map(([x, z]) => [x, fy, z]), uvFlat);
-        if (t === 2) push(G.water, c.map(([x, z]) => [x, WL, z]), uvFlat);
+        if (t === 2 && !(seaTunDist(ccx0, ccz0) < SEA_TUN_W / 2 + 0.6 && seaD(ccx0, ccz0) > -19)) push(G.water, c.map(([x, z]) => [x, WL, z]), uvFlat);   // vorne deckt die Meer-Zunge
         const ccx = CX0 + (i + 0.5) * CELL, ccz = CZ0 + (j + 0.5) * CELL;
         if (!inShaft(ccx, ccz) && !inRect(STW, ccx, ccz)) push(G.rock, c.map(([x, z]) => [x, ceilY(x, z), z]), uvWall);
         for (const [di, dj, a, b] of [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]]) {
@@ -1302,7 +1305,14 @@
       mk(G.rock, M(0x77736c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true, side: THREE.DoubleSide }));
       mk(G.floor, M(0x55575c, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 0.95, side: THREE.DoubleSide }));
       mk(G.bed, M(0x2d3a40, { roughness: 1, side: THREE.DoubleSide }));
-      mk(G.water, M(0x1f5f7a, { transparent: true, opacity: 0.82, roughness: 0.1, metalness: 0.2, emissive: 0x0a2a3a, emissiveIntensity: 0.5 }));
+      mk(G.water, mat.sea);
+      // Meer als Zunge in den Wassertunnel (von 20 m hinter der Klippe bis ins Meer), ueberlappt mit dem Hoehlenwasser
+      {
+        const curve = new THREE.CatmullRomCurve3(SEA_TUNNEL.map(([x, z]) => new THREE.Vector3(x, 0, z))), len = curve.getLength();
+        let t0 = 0, t1 = 1;
+        for (let t = 0; t <= 1; t += 0.002) { const p = curve.getPointAt(t), sd = seaD(p.x, p.z); if (sd < -20) t0 = t; if (sd > 4 && t1 === 1) t1 = t; }
+        ribbon(curve, len, SEA_TUN_W + 1.2, mat.sea, 4, 0, { t0, t1, y: () => SEA_Y - 0.02 });
+      }
       // Kollision: Boden (Zeilen-Laeufe), Wasser gesperrt, Felswaende an jeder Kante zu Fels
       const runs = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
       const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
