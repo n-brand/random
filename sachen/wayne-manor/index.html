@@ -61,6 +61,12 @@
     #btn-jump { display: none; position: fixed; right: 160px; bottom: calc(env(safe-area-inset-bottom, 0px) + 44px); width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; touch-action: none; z-index: 5; }
     body.touch.walk .stick, body.touch.walk #btn-jump { display: block; }
     body.touch #hint { display: none !important; }
+    /* Zeichnen: pinke Markierungen ueber dem Bild (fuer Screenshots) */
+    #draw-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; cursor: crosshair; }
+    body.drawing #draw-layer { pointer-events: auto; }
+    body.walk #draw-layer { display: none; }
+    .panel { z-index: 7; }
+    .panel #btn-draw[aria-pressed="true"] { background: #ff2fa8; color: #fff; font-weight: 800; }
     #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); background: #0b0d12; z-index: 9; }
     @media (max-width: 600px) { .bar h1 { display: none; } }
   </style>
@@ -78,6 +84,7 @@
     <button type="button" id="btn-walk-top" aria-pressed="false">Karte: aus</button>
     <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
     <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
+    <button type="button" id="btn-draw" aria-pressed="false" title="Pink einzeichnen, nochmal klicken löscht die Zeichnung">Zeichnen</button>
     <!-- TEST: Teleport zum Testen, wird ganz am Ende entfernt -->
     <select id="teleport" aria-label="Teleport (Test)"><option value="">Teleport (Test)…</option></select>
   </div>
@@ -89,6 +96,7 @@
   <div id="cross"></div>
   <div id="hint">WASD gehen &middot; Linksklick Maus übernehmen &middot; Leertaste springen &middot; Shift rennen &middot; Esc beenden</div>
   <div id="toast"></div>
+  <canvas id="draw-layer"></canvas>
   <div id="lift-panel" hidden></div>
   <button type="button" id="door-hint" hidden></button>
   <!-- TEST: Teleport-Menue (Taste T), wird ganz am Ende entfernt -->
@@ -1905,6 +1913,39 @@
       }
       controls.update();
     });
+    // Zeichnen: 1. Klick aktiviert (pink), 2. Klick loescht die Zeichnung und beendet. Ansicht steht still, solange gezeichnet wird.
+    {
+      const cv = $("draw-layer"), cx = cv.getContext("2d"), btn = $("btn-draw");
+      let on = false, last = null;
+      const fit = () => {
+        const r = devicePixelRatio || 1, w = Math.round(innerWidth * r), h = Math.round(innerHeight * r);
+        if (cv.width === w && cv.height === h) return;
+        const old = cv.width && cv.height ? cx.getImageData(0, 0, cv.width, cv.height) : null;
+        cv.width = w; cv.height = h; if (old) cx.putImageData(old, 0, 0);
+      };
+      const pt = e => { const r = devicePixelRatio || 1; return [e.clientX * r, e.clientY * r]; };
+      const set = v => {
+        on = v; last = null; document.body.classList.toggle("drawing", on);
+        btn.setAttribute("aria-pressed", String(on)); btn.textContent = on ? "Zeichnung löschen" : "Zeichnen";
+        if (!on) cx.clearRect(0, 0, cv.width, cv.height);
+      };
+      btn.addEventListener("click", () => { if (walking) setWalk(false); fit(); set(!on); });
+      addEventListener("resize", fit);
+      cv.addEventListener("pointerdown", e => {
+        if (!on || e.button !== 0) return;
+        cv.setPointerCapture(e.pointerId); last = pt(e);
+        const r = devicePixelRatio || 1; cx.fillStyle = "#ff2fa8"; cx.beginPath(); cx.arc(last[0], last[1], 2.5 * r, 0, Math.PI * 2); cx.fill();
+      });
+      cv.addEventListener("pointermove", e => {
+        if (!last) return;
+        const p = pt(e), r = devicePixelRatio || 1;
+        cx.strokeStyle = "#ff2fa8"; cx.lineWidth = 5 * r; cx.lineCap = cx.lineJoin = "round";
+        cx.beginPath(); cx.moveTo(last[0], last[1]); cx.lineTo(p[0], p[1]); cx.stroke(); last = p;
+      });
+      const up = () => { last = null; };
+      cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+      cv.addEventListener("contextmenu", e => e.preventDefault());
+    }
     renderer.domElement.addEventListener("mousedown", e => {
       if (!walking || touch || e.button !== 0) return;
       e.preventDefault();
