@@ -64,9 +64,13 @@
     /* Zeichnen: pinke Markierungen ueber dem Bild (fuer Screenshots) */
     #draw-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; cursor: crosshair; }
     body.drawing #draw-layer { pointer-events: auto; }
-    body.walk #draw-layer { display: none; }
+    body.walk #draw-layer, body.walk #draw-colors { display: none; }
     .panel { z-index: 7; }
-    .panel #btn-draw[aria-pressed="true"] { background: #ff2fa8; color: #fff; font-weight: 800; }
+    .panel #btn-draw[aria-pressed="true"] { background: var(--pen, #ff2fa8); color: #111; font-weight: 800; }
+    #draw-colors { display: none; position: fixed; left: 16px; top: 50%; transform: translateY(-50%); flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px; backdrop-filter: blur(8px); z-index: 7; }
+    body.drawing #draw-colors { display: flex; }
+    #draw-colors button { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .25); background: var(--c); cursor: pointer; transition: transform .15s ease; }
+    #draw-colors button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .6); transform: scale(1.15); }
     #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); background: #0b0d12; z-index: 9; }
     @media (max-width: 600px) { .bar h1 { display: none; } }
   </style>
@@ -84,7 +88,7 @@
     <button type="button" id="btn-walk-top" aria-pressed="false">Karte: aus</button>
     <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
     <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
-    <button type="button" id="btn-draw" aria-pressed="false" title="Pink einzeichnen, nochmal klicken löscht die Zeichnung">Zeichnen</button>
+    <button type="button" id="btn-draw" aria-pressed="false" title="Farbig einzeichnen, nochmal klicken löscht die Zeichnung">Zeichnen</button>
     <!-- TEST: Teleport zum Testen, wird ganz am Ende entfernt -->
     <select id="teleport" aria-label="Teleport (Test)"><option value="">Teleport (Test)…</option></select>
   </div>
@@ -97,6 +101,7 @@
   <div id="hint">WASD gehen &middot; Linksklick Maus übernehmen &middot; Leertaste springen &middot; Shift rennen &middot; Esc beenden</div>
   <div id="toast"></div>
   <canvas id="draw-layer"></canvas>
+  <div id="draw-colors" role="group" aria-label="Stiftfarbe"></div>
   <div id="lift-panel" hidden></div>
   <button type="button" id="door-hint" hidden></button>
   <!-- TEST: Teleport-Menue (Taste T), wird ganz am Ende entfernt -->
@@ -1916,7 +1921,19 @@
     // Zeichnen: 1. Klick aktiviert (pink), 2. Klick loescht die Zeichnung und beendet. Ansicht steht still, solange gezeichnet wird.
     {
       const cv = $("draw-layer"), cx = cv.getContext("2d"), btn = $("btn-draw");
-      let on = false, last = null;
+      let on = false, last = null, pen = "#ff2fa8";
+      const COLORS = [["Pink", "#ff2fa8"], ["Gelb", "#ffe600"], ["Grün", "#39ff14"], ["Cyan", "#00e5ff"], ["Orange", "#ff6a00"]];
+      const box = $("draw-colors");
+      for (const [name, c] of COLORS) {
+        const b = document.createElement("button");
+        b.type = "button"; b.title = name; b.setAttribute("aria-label", name); b.style.setProperty("--c", c);
+        b.setAttribute("aria-pressed", String(c === pen));
+        b.addEventListener("click", () => {
+          pen = c; btn.style.setProperty("--pen", c);
+          for (const o of box.children) o.setAttribute("aria-pressed", String(o === b));
+        });
+        box.appendChild(b);
+      }
       const fit = () => {
         const r = devicePixelRatio || 1, w = Math.round(innerWidth * r), h = Math.round(innerHeight * r);
         if (cv.width === w && cv.height === h) return;
@@ -1934,12 +1951,12 @@
       cv.addEventListener("pointerdown", e => {
         if (!on || e.button !== 0) return;
         cv.setPointerCapture(e.pointerId); last = pt(e);
-        const r = devicePixelRatio || 1; cx.fillStyle = "#ff2fa8"; cx.beginPath(); cx.arc(last[0], last[1], 2.5 * r, 0, Math.PI * 2); cx.fill();
+        const r = devicePixelRatio || 1; cx.fillStyle = pen; cx.beginPath(); cx.arc(last[0], last[1], 2.5 * r, 0, Math.PI * 2); cx.fill();
       });
       cv.addEventListener("pointermove", e => {
         if (!last) return;
         const p = pt(e), r = devicePixelRatio || 1;
-        cx.strokeStyle = "#ff2fa8"; cx.lineWidth = 5 * r; cx.lineCap = cx.lineJoin = "round";
+        cx.strokeStyle = pen; cx.lineWidth = 5 * r; cx.lineCap = cx.lineJoin = "round";
         cx.beginPath(); cx.moveTo(last[0], last[1]); cx.lineTo(p[0], p[1]); cx.stroke(); last = p;
       });
       const up = () => { last = null; };
