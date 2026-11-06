@@ -1323,14 +1323,16 @@
       runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), LY - 0.5, LY, Z(j), Z(j + 1)));
       runs((i, j) => CM[j * CNX + i] === 2, (a, b, j) => S(X(a), X(b), BED, LY + 1.0, Z(j), Z(j + 1)));
       const isC = v => v === 1 || v === 2;
-      runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j - 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j) - 0.3, Z(j)));
-      runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j + 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j + 1), Z(j + 1) + 0.3));
+      // Wandkollision um WM nach innen geschoben: die sichtbaren Felsecken sind bis 0,35 m verrauscht, sonst sieht man durch die Wand
+      const WM = 0.4;
+      runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j - 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j) - 0.3 + WM, Z(j) + WM));
+      runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j + 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM));
       for (let i = 0; i < CNX; i++) for (const d of [-1, 1]) {                // senkrechte Kanten spaltenweise
         let s = -1;
         for (let j = 0; j <= CNZ; j++) {
           const ok = j < CNZ && isC(CM[j * CNX + i]) && cmAt(i + d, j) === 0;
           if (ok && s < 0) s = j;
-          if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 : xl, d < 0 ? xl : xl + 0.3, BED, LY + LH, Z(s), Z(j)); s = -1; }
+          if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 + WM : xl - WM, d < 0 ? xl + WM : xl + 0.3 - WM, BED, LY + LH, Z(s), Z(j)); s = -1; }
         }
       }
 
@@ -1466,14 +1468,15 @@
       const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
       const rowRuns = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
       rowRuns((i, j) => CMU[j * CNX + i] === 1 && !hole(X(i) + CELL / 2, Z(j) + CELL / 2), (a, b, j) => S(X(a), X(b), UY - 0.5, UY, Z(j), Z(j + 1)));
-      rowRuns((i, j) => CMU[j * CNX + i] && !cmuAt(i, j - 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j) - 0.3, Z(j)));
-      rowRuns((i, j) => CMU[j * CNX + i] && !cmuAt(i, j + 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j + 1), Z(j + 1) + 0.3));
+      const WM = 0.4;                                                          // wie unten: Kollision nach innen geschoben
+      rowRuns((i, j) => CMU[j * CNX + i] && !cmuAt(i, j - 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j) - 0.3 + WM, Z(j) + WM));
+      rowRuns((i, j) => CMU[j * CNX + i] && !cmuAt(i, j + 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM));
       for (let i = 0; i < CNX; i++) for (const d of [-1, 1]) {
         let s = -1;
         for (let j = 0; j <= CNZ; j++) {
           const ok = j < CNZ && CMU[j * CNX + i] && !cmuAt(i + d, j);
           if (ok && s < 0) s = j;
-          if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 : xl, d < 0 ? xl : xl + 0.3, UY, UY + UH, Z(s), Z(j)); s = -1; }
+          if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 + WM : xl - WM, d < 0 ? xl + WM : xl + 0.3 - WM, UY, UY + UH, Z(s), Z(j)); s = -1; }
         }
       }
 
