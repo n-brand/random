@@ -91,6 +91,7 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick } from "../../shared/orbit-pick.js";
     import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
     // Einheiten: 1 = 1 Meter. Der Berg liegt im Norden (-z), die Strasse/der Wasserfall schaut nach Sueden (+z).
@@ -117,6 +118,7 @@
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.15, 1200);
     camera.position.set(-95, 48, 55);
     const controls = new OrbitControls(camera, renderer.domElement);
+    installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
     controls.target.set(0, 22, -45);
     controls.enableDamping = true;
     controls.minDistance = 4;

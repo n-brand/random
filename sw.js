@@ -1,13 +1,13 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v22";
+const CACHE = "random-v23";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 // Google Fonts der Retro-Game-Hub-Praesentationen (CSS und Schriftdateien werden mitgespeichert)
 const FONTS_CSS = "https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap";
 const isFont = url => url.startsWith("https://fonts.googleapis.com/") || url.startsWith("https://fonts.gstatic.com/");
 const ASSETS = [
-  "./", "index.html", "manifest.webmanifest", "icon.svg",
+  "./", "index.html", "manifest.webmanifest", "icon.svg", "shared/orbit-pick.js",
   "sachen/helden/", "sachen/helden/manifest.webmanifest", "sachen/helden/icon.svg", "sachen/helden/vorschau.webp",
   "sachen/haus/", "sachen/haus/vorschau.webp",
   "sachen/villa/", "sachen/villa/vorschau.webp",

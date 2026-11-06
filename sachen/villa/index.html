@@ -163,6 +163,7 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick } from "../../shared/orbit-pick.js";
     import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
     import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
@@ -208,6 +209,7 @@
     camera.position.copy(homePos());
 
     const controls = new OrbitControls(camera, renderer.domElement);
+    installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
     controls.target.copy(HOME_TARGET);
     controls.enableDamping = true;
     controls.enablePan = false;

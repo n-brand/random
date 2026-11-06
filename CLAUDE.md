@@ -75,6 +75,10 @@ Modrinth (Suche "halloween", Resource Packs, nach Downloads), mit Lizenz:
 
 Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen/helden/`): eigenes `manifest.webmanifest` mit `scope`/`start_url` `./`, eigenes `icon.svg`, und die Seite registriert den gemeinsamen Service Worker `../../sw.js`. Externe Bibliotheken (three.js) sind fest versioniert und stehen in `ASSETS`, damit sie offline verfuegbar sind.
 
+## Gemeinsame Skripte (`shared/`)
+
+- `shared/orbit-pick.js` (Wunsch von Nicolas, 2026-11-06): **in jeder 3D-Seite mit Orbit-Ansicht** einbinden. Rechtsklick ohne Ziehen auf einen Ort kopiert in die Zwischenablage: Seitentitel, Punkt (x/y/z), Objektname (falls gesetzt), Kamera, Ziel, Abstand, Azimut, Neigung, Sichtwinkel, Seite. Rechts ziehen verschiebt weiter, im Laufmodus (`controls.enabled = false`) inaktiv. Einbindung: `import { installOrbitPick } from "../../shared/orbit-pick.js";` und nach `new OrbitControls(...)`: `installOrbitPick({ renderer, camera, controls, scene });`. Eingebunden in: Haus, Villa, Wohnwagen, Helden, Wayne-Berg, Wayne Manor, Cowboyhut, Pack-Viewer. Steht in `ASSETS` von `sw.js`.
+
 ## Konventionen
 
 - Reines HTML/CSS/JS, relative Pfade (Seite laeuft auch unter `https://n-brand.github.io/random/`).
@@ -136,7 +140,7 @@ Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen
 - **TEST-Teleport** (Nicolas, 2026-11-06): Auswahl „Teleport (Test)…“ in der Knopfleiste (`#teleport`, Liste `TP` mit 24 Zielen in Haus, Garage, beiden Höhlen, Klippe, Teich). Taste **T** öffnet ein Teleport-Menü (`#tp-menu`, Knöpfe für alle Ziele, T/Esc schliesst; Maus wird freigegeben, Begehen bleibt an). Karte startet ausgeschaltet. **Ganz am Ende entfernen** (HTML-Select und `#tp-menu`, CSS `#teleport`/`#tp-menu`, JS-Block „TEST: Teleport“, T-Taste im keydown).
 - **Schwimmen** (Nicolas, wie Pool der Villa): `waterAt(x, z)` liefert die Wasserhöhe (Pool, Brunnen, Höhle/Meer `SEA_Y`, Seen `WATER_Y`); im Wasser langsamer, langsam sinken, Leertaste halten = auftauchen, an der Oberfläche hinausspringen, unter Wasser blauer Nebel. Pool jetzt 1,7 m tief (`POOL`, Gelände ausgeschnitten, breite Terrasse, Stufen Ost), Brunnen mit 0,42 m Rand (begehbar) und 1,4 m tiefem Becken (`FOUNT`). Höhlenwasser hat Grund-Quader statt Sperre. Steile Hänge prüft nur noch Gelände/Rampe (`slopeG`), Stufen regelt `supportAt`.
 - **Boot fahrbar** (Nicolas): E in der Nähe (4,5 m) = einsteigen, W/S Gas/Bremse, A/D lenken, Shift schneller (8/14 m/s), E = aussteigen auf den nächsten Höhlenboden (an der Steilküste kein Ufer). Fährt auf Höhlenwasser, Wassertunnel und Meer (`boatWater`, `boatFree` prüft 7 Rumpfpunkte), geschlossene Felstore sperren. Sitzposition hinten, Maus schaut frei, Kurs dreht die Sicht mit.
-- **Mausempfindlichkeit fest 30 %** (`MOUSE_SENS`, nicht einstellbar).
+- **Mausempfindlichkeit fest 50 %** (`MOUSE_SENS`, nicht einstellbar; Nicolas wollte erst 30 %, dann 50 %).
 - **Flackern aus der Ferne** (Z-Fighting) behoben: `logarithmicDepthBuffer`, Orbit-Ansicht near 0,6 (Begehen 0,15), Strassen in den Hügeln 0,25 m höher.
 - **Alle Strassen im Stil der Hauptstrasse** (Nicolas): Asphalt mit Rand- und gelber Mittellinie (auch Rampen und Main Driveway, dieser jetzt 7 m), Bänder an den Rampengräben grau wie Gehweg. Die Texturen `drive`/`ramp` sind ungenutzt.
 - Nächster Schritt: 8 (Verbindungen: Tunnel-Ausgänge Gotham/Waterfall, Aircraft Exit, Garage ↔ Höhle). Nicht vergessen: Startseite (`ENTRIES`), `sw.js` (ASSETS, Cache hochzählen), Vorschaubild, wenn das Projekt vorzeigbar ist.

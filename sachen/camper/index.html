@@ -92,6 +92,7 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick } from "../../shared/orbit-pick.js";
 
     // Einheiten: 1 = 1 Meter. Wohnwagen laengs der x-Achse (hinten = -x mit Klapp-Terrasse, vorne = +x mit Deichsel),
     // Seiten +z und -z. Boden innen auf y = 0.65. Alles Ausklappbare haengt an der Fortschrittszahl p (0 = zu, 1 = ganz offen).
@@ -115,6 +116,7 @@
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.15, 700);
     camera.position.set(12, 6.5, 14);
     const controls = new OrbitControls(camera, renderer.domElement);
+    installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
     controls.target.set(-0.5, 1.4, 0);
     controls.enableDamping = true;
     controls.minDistance = 3;

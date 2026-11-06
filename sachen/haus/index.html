@@ -160,6 +160,7 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick } from "../../shared/orbit-pick.js";
     import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
     // Einheiten: 1 = 1 Meter. Haus 8 x 6 m, Wandhoehe 2.8 m, Satteldach mit First in x-Richtung, vorne = +z.
@@ -190,6 +191,7 @@
     camera.position.copy(homePos());
 
     const controls = new OrbitControls(camera, renderer.domElement);
+    installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
     controls.target.copy(HOME_TARGET);
     controls.enableDamping = true;
     controls.enablePan = false;

@@ -126,6 +126,7 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick } from "../../shared/orbit-pick.js";
 
     // ?embed=1: ohne Kopfzeile und Footer, zum Einbetten in andere Seiten (iframe)
     if (new URLSearchParams(location.search).has("embed")) document.documentElement.classList.add("embed");
@@ -146,6 +147,7 @@
 
     const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
     const controls = new OrbitControls(camera, renderer.domElement);
+    installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
     controls.enableDamping = true;
     controls.minDistance = 1.5;
     controls.maxDistance = 20;

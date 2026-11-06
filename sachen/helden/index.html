@@ -111,6 +111,7 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick } from "../../shared/orbit-pick.js";
     import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
     import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
@@ -137,6 +138,7 @@
     camera.position.copy(HOME_POS);
 
     const controls = new OrbitControls(camera, renderer.domElement);
+    installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
     controls.target.copy(HOME_TARGET);
     controls.enableDamping = true;
     controls.minDistance = 1.2;

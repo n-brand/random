@@ -114,6 +114,7 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick } from "../../shared/orbit-pick.js";
     import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
     // Einheiten: 1 = 1 Meter. Welt nach dem Kompass der Karten: Norden = -z, Osten = +x (Hausfront und Hauptzufahrt zeigen nach Osten).
@@ -139,6 +140,7 @@
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.6, 3000);
     camera.position.set(95, 75, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
+    installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
     controls.target.set(-25, 0, 10);
     controls.enableDamping = true;
     controls.minDistance = 4;
@@ -1912,7 +1914,7 @@
       renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
     });
     document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); } });
-    const MOUSE_SENS = 0.0025 * 0.3;                                          // fest 30 % (Wunsch von Nicolas, nicht einstellbar)
+    const MOUSE_SENS = 0.0025 * 0.5;                                          // fest 50 % (Wunsch von Nicolas, nicht einstellbar)
     document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS); });
     addEventListener("keydown", e => {
       if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
