@@ -41,6 +41,12 @@
     #lift-panel[hidden] { display: none; }
     #teleport { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 10px; border-radius: 9px; cursor: pointer; }
     #teleport option { color: #111; }
+    #tp-menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 32px)); max-height: calc(100% - 120px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; backdrop-filter: blur(10px); z-index: 8; }
+    #tp-menu[hidden] { display: none; }
+    #tp-menu .tp-head { font-size: .8rem; color: var(--muted); margin-bottom: 8px; text-align: center; }
+    #tp-menu .tp-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+    #tp-menu button { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 8px 10px; border-radius: 8px; cursor: pointer; text-align: left; }
+    #tp-menu button:hover { background: var(--accent); color: #1a1405; }
     #lift-panel .lp-title { font-size: .72rem; color: var(--muted); text-align: center; }
     #lift-panel button { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 12px; border-radius: 8px; cursor: pointer; text-align: left; white-space: nowrap; }
     #lift-panel button.here { background: var(--text); color: #0b0d12; font-weight: 800; }
@@ -81,6 +87,8 @@
   <div id="hint">WASD gehen &middot; Linksklick Maus übernehmen &middot; Leertaste springen &middot; Shift rennen &middot; Esc beenden</div>
   <div id="toast"></div>
   <div id="lift-panel" hidden></div>
+  <!-- TEST: Teleport-Menue (Taste T), wird ganz am Ende entfernt -->
+  <div id="tp-menu" hidden><div class="tp-head">Teleport (Test) &middot; T oder Esc schließt</div><div class="tp-list"></div></div>
   <div class="stick" id="stick-move"><span></span></div>
   <div class="stick" id="stick-look"><span></span></div>
   <button type="button" id="btn-jump">Sprung</button>
@@ -1666,10 +1674,9 @@
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
         ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N]
       ];
-      const sel = $("teleport");
-      TP.forEach(([name], i) => { const o = document.createElement("option"); o.value = String(i); o.textContent = name; sel.appendChild(o); });
-      sel.addEventListener("change", () => {
-        const t = TP[+sel.value]; sel.value = ""; sel.blur();
+      const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
+      function teleportTo(i) {
+        const t = TP[i];
         if (!t) return;
         const [, x, y, z, yaw] = t;
         if (belowView) $("btn-below").click();
@@ -1677,7 +1684,21 @@
         player.pos.set(x, y + 0.3, z); player.pos.y = supportAt(player.pos, y + 0.3); player.vy = 0;
         updatePlayer(0.001, 0, 0, false);
         toast("Teleport: " + t[0]);
+      }
+      TP.forEach(([name], i) => {
+        const o = document.createElement("option"); o.value = String(i); o.textContent = name; sel.appendChild(o);
+        const b = document.createElement("button"); b.type = "button"; b.textContent = name; b.addEventListener("click", () => { closeTp(); teleportTo(i); }); list.appendChild(b);
       });
+      sel.addEventListener("change", () => { const i = sel.value; sel.value = ""; sel.blur(); if (i !== "") teleportTo(+i); });
+      // Taste T: Menue auf/zu; Maus wird freigegeben, ohne das Begehen zu beenden
+      function closeTp() { menu.hidden = true; }
+      window.toggleTp = () => {
+        if (!menu.hidden) return closeTp();
+        if (dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); }
+        keys.clear();
+        menu.hidden = false;
+      };
+      window.tpMenuOpen = () => !menu.hidden;
     }
     // Ansicht von unten: Kamera darf unter das Gelaende (Gelaende ist von unten durchsichtig), Blick auf Garage und Hoehle
     let belowView = false;
@@ -1707,6 +1728,8 @@
     document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); } });
     document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * 0.0025, e.movementY * 0.0025); });
     addEventListener("keydown", e => {
+      if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
+      if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
       if (e.code === "KeyE" && !e.repeat) return useLift();
