@@ -1321,7 +1321,7 @@
       const runs = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
       const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
       runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), LY - 0.5, LY, Z(j), Z(j + 1)));
-      runs((i, j) => CM[j * CNX + i] === 2, (a, b, j) => S(X(a), X(b), BED, LY + 1.0, Z(j), Z(j + 1)));
+      runs((i, j) => CM[j * CNX + i] === 2, (a, b, j) => S(X(a), X(b), BED, LY + 2.6, Z(j), Z(j + 1)));   // hoch genug, dass man nicht hinaufspringt
       const isC = v => v === 1 || v === 2;
       // Wandkollision um WM nach innen geschoben: die sichtbaren Felsecken sind bis 0,35 m verrauscht, sonst sieht man durch die Wand
       const WM = 0.4;
