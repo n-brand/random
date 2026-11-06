@@ -1567,7 +1567,7 @@
         }
       }
       for (const [cx, cz, r, top] of circles) {
-        if (top !== undefined && feet >= top) continue;
+        if (top !== undefined && (feet >= top || feet < top - 8)) continue;   // Hindernis mit Hoehe gilt nur auf seiner Ebene
         const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
         if (d < min && d > 1e-6) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
       }
@@ -1732,7 +1732,18 @@
       updateLiftPanel();
       if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || player.pos.y < -8) ? 1 : 0;
-      world.userData.turntable.rotation.y += dt * 0.12;
+      // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
+      {
+        const tt = world.userData.turntable, w = dt * 0.05;
+        tt.rotation.y += w;
+        if (walking && player.onGround) {
+          const p = player.pos, dx = p.x - tt.position.x, dz = p.z - tt.position.z;
+          if (Math.abs(p.y - LY) < 0.3 && dx * dx + dz * dz < (60 * CAVE_SC) ** 2) {
+            const c = Math.cos(w), s = Math.sin(w);
+            p.x = tt.position.x + dx * c + dz * s; p.z = tt.position.z - dx * s + dz * c; player.yaw += w;
+          }
+        }
+      }
       if (ut !== under) { under = ut > under ? Math.min(ut, under + dt * 2) : Math.max(ut, under - dt * 2); applyNight(); }
       const rn = night < nightTarget ? Math.min(nightTarget, night + dt * 0.8) : Math.max(nightTarget, night - dt * 0.8);
       if (rn !== night) { night = rn; applyNight(); }
