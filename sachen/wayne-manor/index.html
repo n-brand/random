@@ -125,7 +125,7 @@
     const rng = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
     // --- Renderer, Szene, Kamera ---
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });   // genaue Tiefe auch von weit weg (kein Flackern)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, matchMedia("(pointer: coarse)").matches ? 1.25 : 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
@@ -136,7 +136,7 @@
     const scene = new THREE.Scene();
     scene.background = SKY_DAY.clone();
     scene.fog = new THREE.Fog(SKY_DAY.clone(), 350, 1500);
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.15, 3000);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.6, 3000);
     camera.position.set(95, 75, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(-25, 0, 10);
@@ -306,8 +306,8 @@
     const P = list => list.map(([px, py]) => mp(px, py));                      // Kartenpunkte -> Welt
     const ROADS = [
       { name: "Zufahrt", w: 7, kind: "road", pts: [[85, -200], [70, -110], [64, -41], [62, 0], [62, 41], [62, 74], [56, 120], [20, 165], [-30, 200], [-120, 240]] },
-      { name: "Main Driveway Sued", w: 9, kind: "drive", pts: [...P([[445, 1040], [410, 1072], [380, 1110], [350, 1150], [322, 1202]]), [62, 41]] },
-      { name: "Main Driveway Nord", w: 9, kind: "drive", pts: [...P([[555, 1040], [590, 1075], [625, 1115], [655, 1160], [680, 1202]]), [64, -41]] },
+      { name: "Main Driveway Sued", w: 7, kind: "drive", pts: [...P([[445, 1040], [410, 1072], [380, 1110], [350, 1150], [322, 1202]]), [62, 41]] },
+      { name: "Main Driveway Nord", w: 7, kind: "drive", pts: [...P([[555, 1040], [590, 1075], [625, 1115], [655, 1160], [680, 1202]]), [64, -41]] },
       { name: "Garagen-Ausfahrt", w: 7, kind: "ramp", pts: [...P([[337, 1018], [337, 1034], [312, 1054], [270, 1078], [235, 1110], [200, 1150], [172, 1202]]), [62, 74]] },
       { name: "Garagen-Einfahrt", w: 7, kind: "ramp", pts: [...P([[337, 827], [337, 815], [315, 777], [275, 737], [220, 705], [150, 681], [50, 672]]), [-66.5, 112], [-60, 140], [-47, 170], [-30, 200]] }
     ];
@@ -331,6 +331,10 @@
       }
       return m;
     }
+    // Becken zum Hineingehen (Wunsch von Nicolas): Pool (Karte 90..140 / 912..985) und Springbrunnen im Rondell (Karte 500/1000, r 30 px)
+    const POOL = (() => { const [ax, az] = mp(90, 912), [bx, bz] = mp(140, 985); return { x0: Math.min(ax, bx), x1: Math.max(ax, bx), z0: Math.min(az, bz), z1: Math.max(az, bz), floor: -1.6, water: 0.12 }; })();
+    const FOUNT = (() => { const [x, z] = mp(500, 1000); return { x, z, r: 30 * SC, floor: -1.0, water: 0.36, rim: 0.42 }; })();
+    const inPool = (x, z) => x > POOL.x0 && x < POOL.x1 && z > POOL.z0 && z < POOL.z1;
     // Garagenrampen: die ersten RAMP_D Meter ab der Hauswand fuehren hinunter auf die Tiefgarage (GY)
     const GY = -4.0, RAMP_D = 42;
     const rampY = d => GY * (1 - d / RAMP_D);
@@ -419,6 +423,8 @@
       const cut = new Uint8Array(TN1 * TN1);
       for (let k = 0; k < TN1 * TN1; k++) {
         const ra = rampAt(pos[k * 3], pos[k * 3 + 2], 0.3);
+        const vx = pos[k * 3], vz = pos[k * 3 + 2];
+        if (inPool(vx, vz) || Math.hypot(vx - FOUNT.x, vz - FOUNT.z) < FOUNT.r - 0.2) { cut[k] = 1; continue; }   // Becken (Pool, Brunnen)
         if ((ra && ra.y < -0.1) || (pos[k * 3 + 1] < -8 && seaD(pos[k * 3], pos[k * 3 + 2]) < 5 && seaTunDist(pos[k * 3], pos[k * 3 + 2]) < SEA_TUN_W / 2 + 1.5)) cut[k] = 1;   // Rampen und Meereshoehle
       }
       let n = 0;
@@ -1064,7 +1070,7 @@
         const t = t0 + (t1 - t0) * i / n, p = curve.getPointAt(t), tg = curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z), nx = -tg.z / nl, nz = tg.x / nl;
         for (const sd of [-1, 1]) {
           const lat = o.wall ? off : off + w / 2 * sd, x = p.x + nx * lat, z = p.z + nz * lat;
-          const y = o.wall ? (sd < 0 ? o.y(t * len) - 0.2 : o.top) : o.y ? o.y(t * len) + 0.02 : Math.max(terrainH(x, z), terrainH(p.x + nx * off, p.z + nz * off)) + lift;
+          const y = o.wall ? (sd < 0 ? o.y(t * len) - 0.2 : o.top) : o.y ? o.y(t * len) + 0.02 : Math.max(terrainH(x, z), terrainH(p.x + nx * off, p.z + nz * off)) + lift + 0.25 * sst(5, 40, siteDist(x, z));   // in den Huegeln etwas hoeher (Gelaende zwischen den Stuetzpunkten)
           pos.push(x, y, z); uv.push(sd < 0 ? 0 : 1, t * len / period);
         }
         if (i) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
@@ -1078,17 +1084,17 @@
     }
     const lamps = [];
     for (const r of ROADS) {
-      if (r.kind !== "ramp") ribbon(r.curve, r.len, r.w, flatMat({ map: roadTex[r.kind], side: THREE.DoubleSide }), roadPeriod[r.kind]);
+      // Alle Strassen im Stil der Hauptstrasse (Wunsch von Nicolas): Asphalt mit Rand- und Mittellinie
+      if (r.kind !== "ramp") ribbon(r.curve, r.len, r.w, flatMat({ map: roadTex.road, side: THREE.DoubleSide }), roadPeriod.road);
       else {
-        // Rampe: erste RAMP_D Meter fallen zur Tiefgarage ab, mit Stuetzmauern (0,9 m Bruestung) und Steinband ueber dem Grabenrand
-        const td = RAMP_D / r.len, hw = r.w / 2, roadM = flatMat({ map: roadTex.ramp, side: THREE.DoubleSide });
-        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.ramp, 0.07, { t0: 0, t1: td, y: rampY });
-        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.ramp, 0.07, { t0: td, t1: 1 });
-        ribbon(r.curve, r.len, r.w + 1.6, flatMat({ color: 0xd6d2c6, polygonOffsetFactor: -0.5, polygonOffsetUnits: -0.5, side: THREE.DoubleSide }), 4, 0.05, { t0: td, t1: 1 });
+        // Rampe: erste RAMP_D Meter fallen zur Tiefgarage ab, mit Stuetzmauern (0,9 m Bruestung) und Gehweg-Band ueber dem Grabenrand
+        const td = RAMP_D / r.len, hw = r.w / 2, roadM = flatMat({ map: roadTex.road, side: THREE.DoubleSide });
+        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.road, 0.07, { t0: 0, t1: td, y: rampY });
+        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.road, 0.07, { t0: td, t1: 1 });
         const wallM = M(0x9a968c, { side: THREE.DoubleSide, roughness: 0.95 });
         for (const sd of [-1, 1]) {
           ribbon(r.curve, r.len, 0, wallM, 3, 0, { t0: 0, t1: td, off: sd * (hw + 0.15), wall: true, y: rampY, top: 0.9 });
-          ribbon(r.curve, r.len, 4.4, flatMat({ color: 0xbdb6a6, side: THREE.DoubleSide }), 4, 0.08, { t0: 0, t1: td, off: sd * (hw + 2.45) });
+          ribbon(r.curve, r.len, 4.4, flatMat({ color: 0x8e8f8c, side: THREE.DoubleSide }), 4, 0.08, { t0: 0, t1: td, off: sd * (hw + 2.45) });
           for (let d = 0; d <= RAMP_D; d += 0.6) {
             const t = d / r.len, p = r.curve.getPointAt(t), tg = r.curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z);
             circles.push([p.x - tg.z / nl * sd * (hw + 0.2), p.z + tg.x / nl * sd * (hw + 0.2), 0.22]);
@@ -1118,15 +1124,20 @@
     const [RX, RZ] = mp(500, 1000), RON = { x: RX, z: RZ, r: 70 * SC };
     const gravelMat = flatMat({ color: 0xc9bc9c });
     {
-      const disc = new THREE.Mesh(new THREE.CircleGeometry(RON.r, 64).rotateX(-Math.PI / 2), gravelMat); disc.position.set(RON.x, 0.05, RON.z); disc.receiveShadow = true; scene.add(disc);
+      const disc = new THREE.Mesh(new THREE.RingGeometry(FOUNT.r - 0.1, RON.r, 64).rotateX(-Math.PI / 2), gravelMat); disc.position.set(RON.x, 0.05, RON.z); disc.receiveShadow = true; scene.add(disc);
       const [fx0] = mp(0, 893), [fx1] = mp(0, 965), fw = 140 * SC;
       const fore = new THREE.Mesh(new THREE.PlaneGeometry(fx1 - fx0, fw).rotateX(-Math.PI / 2), gravelMat); fore.position.set((fx0 + fx1) / 2, 0.05, 0); fore.receiveShadow = true; scene.add(fore);
       const fr = 30 * SC;                                                     // Brunnen-Radius ca. 6 m
       const ring = new THREE.Mesh(new THREE.RingGeometry(fr + 0.4, fr + 0.8, 64).rotateX(-Math.PI / 2), flatMat({ color: 0x8c8676 })); ring.position.set(RON.x, 0.06, RON.z); scene.add(ring);
-      // Brunnen: Becken mit Rand, Wasser, Sockel und zwei Schalen
-      cyl(fr, fr, 0.6, stoneLight, RON.x, 0.3, RON.z, world, 40);
-      const water = new THREE.Mesh(new THREE.CircleGeometry(fr - 0.45, 40).rotateX(-Math.PI / 2), mat.water); water.position.set(RON.x, 0.62, RON.z); scene.add(water);
-      circles.push([RON.x, RON.z, fr, 0.6]);
+      // Brunnen: niedriger Rand (begehbar), Becken 1,4 m tief zum Hineingehen, Sockel und zwei Schalen
+      const F = FOUNT, basin = M(0x9d978a, { roughness: 0.9, side: THREE.DoubleSide });
+      { const o = new THREE.Mesh(new THREE.CylinderGeometry(F.r, F.r, F.rim + 0.1, 48, 1, true), stoneLight); o.position.set(F.x, (F.rim - 0.1) / 2, F.z); o.castShadow = o.receiveShadow = true; world.add(o);
+        const i = new THREE.Mesh(new THREE.CylinderGeometry(F.r - 0.4, F.r - 0.4, F.rim - F.floor, 48, 1, true), basin); i.position.set(F.x, (F.rim + F.floor) / 2, F.z); world.add(i);
+        const t = new THREE.Mesh(new THREE.RingGeometry(F.r - 0.4, F.r, 48).rotateX(-Math.PI / 2), stoneLight); t.position.set(F.x, F.rim, F.z); world.add(t);
+        const b = new THREE.Mesh(new THREE.CircleGeometry(F.r - 0.4, 48).rotateX(-Math.PI / 2), basin); b.position.set(F.x, F.floor, F.z); world.add(b); }
+      const water = new THREE.Mesh(new THREE.CircleGeometry(F.r - 0.4, 48).rotateX(-Math.PI / 2), mat.water); water.position.set(F.x, F.water, F.z); scene.add(water);
+      cyl(1.0, 1.4, F.water - F.floor + 0.2, stoneLight, F.x, (F.floor + F.water + 0.2) / 2, F.z, world, 20);
+      circles.push([F.x, F.z, 1.4, 3.4]);
       cyl(1.0, 1.4, 1.2, stoneLight, RON.x, 1.0, RON.z, world, 20);
       cyl(2.2, 0.8, 0.45, stoneLight, RON.x, 1.8, RON.z, world, 24);
       cyl(0.35, 0.5, 1.2, stoneLight, RON.x, 2.5, RON.z, world, 12);
@@ -1187,15 +1198,17 @@
 
     // Pool mit Steinterrasse, Poolhaus, Whirlpool
     {
-      const [px0, pz1] = mp(90, 912), [px1, pz0] = mp(140, 985);            // Wasser ca. 15 x 10 m
-      const x0 = Math.min(px0, px1), x1 = Math.max(px0, px1), z0 = Math.min(pz0, pz1), z1 = Math.max(pz0, pz1), d = 1.5;
-      for (const [a, b, c, e] of [[x0 - d, x1 + d, z0 - d, z0], [x0 - d, x1 + d, z1, z1 + d], [x0 - d, x0, z0, z1], [x1, x1 + d, z0, z1]]) B(a, b, 0, 0.3, c, e, stoneLight);
-      B(x0, x1, 0, 0.04, z0, z1, M(0x3d9fc9, { roughness: 0.4 }), false);
-      B(x0, x1, 0, 0.2, z0, z1, mat.water, false);
-      S(x0, x1, 0, 2, z0, z1);                                               // nicht ins Becken laufen (kein Schwimmen)
+      // Pool: Becken 1,7 m tief (Gelaende ausgeschnitten), breite Steinterrasse verdeckt den Schnittrand, Stufen an der Ostseite
+      const { x0, x1, z0, z1 } = POOL, d = 3.2, tile = M(0x3d9fc9, { roughness: 0.4 });
+      for (const [a, b, c, e] of [[x0 - d, x1 + d, z0 - d, z0], [x0 - d, x1 + d, z1, z1 + d], [x0 - d, x0, z0, z1], [x1, x1 + d, z0, z1]]) B(a, b, -0.2, 0.3, c, e, stoneLight);
+      B(x0, x1, POOL.floor - 0.2, POOL.floor, z0, z1, tile);
+      B(x0, x1, POOL.floor, 0.3, z0 - 0.2, z0, tile); B(x0, x1, POOL.floor, 0.3, z1, z1 + 0.2, tile); B(x0 - 0.2, x0, POOL.floor, 0.3, z0, z1, tile); B(x1, x1 + 0.2, POOL.floor, 0.3, z0, z1, tile);
+      const pm = (z0 + z1) / 2;
+      [-0.25, -0.7, -1.15].forEach((top, k) => B(x1 - (k + 1) * 0.45, x1 - k * 0.45, POOL.floor, top, pm - 1.2, pm + 1.2, tile));
+      { const w = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0).rotateX(-Math.PI / 2), mat.water); w.position.set((x0 + x1) / 2, POOL.water, (z0 + z1) / 2); w.userData.keep = true; scene.add(w); }
       // Poolhaus
       const [hx0, hz1] = mp(58, 975), [hx1, hz0] = mp(83, 1015);
-      const ax0 = Math.min(hx0, hx1), ax1 = Math.max(hx0, hx1), az0 = Math.max(Math.min(hz0, hz1), z1 + d + 0.3), az1 = Math.max(hz0, hz1);
+      const ax0 = Math.min(hx0, hx1), ax1 = Math.max(hx0, hx1), az0 = Math.max(Math.min(hz0, hz1), z1 + 1.8), az1 = Math.max(hz0, hz1);
       B(ax0, ax1, 0, 3.6, az0, az1, mat.facade);
       B(ax0 - 0.3, ax1 + 0.3, 3.6, 3.9, az0 - 0.3, az1 + 0.3, stoneLight, false);
       B((ax0 + ax1) / 2 - 0.6, (ax0 + ax1) / 2 + 0.6, 0, 2.3, az0 - 0.05, az0, mat.trim, false);
@@ -1321,7 +1334,7 @@
       const runs = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
       const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
       runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), LY - 0.5, LY, Z(j), Z(j + 1)));
-      runs((i, j) => CM[j * CNX + i] === 2, (a, b, j) => S(X(a), X(b), BED, LY + 2.6, Z(j), Z(j + 1)));   // hoch genug, dass man nicht hinaufspringt
+      runs((i, j) => CM[j * CNX + i] === 2 || CM[j * CNX + i] === 4, (a, b, j) => S(X(a), X(b), BED - 0.5, BED, Z(j), Z(j + 1)));   // Grund im Wasser (man kann hinein und schwimmen)
       const isC = v => v === 1 || v === 2;
       // Wandkollision um WM nach innen geschoben: die sichtbaren Felsecken sind bis 0,35 m verrauscht, sonst sieht man durch die Wand
       const WM = 0.4;
@@ -1376,7 +1389,19 @@
       for (const py of [398, 414]) { const [x, z] = C(250, py); for (const sz of [-2, 2]) B(x - 0.15, x + 0.15, LY, LY + 2.4, z + sz - 0.15, z + sz + 0.15, mat.steel); B(x - 1.1, x + 1.1, LY + 1.0, LY + 1.12, z - 2.2, z + 2.2, mat.steel, false); }
       { const [x, z] = C(240, 357); B(x - 0.4, x + 0.4, LY, LY + 1.0, z - 0.6, z + 0.6, M(0xb33b2e)); }
       // Anlegestelle mit Boot, Stufen zum Wasser
-      { const [x, z] = C(300, 545); B(x - 1.1, x + 1.1, WL - 0.4, WL + 0.5, z - 3.2, z + 3.2, mat.bat, false); B(x - 0.8, x + 0.8, WL + 0.5, WL + 1.3, z - 1.2, z + 0.8, mat.dark, false); }
+      // Boot (fahrbar, siehe "Boot fahren"): Rumpf mit Spitze, Kabine, Frontscheibe, Lichter; Bug zeigt lokal nach -z
+      {
+        const [x, z] = C(300, 545), g = new THREE.Group(); g.position.set(x, WL, z); g.userData.dynamic = true; world.add(g);
+        const hull = new THREE.Shape(); hull.moveTo(-1.1, 3.0); hull.lineTo(1.1, 3.0); hull.lineTo(1.15, -1.6); hull.lineTo(0, -3.6); hull.lineTo(-1.15, -1.6); hull.closePath();
+        const hm = new THREE.Mesh(new THREE.ExtrudeGeometry(hull, { depth: 0.9, bevelEnabled: false }).rotateX(Math.PI / 2), mat.bat); hm.position.y = 0.5; hm.castShadow = true; g.add(hm);
+        B(-0.95, 0.95, 0.5, 0.56, -1.4, 2.8, mat.dark, false, g, false);                                    // Deck
+        B(-0.8, 0.8, 0.56, 1.35, -0.4, 1.0, mat.bat, false, g);                                             // Kabine
+        const ws = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.6, 0.06), mat.glass); ws.position.set(0, 1.0, -0.62); ws.rotation.x = -0.5; g.add(ws);
+        B(-0.5, 0.5, 0.56, 0.95, 1.4, 2.0, mat.dark, false, g);                                             // Sitz
+        for (const sx of [-0.7, 0.7]) B(sx - 0.12, sx + 0.12, 0.62, 0.72, -2.55, -2.45, mat.glow, false, g, false);
+        B(-0.25, 0.25, 0.75, 0.85, 2.98, 3.02, mat.glowRed, false, g, false);
+        world.userData.boat = { g, x, z, h: 0, v: 0, on: false };
+      }
       { const [x0, z0] = C(322, 512), [x1, z1] = C(348, 525), ax0 = Math.min(x0, x1), ax1 = Math.max(x0, x1), az0 = Math.min(z0, z1), az1 = Math.max(z0, z1);
         for (let k = 0; k < 4; k++) B(ax0 + k * (ax1 - ax0) / 4, ax0 + (k + 1) * (ax1 - ax0) / 4, BED, LY - k * 0.25, az0, az1, mat.concrete, false); }
       // Tore (SE und NE Gate): getarnte Felswaende quer ueber den Kanal; von beiden Seiten sieht es aus, als ende die Hoehle.
@@ -1392,7 +1417,7 @@
           const s = 0.8 + gr() * 1.8, m = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), rockM);
           m.position.set((gr() - 0.5) * (len - 1), 0.5 + gr() * (h - 1), (k % 2 ? 1 : -1) * (0.5 + gr() * 0.4)); m.rotation.set(gr() * 6, gr() * 6, gr() * 6); m.scale.set(1, 1, 0.55); g.add(m);
         }
-        gates.push({ name, g, open: 0, target: 0, lift: h + 0.5 });
+        gates.push({ name, g, open: 0, target: 0, lift: h + 0.5, a: A, b: Bp });
       }
       // Meereshoehle: Felsbogen in der Klippe ueber dem Ausgang des Wassertunnels (verdeckt den ausgeschnittenen Klippenrand)
       {
@@ -1619,7 +1644,14 @@
       const ra = rampAt(x, z);
       if (ra && feet > ra.y - 2) return ra.y;                                // Rampe nur auf ihrer Hoehe (darunter liegt die Hoehle)
       if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
-      if (feet < -1 && (inPoly(GARAGE, x, z) || caveAt(x, z) || caveUpAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
+      const ca = caveAt(x, z);
+      if (feet < -1 && (inPoly(GARAGE, x, z) || ca === 1 || ca === 2 || ca === 4 || caveUpAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
+      if (feet > -3) {                                                       // Becken: Brunnen (Rand begehbar) und Pool
+        const fd = Math.hypot(x - FOUNT.x, z - FOUNT.z);
+        if (fd < FOUNT.r - 0.4) return FOUNT.floor;
+        if (fd < FOUNT.r) return FOUNT.rim;
+        if (inPool(x, z)) return POOL.floor;
+      }
       return terrainH(x, z);
     }
     function supportAt(p, feet) {
@@ -1630,21 +1662,42 @@
       }
       return top;
     }
+    // Wasseroberflaeche an (x, z) oder null: Pool, Brunnen, Hoehle/Meer (gleiche Hoehe), Seen
+    function waterAt(x, z) {
+      if (inPool(x, z)) return POOL.water;
+      if (Math.hypot(x - FOUNT.x, z - FOUNT.z) < FOUNT.r - 0.4) return FOUNT.water;
+      const c = caveAt(x, z);
+      if (c === 2 || c === 4 || c === 3) return SEA_Y;
+      if (c !== 1 && seaD(x, z) > -0.5) return SEA_Y;
+      for (const L of LAKES) if (lakeD(L, x, z) < 1) return WATER_Y;
+      return null;
+    }
     function updatePlayer(dt, moveX, moveZ, run) {
       const len = Math.hypot(moveX, moveZ);
       if (len > 1) { moveX /= len; moveZ /= len; }
-      const speed = run ? RUN : WALK, sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+      const surf = waterAt(player.pos.x, player.pos.z), swim = surf !== null && player.pos.y < surf - 0.3;
+      const speed = swim ? 2.8 : run ? RUN : WALK, sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
       const next = player.pos.clone();
       next.x += (-sin * moveZ + cos * moveX) * speed * dt;
       next.z += (-cos * moveZ - sin * moveX) * speed * dt;
       pushOut(next, player.pos.y);
-      if (player.pos.y > -3 && terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }   // nicht in tiefes Wasser
-      const g0 = groundAt(player.pos.x, player.pos.z, player.pos.y), g1 = groundAt(next.x, next.z, player.pos.y), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
+      // Steilkueste: oben an der Kante nicht hinunterfallen (Seen im Inland darf man betreten)
+      if (player.pos.y > -3 && seaD(next.x, next.z) > -40 && terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }
+      // Steile Haenge sperren: nur Gelaende und Rampen zaehlen (Stufen wie der Brunnenrand regelt supportAt)
+      const slopeG = (x, z) => { const ra = rampAt(x, z); return ra && player.pos.y > ra.y - 2 ? ra.y : terrainH(x, z); };
+      const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
       if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
       player.pos.x = next.x; player.pos.z = next.z;
-      const wasGround = player.onGround;
-      if (player.jump && player.onGround) { player.vy = JUMP; player.onGround = false; }
-      player.vy -= GRAVITY * dt;
+      const wasGround = player.onGround && !swim;
+      if (swim) {
+        // Schwimmen wie im Pool der Villa: langsam sinken, Leertaste halten = auftauchen, an der Oberflaeche hinausspringen
+        const up = player.jump || jumpHeld || keys.has("Space");
+        if (up && player.pos.y > surf - 0.8) player.vy = Math.max(player.vy, 5.6);
+        else { player.vy -= 5 * dt; if (up) player.vy = 2.4; player.vy = Math.max(player.vy, -2); }
+      } else {
+        if (player.jump && player.onGround) { player.vy = JUMP; player.onGround = false; }
+        player.vy -= GRAVITY * dt;
+      }
       player.jump = false;
       player.pos.y += player.vy * dt;
       const support = supportAt(player.pos, player.pos.y);
@@ -1669,8 +1722,9 @@
       walking = true;
       document.body.classList.add("walk");
       controls.enabled = false;
+      if (world.userData.boat) world.userData.boat.on = false;
       player.pos.set(x, terrainH(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
-      camera.fov = 70; camera.updateProjectionMatrix();
+      camera.fov = 70; camera.near = 0.15; camera.updateProjectionMatrix();
       updatePlayer(0.001, 0, 0, false);
     }
     function setWalk(on) {
@@ -1679,7 +1733,7 @@
       document.body.classList.remove("walk");
       controls.enabled = true;
       stopDrag(); keys.clear();
-      camera.fov = 45; camera.updateProjectionMatrix();
+      camera.fov = 45; camera.near = 0.6; camera.updateProjectionMatrix();
       camera.position.copy(orbitView.pos); controls.target.copy(orbitView.target); camera.lookAt(orbitView.target);
     }
     $("btn-walk-low").addEventListener("click", () => startWalk());
@@ -1696,7 +1750,7 @@
         ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
         ["Tiefgarage", -28, GY, 32.7, E], ["Rampe Einfahrt (oben)", -60, 0, 140, N],
         ["Höhle unten: Drehplattform", ...(([x, z]) => [x - 10, LY, z])(cm(385, 417)), E], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
-        ["Höhle unten: Anlegestelle", ...(([x, z]) => [x, LY, z])(cm(300, 490)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
+        ["Höhle unten: Anlegestelle", ...(([x, z]) => [x, LY, z])(cm(300, 518)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(300, 400)), W],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
@@ -1756,6 +1810,82 @@
       if (hint.hidden !== !aimedGate) hint.hidden = !aimedGate;
       if (aimedGate && hint.textContent !== txt) hint.textContent = txt;
     }
+    // ===================== Boot fahren =====================
+    // E in der Naehe (4,5 m) = einsteigen, im Boot E = am Ufer aussteigen. W/S Gas/Bremse, A/D lenken, Shift schneller.
+    // Faehrt nur auf Wasser (Hoehlenkanaele, Wassertunnel, Meer), geschlossene Felstore sperren.
+    const BOAT = world.userData.boat;
+    function boatWater(x, z) {
+      const c = caveAt(x, z);
+      if (c === 1) return false;
+      if (c === 0 && !(seaD(x, z) > 2 && terrainH(x, z) < SEA_Y - 0.5)) return false;
+      for (const t of gates) {
+        if (t.open > 0.9) continue;
+        const [ax, az] = t.a, [bx, bz] = t.b, dx = bx - ax, dz = bz - az, k = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz));
+        if (Math.hypot(x - ax - dx * k, z - az - dz * k) < 1.2) return false;
+      }
+      return Math.hypot(x, z) < 900;
+    }
+    function boatFree(x, z, h) {
+      const s = Math.sin(h), c = Math.cos(h);
+      return [[0, 0], [0, -3.6], [0, 3.0], [-1.15, -1.6], [1.15, -1.6], [-1.1, 3.0], [1.1, 3.0]].every(([lx, lz]) => boatWater(x + lx * c + lz * s, z - lx * s + lz * c));
+    }
+    function seatBoat() {
+      const s = Math.sin(BOAT.h), c = Math.cos(BOAT.h);
+      player.pos.set(BOAT.x + 1.6 * s, BOAT.g.position.y + 0.95, BOAT.z + 1.6 * c);
+      camera.position.set(player.pos.x, player.pos.y + 0.9, player.pos.z);
+      camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
+    }
+    function useBoat() {
+      if (!walking) return false;
+      const p = player.pos;
+      if (BOAT.on) {
+        // Ufer suchen: naechste Bodenzelle (Hoehle) bzw. trockenes Gelaende im Umkreis
+        let best = null;
+        for (let r = 2.5; r <= 7 && !best; r += 0.75) for (let k = 0; k < 24; k++) {
+          const a = k / 24 * Math.PI * 2, x = BOAT.x + Math.cos(a) * r, z = BOAT.z + Math.sin(a) * r;
+          if (caveAt(x, z) === 1) { best = [x, z]; break; }                     // nur auf Hoehlenboden (an der Steilkueste gibt es kein Ufer)
+        }
+        if (!best) { toast("Zum Aussteigen näher ans Ufer fahren"); return true; }
+        BOAT.on = false; BOAT.v = 0;
+        player.pos.set(best[0], LY + 0.4, best[1]); player.vy = 0;
+        player.pos.y = supportAt(player.pos, player.pos.y);
+        toast("Ausgestiegen");
+        return true;
+      }
+      if (Math.hypot(p.x - BOAT.x, p.z - BOAT.z) < 4.5 && p.y > SEA_Y - 1.5 && p.y < SEA_Y + 3) {
+        BOAT.on = true; BOAT.v = 0; keys.clear();
+        player.yaw = BOAT.h;
+        toast("Im Boot: W/S Gas und Bremse, A/D lenken, Shift schneller, E aussteigen");
+        seatBoat();
+        return true;
+      }
+      return false;
+    }
+    function boatStep(dt) {
+      let th = 0, st = 0;
+      if (keys.has("KeyW") || keys.has("ArrowUp")) th += 1;
+      if (keys.has("KeyS") || keys.has("ArrowDown")) th -= 1;
+      if (keys.has("KeyA") || keys.has("ArrowLeft")) st += 1;
+      if (keys.has("KeyD") || keys.has("ArrowRight")) st -= 1;
+      th -= moveStick.y; st -= moveStick.x;
+      look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
+      const max = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 14 : 8;
+      BOAT.v += th * 5 * dt;
+      if (!th) BOAT.v *= Math.pow(0.35, dt);
+      BOAT.v = Math.max(-3, Math.min(max, BOAT.v));
+      const dh = st * dt * 0.9 * Math.min(1, Math.abs(BOAT.v) / 2.5) * (BOAT.v < 0 ? -1 : 1);
+      if (boatFree(BOAT.x, BOAT.z, BOAT.h + dh)) { BOAT.h += dh; player.yaw += dh; }
+      const nx = BOAT.x - Math.sin(BOAT.h) * BOAT.v * dt, nz = BOAT.z - Math.cos(BOAT.h) * BOAT.v * dt;
+      if (boatFree(nx, nz, BOAT.h)) { BOAT.x = nx; BOAT.z = nz; } else BOAT.v *= -0.25;
+      boatPose();
+      seatBoat();
+    }
+    let boatTime = 0;
+    function boatPose() {
+      boatTime += 1 / 60;
+      BOAT.g.position.set(BOAT.x, SEA_Y + 0.05 * Math.sin(boatTime * 2.1), BOAT.z);
+      BOAT.g.rotation.set(0.02 * Math.sin(boatTime * 1.3) - BOAT.v * 0.004, BOAT.h, 0.03 * Math.sin(boatTime * 1.7));
+    }
     // Ansicht von unten: Kamera darf unter das Gelaende (Gelaende ist von unten durchsichtig), Blick auf Garage und Hoehle
     let belowView = false;
     const belowSave = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
@@ -1782,13 +1912,15 @@
       renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
     });
     document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); } });
-    document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * 0.0025, e.movementY * 0.0025); });
+    const MOUSE_SENS = 0.0025 * 0.3;                                          // fest 30 % (Wunsch von Nicolas, nicht einstellbar)
+    document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS); });
     addEventListener("keydown", e => {
       if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
       if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
-      if (e.code === "KeyE" && !e.repeat) return useLift();
+      if (e.code === "KeyE" && !e.repeat) { if (!useBoat()) useLift(); return; }
+      if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
       if (inCar(player.pos)) {
         if (/^(Digit|Numpad)[1-5]$/.test(e.code)) return pickStop(STOP_ORDER[+e.code.slice(-1) - 1]);
         if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) stepStop(e.code === "ArrowUp" ? 1 : -1); return; }
@@ -1818,6 +1950,7 @@
     $("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.jump = true; jumpHeld = true; });
     for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
     function walkStep(dt) {
+      if (BOAT.on) return boatStep(dt);
       let mx = 0, mz = 0;
       if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;
       if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1;
@@ -1839,11 +1972,19 @@
       const dt = Math.min(clock.getDelta(), 0.05);
       if (walking) walkStep(dt);
       else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (!belowView && camera.position.y < gy) camera.position.y = gy; }
+      // Unter Wasser: blauer, dichter Nebel (wie im Pool der Villa)
+      {
+        const cw = walking ? waterAt(camera.position.x, camera.position.z) : null, uw = cw !== null && camera.position.y < cw;
+        if (uw) { scene.fog.color.set(0x0c3d55); scene.background.set(0x0c3d55); scene.fog.near = 0.5; scene.fog.far = 12; }
+        else if (scene.fog.far < 100) { scene.fog.near = 350; scene.fog.far = 1500; applyNight(); }
+      }
       updateLift(dt);
       updateLiftPanel();
       updateGates(dt);
       if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
-      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || player.pos.y < -8) ? 1 : 0;
+      const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
+      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
+      if (!BOAT.on) boatPose();
       // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
       {
         const tt = world.userData.turntable, w = dt * 0.05;
@@ -1898,7 +2039,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
