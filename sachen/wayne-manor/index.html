@@ -1600,7 +1600,7 @@
     // Boden ohne Quader: Rampe, unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
     function groundAt(x, z, feet = 0) {
       const ra = rampAt(x, z);
-      if (ra) return ra.y;
+      if (ra && feet > ra.y - 2) return ra.y;                                // Rampe nur auf ihrer Hoehe (darunter liegt die Hoehle)
       if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
       if (feet < -1 && (inPoly(GARAGE, x, z) || caveAt(x, z) || caveUpAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
       return terrainH(x, z);
