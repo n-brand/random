@@ -329,8 +329,22 @@
     // Meer im Suedosten (Wunsch von Nicolas, statt Mideast Lake): s = Abstand Richtung Suedost, t = entlang der Kueste.
     // Bucht dort, wo auf der Karte der Mideast Lake steht (Wasserweg der Hoehle, Lake Exit).
     const R2 = Math.SQRT1_2;
-    const coastS = t => 200 - 45 * Math.exp(-(((t - 2) / 60) ** 2)) + 10 * Math.sin(t / 37) + 5 * Math.sin(t / 13 + 1);
-    const seaD = (x, z) => (x + z) * R2 - coastS((z - x) * R2);               // > 0 = im Meer
+    // E3 (Nicolas, 2026-11-07, Skizze kueste-skizze-oben.webp): Kueste weniger gerade. Links (t > 0, Richtung Sued-West) eine grosse Bucht
+    // (t ca. 340..860, bis ca. 250 m ins Land), rechts (t < -291) biegt die Kueste in einem Bogen nach Norden ab (Meer im Osten).
+    // Dazu leichte Vor- und Ruecksprunge; der Abschnitt um den Wassertunnel (|t| < 90) bleibt wie bisher.
+    const coastBay = t => { const u = (t - 600) / 260; return Math.abs(u) < 1 ? 255 * (1 - u * u) ** 2 : 0; };
+    const BEND_U = 376, BEND_D0 = 94 * (BEND_U / 181) ** 2.1, BEND_K = 2.1 * BEND_D0 / BEND_U;
+    const coastBend = t => {
+      const u = -t - 291;
+      if (u <= 0) return 0;
+      if (u <= BEND_U) return 94 * (u / 181) ** 2.1;                         // Bogen (aus der Skizze abgelesen)
+      return BEND_D0 + (u - BEND_U) + (BEND_K - 1) * 160 * (1 - Math.exp(-(u - BEND_U) / 160));   // laeuft dann nach Norden aus
+    };
+    const coastS = t => 200 - 45 * Math.exp(-(((t - 2) / 60) ** 2)) + 10 * Math.sin(t / 37) + 5 * Math.sin(t / 13 + 1)
+      + sst(90, 220, Math.abs(t)) * (7 * Math.sin(t / 61 + 0.5) + 4 * Math.sin(t / 17.3 + 2.2)) - coastBay(t) - coastBend(t);
+    const coastSlope = t => coastS(t + 0.5) - coastS(t - 0.5);
+    // > 0 = im Meer; durch die Steigung der Kuestenlinie geteilt, damit der Wert auch an schraegen Stellen ungefaehr Meter sind
+    const seaD = (x, z) => { const t = (z - x) * R2; return ((x + z) * R2 - coastS(t)) / Math.hypot(1, coastSlope(t)); };
     // Strassen und Garagenrampen sind entfernt (Plan A1, 2026-11-07): Autos kommen spaeter ueber den Autoaufzug (A3) und die Serpentine (A5)
     // Wassertunnel vom Ende des Lake-Exit-Kanals (Hoehlenkarte 250/1042) bis zur Meereshoehle in der Bucht (Weltkoordinaten)
     const SEA_TUNNEL = [[49.8, 30.7], [70, 58], [95, 92], [112, 115], [128, 131]], SEA_TUN_W = 9;
@@ -384,7 +398,7 @@
       for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
       const w = sst(25, 140, Math.abs(x - WATERFALL.x));
       const zc = WATERFALL.z + 2;
-      h += 14 * sst(zc, zc - lerp(14, 90, w), z) + 10 * sst(zc - 38, zc - 258, z);       // Nordhang, beim Wasserfall steil
+      h += (14 * sst(zc, zc - lerp(14, 90, w), z) + 10 * sst(zc - 38, zc - 258, z)) * (1 - sst(-25, -3, sd));   // Nordhang, beim Wasserfall steil (nur an Land, E3: Meer reicht nach Norden)
       for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));
       const ph = plateauH(x, z);
       if (ph > 0.01) h = Math.max(h, ph);
@@ -401,8 +415,8 @@
       return d * sst(1000, 800, Math.hypot(x, z));
     }
 
-    // Hoehenfeld: Gitter wird zur Mitte hin feiner (ca. 2 m am Anwesen, gross am Rand bei 1500 m)
-    const T_N = 480, T_A = 480, T_B = 1020, TN1 = T_N + 1;                  // Mitte ca. 2 m (A2: Haenge sauberer)
+    // Hoehenfeld: Gitter wird zur Mitte hin feiner (ca. 2 m am Anwesen, 3-6 m an der Kueste, gross am Rand bei 1500 m)
+    const T_N = 640, T_A = 640, T_B = 860, TN1 = T_N + 1;                   // Mitte ca. 2 m, Kueste 3-6 m (A2, E3)
     const warp = u => Math.sign(u) * (T_A * Math.abs(u) + T_B * Math.abs(u) ** 3);
     function unwarp(x) {
       const s = Math.min(Math.abs(x), T_A + T_B);
@@ -484,18 +498,24 @@
     mat.sea = M(0x1d5f80, { roughness: 0.15, metalness: 0.2, side: THREE.DoubleSide });
     // Meer: Flaeche von der Kuestenlinie bis weit hinter den Horizont
     {
-      const sh = new THREE.Shape(), P = (s, t) => [(s - t) * R2, -(s + t) * R2];
-      sh.moveTo(...P(3200, -2600));
-      for (let t = -2600; t <= 2600; t += 25) sh.lineTo(...P(coastS(t) - 0.5, t));
-      sh.lineTo(...P(3200, 2600));
-      const sea = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), mat.sea);
+      // Als Streifen von der Kueste (s = coastS) bis s = 3200 (E3: ein grosses Vieleck mit vielen Punkten wurde nicht mehr ganz trianguliert)
+      const P = (s, t) => [(s - t) * R2, -(s + t) * R2];
+      const sp = [], si = [];
+      for (let t = -2600; t <= 2600; t += Math.abs(t) < 1400 ? 4 : 25) {
+        const [ax, az] = P(coastS(t) - 0.5 * Math.hypot(1, coastSlope(t)), t), [bx, bz] = P(3200, t);
+        sp.push(ax, 0, -az, bx, 0, -bz);
+      }
+      for (let k = 0; k < sp.length / 6 - 1; k++) { const a = k * 2; si.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      const seaG = new THREE.BufferGeometry();
+      seaG.setAttribute("position", new THREE.Float32BufferAttribute(sp, 3)); seaG.setIndex(si); seaG.computeVertexNormals();
+      const sea = new THREE.Mesh(seaG, mat.sea);
       sea.position.y = SEA_Y; sea.receiveShadow = true;
       scene.add(sea);
       // Eckige Felsbrocken entlang der Kueste (statt Strand)
       const rr = rng(303), list = [];
       // oben an der Kante wenige kleine, unten am Klippenfuss grosse Brocken im Wasser
       for (let t = -1300; t <= 1300; t += 2.6) for (let k = 0; k < 2; k++) {
-        const top = k === 0, off = top ? -15 + rr() * 11 : 2 + rr() * 16, size = top ? 0.6 + rr() ** 2 * 1.8 : 1.5 + rr() ** 2 * 5, s = coastS(t) + off, x = (s - t) * R2, z = (s + t) * R2;
+        const top = k === 0, off = top ? -15 + rr() * 11 : 2 + rr() * 16, size = top ? 0.6 + rr() ** 2 * 1.8 : 1.5 + rr() ** 2 * 5, s = coastS(t) + off * Math.hypot(1, coastSlope(t)), x = (s - t) * R2, z = (s + t) * R2;
         if (rr() < (top ? 0.6 : 0.2) || Math.hypot(x, z) > 1250 || seaTunDist(x, z) < 10) continue;
         list.push([x, terrainH(x, z) - size * 0.35, z, size, rr(), rr(), rr(), rr()]);
       }
