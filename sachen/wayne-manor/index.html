@@ -234,7 +234,7 @@
       floorStone: M(0x32353d, { roughness: 0.9 }), concrete: M(0x6c6e72, { roughness: 0.95 }),
       white: M(0xf0efe9), cloth: M(0x4a5a78), red: M(0xb32d2d), green: M(0x3e7a45), wood: M(0x6a4526),
       glass: M(0x9fd0e6, { transparent: true, opacity: 0.38, roughness: 0.1, emissive: 0xffd27a, emissiveIntensity: 0 }),
-      water: M(0x2e8fbf, { transparent: true, opacity: 0.8, roughness: 0.1, metalness: 0.1, emissive: 0x0b3550, emissiveIntensity: 0.4, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+      water: M(0x2e8fbf, { transparent: true, opacity: 0.82, roughness: 0.3, metalness: 0, emissive: 0x0b3550, emissiveIntensity: 0.3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),   // B7: rauer, nicht metallisch (Normalmap folgt unten)
       glow: new THREE.MeshBasicMaterial({ color: 0xbfe6ff }), glowOrange: new THREE.MeshBasicMaterial({ color: 0xffa040 }),
       glowRed: new THREE.MeshBasicMaterial({ color: 0xff3b30 }),
       gravel: M(0xb2a891, { roughness: 1 }), leaves: M(0x2f6b3a, { roughness: 1, flatShading: true }), bark: M(0x5a3d22)
@@ -687,19 +687,34 @@
       scene.add(m);
     }
     // Ein gemeinsames Wasser fuer Meer, Meereshoehle und Hoehlenkanaele (gleiche Hoehe SEA_Y, undurchsichtig: keine sichtbaren Kanten)
-    mat.sea = M(0x1d5f80, { roughness: 0.15, metalness: 0.2, side: THREE.DoubleSide });
+    // B7: Wasser ohne ueberstrahlten weissen Fleck. Wellen-Normalmap (nahtlos: Summe von Sinuswellen mit ganzzahligen Frequenzen),
+    // etwas rauer, nicht metallisch, gedaempfte Spiegelung -> schmaler, glitzernder Lichtstreifen, das Wasser bleibt blau. Bewegt sich (waterAnim).
+    const waveNormals = (() => {
+      const N = 256, c = document.createElement("canvas"); c.width = c.height = N;
+      const g = c.getContext("2d"), img = g.createImageData(N, N), wr = rng(606), W = [];
+      for (let k = 0; k < 14; k++) { const a = wr() * Math.PI * 2, f = 1 + Math.floor(wr() * (k < 5 ? 4 : 12)); W.push([Math.round(Math.cos(a) * f), Math.round(Math.sin(a) * f), (0.6 / Math.max(1, Math.hypot(Math.cos(a) * f, Math.sin(a) * f))) * (0.6 + wr()), wr() * 6.28]); }
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        let dx = 0, dy = 0;
+        for (const [kx, ky, amp, ph] of W) { const s = Math.cos(2 * Math.PI * (kx * x + ky * y) / N + ph) * amp * 2 * Math.PI / N * N / 8; dx += s * kx; dy += s * ky; }
+        const l = Math.hypot(dx, dy, 1), i = (y * N + x) * 4;
+        img.data[i] = (-dx / l * 0.5 + 0.5) * 255; img.data[i + 1] = (-dy / l * 0.5 + 0.5) * 255; img.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[i + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+      return rep => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.anisotropy = 8; return t; };
+    })();
+    mat.sea = new THREE.MeshPhysicalMaterial({ color: 0x1d5f80, roughness: 0.3, metalness: 0, specularIntensity: 0.55, normalMap: waveNormals(1), normalScale: new THREE.Vector2(0.55, 0.55), side: THREE.DoubleSide });
     // Meer: Flaeche von der Kuestenlinie bis weit hinter den Horizont
     {
       // Als Streifen von der Kueste (s = coastS) bis s = 3200 (E3: ein grosses Vieleck mit vielen Punkten wurde nicht mehr ganz trianguliert)
       const P = (s, t) => [(s - t) * R2, -(s + t) * R2];
-      const sp = [], si = [];
+      const sp = [], si = [], su = [];
       for (let t = -2600; t <= 2600; t += Math.abs(t) < 1400 ? 4 : 25) {
         const [ax, az] = P(coastS(t) - 0.5 * Math.hypot(1, coastSlope(t)), t), [bx, bz] = P(3200, t);
-        sp.push(ax, 0, -az, bx, 0, -bz);
+        sp.push(ax, 0, -az, bx, 0, -bz); su.push(ax / 10, -az / 10, bx / 10, -bz / 10);
       }
       for (let k = 0; k < sp.length / 6 - 1; k++) { const a = k * 2; si.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
       const seaG = new THREE.BufferGeometry();
-      seaG.setAttribute("position", new THREE.Float32BufferAttribute(sp, 3)); seaG.setIndex(si); seaG.computeVertexNormals();
+      seaG.setAttribute("position", new THREE.Float32BufferAttribute(sp, 3)); seaG.setAttribute("uv", new THREE.Float32BufferAttribute(su, 2)); seaG.setIndex(si); seaG.computeVertexNormals();
       const sea = new THREE.Mesh(seaG, mat.sea);
       sea.position.y = SEA_Y; sea.receiveShadow = true;
       scene.add(sea);
@@ -2733,6 +2748,9 @@
     // Bach in der Rinne auf der Erweiterung, Fall ueber die Felswand bei WF_LIP (ca. 25 m) in den Teich, Wasservorhang mit laufender Textur
     // (zwei Schichten), Gischt-Nebel (Sprites), Schaum auf dem Teich, Felsbrocken. Der Vorhang faellt nach aussen: dahinter Platz fuer A8.
     const waterAnim = [];
+    // B7: Wellen auf Meer/Hoehle und Seen/Pool bewegen sich langsam
+    mat.water.normalMap = waveNormals(0.1); mat.water.normalScale = new THREE.Vector2(0.45, 0.45); mat.water.needsUpdate = true;
+    waterAnim.push([mat.sea.normalMap, 0.05], [mat.water.normalMap, 0.04]);
     {
       const bed = HILL - 0.55;
       // Bach: Wasserband in der Rinne
@@ -3151,7 +3169,7 @@
       }
       const tg = new THREE.BufferGeometry(); tg.setAttribute("position", new THREE.Float32BufferAttribute(tp, 3)); tg.setAttribute("color", new THREE.Float32BufferAttribute(tcol, 3)); tg.setIndex(tidx); tg.computeVertexNormals();
       const tubes = new THREE.Mesh(tg, M(0xffffff, { vertexColors: true, roughness: 1, side: THREE.DoubleSide })); tubes.receiveShadow = true; tubes.userData.keep = true; scene.add(tubes);
-      const wg = new THREE.BufferGeometry(); wg.setAttribute("position", new THREE.Float32BufferAttribute(wp, 3)); wg.setIndex(widx); wg.computeVertexNormals();
+      const wg = new THREE.BufferGeometry(); wg.setAttribute("position", new THREE.Float32BufferAttribute(wp, 3)); wg.setAttribute("uv", new THREE.Float32BufferAttribute(wp.flatMap((v, i) => i % 3 === 1 ? [] : [v / 10]), 2)); wg.setIndex(widx); wg.computeVertexNormals();
       const cwater = new THREE.Mesh(wg, mat.sea); cwater.userData.keep = true; scene.add(cwater);
       // ---- Felsnadeln und Brocken am Fuss (Felsgenerator, in Klippenfarbe) ----
       const geos = [], sr = rng(919);
