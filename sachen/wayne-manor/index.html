@@ -1896,7 +1896,9 @@
       t.target = t.target ? 0 : 1;
       toast(t.name + (t.target ? " öffnet sich" : " schließt sich"));
     }
-    renderer.domElement.addEventListener("contextmenu", e => { if (!walking) return; e.preventDefault(); toggleGate(findAimedGate()); });
+    // Rechtsklick ueber mousedown (wie die Villa): bei gefangener Maus schickt der Browser kein contextmenu
+    renderer.domElement.addEventListener("contextmenu", e => { if (walking) e.preventDefault(); });
+    renderer.domElement.addEventListener("mousedown", e => { if (!walking || e.button !== 2) return; e.preventDefault(); toggleGate(findAimedGate()); });
     $("door-hint").addEventListener("click", () => toggleGate(aimedGate));
     function updateGates(dt) {
       for (const t of gates) {
