@@ -1473,7 +1473,8 @@
       if (seaTunDist(x, z) < SEA_TUN_W / 2) { const sd = seaD(x, z); return sd > 6 ? 3 : sd > -1.5 ? 4 : 2; }   // 4 = vor der Klippe: nur Grund
       const [px, py] = toCave(x, z);
       if (px < 0 || px > 736 || py > 1042) return 0;
-      if (inPoly(LOW_FLOOR, px, py) || (px > LOW_DOCK[0] && px < LOW_DOCK[1] && py > LOW_DOCK[2] && py < LOW_DOCK[3])) return 1;
+      if (inPoly(LOW_FLOOR, px, py)) return 1;                                   // B4: alte Anlegestelle (LOW_DOCK) entfernt
+      if (px > 255 && px < 372 && py > 470 && py < 500) return 2;                // B4: Wasser bis an den Tunnelrand (Weg und Treppen stehen darin)
       if (inPoly(LAKE_PX, px, py)) return 2;                                     // B3: Hoehlensee
       for (const c of CHANNELS) if (plDist(c.pts, px, py) < c.w / 2) return 2;
       return 0;
@@ -1592,7 +1593,7 @@
       // Anlegestelle mit Boot, Stufen zum Wasser
       // Boot (fahrbar, siehe "Boot fahren"): Rumpf mit Spitze, Kabine, Frontscheibe, Lichter; Bug zeigt lokal nach -z
       {
-        const [x, z] = C(300, 545), g = new THREE.Group(); g.position.set(x, WL, z); g.userData.dynamic = true; world.add(g);
+        const x = C(0, 522)[0] + 3.7, z = C(291.5, 0)[1], g = new THREE.Group(); g.position.set(x, WL, z); g.userData.dynamic = true; world.add(g);   // B4: in der Bootsbox, Bug an der Westwand
         const hull = new THREE.Shape(); hull.moveTo(-1.1, 3.0); hull.lineTo(1.1, 3.0); hull.lineTo(1.15, -1.6); hull.lineTo(0, -3.6); hull.lineTo(-1.15, -1.6); hull.closePath();
         const hm = new THREE.Mesh(new THREE.ExtrudeGeometry(hull, { depth: 0.9, bevelEnabled: false }).rotateX(Math.PI / 2), mat.bat); hm.position.y = 0.5; hm.castShadow = true; g.add(hm);
         B(-0.95, 0.95, 0.5, 0.56, -1.4, 2.8, mat.dark, false, g, false);                                    // Deck
@@ -1601,10 +1602,42 @@
         B(-0.5, 0.5, 0.56, 0.95, 1.4, 2.0, mat.dark, false, g);                                             // Sitz
         for (const sx of [-0.7, 0.7]) B(sx - 0.12, sx + 0.12, 0.62, 0.72, -2.55, -2.45, mat.glow, false, g, false);
         B(-0.25, 0.25, 0.75, 0.85, 2.98, 3.02, mat.glowRed, false, g, false);
-        world.userData.boat = { g, x, z, h: 0, v: 0, on: false };
+        world.userData.boat = { g, x, z, h: Math.PI / 2, v: 0, on: false };   // Spitze nach Westen
       }
-      { const [x0, z0] = C(322, 512), [x1, z1] = C(348, 525), ax0 = Math.min(x0, x1), ax1 = Math.max(x0, x1), az0 = Math.min(z0, z1), az1 = Math.max(z0, z1);
-        for (let k = 0; k < 4; k++) B(ax0 + k * (ax1 - ax0) / 4, ax0 + (k + 1) * (ax1 - ax0) / 4, BED, LY - k * 0.25, az0, az1, mat.concrete, false); }
+      // B4: Weg vom Tunnelrand und Treppe 1 aus Stein, Podest bei -31, Treppe 2 aus Holz hinunter zum U-Steg (-33,5) mit Bootsbox (offen nach Osten).
+      // Kartenpixel nach der Hoehlenkarte; Treppe 1 ca. 1 m laenger als auf der Karte (flacher), Treppe 2 schliesst am Podest an.
+      {
+        const R = (pa, pb, qa, qb) => { const [xa, za] = C(pa, qa), [xb, zb] = C(pb, qb); return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: Math.min(za, zb), z1: Math.max(za, zb) }; };
+        const stone = mat.floorStone, wood = mat.floorWood, pile = M(0x4a3727, { roughness: 0.9 }), iron = M(0x24262a, { metalness: 0.5, roughness: 0.5 });
+        const W = R(321, 362, 476, 494); W.x0 -= 0.7;                            // Weg (Hallenhoehe), an den Tunnelboden angeschlossen
+        B(W.x0, W.x1, BED, LY, W.z0, W.z1, stone);
+        const T1 = R(350, 364, 494, 523), PODY = LY - 3, STEG = SEA_Y + 0.5;    // Treppe 1 (17 Stufen nach Osten hinab)
+        const t1x0 = W.x1, t1x1 = T1.x1 + 0.6, n1 = 17, run1 = (t1x1 - t1x0) / n1;
+        for (let k = 0; k < n1; k++) B(t1x0 + k * run1, t1x0 + (k + 1) * run1, BED, LY - (k + 1) * (LY - PODY) / n1, T1.z0, T1.z1, stone);
+        const P = { x0: t1x1, x1: t1x1 + 2.3, z0: T1.z0, z1: T1.z1 };           // Podest
+        B(P.x0, P.x1, BED, PODY, P.z0, P.z1, stone);
+        const T2 = { x0: P.x0 + 0.1, x1: P.x1, z0: P.z1, z1: C(320, 0)[1] }, n2 = 17, run2 = (T2.z1 - T2.z0) / n2;   // Treppe 2 (Holz) nach Sueden hinab
+        for (let k = 0; k < n2; k++) {
+          const top = PODY - (k + 1) * (PODY - STEG) / n2;
+          B(T2.x0, T2.x1, top - 0.12, top, T2.z0 + k * run2, T2.z0 + (k + 1) * run2, wood);
+          if (k % 4 === 0) for (const x of [T2.x0 + 0.1, T2.x1 - 0.1]) cyl(0.09, 0.09, top - BED, pile, x, (top + BED) / 2, T2.z0 + (k + 0.5) * run2, world, 8);
+        }
+        // U-Steg aus Holz: oberer Balken, linker Arm, rechter Block; dazwischen die Bootsbox
+        const top = R(265, 320, 503, 511), left = R(265, 276, 503, 553), right = R(307, 320, 511, 538);
+        right.x1 = Math.max(right.x1, T2.x1);                                   // Treppe 2 landet auf dem rechten Block
+        for (const r of [top, left, right]) {
+          B(r.x0, r.x1, STEG - 0.15, STEG, r.z0, r.z1, wood);
+          for (let x = r.x0 + 0.3; x <= r.x1 - 0.2; x += 2) for (const z of [r.z0 + 0.2, r.z1 - 0.2]) { cyl(0.13, 0.13, STEG - BED, pile, x, (STEG + BED) / 2, z, world, 8); circles.push([x, z, 0.16, STEG - 0.2]); }
+          for (let x = r.x0; x < r.x1; x += 0.6) B(x, x + 0.04, STEG, STEG + 0.005, r.z0, r.z1, M(0x5b4632), false, world, false);   // Fugen
+        }
+        // Poller an der Bootsbox, Laternen an den Ecken
+        for (const [x, z] of [[left.x1 - 0.4, left.z0 + 0.4], [right.x1 - 0.4, right.z1 - 0.4], [left.x0 + 2, left.z0 + 0.4], [right.x0 + 1.5, right.z1 - 0.4]]) { cyl(0.16, 0.2, 0.5, iron, x, STEG + 0.25, z, world, 10); cyl(0.24, 0.24, 0.08, iron, x, STEG + 0.52, z, world, 10); circles.push([x, z, 0.25, STEG + 0.6]); }
+        for (const [x, z] of [[top.x0 + 0.3, top.z1 - 0.3], [top.x0 + 0.3, top.z0 + 0.3], [left.x1 - 0.3, left.z1 - 0.3], [right.x1 - 0.3, right.z0 + 0.3]]) {
+          cyl(0.06, 0.08, 2.4, iron, x, STEG + 1.2, z, world, 8); circles.push([x, z, 0.12, STEG + 2.4]);
+          const l = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.36, 0.28), mat.glowOrange); l.position.set(x, STEG + 2.55, z); world.add(l);
+        }
+        { const l = new THREE.PointLight(0xffd59a, 0, 26, 1.6); l.position.set((top.x0 + right.x1) / 2, STEG + 4, (top.z0 + left.z1) / 2); l.userData.I = 30; scene.add(l); caveLights.push(l); }
+      }
       // Tore (SE und NE Gate): getarnte Felswaende quer ueber den Kanal; von beiden Seiten sieht es aus, als ende die Hoehle.
       // Rechtsklick (wie die Tueren der Villa) faehrt die Wand nach oben in die Decke.
       for (const [name, a, b] of []) {                                            // B3: SE/NE Gate entfernt (stuenden mitten im See); neues Tor an der Engstelle kommt mit B6
@@ -2024,7 +2057,7 @@
         ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
         ["Tiefgarage", -28, GY, 32.7, E],
         ["Höhle unten: Drehplattform", ...(([x, z]) => [x - 10, LY, z])(cm(385, 417)), E], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
-        ["Höhle unten: Anlegestelle", ...(([x, z]) => [x, LY, z])(cm(300, 518)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
+        ["Höhle unten: Anlegestelle (Weg)", ...(([x, z]) => [x, LY, z])(cm(340, 485)), E], ["Höhle unten: Steg", ...(([x, z]) => [x, SEA_Y + 0.5, z])(cm(300, 507)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
