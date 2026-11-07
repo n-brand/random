@@ -91,7 +91,7 @@
 
   <div class="panel" role="group" aria-label="Steuerung">
     <button type="button" id="btn-walk-low" class="big">Begehen</button>
-    <button type="button" id="btn-ghost" title="Durch alles fliegen: WASD, Leertaste hoch, Shift runter, Esc zurück">Geist</button>
+    <button type="button" id="btn-ghost" title="Durch alles fliegen: WASD waagrecht, Leertaste hoch, Strg runter, Shift schneller, Esc zurück">Geist</button>
     <button type="button" id="btn-walk-top" aria-pressed="false">Karte: aus</button>
     <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
     <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
@@ -2009,7 +2009,7 @@
       if (BOAT.on) BOAT.on = false;
       walking = true; ghost = true;
       document.body.classList.add("walk", "ghost");
-      hintEl.innerHTML = "Geist &middot; WASD fliegen &middot; Leertaste hoch &middot; Shift runter &middot; Linksklick Maus übernehmen &middot; Esc zurück";
+      hintEl.innerHTML = "Geist &middot; WASD fliegen (waagrecht) &middot; Leertaste hoch &middot; Strg runter &middot; Shift schneller &middot; Linksklick Maus übernehmen &middot; Esc zurück";
       controls.enabled = false;
       player.pos.set(camera.position.x, camera.position.y - EYE, camera.position.z);
       player.yaw = Math.atan2(-dir.x, -dir.z); player.pitch = Math.max(-1.5, Math.min(1.5, Math.asin(Math.max(-1, Math.min(1, dir.y)))));
@@ -2026,16 +2026,17 @@
       if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
       if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
       if (keys.has("Space") || jumpHeld) my += 1;
-      if (keys.has("ShiftLeft") || keys.has("ShiftRight") || downHeld) my -= 1;
+      if (keys.has("ControlLeft") || keys.has("ControlRight") || downHeld) my -= 1;   // Strg runter (Nicolas, 2026-11-07)
       mx += moveStick.x; mz -= moveStick.y;
       look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
       const len = Math.hypot(mx, mz);
       if (len > 1) { mx /= len; mz /= len; }
-      const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw), cp = Math.cos(player.pitch), sp = Math.sin(player.pitch), v = GHOST * dt;
+      const fast = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 3 : 1;   // Shift: dreimal so schnell
+      const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw), v = GHOST * fast * dt;
       const p = player.pos;
-      p.x += (-sy * cp * mz + cy * mx) * v;                                     // vorwaerts in Blickrichtung (auch nach oben/unten)
-      p.z += (-cy * cp * mz - sy * mx) * v;
-      p.y += (sp * mz + my) * v;
+      p.x += (-sy * mz + cy * mx) * v;                                          // nur waagrecht (Blick nach oben/unten aendert die Hoehe nicht)
+      p.z += (-cy * mz - sy * mx) * v;
+      p.y += my * v;
       const far = Math.hypot(p.x, p.z);
       if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
       p.y = Math.max(-200, Math.min(800, p.y));
@@ -2277,7 +2278,7 @@
       if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
-      if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }   // Geist: E, Aufzugstasten ohne Wirkung
+      if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: E, Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
       if (e.code === "KeyE" && !e.repeat) {
         if (useBoat()) return;
         const ag = findAimedGate();
@@ -2954,7 +2955,7 @@
         const x = lerp(SEA_TUNNEL[k][0], SEA_TUNNEL[k + 1][0], t), z = lerp(SEA_TUNNEL[k][1], SEA_TUNNEL[k + 1][1], t);
         if (seaD(x, z) > -0.5) { M0 = [x, z]; break; }
       }
-      const tB = (M0[1] - M0[0]) * R2, [bnx, bnz] = coastN(tB);
+      const [ta, tb] = [SEA_TUNNEL[SEA_TUNNEL.length - 2], SEA_TUNNEL[SEA_TUNNEL.length - 1]], tl = Math.hypot(tb[0] - ta[0], tb[1] - ta[1]), bnx = (tb[0] - ta[0]) / tl, bnz = (tb[1] - ta[1]) / tl;   // Richtung des Wassertunnels
       const BAT = { cx: M0[0], cz: M0[1], nx: bnx, nz: bnz, w: 9.6, h: 7, d: 11, open: true };
       const holes = [...WATER_CAVES, BAT];
       // ---- Kuestenlinien sammeln: Grundkueste (wo kein Landstueck davor liegt) und Raender der Landstuecke in der Bucht ----
