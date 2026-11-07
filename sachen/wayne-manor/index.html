@@ -319,12 +319,22 @@
     const fbm = (x, z) => vnoise(x, z) * 0.53 + vnoise(x * 2.1 + 17, z * 2.1 + 5) * 0.29 + vnoise(x * 4.3 + 3, z * 4.3 + 41) * 0.18;
     const LAKES = [
       { name: "Northwest Lake", cx: -150, cz: -55, rx: 24, rz: 36, s: 1.0, depth: 4 },
-      { name: "Wasserfall-Teich", cx: -99, cz: -126, rx: 11, rz: 8, s: 4.1, depth: 2.5 }
+      // A7: neuer Teich am Fuss der Felswand (der alte bei -99/-126 ist weg); keepPlateau: schneidet die Felswand nicht ab
+      { name: "Wasserfall-Teich", cx: -121, cz: -186, rx: 15, rz: 13, s: 2.3, depth: 2.6, keepPlateau: true }
     ];
     const wob = (L, a) => 1 + 0.12 * Math.sin(3 * a + L.s) + 0.07 * Math.sin(5 * a + 2 * L.s) + 0.04 * Math.sin(8 * a + 3 * L.s);
     function lakeD(L, x, z) { const ux = (x - L.cx) / L.rx, uz = (z - L.cz) / L.rz; return Math.hypot(ux, uz) / wob(L, Math.atan2(uz, ux)); }
     const LAWNS = [{ name: "West Lawn", cx: -92, cz: 20, rx: 26, rz: 40 }, { name: "South Lawn", cx: -20, cz: 114, rx: 34, rz: 22 }];
-    const WATERFALL = { x: -99, z: -135 };                                   // Felskante nördlich vom Teich (Ausgang der Hoehle folgt in Schritt 8)
+    const WATERFALL = { x: -121, z: -190 };                                   // Teich am Fuss (A7); Fallkante WF_LIP
+    const WF_LIP = [-105.3, -186];
+    // Bach auf der Plateau-Erweiterung: Quelle im Wald, schlaengelt sich nach Westen bis zur Fallkante
+    const STREAM = [[-35, -200], [-48, -196], [-60, -201], [-72, -195], [-84, -190], [-95, -188.5], WF_LIP];
+    function streamDist(x, z) {
+      if (x < -112 || x > -28 || z < -210 || z > -178) return 1e9;
+      let m = 1e9;
+      for (let i = 0; i < STREAM.length - 1; i++) m = Math.min(m, segDist(x, z, [STREAM[i], STREAM[i + 1]]));
+      return m;
+    }                                   // Felskante nördlich vom Teich (Ausgang der Hoehle folgt in Schritt 8)
     const POLES = [[0, -160], [160, 0], [0, 160], [-160, 0]];
     // Meer im Suedosten (Wunsch von Nicolas, statt Mideast Lake): s = Abstand Richtung Suedost, t = entlang der Kueste.
     // Bucht dort, wo auf der Karte der Mideast Lake steht (Wasserweg der Hoehle, Lake Exit).
@@ -401,7 +411,7 @@
     // A4 (2026-11-07): Erweiterung nach Norden, gleiche Hoehe, bewaldet (Skizze plateau-wasserfall.webp). Keine Bauten, darum ohne Zusatzrand.
     // Westkante (PL_CLIFF) als steile Felswand fuer den Wasserfall (A7), sonst Haenge wie beim Plateau.
     const PLATEAU_N = [[-77, -70], [-78, -134], [-100, -156], [-110, -213], [-100, -241], [-72, -249], [-61, -221], [-30, -213], [-17, -204], [-30, -156], [-29, -128], [-13, -109], [-20, -83]];
-    const PL_CLIFF = [[-100, -156], [-110, -213]];
+    const PL_CLIFF = [[-100, -156], [-110, -213]];   // Fallkante des Wasserfalls (A7) bei z -186
     const PL_FLAT = 8, PL_W = 42;
     const PL_BOX = [...PLATEAU, ...PLATEAU_N].reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
     function polySD(poly, x, z) {                                             // Abstand zur Umrisslinie, innen negativ
@@ -429,7 +439,7 @@
       if (t >= 1) return 0;
       let f = (1 - t) ** lerp(1.5, 1.05, sz);
       f += f * (1 - f) * 0.5 * (fbm(x / 22 + 31, z / 22 + 7) - 0.5);       // Buckel und Mulden im Hang (oben und unten 0)
-      for (const L of LAKES) f *= sst(1.0, 1.4, lakeD(L, x, z));
+      for (const L of LAKES) if (!L.keepPlateau) f *= sst(1.0, 1.4, lakeD(L, x, z));
       return HILL * Math.max(0, f);
     }
     // ===================== Serpentinenstrasse (A5) =====================
@@ -504,13 +514,14 @@
       for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));
       const ph = plateauH(x, z);
       if (ph > 0.01) h = Math.max(h, ph);
+      if (ph > HILL - 6) { const sdd = streamDist(x, z); if (sdd < 4) h -= 1.15 * (1 - sst(1.4, 3.6, sdd)); }   // Bachrinne (A7)
       return h;
     }
     // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
     function forestD(x, z) {
       if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4) return 0;
       for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
-      if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z - 4) < 22) return 0;
+      if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z) < 27 || streamDist(x, z) < 4.5) return 0;
       let d = 0.08 + 0.55 * sst(0.6, 0.75, vnoise(x / 60, z / 60));
       if (z < -100 || (z < -90 && x > -130 && x < 20)) d = 0.9;
       if (x < -118) d = Math.max(d, 0.85);
@@ -1927,7 +1938,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -2211,6 +2222,12 @@
       updateLift(dt);
       updateLiftPanel();
       updateGates(dt);
+      // Wasser bewegen (A7): Texturen laufen, Schaum dreht, Nebel pulsiert
+      for (const [o, v, kind] of waterAnim) {
+        if (kind === "spin") o.rotation.y += dt * v;
+        else if (kind === "mist") { const tt = clock.elapsedTime + v; o.material.opacity = 0.35 + 0.2 * Math.sin(tt * 1.3); o.position.y += Math.sin(tt * 0.9) * dt * 0.3; }
+        else o.offset.y = (o.offset.y + dt * v / 2.2) % 1;
+      }
       if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
       const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
@@ -2267,6 +2284,46 @@
       }
       world.userData.lifted = lifted;
     }
+    // Felsgenerator (gemeinsam fuer Passstrasse und Wasserfall): makeRock(sx, sy, sz, seed, detail) -> Geometrie mit Vertexfarben
+    const rockR = rng(4243);
+      const n3 = (x, y, z) => (vnoise(x + z * 0.71, y + z * 0.37) + vnoise(y * 1.13 + 7.1 + x * 0.21, z - x * 0.29 + 3.3)) / 2;
+      const fbm3 = (x, y, z) => n3(x, y, z) * 0.55 + n3(x * 2.03 + 5, y * 2.03 + 1, z * 2.03 + 9) * 0.3 + n3(x * 4.1 + 2, y * 4.1 + 7, z * 4.1 + 3) * 0.15;
+      const TONES = [0x8d8a84, 0x6c6964, 0x7f6f5d, 0xa59b88, 0x77736b].map(h => new THREE.Color(h));
+      const cMoss = new THREE.Color(0x5b6a3c), cLichen = new THREE.Color(0xb7b29a), tmpC = new THREE.Color();
+      function makeRock(sx, sy, sz, seed, detail = 4) {
+        let g = new THREE.IcosahedronGeometry(1, detail);
+        g.deleteAttribute("uv"); g.deleteAttribute("normal"); g = mergeVertices(g);
+        const P = g.attributes.position, a = seed * 7.31, tone = TONES[Math.floor(seed * 13.7) % TONES.length];
+        // Bruchflaechen: 3-5 Ebenen schneiden die Form ab (Felsabbrueche)
+        const cuts = []; for (let k = 0, n = 4 + Math.floor(rockR() * 3); k < n; k++) { const t = rockR() * 6.28, p = (rockR() - 0.35) * 1.2; cuts.push([Math.cos(t) * Math.cos(p), Math.sin(p) * 0.6, Math.sin(t) * Math.cos(p), 0.5 + rockR() * 0.28]); }
+        const dip = (rockR() - 0.5) * 0.5;                                          // Schichten leicht geneigt
+        const lay = [], crk = [];
+        for (let i = 0; i < P.count; i++) {
+          let x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+          // Kugel -> abgerundeter Block (massiger, kantiger Fels)
+          const blk = v => Math.sign(v) * Math.pow(Math.abs(v), 0.45);
+          const bl = Math.hypot(blk(x), blk(y), blk(z)); x = blk(x) / bl * 1.25; y = blk(y) / bl * 1.25; z = blk(z) / bl * 1.25;
+          const ln = Math.hypot(x, y, z); x /= ln; y /= ln; z /= ln;
+          let r = ln * (1 + 0.32 * (fbm3(x * 1.3 + a, y * 1.3, z * 1.3 - a) - 0.5) + 0.14 * (n3(x * 3.2 + a, y * 3.2, z * 3.2) - 0.5));
+          const ly = (y + dip * x) * sy * 1.1 + 0.5 * n3(x + a, y, z), f = ly - Math.floor(ly); const ledge = sst(0.7, 0.95, f); r *= 1 - 0.1 * ledge;   // Schichten
+          const ang = Math.atan2(z, x), cr = Math.pow(1 - Math.abs(Math.sin(ang * 4 + y * 2 + 3 * n3(x * 2 + a, y * 2, z * 2))), 12); r *= 1 - 0.07 * cr;   // senkrechte Risse
+          if (y > 0.5) r *= lerp(1, 0.84, sst(0.5, 1, y));                      // flachere Oberseite
+          x *= r; y *= r; z *= r;
+          for (const [cx, cy, cz, o] of cuts) { const dd = x * cx + y * cy + z * cz; if (dd > o) { const k = (dd - o) * 0.9; x -= cx * k; y -= cy * k; z -= cz * k; } }
+          P.setXYZ(i, x * sx, y * sy, z * sz); lay.push(ledge); crk.push(cr);
+        }
+        g.computeVertexNormals();
+        const N = g.attributes.normal, col = new Float32Array(P.count * 3), uv = new Float32Array(P.count * 2);
+        for (let i = 0; i < P.count; i++) {
+          const x = P.getX(i), y = P.getY(i), z = P.getZ(i), ny = N.getY(i), nn = n3(x * 0.5 + a, y * 0.5, z * 0.5), sp = n3(x * 2.5, y * 2.5 + a, z * 2.5);
+          tmpC.copy(tone).multiplyScalar(0.8 + 0.34 * nn - 0.18 * lay[i] - 0.3 * crk[i]);
+          if (sp > 0.72) tmpC.lerp(cLichen, 0.3);
+          if (ny > 0.5) tmpC.lerp(cMoss, sst(0.5, 0.9, ny) * sst(0.5, 0.75, nn) * 0.55);
+          col.set([tmpC.r, tmpC.g, tmpC.b], i * 3); uv.set([(x + z) * 0.3, y * 0.3], i * 2);
+        }
+        g.setAttribute("color", new THREE.BufferAttribute(col, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+        return g;
+      }
     // Serpentine bauen (A5, ueberarbeitet: Alpenpass): nach liftPlateau, alles ist schon in Endhoehe.
     // Fahrbahn mit Asphalt-Textur (Farbunterschiede, Fahrspuren, Risse, Flickstellen, weisse Markierung) und Bankett, bergseitig Felsformationen
     // im Einschnitt, talseitig Felsabbrueche unter dem Rand, Leitplanken (W-Profil, Pfosten bis in den Boden) an Talseite und Kehren,
@@ -2275,8 +2332,6 @@
       const hw = SERP_W / 2, S2 = SERP.samples, NS = S2.length;
       const fr = rng(4242);
       // ---- Hilfen ----
-      const n3 = (x, y, z) => (vnoise(x + z * 0.71, y + z * 0.37) + vnoise(y * 1.13 + 7.1 + x * 0.21, z - x * 0.29 + 3.3)) / 2;
-      const fbm3 = (x, y, z) => n3(x, y, z) * 0.55 + n3(x * 2.03 + 5, y * 2.03 + 1, z * 2.03 + 9) * 0.3 + n3(x * 4.1 + 2, y * 4.1 + 7, z * 4.1 + 3) * 0.15;
       const tang = i => { const a = S2[Math.max(0, i - 1)], b = S2[Math.min(NS - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]); return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; };
       // Abstand zu anderen Strassenstuecken (nicht dem eigenen Abschnitt um s0)
       const otherRoad = (x, z, s0) => { let m = 1e9; for (const [sx, sz, s] of S2) if (Math.abs(s - s0) > 28) m = Math.min(m, Math.hypot(x - sx, z - sz)); return m; };
@@ -2328,42 +2383,6 @@
 
       // ---- Felsen: verformte Kugel mit Bruchflaechen, Schichten, Rissen, Moos; viele zu einem Netz ----
       const rockGeos = [];
-      const TONES = [0x8d8a84, 0x6c6964, 0x7f6f5d, 0xa59b88, 0x77736b].map(h => new THREE.Color(h));
-      const cMoss = new THREE.Color(0x5b6a3c), cLichen = new THREE.Color(0xb7b29a), tmpC = new THREE.Color();
-      function makeRock(sx, sy, sz, seed, detail = 4) {
-        let g = new THREE.IcosahedronGeometry(1, detail);
-        g.deleteAttribute("uv"); g.deleteAttribute("normal"); g = mergeVertices(g);
-        const P = g.attributes.position, a = seed * 7.31, tone = TONES[Math.floor(seed * 13.7) % TONES.length];
-        // Bruchflaechen: 3-5 Ebenen schneiden die Form ab (Felsabbrueche)
-        const cuts = []; for (let k = 0, n = 4 + Math.floor(fr() * 3); k < n; k++) { const t = fr() * 6.28, p = (fr() - 0.35) * 1.2; cuts.push([Math.cos(t) * Math.cos(p), Math.sin(p) * 0.6, Math.sin(t) * Math.cos(p), 0.5 + fr() * 0.28]); }
-        const dip = (fr() - 0.5) * 0.5;                                          // Schichten leicht geneigt
-        const lay = [], crk = [];
-        for (let i = 0; i < P.count; i++) {
-          let x = P.getX(i), y = P.getY(i), z = P.getZ(i);
-          // Kugel -> abgerundeter Block (massiger, kantiger Fels)
-          const blk = v => Math.sign(v) * Math.pow(Math.abs(v), 0.45);
-          const bl = Math.hypot(blk(x), blk(y), blk(z)); x = blk(x) / bl * 1.25; y = blk(y) / bl * 1.25; z = blk(z) / bl * 1.25;
-          const ln = Math.hypot(x, y, z); x /= ln; y /= ln; z /= ln;
-          let r = ln * (1 + 0.32 * (fbm3(x * 1.3 + a, y * 1.3, z * 1.3 - a) - 0.5) + 0.14 * (n3(x * 3.2 + a, y * 3.2, z * 3.2) - 0.5));
-          const ly = (y + dip * x) * sy * 1.1 + 0.5 * n3(x + a, y, z), f = ly - Math.floor(ly); const ledge = sst(0.7, 0.95, f); r *= 1 - 0.1 * ledge;   // Schichten
-          const ang = Math.atan2(z, x), cr = Math.pow(1 - Math.abs(Math.sin(ang * 4 + y * 2 + 3 * n3(x * 2 + a, y * 2, z * 2))), 12); r *= 1 - 0.07 * cr;   // senkrechte Risse
-          if (y > 0.5) r *= lerp(1, 0.84, sst(0.5, 1, y));                      // flachere Oberseite
-          x *= r; y *= r; z *= r;
-          for (const [cx, cy, cz, o] of cuts) { const dd = x * cx + y * cy + z * cz; if (dd > o) { const k = (dd - o) * 0.9; x -= cx * k; y -= cy * k; z -= cz * k; } }
-          P.setXYZ(i, x * sx, y * sy, z * sz); lay.push(ledge); crk.push(cr);
-        }
-        g.computeVertexNormals();
-        const N = g.attributes.normal, col = new Float32Array(P.count * 3), uv = new Float32Array(P.count * 2);
-        for (let i = 0; i < P.count; i++) {
-          const x = P.getX(i), y = P.getY(i), z = P.getZ(i), ny = N.getY(i), nn = n3(x * 0.5 + a, y * 0.5, z * 0.5), sp = n3(x * 2.5, y * 2.5 + a, z * 2.5);
-          tmpC.copy(tone).multiplyScalar(0.8 + 0.34 * nn - 0.18 * lay[i] - 0.3 * crk[i]);
-          if (sp > 0.72) tmpC.lerp(cLichen, 0.3);
-          if (ny > 0.5) tmpC.lerp(cMoss, sst(0.5, 0.9, ny) * sst(0.5, 0.75, nn) * 0.55);
-          col.set([tmpC.r, tmpC.g, tmpC.b], i * 3); uv.set([(x + z) * 0.3, y * 0.3], i * 2);
-        }
-        g.setAttribute("color", new THREE.BufferAttribute(col, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-        return g;
-      }
       // yTop: Felsen oben kappen (Felsabbrueche unter einer hoeher liegenden Fahrbahn duerfen nicht ueber deren Rand ragen)
       const placeRock = (g, x, y, z, rotY, yTop = Infinity) => {
         g.rotateY(rotY); g.translate(x, y, z);
@@ -2557,6 +2576,81 @@
       B(hx0, hx1, top, top + 0.15, hz0, hz1, capM, false);
       gableRoof(hx0, hx1, hz0, hz1, top + 0.15, 1.7, 0.35, mat.slate);
       const dl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.22), mat.gateLamp); dl.position.set(xm + 0.9, fy + 2.45, hz1 + 0.15); world.add(dl);
+    }
+    // ===================== Wasserfall (A7) =====================
+    // Bach in der Rinne auf der Erweiterung, Fall ueber die Felswand bei WF_LIP (ca. 25 m) in den Teich, Wasservorhang mit laufender Textur
+    // (zwei Schichten), Gischt-Nebel (Sprites), Schaum auf dem Teich, Felsbrocken. Der Vorhang faellt nach aussen: dahinter Platz fuer A8.
+    const waterAnim = [];
+    {
+      const bed = HILL - 0.55;
+      // Bach: Wasserband in der Rinne
+      const sc = new THREE.CatmullRomCurve3(STREAM.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
+      const streamTex = canvasTex(64, 256, (g, w, h) => {
+        const rr = rng(12); g.fillStyle = "#3f7f96"; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(225,240,250,${0.08 + rr() * 0.25})`; g.fillRect(rr() * w, rr() * h, 1 + rr() * 2, 6 + rr() * 26); }
+      });
+      const streamMat = M(0xffffff, { map: streamTex, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.88 });
+      ribbon(sc, sc.getLength(), 2.6, streamMat, 6, 0, { y: () => bed });
+      waterAnim.push([streamTex, -0.55]);                                     // fliesst zur Kante
+      // Vorhang: von der Kante (Richtung der Felswand) nach aussen gekruemmt bis zum Teich
+      const [lx, lz] = WF_LIP, dirX = -10 / Math.hypot(10, 57), dirZ = -57 / Math.hypot(10, 57), outX = -0.985, outZ = 0.173;
+      const fallTex = canvasTex(128, 256, (g, w, h) => {
+        const rr = rng(33); g.clearRect(0, 0, w, h);
+        for (let i = 0; i < 900; i++) { const x = rr() * w, a = 0.1 + rr() * 0.45, l = 20 + rr() * 90; const gr = g.createLinearGradient(0, 0, 0, l); gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.5, `rgba(240,248,255,${a})`); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.save(); g.translate(x, rr() * h); g.fillRect(0, 0, 1 + rr() * 2.5, l); g.restore(); }
+      });
+      const mkCurtain = (W, push, alpha, speed, ofs) => {
+        const nu = 12, nv = 24, pos = [], uv = [], idx = [], top = HILL - 0.5, bot = WATER_Y;
+        for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
+          const v = j / nv, u = i / nu - 0.5, o = ofs + 0.4 + push * v ** 1.7 + 0.15 * Math.sin(u * 9 + v * 5), w = W * (1 + 0.35 * v);
+          pos.push(lx + dirX * u * w + outX * o, lerp(top, bot, v), lz + dirZ * u * w + outZ * o); uv.push(i / nu, -v * 2.2);
+        }
+        for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const a = j * (nu + 1) + i, b = a + nu + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+        const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+        const t = fallTex.clone(); t.needsUpdate = true;
+        const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, color: 0xe6f3fb, transparent: true, opacity: alpha, depthWrite: false, side: THREE.DoubleSide, roughness: 0.3, emissive: 0x223038, emissiveMap: t }));
+        m.userData.keep = true; m.renderOrder = 2; scene.add(m); waterAnim.push([t, speed]);
+      };
+      mkCurtain(5.5, 3.2, 0.9, 2.4, 0); mkCurtain(6.5, 3.6, 0.55, 1.7, 0.35);
+      // Kante: Wasser fliesst ueber den Rand (kurzes Stueck vom Bach bis zum Vorhang)
+      // Schaum auf dem Teich am Fuss
+      const fx = lx + outX * 3.9, fz = lz + outZ * 3.9;
+      const foamTex = canvasTex(128, 128, (g, w, h) => { const rr = rng(8); for (let i = 0; i < 500; i++) { const a = rr() * 6.28, r = rr() ** 0.6 * 60; g.fillStyle = `rgba(255,255,255,${0.15 + rr() * 0.4 * (1 - r / 64)})`; g.beginPath(); g.arc(64 + Math.cos(a) * r, 64 + Math.sin(a) * r, 1 + rr() * 3, 0, 7); g.fill(); } });
+      const foam = new THREE.Mesh(new THREE.CircleGeometry(5.5, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: foamTex, transparent: true, depthWrite: false }));
+      foam.position.set(fx, WATER_Y + 0.04, fz); foam.userData.keep = true; scene.add(foam); waterAnim.push([foam, 0.15, "spin"]);
+      // Gischt-Nebel
+      const mistTex = canvasTex(64, 64, (g, w, h) => { const gr = g.createRadialGradient(32, 32, 2, 32, 32, 31); gr.addColorStop(0, "rgba(255,255,255,.55)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+      for (let k = 0; k < 9; k++) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: mistTex, transparent: true, depthWrite: false, opacity: 0.5 }));
+        const a = k / 9 * 6.28; sp.position.set(fx + Math.cos(a) * 2.5, WATER_Y + 1.2 + (k % 3) * 1.4, fz + Math.sin(a) * 3); sp.scale.setScalar(6 + (k % 4) * 1.5); sp.userData.keep = true; scene.add(sp);
+        waterAnim.push([sp, k, "mist"]);
+      }
+      // Felsbrocken am Ufer und unter dem Fall (einige halb im Wasser)
+      const geos = [], wr = rng(515);
+      for (let k = 0, n = 0; k < 200 && n < 16; k++) {
+        const a = wr() * 6.28, L = LAKES.find(q => q.name === "Wasserfall-Teich"), rr = 0.85 + wr() * 0.45;
+        const x = L.cx + Math.cos(a) * L.rx * rr, z = L.cz + Math.sin(a) * L.rz * rr, s = 0.8 + wr() * 2.0;
+        if (Math.hypot(x - fx, z - fz) < 4.5 || terrainH(x, z) > 1.5) continue;   // nicht in den Vorhang, nicht an die Wand
+        const y = Math.max(terrainH(x, z), WATER_Y - 1.2);
+        const g = makeRock(s, s * (0.55 + wr() * 0.3), s * (0.8 + wr() * 0.4), wr(), 3); g.rotateY(wr() * 6); g.translate(x, y + s * 0.15, z); geos.push(g);
+        if (terrainH(x, z) > WATER_Y) circles.push([x, z, s * 0.8, y + s]);
+        n++;
+      }
+      for (const [dx, dz, s] of [[1.5, 3.5, 1.6], [-1.2, -3.6, 1.9], [2.6, -1.5, 1.2]]) {   // Brocken direkt am Fuss
+        const x = lx + outX * (1.5 + dx) + dirX * dz, z = lz + outZ * (1.5 + dx) + dirZ * dz, g = makeRock(s, s * 0.7, s, wr(), 3); g.translate(x, WATER_Y - 0.2, z); geos.push(g);
+      }
+      // Felsplatten vor der Wand links und rechts vom Fall (Schichten, Vorspruenge); hinter dem Vorhang bleibt frei (A8)
+      for (const side of [-1, 1]) for (let k = 0, along = 4.2 + wr() * 1.5; k < 16 && along < 30; k++) {
+        const w = 6 + wr() * 5, h = 9 + wr() * 9, dd = 2.2 + wr() * 1.8, y = k % 2 ? 9 + wr() * 6 : -1 + wr() * 3;   // unten und oben versetzt, ueberlappend
+        const a = side * (along + w * 0.4), cx0 = lx + dirX * a, cz0 = lz + dirZ * a;
+        // Wandfuss hier: so weit nach aussen, bis das Gelaende unter 60 % der Hoehe liegt
+        let o = 0; while (o < 8 && terrainH(cx0 + outX * o, cz0 + outZ * o) > y + h * 0.3) o += 0.5;
+        const g = makeRock(w / 2, h / 2, dd / 2, wr());
+        g.rotateY(-Math.atan2(dirZ, dirX)); g.translate(cx0 + outX * (o - dd * 0.45), y + h / 2, cz0 + outZ * (o - dd * 0.45));
+        const P = g.attributes.position; for (let q = 0; q < P.count; q++) if (P.getY(q) > HILL + 0.3) P.setY(q, HILL + 0.3);
+        g.computeVertexNormals(); geos.push(g);
+        along += w * (k % 2 ? 0.55 + wr() * 0.25 : 0.15);
+      }
+      if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.9 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
     }
     // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
     {
