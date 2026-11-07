@@ -1580,7 +1580,26 @@
           B(-0.06, 0.06, 1.2, 2.4, -2.4, -1.4, mat.bat, false, g); for (const sx of [-1, 1]) cyl(0.08, 0.08, 1.0, mat.dark, sx * 0.9, 0.5, 0, g, 6); }
         circles.push([x, z, 1.8 * scale, UY + 2]);
       };
-      plane(255, 388, 0.8, 1.15, "bat"); plane(283, 360, 0.5, 1, "jet"); plane(312, 330, 0.3, 1, "jet"); plane(568, 372, -0.6, 0.9, "jet"); plane(585, 420, -0.9, 0.9, "bat");
+      plane(255, 388, 0.8, 1.15, "bat"); plane(283, 360, 0.5, 1, "jet"); plane(305, 400, 0.3, 0.85, "jet"); plane(568, 372, -0.6, 0.9, "jet"); plane(585, 420, -0.9, 0.9, "bat");
+      // E1 (Nicolas, 2026-11-07, Loesung c): Vorraum aus Fels um Treppen- und Aufzugsausgang, Hangartor (Stahl) nach Osten.
+      // Vorher stand der Hangar im Treppenhaus und ein Jet direkt im Ausgang.
+      {
+        const VX0 = -61, VX1 = -44, VZ0 = 13.5, VZ1 = 25.5, GZ0 = 14.8, GZ1 = 20.8, GH = 5.2, T = 0.8, top = UY + UH + 0.5;
+        const rk = M(0x6f6b64, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1 });
+        B(VX0, VX1 + T / 2, UY, top, VZ0 - T, VZ0, rk);                          // Nordwand
+        B(VX0, VX1 + T / 2, UY, top, VZ1, VZ1 + T, rk);                          // Suedwand
+        B(VX1 - T / 2, VX1 + T / 2, UY, top, VZ0, GZ0, rk); B(VX1 - T / 2, VX1 + T / 2, UY, top, GZ1, VZ1, rk);   // Ostwand neben dem Tor
+        B(VX1 - T / 2, VX1 + T / 2, UY + GH, top, GZ0, GZ1, rk);                 // Sturz ueber dem Tor
+        for (const s of [-1, 1]) { const x = VX1 + s * (T / 2 + 0.03); B(x - 0.03, x + 0.03, UY + GH + 0.3, UY + GH + 0.45, GZ0, GZ1, mat.glowOrange, false, world, false); }
+        const l = new THREE.PointLight(0xdfe8ff, 0, 20, 1.6); l.position.set(-55, UY + 4.5, 21.5); l.userData.I = 24; scene.add(l); caveLights.push(l);
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 6), mat.glow); f.position.copy(l.position); world.add(f);
+        // Tor: faehrt nach oben in den Sturz (Rechtsklick wie die Felstore), geschlossen sperrt es
+        const g = new THREE.Group(); g.position.set(VX1, UY, (GZ0 + GZ1) / 2); g.rotation.y = Math.PI / 2; g.userData.dynamic = true; world.add(g);
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(GZ1 - GZ0, GH, 0.3), mat.steel); leaf.position.y = GH / 2; leaf.castShadow = leaf.receiveShadow = true; g.add(leaf);
+        for (let k = 1; k < 5; k++) { const s = new THREE.Mesh(new THREE.BoxGeometry(GZ1 - GZ0 - 0.4, 0.1, 0.36), mat.glowOrange); s.position.y = k * GH / 5; g.add(s); }
+        const solid = S(VX1 - 0.3, VX1 + 0.3, UY, UY + GH, GZ0, GZ1);
+        gates.push({ name: "Hangartor", g, open: 0, target: 0, lift: GH - 0.1, y0: UY, solid, a: [VX1, GZ0], b: [VX1, GZ1] });
+      }
       // Aircraft Exit: Vorraum mit grossem Tor (oeffnet in Schritt 8)
       { const a = C(187, 352), b = C(240, 298), len = Math.hypot(b[0] - a[0], b[1] - a[1]), d = new THREE.Mesh(new THREE.BoxGeometry(len, UH - 1.5, 0.5), mat.steel);
         d.position.set((a[0] + b[0]) / 2, UY + (UH - 1.5) / 2, (a[1] + b[1]) / 2); d.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0]); world.add(d);
@@ -1833,7 +1852,7 @@
         ["Höhle unten: Drehplattform", ...(([x, z]) => [x - 10, LY, z])(cm(385, 417)), E], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
         ["Höhle unten: Anlegestelle", ...(([x, z]) => [x, LY, z])(cm(300, 518)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
-        ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(300, 400)), W],
+        ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
         ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N]
       ];
@@ -1881,7 +1900,7 @@
     $("door-hint").addEventListener("click", () => toggleGate(aimedGate));
     function updateGates(dt) {
       for (const t of gates) {
-        if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / 4) : Math.max(0, t.open - dt / 4); t.g.position.y = BED + sst(0, 1, t.open) * t.lift; }
+        if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / 4) : Math.max(0, t.open - dt / 4); t.g.position.y = (t.y0 ?? BED) + sst(0, 1, t.open) * t.lift; if (t.solid) t.solid.on = t.open < 0.8; }
       }
       gateHintClock += dt;
       if (gateHintClock < 0.15) return;
