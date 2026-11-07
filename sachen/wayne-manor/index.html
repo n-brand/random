@@ -332,7 +332,12 @@
     // E3 (Nicolas, 2026-11-07, Skizze kueste-skizze-oben.webp): Kueste weniger gerade. Links (t > 0, Richtung Sued-West) eine grosse Bucht
     // (t ca. 340..860, bis ca. 250 m ins Land), rechts (t < -291) biegt die Kueste in einem Bogen nach Norden ab (Meer im Osten).
     // Dazu leichte Vor- und Ruecksprunge; der Abschnitt um den Wassertunnel (|t| < 90) bleibt wie bisher.
-    const coastBay = t => { const u = (t - 600) / 260; return Math.abs(u) < 1 ? 255 * (1 - u * u) ** 2 : 0; };
+    // Bucht rund (Nicolas: "zu eckig"): Halbellipse statt Hoecker, an der Einfahrt weich auslaufend, innen leicht unregelmaessig
+    const coastBay = t => {
+      const u = (t - 600) / 270, a = Math.abs(u);
+      if (a >= 1) return 0;
+      return 240 * Math.sqrt(1 - u * u) * sst(1, 0.72, a) * (1 + 0.05 * Math.sin(t / 47 + 1));
+    };
     const BEND_U = 376, BEND_D0 = 94 * (BEND_U / 181) ** 2.1, BEND_K = 2.1 * BEND_D0 / BEND_U;
     const coastBend = t => {
       const u = -t - 291;
@@ -341,7 +346,7 @@
       return BEND_D0 + (u - BEND_U) + (BEND_K - 1) * 160 * (1 - Math.exp(-(u - BEND_U) / 160));   // laeuft dann nach Norden aus
     };
     const coastS = t => 200 - 45 * Math.exp(-(((t - 2) / 60) ** 2)) + 10 * Math.sin(t / 37) + 5 * Math.sin(t / 13 + 1)
-      + sst(90, 220, Math.abs(t)) * (7 * Math.sin(t / 61 + 0.5) + 4 * Math.sin(t / 17.3 + 2.2)) - coastBay(t) - coastBend(t);
+      + sst(90, 220, Math.abs(t)) * (7 * Math.sin(t / 61 + 0.5) + 3 * Math.sin(t / 31 + 2.2)) - coastBay(t) - coastBend(t);
     const coastSlope = t => coastS(t + 0.5) - coastS(t - 0.5);
     // > 0 = im Meer; durch die Steigung der Kuestenlinie geteilt, damit der Wert auch an schraegen Stellen ungefaehr Meter sind
     const seaD = (x, z) => { const t = (z - x) * R2; return ((x + z) * R2 - coastS(t)) / Math.hypot(1, coastSlope(t)); };
@@ -394,7 +399,9 @@
       let h = sst(0, 140, siteDist(x, z)) * fbm(x / 170 + 3, z / 170 + 9) * 16 * sst(0, -80, sd);   // sanfte Huegel ausserhalb des Anwesens
       h += 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2)) * sst(-60, -320, sd);   // Berge am Horizont (nicht zum Meer hin)
       // Steilkueste: oben leicht erhoehte Felskante, dann ca. 32 m senkrecht hinab, am Fuss ein flacher Felssockel, weiter draussen tiefer
-      h = h * (1 - sst(-25, -3, sd)) + 1.0 * sst(-30, -8, sd) * (1 - sst(-3, -1, sd)) - 32 * sst(-2.5, 1.5, sd) - 9 * sst(14, 60, sd);
+      // Klippe mindestens so breit wie ca. 1,6 Rasterzellen (draussen ist das Raster grob, sonst springt die Kante zackig von Zelle zu Zelle)
+      const cw = Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
+      h = h * (1 - sst(-25, -3, sd)) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 32 * sst(-0.62 * cw, 0.38 * cw, sd) - 9 * sst(14, 60, sd);
       for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
       const w = sst(25, 140, Math.abs(x - WATERFALL.x));
       const zc = WATERFALL.z + 2;
@@ -424,6 +431,7 @@
       for (let k = 0; k < 6; k++) t -= (T_A * t + T_B * t * t * t - s) / (T_A + 3 * T_B * t * t);
       return Math.sign(x) * t;
     }
+    function gridStep(v) { const u = unwarp(v); return (T_A + 3 * T_B * u * u) * 2 / T_N; }   // Rasterweite an der Stelle v (m)
     const TX = Float32Array.from({ length: TN1 }, (_, i) => warp(i / (T_N / 2) - 1));
     const TH = new Float32Array(TN1 * TN1);
     for (let j = 0; j < TN1; j++) for (let i = 0; i < TN1; i++) TH[j * TN1 + i] = genH(TX[i], TX[j]);
