@@ -310,7 +310,7 @@
     const SITE = { x0: -100, x1: 60, z0: -90, z1: 120 };                 // Anwesen (Kartenbereich) bleibt flach (y 0)
     const WATER_Y = -0.35, LIMIT_WORLD = 700;                               // WATER_Y = Seen im Inland
     const LY = -28, LH = 10;                                                  // Hoehle unten (Lower Level): Boden und Hoehe
-    const SEA_Y = LY - 0.7;                                                   // Meer = Wasser in der Hoehle (Boot faehrt ohne Schleuse hinaus), Steilkueste ca. 30 m
+    const SEA_Y = LY - 6;                                                     // B1: Meer = Wasser in der Hoehle bei -34 (6 m unter dem Hallenboden), Steilkueste ca. 38 m
     const hash2 = (i, j) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
     function vnoise(x, z) {
       const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
@@ -550,7 +550,7 @@
       // Steilkueste: oben leicht erhoehte Felskante, dann ca. 32 m senkrecht hinab, am Fuss ein flacher Felssockel, weiter draussen tiefer
       // Klippe mindestens so breit wie ca. 1,6 Rasterzellen (draussen ist das Raster grob, sonst springt die Kante zackig von Zelle zu Zelle)
       const cw = Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
-      h = h * lerp(1 - sst(-25, -3, sd), 1 - sst(-0.62 * cw, 0.38 * cw, sd), ch) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 32 * sst(-0.62 * cw, 0.38 * cw, sd) - 9 * sst(14, 60, sd);
+      h = h * lerp(1 - sst(-25, -3, sd), 1 - sst(-0.62 * cw, 0.38 * cw, sd), ch) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 38 * sst(-0.62 * cw, 0.38 * cw, sd) - 9 * sst(14, 60, sd);   // B1: Klippe 38 m
       for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
       // (A4: der alte Nordhang mit Felskante beim alten Wasserfall ist weg; die Plateau-Erweiterung mit Felswand uebernimmt, Wasserfall neu in A7)
       for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));
@@ -1416,7 +1416,7 @@
     // ===================== Hoehle unten (Schritt 6, Karte "Lower Level") =====================
     // Alles in Pixeln der Hoehlenkarte (caveMp). Raster aus 0,6-m-Zellen: 0 = Fels, 1 = Boden, 2 = Wasser.
     // Boden y LY, Wasser WL, Kanalgrund BED, Decke LY + LH (unregelmaessig). Tunnel Sued (Gotham Exit) <-> Nord (Waterfall Exit).
-    const WL = LY - 0.7, BED = LY - 3.2;
+    const WL = SEA_Y, BED = SEA_Y - 3.5;                                      // B1: Hoehlenwasser = Meer, Grund 3,5 m tiefer
     const toCave = (x, z) => [CAVE_LIFT[0] - (z - SHAFT.cz) / CAVE_SC, CAVE_LIFT[1] + (x - SHAFT.cx) / CAVE_SC];
     const LOW_FLOOR = [[0, 435], [212, 435], [220, 370], [250, 340], [280, 325], [295, 300], [300, 275], [320, 245], [380, 250], [395, 290], [410, 310], [450, 312], [500, 320],
       [550, 325], [580, 365], [583, 395], [610, 435], [622, 460], [736, 460], [736, 505], [470, 505], [440, 472], [0, 472]];
@@ -1497,7 +1497,7 @@
       // Kollision: Boden (Zeilen-Laeufe), Wasser gesperrt, Felswaende an jeder Kante zu Fels
       const runs = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
       const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
-      runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), LY - 0.5, LY, Z(j), Z(j + 1)));
+      runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), BED - 1.5, LY, Z(j), Z(j + 1)));   // B1: bis unter den Grund
       runs((i, j) => CM[j * CNX + i] === 2 || CM[j * CNX + i] === 4, (a, b, j) => S(X(a), X(b), BED - 0.5, BED, Z(j), Z(j + 1)));   // Grund im Wasser (man kann hinein und schwimmen)
       const isC = v => v === 1 || v === 2;
       // Wandkollision um WM nach innen geschoben: die sichtbaren Felsecken sind bis 0,35 m verrauscht, sonst sieht man durch die Wand
@@ -1887,6 +1887,12 @@
         if (player.jump && player.onGround) { player.vy = JUMP; player.onGround = false; }
         player.vy -= GRAVITY * dt;
       }
+      // B1 (Uebergang bis Treppen/Steg in B4): an der Uferkante in der Hoehle mit gehaltener Leertaste hochklettern
+      if ((keys.has("Space") || jumpHeld) && player.pos.y < LY - 0.05 && player.pos.y > SEA_Y - 1.5) {
+        let edge = false;
+        for (let k = 0; k < 8 && !edge; k++) { const a = k / 8 * Math.PI * 2; edge = caveAt(player.pos.x + Math.cos(a) * 1.1, player.pos.z + Math.sin(a) * 1.1) === 1; }
+        if (edge) player.vy = Math.max(player.vy, 3.2);
+      }
       player.jump = false;
       player.pos.y += player.vy * dt;
       const support = supportAt(player.pos, player.pos.y);
@@ -2098,7 +2104,7 @@
         toast("Ausgestiegen");
         return true;
       }
-      if (Math.hypot(p.x - BOAT.x, p.z - BOAT.z) < 4.5 && p.y > SEA_Y - 1.5 && p.y < SEA_Y + 3) {
+      if (Math.hypot(p.x - BOAT.x, p.z - BOAT.z) < 4.5 && p.y > SEA_Y - 1.5 && p.y < LY + 1) {   // B1: auch vom Hallenboden (6 m darueber) bis zum Steg (B4)
         BOAT.on = true; BOAT.v = 0; keys.clear();
         player.yaw = BOAT.h;
         toast("Im Boot: W/S Gas und Bremse, A/D lenken, Shift schneller, E aussteigen");
