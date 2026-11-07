@@ -500,9 +500,44 @@
       r = 1.4 * (Math.floor(q) + sst(0.55, 1, f));                           // Gesteinsschichten als kleine Stufen
       return zn * r * (1 - sst(HILL - 3, HILL - 0.3, plateauH(x, z)));
     }
+    // ===================== Waterfall Exit (A8) =====================
+    // Vom Nordende des Hoehlentunnels (LY) ansteigend (knapp 10 %) mit einer Kehre im Berg unter der Nord-Erweiterung bis hinter den
+    // Wasserfall (Portal WF_PORTAL am Fuss der Felswand, Hoehe WFX_Y). Draussen ueber einen Steindamm durch den Teich ans Suedufer.
+    const WFX_Y = 0.15, WF_PORTAL = { x0: -110.6, x1: -103.5, z0: -190.2, z1: -181.8 };
+    const WFT = (() => {
+      const tun = [[-25.8, -35.2], [-25.8, -45], [-26, -80], [-28, -120], [-33, -160], [-38, -190], [-38, -205]];
+      for (let k = 1; k < 6; k++) { const a = Math.PI * k / 6; tun.push([-50 + 12 * Math.cos(a), -205 - 12 * Math.sin(a)]); }
+      tun.push([-62, -205], [-63, -185], [-68, -172], [-78, -168], [-90, -172], [-100, -181], [-104, -185.5], [-107.8, -186]);
+      const out = [[-110, -185], [-110.8, -178], [-111.3, -172], [-114, -166], [-119, -161], [-125, -158]];
+      const curve = new THREE.CatmullRomCurve3([...tun, ...out].map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
+      const len = curve.getLength(), n = Math.ceil(len), samples = [];
+      for (let i = 0; i <= n; i++) { const p = curve.getPointAt(i / n); samples.push([p.x, p.z, i / n * len]); }
+      let sP = 0, best = 1e9; for (const [x, z, s] of samples) { const q = Math.hypot(x + 107.8, z + 186); if (q < best) { best = q; sP = s; } }   // Portal
+      let sD = 0; best = 1e9; for (const [x, z, s] of samples) { const q = Math.hypot(x + 111.3, z + 172); if (q < best) { best = q; sD = s; } }   // Ende Damm
+      let yEnd = null;                                                          // erst bei Bedarf (das Gelaende-Raster gibt es hier noch nicht)
+      const y = s => s <= sP ? lerp(LY, WFX_Y, s / sP) : s <= sD ? WFX_Y : lerp(WFX_Y, yEnd ??= genH0(-125, -158), sst(sD, len, s));
+      const box = samples.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
+      return { curve, len, samples, sP, sD, y, box };
+    })();
+    function wfNear(x, z, max) {
+      const b = WFT.box;
+      if (x < b[0] - max || x > b[1] + max || z < b[2] - max || z > b[3] + max) return null;
+      let bq = max * max, bs = -1;
+      for (const [sx, sz, s] of WFT.samples) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < bq) { bq = q; bs = s; } }
+      return bs < 0 ? null : { d: Math.sqrt(bq), s: bs, y: WFT.y(bs) };
+    }
+    const wfInTunnel = (x, z) => { const w = wfNear(x, z, 3.4); return w && w.s < WFT.sP + 0.5 ? w : null; };
+    // Gelaende draussen an die Fahrbahn angleichen (Damm durch den Teich, Rampe aufs Ufer)
+    function wfBlend(x, z) {
+      const w = wfNear(x, z, 6.5);
+      if (!w || w.s < WFT.sP - 1) return null;
+      return { y: w.y - 0.08, w: 1 - sst(2.9, 6.5, w.d) };
+    }
     function genH(x, z) {
-      const h = genH0(x, z) + serpRug(x, z), r = serpBlend(x, z);
-      return r ? lerp(h, r.y, r.w) : h;
+      let h = genH0(x, z) + serpRug(x, z);
+      const r = serpBlend(x, z); if (r) h = lerp(h, r.y, r.w);
+      const q = wfBlend(x, z); if (q) h = lerp(h, q.y, q.w);
+      return h;
     }
     function genH0(x, z) {
       const sd = seaD(x, z);
@@ -571,6 +606,7 @@
         if (inPool(vx, vz) || Math.hypot(vx - FOUNT.x, vz - FOUNT.z) < FOUNT.r - 0.2) { cut[k] = 1; continue; }   // Becken (Pool, Brunnen)
         if (pos[k * 3 + 1] < -8 && seaD(vx, vz) < 5 && seaTunDist(vx, vz) < SEA_TUN_W / 2 + 1.5) cut[k] = 1;   // Meereshoehle
         if (vx > HF_PORTAL.x0 && vx < HF_PORTAL.x1 && vz > HF_PORTAL.z0 && vz < HF_PORTAL.z1 && pos[k * 3 + 1] < 6.5) cut[k] = 1;   // Felstor Hangfuss (A3)
+        if (vx > WF_PORTAL.x0 && vx < WF_PORTAL.x1 && vz > WF_PORTAL.z0 && vz < WF_PORTAL.z1 && pos[k * 3 + 1] < 7.5 && pos[k * 3 + 1] > -1.5) cut[k] = 1;   // Waterfall Exit (A8)
       }
       let n = 0;
       for (let j = 0; j < T_N; j++) for (let i = 0; i < T_N; i++) {
@@ -1403,6 +1439,7 @@
     function caveCell(x, z) {
       if (inRect(STW, x, z, 1.5)) return 1;
       if (inRect(CSH, x, z) || inRect(CGA, x, z) || inRect(CGB, x, z)) return 1;   // A3: Autoaufzug-Schacht und Geheimgang
+      if (x > -29.6 && x < -22.2 && z < -35.0) return 3;                         // A8: Nordende offen, dort beginnt der Waterfall-Exit-Tunnel
       if (seaTunDist(x, z) < SEA_TUN_W / 2) { const sd = seaD(x, z); return sd > 6 ? 3 : sd > -1.5 ? 4 : 2; }   // 4 = vor der Klippe: nur Grund
       const [px, py] = toCave(x, z);
       if (px < 0 || px > 736 || py > 1042) return 0;
@@ -1793,6 +1830,7 @@
       const sn = serpNear(x, z, SERP_W / 2);
       if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
       if (feet < HILL - 1 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return BED - 20;   // A3: Tunnel und Autoaufzug-Schacht
+      if (feet < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) return BED - 20;   // A8: Waterfall-Exit-Tunnel (nur Quader)
       if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
       const ca = caveAt(x, z);
       if ((feet < HILL - 1 && inPoly(GARAGE, x, z)) || (feet < -1 && (ca === 1 || ca === 2 || ca === 4 || caveUpAt(x, z)))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
@@ -1814,6 +1852,7 @@
     }
     // Wasseroberflaeche an (x, z) oder null: Pool, Brunnen, Hoehle/Meer (gleiche Hoehe), Seen
     function waterAt(x, z) {
+      if (wfNear(x, z, 3.3)) return null;                                    // A8: Tunnel und Damm
       if (inPool(x, z)) return POOL.water + HILL;
       if (Math.hypot(x - FOUNT.x, z - FOUNT.z) < FOUNT.r - 0.4) return FOUNT.water + HILL;
       const c = caveAt(x, z);
@@ -1834,7 +1873,7 @@
       // Steilkueste: oben an der Kante nicht hinunterfallen (Seen im Inland darf man betreten)
       if (player.pos.y > -3 && seaD(next.x, next.z) > -40 && terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }
       // Steile Haenge sperren: nur das Gelaende zaehlt (Stufen wie der Brunnenrand regelt supportAt)
-      const slopeG = (x, z) => player.pos.y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z)) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
+      const slopeG = (x, z) => (player.pos.y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
       const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
       if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
       player.pos.x = next.x; player.pos.z = next.z;
@@ -1958,7 +1997,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Kehre)", -50, -10, -215, W], ["Waterfall Exit (aussen)", -122, 0, -159, N], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -2259,7 +2298,7 @@
       }
       if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
-      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < HILL - 2 && (inRect(HF_TUN, player.pos.x, player.pos.z) || inRect(CSH_OUT, player.pos.x, player.pos.z))) || (player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
+      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < terrainH(player.pos.x, player.pos.z) - 2 && wfInTunnel(player.pos.x, player.pos.z)) || (player.pos.y < HILL - 2 && (inRect(HF_TUN, player.pos.x, player.pos.z) || inRect(CSH_OUT, player.pos.x, player.pos.z))) || (player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
       if (!BOAT.on) boatPose();
       // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
       {
@@ -2658,14 +2697,16 @@
       for (let k = 0, n = 0; k < 200 && n < 16; k++) {
         const a = wr() * 6.28, L = LAKES.find(q => q.name === "Wasserfall-Teich"), rr = 0.85 + wr() * 0.45;
         const x = L.cx + Math.cos(a) * L.rx * rr, z = L.cz + Math.sin(a) * L.rz * rr, s = 0.8 + wr() * 2.0;
-        if (Math.hypot(x - fx, z - fz) < 4.5 || terrainH(x, z) > 1.5) continue;   // nicht in den Vorhang, nicht an die Wand
+        if (Math.hypot(x - fx, z - fz) < 4.5 || terrainH(x, z) > 1.5 || wfNear(x, z, s + 4)) continue;   // nicht in den Vorhang, nicht an die Wand, nicht auf die Ausfahrt (A8)
         const y = Math.max(terrainH(x, z), WATER_Y - 1.2);
         const g = makeRock(s, s * (0.55 + wr() * 0.3), s * (0.8 + wr() * 0.4), wr(), 3); g.rotateY(wr() * 6); g.translate(x, y + s * 0.15, z); geos.push(g);
         if (terrainH(x, z) > WATER_Y) circles.push([x, z, s * 0.8, y + s]);
         n++;
       }
       for (const [dx, dz, s] of [[1.5, 3.5, 1.6], [-1.2, -3.6, 1.9], [2.6, -1.5, 1.2]]) {   // Brocken direkt am Fuss
-        const x = lx + outX * (1.5 + dx) + dirX * dz, z = lz + outZ * (1.5 + dx) + dirZ * dz, g = makeRock(s, s * 0.7, s, wr(), 3); g.translate(x, WATER_Y - 0.2, z); geos.push(g);
+        const x = lx + outX * (1.5 + dx) + dirX * dz, z = lz + outZ * (1.5 + dx) + dirZ * dz;
+        if (wfNear(x, z, s + 3.5)) continue;                                    // Ausfahrt (A8) frei
+        const g = makeRock(s, s * 0.7, s, wr(), 3); g.translate(x, WATER_Y - 0.2, z); geos.push(g);
       }
       // Felsplatten vor der Wand links und rechts vom Fall (Schichten, Vorspruenge); hinter dem Vorhang bleibt frei (A8)
       for (const side of [-1, 1]) for (let k = 0, along = 4.2 + wr() * 1.5; k < 16 && along < 30; k++) {
@@ -2789,6 +2830,49 @@
       // Geheimgang unten: getarnte Felswand am Nordende (von der Auto Repair aus sieht es wie Fels aus)
       rockGate("Felswand (Geheimgang)", (CGB.x0 + CGB.x1) / 2, CGB.z0 + 2.4, "x", CGB.x1 - CGB.x0 + 0.6, LH - 1.2, LY - 0.2, 0);
       if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.9 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
+    }
+    // ===================== Waterfall Exit bauen (A8) =====================
+    {
+      const S3 = WFT.samples, NS3 = S3.length, rockIn = M(0x6f6b64, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, side: THREE.DoubleSide });
+      const tng = i => { const a = S3[Math.max(0, i - 1)], b = S3[Math.min(NS3 - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]); return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; };
+      // Roehre: Waende und Gewoelbe als Profil entlang des Wegs (bis zum Portal)
+      const PROF = [[-3.4, -0.2], [-3.4, 3.6], [-3.0, 4.6], [-2.0, 5.3], [-0.7, 5.6], [0.7, 5.6], [2.0, 5.3], [3.0, 4.6], [3.4, 3.6], [3.4, -0.2]];
+      const pos = [], uv = [], idx = [];
+      const iEnd = S3.findIndex(([, , s]) => s > WFT.sP + 0.6);
+      for (let i = 0; i <= iEnd; i++) {
+        const [x, z, s] = S3[i], [tx, tz] = tng(i), nx = -tz, nz = tx, y = WFT.y(s);
+        PROF.forEach(([l, h], k) => { pos.push(x + nx * l, y + h, z + nz * l); uv.push(k / 3, s / 3); });
+        if (i) { const a = (i - 1) * PROF.length, b = i * PROF.length; for (let k = 0; k < PROF.length - 1; k++) idx.push(a + k, b + k, a + k + 1, a + k + 1, b + k, b + k + 1); }
+        if (i % 2 === 0) for (const sd of [-1, 1]) circles.push([x + nx * sd * 3.4, z + nz * sd * 3.4, 0.35, y + 5.5]);
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+      const tube = new THREE.Mesh(g, rockIn); tube.receiveShadow = true; tube.userData.keep = true; scene.add(tube);
+      // Fahrbahn (wie der Hoehlentunnel), Boden darunter traegt
+      const road = ribbon(WFT.curve, WFT.len, 5, flatMat({ map: roadTex.road, side: THREE.DoubleSide }), roadPeriod.road, 0, { y: WFT.y });
+      road.userData.keep = false;
+      const tunFloor = ribbon(WFT.curve, WFT.len, 7.0, M(0x4f4c47, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, side: THREE.DoubleSide }), 4, 0, { y: s => WFT.y(s) - 0.05, t0: 0, t1: (WFT.sP + 0.6) / WFT.len });
+      tunFloor.userData.keep = false;                                          // Tunnelboden ueber die ganze Breite
+      for (let i = 0; i < NS3 - 1; i += 2) {                                   // Boden als Quader (Tunnel); draussen traegt das Gelaende
+        const [x, z, s] = S3[i]; if (s > WFT.sP + 0.5) break;
+        const y = WFT.y(s); S(x - 3.3, x + 3.3, y - 0.6, y + 0.07, z - 3.3, z + 3.3);
+      }
+      // Haengelampen alle 10 m, einige echte Lichter (nur unter der Erde an)
+      for (let s = 5; s < WFT.sP - 2; s += 10) {
+        const p = WFT.curve.getPointAt(s / WFT.len), y = WFT.y(s);
+        B(p.x - 0.5, p.x + 0.5, y + 4.8, y + 4.95, p.z - 0.15, p.z + 0.15, mat.glow, false, world, false); B(p.x - 0.02, p.x + 0.02, y + 4.95, y + 5.6, p.z - 0.02, p.z + 0.02, mat.dark, false, world, false);
+      }
+      for (const f of [0.12, 0.38, 0.62, 0.88]) { const s = f * WFT.sP, p = WFT.curve.getPointAt(s / WFT.len), l = new THREE.PointLight(0xffe2b8, 0, 40, 1.6); l.position.set(p.x, WFT.y(s) + 4.4, p.z); l.userData.I = 40; scene.add(l); caveLights.push(l); }
+      // Portal: Fels um die Oeffnung (das Gelaende ist dort ausgeschnitten), Saeulen im 0,8-m-Raster bis knapp uebers Gelaende
+      const portalRock = M(0x8f8b84, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 1 }), [px, pz] = [-107.8, -186], st = 0.8;
+      for (let x = WF_PORTAL.x0 + 1.4; x < WF_PORTAL.x1 + 2.4; x += st) for (let z = WF_PORTAL.z0 - 1.2; z < WF_PORTAL.z1 + 1.2; z += st) {
+        const top = Math.min(HILL + 0.1, Math.max(terrainH(x, z), terrainH(x + st, z), terrainH(x, z + st), terrainH(x + st, z + st)) + 0.1);
+        const w = wfNear(x + st / 2, z + st / 2, 3.6), inTun = w && w.s < WFT.sP + 1.5, bot = inTun ? w.y + 5.5 : -2.8;
+        if (w && !inTun) continue;                                              // draussen auf der Fahrbahn frei lassen
+        if (top > bot + 0.05) B(x, x + st, bot, top, z, z + st, portalRock, !inTun);
+      }
+      // Schild am Tunnelanfang
+      { const t = canvasTex(512, 128, (gg, w, h) => { gg.fillStyle = "#1b2a1f"; gg.fillRect(0, 0, w, h); gg.strokeStyle = "#7fbf7a"; gg.lineWidth = 6; gg.strokeRect(6, 6, w - 12, h - 12); gg.fillStyle = "#cfe8c8"; gg.font = "800 54px system-ui, sans-serif"; gg.textAlign = "center"; gg.textBaseline = "middle"; gg.fillText("WATERFALL EXIT 290 m", w / 2, h / 2 + 2); }); t.repeat.set(1, 1);
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(4, 1), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide })); m.position.set(-25.8, LY + 4.6, -40); m.userData.keep = true; scene.add(m); }
     }
     // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
     {
