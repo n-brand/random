@@ -159,11 +159,14 @@
     const scene = new THREE.Scene();
     scene.background = SKY_DAY.clone();
     scene.fog = new THREE.Fog(SKY_DAY.clone(), 350, 1500);
+    // A2 (2026-11-07): Anwesen auf einem Plateau, HILL Meter ueber der Umgebung. Gebaut wird alles wie bisher mit Boden y 0,
+    // danach hebt liftPlateau() (vor dem Zusammenfassen) alles auf dem Plateau samt Kollision an. Hoehlen bleiben, wo sie sind.
+    const HILL = 25;
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.6, 3000);
-    camera.position.set(95, 75, 60);
+    camera.position.set(95, 75 + HILL, 60);
     const controls = new OrbitControls(camera, renderer.domElement);
     installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
-    controls.target.set(-25, 0, 10);
+    controls.target.set(-25, HILL, 10);
     controls.enableDamping = true;
     controls.minDistance = 4;
     controls.maxDistance = 900;
@@ -240,7 +243,8 @@
     // Quader mit Texturkoordinaten in Metern; solid = Kollisionsquader (nur Welt-Gruppe)
     const solids = [];
     const circles = [];
-    const S = (x0, x1, y0, y1, z0, z1, on = true) => { const s = { x0, x1, y0, y1, z0, z1, on }; solids.push(s); return s; };
+    let NOLIFT = false;                                                       // true: Teil wird schon in Endhoehe gebaut (liftPlateau laesst es aus)
+    const S = (x0, x1, y0, y1, z0, z1, on = true) => { const s = { x0, x1, y0, y1, z0, z1, on, noLift: NOLIFT }; solids.push(s); return s; };
     function boxUV(g, w, h, d) {
       const uv = g.attributes.uv, sc = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
       for (let f = 0; f < 6; f++) for (let i = 0; i < 4; i++) { const k = f * 4 + i; uv.setXY(k, uv.getX(k) * sc[f][0], uv.getY(k) * sc[f][1]); }
@@ -251,6 +255,7 @@
       const mesh = new THREE.Mesh(g, m);
       mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
       mesh.castShadow = shadow; mesh.receiveShadow = true;
+      if (NOLIFT) mesh.userData.noLift = true;
       parent.add(mesh);
       if (solid && parent === world) S(x0, x1, y0, y1, z0, z1);
       return mesh;
@@ -313,7 +318,7 @@
     }
     const fbm = (x, z) => vnoise(x, z) * 0.53 + vnoise(x * 2.1 + 17, z * 2.1 + 5) * 0.29 + vnoise(x * 4.3 + 3, z * 4.3 + 41) * 0.18;
     const LAKES = [
-      { name: "Northwest Lake", cx: -119, cz: -55, rx: 24, rz: 36, s: 1.0, depth: 4 },
+      { name: "Northwest Lake", cx: -150, cz: -55, rx: 24, rz: 36, s: 1.0, depth: 4 },
       { name: "Wasserfall-Teich", cx: -99, cz: -126, rx: 11, rz: 8, s: 4.1, depth: 2.5 }
     ];
     const wob = (L, a) => 1 + 0.12 * Math.sin(3 * a + L.s) + 0.07 * Math.sin(5 * a + 2 * L.s) + 0.04 * Math.sin(8 * a + 3 * L.s);
@@ -344,6 +349,32 @@
     const GY = -4.0;                                                          // Boden der Tiefgarage
     const siteDist = (x, z) => Math.hypot(Math.max(SITE.x0 - x, 0, x - SITE.x1), Math.max(SITE.z0 - z, 0, z - SITE.z1));
     const inLawn = (x, z) => LAWNS.some(l => Math.hypot((x - l.cx) / l.rx, (z - l.cz) / l.rz) < 1);
+    // Plateau (A2): Umriss von Nicolas (Skizze plateau-wasserfall.webp, grob), flach bis PL_FLAT Meter ausserhalb der Linie
+    // (so bleiben rund 10 m Rand um alle Bauten), dann Hang ueber PL_W Meter: oben steiler, unten flach auslaufend (im Mittel ca. 30 Grad).
+    const PLATEAU = [[-44, 97], [-46, 30], [-64, 27], [-77, -38], [-77, -69], [-50, -76], [-19, -69], [-2, -44], [15, -35], [18, 13], [12, 96], [-19, 101]];
+    const PL_FLAT = 8, PL_W = 42;
+    const PL_BOX = PLATEAU.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
+    function plateauSD(x, z) {                                                // Abstand zur Umrisslinie, innen negativ
+      let m = 1e9, inside = false;
+      for (let i = 0, j = PLATEAU.length - 1; i < PLATEAU.length; j = i++) {
+        const [ax, az] = PLATEAU[j], [bx, bz] = PLATEAU[i], dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz));
+        m = Math.min(m, Math.hypot(x - ax - dx * t, z - az - dz * t));
+        if ((bz > z) !== (az > z) && x < ax + dx * (z - az) / dz) inside = !inside;
+      }
+      return inside ? -m : m;
+    }
+    // Hoehe des Plateaus samt Hang an (x, z); 0 weit draussen. Seen schneiden den Hangfuss ab.
+    function plateauH(x, z) {
+      if (x < PL_BOX[0] - PL_FLAT - PL_W || x > PL_BOX[1] + PL_FLAT + PL_W || z < PL_BOX[2] - PL_FLAT - PL_W || z > PL_BOX[3] + PL_FLAT + PL_W) return 0;
+      const d = plateauSD(x, z) - PL_FLAT;
+      if (d <= 0) return HILL;
+      const t = d / (PL_W * (0.85 + 0.3 * vnoise(x / 70 + 4, z / 70 + 8)));   // Hangbreite leicht wechselnd
+      if (t >= 1) return 0;
+      let f = (1 - t) ** 1.5;
+      f += f * (1 - f) * 0.5 * (fbm(x / 22 + 31, z / 22 + 7) - 0.5);       // Buckel und Mulden im Hang (oben und unten 0)
+      for (const L of LAKES) f *= sst(1.0, 1.4, lakeD(L, x, z));
+      return HILL * Math.max(0, f);
+    }
     function genH(x, z) {
       const sd = seaD(x, z);
       let h = sst(0, 140, siteDist(x, z)) * fbm(x / 170 + 3, z / 170 + 9) * 16 * sst(0, -80, sd);   // sanfte Huegel ausserhalb des Anwesens
@@ -355,6 +386,8 @@
       const zc = WATERFALL.z + 2;
       h += 14 * sst(zc, zc - lerp(14, 90, w), z) + 10 * sst(zc - 38, zc - 258, z);       // Nordhang, beim Wasserfall steil
       for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));
+      const ph = plateauH(x, z);
+      if (ph > 0.01) h = Math.max(h, ph);
       return h;
     }
     // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
@@ -368,8 +401,8 @@
       return d * sst(1000, 800, Math.hypot(x, z));
     }
 
-    // Hoehenfeld: Gitter wird zur Mitte hin feiner (ca. 3 m am Anwesen, 22 m am Rand bei 1500 m)
-    const T_N = 320, T_A = 480, T_B = 1020, TN1 = T_N + 1;
+    // Hoehenfeld: Gitter wird zur Mitte hin feiner (ca. 2 m am Anwesen, gross am Rand bei 1500 m)
+    const T_N = 480, T_A = 480, T_B = 1020, TN1 = T_N + 1;                  // Mitte ca. 2 m (A2: Haenge sauberer)
     const warp = u => Math.sign(u) * (T_A * Math.abs(u) + T_B * Math.abs(u) ** 3);
     function unwarp(x) {
       const s = Math.min(Math.abs(x), T_A + T_B);
@@ -534,7 +567,8 @@
     mapTex.repeat.set(1, (MAP_H - MAP_Y0) / MAP_H);
     const mapMesh = new THREE.Mesh(new THREE.PlaneGeometry(MAP_W * SC, (MAP_H - MAP_Y0) * SC).rotateX(-Math.PI / 2).rotateY(Math.PI / 2),
       new THREE.MeshBasicMaterial({ map: mapTex, transparent: true, opacity: 0.9, depthWrite: false }));
-    { const [cx, cz] = mp(MAP_W / 2, (MAP_Y0 + MAP_H) / 2); mapMesh.position.set(cx, 0.06, cz); }
+    { const [cx, cz] = mp(MAP_W / 2, (MAP_Y0 + MAP_H) / 2); mapMesh.position.set(cx, HILL + 0.06, cz); }
+    mapMesh.userData.noLift = true;
     scene.add(mapMesh);
 
     // ===================== Haus-Huelle (Schritt 3) =====================
@@ -746,8 +780,9 @@
       B(STAIR.x0, STAIR.x1 + 0.08, FL1, FL1 + 1.0, STAIR.z0 - 0.08, STAIR.z0, mat.trim);
       B(STAIR.x0 - 0.08, STAIR.x0, FL1, FL1 + 1.0, STAIR.z0, STAIR.z1, mat.trim);
 
-      // Aufzugschacht (Tueren nach Osten in jedem Halt, ueber dem Dach ein Aufbau)
-      const STOP_Y = [LY, UY, FL0, FL1, TF], SH_TOP = TF + 3.5, SH_BOT = LY - 0.3;
+      // Aufzugschacht (Tueren nach Osten in jedem Halt, ueber dem Dach ein Aufbau); schon in Endhoehe (Plateau HILL)
+      NOLIFT = true;
+      const STOP_Y = [LY, UY, FL0 + HILL, FL1 + HILL, TF + HILL], SH_TOP = TF + HILL + 3.5, SH_BOT = LY - 0.3;
       const [sx0, sx1, sz0, sz1] = SHAFT_OUT;
       B(sx0, sx1, SH_BOT, SH_TOP, sz0, SHAFT.z0, mat.dark); B(sx0, sx1, SH_BOT, SH_TOP, SHAFT.z1, sz1, mat.dark); B(sx0, SHAFT.x0, SH_BOT, SH_TOP, SHAFT.z0, SHAFT.z1, mat.dark);
       const dz0 = SHAFT.cz - 1, dz1 = SHAFT.cz + 1;
@@ -757,6 +792,7 @@
       B(SHAFT.x1, sx1, yy, SH_TOP, dz0, dz1, mat.dark);
       B(sx0 - 0.2, sx1 + 0.2, SH_TOP, SH_TOP + 0.3, sz0 - 0.2, sz1 + 0.2, stoneLight, false);
       for (const y of STOP_Y) B(sx1, sx1 + 0.06, y + 3.2, y + 3.4, SHAFT.cz - 0.6, SHAFT.cz + 0.6, mat.glow, false, world, false);
+      NOLIFT = false;
 
       // U-Treppe (2 x 13 Stufen): Lauf A von x1 nach Westen, Podest, Lauf B zurueck; Gelaender oben ausser am Austritt (x1, Lauf B)
       function stairU(St, yb, yt, rails = true) {
@@ -880,13 +916,14 @@
     }
 
     // ===================== Aufzug (Halte: EG, 1. OG, Dach/2. OG; die Hoehle kommt in Schritt 8 dazu) =====================
-    const STOPS = [{ name: "Erdgeschoss", y: FL0 }, { name: "1. Obergeschoss", y: FL1 }, { name: "Dach / 2. Obergeschoss", y: TF }, { name: "Höhle oben (Upper Level)", y: UY }, { name: "Höhle unten (Lower Level)", y: LY }];
-    const LIFT = { y: FL0, at: 0, target: 0, state: "idle", t: 0, from: FL0, to: FL0, open: STOPS.map((_, i) => i === 0 ? 1 : 0) };
+    const STOPS = [{ name: "Erdgeschoss", y: FL0 + HILL }, { name: "1. Obergeschoss", y: FL1 + HILL }, { name: "Dach / 2. Obergeschoss", y: TF + HILL }, { name: "Höhle oben (Upper Level)", y: UY }, { name: "Höhle unten (Lower Level)", y: LY }];
+    const LIFT = { y: STOPS[0].y, at: 0, target: 0, state: "idle", t: 0, from: STOPS[0].y, to: STOPS[0].y, open: STOPS.map((_, i) => i === 0 ? 1 : 0) };
+    NOLIFT = true;                                                           // Kabine, Tueren und ihre Kollision sind schon in Endhoehe
     const car = new THREE.Group();
-    car.position.set(SHAFT.cx, FL0, SHAFT.cz);
-    car.userData.dynamic = true;
+    car.position.set(SHAFT.cx, LIFT.y, SHAFT.cz);
+    car.userData.dynamic = true; car.userData.noLift = true;
     world.add(car);
-    const carFloor = S(SHAFT.x0 + 0.05, SHAFT.x1 - 0.05, FL0 - 0.15, FL0, SHAFT.z0 + 0.05, SHAFT.z1 - 0.05);
+    const carFloor = S(SHAFT.x0 + 0.05, SHAFT.x1 - 0.05, LIFT.y - 0.15, LIFT.y, SHAFT.z0 + 0.05, SHAFT.z1 - 0.05);
     {
       const h = (SHAFT.x1 - SHAFT.x0) / 2 - 0.05;
       B(-h, h, -0.15, 0, -h, h, mat.steel, false, car);
@@ -895,7 +932,7 @@
       B(-h, h, 2.9, 3.05, -h, h, mat.dark, false, car); B(-0.9, 0.9, 2.86, 2.9, -0.9, 0.9, mat.glow, false, car, false);
       B(-h + 0.08, -h + 0.16, 1.0, 1.1, -1.1, 1.1, mat.gold, false, car);
     }
-    const doorG = new THREE.Group(); doorG.userData.dynamic = true; world.add(doorG);
+    const doorG = new THREE.Group(); doorG.userData.dynamic = true; doorG.userData.noLift = true; world.add(doorG);
     const doorPanels = [], doorSolid = [];
     STOPS.forEach((st, i) => {
       doorPanels[i] = [-1, 1].map(s => {
@@ -905,6 +942,7 @@
       });
       doorSolid[i] = S(SHAFT.x1, SHAFT.x1 + 0.2, st.y, st.y + 3, SHAFT.cz - 1, SHAFT.cz + 1, i !== 0);
     });
+    NOLIFT = false;
     function applyLift() {
       car.position.y = LIFT.y;
       Object.assign(carFloor, { y0: LIFT.y - 0.15, y1: LIFT.y });
@@ -921,7 +959,7 @@
         L.open[L.at] = Math.max(0, L.open[L.at] - dt / 0.9);
         if (L.open[L.at] <= 0) { L.state = "moving"; L.t = 0; L.from = L.y; L.to = STOPS[L.target].y; }
       } else if (L.state === "moving") {
-        L.t = Math.min(1, L.t + dt / Math.max(2.5, Math.abs(L.to - L.from) / 3.5));
+        L.t = Math.min(1, L.t + dt / Math.max(2.5, Math.abs(L.to - L.from) / 7));   // ca. 7 m/s (A2: Haus -> Hoehle unten ca. 8 s)
         L.y = lerp(L.from, L.to, sst(0, 1, L.t));
         if (L.t >= 1) { L.at = L.target; L.state = "opening"; }
       } else if (L.state === "opening") {
@@ -1042,6 +1080,7 @@
       g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
       g.computeVertexNormals();
       const m = new THREE.Mesh(g, material); m.receiveShadow = true; m.userData.keep = true;
+      if (!o.y) m.userData.noLift = true;                                     // liegt schon auf dem Gelaende (inkl. Plateau)
       scene.add(m);
       return m;
     }
@@ -1558,7 +1597,7 @@
     const touch = matchMedia("(pointer: coarse)").matches;
     document.body.classList.toggle("touch", touch);
     const EYE = 1.62, BODY = 1.8, RADIUS = 0.3, STEP = 0.45, WALK = 4.6, RUN = 9, JUMP = 6.4, GRAVITY = 22, LIMIT = LIMIT_WORLD;
-    const START = { x: 32, z: 0, yaw: Math.PI / 2 };                        // Blick nach Westen auf das Rondell
+    const START = { x: 22, z: 0, yaw: Math.PI / 2 };                        // Blick nach Westen auf das Rondell (Ostrand des Plateaus)
     const player = { pos: new THREE.Vector3(START.x, 0, START.z), vy: 0, yaw: START.yaw, pitch: 0.05, onGround: true, jump: false };
     const keys = new Set();
     let walking = false, dragging = false, jumpHeld = false, downHeld = false;
@@ -1590,12 +1629,12 @@
     function groundAt(x, z, feet = 0) {
       if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
       const ca = caveAt(x, z);
-      if (feet < -1 && (inPoly(GARAGE, x, z) || ca === 1 || ca === 2 || ca === 4 || caveUpAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
-      if (feet > -3) {                                                       // Becken: Brunnen (Rand begehbar) und Pool
+      if ((feet < HILL - 1 && inPoly(GARAGE, x, z)) || (feet < -1 && (ca === 1 || ca === 2 || ca === 4 || caveUpAt(x, z)))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
+      if (feet > HILL - 3) {                                                 // Becken: Brunnen (Rand begehbar) und Pool (auf dem Plateau)
         const fd = Math.hypot(x - FOUNT.x, z - FOUNT.z);
-        if (fd < FOUNT.r - 0.4) return FOUNT.floor;
-        if (fd < FOUNT.r) return FOUNT.rim;
-        if (inPool(x, z)) return POOL.floor;
+        if (fd < FOUNT.r - 0.4) return FOUNT.floor + HILL;
+        if (fd < FOUNT.r) return FOUNT.rim + HILL;
+        if (inPool(x, z)) return POOL.floor + HILL;
       }
       return terrainH(x, z);
     }
@@ -1609,8 +1648,8 @@
     }
     // Wasseroberflaeche an (x, z) oder null: Pool, Brunnen, Hoehle/Meer (gleiche Hoehe), Seen
     function waterAt(x, z) {
-      if (inPool(x, z)) return POOL.water;
-      if (Math.hypot(x - FOUNT.x, z - FOUNT.z) < FOUNT.r - 0.4) return FOUNT.water;
+      if (inPool(x, z)) return POOL.water + HILL;
+      if (Math.hypot(x - FOUNT.x, z - FOUNT.z) < FOUNT.r - 0.4) return FOUNT.water + HILL;
       const c = caveAt(x, z);
       if (c === 2 || c === 4 || c === 3) return SEA_Y;
       if (c !== 1 && seaD(x, z) > -0.5) return SEA_Y;
@@ -1744,7 +1783,7 @@
     {
       const cm = (px, py) => caveMp(px, py), W = Math.PI / 2, E = -Math.PI / 2, N = 0, S = Math.PI;
       const TP = [
-        ["Rondell (vor dem Haus)", 25, 0, 0, W], ["Halle EG", -30, FL0, 0, W], ["Aufzug EG", -49, FL0, SHAFT.cz, W], ["1. Obergeschoss", -45, FL1, 3, W],
+        ["Rondell (vor dem Haus)", 18, 0, 0, W], ["Halle EG", -30, FL0, 0, W], ["Aufzug EG", -49, FL0, SHAFT.cz, W], ["1. Obergeschoss", -45, FL1, 3, W],
         ["Dach / 2. OG", -45, TF, SHAFT.cz, E], ["Theater", -44, TF, 10, N], ["Observatorium", -40, TF2, 0, N], ["Landeplatz", -18, HP, 42, W],
         ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
         ["Tiefgarage", -28, GY, 32.7, E],
@@ -1755,6 +1794,7 @@
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
         ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N]
       ];
+      for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
       function teleportTo(i) {
         const t = TP[i];
@@ -2033,7 +2073,7 @@
       updateGates(dt);
       if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
-      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
+      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
       if (!BOAT.on) boatPose();
       // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
       {
@@ -2056,6 +2096,36 @@
       sun.target.updateMatrixWorld();
       renderer.render(scene, camera);
       requestAnimationFrame(frame);
+    }
+    // A2: alles auf dem Plateau (ueber y -6, also nicht die Hoehlen) um die Plateauhoehe an seiner Mitte anheben, samt Kollision.
+    // Ausgenommen: Gelaende, Wald, Meer (zu gross), Teile auf dem Gelaende (ribbon) und schon in Endhoehe gebaute Teile (noLift).
+    {
+      const bb = new THREE.Box3(), lifted = [0, 0, 0];
+      const tops = [...world.children, ...scene.children.filter(o => o !== world)];
+      for (const o of tops) {
+        if (o.userData.noLift || o === sun || o === sun.target || o.isHemisphereLight || o.isAmbientLight) continue;
+        let cx, cz, minY;
+        if (o.isLight) { cx = o.position.x; cz = o.position.z; minY = o.position.y; }
+        else {
+          bb.setFromObject(o);
+          if (bb.isEmpty() || bb.max.x - bb.min.x > 300 || bb.max.z - bb.min.z > 300) continue;
+          cx = (bb.min.x + bb.max.x) / 2; cz = (bb.min.z + bb.max.z) / 2; minY = bb.min.y;
+        }
+        if (minY < -6) continue;
+        const d = plateauH(cx, cz);
+        if (d > 0.01) { o.position.y += d; lifted[0]++; }
+      }
+      for (const s of solids) {
+        if (s.noLift || s.y0 < -6.5) continue;
+        const d = plateauH((s.x0 + s.x1) / 2, (s.z0 + s.z1) / 2);
+        if (d > 0.01) { s.y0 += d; s.y1 += d; lifted[1]++; }
+      }
+      for (const c of circles) {
+        if (c[3] === undefined || c[3] < -6) continue;
+        const d = plateauH(c[0], c[1]);
+        if (d > 0.01) { c[3] += d; lifted[2]++; }
+      }
+      world.userData.lifted = lifted;
     }
     // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
     {
@@ -2089,7 +2159,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
