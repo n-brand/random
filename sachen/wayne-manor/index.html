@@ -1603,7 +1603,7 @@
         B(-0.5, 0.5, 0.56, 0.95, 1.4, 2.0, mat.dark, false, g);                                             // Sitz
         for (const sx of [-0.7, 0.7]) B(sx - 0.12, sx + 0.12, 0.62, 0.72, -2.55, -2.45, mat.glow, false, g, false);
         B(-0.25, 0.25, 0.75, 0.85, 2.98, 3.02, mat.glowRed, false, g, false);
-        world.userData.boat = { g, x, z, h: Math.PI / 2, v: 0, on: false };   // Spitze nach Westen
+        world.userData.boat = { g, x, z, h: Math.PI / 2, v: 0, on: false, home: { x, z, h: Math.PI / 2 } };   // Spitze nach Westen; home = Platz in der Bootsbox (B5)
       }
       // B4: Weg vom Tunnelrand und Treppe 1 aus Stein, Podest bei -31, Treppe 2 aus Holz hinunter zum U-Steg (-33,5) mit Bootsbox (offen nach Osten).
       // Kartenpixel nach der Hoehlenkarte; Treppe 1 ca. 1 m laenger als auf der Karte (flacher), Treppe 2 schliesst am Podest an.
@@ -2154,16 +2154,20 @@
       if (!walking) return false;
       const p = player.pos;
       if (BOAT.on) {
-        // Ufer suchen: naechste Bodenzelle (Hoehle) bzw. trockenes Gelaende im Umkreis
+        // B5: Aussteigen auf das naechste begehbare Ufer: Steg, Treppe, Podest, Weg oder Hallenboden (Oberseite ueber dem Wasser,
+        // hoechstens bis zum Hallenboden), frei von Hindernissen; das naechste gewinnt
         let best = null;
-        for (let r = 2.5; r <= 7 && !best; r += 0.75) for (let k = 0; k < 24; k++) {
-          const a = k / 24 * Math.PI * 2, x = BOAT.x + Math.cos(a) * r, z = BOAT.z + Math.sin(a) * r;
-          if (caveAt(x, z) === 1) { best = [x, z]; break; }                     // nur auf Hoehlenboden (an der Steilkueste gibt es kein Ufer)
+        for (let r = 2.2; r <= 7.5 && !best; r += 0.5) for (let k = 0; k < 32; k++) {
+          const a = k / 32 * Math.PI * 2, q = new THREE.Vector3(BOAT.x + Math.cos(a) * r, LY + 0.5, BOAT.z + Math.sin(a) * r);
+          const top = supportAt(q, LY + 0.5);
+          if (top < SEA_Y + 0.3 || top > LY + 0.6) continue;                    // Wasser/Grund oder zu hoch
+          const t2 = q.clone(); t2.y = top; pushOut(t2, top);
+          if (Math.hypot(t2.x - q.x, t2.z - q.z) > 0.05) continue;               // Hindernis (Poller, Pfahl, Wand)
+          best = [q.x, top, q.z]; break;
         }
         if (!best) { toast("Zum Aussteigen näher ans Ufer fahren"); return true; }
         BOAT.on = false; BOAT.v = 0;
-        player.pos.set(best[0], LY + 0.4, best[1]); player.vy = 0;
-        player.pos.y = supportAt(player.pos, player.pos.y);
+        player.pos.set(best[0], best[1], best[2]); player.vy = 0;
         toast("Ausgestiegen");
         return true;
       }
@@ -2194,6 +2198,16 @@
       if (boatFree(nx, nz, BOAT.h)) { BOAT.x = nx; BOAT.z = nz; } else BOAT.v *= -0.25;
       boatPose();
       seatBoat();
+    }
+    // B5: Spieler mehr als 20 m weg -> Boot zurueck in die Bootsbox (schwimmt man daneben, bleibt es)
+    function boatReturn() {
+      const H = BOAT.home;
+      if (!walking || BOAT.on || (BOAT.x === H.x && BOAT.z === H.z)) return false;
+      if (Math.hypot(player.pos.x - BOAT.x, player.pos.z - BOAT.z) + Math.max(0, Math.abs(player.pos.y - SEA_Y) - 8) <= 20) return false;
+      const near = Math.hypot(player.pos.x - H.x, player.pos.z - H.z) < 80 && Math.abs(player.pos.y - LY) < 8;
+      BOAT.x = H.x; BOAT.z = H.z; BOAT.h = H.h; BOAT.v = 0;
+      if (near) toast("Das Boot ist zurück am Steg");
+      return true;
     }
     let boatTime = 0;
     function boatPose() {
@@ -2368,7 +2382,7 @@
       if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
       const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < terrainH(player.pos.x, player.pos.z) - 2 && wfInTunnel(player.pos.x, player.pos.z)) || (player.pos.y < HILL - 2 && (inRect(HF_TUN, player.pos.x, player.pos.z) || inRect(CSH_OUT, player.pos.x, player.pos.z))) || (player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
-      if (!BOAT.on) boatPose();
+      if (!BOAT.on) { boatReturn(); boatPose(); }
       // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
       {
         const tt = world.userData.turntable, w = dt * 0.05;
@@ -3184,7 +3198,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatReturn, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
