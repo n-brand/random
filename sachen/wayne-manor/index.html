@@ -423,12 +423,16 @@
     }
     function genH(x, z) {
       const sd = seaD(x, z);
-      let h = sst(0, 140, siteDist(x, z)) * fbm(x / 170 + 3, z / 170 + 9) * 16 * sst(0, -80, sd);   // sanfte Huegel ausserhalb des Anwesens
+      // Huegel ausserhalb des Anwesens. An der Kueste (Nicolas: "mehr Hoehenunterschiede") reichen sie bis an die Kante, etwas hoeher und mit
+      // mittelgrossen Buckeln, so wechselt auch die Klippenhoehe. Um Wassertunnel und Felsbogen (|t| < 80) bleibt es wie vorher flach.
+      const ch = sst(80, 170, Math.abs((z - x) * R2));
+      let h = sst(0, 140, siteDist(x, z)) * Math.max(0, fbm(x / 170 + 3, z / 170 + 9) * lerp(16, 24, ch) + ch * 9 * (vnoise(x / 48 + 21, z / 48 + 13) - 0.5))
+        * lerp(sst(0, -80, sd), sst(-6, -40, sd), ch);
       h += 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2)) * sst(-60, -320, sd);   // Berge am Horizont (nicht zum Meer hin)
       // Steilkueste: oben leicht erhoehte Felskante, dann ca. 32 m senkrecht hinab, am Fuss ein flacher Felssockel, weiter draussen tiefer
       // Klippe mindestens so breit wie ca. 1,6 Rasterzellen (draussen ist das Raster grob, sonst springt die Kante zackig von Zelle zu Zelle)
       const cw = Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
-      h = h * (1 - sst(-25, -3, sd)) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 32 * sst(-0.62 * cw, 0.38 * cw, sd) - 9 * sst(14, 60, sd);
+      h = h * lerp(1 - sst(-25, -3, sd), 1 - sst(-0.62 * cw, 0.38 * cw, sd), ch) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 32 * sst(-0.62 * cw, 0.38 * cw, sd) - 9 * sst(14, 60, sd);
       for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
       const w = sst(25, 140, Math.abs(x - WATERFALL.x));
       const zc = WATERFALL.z + 2;
