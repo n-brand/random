@@ -1641,7 +1641,8 @@
       }
       // Tore (SE und NE Gate): getarnte Felswaende quer ueber den Kanal; von beiden Seiten sieht es aus, als ende die Hoehle.
       // Rechtsklick (wie die Tueren der Villa) faehrt die Wand nach oben in die Decke.
-      for (const [name, a, b] of []) {                                            // B3: SE/NE Gate entfernt (stuenden mitten im See); neues Tor an der Engstelle kommt mit B6
+      // B3: SE/NE Gate entfernt (stuenden mitten im See). B6: ein Felstor quer ueber die Engstelle zum Lake Exit (Karte ca. 215/830, ca. 10 m)
+      for (const [name, a, b] of [["Felstor (Lake Exit)", [179, 820], [251, 840]]]) {
         const A = C(...a), Bp = C(...b), len = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]) + 3.2, h = LY + LH + 1 - BED;
         const g = new THREE.Group(); g.position.set((A[0] + Bp[0]) / 2, BED, (A[1] + Bp[1]) / 2); g.rotation.y = -Math.atan2(Bp[1] - A[1], Bp[0] - A[0]);
         g.userData.dynamic = true; world.add(g);
