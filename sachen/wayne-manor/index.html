@@ -407,11 +407,18 @@
     const inLawn = (x, z) => LAWNS.some(l => Math.hypot((x - l.cx) / l.rx, (z - l.cz) / l.rz) < 1);
     // Plateau (A2): Umriss von Nicolas (Skizze plateau-wasserfall.webp, grob), flach bis PL_FLAT Meter ausserhalb der Linie
     // (so bleiben rund 10 m Rand um alle Bauten), dann Hang ueber PL_W Meter: oben steiler, unten flach auslaufend (im Mittel ca. 30 Grad).
-    const PLATEAU = [[-44, 97], [-46, 30], [-64, 27], [-77, -38], [-77, -69], [-50, -76], [-19, -69], [-2, -44], [15, -35], [18, 13], [12, 96], [-19, 101]];
+    const PLATEAU = [[-44, 97], [-46, 30], [-64, 22], [-77, -38], [-77, -69], [-50, -76], [-19, -69], [-2, -44], [15, -35], [18, 13], [12, 96], [-19, 101]];
     // A4 (2026-11-07): Erweiterung nach Norden, gleiche Hoehe, bewaldet (Skizze plateau-wasserfall.webp). Keine Bauten, darum ohne Zusatzrand.
     // Westkante (PL_CLIFF) als steile Felswand fuer den Wasserfall (A7), sonst Haenge wie beim Plateau.
     const PLATEAU_N = [[-77, -70], [-78, -134], [-100, -156], [-110, -213], [-100, -241], [-72, -249], [-61, -221], [-30, -213], [-17, -204], [-30, -156], [-29, -128], [-13, -109], [-20, -83]];
     const PL_CLIFF = [[-100, -156], [-110, -213]];   // Fallkante des Wasserfalls (A7) bei z -186
+    // A3 Autoaufzug: Schacht im Hof westlich der Tiefgarage, Halte Garage (GY + HILL) / Hangfuss (HF_Y) / Batcave (LY).
+    // Am Hangfuss Tunnel nach Westen zu einer kurzen steilen Felspartie im Westhang (PL_CLIFF2) mit getarntem Felstor (HF_PORTAL).
+    const CSH = { x0: -41, x1: -33.7, z0: 36, z1: 40.5 }, CSH_OUT = { x0: -41.3, x1: -33.4, z0: 35.7, z1: 40.8 };
+    const HF_Y = 0.15, HF_TUN = { x0: -58.9, x1: -41, z0: 35.6, z1: 40.9 }, HF_PORTAL = { x0: -61, x1: -55.2, z0: 34.6, z1: 41.9 };
+    const PL_CLIFF2 = [[-54, 31], [-54, 47]];                                // (Ecke (-64, 27) dafuer nach (-64, 22), Rand zum Haus bleibt > 10 m)
+    // Geheimgang unten: 3 m nach Westen, dann nach Norden in die Auto Repair
+    const CGA = { x0: -47.9, x1: -41, z0: 36, z1: 40.5 }, CGB = { x0: -47.9, x1: -43.2, z0: 30.5, z1: 40.5 };
     const PL_FLAT = 8, PL_W = 42;
     const PL_BOX = [...PLATEAU, ...PLATEAU_N].reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
     function polySD(poly, x, z) {                                             // Abstand zur Umrisslinie, innen negativ
@@ -432,7 +439,7 @@
       const dn = polySD(PLATEAU_N, x, z), d = Math.min(plateauSD(x, z) - PL_FLAT, dn);
       if (d <= 0) return HILL;
       // an der Westkante der Erweiterung eine fast senkrechte Felswand (ca. 4 m breit), zu den Enden hin wieder normaler Hang
-      const wall = dn <= d + 0.01 ? 1 - sst(6, 30, segDist(x, z, PL_CLIFF) - dn) : 0;
+      const wall = dn <= d + 0.01 ? 1 - sst(6, 30, segDist(x, z, PL_CLIFF) - dn) : Math.max(0, 1 - sst(3, 14, segDist(x, z, PL_CLIFF2) - d));
       // A5: im Bereich der Serpentine (Osthang, z -60..70) ist der Hang ca. 62 m breit und gleichmaessig (Platz fuer vier Kehren)
       const sz = sst(-75, -55, z) * sst(80, 62, z) * sst(5, 18, x);
       const t = d / lerp(lerp(PL_W * (0.85 + 0.3 * vnoise(x / 70 + 4, z / 70 + 8)), 4, wall), 62, sz);   // Hangbreite leicht wechselnd
@@ -563,6 +570,7 @@
         const vx = pos[k * 3], vz = pos[k * 3 + 2];
         if (inPool(vx, vz) || Math.hypot(vx - FOUNT.x, vz - FOUNT.z) < FOUNT.r - 0.2) { cut[k] = 1; continue; }   // Becken (Pool, Brunnen)
         if (pos[k * 3 + 1] < -8 && seaD(vx, vz) < 5 && seaTunDist(vx, vz) < SEA_TUN_W / 2 + 1.5) cut[k] = 1;   // Meereshoehle
+        if (vx > HF_PORTAL.x0 && vx < HF_PORTAL.x1 && vz > HF_PORTAL.z0 && vz < HF_PORTAL.z1 && pos[k * 3 + 1] < 6.5) cut[k] = 1;   // Felstor Hangfuss (A3)
       }
       let n = 0;
       for (let j = 0; j < T_N; j++) for (let i = 0; i < T_N; i++) {
@@ -970,7 +978,8 @@
           const a0 = axis === "x" ? Math.min(ax, bx) : Math.min(az, bz), a1 = axis === "x" ? Math.max(ax, bx) : Math.max(az, bz);
           const L = axis === "x" ? az : ax, mid = (a0 + a1) / 2;
           const s = (axis === "x" ? inPoly(GARAGE, mid, L + 0.3) : inPoly(GARAGE, L + 0.3, mid)) ? 1 : -1;
-          wall(axis, a0, a1, L + s * 0.25, GY, -0.02, [], mat.concrete, 0.5);
+          const carOpen = axis === "z" && Math.abs(L - CSH.x1) < 0.2 ? [[CSH.z0, CSH.z1, GY, GY + 3.6]] : [];   // A3: Tor zum Autoaufzug
+          wall(axis, a0, a1, L + s * 0.25, GY, -0.02, carOpen, mat.concrete, 0.5);
         }
         // Stellplaetze 1-9 (Karte "Garage"), Linien, Nummern, einige Autos
         const BAYS = [[1, 259, 390, 299, 412.5], [2, 257.5, 338.5, 297.5, 360], [3, 117.5, 387.5, 157.5, 410], [4, 115, 337.5, 155, 360], [5, 112.5, 279, 152.5, 301],
@@ -1139,18 +1148,27 @@
     }
     const liftPanel = $("lift-panel");
     liftPanel.innerHTML = '<div class="lp-title">Aufzug</div>' + [...STOP_ORDER].reverse().map(i => `<button type="button" data-stop="${i}">${STOP_ORDER.indexOf(i) + 1}&nbsp; ${STOPS[i].name}</button>`).join("");
-    liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (b) pickStop(+b.dataset.stop); });
-    let liftPanelKey = "";
+    // Zwei Aufzuege (A3): Personenaufzug "P" und Autoaufzug "C" (CAR_LIFT, wird spaeter gebaut). Die Anzeige zeigt den, in dem man steht.
+    let CAR_LIFT = null, liftPanelKey = "", liftPanelFor = "P";
+    function buildLiftPanel(which) {
+      const U = which === "C" ? { title: "Autoaufzug", stops: CAR_LIFT.stops, order: CAR_LIFT.order } : { title: "Aufzug", stops: STOPS, order: STOP_ORDER };
+      liftPanel.innerHTML = `<div class="lp-title">${U.title}</div>` + [...U.order].reverse().map(i => `<button type="button" data-stop="${i}">${U.order.indexOf(i) + 1}&nbsp; ${U.stops[i].name}</button>`).join("");
+      liftPanelFor = which; liftPanelKey = "";
+    }
+    liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; if (liftPanelFor === "C") CAR_LIFT.pick(+b.dataset.stop); else pickStop(+b.dataset.stop); });
     function updateLiftPanel() {
-      const show = walking && !ghost && inCar(player.pos);
-      if (liftPanel.hidden === show) { liftPanel.hidden = !show; if (show) toast("Aufzug: Pfeil hoch/runter oder Tasten 1-5"); }
-      const key = LIFT.at + "/" + LIFT.target + "/" + LIFT.state;
-      if (!show || key === liftPanelKey) return;
+      const which = !walking || ghost ? "" : inCar(player.pos) ? "P" : CAR_LIFT && CAR_LIFT.inCar(player.pos) ? "C" : "";
+      if (which && which !== liftPanelFor) buildLiftPanel(which);
+      const show = !!which;
+      if (liftPanel.hidden === show) { liftPanel.hidden = !show; if (show) toast(which === "C" ? "Autoaufzug: Pfeil hoch/runter oder Tasten 1-3" : "Aufzug: Pfeil hoch/runter oder Tasten 1-5"); }
+      if (!show) return;
+      const L = which === "C" ? CAR_LIFT.L : LIFT, key = which + L.at + "/" + L.target + "/" + L.state;
+      if (key === liftPanelKey) return;
       liftPanelKey = key;
       for (const b of liftPanel.querySelectorAll("button")) {
         const i = +b.dataset.stop;
-        b.classList.toggle("here", i === LIFT.at && LIFT.state === "idle");
-        b.classList.toggle("target", i === LIFT.target && LIFT.state !== "idle");
+        b.classList.toggle("here", i === L.at && L.state === "idle");
+        b.classList.toggle("target", i === L.target && L.state !== "idle");
       }
     }
 
@@ -1384,6 +1402,7 @@
     // 3 = offen (Meer vor der Meereshoehle): keine Hoehlengeometrie, keine Wand dorthin
     function caveCell(x, z) {
       if (inRect(STW, x, z, 1.5)) return 1;
+      if (inRect(CSH, x, z) || inRect(CGA, x, z) || inRect(CGB, x, z)) return 1;   // A3: Autoaufzug-Schacht und Geheimgang
       if (seaTunDist(x, z) < SEA_TUN_W / 2) { const sd = seaD(x, z); return sd > 6 ? 3 : sd > -1.5 ? 4 : 2; }   // 4 = vor der Klippe: nur Grund
       const [px, py] = toCave(x, z);
       if (px < 0 || px > 736 || py > 1042) return 0;
@@ -1414,7 +1433,7 @@
         push(t === 1 ? G.floor : G.bed, c.map(([x, z]) => [x, fy, z]), uvFlat);
         if (t === 2 && !(seaTunDist(ccx0, ccz0) < SEA_TUN_W / 2 + 0.6 && seaD(ccx0, ccz0) > -19)) push(G.water, c.map(([x, z]) => [x, WL, z]), uvFlat);   // vorne deckt die Meer-Zunge
         const ccx = CX0 + (i + 0.5) * CELL, ccz = CZ0 + (j + 0.5) * CELL;
-        if (!inShaft(ccx, ccz) && !inRect(STW, ccx, ccz)) push(G.rock, c.map(([x, z]) => [x, ceilY(x, z), z]), uvWall);
+        if (!inShaft(ccx, ccz) && !inRect(STW, ccx, ccz) && !inRect(CSH_OUT, ccx, ccz)) push(G.rock, c.map(([x, z]) => [x, ceilY(x, z), z]), uvWall);
         for (const [di, dj, a, b] of [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]]) {
           const nt = cmAt(i + di, j + dj), [ax, az] = c[a], [bx, bz] = c[b];
           if (nt === 0) push(G.rock, [[ax, fy, az], [bx, fy, bz], [bx, ceilY(bx, bz), bz], [ax, ceilY(ax, az), az]], uvWall);
@@ -1773,6 +1792,7 @@
     function groundAt(x, z, feet = 0) {
       const sn = serpNear(x, z, SERP_W / 2);
       if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
+      if (feet < HILL - 1 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return BED - 20;   // A3: Tunnel und Autoaufzug-Schacht
       if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
       const ca = caveAt(x, z);
       if ((feet < HILL - 1 && inPoly(GARAGE, x, z)) || (feet < -1 && (ca === 1 || ca === 2 || ca === 4 || caveUpAt(x, z)))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
@@ -1814,7 +1834,7 @@
       // Steilkueste: oben an der Kante nicht hinunterfallen (Seen im Inland darf man betreten)
       if (player.pos.y > -3 && seaD(next.x, next.z) > -40 && terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }
       // Steile Haenge sperren: nur das Gelaende zaehlt (Stufen wie der Brunnenrand regelt supportAt)
-      const slopeG = (x, z) => terrainH(x, z);
+      const slopeG = (x, z) => player.pos.y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z)) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
       const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
       if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
       player.pos.x = next.x; player.pos.z = next.z;
@@ -1938,7 +1958,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -2155,10 +2175,15 @@
       if (e.code === "KeyE" && !e.repeat) {
         if (useBoat()) return;
         const ag = findAimedGate();
-        if (ag && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 9) toggleGate(ag); else useLift();
+        if (ag && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 9) toggleGate(ag);
+        else if (CAR_LIFT && CAR_LIFT.near(player.pos)) CAR_LIFT.use(); else useLift();
         return;
       }
       if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
+      if (CAR_LIFT && CAR_LIFT.inCar(player.pos)) {
+        if (/^(Digit|Numpad)[1-3]$/.test(e.code)) return CAR_LIFT.pick(CAR_LIFT.order[+e.code.slice(-1) - 1]);
+        if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) CAR_LIFT.step(e.code === "ArrowUp" ? 1 : -1); return; }
+      }
       if (inCar(player.pos)) {
         if (/^(Digit|Numpad)[1-5]$/.test(e.code)) return pickStop(STOP_ORDER[+e.code.slice(-1) - 1]);
         if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) stepStop(e.code === "ArrowUp" ? 1 : -1); return; }
@@ -2228,9 +2253,13 @@
         else if (kind === "mist") { const tt = clock.elapsedTime + v; o.material.opacity = 0.35 + 0.2 * Math.sin(tt * 1.3); o.position.y += Math.sin(tt * 0.9) * dt * 0.3; }
         else o.offset.y = (o.offset.y + dt * v / 2.2) % 1;
       }
+      if (CAR_LIFT) {
+        CAR_LIFT.update(dt);
+        if (walking && !ghost && CAR_LIFT.L.state === "moving" && CAR_LIFT.inCar(player.pos)) { player.pos.y = CAR_LIFT.L.y; player.vy = 0; player.onGround = true; camera.position.y = CAR_LIFT.L.y + EYE; }
+      }
       if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
-      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
+      const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < HILL - 2 && (inRect(HF_TUN, player.pos.x, player.pos.z) || inRect(CSH_OUT, player.pos.x, player.pos.z))) || (player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
       if (!BOAT.on) boatPose();
       // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
       {
@@ -2652,6 +2681,115 @@
       }
       if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.9 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
     }
+    // ===================== Autoaufzug Garage - Hangfuss - Batcave (A3) =====================
+    // Schacht CSH (7,3 x 4,5 m, Laengsachse West-Ost, man faehrt durch). Halte: Garage (Tor Ost), Hangfuss (Tor West -> Tunnel -> Felstor),
+    // Batcave (Tor West -> Geheimgang -> getarnte Felswand in der Auto Repair). Rolltore an jedem Halt, Bedienung wie der Personenaufzug.
+    {
+      const concrete = M(0x8e8c86, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 0.95 }), stripe = M(0xf2c230, { roughness: 0.6 }), roofM = M(0xc9c2b2, { roughness: 0.85 });
+      const cx = (CSH.x0 + CSH.x1) / 2, cz = (CSH.z0 + CSH.z1) / 2, top = HILL - 0.05;
+      // Schachtwaende (Oeffnungen an den Halten), Dach im Hof als geschlossene Steinflaeche
+      wall("x", CSH_OUT.x0, CSH_OUT.x1, CSH.z0 - 0.15, LY - 0.3, top, [], concrete, 0.3);
+      wall("x", CSH_OUT.x0, CSH_OUT.x1, CSH.z1 + 0.15, LY - 0.3, top, [], concrete, 0.3);
+      wall("z", CSH.z0, CSH.z1, CSH.x0 - 0.15, LY - 0.3, top, [[CSH.z0, CSH.z1, HF_Y, HF_Y + 4.0], [CSH.z0, CSH.z1, LY, LY + 4.0]], concrete, 0.3);
+      wall("z", CSH.z0, CSH.z1, CSH.x1 + 0.12, LY - 0.3, top, [[CSH.z0, CSH.z1, GY + HILL, GY + HILL + 3.6]], concrete, 0.24);
+      B(CSH_OUT.x0 - 0.2, CSH_OUT.x1 + 0.2, top, HILL + 0.14, CSH_OUT.z0 - 0.2, CSH_OUT.z1 + 0.2, roofM);
+      for (const y of [HF_Y, GY + HILL, LY]) B(CSH.x0 + 0.3, CSH.x1 - 0.3, y + 4.3, y + 4.38, cz - 0.15, cz + 0.15, mat.glow, false, world, false);
+      // Plattform (faehrt), gelb-schwarze Kanten, Gelaender an den Laengsseiten
+      const stops = [{ name: "Garage", y: GY + HILL, side: 1 }, { name: "Hangfuss (Felstor)", y: HF_Y, side: -1 }, { name: "Batcave (Auto Repair)", y: LY, side: -1 }];
+      const L = { y: stops[0].y, at: 0, target: 0, state: "idle", t: 0, from: stops[0].y, to: stops[0].y, open: stops.map((_, i) => i === 0 ? 1 : 0) };
+      const plat = new THREE.Group(); plat.position.set(cx, L.y, cz); plat.userData.dynamic = true; world.add(plat);
+      const hx = (CSH.x1 - CSH.x0) / 2 - 0.06, hz = (CSH.z1 - CSH.z0) / 2 - 0.06;
+      B(-hx, hx, -0.3, 0, -hz, hz, mat.steel, false, plat);
+      for (const s of [-1, 1]) {
+        B(s * hx - 0.25, s * hx + 0.25, 0, 0.02, -hz, hz, stripe, false, plat, false);
+        for (let k = 0; k < 6; k++) B(-hx + 0.4 + k * (2 * hx - 0.8) / 5 - 0.04, -hx + 0.4 + k * (2 * hx - 0.8) / 5 + 0.04, 0, 1.0, s * (hz - 0.08) - 0.04, s * (hz - 0.08) + 0.04, mat.steel, false, plat);
+        B(-hx + 0.36, hx - 0.36, 0.95, 1.02, s * (hz - 0.08) - 0.04, s * (hz - 0.08) + 0.04, stripe, false, plat);
+      }
+      const floor = S(CSH.x0 + 0.05, CSH.x1 - 0.05, L.y - 0.3, L.y, CSH.z0 + 0.05, CSH.z1 - 0.05);
+      // Rolltore: rollen nach oben ein (Hoehe skaliert), geschlossen sperren sie
+      const doorG = new THREE.Group(); doorG.userData.dynamic = true; world.add(doorG);
+      const doors = stops.map((st, i) => {
+        const h = i === 0 ? 3.6 : 4.0, x = st.side > 0 ? CSH.x1 + 0.02 : CSH.x0 - 0.02;
+        const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, h, CSH.z1 - CSH.z0).translate(0, -h / 2, 0), M(0x7c8189, { metalness: 0.5, roughness: 0.5, map: canvasTex(16, 64, (g, w, hh) => { g.fillStyle = "#c8ccd2"; g.fillRect(0, 0, w, hh); g.fillStyle = "#8a8f96"; for (let y = 0; y < hh; y += 4) g.fillRect(0, y, w, 1); }) }));
+        m.position.set(x, st.y + h, cz); m.castShadow = true; doorG.add(m);
+        return { m, solid: S(x - 0.15, x + 0.15, st.y, st.y + h, CSH.z0, CSH.z1, i !== 0) };
+      });
+      const order = stops.map((_, i) => i).sort((a, b) => stops[a].y - stops[b].y);
+      const inCarC = p => p.x > CSH.x0 + 0.05 && p.x < CSH.x1 - 0.05 && p.z > CSH.z0 + 0.05 && p.z < CSH.z1 - 0.05 && Math.abs(p.y - L.y) < 1.5;
+      const nearC = p => inCarC(p) || (Math.hypot(p.x - cx, p.z - cz) < 10 && stops.some(s => Math.abs(p.y - s.y) < 2.5));
+      function apply() {
+        plat.position.y = L.y; Object.assign(floor, { y0: L.y - 0.3, y1: L.y });
+        doors.forEach((d, i) => { const o = L.open[i]; d.m.scale.y = Math.max(0.04, 1 - o); d.solid.on = o < 0.7; });
+      }
+      function update(dt) {
+        if (L.state === "idle" && L.target !== L.at) L.state = "closing";
+        if (L.state === "closing") { L.open[L.at] = Math.max(0, L.open[L.at] - dt / 1.6); if (L.open[L.at] <= 0) { L.state = "moving"; L.t = 0; L.from = L.y; L.to = stops[L.target].y; } }
+        else if (L.state === "moving") { L.t = Math.min(1, L.t + dt / Math.max(2.5, Math.abs(L.to - L.from) / 7)); L.y = lerp(L.from, L.to, sst(0, 1, L.t)); if (L.t >= 1) { L.at = L.target; L.state = "opening"; } }
+        else if (L.state === "opening") { L.open[L.at] = Math.min(1, L.open[L.at] + dt / 1.6); if (L.open[L.at] >= 1) L.state = "idle"; }
+        apply();
+      }
+      function use() {
+        if (L.state !== "idle") return toast("Autoaufzug ist unterwegs");
+        const p = player.pos;
+        if (inCarC(p)) { const k = (order.indexOf(L.at) + 1) % order.length; L.target = order[k]; return toast("Fahrt: " + stops[L.target].name + " (Pfeil hoch/runter oder 1-3)"); }
+        const here = stops.findIndex(s => Math.abs(p.y - s.y) < 2.5);
+        if (here < 0) return toast("Zu weit vom Autoaufzug entfernt");
+        if (L.at === here) return toast("Der Autoaufzug ist schon da");
+        L.target = here; toast("Der Autoaufzug kommt");
+      }
+      function pick(i) { if (!walking || !inCarC(player.pos) || L.state !== "idle" || i === L.at || !stops[i]) return; L.target = i; toast("Fahrt: " + stops[i].name); }
+      function step(dir) { const k = order.indexOf(L.at) + dir; if (k < 0 || k >= order.length) return toast(dir > 0 ? "Ganz oben" : "Ganz unten"); pick(order[k]); }
+      apply();
+      CAR_LIFT = { stops, order, L, inCar: inCarC, near: nearC, update, use, pick, step };
+      // Licht im Schacht und im Tunnel (nur unter der Erde an)
+      for (const [x, y, z] of [[cx, HF_Y + 3.5, cz], [-50, HF_Y + 3.6, cz]]) { const l = new THREE.PointLight(0xfff0d8, 0, 18, 1.6); l.position.set(x, y, z); l.userData.I = 22; scene.add(l); caveLights.push(l); }
+
+      // Tunnel zum Westhang
+      B(HF_TUN.x0, HF_TUN.x1, HF_Y - 0.4, HF_Y, HF_TUN.z0, HF_TUN.z1, concrete);
+      B(HF_TUN.x0, HF_TUN.x1, HF_Y, HF_Y + 4.8, HF_TUN.z0 - 0.4, HF_TUN.z0, concrete);
+      B(HF_TUN.x0, HF_TUN.x1, HF_Y, HF_Y + 4.8, HF_TUN.z1, HF_TUN.z1 + 0.4, concrete);
+      B(HF_TUN.x0, HF_TUN.x1, HF_Y + 4.8, HF_Y + 5.2, HF_TUN.z0 - 0.4, HF_TUN.z1 + 0.4, concrete);
+      for (let x = HF_TUN.x0 + 2; x < HF_TUN.x1 - 1; x += 4) B(x - 0.8, x + 0.8, HF_Y + 4.72, HF_Y + 4.8, cz - 0.12, cz + 0.12, mat.glow, false, world, false);
+      // Getarntes Felstor am Portal (faehrt nach oben in den Fels), Felsen rahmen das Portal, steile Felspartie rundherum
+      const rockGate = (name, gx, gz, along, len, h, y0, rotY) => {
+        const g = new THREE.Group(); g.position.set(gx, y0, gz); g.rotation.y = rotY; g.userData.dynamic = true; world.add(g);
+        const rockM = M(0x77736c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true });
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(len, h, 1.0), rockM); slab.position.y = h / 2; slab.castShadow = slab.receiveShadow = true; g.add(slab);
+        const gr = rng(name.length * 31);
+        for (let k = 0; k < 22; k++) { const s = 0.5 + gr() * 1.2, m = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), rockM); m.position.set((gr() - 0.5) * (len - 0.6), 0.4 + gr() * (h - 0.8), (k % 2 ? 1 : -1) * (0.35 + gr() * 0.25)); m.rotation.set(gr() * 6, gr() * 6, gr() * 6); m.scale.set(1, 1, 0.5); g.add(m); }
+        const solid = along === "z" ? S(gx - 0.5, gx + 0.5, y0, y0 + h, gz - len / 2, gz + len / 2) : S(gx - len / 2, gx + len / 2, y0, y0 + h, gz - 0.5, gz + 0.5);
+        const a = along === "z" ? [gx, gz - len / 2] : [gx - len / 2, gz], b = along === "z" ? [gx, gz + len / 2] : [gx + len / 2, gz];
+        gates.push({ name, g, open: 0, target: 0, lift: h + 0.3, y0, solid, a, b });
+      };
+      rockGate("Felstor", HF_TUN.x0 + 0.5, cz, "z", HF_TUN.z1 - HF_TUN.z0 + 0.4, 4.9, HF_Y - 0.1, Math.PI / 2);
+      // Fels rund um die Tunneloeffnung (das Gelaende ist dort fuer das Portal ausgeschnitten): Scheiben bis knapp unter die Gelaendeoberflaeche
+      {
+        const portalRock = M(0x8f8b84, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 1 });
+        // Saeulen im 0,8-m-Raster, jede bis knapp ueber das (ausgeschnittene) Gelaende an ihrer Stelle; im Tunnel erst ueber der Decke
+        const st = 0.8;
+        for (let x = HF_PORTAL.x0 + 1.2; x < HF_PORTAL.x1 + 2.2; x += st) for (let z = HF_PORTAL.z0 - 1.2; z < HF_PORTAL.z1 + 1.2; z += st) {
+          const top = Math.min(HILL + 0.1, Math.max(terrainH(x, z), terrainH(x + st, z), terrainH(x, z + st), terrainH(x + st, z + st)) + 0.1);
+          const inTun = z + st > HF_TUN.z0 && z < HF_TUN.z1, bot = inTun ? HF_Y + 4.8 : -0.6;
+          if (top > bot + 0.05) B(x, x + st, bot, top, z, z + st, portalRock, !inTun);
+        }
+      }
+      const geos = [], pr = rng(616);
+      const put = (g, x, y, z, rot, yTop = HILL + 0.3) => { g.rotateY(rot); g.translate(x, y, z); const P = g.attributes.position; for (let q = 0; q < P.count; q++) if (P.getY(q) > yTop) P.setY(q, yTop); g.computeVertexNormals(); geos.push(g); };
+      put(makeRock(1.4, 4.2, 1.6, pr()), HF_TUN.x0 - 0.6, 3.6, HF_TUN.z0 - 1.5, Math.PI / 2);
+      put(makeRock(1.4, 4.2, 1.6, pr()), HF_TUN.x0 - 0.6, 3.6, HF_TUN.z1 + 1.5, Math.PI / 2);
+      put(makeRock(4.6, 2.2, 1.8, pr()), HF_TUN.x0 - 0.4, HF_Y + 6.4, cz, Math.PI / 2);
+      for (const sd of [-1, 1]) for (let a = 5.5; a < 12; a += 2.6 + pr() * 1.5) for (const y of [2 + pr() * 3, 11 + pr() * 6]) {
+        const w = 3 + pr() * 3, h = 7 + pr() * 6;
+        put(makeRock(w / 2, h / 2, 1.2 + pr() * 0.6, pr()), -56.6 - pr() * 0.8, y, cz + sd * a, Math.PI / 2 + (pr() - 0.5) * 0.3);
+      }
+      for (const z of [HF_TUN.z0 - 1.5, HF_TUN.z1 + 1.5]) circles.push([HF_TUN.x0 - 0.6, z, 1.3, 9]);
+      // Platz vor dem Tor (hier schliesst spaeter die Zufahrt an)
+      B(-67, HF_TUN.x0 - 0.9, -0.3, 0.05, cz - 1.8, cz + 9, M(0x8b8478, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 0.95 }), false);
+
+      // Geheimgang unten: getarnte Felswand am Nordende (von der Auto Repair aus sieht es wie Fels aus)
+      rockGate("Felswand (Geheimgang)", (CGB.x0 + CGB.x1) / 2, CGB.z0 + 2.4, "x", CGB.x1 - CGB.x0 + 0.6, LH - 1.2, LY - 0.2, 0);
+      if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.9 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
+    }
     // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
     {
       scene.updateMatrixWorld(true);
@@ -2684,7 +2822,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
