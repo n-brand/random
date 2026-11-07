@@ -417,19 +417,64 @@
     function segDist(x, z, [[ax, az], [bx, bz]]) { const dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)); return Math.hypot(x - ax - dx * t, z - az - dz * t); }
     // Hoehe des Plateaus samt Hang an (x, z); 0 weit draussen. Seen schneiden den Hangfuss ab.
     function plateauH(x, z) {
-      if (x < PL_BOX[0] - PL_FLAT - PL_W || x > PL_BOX[1] + PL_FLAT + PL_W || z < PL_BOX[2] - PL_FLAT - PL_W || z > PL_BOX[3] + PL_FLAT + PL_W) return 0;
+      const M = PL_FLAT + PL_W * 1.6;
+      if (x < PL_BOX[0] - M || x > PL_BOX[1] + M || z < PL_BOX[2] - M || z > PL_BOX[3] + M) return 0;
       const dn = polySD(PLATEAU_N, x, z), d = Math.min(plateauSD(x, z) - PL_FLAT, dn);
       if (d <= 0) return HILL;
       // an der Westkante der Erweiterung eine fast senkrechte Felswand (ca. 4 m breit), zu den Enden hin wieder normaler Hang
       const wall = dn <= d + 0.01 ? 1 - sst(6, 30, segDist(x, z, PL_CLIFF) - dn) : 0;
-      const t = d / (lerp(PL_W * (0.85 + 0.3 * vnoise(x / 70 + 4, z / 70 + 8)), 4, wall));   // Hangbreite leicht wechselnd
+      // A5: im Bereich der Serpentine (Osthang, z -60..70) ist der Hang ca. 62 m breit und gleichmaessig (Platz fuer vier Kehren)
+      const sz = sst(-75, -55, z) * sst(80, 62, z) * sst(5, 18, x);
+      const t = d / lerp(lerp(PL_W * (0.85 + 0.3 * vnoise(x / 70 + 4, z / 70 + 8)), 4, wall), 62, sz);   // Hangbreite leicht wechselnd
       if (t >= 1) return 0;
-      let f = (1 - t) ** 1.5;
+      let f = (1 - t) ** lerp(1.5, 1.05, sz);
       f += f * (1 - f) * 0.5 * (fbm(x / 22 + 31, z / 22 + 7) - 0.5);       // Buckel und Mulden im Hang (oben und unten 0)
       for (const L of LAKES) f *= sst(1.0, 1.4, lakeD(L, x, z));
       return HILL * Math.max(0, f);
     }
+    // ===================== Serpentinenstrasse (A5) =====================
+    // Vom Ostrand des Rondells (25 m) in vier Kehren den Osthang hinab bis zum Hangfuss (ca. x 108). Mittellinie in Weltkoordinaten,
+    // Hoehe gleichmaessig nach Laenge (ca. 5-6 %). Kehren als Halbkreise (Radius 7 m). Das Gelaende wird an die Fahrbahn angeglichen (genH).
+    const SERP_W = 7.5, SERP_TOP = HILL, SERP_FOOT = 1.5;
+    const SERP = (() => {
+      const pts = [[15, 0], [21, 0], [27, -2], [30.5, -7], [31, -14], [31, -26], [31, -38]];
+      const kehre = (cx, cz, dir, from) => { for (let k = 1; k < 6; k++) { const a = Math.PI * k / 6; pts.push([cx - from * 7 * Math.cos(a), cz + dir * 7 * Math.sin(a)]); } };
+      kehre(38, -38, -1, 1); pts.push([45, -38], [45, -10], [45, 20], [45, 50]);
+      kehre(52, 50, 1, 1); pts.push([59, 50], [59, 20], [59, -5], [59, -32]);
+      kehre(66, -32, -1, 1); pts.push([73, -32], [73, -5], [73, 20], [73, 44]);
+      kehre(80, 44, 1, 1); pts.push([87, 44], [88, 30], [92, 16], [99, 7], [108, 2]);
+      const curve = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
+      const len = curve.getLength(), n = Math.ceil(len), samples = [];
+      for (let i = 0; i <= n; i++) { const p = curve.getPointAt(i / n); samples.push([p.x, p.z, i / n * len]); }
+      const box = samples.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
+      return { curve, len, samples, box, y: s => lerp(SERP_TOP, SERP_FOOT, clamp01(s / len)) };
+    })();
+    // Naechster Strassenpunkt (bis max Meter): { d, s, y } oder null
+    function serpNear(x, z, max) {
+      const b = SERP.box;
+      if (x < b[0] - max || x > b[1] + max || z < b[2] - max || z > b[3] + max) return null;
+      let best = max * max, bs = -1;
+      for (const [sx, sz, s] of SERP.samples) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < best) { best = q; bs = s; } }
+      return bs < 0 ? null : { d: Math.sqrt(best), s: bs, y: SERP.y(bs) };
+    }
+    // Gelaende an die Fahrbahn angleichen: gewichtetes Mittel der Strassenhoehe in der Naehe (zwischen zwei Schleifen weicher Uebergang)
+    function serpBlend(x, z) {
+      const b = SERP.box, R = SERP_W / 2 + 7;
+      if (x < b[0] - R || x > b[1] + R || z < b[2] - R || z > b[3] + R) return null;
+      let W = 0, WY = 0, mw = 0;
+      for (const [sx, sz, s] of SERP.samples) {
+        const d = Math.hypot(x - sx, z - sz);
+        if (d >= R) continue;
+        const w = 1 - sst(SERP_W / 2 + 0.8, R, d);
+        W += w; WY += w * SERP.y(s); mw = Math.max(mw, w);
+      }
+      return W > 0 ? { y: WY / W - 0.08, w: mw } : null;
+    }
     function genH(x, z) {
+      const h = genH0(x, z), r = serpBlend(x, z);
+      return r ? lerp(h, r.y, r.w) : h;
+    }
+    function genH0(x, z) {
       const sd = seaD(x, z);
       // Huegel ausserhalb des Anwesens. An der Kueste (Nicolas: "mehr Hoehenunterschiede") reichen sie bis an die Kante, etwas hoeher und mit
       // mittelgrossen Buckeln, so wechselt auch die Klippenhoehe. Um Wassertunnel und Felsbogen (|t| < 80) bleibt es wie vorher flach.
@@ -450,7 +495,7 @@
     }
     // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
     function forestD(x, z) {
-      if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30) return 0;
+      if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9)) return 0;
       for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
       if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z - 4) < 22) return 0;
       let d = 0.08 + 0.55 * sst(0.6, 0.75, vnoise(x / 60, z / 60));
@@ -1692,6 +1737,8 @@
     }
     // Boden ohne Quader: unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
     function groundAt(x, z, feet = 0) {
+      const sn = serpNear(x, z, SERP_W / 2);
+      if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
       if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
       const ca = caveAt(x, z);
       if ((feet < HILL - 1 && inPoly(GARAGE, x, z)) || (feet < -1 && (ca === 1 || ca === 2 || ca === 4 || caveUpAt(x, z)))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
@@ -1857,7 +1904,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -2192,6 +2239,56 @@
       }
       world.userData.lifted = lifted;
     }
+    // Serpentine bauen (A5): nach liftPlateau, alles ist schon in Endhoehe. Fahrbahn hellgrau mit dezenter Mittellinie, Steinmauern an der
+    // Talseite (wo das urspruengliche Gelaende tiefer liegt), schlichte graue Leitplanken an den Kehren; Mauern und Planken mit Kollision.
+    {
+      const tex = canvasTex(128, 128, (g, w, h) => {
+        g.fillStyle = "#8e9094"; g.fillRect(0, 0, w, h);
+        for (let i = 0; i < 900; i++) { const v = 120 + r1() * 40; g.fillStyle = `rgba(${v},${v},${v + 3},.45)`; g.fillRect(r1() * w, r1() * h, 1.5, 1.5); }
+        g.fillStyle = "rgba(235,235,228,.55)"; g.fillRect(5, 0, 2, h); g.fillRect(w - 7, 0, 2, h);
+        g.fillStyle = "rgba(235,235,228,.35)"; g.fillRect(w / 2 - 1, 0, 2, h * 0.4);
+      });
+      tex.repeat.set(1, 1);
+      const road = ribbon(SERP.curve, SERP.len, SERP_W, flatMat({ map: tex, side: THREE.DoubleSide }), 5, 0, { y: SERP.y });
+      road.userData.keep = false;                                              // darf zusammengefasst werden
+      const stone = M(0x9a958a, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 0.95 }), rail = M(0xa3a8ae, { metalness: 0.5, roughness: 0.45 }), postM = M(0x6c7077, { metalness: 0.4, roughness: 0.6 });
+      const seg = (ax, az, bx, bz, y0, y1, th, m) => {
+        const len = Math.hypot(bx - ax, bz - az), mesh = new THREE.Mesh(new THREE.BoxGeometry(len + 0.05, y1 - y0, th), m);
+        mesh.position.set((ax + bx) / 2, (y0 + y1) / 2, (az + bz) / 2); mesh.rotation.y = -Math.atan2(bz - az, bx - ax);
+        mesh.castShadow = mesh.receiveShadow = true; world.add(mesh);
+      };
+      const S2 = SERP.samples, hw = SERP_W / 2, step = 2;
+      for (let i = 0; i + step < S2.length; i += step) {
+        const [ax, az, sa] = S2[i], [bx, bz, sb] = S2[i + step], tx = (bx - ax) / Math.hypot(bx - ax, bz - az), tz = (bz - az) / Math.hypot(bx - ax, bz - az);
+        const nx = -tz, nz = tx;                                               // links der Fahrtrichtung (bergab)
+        const ya = SERP.y(sa), yb = SERP.y(sb);
+        // Kehre: Richtungsaenderung ueber 6 m gross
+        const j = Math.min(S2.length - 1, i + 6), k = Math.max(0, i - 6);
+        const turn = Math.abs(Math.atan2(S2[j][1] - S2[i][1], S2[j][0] - S2[i][0]) - Math.atan2(S2[i][1] - S2[k][1], S2[i][0] - S2[k][0]));
+        const kehre = Math.min(turn, Math.PI * 2 - turn) > 0.6;
+        for (const sd of [-1, 1]) {
+          const ox = nx * sd * (hw + 0.3), oz = nz * sd * (hw + 0.3), mx = (ax + bx) / 2 + ox, mz = (az + bz) / 2 + oz;
+          const base = genH0(mx + nx * sd * 4, mz + nz * sd * 4), ym = (ya + yb) / 2;
+          const tal = base < ym - 1.2;                                         // Talseite: urspruengliches Gelaende deutlich tiefer
+          if (kehre && tal) {
+            seg(ax + ox, az + oz, bx + ox, bz + oz, ym + 0.45, ym + 0.75, 0.08, rail);
+            const pi = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 0.12), postM); pi.position.set(ax + ox, ya + 0.4, az + oz); world.add(pi);
+          } else if (tal && i > 10) {
+            seg(ax + ox, az + oz, bx + ox, bz + oz, Math.min(ya, yb) - 1.6, ym + 0.55, 0.45, stone);
+          } else continue;
+          for (let q = 0; q <= 2; q++) circles.push([lerp(ax, bx, q / 3) + ox, lerp(az, bz, q / 3) + oz, 0.25, ym + 1.4]);
+        }
+      }
+      // einzelne Felsen auf der Wiese zwischen den Schleifen
+      const fr = rng(808), rockM2 = M(0x8f8b83, { map: rockTex, roughness: 1, flatShading: true });
+      for (let k = 0; k < 40 && k >= 0; k++) {
+        const x = 30 + fr() * 70, z = -45 + fr() * 100, sn = serpNear(x, z, 6);
+        if (sn) continue;
+        const s = 0.6 + fr() * 1.4, m = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), rockM2);
+        m.position.set(x, terrainH(x, z) + s * 0.3, z); m.rotation.set(fr() * 6, fr() * 6, fr() * 6); m.scale.y = 0.7; m.castShadow = true; world.add(m);
+        circles.push([x, z, s * 0.8, terrainH(x, z) + s]);
+      }
+    }
     // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
     {
       scene.updateMatrixWorld(true);
@@ -2224,7 +2321,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
