@@ -1,6 +1,6 @@
 # Karten fuer Wayne Manor (Vorlagen, von Nicolas)
 
-Alle sechs Vorlagen liegen hier:
+Alle Vorlagen liegen hier (fuenf Dateien, dazu Skizzen unter `planung/`):
 
 - `aussenanlage.webp` - Exterior Grounds (Lageplan, Fluegel-Schema, Kompass: Norden rechts, Westen oben)
 - `nebengeschosse.webp` - Auxiliary Floors (Garage mit Carpark, 3. und 4. Stock, Observatory, Hubschrauberlandeplatz)
