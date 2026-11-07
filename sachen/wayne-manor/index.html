@@ -398,23 +398,31 @@
     // Plateau (A2): Umriss von Nicolas (Skizze plateau-wasserfall.webp, grob), flach bis PL_FLAT Meter ausserhalb der Linie
     // (so bleiben rund 10 m Rand um alle Bauten), dann Hang ueber PL_W Meter: oben steiler, unten flach auslaufend (im Mittel ca. 30 Grad).
     const PLATEAU = [[-44, 97], [-46, 30], [-64, 27], [-77, -38], [-77, -69], [-50, -76], [-19, -69], [-2, -44], [15, -35], [18, 13], [12, 96], [-19, 101]];
+    // A4 (2026-11-07): Erweiterung nach Norden, gleiche Hoehe, bewaldet (Skizze plateau-wasserfall.webp). Keine Bauten, darum ohne Zusatzrand.
+    // Westkante (PL_CLIFF) als steile Felswand fuer den Wasserfall (A7), sonst Haenge wie beim Plateau.
+    const PLATEAU_N = [[-77, -70], [-78, -134], [-100, -156], [-110, -213], [-100, -241], [-72, -249], [-61, -221], [-30, -213], [-17, -204], [-30, -156], [-29, -128], [-13, -109], [-20, -83]];
+    const PL_CLIFF = [[-100, -156], [-110, -213]];
     const PL_FLAT = 8, PL_W = 42;
-    const PL_BOX = PLATEAU.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
-    function plateauSD(x, z) {                                                // Abstand zur Umrisslinie, innen negativ
+    const PL_BOX = [...PLATEAU, ...PLATEAU_N].reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
+    function polySD(poly, x, z) {                                             // Abstand zur Umrisslinie, innen negativ
       let m = 1e9, inside = false;
-      for (let i = 0, j = PLATEAU.length - 1; i < PLATEAU.length; j = i++) {
-        const [ax, az] = PLATEAU[j], [bx, bz] = PLATEAU[i], dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz));
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [ax, az] = poly[j], [bx, bz] = poly[i], dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz));
         m = Math.min(m, Math.hypot(x - ax - dx * t, z - az - dz * t));
         if ((bz > z) !== (az > z) && x < ax + dx * (z - az) / dz) inside = !inside;
       }
       return inside ? -m : m;
     }
+    const plateauSD = (x, z) => polySD(PLATEAU, x, z);
+    function segDist(x, z, [[ax, az], [bx, bz]]) { const dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)); return Math.hypot(x - ax - dx * t, z - az - dz * t); }
     // Hoehe des Plateaus samt Hang an (x, z); 0 weit draussen. Seen schneiden den Hangfuss ab.
     function plateauH(x, z) {
       if (x < PL_BOX[0] - PL_FLAT - PL_W || x > PL_BOX[1] + PL_FLAT + PL_W || z < PL_BOX[2] - PL_FLAT - PL_W || z > PL_BOX[3] + PL_FLAT + PL_W) return 0;
-      const d = plateauSD(x, z) - PL_FLAT;
+      const dn = polySD(PLATEAU_N, x, z), d = Math.min(plateauSD(x, z) - PL_FLAT, dn);
       if (d <= 0) return HILL;
-      const t = d / (PL_W * (0.85 + 0.3 * vnoise(x / 70 + 4, z / 70 + 8)));   // Hangbreite leicht wechselnd
+      // an der Westkante der Erweiterung eine fast senkrechte Felswand (ca. 4 m breit), zu den Enden hin wieder normaler Hang
+      const wall = dn <= d + 0.01 ? 1 - sst(6, 30, segDist(x, z, PL_CLIFF) - dn) : 0;
+      const t = d / (lerp(PL_W * (0.85 + 0.3 * vnoise(x / 70 + 4, z / 70 + 8)), 4, wall));   // Hangbreite leicht wechselnd
       if (t >= 1) return 0;
       let f = (1 - t) ** 1.5;
       f += f * (1 - f) * 0.5 * (fbm(x / 22 + 31, z / 22 + 7) - 0.5);       // Buckel und Mulden im Hang (oben und unten 0)
@@ -434,9 +442,7 @@
       const cw = Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
       h = h * lerp(1 - sst(-25, -3, sd), 1 - sst(-0.62 * cw, 0.38 * cw, sd), ch) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 32 * sst(-0.62 * cw, 0.38 * cw, sd) - 9 * sst(14, 60, sd);
       for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
-      const w = sst(25, 140, Math.abs(x - WATERFALL.x));
-      const zc = WATERFALL.z + 2;
-      h += (14 * sst(zc, zc - lerp(14, 90, w), z) + 10 * sst(zc - 38, zc - 258, z)) * (1 - sst(-25, -3, sd));   // Nordhang, beim Wasserfall steil (nur an Land, E3: Meer reicht nach Norden)
+      // (A4: der alte Nordhang mit Felskante beim alten Wasserfall ist weg; die Plateau-Erweiterung mit Felswand uebernimmt, Wasserfall neu in A7)
       for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));
       const ph = plateauH(x, z);
       if (ph > 0.01) h = Math.max(h, ph);
@@ -1851,7 +1857,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
