@@ -72,7 +72,13 @@
     #draw-colors button { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .25); background: var(--c); cursor: pointer; transition: transform .15s ease; }
     #draw-colors button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .6); transform: scale(1.15); }
     #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); background: #0b0d12; z-index: 9; }
-    @media (max-width: 600px) { .bar h1 { display: none; } }
+    /* Geistmodus: Anzeige oben, kein Aufzug-Knopf, am Handy Hoch/Runter statt Sprung */
+    #ghost-tag { display: none; position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 12px); transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 16px; font-weight: 800; letter-spacing: .08em; color: #bfe3ff; pointer-events: none; z-index: 6; }
+    body.ghost #ghost-tag { display: block; }
+    body.ghost #btn-lift { display: none; }
+    #btn-down { display: none; position: fixed; right: 160px; bottom: calc(env(safe-area-inset-bottom, 0px) + 118px); width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; touch-action: none; z-index: 5; }
+    body.touch.ghost #btn-down { display: block; }
+    @media (max-width: 600px) { .bar h1 { display: none; } #ghost-tag { top: calc(env(safe-area-inset-top, 0px) + 60px); } }
   </style>
 </head>
 <body>
@@ -85,6 +91,7 @@
 
   <div class="panel" role="group" aria-label="Steuerung">
     <button type="button" id="btn-walk-low" class="big">Begehen</button>
+    <button type="button" id="btn-ghost" title="Durch alles fliegen: WASD, Leertaste hoch, Shift runter, Esc zurück">Geist</button>
     <button type="button" id="btn-walk-top" aria-pressed="false">Karte: aus</button>
     <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
     <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
@@ -98,6 +105,7 @@
     <button type="button" id="btn-exit">Beenden (Esc)</button>
   </div>
   <div id="cross"></div>
+  <div id="ghost-tag">Geist</div>
   <div id="hint">WASD gehen &middot; Linksklick Maus übernehmen &middot; Leertaste springen &middot; Shift rennen &middot; Esc beenden</div>
   <div id="toast"></div>
   <canvas id="draw-layer"></canvas>
@@ -109,6 +117,7 @@
   <div class="stick" id="stick-move"><span></span></div>
   <div class="stick" id="stick-look"><span></span></div>
   <button type="button" id="btn-jump">Sprung</button>
+  <button type="button" id="btn-down">Runter</button>
 
   <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
 
@@ -1001,7 +1010,7 @@
     liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (b) pickStop(+b.dataset.stop); });
     let liftPanelKey = "";
     function updateLiftPanel() {
-      const show = walking && inCar(player.pos);
+      const show = walking && !ghost && inCar(player.pos);
       if (liftPanel.hidden === show) { liftPanel.hidden = !show; if (show) toast("Aufzug: Pfeil hoch/runter oder Tasten 1-5"); }
       const key = LIFT.at + "/" + LIFT.target + "/" + LIFT.state;
       if (!show || key === liftPanelKey) return;
@@ -1632,7 +1641,10 @@
     const START = { x: 32, z: 0, yaw: Math.PI / 2 };                        // Blick nach Westen auf das Rondell
     const player = { pos: new THREE.Vector3(START.x, 0, START.z), vy: 0, yaw: START.yaw, pitch: 0.05, onGround: true, jump: false };
     const keys = new Set();
-    let walking = false, dragging = false, jumpHeld = false;
+    let walking = false, dragging = false, jumpHeld = false, downHeld = false;
+    // Geistmodus (01): fliegen ohne Kollision und Schwerkraft, 20-mal Gehtempo, Aufzug/Boot/Tore reagieren nicht
+    let ghost = false;
+    const GHOST = WALK * 20, hintEl = document.getElementById("hint"), HINT_WALK = hintEl.innerHTML;
     const orbitView = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
     function pushOut(p, feet) {
       for (const s of solids) {
@@ -1734,8 +1746,8 @@
     }
     function startWalk(x = START.x, z = START.z, yaw = START.yaw) {
       if (!walking) { orbitView.pos.copy(camera.position); orbitView.target.copy(controls.target); }
-      walking = true;
-      document.body.classList.add("walk");
+      walking = true; ghost = false;
+      document.body.classList.add("walk"); document.body.classList.remove("ghost"); hintEl.innerHTML = HINT_WALK;
       controls.enabled = false;
       if (world.userData.boat) world.userData.boat.on = false;
       player.pos.set(x, terrainH(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
@@ -1744,14 +1756,68 @@
     }
     function setWalk(on) {
       if (on) return startWalk();
-      walking = false;
-      document.body.classList.remove("walk");
+      const wasGhost = ghost;
+      walking = false; ghost = false;
+      document.body.classList.remove("walk", "ghost"); hintEl.innerHTML = HINT_WALK;
       controls.enabled = true;
-      stopDrag(); keys.clear();
+      stopDrag(); keys.clear(); downHeld = jumpHeld = false;
       camera.fov = 45; camera.near = 0.6; camera.updateProjectionMatrix();
+      if (wasGhost) {
+        // Orbit-Kamera bleibt, wo der Geist war, und schaut in dieselbe Richtung (Ziel 25 m voraus)
+        const dir = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
+        controls.target.copy(camera.position).addScaledVector(dir, 25); camera.lookAt(controls.target);
+        // unter dem Gelaende (Hoehle, Garage): Ansicht "Von unten" einschalten, sonst schiebt die Orbit-Ansicht die Kamera nach oben
+        if (!belowView && camera.position.y < terrainH(camera.position.x, camera.position.z) + 3) {
+          belowView = true; $("btn-below").setAttribute("aria-pressed", "true");
+          belowSave.pos.copy(orbitView.pos); belowSave.target.copy(orbitView.target);
+          controls.maxPolarAngle = Math.PI;
+        }
+        controls.update();
+        return;
+      }
       camera.position.copy(orbitView.pos); controls.target.copy(orbitView.target); camera.lookAt(orbitView.target);
     }
+    function startGhost() {
+      orbitView.pos.copy(camera.position); orbitView.target.copy(controls.target);
+      const dir = controls.target.clone().sub(camera.position).normalize();
+      if (BOAT.on) BOAT.on = false;
+      walking = true; ghost = true;
+      document.body.classList.add("walk", "ghost");
+      hintEl.innerHTML = "Geist &middot; WASD fliegen &middot; Leertaste hoch &middot; Shift runter &middot; Linksklick Maus übernehmen &middot; Esc zurück";
+      controls.enabled = false;
+      player.pos.set(camera.position.x, camera.position.y - EYE, camera.position.z);
+      player.yaw = Math.atan2(-dir.x, -dir.z); player.pitch = Math.max(-1.5, Math.min(1.5, Math.asin(Math.max(-1, Math.min(1, dir.y)))));
+      player.vy = 0; keys.clear();
+      camera.fov = 70; camera.near = 0.15; camera.updateProjectionMatrix();
+      camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
+      camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
+      toast("Geist: durch alles fliegen, Esc führt zurück");
+    }
+    function ghostStep(dt) {
+      let mx = 0, mz = 0, my = 0;
+      if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;
+      if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1;
+      if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
+      if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
+      if (keys.has("Space") || jumpHeld) my += 1;
+      if (keys.has("ShiftLeft") || keys.has("ShiftRight") || downHeld) my -= 1;
+      mx += moveStick.x; mz -= moveStick.y;
+      look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
+      const len = Math.hypot(mx, mz);
+      if (len > 1) { mx /= len; mz /= len; }
+      const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw), cp = Math.cos(player.pitch), sp = Math.sin(player.pitch), v = GHOST * dt;
+      const p = player.pos;
+      p.x += (-sy * cp * mz + cy * mx) * v;                                     // vorwaerts in Blickrichtung (auch nach oben/unten)
+      p.z += (-cy * cp * mz - sy * mx) * v;
+      p.y += (sp * mz + my) * v;
+      const far = Math.hypot(p.x, p.z);
+      if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
+      p.y = Math.max(-200, Math.min(800, p.y));
+      camera.position.set(p.x, p.y + EYE, p.z);
+      camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
+    }
     $("btn-walk-low").addEventListener("click", () => startWalk());
+    $("btn-ghost").addEventListener("click", e => { e.currentTarget.blur(); startGhost(); });
     $("btn-walk-top").addEventListener("click", () => showMap((mapIdx + 1) % (MAPS.length + 1)));
     showMap(MAPS.length);                                                     // Start ohne Karte (Wunsch von Nicolas)
     $("btn-exit").addEventListener("click", () => setWalk(false));
@@ -1801,7 +1867,7 @@
     const gateRay = new THREE.Raycaster(), gateCenter = new THREE.Vector2(0, 0);
     let aimedGate = null, gateHintClock = 0;
     function findAimedGate() {
-      if (!walking) return null;
+      if (!walking || ghost) return null;
       gateRay.setFromCamera(gateCenter, camera); gateRay.far = 60;
       const hit = gateRay.intersectObjects(gates.map(t => t.g), true)[0];
       return hit ? gates.find(t => { for (let o = hit.object; o; o = o.parent) if (o === t.g) return true; return false; }) : null;
@@ -1979,6 +2045,7 @@
       if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
+      if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }   // Geist: E, Aufzugstasten ohne Wirkung
       if (e.code === "KeyE" && !e.repeat) { if (!useBoat()) useLift(); return; }
       if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
       if (inCar(player.pos)) {
@@ -2009,7 +2076,10 @@
     const moveStick = joystick($("stick-move")), lookStick = joystick($("stick-look"));
     $("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.jump = true; jumpHeld = true; });
     for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
+    $("btn-down").addEventListener("pointerdown", e => { e.preventDefault(); downHeld = true; });
+    for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down").addEventListener(type, () => { downHeld = false; });
     function walkStep(dt) {
+      if (ghost) return ghostStep(dt);
       if (BOAT.on) return boatStep(dt);
       let mx = 0, mz = 0;
       if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;
@@ -2034,14 +2104,14 @@
       else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (!belowView && camera.position.y < gy) camera.position.y = gy; }
       // Unter Wasser: blauer, dichter Nebel (wie im Pool der Villa)
       {
-        const cw = walking ? waterAt(camera.position.x, camera.position.z) : null, uw = cw !== null && camera.position.y < cw;
+        const cw = walking && !ghost ? waterAt(camera.position.x, camera.position.z) : null, uw = cw !== null && camera.position.y < cw;
         if (uw) { scene.fog.color.set(0x0c3d55); scene.background.set(0x0c3d55); scene.fog.near = 0.5; scene.fog.far = 12; }
         else if (scene.fog.far < 100) { scene.fog.near = 350; scene.fog.far = 1500; applyNight(); }
       }
       updateLift(dt);
       updateLiftPanel();
       updateGates(dt);
-      if (walking && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
+      if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
       const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
       const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < GY + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
       if (!BOAT.on) boatPose();
@@ -2049,7 +2119,7 @@
       {
         const tt = world.userData.turntable, w = dt * 0.05;
         tt.rotation.y += w;
-        if (walking && player.onGround) {
+        if (walking && !ghost && player.onGround) {
           const p = player.pos, dx = p.x - tt.position.x, dz = p.z - tt.position.z;
           if (Math.abs(p.y - LY) < 0.3 && dx * dx + dz * dz < (60 * CAVE_SC) ** 2) {
             const c = Math.cos(w), s = Math.sin(w);
@@ -2099,7 +2169,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
