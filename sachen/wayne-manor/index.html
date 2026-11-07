@@ -320,12 +320,12 @@
     const LAKES = [
       { name: "Northwest Lake", cx: -150, cz: -55, rx: 24, rz: 36, s: 1.0, depth: 4 },
       // A7: neuer Teich am Fuss der Felswand (der alte bei -99/-126 ist weg); keepPlateau: schneidet die Felswand nicht ab
-      { name: "Wasserfall-Teich", cx: -121, cz: -186, rx: 15, rz: 13, s: 2.3, depth: 2.6, keepPlateau: true }
+      { name: "Wasserfall-Teich", cx: -117.5, cz: -186, rx: 9.5, rz: 8.5, s: 2.3, depth: 2.6, keepPlateau: true }   // kleiner (Nicolas): Luecke fuer den Sprung mit dem Batmobil
     ];
     const wob = (L, a) => 1 + 0.12 * Math.sin(3 * a + L.s) + 0.07 * Math.sin(5 * a + 2 * L.s) + 0.04 * Math.sin(8 * a + 3 * L.s);
     function lakeD(L, x, z) { const ux = (x - L.cx) / L.rx, uz = (z - L.cz) / L.rz; return Math.hypot(ux, uz) / wob(L, Math.atan2(uz, ux)); }
     const LAWNS = [{ name: "West Lawn", cx: -92, cz: 20, rx: 26, rz: 40 }, { name: "South Lawn", cx: -20, cz: 114, rx: 34, rz: 22 }];
-    const WATERFALL = { x: -121, z: -190 };                                   // Teich am Fuss (A7); Fallkante WF_LIP
+    const WATERFALL = { x: -117.5, z: -186 };                                   // Teich am Fuss (A7); Fallkante WF_LIP
     const WF_LIP = [-105.3, -186];
     // Bach auf der Plateau-Erweiterung: Quelle im Wald, schlaengelt sich nach Westen bis zur Fallkante
     const STREAM = [[-35, -200], [-48, -196], [-60, -201], [-72, -195], [-84, -190], [-95, -188.5], WF_LIP];
@@ -531,16 +531,17 @@
       const tun = [[-25.8, -35.2], [-25.8, -45], [-26, -80], [-28, -120], [-33, -160], [-38, -190], [-38, -205]];
       for (let k = 1; k < 6; k++) { const a = Math.PI * k / 6; tun.push([-50 + 12 * Math.cos(a), -205 - 12 * Math.sin(a)]); }
       tun.push([-62, -205], [-63, -185], [-68, -172], [-78, -168], [-90, -172], [-100, -181], [-104, -185.5], [-107.8, -186]);
-      const out = [[-110, -185], [-110.8, -178], [-111.3, -172], [-114, -166], [-119, -161], [-125, -158]];
+      // Draussen geradeaus nach Westen; ueber dem Teich eine Luecke (Sprung ohne Rampe, D1), am Westufer geht die Strasse weiter
+      const out = [[-111, -186], [-120, -186], [-129.5, -186.2], [-140, -186.8], [-155, -187.8], [-170, -189]];
       const curve = new THREE.CatmullRomCurve3([...tun, ...out].map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
       const len = curve.getLength(), n = Math.ceil(len), samples = [];
       for (let i = 0; i <= n; i++) { const p = curve.getPointAt(i / n); samples.push([p.x, p.z, i / n * len]); }
       let sP = 0, best = 1e9; for (const [x, z, s] of samples) { const q = Math.hypot(x + 107.8, z + 186); if (q < best) { best = q; sP = s; } }   // Portal
-      let sD = 0; best = 1e9; for (const [x, z, s] of samples) { const q = Math.hypot(x + 111.3, z + 172); if (q < best) { best = q; sD = s; } }   // Ende Damm
+      let sG0 = 0, sG1 = 0; for (const [x, , s] of samples) { if (s > sP && !sG0 && x < -110.4) sG0 = s; if (s > sP && !sG1 && x < -129.2) sG1 = s; }   // Luecke ueber dem Teich
       let yEnd = null;                                                          // erst bei Bedarf (das Gelaende-Raster gibt es hier noch nicht)
-      const y = s => s <= sP ? lerp(LY, WFX_Y, s / sP) : s <= sD ? WFX_Y : lerp(WFX_Y, yEnd ??= genH0(-125, -158), sst(sD, len, s));
+      const y = s => s <= sP ? lerp(LY, WFX_Y, s / sP) : s <= sG1 + 4 ? WFX_Y : lerp(WFX_Y, yEnd ??= genH0(-170, -189), sst(sG1 + 4, len, s));
       const box = samples.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
-      return { curve, len, samples, sP, sD, y, box };
+      return { curve, len, samples, sP, sG0, sG1, y, box, inGap: s => s > sG0 && s < sG1 };
     })();
     function wfNear(x, z, max) {
       const b = WFT.box;
@@ -553,7 +554,7 @@
     // Gelaende draussen an die Fahrbahn angleichen (Damm durch den Teich, Rampe aufs Ufer)
     function wfBlend(x, z) {
       const w = wfNear(x, z, 6.5);
-      if (!w || w.s < WFT.sP - 1) return null;
+      if (!w || w.s < WFT.sP - 1 || (w.s > WFT.sG0 + 0.5 && w.s < WFT.sG1 - 0.5)) return null;   // ueber dem Teich keine Strasse
       return { y: w.y - 0.08, w: 1 - sst(2.9, 6.5, w.d) };
     }
     function genH(x, z) {
@@ -1909,7 +1910,7 @@
     }
     // Wasseroberflaeche an (x, z) oder null: Pool, Brunnen, Hoehle/Meer (gleiche Hoehe), Seen
     function waterAt(x, z) {
-      if (wfNear(x, z, 3.3)) return null;                                    // A8: Tunnel und Damm
+      { const w = wfNear(x, z, 3.3); if (w && !WFT.inGap(w.s)) return null; }   // A8: Tunnel und Strasse trocken, ueber dem Teich Wasser
       if (inPool(x, z)) return POOL.water + HILL;
       if (Math.hypot(x - FOUNT.x, z - FOUNT.z) < FOUNT.r - 0.4) return FOUNT.water + HILL;
       const c = caveAt(x, z);
@@ -2062,7 +2063,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Kehre)", -50, -10, -215, W], ["Waterfall Exit (aussen)", -122, 0, -159, N], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Kehre)", -50, -10, -215, W], ["Waterfall Exit (aussen, Westufer)", -134, 0, -186.4, E], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -2916,8 +2917,8 @@
       const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
       const tube = new THREE.Mesh(g, rockIn); tube.receiveShadow = true; tube.userData.keep = true; scene.add(tube);
       // Fahrbahn (wie der Hoehlentunnel), Boden darunter traegt
-      const road = ribbon(WFT.curve, WFT.len, 5, flatMat({ map: roadTex.road, side: THREE.DoubleSide }), roadPeriod.road, 0, { y: WFT.y });
-      road.userData.keep = false;
+      const roadM = flatMat({ map: roadTex.road, side: THREE.DoubleSide });
+      for (const [t0, t1] of [[0, WFT.sG0 / WFT.len], [WFT.sG1 / WFT.len, 1]]) { const road = ribbon(WFT.curve, WFT.len, 5, roadM, roadPeriod.road, 0, { y: WFT.y, t0, t1 }); road.userData.keep = false; }   // Luecke ueber dem Teich
       const tunFloor = ribbon(WFT.curve, WFT.len, 7.0, M(0x4f4c47, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, side: THREE.DoubleSide }), 4, 0, { y: s => WFT.y(s) - 0.05, t0: 0, t1: (WFT.sP + 0.6) / WFT.len });
       tunFloor.userData.keep = false;                                          // Tunnelboden ueber die ganze Breite
       for (let i = 0; i < NS3 - 1; i += 2) {                                   // Boden als Quader (Tunnel); draussen traegt das Gelaende
@@ -2961,10 +2962,10 @@
       // ---- Kuestenlinien sammeln: Grundkueste (wo kein Landstueck davor liegt, inkl. Bucht) und Raender der Landstuecke ----
       const lines = [], STEP = 0.8;
       let cur = null;
-      for (let t = -700; t <= 1100; t += STEP * 0.7) {
-        const [x, z] = coastPt(t), ok = Math.hypot(x, z) < 780 && LANDS.every(L => landSD(L, x, z) > 1);
+      for (let t = -1100; t <= 1700; t += STEP * 0.7) {
+        const [x, z] = coastPt(t), r = Math.hypot(x, z), ok = r < 1250 && LANDS.every(L => landSD(L, x, z) > -2.5);   // leicht ueberlappen, sonst Spalt am Anschluss der Landstuecke
         if (!ok) { cur = null; continue; }
-        if (cur && Math.hypot(x - cur[cur.length - 1][0], z - cur[cur.length - 1][1]) < STEP) continue;   // gleichmaessig ca. 0,8 m
+        if (cur && Math.hypot(x - cur[cur.length - 1][0], z - cur[cur.length - 1][1]) < STEP * Math.max(1, r / 420)) continue;   // ca. 0,8 m, weit draussen groeber
         if (!cur) lines.push(cur = []);
         const [nx, nz] = coastN(t); cur.push([x, z, nx, nz]);
       }
@@ -2974,7 +2975,7 @@
         let start = pts.findIndex(([x, z]) => seaBase(x, z) <= 1); if (start < 0) start = 0;
         cur = null;
         for (let k = 0; k <= pts.length; k++) {
-          const q = (start + k) % pts.length, [x, z] = pts[q], ok = seaBase(x, z) > 1 && Math.hypot(x, z) < 780;
+          const q = (start + k) % pts.length, [x, z] = pts[q], ok = seaBase(x, z) > -2.5 && Math.hypot(x, z) < 1250;
           if (!ok) { cur = null; continue; }
           if (!cur) lines.push(cur = []);
           const [ax, az] = pts[(q - 1 + pts.length) % pts.length], [bx, bz] = pts[(q + 1) % pts.length];
