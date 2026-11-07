@@ -326,25 +326,7 @@
     const R2 = Math.SQRT1_2;
     const coastS = t => 200 - 45 * Math.exp(-(((t - 2) / 60) ** 2)) + 10 * Math.sin(t / 37) + 5 * Math.sin(t / 13 + 1);
     const seaD = (x, z) => (x + z) * R2 - coastS((z - x) * R2);               // > 0 = im Meer
-    // Strassen und Wege (Mittellinien in Weltkoordinaten, aus der Karte; ausserhalb der Karte frei ergaenzt)
-    const P = list => list.map(([px, py]) => mp(px, py));                      // Kartenpunkte -> Welt
-    const ROADS = [
-      { name: "Zufahrt", w: 7, kind: "road", pts: [[85, -200], [70, -110], [64, -41], [62, 0], [62, 41], [62, 74], [56, 120], [20, 165], [-30, 200], [-120, 240]] },
-      { name: "Main Driveway Sued", w: 7, kind: "drive", pts: [...P([[445, 1040], [410, 1072], [380, 1110], [350, 1150], [322, 1202]]), [62, 41]] },
-      { name: "Main Driveway Nord", w: 7, kind: "drive", pts: [...P([[555, 1040], [590, 1075], [625, 1115], [655, 1160], [680, 1202]]), [64, -41]] },
-      { name: "Garagen-Ausfahrt", w: 7, kind: "ramp", pts: [...P([[337, 1018], [337, 1034], [312, 1054], [270, 1078], [235, 1110], [200, 1150], [172, 1202]]), [62, 74]] },
-      { name: "Garagen-Einfahrt", w: 7, kind: "ramp", pts: [...P([[337, 827], [337, 815], [315, 777], [275, 737], [220, 705], [150, 681], [50, 672]]), [-66.5, 112], [-60, 140], [-47, 170], [-30, 200]] }
-    ];
-    const roadHash = new Map();
-    for (const r of ROADS) {
-      r.curve = new THREE.CatmullRomCurve3(r.pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
-      r.len = r.curve.getLength();
-      for (const p of r.curve.getSpacedPoints(Math.ceil(r.len / 3))) {
-        const key = Math.floor(p.x / 25) + "," + Math.floor(p.z / 25);
-        if (!roadHash.has(key)) roadHash.set(key, []);
-        roadHash.get(key).push([p.x, p.z, r.w / 2]);
-      }
-    }
+    // Strassen und Garagenrampen sind entfernt (Plan A1, 2026-11-07): Autos kommen spaeter ueber den Autoaufzug (A3) und die Serpentine (A5)
     // Wassertunnel vom Ende des Lake-Exit-Kanals (Hoehlenkarte 250/1042) bis zur Meereshoehle in der Bucht (Weltkoordinaten)
     const SEA_TUNNEL = [[49.8, 30.7], [70, 58], [95, 92], [112, 115], [128, 131]], SEA_TUN_W = 9;
     function seaTunDist(x, z) {
@@ -359,36 +341,7 @@
     const POOL = (() => { const [ax, az] = mp(90, 912), [bx, bz] = mp(140, 985); return { x0: Math.min(ax, bx), x1: Math.max(ax, bx), z0: Math.min(az, bz), z1: Math.max(az, bz), floor: -1.6, water: 0.12 }; })();
     const FOUNT = (() => { const [x, z] = mp(500, 1000); return { x, z, r: 30 * SC, floor: -1.0, water: 0.36, rim: 0.42 }; })();
     const inPool = (x, z) => x > POOL.x0 && x < POOL.x1 && z > POOL.z0 && z < POOL.z1;
-    // Garagenrampen: die ersten RAMP_D Meter ab der Hauswand fuehren hinunter auf die Tiefgarage (GY)
-    const GY = -4.0, RAMP_D = 42;
-    const rampY = d => GY * (1 - d / RAMP_D);
-    const RAMPS = ROADS.filter(r => r.kind === "ramp").map(r => {
-      const samples = [], box = [1e9, -1e9, 1e9, -1e9];
-      for (let d = 0; d <= RAMP_D + 2; d += 0.5) {
-        const p = r.curve.getPointAt(Math.min(1, d / r.len));
-        samples.push([p.x, p.z, d]);
-        box[0] = Math.min(box[0], p.x); box[1] = Math.max(box[1], p.x); box[2] = Math.min(box[2], p.z); box[3] = Math.max(box[3], p.z);
-      }
-      return { r, samples, box, hw: r.w / 2 };
-    });
-    function rampAt(x, z, extra = 0) {
-      for (const R of RAMPS) {
-        const m = R.hw + extra + 1;
-        if (x < R.box[0] - m || x > R.box[1] + m || z < R.box[2] - m || z > R.box[3] + m) continue;
-        let best = 1e9, bd = 0;
-        for (const [sx, sz, d] of R.samples) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < best) { best = q; bd = d; } }
-        if (best < (R.hw + extra) ** 2 && bd < RAMP_D) return { d: bd, y: rampY(bd) };
-      }
-      return null;
-    }
-    function nearRoad(x, z, extra) {
-      const i = Math.floor(x / 25), j = Math.floor(z / 25);
-      for (let a = i - 1; a <= i + 1; a++) for (let b = j - 1; b <= j + 1; b++) {
-        const l = roadHash.get(a + "," + b);
-        if (l) for (const [px, pz, hw] of l) if (Math.hypot(x - px, z - pz) < hw + extra) return true;
-      }
-      return false;
-    }
+    const GY = -4.0;                                                          // Boden der Tiefgarage
     const siteDist = (x, z) => Math.hypot(Math.max(SITE.x0 - x, 0, x - SITE.x1), Math.max(SITE.z0 - z, 0, z - SITE.z1));
     const inLawn = (x, z) => LAWNS.some(l => Math.hypot((x - l.cx) / l.rx, (z - l.cz) / l.rz) < 1);
     function genH(x, z) {
@@ -406,7 +359,7 @@
     }
     // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
     function forestD(x, z) {
-      if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || nearRoad(x, z, 4)) return 0;
+      if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30) return 0;
       for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
       if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z - 4) < 22) return 0;
       let d = 0.08 + 0.55 * sst(0.6, 0.75, vnoise(x / 60, z / 60));
@@ -443,13 +396,12 @@
       for (let j = 0, k = 0; j < TN1; j++) for (let i = 0; i < TN1; i++, k++) {
         pos.set([TX[i], TH[k], TX[j]], k * 3); uv.set([TX[i] / 10, -TX[j] / 10], k * 2);
       }
-      // Rampengraeben: Dreiecke mit einer Ecke im Graben weglassen (der Rand wird von einem Steinband verdeckt)
+      // Dreiecke mit einer Ecke in einem Becken oder in der Meereshoehle weglassen
       const cut = new Uint8Array(TN1 * TN1);
       for (let k = 0; k < TN1 * TN1; k++) {
-        const ra = rampAt(pos[k * 3], pos[k * 3 + 2], 0.3);
         const vx = pos[k * 3], vz = pos[k * 3 + 2];
         if (inPool(vx, vz) || Math.hypot(vx - FOUNT.x, vz - FOUNT.z) < FOUNT.r - 0.2) { cut[k] = 1; continue; }   // Becken (Pool, Brunnen)
-        if ((ra && ra.y < -0.1) || (pos[k * 3 + 1] < -8 && seaD(pos[k * 3], pos[k * 3 + 2]) < 5 && seaTunDist(pos[k * 3], pos[k * 3 + 2]) < SEA_TUN_W / 2 + 1.5)) cut[k] = 1;   // Rampen und Meereshoehle
+        if (pos[k * 3 + 1] < -8 && seaD(vx, vz) < 5 && seaTunDist(vx, vz) < SEA_TUN_W / 2 + 1.5) cut[k] = 1;   // Meereshoehle
       }
       let n = 0;
       for (let j = 0; j < T_N; j++) for (let i = 0; i < T_N; i++) {
@@ -682,7 +634,7 @@
     const THEATRE_DIV = tmp(385, 0)[1], GARDEN_X = tmp(0, 697.5)[0];
     const TSTAIR = { x0: -37.4, x1: -31.3, z0: 8.9, z1: 13.1 };              // 1. OG -> 2. OG (rote Treppe im Theatre)
     const OSTAIR = { x0: -37.4, x1: -31.3, z0: 13.5, z1: 17.7 };             // 2. OG -> Observatory
-    // Tiefgarage (Karte "Garage", gleiche Orientierung): SW-Eingang = Rampenende an der Westwand, SW-Ausgang = Rampe an der Ostwand
+    // Tiefgarage (Karte "Garage", gleiche Orientierung); Ein- und Ausfahrt sind seit A1 zu (nur Treppe und Aufzug)
     const gmp = (gx, gy) => mp(337 + (gx - 200) * 0.697, 827 + (gy - 166) * 0.697);
     const GARAGE = [[102.5, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 217.5], [272.5, 217.5], [272.5, 282.5], [230, 282.5], [230, 316], [312.5, 316],
       [312.5, 441], [102.5, 441], [102.5, 360], [37.5, 360], [37.5, 216], [102.5, 216]].map(([gx, gy]) => gmp(gx, gy));
@@ -832,15 +784,14 @@
       for (const [x0, x1, z0, z1] of rectCover(GARAGE)) B(x0, x1, GY - 0.3, GY, z0, z1, mat.floorStone);
       for (const [x0, x1, z0, z1] of rectCover(GARAGE, [GHOLE])) B(x0, x1, -0.3, -0.02, z0, z1, mat.concrete, false);
       {
-        const gn = GARAGE.length, gIn = gmp(0, 165)[0], gOut = gmp(0, 441)[0], gz = [gmp(230, 0)[1], gmp(170, 0)[1]];
+        const gn = GARAGE.length;
         for (let k = 0; k < gn; k++) {
           const [ax, az] = GARAGE[k], [bx, bz] = GARAGE[(k + 1) % gn];
           const axis = Math.abs(az - bz) < 1e-6 ? "x" : "z";
           const a0 = axis === "x" ? Math.min(ax, bx) : Math.min(az, bz), a1 = axis === "x" ? Math.max(ax, bx) : Math.max(az, bz);
           const L = axis === "x" ? az : ax, mid = (a0 + a1) / 2;
           const s = (axis === "x" ? inPoly(GARAGE, mid, L + 0.3) : inPoly(GARAGE, L + 0.3, mid)) ? 1 : -1;
-          const open = axis === "z" && (Math.abs(L - gIn) < 0.05 || Math.abs(L - gOut) < 0.05) ? [[gz[0], gz[1], GY, GY + 3.6]] : [];
-          wall(axis, a0, a1, L + s * 0.25, GY, -0.02, open, mat.concrete, 0.5);
+          wall(axis, a0, a1, L + s * 0.25, GY, -0.02, [], mat.concrete, 0.5);
         }
         // Stellplaetze 1-9 (Karte "Garage"), Linien, Nummern, einige Autos
         const BAYS = [[1, 259, 390, 299, 412.5], [2, 257.5, 338.5, 297.5, 360], [3, 117.5, 387.5, 157.5, 410], [4, 115, 337.5, 155, 360], [5, 112.5, 279, 152.5, 301],
@@ -1070,22 +1021,10 @@
         for (let i = 0; i < 900; i++) { const v = 60 + r1() * 40; g.fillStyle = `rgba(${v},${v},${v + 4},.5)`; g.fillRect(r1() * w, r1() * h, 1.5, 1.5); }
         g.fillStyle = "#e8e4d8"; g.fillRect(4, 0, 3, h); g.fillRect(w - 7, 0, 3, h);
         g.fillStyle = "#e0c341"; g.fillRect(w / 2 - 2, 0, 4, h * 0.55);
-      }),
-      drive: canvasTex(256, 64, (g, w, h) => {
-        g.fillStyle = "#55575b"; g.fillRect(0, 0, w, h);
-        for (let i = 0; i < 700; i++) { const v = 70 + r1() * 40; g.fillStyle = `rgba(${v},${v},${v + 4},.5)`; g.fillRect(r1() * w, r1() * h, 1.5, 1.5); }
-        g.fillStyle = "#ece8dc"; g.fillRect(0, 0, w * 0.34, 3); g.fillRect(w * 0.66, 0, w * 0.34, 3);   // Parkplatz-Linien beidseitig
-        g.fillRect(w * 0.34, 0, 3, h); g.fillRect(w * 0.66 - 3, 0, 3, h);
-      }),
-      ramp: canvasTex(128, 64, (g, w, h) => {
-        g.fillStyle = "#77787a"; g.fillRect(0, 0, w, h);
-        g.strokeStyle = "#a9a9a6"; g.lineWidth = 5;
-        for (let x = -h; x < w + h; x += 18) { g.beginPath(); g.moveTo(x, h); g.lineTo(x + h, 0); g.stroke(); }
-        g.fillStyle = "#d6d2c6"; g.fillRect(0, 0, 5, h); g.fillRect(w - 5, 0, 5, h);
       })
     };
     for (const t of Object.values(roadTex)) t.repeat.set(1, 1);
-    const roadPeriod = { road: 6, drive: 2.6, ramp: 2.2 };
+    const roadPeriod = { road: 6 };
     // Band entlang einer Kurve, folgt dem Gelaende
     // o.t0/o.t1 = Abschnitt (0..1), o.off = seitlicher Versatz, o.y(d) = feste Hoehe statt Gelaende (Rampe), o.wall = senkrechtes Band von o.y bis o.top
     function ribbon(curve, len, w, material, period, lift = 0.07, o = {}) {
@@ -1105,43 +1044,6 @@
       const m = new THREE.Mesh(g, material); m.receiveShadow = true; m.userData.keep = true;
       scene.add(m);
       return m;
-    }
-    const lamps = [];
-    for (const r of ROADS) {
-      // Alle Strassen im Stil der Hauptstrasse (Wunsch von Nicolas): Asphalt mit Rand- und Mittellinie
-      if (r.kind !== "ramp") ribbon(r.curve, r.len, r.w, flatMat({ map: roadTex.road, side: THREE.DoubleSide }), roadPeriod.road);
-      else {
-        // Rampe: erste RAMP_D Meter fallen zur Tiefgarage ab, mit Stuetzmauern (0,9 m Bruestung) und Gehweg-Band ueber dem Grabenrand
-        const td = RAMP_D / r.len, hw = r.w / 2, roadM = flatMat({ map: roadTex.road, side: THREE.DoubleSide });
-        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.road, 0.07, { t0: 0, t1: td, y: rampY });
-        ribbon(r.curve, r.len, r.w, roadM, roadPeriod.road, 0.07, { t0: td, t1: 1 });
-        const wallM = M(0x9a968c, { side: THREE.DoubleSide, roughness: 0.95 });
-        for (const sd of [-1, 1]) {
-          ribbon(r.curve, r.len, 0, wallM, 3, 0, { t0: 0, t1: td, off: sd * (hw + 0.15), wall: true, y: rampY, top: 0.9 });
-          ribbon(r.curve, r.len, 4.4, flatMat({ color: 0x8e8f8c, side: THREE.DoubleSide }), 4, 0.08, { t0: 0, t1: td, off: sd * (hw + 2.45) });
-          for (let d = 0; d <= RAMP_D; d += 0.6) {
-            const t = d / r.len, p = r.curve.getPointAt(t), tg = r.curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z);
-            circles.push([p.x - tg.z / nl * sd * (hw + 0.2), p.z + tg.x / nl * sd * (hw + 0.2), 0.22]);
-          }
-        }
-      }
-      // Laternen beidseitig alle 18 m (wie die Quadrate auf der Karte)
-      const n = Math.floor(r.len / 14);
-      for (let i = 1; i < n; i++) {
-        const t = i / n, p = r.curve.getPointAt(t), tg = r.curve.getTangentAt(t), nl = Math.hypot(tg.x, tg.z);
-        for (const sd of [-1, 1]) {
-          const x = p.x - tg.z / nl * (r.w / 2 + 1.2) * sd, z = p.z + tg.x / nl * (r.w / 2 + 1.2) * sd;
-          if (Math.hypot(x, z) < 600 && !inPoly(HOUSE, x, z)) lamps.push([x, terrainH(x, z), z]);
-        }
-      }
-    }
-    {
-      const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.08, 0.12, 4, 6).translate(0, 2, 0), mat.dark, lamps.length);
-      const head = new THREE.InstancedMesh(new THREE.SphereGeometry(0.28, 8, 6).translate(0, 4.1, 0), mat.lamp = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffd27a, emissiveIntensity: 0.2 }), lamps.length);
-      const m4 = new THREE.Matrix4();
-      lamps.forEach(([x, y, z], i) => { m4.makeTranslation(x, y, z); pole.setMatrixAt(i, m4); head.setMatrixAt(i, m4); circles.push([x, z, 0.15]); });
-      pole.castShadow = true; pole.computeBoundingSphere(); head.computeBoundingSphere();
-      scene.add(pole, head);
     }
 
     // Rondell mit Brunnen, Vorplatz, zwei Baeume (Rondell-Mitte Karte 500 / 1000, aussen 70 px, Brunnen 30 px)
@@ -1649,7 +1551,6 @@
       cave.intensity = 1.1 * under;
       for (const l of caveLights) l.intensity = l.userData.I * under;
       mat.facade.emissiveIntensity = night * 1.2;
-      mat.lamp.emissiveIntensity = 0.2 + night * 2.5;
     }
     applyNight();
 
@@ -1685,10 +1586,8 @@
       const far = Math.hypot(p.x, p.z);
       if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
     }
-    // Boden ohne Quader: Rampe, unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
+    // Boden ohne Quader: unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
     function groundAt(x, z, feet = 0) {
-      const ra = rampAt(x, z);
-      if (ra && feet > ra.y - 2) return ra.y;                                // Rampe nur auf ihrer Hoehe (darunter liegt die Hoehle)
       if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
       const ca = caveAt(x, z);
       if (feet < -1 && (inPoly(GARAGE, x, z) || ca === 1 || ca === 2 || ca === 4 || caveUpAt(x, z))) return BED - 20;   // unter der Erde: Boden nur aus Quadern
@@ -1729,8 +1628,8 @@
       pushOut(next, player.pos.y);
       // Steilkueste: oben an der Kante nicht hinunterfallen (Seen im Inland darf man betreten)
       if (player.pos.y > -3 && seaD(next.x, next.z) > -40 && terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }
-      // Steile Haenge sperren: nur Gelaende und Rampen zaehlen (Stufen wie der Brunnenrand regelt supportAt)
-      const slopeG = (x, z) => { const ra = rampAt(x, z); return ra && player.pos.y > ra.y - 2 ? ra.y : terrainH(x, z); };
+      // Steile Haenge sperren: nur das Gelaende zaehlt (Stufen wie der Brunnenrand regelt supportAt)
+      const slopeG = (x, z) => terrainH(x, z);
       const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
       if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
       player.pos.x = next.x; player.pos.z = next.z;
@@ -1848,7 +1747,7 @@
         ["Rondell (vor dem Haus)", 25, 0, 0, W], ["Halle EG", -30, FL0, 0, W], ["Aufzug EG", -49, FL0, SHAFT.cz, W], ["1. Obergeschoss", -45, FL1, 3, W],
         ["Dach / 2. OG", -45, TF, SHAFT.cz, E], ["Theater", -44, TF, 10, N], ["Observatorium", -40, TF2, 0, N], ["Landeplatz", -18, HP, 42, W],
         ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
-        ["Tiefgarage", -28, GY, 32.7, E], ["Rampe Einfahrt (oben)", -60, 0, 140, N],
+        ["Tiefgarage", -28, GY, 32.7, E],
         ["Höhle unten: Drehplattform", ...(([x, z]) => [x - 10, LY, z])(cm(385, 417)), E], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
         ["Höhle unten: Anlegestelle", ...(([x, z]) => [x, LY, z])(cm(300, 518)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
@@ -2190,7 +2089,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, ROADS, seaD, groundAt, rampAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, GARAGE, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
