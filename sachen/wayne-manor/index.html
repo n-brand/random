@@ -444,7 +444,7 @@
       kehre(38, -38, -1, 1); pts.push([45, -38]); leg(45, -38, 50, 3.0, 1.2);
       kehre(52, 50, 1, 1); pts.push([59, 50]); leg(59, 50, -32, 2.2, -1.0);
       kehre(66, -32, -1, 1); pts.push([73, -32]); leg(73, -32, 44, 3.4, 0.9);
-      kehre(80, 44, 1, 1); pts.push([87, 44], [88.5, 31], [91.5, 18], [98, 8.5], [108, 2]);
+      kehre(80, 44, 1, 1); pts.push([87, 44], [88.5, 31], [91.5, 18], [98, 8.5], [107, 2.6], [114, 1.6], [122, 1.5]);
       const curve = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
       const len = curve.getLength(), n = Math.ceil(len), samples = [];
       for (let i = 0; i <= n; i++) { const p = curve.getPointAt(i / n); samples.push([p.x, p.z, i / n * len]); }
@@ -473,7 +473,7 @@
       return W > 0 ? { y: WY / W - 0.08, w: mw } : null;
     }
     // Bereich der Passstrasse (Osthang ausserhalb des Plateaus): Fels statt Wiese, unruhiges Gelaende mit Schichtstufen
-    function serpZone(x, z) { return sst(-74, -60, z) * sst(82, 68, z) * sst(22, 33, x) * sst(124, 110, x); }
+    function serpZone(x, z) { return sst(-74, -60, z) * sst(82, 68, z) * sst(22, 33, x) * sst(110, 99, x); }   // ab x ca. 105 Torbereich (A6)
     function serpRug(x, z) {
       const zn = serpZone(x, z);
       if (zn <= 0) return 0;
@@ -1722,6 +1722,7 @@
       cave.intensity = 1.1 * under;
       for (const l of caveLights) l.intensity = l.userData.I * under;
       mat.facade.emissiveIntensity = night * 1.2;
+      if (mat.gateLamp) mat.gateLamp.emissiveIntensity = 0.15 + night * 2.6;
     }
     applyNight();
 
@@ -1926,7 +1927,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", WATERFALL.x + 10, 0, WATERFALL.z + 22, N], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -1975,13 +1976,13 @@
     $("door-hint").addEventListener("click", () => toggleGate(aimedGate));
     function updateGates(dt) {
       for (const t of gates) {
-        if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / 4) : Math.max(0, t.open - dt / 4); t.g.position.y = (t.y0 ?? BED) + sst(0, 1, t.open) * t.lift; if (t.solid) t.solid.on = t.open < 0.8; }
+        if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / 4) : Math.max(0, t.open - dt / 4); if (t.anim) t.anim(sst(0, 1, t.open)); else t.g.position.y = (t.y0 ?? BED) + sst(0, 1, t.open) * t.lift; if (t.solid) t.solid.on = t.open < 0.8; }
       }
       gateHintClock += dt;
       if (gateHintClock < 0.15) return;
       gateHintClock = 0;
       aimedGate = findAimedGate();
-      const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : "Rechtsklick: ") + aimedGate.name + (aimedGate.target ? " schließen" : " öffnen") : "";
+      const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : "Rechtsklick/E: ") + aimedGate.name + (aimedGate.target ? " schließen" : " öffnen") : "";
       if (hint.hidden !== !aimedGate) hint.hidden = !aimedGate;
       if (aimedGate && hint.textContent !== txt) hint.textContent = txt;
     }
@@ -2140,7 +2141,12 @@
       if (!walking) return;
       if (e.code === "Escape") return setWalk(false);
       if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }   // Geist: E, Aufzugstasten ohne Wirkung
-      if (e.code === "KeyE" && !e.repeat) { if (!useBoat()) useLift(); return; }
+      if (e.code === "KeyE" && !e.repeat) {
+        if (useBoat()) return;
+        const ag = findAimedGate();
+        if (ag && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 9) toggleGate(ag); else useLift();
+        return;
+      }
       if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
       if (inCar(player.pos)) {
         if (/^(Digit|Numpad)[1-5]$/.test(e.code)) return pickStop(STOP_ORDER[+e.code.slice(-1) - 1]);
@@ -2368,6 +2374,7 @@
       let i = 18;
       while (i < NS - 6) {
         const [x0, z0, s0] = S2[i], [tx, tz] = tang(i), y0 = SERP.y(s0), rot = -Math.atan2(tz, tx);
+        if (x0 > 97) break;                                                    // Torbereich (A6) frei lassen
         for (const sd of [-1, 1]) {
           const nx = -tz * sd, nz = tx * sd, dp = drop(i, sd);
           const oi = otherInfo(x0 + nx * (hw + 2), z0 + nz * (hw + 2), s0);
@@ -2448,7 +2455,7 @@
 
       // ---- Leitplanken (W-Profil) an der Talseite und an den Kehren, Natursteinbruestung an den Kehren, Leitpfosten sonst ----
       const need = { "-1": new Uint8Array(NS), "1": new Uint8Array(NS) }, kehreAt = new Uint8Array(NS);
-      for (let k = 0; k < NS; k++) { kehreAt[k] = turnAt(k) > 0.75 ? 1 : 0; for (const sd of [-1, 1]) need[sd][k] = k > 14 && k < NS - 3 && (drop(k, sd) > 1.4 || (kehreAt[k] && drop(k, sd) > 0.2)) ? 1 : 0; }
+      for (let k = 0; k < NS; k++) { kehreAt[k] = turnAt(k) > 0.75 ? 1 : 0; for (const sd of [-1, 1]) need[sd][k] = k > 14 && k < NS - 3 && S2[k][0] < 103 && (drop(k, sd) > 1.4 || (kehreAt[k] && drop(k, sd) > 0.2)) ? 1 : 0; }
       for (const sd of [-1, 1]) {                                             // Luecken unter 7 m schliessen, Stuecke unter 8 m weglassen
         const a = need[sd];
         for (let k = 0; k < NS; k++) if (!a[k]) { let j = k; while (j < NS && !a[j]) j++; if (k > 0 && j < NS && j - k < 7) for (let q = k; q < j; q++) a[q] = 1; k = j; }
@@ -2491,7 +2498,7 @@
       // Leitpfosten (weiss, schwarzes Band, Reflektor) alle ca. 25 m, wo keine Planke steht
       {
         const pl = [];
-        for (let k = 20; k < NS - 4; k += 25) for (const sd of [-1, 1]) if (!need[sd][k]) { const [x, z, s] = S2[k], [ox, oz] = outer(k, sd); pl.push([x + ox * (hw + 0.75), SERP.y(s), z + oz * (hw + 0.75), sd]); }
+        for (let k = 20; k < NS - 4; k += 25) for (const sd of [-1, 1]) if (!need[sd][k] && S2[k][0] < 104) { const [x, z, s] = S2[k], [ox, oz] = outer(k, sd); pl.push([x + ox * (hw + 0.75), SERP.y(s), z + oz * (hw + 0.75), sd]); }
         const o = new THREE.Object3D();
         const body = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 1.05, 0.1).translate(0, 0.52, 0), M(0xf2f2ee, { roughness: 0.5 }), pl.length);
         const band = new THREE.InstancedMesh(new THREE.BoxGeometry(0.125, 0.22, 0.105).translate(0, 0.78, 0), M(0x1a1a1a, { roughness: 0.6 }), pl.length);
@@ -2499,6 +2506,57 @@
         pl.forEach(([x, y, z], k) => { o.position.set(x, y - 0.15, z); o.rotation.set(0, fr() * 0.2, 0); o.updateMatrix(); body.setMatrixAt(k, o.matrix); band.setMatrixAt(k, o.matrix); refl.setMatrixAt(k, o.matrix); circles.push([x, z, 0.12, y + 1.1]); });
         for (const im of [body, band, refl]) { im.castShadow = true; im.computeBoundingSphere(); scene.add(im); }
       }
+    }
+    // ===================== Tor am Fuss der Serpentine (A6) =====================
+    // Quer zur Strasse bei x GX: Natursteinmauern beidseits (folgen dem Gelaende), zwei Pfeiler mit Laternen, zweifluegeliges Schmiedeeisentor
+    // (oeffnet nach innen/bergseitig, Rechtsklick oder E wie die Felstore), kleines Torhaus aussen. Hier schliesst spaeter die Zufahrt an.
+    {
+      const GX = 115, zc = (() => { let best = 1e9, bz = 1.5; for (const [x, z] of SERP.samples) if (Math.abs(x - GX) < best) { best = Math.abs(x - GX); bz = z; } return bz; })();
+      const gy = SERP.y(serpNear(GX, zc, 6).s) + 0.07, OPEN = 4.0;
+      const stoneM = M(0xffffff, { map: texClone(brickTex, 1 / 1.5, 1 / 1.5), roughness: 0.95 }), capM = M(0xbdb6a6, { roughness: 0.8 }), iron = M(0x1d1f22, { metalness: 0.6, roughness: 0.45 });
+      mat.gateLamp = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffc870, emissiveIntensity: 0.15 + night * 2.6 });
+      for (const sd of [-1, 1]) for (let a = OPEN + 1.15; a < 16; a += 2) {                   // Mauern
+        const za = zc + sd * a, zb = zc + sd * Math.min(16, a + 2), z0 = Math.min(za, zb), z1 = Math.max(za, zb), g = terrainH(GX, (z0 + z1) / 2);
+        B(GX - 0.35, GX + 0.35, Math.min(g, gy) - 0.8, g + 2.1, z0, z1, stoneM);
+        B(GX - 0.45, GX + 0.45, g + 2.1, g + 2.3, z0 - 0.02, z1 + 0.02, capM, false);
+      }
+      for (const sd of [-1, 1]) {                                                              // Pfeiler mit Laterne
+        const pz = zc + sd * (OPEN + 0.6);
+        B(GX - 0.6, GX + 0.6, gy - 0.8, gy + 3.0, pz - 0.6, pz + 0.6, stoneM);
+        B(GX - 0.72, GX + 0.72, gy + 3.0, gy + 3.25, pz - 0.72, pz + 0.72, capM, false);
+        B(GX - 0.16, GX + 0.16, gy + 3.25, gy + 3.36, pz - 0.16, pz + 0.16, iron, false);
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.42, 0.3), mat.gateLamp); lamp.position.set(GX, gy + 3.57, pz); world.add(lamp);
+        const hat = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.26, 4).rotateY(Math.PI / 4), iron); hat.position.set(GX, gy + 3.91, pz); world.add(hat);
+      }
+      const g = new THREE.Group(); g.userData.dynamic = true; world.add(g);
+      const leaves = [];
+      for (const sd of [-1, 1]) {                                                              // Fluegel: Drehpunkt am Pfeiler, reicht bis zur Mitte
+        const piv = new THREE.Group(); piv.position.set(GX, gy, zc + sd * OPEN); g.add(piv);
+        const W = OPEN - 0.04, zA = 0, zB = -sd * W, zl = Math.min(zA, zB), zh = Math.max(zA, zB);
+        const add = (x0, x1, y0, y1, z0, z1) => { const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), iron); m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.castShadow = true; piv.add(m); };
+        add(-0.04, 0.04, 0.12, 0.2, zl, zh); add(-0.04, 0.04, 1.05, 1.11, zl, zh); add(-0.035, 0.035, 0.45, 0.5, zl, zh);
+        add(-0.06, 0.06, 0.05, 2.5, zA - 0.06, zA + 0.06); add(-0.05, 0.05, 0.05, 2.75, zB - 0.05, zB + 0.05);
+        for (let k = 1; k < 28; k++) {
+          const u = k / 28, z = lerp(zA, zB, u), top = 2.25 + 0.45 * u * u;                  // zur Mitte hin hoeher (Bogen)
+          add(-0.017, 0.017, 0.12, top, z - 0.017, z + 0.017);
+          const tip = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.14, 4), iron); tip.position.set(0, top + 0.07, z); piv.add(tip);
+        }
+        for (let k = 0; k < 7; k++) { const u = (k + 0.5) / 7, z = lerp(zA, zB, u); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.02, 6, 16).rotateY(Math.PI / 2), iron); ring.position.set(0, 0.78, z); piv.add(ring); }
+        leaves.push({ piv, sd });
+      }
+      const solid = S(GX - 0.2, GX + 0.2, gy - 0.5, gy + 2.9, zc - OPEN, zc + OPEN);
+      gates.push({ name: "Einfahrtstor", g, open: 0, target: 0, solid, a: [GX, zc - OPEN], b: [GX, zc + OPEN], anim: f => { for (const L of leaves) L.piv.rotation.y = L.sd * f * 1.7; } });
+      // Torhaus aussen, noerdlich der Strasse; Tuer zur Strasse, Fenster zum Tor und nach hinten
+      const hx0 = 117.2, hx1 = 121.4, hz1 = zc - OPEN - 4.6, hz0 = hz1 - 4.4;
+      const hg = Math.max(...[[hx0, hz0], [hx1, hz0], [hx0, hz1], [hx1, hz1]].map(([x, z]) => terrainH(x, z))), fy = hg + 0.2, top = fy + 2.8, xm = (hx0 + hx1) / 2, zm = (hz0 + hz1) / 2;
+      B(hx0 - 0.15, hx1 + 0.15, hg - 1.2, fy, hz0 - 0.15, hz1 + 0.15, capM);
+      wall("x", hx0, hx1, hz1 - 0.2, fy, top, [[xm - 0.55, xm + 0.55, fy, fy + 2.15]], stoneM, 0.4);
+      wall("x", hx0, hx1, hz0 + 0.2, fy, top, [[xm - 0.7, xm + 0.7, fy + 1.0, fy + 1.9, true]], stoneM, 0.4);
+      wall("z", hz0 + 0.4, hz1 - 0.4, hx0 + 0.2, fy, top, [[zm - 0.7, zm + 0.7, fy + 1.0, fy + 1.9, true]], stoneM, 0.4);
+      wall("z", hz0 + 0.4, hz1 - 0.4, hx1 - 0.2, fy, top, [], stoneM, 0.4);
+      B(hx0, hx1, top, top + 0.15, hz0, hz1, capM, false);
+      gableRoof(hx0, hx1, hz0, hz1, top + 0.15, 1.7, 0.35, mat.slate);
+      const dl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.22), mat.gateLamp); dl.position.set(xm + 0.9, fy + 2.45, hz1 + 0.15); world.add(dl);
     }
     // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
     {
