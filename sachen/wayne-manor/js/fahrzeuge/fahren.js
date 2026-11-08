@@ -2,7 +2,7 @@
 // Teil der Seite sachen/wayne-manor/ (klassisches Skript, Reihenfolge in index.html; gemeinsame Namen ueber den globalen Bereich)
 "use strict";
 
-const CAR_STEP = 0.6, CAR_G = 14;
+const CAR_STEP = 0.6, CAR_G = 14, SLOPE_G = 9.81, WALL_TAN = Math.tan(65 * Math.PI / 180);   // Hangabtrieb, ab 65 Grad gilt Gelaende als Wand
 const carW = (lx, lz) => { const s = Math.sin(CAR.h), c = Math.cos(CAR.h); return [CAR.x + lx * c + lz * s, CAR.z - lx * s + lz * c]; };
 const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
 // Nur Hindernisse im Umkreis von 14 m pruefen (einmal pro Bild gefiltert), sonst kostet ein Fahrzeug ca. 1 ms pro Bild
@@ -138,11 +138,21 @@ function carStep(dt) {
   if (!C.air) {
     const dh = C.v * Math.tan(C.steer) / sp.wb * dt;
     C.h = wrapA(C.h + dh); player.yaw += dh;
-    if (th > 0) C.v += (C.v < -0.2 ? 16 : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * dt;
+    // Hang (Nicolas 2026-11-08): Hangabtrieb statt harter Sperre. Steigung aus dem Gelaende vor/hinter dem Fahrzeug (nur auf freiem
+    // Gelaende; Tunnel, Hallen, Hoehle liefern -100 bzw. liegen weit weg). Bergauf bremst die Schwerkraft, bergab wird man schneller;
+    // ueber der Grenzsteigung des Fahrzeugs (spec.grade) drehen die Raeder durch: kein Vortrieb mehr, man rollt mit Schwung weiter und dann zurueck.
+    const hx = -Math.sin(C.h), hz = -Math.cos(C.h), gF = carSlopeG(C.x + hx * 1.2, C.z + hz * 1.2, C.y), gB = carSlopeG(C.x - hx * 1.2, C.z - hz * 1.2, C.y);
+    const onTerrain = gF > -50 && gB > -50 && Math.abs(gF - C.y) < 2 && Math.abs(gB - C.y) < 2;
+    const slope = onTerrain ? Math.atan2(gF - gB, 2.4) : 0, maxG = (sp.grade || 40) * Math.PI / 180;
+    const grip = th > 0 && slope > 0 ? clamp01((maxG - slope) / 0.14) : 1;   // 8 Grad Uebergang bis zum Durchdrehen
+    const held = th === 0 && Math.abs(C.v) < 0.6 && slope < maxG;            // Stillstand ohne Gas: Bremse haelt
+    if (held) C.v = 0; else C.v -= SLOPE_G * Math.sin(slope) * dt;
+    C.slope = slope;
+    if (th > 0) C.v += (C.v < -0.2 ? 16 : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * grip * dt;
     else if (th < 0) C.v -= (C.v > 0.2 ? 16 : 6) * dt;
     else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (2.5 + Math.abs(C.v) * 0.04) * dt);
-    if (C.v > max) C.v = Math.max(max, C.v - 14 * dt);
-    C.v = Math.max(-8, C.v);
+    if (C.v > max) C.v = Math.max(max, C.v - (C.slope < -0.05 ? 4 : 14) * dt);   // bergab darf man etwas ueber das Hoechsttempo rollen
+    C.v = Math.max(th < 0 ? -8 : -16, C.v);                                     // rueckwaerts den Hang hinunter auch schneller
     // Sprung mit Schub (nur Tumbler: ohne Rampe)
     if (sp.jump && (player.jump || jumpHeld)) {
       if (C.v >= 14 && !C.wet) { C.air = true; C.vy = 7.5; C.v += C.jetM ? 6 : 3; C.jet = 0.9; toast("Sprung!"); if (C.jetM) engineJet(); }   // Batpod: Sprung ohne Duese/Schub
@@ -164,7 +174,14 @@ function carStep(dt) {
   const moved = Math.hypot(nx - x0, nz - z0);
   if (!C.air) {
     const g0 = carSlopeG(x0, z0, C.y), g1 = carSlopeG(nx, nz, C.y);
-    if (moved > 1e-6 && g1 - g0 > 1.0 * moved && C.y < g0 + 0.3) { nx = x0; nz = z0; }
+    if (moved > 1e-6 && g1 - g0 > WALL_TAN * moved && C.y < g0 + 0.3) {
+      // Echte Wand (ueber ca. 65 Grad): nicht hart stoppen, sondern entlang der Hoehenlinie abgleiten (Anteil bergauf entfernen)
+      const e = 0.4, gx = carSlopeG(x0 + e, z0, C.y) - carSlopeG(x0 - e, z0, C.y), gz = carSlopeG(x0, z0 + e, C.y) - carSlopeG(x0, z0 - e, C.y), gl = Math.hypot(gx, gz);
+      let mx = nx - x0, mz = nz - z0;
+      if (gl > 1e-6 && Math.abs(gx) < 50 && Math.abs(gz) < 50) { const ux = gx / gl, uz = gz / gl, up = mx * ux + mz * uz; if (up > 0) { mx -= ux * up; mz -= uz * up; } }
+      const sx = x0 + mx * 0.9, sz = z0 + mz * 0.9;
+      if (carSlopeG(sx, sz, C.y) - g0 <= WALL_TAN * Math.hypot(mx, mz) + 0.02) { nx = sx; nz = sz; } else { nx = x0; nz = z0; }
+    }
     if (C.y > -3 && seaD(nx, nz) > -40 && terrainH(nx, nz) < WATER_Y - 0.5 && carSupport(nx, nz, C.y) < WATER_Y - 0.5) { nx = x0; nz = z0; }   // Steilkueste
   }
   if (C.y > -3 && coastEdge(nx, nz, x0, z0, 6)) { nx = x0; nz = z0; if (!C.air) C.v *= 0.3; }   // Klippenkante: Fahrzeuge halten 6 m vor der Kuestenlinie (auch im Flug)

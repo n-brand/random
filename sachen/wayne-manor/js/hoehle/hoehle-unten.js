@@ -42,13 +42,13 @@ function caveCell(x, z) {
   if (inPoly(LOW_FLOOR, px, py)) return 1;                                   // B4: alte Anlegestelle (LOW_DOCK) entfernt
   if (plDist(TUN_PX, px, py) < 4.1 / CAVE_SC) return 1;                      // Kiesstrasse ganz auf Boden (am See hing sie ueber dem Wasser, man fiel durch)
   if (x > -28 && x < -19.5 && z > 29 && z < 50) return 1;                    // vor dem Autoaufzug breiter (Nicolas: leichter einbiegen)
+  if (x > -26.5 && x < -24.2 && z > 2 && z < 17.2) return 1;                 // gerade Uferkante bei x -24,2 bis an den Treppenkopf (vorher Felsstreifen wie eine Wand bzw. Treppenbucht und Steinblock, Nicolas)
   if (px > 255 && px < 372 && py > 470 && py < 500) return 2;                // B4: Wasser bis an den Tunnelrand (Weg und Treppen stehen darin)
   if (inPoly(LAKE_PX, px, py)) return 2;                                     // B3: Hoehlensee
   for (const c of CHANNELS) if (plDist(c.pts, px, py) < c.w / 2) return 2;
   if (plDist(TUN_PX, px, py) < 4.3 / CAVE_SC) return 1;                      // Hoehlentunnel breiter (Kiesstrasse 7,5 m)
   if (x > -27.6 && x < -12 && z > 40.5 && z < 70) return 1;               // Wendeplatz (Nicolas, 2026-11-08): Felswand zwischen Gotham-Tunnel und See weg
   if (x > -16.5 && x < 6.5 && z > -21 && z < 6) return 2;                    // Felsblock oestlich vom Wasserband weg, der See geht dort weiter (Nicolas)
-  if (x > -26 && x < -24 && z > 7 && z < 15) return 2;                       // schmaler Felsstreifen zwischen Boden und See weg (stand wie eine Wand bis zur Decke, Nicolas)
   if ((x > -64 && x < -47 && z > -24 && z < 11) || (x > -49 && x < -24 && z > -29 && z < -17) || (x > -49 && x < -35 && z > -17.5 && z < -10.5)) return 1;   // Batcave-Ausbau West und Nord (batcave-ausbau.js)
   return 0;
 }
@@ -61,7 +61,7 @@ function caveAt(x, z) { return cmAt(Math.floor((x - CX0) / CELL), Math.floor((z 
   const stoneM = M(0x7a756c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 0.95 });
   for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
     const x = CX0 + (i + 0.5) * CELL, z = CZ0 + (j + 0.5) * CELL;
-    if (x < -28 || x > -12 || z < 2 || z > 70 || (z > 14 && z < 22.5) || cmAt(i, j) !== 1) continue;   // Luecke beim Steinweg zu Treppe und Steg   // Wendeplatz und Tunnel entlang des Sees
+    if (x < -30 || x > -12 || z < -36 || z > 70 || (z > 15.4 && z < 17.2 && x > -24.8) || cmAt(i, j) !== 1) continue;   // Luecke beim Steinweg zu Treppe und Steg   // Wendeplatz und Tunnel entlang des Sees
     if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => cmAt(i + a, j + b) === 2)) continue;
     B(x - CELL / 2, x + CELL / 2, LY - 0.4, LY + 0.72 + 0.22 * vnoise(x * 0.9, z * 0.9), z - CELL / 2, z + CELL / 2, stoneM);
   }
@@ -81,8 +81,29 @@ const caveLights = [], gates = [];
   const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
   const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.25, z * 0.25];
   const corner = (i, j) => jit(CX0 + i * CELL, CZ0 + j * CELL);
-  const undercut = x => x < -26.6 || x > -18.8 ? 0 : 3.6 * Math.sin(Math.PI * (x + 26.6) / 7.8) ** 0.7;   // Ueberhang-Tiefe unten
-  const isUC = (i, j) => { const x = CX0 + (i + 0.5) * CELL, z = CZ0 + (j + 0.5) * CELL; return cmAt(i, j) === 1 && cmAt(i, j - 1) === 2 && z > 28.5 && z < 30 && undercut(x) > 0; };
+  // Ueberhang am Steg (Nicolas 2026-11-08): Nordkante des Wendeplatzes (z ca. 29) und um die Ecke die Ostkante (x ca. -25,4, z 23,5..29)
+  // gehen nach unten schraeg in den Fels zurueck. Jede untere Ecke bekommt EINEN Versatz (Summe der Innennormalen der Ueberhang-Flaechen),
+  // damit die Flaechen an der Ecke dicht sind; Ecken, die an eine senkrechte Kante grenzen, bleiben bei 0.
+  const UCD = 3.4, cc01 = v => Math.min(1, Math.max(0, v));
+  const ucFace = (i, j, di, dj) => { const x = CX0 + (i + 0.5) * CELL, z = CZ0 + (j + 0.5) * CELL;
+    return (dj === -1 && z > 28.5 && z < 30 && x > -25.5 && x < -19) || (di === 1 && x > -26.2 && x < -25.3 && z > 23.5 && z < 29.6); };
+  const ucDepth = (dj, x, z) => dj === -1 ? UCD * cc01((-19.0 - x) / 3) ** 0.7 : UCD * cc01((z - 23.5) / 4) ** 0.7;
+  const FACES = [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]], CIDX = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const ucD = new Map(), ucBlock = new Set();
+  for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
+    if (CM[j * CNX + i] !== 1) continue;
+    for (const [di, dj, a, b] of FACES) {
+      if (cmAt(i + di, j + dj) !== 2) continue;
+      const uc = ucFace(i, j, di, dj);
+      for (const k of [a, b]) {
+        const ci = i + CIDX[k][0], cj = j + CIDX[k][1], key = ci * 4096 + cj;
+        if (!uc) { ucBlock.add(key); continue; }
+        const [x, z] = corner(ci, cj), dd = ucDepth(dj, x, z), o = ucD.get(key) || [0, 0];
+        ucD.set(key, [o[0] - di * dd, o[1] - dj * dd]);
+      }
+    }
+  }
+  const ucDisp = (ci, cj) => { const key = ci * 4096 + cj; return ucBlock.has(key) ? [0, 0] : ucD.get(key) || [0, 0]; };
   for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
     const t = CM[j * CNX + i];
     if (!t || t === 3) continue;
@@ -97,18 +118,17 @@ const caveLights = [], gates = [];
     for (const [di, dj, a, b] of [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]]) {
       const nt = cmAt(i + di, j + dj), [ax, az] = c[a], [bx, bz] = c[b];
       if (nt === 0) push(G.rock, [[ax, fy, az], [bx, fy, bz], [bx, ceilY(bx, bz), bz], [ax, ceilY(ax, az), az]], uvWall);
-      else if (dj === -1 && isUC(i, j)) {
-        // Nicolas 2026-11-08: Wendeplatz-Kante ueber dem Steg geht nach unten schraeg und unregelmaessig in den Fels zurueck (vorher senkrecht, dicht am Steg)
-        // An den Enden (Nachbarzelle ohne Ueberhang) ist die Tiefe 0, damit die Flaeche dicht an die senkrechten Kanten anschliesst
-        const eA = isUC(i - 1, j) ? 1 : 0, eB = isUC(i + 1, j) ? 1 : 0, lv = [0, 0.3, 0.55, 0.8, 1];
-        const dp = (x, f) => (x === ax ? eA : eB) * undercut(x) * f ** 0.8 * (f > 0 ? 0.8 + 0.4 * vnoise(x * 0.7 + f * 5, 3.1) : 1);
+      else if (t === 1 && nt === 2 && ucFace(i, j, di, dj)) {
+        // Ueberhang (siehe ucFace): untere Kante je Ecke um ucDisp versetzt, in 4 Baendern mit etwas Rauschen (unregelmaessig)
+        const DA = ucDisp(i + CIDX[a][0], j + CIDX[a][1]), DB = ucDisp(i + CIDX[b][0], j + CIDX[b][1]), lv = [0, 0.3, 0.55, 0.8, 1];
+        const P = (x, z, D, f, y) => { const s = f ** 0.8 * (f > 0 && f < 1 ? 0.85 + 0.3 * vnoise(x * 0.7 + f * 5, z * 0.7) : 1); return [x + D[0] * s, y, z + D[1] * s]; };
         for (let k = 0; k < 4; k++) {
           const f0 = lv[k], f1 = lv[k + 1], y0 = LY - (LY - BED) * f0, y1 = LY - (LY - BED) * f1;
-          push(G.rock, [[ax, y1, az + dp(ax, f1)], [bx, y1, bz + dp(bx, f1)], [bx, y0, bz + dp(bx, f0)], [ax, y0, az + dp(ax, f0)]], uvWall);
+          push(G.rock, [P(ax, az, DA, f1, y1), P(bx, bz, DB, f1, y1), P(bx, bz, DB, f0, y0), P(ax, az, DA, f0, y0)], uvWall);
         }
-        const fw = (LY - WL) / (LY - BED);                                    // Wasser und Grund unter dem Ueberhang
-        push(G.water, [[ax, WL, az], [bx, WL, bz], [bx, WL, bz + dp(bx, fw) + 0.3], [ax, WL, az + dp(ax, fw) + 0.3]], uvFlat);
-        push(G.bed, [[ax, BED, az], [bx, BED, bz], [bx, BED, bz + dp(bx, 1) + 0.3], [ax, BED, az + dp(ax, 1) + 0.3]], uvFlat);
+        const fw = (LY - WL) / (LY - BED), W2 = (x, z, D, f, y) => { const p = P(x, z, D, f, y); return [p[0] + D[0] * 0.08, y, p[2] + D[1] * 0.08]; };   // Wasser und Grund unter dem Ueberhang
+        push(G.water, [[ax, WL, az], [bx, WL, bz], W2(bx, bz, DB, fw, WL), W2(ax, az, DA, fw, WL)], uvFlat);
+        push(G.bed, [[ax, BED, az], [bx, BED, bz], W2(bx, bz, DB, 1, BED), W2(ax, az, DA, 1, BED)], uvFlat);
       }
       else if (t === 1 && nt === 2) push(G.rock, [[ax, BED, az], [bx, BED, bz], [bx, LY, bz], [ax, LY, az]], uvWall);
     }
@@ -260,7 +280,7 @@ const caveLights = [], gates = [];
     const R = (pa, pb, qa, qb) => { const [xa, za] = C(pa, qa), [xb, zb] = C(pb, qb); return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: Math.min(za, zb), z1: Math.max(za, zb) }; };
     const stone = mat.floorStone, wood = mat.floorWood, pile = M(0x4a3727, { roughness: 0.9 }), iron = M(0x24262a, { metalness: 0.5, roughness: 0.5 });
     const W = R(321, 362, 476, 494); W.x0 -= 0.7;                            // Weg (Hallenhoehe), an den Tunnelboden angeschlossen
-    B(W.x0, W.x1, BED, LY, W.z0, W.z1, stone);
+    // (Steinblock "Weg" neben der Treppe entfernt, Nicolas 2026-11-08: der Hallenboden reicht jetzt bis an den Treppenkopf)
     const T1 = R(350, 364, 494, 523), PODY = LY - 3, STEG = SEA_Y + 0.5;    // Treppe 1 (17 Stufen nach Osten hinab)
     const t1x0 = W.x1, t1x1 = T1.x1 + 0.6, n1 = 17, run1 = (t1x1 - t1x0) / n1;
     for (let k = 0; k < n1; k++) B(t1x0 + k * run1, t1x0 + (k + 1) * run1, BED, LY - (k + 1) * (LY - PODY) / n1, T1.z0, T1.z1, stone);
@@ -284,6 +304,7 @@ const caveLights = [], gates = [];
     };
     const ri = 0.07;
     rail(t1x0, LY, T1.z0 + ri, t1x1, PODY, T1.z0 + ri); rail(t1x0, LY, T1.z1 - ri, t1x1, PODY, T1.z1 - ri);   // Treppe 1 beidseits
+    rail(t1x0 - 0.7, LY, T1.z1 - ri, t1x0, LY, T1.z1 - ri);                    // oben ein Stueck flach bis an die Mauer (Luecke an der Ecke zu)
     rail(P.x0, PODY, P.z0 + ri, P.x1 - ri, PODY, P.z0 + ri); rail(P.x1 - ri, PODY, P.z0 + ri, P.x1 - ri, PODY, P.z1);   // Podest Nord und Ost
     rail(T2.x1 - ri, PODY, T2.z0, T2.x1 - ri, STEG, T2.z1); rail(T2.x0 + ri, PODY, T2.z0, T2.x0 + ri, STEG, T2.z1);   // Treppe 2 beidseits
     // U-Steg aus Holz: oberer Balken, linker Arm, rechter Block; dazwischen die Bootsbox

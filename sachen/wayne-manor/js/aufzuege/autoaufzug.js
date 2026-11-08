@@ -78,6 +78,8 @@
   function step(dir) { const k = order.indexOf(L.at) + dir; if (k < 0 || k >= order.length) return toast(dir > 0 ? "Ganz oben" : "Ganz unten"); pick(order[k]); }
   apply();
   CAR_LIFT = { stops, order, L, inCar: inCarC, near: nearC, update, use, pick, step };
+  // Rechtsklick auf ein Rolltor holt den Autoaufzug (Nicolas 2026-11-08, statt Taste E; siehe tore.js)
+  gates.push({ name: "Autoaufzug", g: doorG, call: () => nearC(player.pos) ? use() : toast("Zu weit vom Autoaufzug entfernt"), verbs: ["holen / fahren", "holen / fahren"], a: [cx, cz], b: [cx, cz] });
   // Licht im Schacht und im Tunnel (nur unter der Erde an)
   for (const [x, y, z] of [[cx, HF_Y + 3.5, cz], [-50, HF_Y + 3.6, cz]]) { const l = new THREE.PointLight(0xfff0d8, 0, 18, 1.6); l.position.set(x, y, z); l.userData.I = 22; scene.add(l); caveLights.push(l); }
 
