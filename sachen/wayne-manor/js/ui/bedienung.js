@@ -103,6 +103,7 @@ addEventListener("keydown", e => {
     // Aufzuege nicht mehr mit E, sondern per Rechtsklick auf die Tuer (Nicolas 2026-11-08, siehe tore.js)
     return;
   }
+  if (BOAT.on && e.code === "KeyV" && !e.repeat) { BOAT.view = BOAT.view === 1 ? 0 : 1; player.pitch = BOAT.view ? 0 : -0.12; return toast(BOAT.view ? "Fahrersicht" : "Kamera hinter dem Boot"); }
   if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
   if (CAR.on) {
     if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault();

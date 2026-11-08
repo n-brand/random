@@ -27,8 +27,14 @@ function boatFree(x, z, h) {
 function seatBoat() {
   const s = Math.sin(BOAT.h), c = Math.cos(BOAT.h);
   player.pos.set(BOAT.x + 1.6 * s, BOAT.g.position.y + 0.95, BOAT.z + 1.6 * c);
-  camera.position.set(player.pos.x, player.pos.y + 0.9, player.pos.z);
-  camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
+  if (BOAT.view === 1) { camera.position.set(player.pos.x, player.pos.y + 0.9, player.pos.z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); return; }
+  // Third Person (Nicolas 2026-11-08, Standard): Kamera hinter dem Boot wie beim Auto, Maus dreht um das Boot, V = Fahrersicht
+  const D = 8.5, H = Math.max(1.2, Math.min(7, 2.6 - player.pitch * 6)), tx = BOAT.x, ty = SEA_Y + 1.4, tz = BOAT.z;
+  const dx = Math.sin(player.yaw) * D, dy = H, dz = Math.cos(player.yaw) * D;
+  let k = 1;
+  for (let t = 0.12; t <= 1.0001; t += 0.06) if (camBlocked(tx + dx * t, ty + dy * t, tz + dz * t)) { k = Math.max(0.12, t - 0.08); break; }
+  camera.position.set(tx + dx * k, ty + dy * k, tz + dz * k);
+  camera.lookAt(tx, ty + 0.3, tz);
 }
 function useBoat() {
   if (!walking) return false;
@@ -54,7 +60,7 @@ function useBoat() {
   if (Math.hypot(p.x - BOAT.x, p.z - BOAT.z) < 4.5 && p.y > SEA_Y - 1.5 && p.y < LY + 1) {   // B1: auch vom Hallenboden (6 m darueber) bis zum Steg (B4)
     BOAT.on = true; BOAT.v = 0; keys.clear();
     player.yaw = BOAT.h;
-    toast("Im Boot: W/S Gas und Bremse, A/D lenken, Shift schneller, E aussteigen");
+    toast("Im Boot: W/S Gas und Bremse, A/D lenken, Shift schneller, V Kamera, E aussteigen");
     seatBoat();
     return true;
   }
@@ -92,6 +98,9 @@ function boatReturn() {
 let boatTime = 0;
 function boatPose() {
   boatTime += 1 / 60;
-  BOAT.g.position.set(BOAT.x, SEA_Y + 0.05 * Math.sin(boatTime * 2.1), BOAT.z);
-  BOAT.g.rotation.set(0.02 * Math.sin(boatTime * 1.3) - BOAT.v * 0.004, BOAT.h, 0.03 * Math.sin(boatTime * 1.7));
+  // Nicolas 2026-11-08: bei Tempo hebt sich der Bug (Heck tiefer, bis ca. 6 Grad) und das Schaukeln wird ruhiger (bis 75 % weniger)
+  const sp = Math.min(1, Math.abs(BOAT.v) / 10), rock = 1 - 0.75 * sp;
+  BOAT.trim = (BOAT.trim || 0) + ((BOAT.v > 0 ? 0.105 * sp ** 0.8 : 0) - (BOAT.trim || 0)) * Math.min(1, 1 / 60 * 2.5);   // weich ein- und auslaufen
+  BOAT.g.position.set(BOAT.x, SEA_Y + 0.05 * rock * Math.sin(boatTime * 2.1) + 0.06 * sp, BOAT.z);
+  BOAT.g.rotation.set(0.02 * rock * Math.sin(boatTime * 1.3) + BOAT.trim, BOAT.h, 0.03 * rock * Math.sin(boatTime * 1.7), "YXZ");
 }

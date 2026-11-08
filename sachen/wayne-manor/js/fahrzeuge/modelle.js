@@ -129,41 +129,52 @@ function buildBike(col) {
   const wheels = [addWheel(g, 0, -0.72, 0.31, 0.12, true, tireM, rimM, 0, 20), addWheel(g, 0, 0.72, 0.32, 0.18, false, tireM, rimM, 0, 20)];
   return { g, wheels };
 }
-// ---- Batpod (Nicolas 2026-11-08, nach Foto): zwei gleich grosse, sehr breite Stollenraeder weit auseinander, Schwingen links und rechts
-// vom Rad (Nabenlenkung), langer flacher Rumpf, Fahrer liegt flach, Verkleidung steigt nach vorne an, schraege Panzerplatte ueber dem
-// Vorderrad, seitliche Kanonengehaeuse mit Rohren nach vorne, Sitz hinten, offene Mechanik. Ganz schwarz, keine Duesen.
+// ---- Batpod (Nicolas 2026-11-08, nach Fotos): zwei gleich grosse, sehr breite Stollenraeder weit auseinander, Schwingen links und rechts
+// vom Rad (Nabenlenkung), duenner geschwungener Rahmen aus Rohren statt Block, kleiner Motor unten, Verkleidung ("Tank") steigt nach vorne an,
+// Fahrer liegt flach, KEINE Platte ueber dem Vorderrad, Kanonengehaeuse neben dem Vorderrad mit langen Rohren weit nach vorne,
+// Sitz hinten, offene Mechanik. Ganz schwarz, keine Duesen.
 function buildBatpod() {
   const g = new THREE.Group();
   const body = M(0x111214, { metalness: 0.55, roughness: 0.38, flatShading: true }), matte = M(0x0a0b0c, { roughness: 0.85, flatShading: true });
   const gun = M(0x1e2024, { metalness: 0.75, roughness: 0.3, flatShading: true }), seatM = M(0x070708, { roughness: 0.95 });
   const tireM = M(0x0d0d0d, { roughness: 0.95, flatShading: true }), rimM = M(0x18191c, { metalness: 0.6, roughness: 0.4, flatShading: true });
   const WZ = 1.18, WR = 0.48;                                                                // Radstand 2,36 m, Raeder r 0,48
-  prismIn(g, [[0.72, 0.3], [0.78, 0.72], [-0.6, 0.78], [-0.75, 0.5], [-0.55, 0.28]], 0.42, matte);                     // Motorblock / Unterbau
-  prismIn(g, [[0.78, 0.72], [0.98, 1.02], [0.72, 1.12], [0.1, 1.0], [-0.45, 0.94], [-0.62, 0.8], [-0.6, 0.76]], 0.48, body);   // Verkleidung, steigt nach vorne
-  prismIn(g, [[0.66, 1.12], [1.12, 1.1], [1.62, 1.0], [1.74, 0.9], [1.62, 0.92], [1.12, 1.02], [0.72, 1.04]], 0.62, body);    // Panzerplatte ueber dem Vorderrad
-  prismIn(g, [[-0.3, 0.9], [-0.92, 0.93], [-1.02, 1.02], [-0.98, 1.06], [-0.35, 0.99]], 0.34, seatM);                   // Sitz hinten
-  prismIn(g, [[-0.95, 0.92], [-1.25, 1.06], [-1.68, 1.02], [-1.74, 0.94], [-1.3, 0.98], [-0.95, 0.88]], 0.36, body);    // Heckhaube ueber dem Hinterrad
+  // Rohr von p nach q (lokal: x quer, y hoch, z hinten)
+  const tube = (p, q, r, m, seg = 8) => {
+    const d = new THREE.Vector3(q[0] - p[0], q[1] - p[1], q[2] - p[2]), len = d.length();
+    const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), m); o.position.set((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2);
+    o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(o); return o;
+  };
+  const path = (pts, r, m) => { for (let k = 0; k < pts.length - 1; k++) { tube(pts[k], pts[k + 1], r, m); meshIn(g, new THREE.SphereGeometry(r, 8, 6), m, ...pts[k + 1]); } };
+  // Rahmen: Mittelrohr geschwungen (vorne hoch, Mitte, hinten tief), zwei duenne Unterzuege
+  path([[0, 0.62, -0.62], [0, 0.84, -0.25], [0, 0.8, 0.15], [0, 0.62, 0.45], [0, 0.5, 0.66]], 0.055, gun);
+  for (const sd of [-1, 1]) path([[sd * 0.12, 0.5, -0.62], [sd * 0.13, 0.38, -0.2], [sd * 0.13, 0.36, 0.2], [sd * 0.12, 0.44, 0.66]], 0.032, matte);
+  prismIn(g, [[0.25, 0.32], [0.3, 0.56], [-0.2, 0.6], [-0.32, 0.36]], 0.26, matte);                                    // kleiner Motor unten
+  prismIn(g, [[0.62, 0.8], [0.95, 1.02], [0.76, 1.1], [0.1, 0.98], [-0.4, 0.93], [-0.55, 0.82], [-0.2, 0.76]], 0.36, body);   // Verkleidung ("Tank")
+  prismIn(g, [[-0.3, 0.9], [-0.92, 0.93], [-1.02, 1.02], [-0.98, 1.06], [-0.35, 0.99]], 0.3, seatM);                    // Sitz hinten
+  prismIn(g, [[-0.95, 0.92], [-1.25, 1.04], [-1.6, 0.98], [-1.66, 0.92], [-1.3, 0.95], [-0.95, 0.88]], 0.28, body);     // kleine Heckhaube
   for (const sd of [-1, 1]) {
-    // Schwingen beidseits der Raeder (Nabenlenkung)
-    prismIn(g, [[0.35, 0.38], [0.45, 0.6], [WZ, 0.54], [WZ + 0.12, 0.46], [WZ, 0.38]], 0.07, gun, sd * 0.31);
-    prismIn(g, [[-0.35, 0.38], [-0.45, 0.62], [-WZ, 0.54], [-WZ - 0.12, 0.46], [-WZ, 0.38]], 0.07, gun, sd * 0.31);
+    // Schwingen beidseits der Raeder (Nabenlenkung): vorne schraeg hoch zum Rahmen, hinten flach
+    tube([sd * 0.31, WR, -WZ], [sd * 0.2, 0.8, -0.42], 0.05, gun); tube([sd * 0.31, WR - 0.06, -WZ + 0.1], [sd * 0.16, 0.5, -0.6], 0.03, matte);
+    tube([sd * 0.31, WR, WZ], [sd * 0.18, 0.56, 0.5], 0.05, gun); tube([sd * 0.31, WR - 0.08, WZ - 0.1], [sd * 0.14, 0.4, 0.62], 0.03, matte);
     meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.09, 12).rotateZ(Math.PI / 2), gun, sd * 0.31, WR, -WZ);          // Nabendeckel
     meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.09, 12).rotateZ(Math.PI / 2), gun, sd * 0.31, WR, WZ);
-    // Kanonengehaeuse neben dem Vorderrad, Rohre nach vorne
-    prismIn(g, [[0.55, 0.6], [0.7, 0.86], [1.42, 0.82], [1.5, 0.66], [1.4, 0.56], [0.65, 0.54]], 0.13, gun, sd * 0.43);
-    for (const [dx, y, r, l] of [[0, 0.76, 0.035, 0.5], [0, 0.64, 0.03, 0.42], [sd * 0.05, 0.7, 0.025, 0.6]])
-      meshIn(g, new THREE.CylinderGeometry(r, r, l, 10).rotateX(Math.PI / 2), gun, sd * 0.43 + dx, y, -1.45 - l / 2 + 0.05);
+    // Kanonengehaeuse neben dem Vorderrad, lange Rohre weit nach vorne (mit Muendung)
+    prismIn(g, [[0.75, 0.56], [0.9, 0.78], [1.45, 0.74], [1.55, 0.6], [1.45, 0.5], [0.85, 0.48]], 0.13, gun, sd * 0.43);
+    for (const [dx, y, r, l] of [[0, 0.7, 0.032, 1.25], [0, 0.56, 0.028, 0.95], [sd * 0.05, 0.63, 0.022, 0.75]]) {
+      const z1 = -1.5, z0 = z1 - l;
+      meshIn(g, new THREE.CylinderGeometry(r, r, l, 10).rotateX(Math.PI / 2), gun, sd * 0.43 + dx, y, (z0 + z1) / 2);
+      meshIn(g, new THREE.CylinderGeometry(r * 1.6, r * 1.3, 0.12, 10).rotateX(Math.PI / 2), gun, sd * 0.43 + dx, y, z0 - 0.04);   // Muendung
+    }
+    boxIn(g, sd * 0.43 - 0.04, sd * 0.43 + 0.04, 0.64, 0.68, -1.57, -1.54, mat.glow);                                    // Scheinwerfer vorne am Gehaeuse
     // Griffe weit vorne (Fahrer liegt flach), Fussrasten hinten
-    boxIn(g, sd > 0 ? 0.26 : -0.44, sd > 0 ? 0.44 : -0.26, 1.0, 1.06, -0.98, -0.86, matte);
+    boxIn(g, sd > 0 ? 0.2 : -0.38, sd > 0 ? 0.38 : -0.2, 1.0, 1.06, -0.98, -0.86, matte);
     boxIn(g, sd > 0 ? 0.24 : -0.36, sd > 0 ? 0.36 : -0.24, 0.5, 0.54, 0.62, 0.78, gun);
     // offene Mechanik: Leitungen und Federbein an der Seite
-    meshIn(g, new THREE.CylinderGeometry(0.018, 0.018, 1.2, 6).rotateX(Math.PI / 2 - 0.12), gun, sd * 0.23, 0.62, 0.0);
-    meshIn(g, new THREE.CylinderGeometry(0.014, 0.014, 0.9, 6).rotateX(Math.PI / 2 + 0.08), matte, sd * 0.25, 0.42, -0.1);
-    meshIn(g, new THREE.CylinderGeometry(0.045, 0.045, 0.42, 8).rotateX(0.9), gun, sd * 0.2, 0.62, 0.6);
-    boxIn(g, sd * 0.3 - 0.05, sd * 0.3 + 0.05, 0.92, 0.96, -1.74, -1.62, mat.glow);                                      // Scheinwerfer (schmal, unter der Platte)
+    path([[sd * 0.18, 0.62, -0.5], [sd * 0.22, 0.55, -0.05], [sd * 0.2, 0.5, 0.4]], 0.016, matte);
+    tube([sd * 0.16, 0.48, 0.42], [sd * 0.2, 0.78, 0.72], 0.04, gun);
   }
-  boxIn(g, -0.12, 0.12, 0.95, 1.0, 1.73, 1.76, mat.glowRed);                                                            // Ruecklicht
-  meshIn(g, new THREE.CylinderGeometry(0.06, 0.06, 0.55, 10).rotateX(Math.PI / 2), gun, 0, 0.4, -0.95);                 // mittlerer Rohrstutzen unten
+  boxIn(g, -0.1, 0.1, 0.94, 0.98, 1.65, 1.68, mat.glowRed);                                                             // Ruecklicht
   mergeStatic(g);
   const wheels = [addWheel(g, 0, -WZ, WR, 0.5, true, tireM, rimM, 26, 26), addWheel(g, 0, WZ, WR, 0.5, false, tireM, rimM, 26, 26)];
   return { g, wheels };

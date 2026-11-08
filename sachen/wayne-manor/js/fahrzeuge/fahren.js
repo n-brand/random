@@ -197,7 +197,8 @@ function carStep(dt) {
     C.vy -= CAR_G * dt; C.y += C.vy * dt;
     const g2 = carGround(C.y);
     if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; C.pitch = g2.pitch; C.roll = g2.roll; }
-    else { C.pitch += (Math.atan2(C.vy, Math.max(8, Math.abs(C.v))) * 0.6 - C.pitch) * Math.min(1, dt * 3); C.roll *= 0.95; }
+    else { const tp = Math.max(-0.12, Math.min(0.2, Math.atan2(C.vy, Math.max(8, Math.abs(C.v))) * 0.4));   // im Flug nur leicht neigen (Nicolas: nach tiefen Spruengen kippte die Nase stark nach vorne)
+      C.pitch += (tp - C.pitch) * Math.min(1, dt * 2); C.roll *= 0.95; }
   }
   if (sp.bike) { const tl = C.steer * Math.min(1, Math.abs(C.v) / 6) * 0.9; C.lean += (tl - C.lean) * Math.min(1, dt * 5); }   // Motorrad legt sich in die Kurve
   // Wasser: Teich, See, Meer
@@ -226,6 +227,7 @@ const camBlocked = (x, y, z) => {
   const w = wfNear(x, z, WF_HW - 0.8); if (w && y > w.y - 0.5 && y < w.y + 4.8) return false;
   if (y > LY - 1 && y < LY + 5.4 && caveAt(x, z) !== 0 && caveAt(x + 0.9, z) !== 0 && caveAt(x - 0.9, z) !== 0 && caveAt(x, z + 0.9) !== 0 && caveAt(x, z - 0.9) !== 0) return false;   // Hoehlendecke hängt bis ca. 3,8 m tiefer als LY+LH
   if (y > UY - 1 && y < UY + UH - 1.8 && caveUpAt(x, z)) return false;
+  if (y > SEA_Y + 0.3 && y < SEA_Y + 8.5 && [[0, 0], [0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]].every(([a, b]) => { const c = caveAt(x + a, z + b); return c === 2 || c === 4 || c === 3; })) return false;   // ueber dem Hoehlenwasser (Boot-Kamera)
   return true;
 };
 function carCamera() {
