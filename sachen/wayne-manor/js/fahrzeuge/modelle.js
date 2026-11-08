@@ -138,7 +138,9 @@ function buildBatpod() {
   const body = M(0x111214, { metalness: 0.55, roughness: 0.38, flatShading: true }), matte = M(0x0a0b0c, { roughness: 0.85, flatShading: true });
   const gun = M(0x1e2024, { metalness: 0.75, roughness: 0.3, flatShading: true }), seatM = M(0x070708, { roughness: 0.95 });
   const tireM = M(0x0d0d0d, { roughness: 0.95, flatShading: true }), rimM = M(0x18191c, { metalness: 0.6, roughness: 0.4, flatShading: true });
-  const WZ = 1.18, WR = 0.48;                                                                // Radstand 2,36 m, Raeder r 0,48
+  // Masse nach Fotos und Original (Nicolas: ca. 3,80 m lang): Radstand 2,36 m, Raeder r 0,42 und 0,56 breit,
+  // Kanonen reichen ca. 1 m vor die Vorderradnabe -> von der Muendung bis hinter das Hinterrad 3,80 m
+  const WZ = 1.18, WR = 0.42, TW = 0.56;
   // Rohr von p nach q (lokal: x quer, y hoch, z hinten)
   const tube = (p, q, r, m, seg = 8) => {
     const d = new THREE.Vector3(q[0] - p[0], q[1] - p[1], q[2] - p[2]), len = d.length();
@@ -150,33 +152,36 @@ function buildBatpod() {
   path([[0, 0.62, -0.62], [0, 0.84, -0.25], [0, 0.8, 0.15], [0, 0.62, 0.45], [0, 0.5, 0.66]], 0.055, gun);
   for (const sd of [-1, 1]) path([[sd * 0.12, 0.5, -0.62], [sd * 0.13, 0.38, -0.2], [sd * 0.13, 0.36, 0.2], [sd * 0.12, 0.44, 0.66]], 0.032, matte);
   prismIn(g, [[0.25, 0.32], [0.3, 0.56], [-0.2, 0.6], [-0.32, 0.36]], 0.26, matte);                                    // kleiner Motor unten
-  prismIn(g, [[0.62, 0.8], [0.95, 1.02], [0.76, 1.1], [0.1, 0.98], [-0.4, 0.93], [-0.55, 0.82], [-0.2, 0.76]], 0.36, body);   // Verkleidung ("Tank")
-  prismIn(g, [[-0.3, 0.9], [-0.92, 0.93], [-1.02, 1.02], [-0.98, 1.06], [-0.35, 0.99]], 0.3, seatM);                    // Sitz hinten
-  prismIn(g, [[-0.95, 0.92], [-1.25, 1.04], [-1.6, 0.98], [-1.66, 0.92], [-1.3, 0.95], [-0.95, 0.88]], 0.28, body);     // kleine Heckhaube
+  prismIn(g, [[0.62, 0.8], [0.95, 1.02], [0.76, 1.1], [0.1, 0.98], [-0.12, 0.93], [-0.2, 0.8], [-0.02, 0.76]], 0.36, body);   // Verkleidung ("Tank"), endet vor dem Sattel
+  // Sattel (Nicolas, Foto): schmales flaches Polster hinter der Verkleidung, hinten leicht hochgezogen, auf einer Stuetze; ueber dem Hinterrad nichts
+  prismIn(g, [[-0.14, 0.9], [-0.5, 0.92], [-0.6, 0.97], [-0.57, 1.0], [-0.48, 0.97], [-0.14, 0.96]], 0.24, seatM);
+  tube([0, 0.78, 0.18], [0, 0.91, 0.36], 0.03, gun);
   for (const sd of [-1, 1]) {
     // Schwingen beidseits der Raeder (Nabenlenkung): vorne schraeg hoch zum Rahmen, hinten flach
-    tube([sd * 0.31, WR, -WZ], [sd * 0.2, 0.8, -0.42], 0.05, gun); tube([sd * 0.31, WR - 0.06, -WZ + 0.1], [sd * 0.16, 0.5, -0.6], 0.03, matte);
-    tube([sd * 0.31, WR, WZ], [sd * 0.18, 0.56, 0.5], 0.05, gun); tube([sd * 0.31, WR - 0.08, WZ - 0.1], [sd * 0.14, 0.4, 0.62], 0.03, matte);
-    meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.09, 12).rotateZ(Math.PI / 2), gun, sd * 0.31, WR, -WZ);          // Nabendeckel
-    meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.09, 12).rotateZ(Math.PI / 2), gun, sd * 0.31, WR, WZ);
-    // Kanonengehaeuse neben dem Vorderrad, lange Rohre weit nach vorne (mit Muendung)
-    prismIn(g, [[0.75, 0.56], [0.9, 0.78], [1.45, 0.74], [1.55, 0.6], [1.45, 0.5], [0.85, 0.48]], 0.13, gun, sd * 0.43);
-    for (const [dx, y, r, l] of [[0, 0.7, 0.032, 1.25], [0, 0.56, 0.028, 0.95], [sd * 0.05, 0.63, 0.022, 0.75]]) {
-      const z1 = -1.5, z0 = z1 - l;
-      meshIn(g, new THREE.CylinderGeometry(r, r, l, 10).rotateX(Math.PI / 2), gun, sd * 0.43 + dx, y, (z0 + z1) / 2);
-      meshIn(g, new THREE.CylinderGeometry(r * 1.6, r * 1.3, 0.12, 10).rotateX(Math.PI / 2), gun, sd * 0.43 + dx, y, z0 - 0.04);   // Muendung
+    // Proportionen nach der Frontansicht (Nicolas): Reifen sehr breit (TW), Schwingen und Naben aussen daneben, Kanonen weit aussen
+    const SA = sd * (TW / 2 + 0.06), GX = sd * (TW / 2 + 0.25);
+    tube([SA, WR, -WZ], [sd * 0.2, 0.8, -0.42], 0.05, gun); tube([SA, WR - 0.06, -WZ + 0.1], [sd * 0.16, 0.5, -0.6], 0.03, matte);
+    tube([SA, WR, WZ], [sd * 0.18, 0.56, 0.5], 0.05, gun); tube([SA, WR - 0.08, WZ - 0.1], [sd * 0.14, 0.4, 0.62], 0.03, matte);
+    meshIn(g, new THREE.CylinderGeometry(0.12, 0.12, 0.09, 12).rotateZ(Math.PI / 2), gun, SA, WR, -WZ);                 // Nabendeckel
+    meshIn(g, new THREE.CylinderGeometry(0.12, 0.12, 0.09, 12).rotateZ(Math.PI / 2), gun, SA, WR, WZ);
+    // Kanonen: Achsstummel von der Nabe nach aussen, kantiges Gehaeuse, zwei lange Rohre schraeg nach vorne unten (mit Muendung)
+    tube([SA, WR, -WZ], [GX, WR, -WZ], 0.06, gun);
+    prismIn(g, [[0.85, 0.36], [0.95, 0.72], [1.5, 0.7], [1.6, 0.52], [1.5, 0.34]], 0.17, gun, GX);
+    for (const [dx, y, r, l, dn] of [[0, 0.58, 0.04, 0.6, 0.1], [sd * -0.02, 0.4, 0.03, 0.42, 0.07]]) {
+      const p = [GX + dx, y, -1.55], q = [GX + dx + sd * 0.05, y - dn, -1.55 - l];
+      tube(p, q, r, gun, 10);
+      const e = 0.14 / l; tube([q[0] - (q[0] - p[0]) * e, q[1] - (q[1] - p[1]) * e, q[2] - (q[2] - p[2]) * e], [q[0] + (q[0] - p[0]) * e * 0.3, q[1] + (q[1] - p[1]) * e * 0.3, q[2] + (q[2] - p[2]) * e * 0.3], r * 1.7, gun, 10);   // Muendung
     }
-    boxIn(g, sd * 0.43 - 0.04, sd * 0.43 + 0.04, 0.64, 0.68, -1.57, -1.54, mat.glow);                                    // Scheinwerfer vorne am Gehaeuse
-    // Griffe weit vorne (Fahrer liegt flach), Fussrasten hinten
+    boxIn(g, GX - 0.05, GX + 0.05, 0.62, 0.66, -1.62, -1.59, mat.glow);                                                   // Scheinwerfer vorne am Gehaeuse
+    // Griffe weit vorne (Fahrer liegt flach), Spiegel auf Stielen nach oben-aussen
     boxIn(g, sd > 0 ? 0.2 : -0.38, sd > 0 ? 0.38 : -0.2, 1.0, 1.06, -0.98, -0.86, matte);
-    boxIn(g, sd > 0 ? 0.24 : -0.36, sd > 0 ? 0.36 : -0.24, 0.5, 0.54, 0.62, 0.78, gun);
-    // offene Mechanik: Leitungen und Federbein an der Seite
+    tube([sd * 0.32, 1.04, -0.92], [sd * 0.42, 1.28, -0.98], 0.015, gun); boxIn(g, sd * 0.42 - 0.08, sd * 0.42 + 0.08, 1.24, 1.38, -1.0, -0.96, matte);
+    // offene Mechanik: Leitungen und Federbein an der Seite (bleiben vor dem Hinterrad)
     path([[sd * 0.18, 0.62, -0.5], [sd * 0.22, 0.55, -0.05], [sd * 0.2, 0.5, 0.4]], 0.016, matte);
-    tube([sd * 0.16, 0.48, 0.42], [sd * 0.2, 0.78, 0.72], 0.04, gun);
+    tube([sd * 0.16, 0.48, 0.3], [sd * 0.2, 0.72, 0.56], 0.04, gun);
   }
-  boxIn(g, -0.1, 0.1, 0.94, 0.98, 1.65, 1.68, mat.glowRed);                                                             // Ruecklicht
   mergeStatic(g);
-  const wheels = [addWheel(g, 0, -WZ, WR, 0.5, true, tireM, rimM, 26, 26), addWheel(g, 0, WZ, WR, 0.5, false, tireM, rimM, 26, 26)];
+  const wheels = [addWheel(g, 0, -WZ, WR, TW, true, tireM, rimM, 26, 26), addWheel(g, 0, WZ, WR, TW, false, tireM, rimM, 26, 26)];
   return { g, wheels };
 }
 const SPEC_TUMBLER = { name: "Tumbler", wheels: [[-1.0, -1.75], [1.0, -1.75], [-0.95, 1.55], [0.95, 1.55]], wb: 3.3, track: 1.95, pts: [-1.45, 0, 1.45], R: 1.25, circR: 1.15, enter: 3.8,
