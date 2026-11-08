@@ -20,6 +20,7 @@ const ENG_PROFILES = {
   "Tumbler": { idle: 36, max: 118, gears: [0, 9, 18, 28, 40], wave: "sawtooth", sub: 0.5, cut0: 240, cut1: 1150, vol: 0.2, noise: 0.09 },
   "Rolls-Royce": { idle: 30, max: 92, gears: [0, 12, 24, 37, 52], wave: "triangle", sub: 0.5, cut0: 200, cut1: 650, vol: 0.13, noise: 0.045 },
   "Motorrad": { idle: 52, max: 235, gears: [0, 7, 14, 22, 32, 44, 60], wave: "sawtooth", sub: 2, cut0: 520, cut1: 2700, vol: 0.14, noise: 0.05 },
+  "Batpod": { idle: 40, max: 170, gears: [0, 8, 16, 25, 36, 50], wave: "sawtooth", sub: 1, cut0: 320, cut1: 1700, vol: 0.17, noise: 0.07 },   // tiefer, roher als das Motorrad
 };
 function engineNoise(ctx) {
   if (ENGINE.noiseBuf) return ENGINE.noiseBuf;

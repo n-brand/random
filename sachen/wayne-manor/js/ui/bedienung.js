@@ -94,7 +94,8 @@ addEventListener("keydown", e => {
   if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
   if (!walking) return;
   if (e.code === "Escape") return setWalk(false);
-  if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: E, Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
+  if (ghost && e.code === "KeyE" && !e.repeat) { const ag = findAimedGate(); if (ag && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 12) toggleGate(ag); return; }   // Geist: E schaltet Tore/Tueren/Hebebuehne
+  if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
   if (e.code === "KeyE" && !e.repeat) {
     if (useBoat() || useCar()) return;
     const ag = findAimedGate();

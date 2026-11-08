@@ -145,7 +145,7 @@ function carStep(dt) {
     C.v = Math.max(-8, C.v);
     // Sprung mit Schub (nur Tumbler: ohne Rampe)
     if (sp.jump && (player.jump || jumpHeld)) {
-      if (C.v >= 14 && !C.wet) { C.air = true; C.vy = 7.5; C.v += 6; C.jet = 0.9; toast("Sprung!"); engineJet(); }
+      if (C.v >= 14 && !C.wet) { C.air = true; C.vy = 7.5; C.v += C.jetM ? 6 : 3; C.jet = 0.9; toast("Sprung!"); if (C.jetM) engineJet(); }   // Batpod: Sprung ohne Duese/Schub
       else if (player.jump) carMsg("Für den Sprung schneller fahren (ab 50 km/h)");
     }
   }

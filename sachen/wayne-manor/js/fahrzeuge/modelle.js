@@ -129,6 +129,45 @@ function buildBike(col) {
   const wheels = [addWheel(g, 0, -0.72, 0.31, 0.12, true, tireM, rimM, 0, 20), addWheel(g, 0, 0.72, 0.32, 0.18, false, tireM, rimM, 0, 20)];
   return { g, wheels };
 }
+// ---- Batpod (Nicolas 2026-11-08, nach Foto): zwei gleich grosse, sehr breite Stollenraeder weit auseinander, Schwingen links und rechts
+// vom Rad (Nabenlenkung), langer flacher Rumpf, Fahrer liegt flach, Verkleidung steigt nach vorne an, schraege Panzerplatte ueber dem
+// Vorderrad, seitliche Kanonengehaeuse mit Rohren nach vorne, Sitz hinten, offene Mechanik. Ganz schwarz, keine Duesen.
+function buildBatpod() {
+  const g = new THREE.Group();
+  const body = M(0x111214, { metalness: 0.55, roughness: 0.38, flatShading: true }), matte = M(0x0a0b0c, { roughness: 0.85, flatShading: true });
+  const gun = M(0x1e2024, { metalness: 0.75, roughness: 0.3, flatShading: true }), seatM = M(0x070708, { roughness: 0.95 });
+  const tireM = M(0x0d0d0d, { roughness: 0.95, flatShading: true }), rimM = M(0x18191c, { metalness: 0.6, roughness: 0.4, flatShading: true });
+  const WZ = 1.18, WR = 0.48;                                                                // Radstand 2,36 m, Raeder r 0,48
+  prismIn(g, [[0.72, 0.3], [0.78, 0.72], [-0.6, 0.78], [-0.75, 0.5], [-0.55, 0.28]], 0.42, matte);                     // Motorblock / Unterbau
+  prismIn(g, [[0.78, 0.72], [0.98, 1.02], [0.72, 1.12], [0.1, 1.0], [-0.45, 0.94], [-0.62, 0.8], [-0.6, 0.76]], 0.48, body);   // Verkleidung, steigt nach vorne
+  prismIn(g, [[0.66, 1.12], [1.12, 1.1], [1.62, 1.0], [1.74, 0.9], [1.62, 0.92], [1.12, 1.02], [0.72, 1.04]], 0.62, body);    // Panzerplatte ueber dem Vorderrad
+  prismIn(g, [[-0.3, 0.9], [-0.92, 0.93], [-1.02, 1.02], [-0.98, 1.06], [-0.35, 0.99]], 0.34, seatM);                   // Sitz hinten
+  prismIn(g, [[-0.95, 0.92], [-1.25, 1.06], [-1.68, 1.02], [-1.74, 0.94], [-1.3, 0.98], [-0.95, 0.88]], 0.36, body);    // Heckhaube ueber dem Hinterrad
+  for (const sd of [-1, 1]) {
+    // Schwingen beidseits der Raeder (Nabenlenkung)
+    prismIn(g, [[0.35, 0.38], [0.45, 0.6], [WZ, 0.54], [WZ + 0.12, 0.46], [WZ, 0.38]], 0.07, gun, sd * 0.31);
+    prismIn(g, [[-0.35, 0.38], [-0.45, 0.62], [-WZ, 0.54], [-WZ - 0.12, 0.46], [-WZ, 0.38]], 0.07, gun, sd * 0.31);
+    meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.09, 12).rotateZ(Math.PI / 2), gun, sd * 0.31, WR, -WZ);          // Nabendeckel
+    meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.09, 12).rotateZ(Math.PI / 2), gun, sd * 0.31, WR, WZ);
+    // Kanonengehaeuse neben dem Vorderrad, Rohre nach vorne
+    prismIn(g, [[0.55, 0.6], [0.7, 0.86], [1.42, 0.82], [1.5, 0.66], [1.4, 0.56], [0.65, 0.54]], 0.13, gun, sd * 0.43);
+    for (const [dx, y, r, l] of [[0, 0.76, 0.035, 0.5], [0, 0.64, 0.03, 0.42], [sd * 0.05, 0.7, 0.025, 0.6]])
+      meshIn(g, new THREE.CylinderGeometry(r, r, l, 10).rotateX(Math.PI / 2), gun, sd * 0.43 + dx, y, -1.45 - l / 2 + 0.05);
+    // Griffe weit vorne (Fahrer liegt flach), Fussrasten hinten
+    boxIn(g, sd > 0 ? 0.26 : -0.44, sd > 0 ? 0.44 : -0.26, 1.0, 1.06, -0.98, -0.86, matte);
+    boxIn(g, sd > 0 ? 0.24 : -0.36, sd > 0 ? 0.36 : -0.24, 0.5, 0.54, 0.62, 0.78, gun);
+    // offene Mechanik: Leitungen und Federbein an der Seite
+    meshIn(g, new THREE.CylinderGeometry(0.018, 0.018, 1.2, 6).rotateX(Math.PI / 2 - 0.12), gun, sd * 0.23, 0.62, 0.0);
+    meshIn(g, new THREE.CylinderGeometry(0.014, 0.014, 0.9, 6).rotateX(Math.PI / 2 + 0.08), matte, sd * 0.25, 0.42, -0.1);
+    meshIn(g, new THREE.CylinderGeometry(0.045, 0.045, 0.42, 8).rotateX(0.9), gun, sd * 0.2, 0.62, 0.6);
+    boxIn(g, sd * 0.3 - 0.05, sd * 0.3 + 0.05, 0.92, 0.96, -1.74, -1.62, mat.glow);                                      // Scheinwerfer (schmal, unter der Platte)
+  }
+  boxIn(g, -0.12, 0.12, 0.95, 1.0, 1.73, 1.76, mat.glowRed);                                                            // Ruecklicht
+  meshIn(g, new THREE.CylinderGeometry(0.06, 0.06, 0.55, 10).rotateX(Math.PI / 2), gun, 0, 0.4, -0.95);                 // mittlerer Rohrstutzen unten
+  mergeStatic(g);
+  const wheels = [addWheel(g, 0, -WZ, WR, 0.5, true, tireM, rimM, 26, 26), addWheel(g, 0, WZ, WR, 0.5, false, tireM, rimM, 26, 26)];
+  return { g, wheels };
+}
 const SPEC_TUMBLER = { name: "Tumbler", wheels: [[-1.0, -1.75], [1.0, -1.75], [-0.95, 1.55], [0.95, 1.55]], wb: 3.3, track: 1.95, pts: [-1.45, 0, 1.45], R: 1.25, circR: 1.15, enter: 3.8,
   maxN: 24, maxF: 38, acc: 14, steer: 0.72, jump: true, camD: 8.5, camH: 1.3, seat: [0, 1.42, 0.2], bodyH: 1.9, bike: false,
   exits: [[-2.2, -0.3], [2.2, -0.3], [-2.4, 1.2], [2.4, 1.2], [0, -3.6], [0, 3.6]],
@@ -141,6 +180,10 @@ const SPEC_BIKE = { name: "Motorrad", wheels: [[0, -0.72], [0, 0.72]], wb: 1.44,
   maxN: 32, maxF: 52, acc: 13, steer: 0.6, jump: false, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.25], bodyH: 1.7, bike: true,
   exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.8], [0, 1.8]],
   msg: "Motorrad: W/S Gas/Bremse, A/D lenken, Shift schneller, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
+const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36, track: 0, pts: [-0.95, 0, 0.95], R: 0.5, circR: 0.5, enter: 2.8,
+  maxN: 34, maxF: 56, acc: 15, steer: 0.55, jump: true, camD: 6.5, camH: 1.0, seat: [0, 1.25, 0.15], bodyH: 1.4, bike: true,
+  exits: [[-1.1, 0], [1.1, 0], [-1.2, 0.8], [1.2, 0.8], [0, -2.5], [0, 2.5]],
+  msg: "Batpod: W/S Gas/Bremse, A/D lenken, Shift schneller, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
   const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
@@ -162,6 +205,8 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   });
   // Versteck hinter der getarnten Felswand (frueher Geheimgang zum Autoaufzug, Nicolas 2026-11-08): schwarzer Tumbler, Bug zur Felswand
   addVehicle(SPEC_TUMBLER, buildTumbler(0x0e0f12, 0x08090b), -47.5, 36.8, LY, 0, "Tumbler schwarz (Versteck hinter der Felswand)", 0x0e0f12);
+  // Batpod (schwarz) in der Batcave vor dem Batcomputer, Front nach Osten Richtung Hoehle
+  addVehicle(SPEC_BATPOD, buildBatpod(), -49.5, -13, LY, -Math.PI / 2, "Batpod (Batcave beim Batcomputer)", 0x111214);
   world.userData.vehicles = VEH;
   world.userData.car = { leave: () => VEH.forEach(v => v.leave()) };
 }

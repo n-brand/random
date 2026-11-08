@@ -6,7 +6,7 @@
 const gateRay = new THREE.Raycaster(), gateCenter = new THREE.Vector2(0, 0);
 let aimedGate = null, gateHintClock = 0;
 function findAimedGate() {
-  if (!walking || ghost) return null;
+  if (!walking) return null;                                                 // auch im Geistmodus (Nicolas 2026-11-08: Tueren und Hebebuehne bedienen)
   gateRay.setFromCamera(gateCenter, camera); gateRay.far = 60;
   const hit = gateRay.intersectObjects(gates.map(t => t.g), true)[0];
   return hit ? gates.find(t => { for (let o = hit.object; o; o = o.parent) if (o === t.g) return true; return false; }) : null;
