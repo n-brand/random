@@ -26,11 +26,11 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | Umschauen (Orbit) | Ziehen, Mausrad | Wischen, zwei Finger |
 | Rechtsklick (Orbit) | Menue an der Maus: Koordinaten kopieren oder hierhin teleportieren | |
 | Begehen | Knopf "Begehen", Linksklick faengt die Maus, WASD, Leertaste springt, Shift rennt | Joysticks, Sprung-Knopf |
-| Geist (fliegen) | Knopf "Geist", WASD waagrecht, Leertaste hoch, C (oder Strg) runter, Shift schneller | Joysticks, Sprung/Runter |
+| Geist (fliegen) | Knopf "Geist", WASD waagrecht, Leertaste hoch, C (oder Strg) runter, Shift schneller, E/Rechtsklick Tor/Tuer/Hebebuehne | Joysticks, Sprung/Runter |
 | Tore, Hebebuehne | Zielen, Rechtsklick oder E | Hinweis antippen |
 | Aufzuege | E; im Aufzug Tasten 1-5 oder Pfeile, Anzeige rechts | Anzeige antippen |
 | Boot | E einsteigen/aussteigen, W/S Gas, A/D lenken, Shift schneller | Joysticks |
-| Fahrzeuge (Tumbler, Rolls-Royce, Motorrad) | E ein/aus (naechstes Fahrzeug), W/S, A/D, Shift, Leertaste Sprung (nur Tumbler, ab 50 km/h), V Kamera, R zuruecksetzen, L Autoaufzug, 1-3 Halt, M Motorton an/aus | Joysticks, Sprung-Knopf |
+| Fahrzeuge (Tumbler, Rolls-Royce, Motorrad, Batpod) | E ein/aus (naechstes Fahrzeug), W/S, A/D, Shift, Leertaste Sprung (Tumbler und Batpod, ab 50 km/h), V Kamera, R zuruecksetzen, L Autoaufzug, 1-3 Halt, M Motorton an/aus | Joysticks, Sprung-Knopf |
 | Vollbild | Knopf "Vollbild" oder F; sperrt Strg+W (Chrome/Edge), Esc gedrueckt halten zum Verlassen | |
 | Karten | Knopf "Karte" blendet die Lageplaene ein | |
 | Von unten | Knopf "Von unten": Blick unter das Gelaende auf Garage und Hoehle | |
