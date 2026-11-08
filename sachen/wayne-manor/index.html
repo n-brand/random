@@ -485,14 +485,14 @@
     // Hoehe gleichmaessig nach Laenge (ca. 5-6 %). Kehren als Halbkreise (Radius 7 m). Das Gelaende wird an die Fahrbahn angeglichen (genH).
     const SERP_W = 7.5, SERP_TOP = HILL, SERP_FOOT = 1.5;
     const SERP = (() => {
-      const pts = [[15, 0], [21, 0], [27, -2], [30.5, -7], [31, -14], [31.8, -26], [31, -38]];
-      const kehre = (cx, cz, dir, from) => { for (let k = 1; k < 6; k++) { const a = Math.PI * k / 6; pts.push([cx - from * 7 * Math.cos(a), cz + dir * 7 * Math.sin(a)]); } };
+      // Nicolas 2026-11-08: Kehren waren mit r 7 m nur im Schritttempo fahrbar -> zwei Kehren mit r 11 m, laengere Abschnitte (ca. 5 %)
+      const pts = [[15, 0], [21, 0], [27, -2], [31.5, -8], [33, -16], [33.5, -28], [33, -40]];
+      const kehre = (cx, cz, dir, from, r = 11) => { for (let k = 1; k < 8; k++) { const a = Math.PI * k / 8; pts.push([cx - from * r * Math.cos(a), cz + dir * r * Math.sin(a)]); } };
       // Abschnitt zwischen zwei Kehren: an den Enden genau auf x0 (Anschluss an die Kehre), dazwischen sanft gebogen (Nicolas: "zu perfekt gerade")
       const leg = (x0, zA, zB, a1, a2) => { for (let k = 1; k <= 7; k++) { const u = k / 8; pts.push([x0 + a1 * Math.sin(Math.PI * u) + a2 * Math.sin(2 * Math.PI * u), lerp(zA, zB, u)]); } pts.push([x0, zB]); };
-      kehre(38, -38, -1, 1); pts.push([45, -38]); leg(45, -38, 50, 3.0, 1.2);
-      kehre(52, 50, 1, 1); pts.push([59, 50]); leg(59, 50, -32, 2.2, -1.0);
-      kehre(66, -32, -1, 1); pts.push([73, -32]); leg(73, -32, 44, 3.4, 0.9);
-      kehre(80, 44, 1, 1); pts.push([87, 44], [88.5, 31], [91.5, 18], [98, 8.5], [107, 2.6], [114, 1.6], [122, 1.5]);
+      kehre(44, -40, -1, 1); pts.push([55, -40]); leg(55, -40, 52, 3.0, 1.2);
+      kehre(66, 52, 1, 1); pts.push([77, 52]); leg(77, 52, 24, 1.5, 0.5);
+      pts.push([78.5, 14], [83, 7.5], [91, 3.6], [101, 2.2], [112, 1.7], [122, 1.5]);
       const curve = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
       const len = curve.getLength(), n = Math.ceil(len), samples = [];
       for (let i = 0; i <= n; i++) { const p = curve.getPointAt(i / n); samples.push([p.x, p.z, i / n * len]); }
@@ -2739,7 +2739,7 @@
       look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
       const fast = keys.has("ShiftLeft") || keys.has("ShiftRight"), max = C.wet ? 0.3 : fast ? sp.maxF : sp.maxN;   // im Wasser steckt man fest (R setzt zurueck)
       // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
-      const steerT = st * sp.steer / (1 + Math.abs(C.v) / 9);
+      const steerT = st * sp.steer / (1 + Math.abs(C.v) / 14);   // bei Tempo etwas williger (Serpentine r 11 mit ca. 40 km/h)
       C.steer += (steerT - C.steer) * Math.min(1, dt * 8);
       if (!C.air) {
         const dh = C.v * Math.tan(C.steer) / sp.wb * dt;
