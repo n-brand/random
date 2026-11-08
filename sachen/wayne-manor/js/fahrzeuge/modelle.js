@@ -37,12 +37,21 @@ function mergeStatic(g) {
   g.clear(); for (const o of keep) g.add(o);
   for (const [m, list] of byMat) { const mm = new THREE.Mesh(mergeGeometries(list, false), m); mm.castShadow = true; mm.receiveShadow = true; g.add(mm); }
 }
+// Reifen mit runden Schultern (Nicolas 2026-11-08: "von vorne runder", gilt fuer alle und kuenftige Fahrzeuge): Profil (Radius, Achse)
+// von der Flanke (0,6 r) ueber eine Viertelkreis-Schulter zur Laufflaeche und zurueck, um die Achse gedreht. Achse entlang x.
+function roundTireGeo(r, w, seg = 24) {
+  const sh = Math.min(w * 0.3, r * 0.3), hw = w / 2, prof = [new THREE.Vector2(r * 0.6, -hw + 0.01)];
+  for (let k = 0; k <= 6; k++) { const a = k / 6 * Math.PI / 2; prof.push(new THREE.Vector2(r - sh + sh * Math.sin(a), -hw + sh - sh * Math.cos(a))); }
+  for (let k = 0; k <= 6; k++) { const a = k / 6 * Math.PI / 2; prof.push(new THREE.Vector2(r - sh + sh * Math.cos(a), hw - sh + sh * Math.sin(a))); }
+  prof.push(new THREE.Vector2(r * 0.6, hw - 0.01));
+  return new THREE.LatheGeometry(prof, Math.max(16, seg)).rotateZ(Math.PI / 2);
+}
 // Rad: Reifen (+ Stollen) als ein Netz, Felge extra; piv lenkt (Vorderrad), spin dreht
 function addWheel(g, x, z, r, w, front, tireM, rimM, lugs = 0, seg = 16) {
   const piv = new THREE.Group(); piv.position.set(x, r, z); g.add(piv);
   const spin = new THREE.Group(); piv.add(spin);
-  const parts = [new THREE.CylinderGeometry(r, r, w, seg).rotateZ(Math.PI / 2).toNonIndexed()];
-  for (let k = 0; k < lugs; k++) { const a = k / lugs * Math.PI * 2, b = new THREE.BoxGeometry(w + 0.04, 0.07, r * 0.25).rotateX(-a).translate(0, Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97).toNonIndexed(); parts.push(b); }
+  const parts = [roundTireGeo(r, w, seg).toNonIndexed()];
+  for (let k = 0; k < lugs; k++) { const a = k / lugs * Math.PI * 2, b = new THREE.BoxGeometry(w * 0.82, 0.07, r * 0.25).rotateX(-a).translate(0, Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97).toNonIndexed(); parts.push(b); }   // Stollen nur auf der Laufflaeche
   for (const p of parts) { for (const k of Object.keys(p.attributes)) if (!["position", "normal", "uv"].includes(k)) p.deleteAttribute(k); p.clearGroups(); }
   const t = new THREE.Mesh(mergeGeometries(parts, false), tireM); t.castShadow = true; spin.add(t);
   spin.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.62, w + 0.02, 8).rotateZ(Math.PI / 2), rimM));
@@ -182,17 +191,12 @@ function buildBatpod() {
     tube([sd * 0.16, 0.48, 0.3], [sd * 0.2, 0.72, 0.56], 0.04, gun);
   }
   mergeStatic(g);
-  const wheels = [addWheel(g, 0, -WZ, WR, TW, true, tireM, rimM, 0, 26), addWheel(g, 0, WZ, WR, TW, false, tireM, rimM, 0, 26)];
-  // Ballonreifen (Nicolas, Frontfoto): runde Schultern statt Walze, feines Blockprofil als Textur. Profil (Radius, Achse) gedreht um die Achse.
-  const prof = [], sh = 0.15, hw = TW / 2;
-  prof.push(new THREE.Vector2(WR * 0.55, -hw + 0.02));
-  for (let k = 0; k <= 8; k++) prof.push(new THREE.Vector2(WR - sh + sh * Math.sin(k / 8 * Math.PI / 2), -hw + sh - Math.cos(k / 8 * Math.PI / 2) * sh));
-  for (let k = 0; k <= 8; k++) prof.push(new THREE.Vector2(WR - sh + sh * Math.cos(k / 8 * Math.PI / 2), hw - sh + Math.sin(k / 8 * Math.PI / 2) * sh));
-  prof.push(new THREE.Vector2(WR * 0.55, hw - 0.02));
+  // Ballonreifen (runde Schultern kommen aus addWheel) mit feinem Blockprofil als Textur (Nicolas, Frontfoto); Felge kleiner, sitzt im Innern
+  const wheels = [addWheel(g, 0, -WZ, WR, TW, true, tireM, rimM, 0, 40), addWheel(g, 0, WZ, WR, TW, false, tireM, rimM, 0, 40)];
   const tread = canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#1a1a1a"; c.fillRect(0, 0, w, h); c.fillStyle = "#0a0a0a"; for (let k = 0; k < 4; k++) { c.fillRect(k * 16, 0, 2, h); c.fillRect(0, k * 16, w, 2); } });
   tread.repeat.set(44, 6);
-  const balloon = new THREE.LatheGeometry(prof, 40).rotateZ(Math.PI / 2), balloonM = M(0x8a8a8a, { map: tread, roughness: 0.9 });
-  for (const wh of wheels) { const [tire, rim] = wh.spin.children; tire.geometry.dispose(); tire.geometry = balloon; tire.material = balloonM; rim.scale.set(0.85, 0.75, 0.75); }
+  const balloonM = M(0x8a8a8a, { map: tread, roughness: 0.9 });
+  for (const wh of wheels) { const [tire, rim] = wh.spin.children; tire.material = balloonM; rim.scale.set(0.85, 0.75, 0.75); }
   return { g, wheels };
 }
 const SPEC_TUMBLER = { name: "Tumbler", wheels: [[-1.0, -1.75], [1.0, -1.75], [-0.95, 1.55], [0.95, 1.55]], wb: 3.3, track: 1.95, pts: [-1.45, 0, 1.45], R: 1.25, circR: 1.15, enter: 3.8,
