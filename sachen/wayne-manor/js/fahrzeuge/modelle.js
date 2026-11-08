@@ -173,9 +173,10 @@ function buildBatpod() {
       const e = 0.14 / l; tube([q[0] - (q[0] - p[0]) * e, q[1] - (q[1] - p[1]) * e, q[2] - (q[2] - p[2]) * e], [q[0] + (q[0] - p[0]) * e * 0.3, q[1] + (q[1] - p[1]) * e * 0.3, q[2] + (q[2] - p[2]) * e * 0.3], r * 1.7, gun, 10);   // Muendung
     }
     boxIn(g, GX - 0.05, GX + 0.05, 0.62, 0.66, -1.62, -1.59, mat.glow);                                                   // Scheinwerfer vorne am Gehaeuse
-    // Griffe weit vorne (Fahrer liegt flach), Spiegel auf Stielen nach oben-aussen
-    boxIn(g, sd > 0 ? 0.2 : -0.38, sd > 0 ? 0.38 : -0.2, 1.0, 1.06, -0.98, -0.86, matte);
-    tube([sd * 0.32, 1.04, -0.92], [sd * 0.42, 1.28, -0.98], 0.015, gun); boxIn(g, sd * 0.42 - 0.08, sd * 0.42 + 0.08, 1.24, 1.38, -1.0, -0.96, matte);
+    // Griffe (Nicolas, Foto; keine Rueckspiegel): kurzer Ausleger vorne seitlich an der Verkleidung, Griff steht schraeg nach oben, Hebel davor
+    tube([sd * 0.16, 0.98, -0.86], [sd * 0.32, 0.98, -0.9], 0.025, gun);
+    tube([sd * 0.32, 0.94, -0.9], [sd * 0.37, 1.16, -0.84], 0.035, matte, 10);
+    tube([sd * 0.34, 1.1, -0.9], [sd * 0.4, 1.0, -1.02], 0.008, gun);
     // offene Mechanik: Leitungen und Federbein an der Seite (bleiben vor dem Hinterrad)
     path([[sd * 0.18, 0.62, -0.5], [sd * 0.22, 0.55, -0.05], [sd * 0.2, 0.5, 0.4]], 0.016, matte);
     tube([sd * 0.16, 0.48, 0.3], [sd * 0.2, 0.72, 0.56], 0.04, gun);
