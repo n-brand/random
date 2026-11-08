@@ -65,10 +65,10 @@
   <script type="module">
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-    import { installOrbitPick } from "../../shared/orbit-pick.js";
+    import { installOrbitPick, PICK_ICONS } from "../../shared/orbit-pick.js";
     import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
     // Die Seite ist in klassische Skripte unter js/ aufgeteilt (gleicher globaler Bereich, Reihenfolge wie hier). Sie brauchen THREE und die Helfer global.
-    Object.assign(window, { THREE, OrbitControls, installOrbitPick, mergeGeometries, mergeVertices });
+    Object.assign(window, { THREE, OrbitControls, installOrbitPick, PICK_ICONS, mergeGeometries, mergeVertices });
     const FILES = [
       "kern/basis.js",
       "gelaende/karte-kueste.js",
@@ -81,6 +81,7 @@
       "ui/karten-overlay.js",
       "aussen/aussenanlage.js",
       "hoehle/hoehle-unten.js",
+      "hoehle/batcave-ausbau.js",
       "hoehle/hoehle-oben.js",
       "kern/tag-nacht.js",
       "spieler/laufen.js",

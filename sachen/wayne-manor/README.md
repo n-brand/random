@@ -24,6 +24,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | Was | PC | Handy |
 | --- | --- | --- |
 | Umschauen (Orbit) | Ziehen, Mausrad | Wischen, zwei Finger |
+| Rechtsklick (Orbit) | Menue an der Maus: Koordinaten kopieren oder hierhin teleportieren | |
 | Begehen | Knopf "Begehen", Linksklick faengt die Maus, WASD, Leertaste springt, Shift rennt | Joysticks, Sprung-Knopf |
 | Geist (fliegen) | Knopf "Geist", WASD waagrecht, Leertaste hoch, C (oder Strg) runter, Shift schneller | Joysticks, Sprung/Runter |
 | Tore, Hebebuehne | Zielen, Rechtsklick oder E | Hinweis antippen |

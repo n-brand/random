@@ -11,14 +11,14 @@
   // Schachtwaende (Oeffnungen an den Halten), Dach im Hof als geschlossene Steinflaeche
   wall("x", CSH_OUT.x0, CSH_OUT.x1, CSH.z0 - 0.15, LY - 0.3, top, [], concrete, 0.3);
   wall("x", CSH_OUT.x0, CSH_OUT.x1, CSH.z1 + 0.15, LY - 0.3, top, [], concrete, 0.3);
-  wall("z", CSH.z0, CSH.z1, CSH.x0 - 0.15, LY - 0.3, top, [[CSH.z0, CSH.z1, HF_Y, HF_Y + 4.0], [CSH.z0, CSH.z1, LY, LY + 4.0]], concrete, 0.3);
+  wall("z", CSH.z0, CSH.z1, CSH.x0 - 0.15, LY - 0.3, top, [[CSH.z0, CSH.z1, HF_Y, HF_Y + 4.0]], concrete, 0.3);   // Batcave: Westtor entfernt (Nicolas), dahinter das Versteck
   wall("z", CSH.z0, CSH.z1, CSH.x1 + 0.12, LY - 0.3, top, [[CSH.z0, CSH.z1, GY + HILL, GY + HILL + 3.6], [CSH.z0, CSH.z1, LY, LY + 4.0]], concrete, 0.24);   // E5: auch unten nach Osten offen
   B(CSH_OUT.x0 - 0.2, CSH_OUT.x1 + 0.2, top, HILL + 0.14, CSH_OUT.z0 - 0.2, CSH_OUT.z1 + 0.2, roofM);
   for (const y of [HF_Y, GY + HILL, LY]) B(CSH.x0 + 0.3, CSH.x1 - 0.3, y + 4.3, y + 4.38, cz - 0.15, cz + 0.15, mat.glow, false, world, false);
-  // E5: Batcave hat zwei Tore (West = Geheimgang, Ost = Hoehlentunnel Richtung Gotham). Die Plattform dreht sich nicht (Nicolas);
-  // wer von der Garage kommt, faehrt unten rueckwaerts zum Osttor hinaus oder vorwaerts durchs Westtor.
+  // E5: Batcave-Tor nach Osten zum Hoehlentunnel. Die Plattform dreht sich nicht (Nicolas); wer von der Garage kommt, faehrt unten rueckwaerts hinaus.
+  // Das fruehere Westtor (Geheimgang) ist zu; der Raum dahinter ist ein Versteck mit einem schwarzen Tumbler hinter der getarnten Felswand.
   // Plattform (faehrt), gelb-schwarze Kanten, Gelaender an den Laengsseiten
-  const stops = [{ name: "Garage", y: GY + HILL, side: 1, sides: [1] }, { name: "Hangfuss (Felstor)", y: HF_Y, side: -1, sides: [-1] }, { name: "Batcave (Tunnel / Auto Repair)", y: LY, side: 1, sides: [-1, 1] }];
+  const stops = [{ name: "Garage", y: GY + HILL, side: 1, sides: [1] }, { name: "Hangfuss (Felstor)", y: HF_Y, side: -1, sides: [-1] }, { name: "Batcave (Tunnel)", y: LY, side: 1, sides: [1] }];
   const L = { y: stops[0].y, at: 0, target: 0, state: "idle", t: 0, from: stops[0].y, to: stops[0].y, open: stops.map((_, i) => i === 0 ? 1 : 0), rot: 0, rotFrom: 0, rotTo: 0 };
   const plat = new THREE.Group(); plat.position.set(cx, L.y, cz); plat.userData.dynamic = true; world.add(plat);
   const hx = (CSH.x1 - CSH.x0) / 2 - 0.06, hz = (CSH.z1 - CSH.z0) / 2 - 0.06;

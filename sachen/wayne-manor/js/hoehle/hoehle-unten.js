@@ -40,11 +40,15 @@ function caveCell(x, z) {
   const [px, py] = toCave(x, z);
   if (px < 0 || px > 736 || py > 1042) return 0;
   if (inPoly(LOW_FLOOR, px, py)) return 1;                                   // B4: alte Anlegestelle (LOW_DOCK) entfernt
+  if (plDist(TUN_PX, px, py) < 4.1 / CAVE_SC) return 1;                      // Kiesstrasse ganz auf Boden (am See hing sie ueber dem Wasser, man fiel durch)
+  if (x > -28 && x < -19.5 && z > 29 && z < 50) return 1;                    // vor dem Autoaufzug breiter (Nicolas: leichter einbiegen)
   if (px > 255 && px < 372 && py > 470 && py < 500) return 2;                // B4: Wasser bis an den Tunnelrand (Weg und Treppen stehen darin)
   if (inPoly(LAKE_PX, px, py)) return 2;                                     // B3: Hoehlensee
   for (const c of CHANNELS) if (plDist(c.pts, px, py) < c.w / 2) return 2;
   if (plDist(TUN_PX, px, py) < 4.3 / CAVE_SC) return 1;                      // Hoehlentunnel breiter (Kiesstrasse 7,5 m)
   if (x > -27.6 && x < -12 && z > 40.5 && z < 70) return 1;               // Wendeplatz (Nicolas, 2026-11-08): Felswand zwischen Gotham-Tunnel und See weg
+  if (x > -16.5 && x < 6.5 && z > -21 && z < 6) return 2;                    // Felsblock oestlich vom Wasserband weg, der See geht dort weiter (Nicolas)
+  if ((x > -64 && x < -47 && z > -24 && z < 11) || (x > -49 && x < -24 && z > -29 && z < -17) || (x > -49 && x < -35 && z > -17.5 && z < -10.5)) return 1;   // Batcave-Ausbau West und Nord (batcave-ausbau.js)
   return 0;
 }
 const CELL = 0.6, CX0 = -62, CZ0 = -38, CNX = Math.ceil(196 / CELL), CNZ = Math.ceil(175 / CELL), CM = new Uint8Array(CNX * CNZ);
@@ -56,7 +60,7 @@ function caveAt(x, z) { return cmAt(Math.floor((x - CX0) / CELL), Math.floor((z 
   const stoneM = M(0x7a756c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 0.95 });
   for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
     const x = CX0 + (i + 0.5) * CELL, z = CZ0 + (j + 0.5) * CELL;
-    if (x < -28 || x > -12 || z < 29 || z > 70 || cmAt(i, j) !== 1) continue;   // Wendeplatz und Tunnel entlang des Sees
+    if (x < -28 || x > -12 || z < 2 || z > 70 || (z > 14 && z < 22.5) || cmAt(i, j) !== 1) continue;   // Luecke beim Steinweg zu Treppe und Steg   // Wendeplatz und Tunnel entlang des Sees
     if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => cmAt(i + a, j + b) === 2)) continue;
     B(x - CELL / 2, x + CELL / 2, LY - 0.4, LY + 0.72 + 0.22 * vnoise(x * 0.9, z * 0.9), z - CELL / 2, z + CELL / 2, stoneM);
   }
@@ -142,7 +146,7 @@ const caveLights = [], gates = [];
   };
   sign("GOTHAM EXIT", "↓", 6, 453, Math.PI); sign("WATERFALL EXIT " + Math.round(WFT.sP / 10) * 10 + " m", "↑", 730, 482, 0);
   // Drehende Tiefgarage: Scheibe mit 6 Feldern, dreht langsam (vier fahrbare Tumbler darauf, siehe Fahrzeuge)
-  const [rx, rz] = C(385, 417), rr = 60 * CAVE_SC;
+  const [rx, rz] = [-44, 12.5], rr = 60 * CAVE_SC;                          // Nicolas: 9 m nach Westen, ragte in die Kiesstrasse
   const turn = new THREE.Group(); turn.position.set(rx, LY, rz); turn.userData.dynamic = true; world.add(turn);
   { const disc = new THREE.Mesh(new THREE.CylinderGeometry(rr, rr, 0.12, 48), M(0x2e3036, { metalness: 0.5, roughness: 0.4 })); disc.position.y = 0.06; turn.add(disc);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.12, 6, 64).rotateX(Math.PI / 2), mat.gold); ring.position.y = 0.1; turn.add(ring);

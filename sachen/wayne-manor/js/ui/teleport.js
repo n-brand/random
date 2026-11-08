@@ -2,6 +2,15 @@
 // Teil der Seite sachen/wayne-manor/ (klassisches Skript, Reihenfolge in index.html; gemeinsame Namen ueber den globalen Bereich)
 "use strict";
 
+// Orbit-Rechtsklick -> "Hierhin teleportieren" (Nicolas 2026-11-08): Begehen am getroffenen Punkt, Blick in die bisherige Kamerarichtung
+function teleportToPoint(p) {
+  if (belowView) $("btn-below").click();
+  const dir = controls.target.clone().sub(camera.position);
+  startWalk(p.x, p.z, Math.atan2(-dir.x, -dir.z));
+  player.pos.set(p.x, p.y + 0.3, p.z); player.pos.y = supportAt(player.pos, p.y + 0.3); player.vy = 0;
+  updatePlayer(0.001, 0, 0, false);
+  toast("Teleport hierhin");
+}
 // TEST: Teleport-Ziele zum Testen (wird ganz am Ende entfernt). [Name, x, y, z, Blickrichtung]
 {
   const cm = (px, py) => caveMp(px, py), W = Math.PI / 2, E = -Math.PI / 2, N = 0, S = Math.PI;
@@ -10,7 +19,7 @@
     ["Dach / 2. OG", -45, TF, SHAFT.cz, E], ["Theater", -44, TF, 10, N], ["Observatorium", -40, TF2, 0, N], ["Landeplatz", -18, HP, 42, W],
     ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
     ["Tiefgarage", -28, GY, 32.7, E],
-    ["Höhle unten: Drehplattform", ...(([x, z]) => [x - 10, LY, z])(cm(385, 417)), E], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
+    ["Höhle unten: Drehplattform", -32, LY, 12.5, W], ["Höhle unten: Batcomputer", -50, LY, -6, W], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
     ["Höhle unten: Anlegestelle (Weg)", ...(([x, z]) => [x, LY, z])(cm(340, 485)), E], ["Höhle unten: Steg", ...(([x, z]) => [x, SEA_Y + 0.5, z])(cm(300, 507)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
     ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
     ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],

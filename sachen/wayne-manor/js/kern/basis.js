@@ -28,7 +28,7 @@ const HILL = 25;
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.6, 3000);
 camera.position.set(95, 75 + HILL, 60);
 const controls = new OrbitControls(camera, renderer.domElement);
-installOrbitPick({ renderer, camera, controls, scene });   // Rechtsklick in der Orbit-Ansicht: Koordinaten in die Zwischenablage
+installOrbitPick({ renderer, camera, controls, scene, actions: [{ icon: PICK_ICONS.pin, label: "Hierhin teleportieren", run: p => teleportToPoint(p) }] });   // Rechtsklick in der Orbit-Ansicht: Menue (Koordinaten kopieren, hierhin teleportieren)
 controls.target.set(-25, HILL, 10);
 controls.enableDamping = true;
 controls.minDistance = 4;

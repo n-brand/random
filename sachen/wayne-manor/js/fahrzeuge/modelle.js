@@ -158,8 +158,10 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   const tt = world.userData.turntable, rr = 60 * CAVE_SC;
   [[0, 0x16181b, 0x0d0e10, "schwarz"], [1, 0x3a3f45, 0x24282c, "gunmetal"], [3, 0x3b4a2f, 0x283222, "oliv"], [4, 0x6b5d45, 0x4a402f, "sand"]].forEach(([k, b, a, nm]) => {
     const ang = (k + 0.5) / 6 * Math.PI * 2;
-    addVehicle(SPEC_TUMBLER, buildTumbler(b, a), tt.position.x + Math.cos(ang) * rr * 0.55, tt.position.z + Math.sin(ang) * rr * 0.55, LY, -ang + Math.PI / 2, "Tumbler " + nm + " (Batcave Drehscheibe)", b);
+    addVehicle(SPEC_TUMBLER, buildTumbler(b, a), tt.position.x + Math.cos(ang) * rr * 0.55, tt.position.z + Math.sin(ang) * rr * 0.55, LY, Math.atan2(-Math.cos(ang), -Math.sin(ang)), "Tumbler " + nm + " (Batcave Drehscheibe)", b);
   });
+  // Versteck hinter der getarnten Felswand (frueher Geheimgang zum Autoaufzug, Nicolas 2026-11-08): schwarzer Tumbler, Bug zur Felswand
+  addVehicle(SPEC_TUMBLER, buildTumbler(0x0e0f12, 0x08090b), -47.5, 36.8, LY, 0, "Tumbler schwarz (Versteck hinter der Felswand)", 0x0e0f12);
   world.userData.vehicles = VEH;
   world.userData.car = { leave: () => VEH.forEach(v => v.leave()) };
 }
