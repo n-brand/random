@@ -29,7 +29,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | Tore, Hebebuehne | Zielen, Rechtsklick oder E | Hinweis antippen |
 | Aufzuege | E; im Aufzug Tasten 1-5 oder Pfeile, Anzeige rechts | Anzeige antippen |
 | Boot | E einsteigen/aussteigen, W/S Gas, A/D lenken, Shift schneller | Joysticks |
-| Fahrzeuge (Tumbler, Rolls-Royce, Motorrad) | E ein/aus (naechstes Fahrzeug), W/S, A/D, Shift, Leertaste Sprung (nur Tumbler, ab 50 km/h), V Kamera, R zuruecksetzen, L Autoaufzug, 1-3 Halt | Joysticks, Sprung-Knopf |
+| Fahrzeuge (Tumbler, Rolls-Royce, Motorrad) | E ein/aus (naechstes Fahrzeug), W/S, A/D, Shift, Leertaste Sprung (nur Tumbler, ab 50 km/h), V Kamera, R zuruecksetzen, L Autoaufzug, 1-3 Halt, M Motorton an/aus | Joysticks, Sprung-Knopf |
 | Karten | Knopf "Karte" blendet die Lageplaene ein | |
 | Von unten | Knopf "Von unten": Blick unter das Gelaende auf Garage und Hoehle | |
 
