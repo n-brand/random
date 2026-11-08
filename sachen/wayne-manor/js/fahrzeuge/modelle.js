@@ -4,7 +4,7 @@
 
 // ===================== Fahrzeuge (D1, erweitert 2026-11-08) =====================
 // Mehrere fahrbare Fahrzeuge mit gemeinsamer Steuerung: Tumbler (Garage-Platz 1, mit Sprung), Rolls-Royce (Plaetze 3, 4, 6, 7, 9, je eigene
-// Farbe), Motorrad (Platz 2), vier Tumbler auf der drehenden Tiefgarage in der Batcave (drehen mit, auch beim Fahren).
+// Farbe), schwarzer Tumbler und Motorrad auf der drehenden Tiefgarage in der Batcave (drehen mit, auch beim Fahren), Batpod beim Batcomputer.
 // E in der Naehe = ins naechste Fahrzeug einsteigen, im Fahrzeug E = aussteigen. W/S Gas/Bremse (rueckwaerts), A/D lenken, Shift schneller,
 // Leertaste = Sprung mit Schub (nur Tumbler, ab 50 km/h), V = Kamera hinten/Fahrersicht, R = zuruecksetzen, L = Autoaufzug rufen/fahren,
 // 1-3 = Halt im Autoaufzug. Kollision wie beim Laufen (Quader, Kreise, Tore, Leitplanken), Kreise fuer die Karosserie (je Fahrzeug).
@@ -194,15 +194,13 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
 {
   const bays = world.userData.bays, gy = GY + HILL;
   CAR = addVehicle(SPEC_TUMBLER, buildTumbler(0x16181b, 0x0d0e10), bays[1].x, bays[1].z, gy, Math.PI, "Tumbler schwarz (Garage Platz 1)", 0x16181b);
-  addVehicle(SPEC_BIKE, buildBike(0xb0141e), bays[2].x, bays[2].z, gy, Math.PI, "Motorrad rot (Garage Platz 2)", 0xb0141e);
   for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
-  // Drehende Tiefgarage (Batcave): vier Tumbler in dunklen Farben auf den Feldern 0, 1, 3, 4
-  const tt = world.userData.turntable, rr = 60 * CAVE_SC;
-  [[0, 0x16181b, 0x0d0e10, "schwarz"], [1, 0x3a3f45, 0x24282c, "gunmetal"], [3, 0x3b4a2f, 0x283222, "oliv"], [4, 0x6b5d45, 0x4a402f, "sand"]].forEach(([k, b, a, nm]) => {
-    const ang = (k + 0.5) / 6 * Math.PI * 2;
-    addVehicle(SPEC_TUMBLER, buildTumbler(b, a), tt.position.x + Math.cos(ang) * rr * 0.55, tt.position.z + Math.sin(ang) * rr * 0.55, LY, Math.atan2(-Math.cos(ang), -Math.sin(ang)), "Tumbler " + nm + " (Batcave Drehscheibe)", b);
-  });
+  // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
+  // gegenueber auf den Feldern 0 und 3, beide schauen nach aussen; die farbigen Tumbler sind weg
+  const tt = world.userData.turntable, rr = 60 * CAVE_SC, ttPos = k => { const ang = (k + 0.5) / 6 * Math.PI * 2; return [tt.position.x + Math.cos(ang) * rr * 0.55, tt.position.z + Math.sin(ang) * rr * 0.55, Math.atan2(-Math.cos(ang), -Math.sin(ang))]; };
+  { const [x, z, h] = ttPos(0); addVehicle(SPEC_TUMBLER, buildTumbler(0x16181b, 0x0d0e10), x, z, LY, h, "Tumbler schwarz (Batcave Drehscheibe)", 0x16181b); }
+  { const [x, z, h] = ttPos(3); addVehicle(SPEC_BIKE, buildBike(0xb0141e), x, z, LY, h, "Motorrad rot (Batcave Drehscheibe)", 0xb0141e); }
   // Versteck hinter der getarnten Felswand (frueher Geheimgang zum Autoaufzug, Nicolas 2026-11-08): schwarzer Tumbler, Bug zur Felswand
   addVehicle(SPEC_TUMBLER, buildTumbler(0x0e0f12, 0x08090b), -47.5, 36.8, LY, 0, "Tumbler schwarz (Versteck hinter der Felswand)", 0x0e0f12);
   // Batpod (schwarz) in der Batcave vor dem Batcomputer, Front nach Osten Richtung Hoehle

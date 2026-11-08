@@ -19,7 +19,7 @@ function teleportToPoint(p) {
     ["Dach / 2. OG", -45, TF, SHAFT.cz, E], ["Theater", -44, TF, 10, N], ["Observatorium", -40, TF2, 0, N], ["Landeplatz", -18, HP, 42, W],
     ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
     ["Tiefgarage", -28, GY, 32.7, E],
-    ["Höhle unten: Drehplattform", -32, LY, 12.5, W], ["Höhle unten: Batcomputer", -50, LY, -6, W], ["Höhle unten: Medical Bay", ...(([x, z]) => [x, LY, z])(cm(515, 410)), W],
+    ["Höhle unten: Drehplattform", -32, LY, 12.5, W], ["Höhle unten: Batcomputer", -50, LY, -6, W],
     ["Höhle unten: Anlegestelle (Weg)", ...(([x, z]) => [x, LY, z])(cm(340, 485)), E], ["Höhle unten: Steg", ...(([x, z]) => [x, SEA_Y + 0.5, z])(cm(300, 507)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
     ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
     ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],

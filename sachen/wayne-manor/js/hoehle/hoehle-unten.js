@@ -48,6 +48,7 @@ function caveCell(x, z) {
   if (plDist(TUN_PX, px, py) < 4.3 / CAVE_SC) return 1;                      // Hoehlentunnel breiter (Kiesstrasse 7,5 m)
   if (x > -27.6 && x < -12 && z > 40.5 && z < 70) return 1;               // Wendeplatz (Nicolas, 2026-11-08): Felswand zwischen Gotham-Tunnel und See weg
   if (x > -16.5 && x < 6.5 && z > -21 && z < 6) return 2;                    // Felsblock oestlich vom Wasserband weg, der See geht dort weiter (Nicolas)
+  if (x > -26 && x < -24 && z > 7 && z < 15) return 2;                       // schmaler Felsstreifen zwischen Boden und See weg (stand wie eine Wand bis zur Decke, Nicolas)
   if ((x > -64 && x < -47 && z > -24 && z < 11) || (x > -49 && x < -24 && z > -29 && z < -17) || (x > -49 && x < -35 && z > -17.5 && z < -10.5)) return 1;   // Batcave-Ausbau West und Nord (batcave-ausbau.js)
   return 0;
 }
@@ -80,6 +81,8 @@ const caveLights = [], gates = [];
   const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
   const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.25, z * 0.25];
   const corner = (i, j) => jit(CX0 + i * CELL, CZ0 + j * CELL);
+  const undercut = x => x < -26.6 || x > -18.8 ? 0 : 3.6 * Math.sin(Math.PI * (x + 26.6) / 7.8) ** 0.7;   // Ueberhang-Tiefe unten
+  const isUC = (i, j) => { const x = CX0 + (i + 0.5) * CELL, z = CZ0 + (j + 0.5) * CELL; return cmAt(i, j) === 1 && cmAt(i, j - 1) === 2 && z > 28.5 && z < 30 && undercut(x) > 0; };
   for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
     const t = CM[j * CNX + i];
     if (!t || t === 3) continue;
@@ -94,6 +97,19 @@ const caveLights = [], gates = [];
     for (const [di, dj, a, b] of [[-1, 0, 3, 0], [1, 0, 1, 2], [0, -1, 0, 1], [0, 1, 2, 3]]) {
       const nt = cmAt(i + di, j + dj), [ax, az] = c[a], [bx, bz] = c[b];
       if (nt === 0) push(G.rock, [[ax, fy, az], [bx, fy, bz], [bx, ceilY(bx, bz), bz], [ax, ceilY(ax, az), az]], uvWall);
+      else if (dj === -1 && isUC(i, j)) {
+        // Nicolas 2026-11-08: Wendeplatz-Kante ueber dem Steg geht nach unten schraeg und unregelmaessig in den Fels zurueck (vorher senkrecht, dicht am Steg)
+        // An den Enden (Nachbarzelle ohne Ueberhang) ist die Tiefe 0, damit die Flaeche dicht an die senkrechten Kanten anschliesst
+        const eA = isUC(i - 1, j) ? 1 : 0, eB = isUC(i + 1, j) ? 1 : 0, lv = [0, 0.3, 0.55, 0.8, 1];
+        const dp = (x, f) => (x === ax ? eA : eB) * undercut(x) * f ** 0.8 * (f > 0 ? 0.8 + 0.4 * vnoise(x * 0.7 + f * 5, 3.1) : 1);
+        for (let k = 0; k < 4; k++) {
+          const f0 = lv[k], f1 = lv[k + 1], y0 = LY - (LY - BED) * f0, y1 = LY - (LY - BED) * f1;
+          push(G.rock, [[ax, y1, az + dp(ax, f1)], [bx, y1, bz + dp(bx, f1)], [bx, y0, bz + dp(bx, f0)], [ax, y0, az + dp(ax, f0)]], uvWall);
+        }
+        const fw = (LY - WL) / (LY - BED);                                    // Wasser und Grund unter dem Ueberhang
+        push(G.water, [[ax, WL, az], [bx, WL, bz], [bx, WL, bz + dp(bx, fw) + 0.3], [ax, WL, az + dp(ax, fw) + 0.3]], uvFlat);
+        push(G.bed, [[ax, BED, az], [bx, BED, bz], [bx, BED, bz + dp(bx, 1) + 0.3], [ax, BED, az + dp(ax, 1) + 0.3]], uvFlat);
+      }
       else if (t === 1 && nt === 2) push(G.rock, [[ax, BED, az], [bx, BED, bz], [bx, LY, bz], [ax, LY, az]], uvWall);
     }
   }
@@ -153,16 +169,8 @@ const caveLights = [], gates = [];
     for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, l = new THREE.Mesh(new THREE.BoxGeometry(rr, 0.02, 0.08), M(0xd9c27a)); l.position.set(Math.cos(a) * rr / 2, 0.13, Math.sin(a) * rr / 2); l.rotation.y = -a; turn.add(l); }
   }
   world.userData.turntable = turn;
-  // Medical Bay (tuerkis): Boden getoent, OR/ICU als Glasraum, vier Betten
-  const tint = (pxs, color) => { const sh = new THREE.Shape(); pxs.forEach(([px, py], k) => { const [x, z] = C(px, py); if (k) sh.lineTo(x, -z); else sh.moveTo(x, -z); }); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), flatMat({ color, transparent: true, opacity: 0.35 })); m.position.y = LY + 0.02; m.userData.keep = true; world.add(m); };
-  tint([[452, 312], [500, 320], [550, 325], [580, 365], [583, 395], [610, 435], [620, 455], [560, 457], [450, 375]], 0x3fb7a5);
-  tint([[212, 435], [220, 370], [250, 340], [280, 325], [295, 300], [300, 292], [318, 340], [322, 435]], 0x8a5bc4);
-  const panel = ([ax, az], [bx, bz], y0, y1, m, th = 0.08) => { const len = Math.hypot(bx - ax, bz - az), p = new THREE.Mesh(new THREE.BoxGeometry(len, y1 - y0, th), m); p.position.set((ax + bx) / 2, (y0 + y1) / 2, (az + bz) / 2); p.rotation.y = -Math.atan2(bz - az, bx - ax); world.add(p); return p; };
-  const icu = [[505, 340], [530, 320], [582, 370], [560, 390]].map(([px, py]) => C(px, py)), glassW = M(0xcfeee8, { transparent: true, opacity: 0.3, roughness: 0.1 });
-  for (let k = 0; k < 4; k++) panel(icu[k], icu[(k + 1) % 4], LY, LY + 3, glassW);
-  { const [ax, az] = C(450, 375), [bx, bz] = C(560, 457), ang = -Math.atan2(bz - az, bx - ax);
-    for (const [px, py] of [[478, 372], [498, 388], [518, 404], [538, 420]]) { const [x, z] = C(px, py), bed = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.6, 1.0), mat.white); bed.position.set(x, LY + 0.3, z); bed.rotation.y = ang + Math.PI / 2; world.add(bed); circles.push([x, z, 0.6, LY + 0.6]); } }
-  // Auto Repair (lila): Auffahr-Hebebuehne (C1, ersetzt die zwei einfachen), Werkzeugwagen
+  // (Medical Bay und die getoenten Bodenflaechen Lila/Tuerkis entfernt, Nicolas 2026-11-08: dort normaler dunkler Hoehlenboden; Lila flimmerte mit der Kiesstrasse)
+  // Auto Repair: Auffahr-Hebebuehne (C1, ersetzt die zwei einfachen), Werkzeugwagen
   // Zwei Lochblech-Schienen laengs z (je 0,6 x 4,5 m, 1 m Abstand), Auffahrt von Norden (-z, Rampen klappen beim Hochfahren hoch),
   // Radstopper im Sueden (+z), Hubzylinder in der Mitte (versenkt im Boden). Bedienpult rechts daneben: Rechtsklick/E -> in 5 s 1,8 m hoch/runter.
   // Wer oben steht, faehrt mit (Schienen = Kollisionsquader mit wanderndem y); oben 1,86 m Kopffreiheit darunter. Absenken stoppt, solange jemand darunter steht.
@@ -262,14 +270,28 @@ const caveLights = [], gates = [];
     for (let k = 0; k < n2; k++) {
       const top = PODY - (k + 1) * (PODY - STEG) / n2;
       B(T2.x0, T2.x1, top - 0.12, top, T2.z0 + k * run2, T2.z0 + (k + 1) * run2, wood);
-      if (k % 4 === 0) for (const x of [T2.x0 + 0.1, T2.x1 - 0.1]) cyl(0.09, 0.09, top - BED, pile, x, (top + BED) / 2, T2.z0 + (k + 0.5) * run2, world, 8);
+      if (k % 4 === 0) for (const x of [T2.x0 + 0.1, T2.x1 - 0.1]) cyl(0.09, 0.09, top - 0.14 - BED, pile, x, (top - 0.14 + BED) / 2, T2.z0 + (k + 0.5) * run2, world, 8);   // Pfahl endet unter der Stufe (sonst flimmert der Deckel durchs Holz)
     }
+    // Gelaender an Treppe 1, Podest und Treppe 2 (Nicolas 2026-11-08): Pfosten, Handlauf 0,95 m ueber der Lauflinie, dichte Kollisionskreise
+    const railM = M(0x2a2c30, { metalness: 0.6, roughness: 0.4 });
+    const rail = (ax, ay, az, bx, by, bz) => {
+      const len = Math.hypot(bx - ax, by - ay, bz - az), H = 0.95;
+      const hr = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, len, 8), railM); hr.position.set((ax + bx) / 2, (ay + by) / 2 + H, (az + bz) / 2);
+      hr.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(bx - ax, by - ay, bz - az).normalize()); hr.castShadow = true; world.add(hr);
+      const flat = Math.hypot(bx - ax, bz - az), np = Math.max(1, Math.round(flat / 1.2));
+      for (let k = 0; k <= np; k++) { const f = k / np, x = ax + (bx - ax) * f, y = ay + (by - ay) * f, z = az + (bz - az) * f; cyl(0.03, 0.03, H + 0.25, railM, x, y - 0.25 + (H + 0.25) / 2, z, world, 6); }
+      for (let d = 0; d <= flat; d += 0.35) { const f = flat ? d / flat : 0; circles.push([ax + (bx - ax) * f, az + (bz - az) * f, 0.1, ay + (by - ay) * f + H + 0.05]); }
+    };
+    const ri = 0.07;
+    rail(t1x0, LY, T1.z0 + ri, t1x1, PODY, T1.z0 + ri); rail(t1x0, LY, T1.z1 - ri, t1x1, PODY, T1.z1 - ri);   // Treppe 1 beidseits
+    rail(P.x0, PODY, P.z0 + ri, P.x1 - ri, PODY, P.z0 + ri); rail(P.x1 - ri, PODY, P.z0 + ri, P.x1 - ri, PODY, P.z1);   // Podest Nord und Ost
+    rail(T2.x1 - ri, PODY, T2.z0, T2.x1 - ri, STEG, T2.z1); rail(T2.x0 + ri, PODY, T2.z0, T2.x0 + ri, STEG, T2.z1);   // Treppe 2 beidseits
     // U-Steg aus Holz: oberer Balken, linker Arm, rechter Block; dazwischen die Bootsbox
     const top = R(265, 320, 503, 511), left = R(265, 276, 503, 553), right = R(307, 320, 511, 538);
     right.x1 = Math.max(right.x1, T2.x1);                                   // Treppe 2 landet auf dem rechten Block
     for (const r of [top, left, right]) {
       B(r.x0, r.x1, STEG - 0.15, STEG, r.z0, r.z1, wood);
-      for (let x = r.x0 + 0.3; x <= r.x1 - 0.2; x += 2) for (const z of [r.z0 + 0.2, r.z1 - 0.2]) { cyl(0.13, 0.13, STEG - BED, pile, x, (STEG + BED) / 2, z, world, 8); circles.push([x, z, 0.16, STEG - 0.2]); }
+      for (let x = r.x0 + 0.3; x <= r.x1 - 0.2; x += 2) for (const z of [r.z0 + 0.2, r.z1 - 0.2]) { cyl(0.13, 0.13, STEG - 0.17 - BED, pile, x, (STEG - 0.17 + BED) / 2, z, world, 8); circles.push([x, z, 0.16, STEG - 0.2]); }
       for (let x = r.x0; x < r.x1; x += 0.6) B(x, x + 0.04, STEG, STEG + 0.005, r.z0, r.z1, M(0x5b4632), false, world, false);   // Fugen
     }
     // Poller an der Bootsbox, Laternen an den Ecken
