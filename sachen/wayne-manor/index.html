@@ -1603,8 +1603,75 @@
       for (let k = 0; k < 4; k++) panel(icu[k], icu[(k + 1) % 4], LY, LY + 3, glassW);
       { const [ax, az] = C(450, 375), [bx, bz] = C(560, 457), ang = -Math.atan2(bz - az, bx - ax);
         for (const [px, py] of [[478, 372], [498, 388], [518, 404], [538, 420]]) { const [x, z] = C(px, py), bed = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.6, 1.0), mat.white); bed.position.set(x, LY + 0.3, z); bed.rotation.y = ang + Math.PI / 2; world.add(bed); circles.push([x, z, 0.6, LY + 0.6]); } }
-      // Auto Repair (lila): zwei Hebebuehnen, Werkzeugwagen
-      for (const py of [398, 414]) { const [x, z] = C(250, py); for (const sz of [-2, 2]) B(x - 0.15, x + 0.15, LY, LY + 2.4, z + sz - 0.15, z + sz + 0.15, mat.steel); B(x - 1.1, x + 1.1, LY + 1.0, LY + 1.12, z - 2.2, z + 2.2, mat.steel, false); }
+      // Auto Repair (lila): Auffahr-Hebebuehne (C1, ersetzt die zwei einfachen), Werkzeugwagen
+      // Zwei Lochblech-Schienen laengs z (je 0,6 x 4,5 m, 1 m Abstand), Auffahrt von Sueden (-z, Rampen klappen beim Hochfahren hoch),
+      // Radstopper im Norden, Hubzylinder in der Mitte (versenkt im Boden). Bedienpult rechts daneben: Rechtsklick/E -> in 5 s 1,8 m hoch/runter.
+      // Wer oben steht, faehrt mit (Schienen = Kollisionsquader mit wanderndem y); oben 1,86 m Kopffreiheit darunter. Absenken stoppt, solange jemand darunter steht.
+      {
+        const [cx, cz] = C(250, 406), RIN = 0.5, RW = 0.6, RL = 4.5, T0 = LY + 0.18, TH = 0.12, RISE = 1.8, hz = RL / 2;
+        const holes = (() => {
+          const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d");
+          g.fillStyle = "#9aa1a8"; g.fillRect(0, 0, 64, 64); g.fillStyle = "#16181b";
+          for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) for (const o of [-64, 0, 64]) { g.beginPath(); g.arc((8 + x * 16 + (y % 2) * 8) + o, 8 + y * 16, 4.2, 0, 7); g.fill(); }
+          const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+        })();
+        const railM = M(0xffffff, { map: holes, metalness: 0.5, roughness: 0.45 }), frameM = M(0x1f4e8c, { roughness: 0.5, metalness: 0.3 }), yel = M(0xf2c230, { roughness: 0.6 });
+        const chrome = M(0xdfe3e8, { metalness: 0.9, roughness: 0.18 }), dark = M(0x26282c, { roughness: 0.7, metalness: 0.4 });
+        const gp = new THREE.Group(); gp.userData.dynamic = true; world.add(gp);          // alles Bewegliche + Pult (Ziel fuer Rechtsklick)
+        const plat = new THREE.Group(); plat.position.set(cx, 0, cz); gp.add(plat);
+        const ramps = [];
+        for (const sd of [-1, 1]) {
+          const xa = sd * RIN, xb = sd * (RIN + RW), x0 = Math.min(xa, xb), x1 = Math.max(xa, xb), xm = (xa + xb) / 2;
+          const r = B(x0, x1, T0 - TH, T0, -hz, hz, railM, false, plat); r.material = railM.clone(); r.material.map = holes.clone(); r.material.map.repeat.set(RW * 3, RL * 3); r.material.map.needsUpdate = true;
+          B(sd > 0 ? x1 : x0 - 0.04, sd > 0 ? x1 + 0.04 : x0, T0 - 0.22, T0 + 0.06, -hz, hz, frameM, false, plat);       // Aussenkante (Wange)
+          B(sd > 0 ? x0 - 0.03 : x1, sd > 0 ? x0 : x1 + 0.03, T0 - 0.16, T0 + 0.03, -hz, hz, frameM, false, plat);       // Innenkante
+          B(xm - 0.27, xm + 0.27, T0, T0 + 0.13, hz - 0.36, hz - 0.22, yel, false, plat);                                  // Radstopper
+          B(xm - 0.27, xm + 0.27, T0, T0 + 0.02, -hz + 0.05, -hz + 0.25, yel, false, plat, false);                        // Markierung Auffahrt
+          const pv = new THREE.Group(); pv.position.set(xm, T0 - 0.015, -hz); plat.add(pv);                                // Rampe am Scharnier
+          B(-RW / 2, RW / 2, -0.015, 0.015, -0.9, 0, railM, false, pv); B(-RW / 2, RW / 2, -0.03, 0.04, -0.9, -0.84, yel, false, pv, false);
+          ramps.push(pv);
+          B(x0, x1, LY, LY + 0.06, -hz, hz, dark, false, plat, false);                                                    // Bodenrahmen (bleibt unten: wird in anim gegengerechnet)
+        }
+        const base = plat.children.filter(o => o.isMesh && o.material === dark);
+        for (const zz of [-hz + 0.05, hz - 0.3]) B(-RIN - RW, RIN + RW, T0 - 0.24, T0 - TH, zz, zz + 0.25, frameM, false, plat);   // Quertraeger an den Enden
+        B(-RIN, RIN, T0 - 0.32, T0 - TH, -0.25, 0.25, frameM, false, plat);                                               // Joch ueber dem Zylinder
+        const PISTON_TOP = T0 - 0.32;
+        const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.03, 24), dark); sleeve.position.set(cx, LY + 0.015, cz); gp.add(sleeve);
+        const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1, 20).translate(0, 0.5, 0), chrome); piston.position.set(cx, LY, cz); piston.castShadow = true; gp.add(piston);
+        // Sicherheitsmarkierung am Boden (gelb-schwarz) um die Buehne
+        { const c = document.createElement("canvas"); c.width = 64; c.height = 8; const g = c.getContext("2d"); g.fillStyle = "#f2c230"; g.fillRect(0, 0, 64, 8); g.fillStyle = "#1a1a1a"; for (let k = -1; k < 9; k++) { g.beginPath(); g.moveTo(k * 8, 8); g.lineTo(k * 8 + 4, 8); g.lineTo(k * 8 + 8, 0); g.lineTo(k * 8 + 4, 0); g.fill(); }
+          const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping;
+          const ex = RIN + RW + 0.6, ez0 = -hz - 1.1, ez1 = hz + 0.4;
+          for (const [a, b2, c2, d2, len] of [[-ex, -ex + 0.1, ez0, ez1, ez1 - ez0], [ex - 0.1, ex, ez0, ez1, ez1 - ez0], [-ex, ex, ez1 - 0.1, ez1, 2 * ex]]) {
+            const tm = t.clone(); tm.repeat.set(len * 2, 1); tm.needsUpdate = true; const m = M(0xffffff, { map: tm, roughness: 0.8 });
+            const lenAlongZ = d2 - c2 > b2 - a; const geo = new THREE.PlaneGeometry(lenAlongZ ? d2 - c2 : b2 - a, lenAlongZ ? b2 - a : d2 - c2).rotateX(-Math.PI / 2); if (lenAlongZ) geo.rotateY(Math.PI / 2);
+            const mm = new THREE.Mesh(geo, m); mm.position.set(cx + (a + b2) / 2, LY + 0.012, cz + (c2 + d2) / 2); mm.receiveShadow = true; gp.add(mm);
+          } }
+        // Bedienpult rechts (+x) neben dem Nordende: Saeule, Kasten, Knoepfe gruen (hoch) / rot (runter), Not-Aus
+        const px = cx + RIN + RW + 1.1, pz = cz + hz - 0.6;
+        B(px - 0.1, px + 0.1, LY, LY + 1.05, pz - 0.1, pz + 0.1, mat.steel);
+        B(px - 0.17, px + 0.17, LY + 1.05, LY + 1.5, pz - 0.14, pz + 0.14, yel, false, gp);
+        B(px - 0.19, px - 0.17, LY + 1.12, LY + 1.44, pz - 0.12, pz + 0.12, dark, false, gp, false);
+        const btn = (y, z, col) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 12).rotateZ(Math.PI / 2), M(col, { emissive: col, emissiveIntensity: 0.6 })); m.position.set(px - 0.205, y, z); gp.add(m); return m; };
+        btn(LY + 1.36, pz - 0.05, 0x2ecc40); btn(LY + 1.26, pz - 0.05, 0xe03030);
+        const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16).rotateZ(Math.PI / 2), M(0xd01818, { emissive: 0x500000 })); stop.position.set(px - 0.21, LY + 1.31, pz + 0.06); gp.add(stop);
+        // Kollision: Schienen und Zylinder wandern mit
+        const rails = [-1, 1].map(sd => { const xa = cx + sd * RIN, xb = cx + sd * (RIN + RW); return S(Math.min(xa, xb), Math.max(xa, xb), T0 - TH, T0, cz - hz, cz + hz); });
+        const pist = S(cx - 0.16, cx + 0.16, LY - 0.5, PISTON_TOP, cz - 0.16, cz + 0.16);
+        const anim = f => {
+          const dy = f * RISE; plat.position.y = dy;
+          for (const o of base) o.position.y = LY + 0.03 - dy;                       // Bodenrahmen bleibt am Boden
+          for (const pv of ramps) pv.rotation.x = -0.2 + 1.45 * sst(0, 0.25, f);    // Rampen klappen zu Beginn hoch
+          piston.scale.y = Math.max(0.01, PISTON_TOP + dy - LY);
+          for (const s of rails) { s.y0 = T0 - TH + dy; s.y1 = T0 + dy; }
+          pist.y1 = PISTON_TOP + dy;
+        };
+        anim(0);
+        const under = () => player.pos.x > cx - RIN - RW - 0.3 && player.pos.x < cx + RIN + RW + 0.3 && player.pos.z > cz - hz - 0.3 && player.pos.z < cz + hz + 0.3 && player.pos.y < T0 - TH + plat.position.y - 0.5;
+        gates.push({ name: "Hebebühne", g: gp, open: 0, target: 0, dur: 5, anim, a: [cx, cz], b: [cx, cz], block: under,
+          verbs: ["hochfahren", "absenken"], msgs: [" fährt hoch", " fährt runter"], blockMsg: "Hebebühne stoppt: jemand steht darunter" });
+        world.userData.liftBay = { x: cx, z: cz, h: 0, y: () => T0 + plat.position.y };   // fester Stellplatz fuer das Auto (D1): Mitte, Fahrtrichtung +z
+      }
       { const [x, z] = C(240, 357); B(x - 0.4, x + 0.4, LY, LY + 1.0, z - 0.6, z + 0.6, M(0xb33b2e)); }
       // Anlegestelle mit Boot, Stufen zum Wasser
       // Boot (fahrbar, siehe "Boot fahren"): Rumpf mit Spitze, Kabine, Frontscheibe, Lichter; Bug zeigt lokal nach -z
@@ -2120,7 +2187,7 @@
     function toggleGate(t) {
       if (!t) return;
       t.target = t.target ? 0 : 1;
-      toast(t.name + (t.target ? " öffnet sich" : " schließt sich"));
+      toast(t.name + (t.msgs ? t.msgs[t.target ? 0 : 1] : t.target ? " öffnet sich" : " schließt sich"));
     }
     // Rechtsklick ueber mousedown (wie die Villa): bei gefangener Maus schickt der Browser kein contextmenu
     renderer.domElement.addEventListener("contextmenu", e => { if (walking) e.preventDefault(); });
@@ -2128,13 +2195,15 @@
     $("door-hint").addEventListener("click", () => toggleGate(aimedGate));
     function updateGates(dt) {
       for (const t of gates) {
-        if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / 4) : Math.max(0, t.open - dt / 4); if (t.anim) t.anim(sst(0, 1, t.open)); else t.g.position.y = (t.y0 ?? BED) + sst(0, 1, t.open) * t.lift; if (t.solid) t.solid.on = t.open < 0.8; }
+        if (t.open !== t.target && t.target < t.open && t.block && t.block()) { if (!t.blocked) toast(t.blockMsg); t.blocked = true; continue; }   // C1: Sicherheitsstopp
+        t.blocked = false;
+        if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / (t.dur || 4)) : Math.max(0, t.open - dt / (t.dur || 4)); if (t.anim) t.anim(sst(0, 1, t.open)); else t.g.position.y = (t.y0 ?? BED) + sst(0, 1, t.open) * t.lift; if (t.solid) t.solid.on = t.open < 0.8; }
       }
       gateHintClock += dt;
       if (gateHintClock < 0.15) return;
       gateHintClock = 0;
       aimedGate = findAimedGate();
-      const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : "Rechtsklick/E: ") + aimedGate.name + (aimedGate.target ? " schließen" : " öffnen") : "";
+      const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : "Rechtsklick/E: ") + aimedGate.name + " " + (aimedGate.verbs || ["öffnen", "schließen"])[aimedGate.target ? 1 : 0] : "";
       if (hint.hidden !== !aimedGate) hint.hidden = !aimedGate;
       if (aimedGate && hint.textContent !== txt) hint.textContent = txt;
     }
@@ -3217,7 +3286,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatReturn, boatFree, waterAt, gates, toggleGate, findAimedGate, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatReturn, boatFree, waterAt, gates, toggleGate, findAimedGate, updateGates, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
