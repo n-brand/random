@@ -38,6 +38,11 @@ Esc beendet Begehen, Geist und Fahren. Taste T oder die Auswahl "Teleport (Test)
 
 ## Entwickeln
 
+- Aufbau: `index.html` (nur HTML, laedt three.js und startet die Skripte), `style.css`, Code in `js/` nach Themen in Ordnern:
+  `kern/` (Grundgeruest, Tag/Nacht, Tore, Bildschleife, Start), `gelaende/`, `strassen/`, `haus/`, `aussen/`, `aufzuege/`, `hoehle/`, `spieler/`, `ui/`, `fahrzeuge/`.
+  Die Skripte sind klassische Skripte mit gemeinsamem globalem Bereich; die Reihenfolge steht in `FILES` in `index.html`.
+  Neue Datei: dort und in `ASSETS` in `../../sw.js` eintragen.
+
 - Lokal ueber http starten (Service Worker), z. B. im Projektordner `python -m http.server 8080`.
 - `?debug` stellt `window.manorDebug` bereit (Spieler, Wege, Aufzuege, Boot, Auto, Tore) zum Testen ohne Maus.
 - Nach jeder Aenderung `CACHE` in `../../sw.js` hochzaehlen.

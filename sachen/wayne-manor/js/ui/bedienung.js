@@ -1,0 +1,154 @@
+// Wayne Manor 3D – Bedienung: Von unten, Zeichnen, Tastatur, Maus, Joysticks, Knoepfe
+// Teil der Seite sachen/wayne-manor/ (klassisches Skript, Reihenfolge in index.html; gemeinsame Namen ueber den globalen Bereich)
+"use strict";
+
+// Ansicht von unten: Kamera darf unter das Gelaende (Gelaende ist von unten durchsichtig), Blick auf Garage und Hoehle
+let belowView = false;
+const belowSave = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
+$("btn-below").addEventListener("click", e => {
+  if (walking) setWalk(false);
+  belowView = !belowView;
+  e.currentTarget.setAttribute("aria-pressed", String(belowView));
+  if (belowView) {
+    belowSave.pos.copy(camera.position); belowSave.target.copy(controls.target);
+    controls.maxPolarAngle = Math.PI;
+    controls.target.set(-30, -18, 18); camera.position.set(40, -75, 70);
+  } else {
+    controls.maxPolarAngle = Math.PI * 0.495;
+    camera.position.copy(belowSave.pos); controls.target.copy(belowSave.target);
+  }
+  controls.update();
+});
+// Zeichnen: 1. Klick aktiviert (pink), 2. Klick loescht die Zeichnung und beendet. Ansicht steht still, solange gezeichnet wird.
+{
+  const cv = $("draw-layer"), cx = cv.getContext("2d"), btn = $("btn-draw");
+  let on = false, last = null, pen = "#ff2fa8";
+  const COLORS = [["Pink", "#ff2fa8"], ["Gelb", "#ffe600"], ["Grün", "#39ff14"], ["Cyan", "#00e5ff"], ["Orange", "#ff6a00"]];
+  const box = $("draw-colors");
+  for (const [name, c] of COLORS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.title = name; b.setAttribute("aria-label", name); b.style.setProperty("--c", c);
+    b.setAttribute("aria-pressed", String(c === pen));
+    b.addEventListener("click", () => {
+      pen = c; btn.style.setProperty("--pen", c);
+      for (const o of box.children) o.setAttribute("aria-pressed", String(o === b));
+    });
+    box.appendChild(b);
+  }
+  const fit = () => {
+    const r = devicePixelRatio || 1, w = Math.round(innerWidth * r), h = Math.round(innerHeight * r);
+    if (cv.width === w && cv.height === h) return;
+    const old = cv.width && cv.height ? cx.getImageData(0, 0, cv.width, cv.height) : null;
+    cv.width = w; cv.height = h; if (old) cx.putImageData(old, 0, 0);
+  };
+  const pt = e => { const r = devicePixelRatio || 1; return [e.clientX * r, e.clientY * r]; };
+  const set = v => {
+    on = v; last = null; document.body.classList.toggle("drawing", on);
+    btn.setAttribute("aria-pressed", String(on)); btn.textContent = on ? "Zeichnung löschen" : "Zeichnen";
+    if (!on) cx.clearRect(0, 0, cv.width, cv.height);
+  };
+  btn.addEventListener("click", () => { if (walking) setWalk(false); fit(); set(!on); });
+  addEventListener("resize", fit);
+  cv.addEventListener("pointerdown", e => {
+    if (!on || e.button !== 0) return;
+    cv.setPointerCapture(e.pointerId); last = pt(e);
+    const r = devicePixelRatio || 1; cx.fillStyle = pen; cx.beginPath(); cx.arc(last[0], last[1], 2.5 * r, 0, Math.PI * 2); cx.fill();
+  });
+  cv.addEventListener("pointermove", e => {
+    if (!last) return;
+    const p = pt(e), r = devicePixelRatio || 1;
+    cx.strokeStyle = pen; cx.lineWidth = 5 * r; cx.lineCap = cx.lineJoin = "round";
+    cx.beginPath(); cx.moveTo(last[0], last[1]); cx.lineTo(p[0], p[1]); cx.stroke(); last = p;
+  });
+  const up = () => { last = null; };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  cv.addEventListener("contextmenu", e => e.preventDefault());
+}
+renderer.domElement.addEventListener("mousedown", e => {
+  if (!walking || touch || e.button !== 0) return;
+  e.preventDefault();
+  if (dragging) return stopDrag();
+  dragging = true;
+  document.body.classList.add("looking");
+  renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
+});
+document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); } });
+const MOUSE_SENS = 0.0025 * 0.5;                                          // fest 50 % (Wunsch von Nicolas, nicht einstellbar)
+document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS); });
+addEventListener("keydown", e => {
+  if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
+  if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
+  if (!walking) return;
+  if (e.code === "Escape") return setWalk(false);
+  if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: E, Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
+  if (e.code === "KeyE" && !e.repeat) {
+    if (useBoat() || useCar()) return;
+    const ag = findAimedGate();
+    if (ag && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 9) toggleGate(ag);
+    else if (CAR_LIFT && CAR_LIFT.near(player.pos)) CAR_LIFT.use(); else useLift();
+    return;
+  }
+  if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
+  if (CAR.on) {
+    if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault();
+    if (e.repeat) return;
+    if (e.code === "KeyV") { CAR.view = 1 - CAR.view; player.pitch = CAR.view ? 0 : -0.12; return toast(CAR.view ? "Fahrersicht" : "Kamera hinter dem Auto"); }
+    if (e.code === "KeyR") return carReset();
+    if (e.code === "KeyM") return engineMute();
+    if (e.code === "KeyL" && CAR_LIFT) return CAR_LIFT.near(player.pos) ? CAR_LIFT.use() : toast("Kein Autoaufzug in der Nähe");
+    if (CAR_LIFT && CAR_LIFT.inCar(player.pos) && /^(Digit|Numpad)[1-3]$/.test(e.code)) return CAR_LIFT.pick(CAR_LIFT.order[+e.code.slice(-1) - 1]);
+    keys.add(e.code); if (e.code === "Space") player.jump = true;
+    return;
+  }
+  if (CAR_LIFT && CAR_LIFT.inCar(player.pos)) {
+    if (/^(Digit|Numpad)[1-3]$/.test(e.code)) return CAR_LIFT.pick(CAR_LIFT.order[+e.code.slice(-1) - 1]);
+    if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) CAR_LIFT.step(e.code === "ArrowUp" ? 1 : -1); return; }
+  }
+  if (inCar(player.pos)) {
+    if (/^(Digit|Numpad)[1-5]$/.test(e.code)) return pickStop(STOP_ORDER[+e.code.slice(-1) - 1]);
+    if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) stepStop(e.code === "ArrowUp" ? 1 : -1); return; }
+  }
+  keys.add(e.code);
+  if (e.code === "Space") { player.jump = true; e.preventDefault(); }
+});
+addEventListener("keyup", e => keys.delete(e.code));
+addEventListener("blur", () => keys.clear());
+function joystick(el) {
+  const knob = el.querySelector("span"), state = { x: 0, y: 0, id: null };
+  const move = e => {
+    const r = el.getBoundingClientRect(), max = r.width / 2 - 20;
+    let x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
+    const len = Math.hypot(x, y);
+    if (len > max) { x *= max / len; y *= max / len; }
+    state.x = x / max; state.y = y / max;
+    knob.style.transform = `translate(${x}px, ${y}px)`;
+  };
+  el.addEventListener("pointerdown", e => { state.id = e.pointerId; try { el.setPointerCapture(e.pointerId); } catch (err) {} move(e); });
+  el.addEventListener("pointermove", e => { if (e.pointerId === state.id) move(e); });
+  const end = e => { if (e.pointerId !== state.id) return; state.id = null; state.x = 0; state.y = 0; knob.style.transform = ""; };
+  el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+  return state;
+}
+const moveStick = joystick($("stick-move")), lookStick = joystick($("stick-look"));
+$("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.jump = true; jumpHeld = true; });
+for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
+$("btn-down").addEventListener("pointerdown", e => { e.preventDefault(); downHeld = true; });
+for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down").addEventListener(type, () => { downHeld = false; });
+function walkStep(dt) {
+  if (ghost) return ghostStep(dt);
+  if (BOAT.on) return boatStep(dt);
+  if (CAR.on) return carStep(dt);
+  let mx = 0, mz = 0;
+  if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;
+  if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1;
+  if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
+  if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
+  mx += moveStick.x; mz -= moveStick.y;
+  look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
+  updatePlayer(dt, mx, mz, keys.has("ShiftLeft") || keys.has("ShiftRight"));
+}
+$("btn-night").addEventListener("click", e => { nightTarget = nightTarget ? 0 : 1; e.currentTarget.setAttribute("aria-pressed", String(!!nightTarget)); });
+addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
