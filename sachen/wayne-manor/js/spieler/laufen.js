@@ -172,7 +172,7 @@ function startGhost() {
   if (world.userData.car) world.userData.car.leave();
   walking = true; ghost = true;
   document.body.classList.add("walk", "ghost");
-  hintEl.innerHTML = "Geist &middot; WASD fliegen (waagrecht) &middot; Leertaste hoch &middot; Strg runter &middot; Shift schneller &middot; Linksklick Maus übernehmen &middot; Esc zurück";
+  hintEl.innerHTML = "Geist &middot; WASD fliegen (waagrecht) &middot; Leertaste hoch &middot; C (oder Strg) runter &middot; Shift schneller &middot; Linksklick Maus übernehmen &middot; Esc zurück";
   controls.enabled = false;
   player.pos.set(camera.position.x, camera.position.y - EYE, camera.position.z);
   player.yaw = Math.atan2(-dir.x, -dir.z); player.pitch = Math.max(-1.5, Math.min(1.5, Math.asin(Math.max(-1, Math.min(1, dir.y)))));
@@ -189,7 +189,7 @@ function ghostStep(dt) {
   if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1;
   if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
   if (keys.has("Space") || jumpHeld) my += 1;
-  if (keys.has("ControlLeft") || keys.has("ControlRight") || downHeld) my -= 1;   // Strg runter (Nicolas, 2026-11-07)
+  if (keys.has("ControlLeft") || keys.has("ControlRight") || keys.has("KeyC") || downHeld) my -= 1;   // Strg oder C runter (C: Strg+W schliesst sonst den Tab)
   mx += moveStick.x; mz -= moveStick.y;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
   const len = Math.hypot(mx, mz);

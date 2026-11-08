@@ -75,6 +75,8 @@ renderer.domElement.addEventListener("mousedown", e => {
 document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); } });
 const MOUSE_SENS = 0.0025 * 0.5;                                          // fest 50 % (Wunsch von Nicolas, nicht einstellbar)
 document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS); });
+// Strg+W schliesst den Tab, das kann eine Webseite nicht verhindern: beim Begehen/Geist/Fahren fragt der Browser wenigstens nach (Nicolas)
+addEventListener("beforeunload", e => { if (walking) { e.preventDefault(); e.returnValue = ""; } });
 addEventListener("keydown", e => {
   if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
   if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }

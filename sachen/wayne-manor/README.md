@@ -25,7 +25,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | --- | --- | --- |
 | Umschauen (Orbit) | Ziehen, Mausrad | Wischen, zwei Finger |
 | Begehen | Knopf "Begehen", Linksklick faengt die Maus, WASD, Leertaste springt, Shift rennt | Joysticks, Sprung-Knopf |
-| Geist (fliegen) | Knopf "Geist", WASD waagrecht, Leertaste hoch, Strg runter, Shift schneller | Joysticks, Sprung/Runter |
+| Geist (fliegen) | Knopf "Geist", WASD waagrecht, Leertaste hoch, C (oder Strg) runter, Shift schneller | Joysticks, Sprung/Runter |
 | Tore, Hebebuehne | Zielen, Rechtsklick oder E | Hinweis antippen |
 | Aufzuege | E; im Aufzug Tasten 1-5 oder Pfeile, Anzeige rechts | Anzeige antippen |
 | Boot | E einsteigen/aussteigen, W/S Gas, A/D lenken, Shift schneller | Joysticks |
