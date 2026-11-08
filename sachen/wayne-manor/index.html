@@ -1095,24 +1095,16 @@
         const BAYS = [[1, 259, 390, 299, 412.5], [2, 257.5, 338.5, 297.5, 360], [3, 117.5, 387.5, 157.5, 410], [4, 115, 337.5, 155, 360], [5, 112.5, 279, 152.5, 301],
           [6, 112.5, 225, 152.5, 247.5], [7, 112.5, 177.5, 152.5, 200], [8, 50, 307.5, 90, 330], [9, 52.5, 253.5, 92.5, 275]];
         const paint = M(0xeeeeea, { roughness: 0.6 });
-        const carCols = { 3: 0x8c1d1d, 4: 0x2b4c7e, 6: 0xc9c9c4, 7: 0x1d3b2a, 9: 0x55585e };
         for (const [no, g0, h0, g1, h1] of BAYS) {
           const R = rectW(gmp(g0, h0), gmp(g1, h1)), y = GY + 0.005;
-          if (no === 1) world.userData.bay1 = { x: (R.x0 + R.x1) / 2, z: (R.z0 + R.z1) / 2 + 0.2 };   // D1: hier steht der Tumbler
+          (world.userData.bays ??= {})[no] = { x: (R.x0 + R.x1) / 2, z: (R.z0 + R.z1) / 2 + 0.2, w: R.x1 - R.x0, d: R.z1 - R.z0 };   // Fahrzeuge (Tumbler, Rolls-Royce, Motorrad)
+          if (no === 1) world.userData.bay1 = world.userData.bays[1];
           B(R.x0, R.x1, y, y + 0.01, R.z0, R.z0 + 0.1, paint, false, world, false); B(R.x0, R.x1, y, y + 0.01, R.z1 - 0.1, R.z1, paint, false, world, false);
           B(R.x0, R.x0 + 0.1, y, y + 0.01, R.z0, R.z1, paint, false, world, false); B(R.x1 - 0.1, R.x1, y, y + 0.01, R.z0, R.z1, paint, false, world, false);
           const t = canvasTex(64, 64, (g, w, h) => { g.fillStyle = "#3a3d44"; g.fillRect(0, 0, w, h); g.fillStyle = "#f2f2ee"; g.font = "800 48px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(String(no), w / 2, h / 2 + 3); });
           t.repeat.set(1, 1);
           const lab = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), flatMat({ map: t }));
           lab.position.set((R.x0 + R.x1) / 2, GY + 0.02, R.z0 + 0.8); lab.userData.keep = true; world.add(lab);
-          const col = carCols[no];
-          if (col !== undefined) {
-            const cx = (R.x0 + R.x1) / 2, cz = (R.z0 + R.z1) / 2 + 0.2, body = M(col, { metalness: 0.5, roughness: 0.35 });
-            B(cx - 0.9, cx + 0.9, GY + 0.3, GY + 0.95, cz - 2.15, cz + 2.15, body);
-            B(cx - 0.8, cx + 0.8, GY + 0.95, GY + 1.42, cz - 1.0, cz + 0.9, mat.dark, false);
-            for (const sx of [-1, 1]) for (const sz of [-1.4, 1.4]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.24, 12).rotateZ(Math.PI / 2), mat.black); w.position.set(cx + sx * 0.84, GY + 0.33, cz + sz); world.add(w); }
-            B(cx - 0.75, cx - 0.45, GY + 0.6, GY + 0.75, cz + 2.14, cz + 2.17, mat.glow, false, world, false); B(cx + 0.45, cx + 0.75, GY + 0.6, GY + 0.75, cz + 2.14, cz + 2.17, mat.glow, false, world, false);
-          }
         }
         // Gym (Bank, Hantelstaender, Laufband), Werkstatt (Hebebuehne, Werkbank)
         const GYM = rectW(gmp(307.5, 169), gmp(370, 217.5)), WS = rectW(gmp(222.5, 215), gmp(272.5, 282.5));
@@ -1615,18 +1607,12 @@
         m.position.set(x, LY + 4, z); m.rotation.y = face; m.userData.keep = true; world.add(m);
       };
       sign("GOTHAM EXIT", "↓", 6, 453, Math.PI); sign("WATERFALL EXIT 290 m", "↑", 730, 482, 0);
-      // Drehende Tiefgarage: Scheibe mit 6 Feldern, 4 Wagen, dreht langsam
+      // Drehende Tiefgarage: Scheibe mit 6 Feldern, dreht langsam (vier fahrbare Tumbler darauf, siehe Fahrzeuge)
       const [rx, rz] = C(385, 417), rr = 60 * CAVE_SC;
       const turn = new THREE.Group(); turn.position.set(rx, LY, rz); turn.userData.dynamic = true; world.add(turn);
       { const disc = new THREE.Mesh(new THREE.CylinderGeometry(rr, rr, 0.12, 48), M(0x2e3036, { metalness: 0.5, roughness: 0.4 })); disc.position.y = 0.06; turn.add(disc);
         const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.12, 6, 64).rotateX(Math.PI / 2), mat.gold); ring.position.y = 0.1; turn.add(ring);
         for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, l = new THREE.Mesh(new THREE.BoxGeometry(rr, 0.02, 0.08), M(0xd9c27a)); l.position.set(Math.cos(a) * rr / 2, 0.13, Math.sin(a) * rr / 2); l.rotation.y = -a; turn.add(l); }
-        for (const k of [0, 1, 3, 4]) {
-          const a = (k + 0.5) / 6 * Math.PI * 2, cg = new THREE.Group(); cg.position.set(Math.cos(a) * rr * 0.55, 0.12, Math.sin(a) * rr * 0.55); cg.rotation.y = -a + Math.PI / 2; turn.add(cg);
-          B(-0.95, 0.95, 0.25, 0.8, -2.3, 2.3, mat.bat, false, cg); B(-0.7, 0.7, 0.8, 1.2, -0.9, 0.6, mat.dark, false, cg); B(-0.15, 0.15, 0.8, 1.5, 1.3, 2.3, mat.bat, false, cg);
-          B(-0.9, -0.5, 0.45, 0.6, 2.28, 2.32, mat.glowRed, false, cg, false); B(0.5, 0.9, 0.45, 0.6, 2.28, 2.32, mat.glowRed, false, cg, false);
-          for (const sx of [-1, 1]) for (const sz of [-1.5, 1.5]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.3, 12).rotateZ(Math.PI / 2), mat.black); w.position.set(sx * 0.95, 0.38, sz); cg.add(w); }
-        }
       }
       world.userData.turntable = turn;
       // Medical Bay (tuerkis): Boden getoent, OR/ICU als Glasraum, vier Betten
@@ -2185,7 +2171,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", GATE_C[0] + 11 * GATE_U[0], 0, GATE_C[1] + 11 * GATE_U[1], Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Kreuzung)", MAIN_J[0] + 6, 0, MAIN_J[1] - 4, Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Südwest-Ende)", -58, 0, 196, Math.PI * 0.8], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Tumbler (Garage Platz 1)", world.userData.bay1.x + 2.6, GY, world.userData.bay1.z, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Kehre)", -50, -10, -215, W], ["Waterfall Exit (aussen, Westufer)", -134, 0, -186.4, E], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", GATE_C[0] + 11 * GATE_U[0], 0, GATE_C[1] + 11 * GATE_U[1], Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Kreuzung)", MAIN_J[0] + 6, 0, MAIN_J[1] - 4, Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Südwest-Ende)", -58, 0, 196, Math.PI * 0.8], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Tumbler (Garage Platz 1)", world.userData.bay1.x + 2.6, GY, world.userData.bay1.z, N], ["Motorrad (Garage Platz 2)", world.userData.bays[2].x + 1.8, GY, world.userData.bays[2].z, N], ["Rolls-Royce (Garage Platz 3)", world.userData.bays[3].x + 2.4, GY, world.userData.bays[3].z, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Kehre)", -50, -10, -215, W], ["Waterfall Exit (aussen, Westufer)", -134, 0, -186.4, E], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -2339,67 +2325,170 @@
       BOAT.g.position.set(BOAT.x, SEA_Y + 0.05 * Math.sin(boatTime * 2.1), BOAT.z);
       BOAT.g.rotation.set(0.02 * Math.sin(boatTime * 1.3) - BOAT.v * 0.004, BOAT.h, 0.03 * Math.sin(boatTime * 1.7));
     }
-    // ===================== Tumbler fahren (D1) =====================
-    // Schwarzer, kantiger Militaer-Prototyp (Vorbild Tumbler): breite Front mit zwei Vorderraedern unter Kotfluegeln, sehr grosse Hinterraeder, Duese hinten.
-    // Steht auf Garage-Platz 1. E in der Naehe (3,8 m) = einsteigen, im Auto E = aussteigen. W/S Gas/Bremse (rueckwaerts), A/D lenken, Shift schneller,
-    // Leertaste = Sprung mit Schub (ab 50 km/h, ohne Rampe, z. B. ueber die Luecke am Waterfall Exit), V = Kamera hinten/Fahrersicht, R = zuruecksetzen,
-    // L = Autoaufzug rufen/fahren, 1-3 = Halt im Autoaufzug. Kollision wie beim Laufen (Quader, Kreise, Tore, Leitplanken), drei Kreise fuer die Karosserie.
-    const CAR = (() => {
-      const bay = world.userData.bay1, g = new THREE.Group(); g.userData.dynamic = true; g.userData.noLift = true; scene.add(g);
-      const body = M(0x16181b, { roughness: 0.62, metalness: 0.3, flatShading: true }), armor = M(0x0d0e10, { roughness: 0.85, metalness: 0.2, flatShading: true });
-      const tireM = M(0x101010, { roughness: 0.95, flatShading: true }), rimM = M(0x2b2e33, { metalness: 0.6, roughness: 0.45, flatShading: true });
-      const glassM = M(0x07090c, { roughness: 0.08, metalness: 0.7 }), jetM = M(0x3a1a08, { emissive: 0xff6a10, emissiveIntensity: 0 });
-      // Profil in (vorne, hoch) -> Netz: Breite entlang x, vorne = -z
-      const prism = (pts, w, m, x = 0) => {
-        const sh = new THREE.Shape(); pts.forEach(([f, y], i) => i ? sh.lineTo(f, y) : sh.moveTo(f, y));
-        const geo = new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: false }).rotateY(Math.PI / 2).translate(x - w / 2, 0, 0);
-        const mesh = new THREE.Mesh(geo, m); mesh.castShadow = true; mesh.receiveShadow = true; g.add(mesh); return mesh;
-      };
-      const box = (x0, x1, y0, y1, z0, z1, m) => B(x0, x1, y0, y1, z0, z1, m, false, g);
-      prism([[2.35, 0.42], [2.45, 0.72], [2.15, 0.98], [1.0, 1.16], [0.35, 1.56], [-0.95, 1.62], [-1.95, 1.38], [-2.4, 1.12], [-2.45, 0.55], [-2.05, 0.32], [1.95, 0.32]], 1.3, body);   // Rumpf
-      prism([[1.1, 1.18], [0.35, 1.6], [-0.95, 1.66], [-1.2, 1.5], [0.2, 1.42]], 0.9, armor);                                  // Dachpanzer
-      for (const sd of [-1, 1]) {
-        prism([[2.4, 0.5], [2.42, 0.86], [2.0, 1.04], [1.25, 1.02], [1.08, 0.62]], 0.5, body, sd * 1.0);                    // Kotfluegel vorne
-        prism([[2.3, 0.86], [1.95, 1.0], [1.3, 0.99], [1.6, 0.88]], 0.52, armor, sd * 1.0);
-        box(sd > 0 ? 0.62 : -0.78, sd > 0 ? 0.78 : -0.62, 0.62, 0.78, -2.05, -1.2, armor);                                // Querlenker zum Rumpf
-        prism([[0.9, 0.38], [0.9, 0.98], [-0.6, 1.08], [-1.0, 0.95], [-0.85, 0.38]], 0.22, armor, sd * 0.72);              // Seitenkasten
-        box(sd > 0 ? 0.645 : -0.66, sd > 0 ? 0.66 : -0.645, 1.2, 1.38, -0.75, 0.15, glassM);                             // Seitenfenster
-        box(sd * 1.0 - 0.22, sd * 1.0 + 0.22, 0.8, 0.88, -2.44, -2.41, mat.glow);                                         // Scheinwerfer
-        box(sd * 0.45 - 0.14, sd * 0.45 + 0.14, 0.95, 1.05, 2.42, 2.46, mat.glowRed);                                     // Ruecklicht
-        box(sd * 0.92 - 0.35, sd * 0.92 + 0.35, 1.12, 1.2, 0.9, 2.15, armor);                                              // Kotfluegel hinten (Panzerplatte)
-      }
-      box(-1.3, 1.3, 0.3, 0.52, -2.62, -2.2, armor);                                                                      // breite Frontschuerze
-      { const ws = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.03, 0.74), glassM); ws.position.set(0, 1.38, -0.68); ws.rotation.x = -0.56; g.add(ws); }   // Frontscheibe
-      // Duesen hinten (gluehen beim Sprung)
-      const jets = [];
-      for (const [x, y, r] of [[0, 0.95, 0.27], [-0.42, 0.62, 0.14], [0.42, 0.62, 0.14]]) {
-        const n = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.15, 0.4, 14, 1, true).rotateX(Math.PI / 2), M(0x2a2c30, { metalness: 0.7, roughness: 0.35, side: THREE.DoubleSide })); n.position.set(x, y, 2.55); g.add(n);
-        const c = new THREE.Mesh(new THREE.CircleGeometry(r * 0.95, 14), jetM); c.position.set(x, y, 2.45); g.add(c); jets.push(c);
-      }
-      // Raeder: vorne r 0,46 / 0,4 breit, hinten r 0,74 / 0,56 breit (Spur passt auf die Hebebuehne)
-      const wheel = (x, z, r, w, front) => {
-        const piv = new THREE.Group(); piv.position.set(x, r, z); g.add(piv);
-        const spin = new THREE.Group(); piv.add(spin);
-        const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r, w, 14).rotateZ(Math.PI / 2), tireM); t.castShadow = true; spin.add(t);
-        const rim = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, w + 0.02, 7).rotateZ(Math.PI / 2), rimM); spin.add(rim);
-        for (let k = 0; k < 7; k++) { const lug = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.07, r * 0.25), tireM); const a = k / 7 * Math.PI * 2; lug.position.set(0, Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97); lug.rotation.x = -a; spin.add(lug); }   // Profilstollen
-        return { piv, spin, r, front };
-      };
-      const wheels = [wheel(-1.0, -1.75, 0.46, 0.4, true), wheel(1.0, -1.75, 0.46, 0.4, true), wheel(-0.95, 1.55, 0.74, 0.56, false), wheel(0.95, 1.55, 0.74, 0.56, false)];
-      const C = { g, wheels, jets, jetM, x: bay ? bay.x : 0, z: bay ? bay.z : 0, y: GY + HILL, h: Math.PI, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0,
-        circ: null, safe: null, safeT: 0, msgT: 0, home: null };
-      C.home = { x: C.x, z: C.z, y: C.y, h: C.h };
-      C.leave = () => { if (C.on) { C.on = false; C.v = 0; if (speedEl) speedEl.hidden = true; } };
-      world.userData.car = C;
-      return C;
-    })();
+    // ===================== Fahrzeuge (D1, erweitert 2026-11-08) =====================
+    // Mehrere fahrbare Fahrzeuge mit gemeinsamer Steuerung: Tumbler (Garage-Platz 1, mit Sprung), Rolls-Royce (Plaetze 3, 4, 6, 7, 9, je eigene
+    // Farbe), Motorrad (Platz 2), vier Tumbler auf der drehenden Tiefgarage in der Batcave (drehen mit, auch beim Fahren).
+    // E in der Naehe = ins naechste Fahrzeug einsteigen, im Fahrzeug E = aussteigen. W/S Gas/Bremse (rueckwaerts), A/D lenken, Shift schneller,
+    // Leertaste = Sprung mit Schub (nur Tumbler, ab 50 km/h), V = Kamera hinten/Fahrersicht, R = zuruecksetzen, L = Autoaufzug rufen/fahren,
+    // 1-3 = Halt im Autoaufzug. Kollision wie beim Laufen (Quader, Kreise, Tore, Leitplanken), Kreise fuer die Karosserie (je Fahrzeug).
+    // Das aktive Fahrzeug ist CAR; die Hilfsfunktionen arbeiten auf CAR (fuer geparkte Fahrzeuge wird CAR in carFrame kurz umgesetzt).
     const speedEl = (() => { const d = document.createElement("div"); d.id = "car-speed"; d.hidden = true;
       d.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:6;padding:6px 14px;border-radius:999px;background:rgba(10,12,16,.72);color:#f4f4f0;font:600 15px system-ui,sans-serif;pointer-events:none";
       document.body.appendChild(d); return d; })();
-    const CAR_R = 1.25, CAR_PTS = [-1.45, 0, 1.45], CAR_STEP = 0.6, CAR_BODY = 1.9, CAR_G = 14;
+    const VEH = [];
+    let CAR = null;
+    // Profil in (vorne, hoch) -> Netz: Breite entlang x, vorne = -z
+    const prismIn = (g, pts, w, m, x = 0) => {
+      const sh = new THREE.Shape(); pts.forEach(([f, y], i) => i ? sh.lineTo(f, y) : sh.moveTo(f, y));
+      const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: false }).rotateY(Math.PI / 2).translate(x - w / 2, 0, 0), m);
+      g.add(mesh); return mesh;
+    };
+    const boxIn = (g, x0, x1, y0, y1, z0, z1, m) => B(x0, x1, y0, y1, z0, z1, m, false, g);
+    const meshIn = (g, geo, m, x, y, z, rx = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.x = rx; g.add(o); return o; };
+    // Feste Teile eines Fahrzeugs je Material zu einem Netz zusammenfassen (Fahrzeuge sind "dynamisch" und werden sonst nicht zusammengefasst)
+    function mergeStatic(g) {
+      const byMat = new Map(), keep = [];
+      for (const o of [...g.children]) {
+        if (!o.isMesh) { keep.push(o); continue; }
+        o.updateMatrix();
+        const gg = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); gg.applyMatrix4(o.matrix);
+        for (const k of Object.keys(gg.attributes)) if (!["position", "normal", "uv"].includes(k)) gg.deleteAttribute(k);
+        if (!gg.attributes.uv) gg.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(gg.attributes.position.count * 2), 2));
+        gg.clearGroups();
+        if (!byMat.has(o.material)) byMat.set(o.material, []); byMat.get(o.material).push(gg);
+      }
+      g.clear(); for (const o of keep) g.add(o);
+      for (const [m, list] of byMat) { const mm = new THREE.Mesh(mergeGeometries(list, false), m); mm.castShadow = true; mm.receiveShadow = true; g.add(mm); }
+    }
+    // Rad: Reifen (+ Stollen) als ein Netz, Felge extra; piv lenkt (Vorderrad), spin dreht
+    function addWheel(g, x, z, r, w, front, tireM, rimM, lugs = 0, seg = 16) {
+      const piv = new THREE.Group(); piv.position.set(x, r, z); g.add(piv);
+      const spin = new THREE.Group(); piv.add(spin);
+      const parts = [new THREE.CylinderGeometry(r, r, w, seg).rotateZ(Math.PI / 2).toNonIndexed()];
+      for (let k = 0; k < lugs; k++) { const a = k / lugs * Math.PI * 2, b = new THREE.BoxGeometry(w + 0.04, 0.07, r * 0.25).rotateX(-a).translate(0, Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97).toNonIndexed(); parts.push(b); }
+      for (const p of parts) { for (const k of Object.keys(p.attributes)) if (!["position", "normal", "uv"].includes(k)) p.deleteAttribute(k); p.clearGroups(); }
+      const t = new THREE.Mesh(mergeGeometries(parts, false), tireM); t.castShadow = true; spin.add(t);
+      spin.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.62, w + 0.02, 8).rotateZ(Math.PI / 2), rimM));
+      return { piv, spin, r, front };
+    }
+    // ---- Tumbler: schwarz, kantig, breite Front mit Vorderraedern unter Kotfluegeln, sehr grosse Hinterraeder, Duesen hinten ----
+    function buildTumbler(bodyCol, armorCol) {
+      const g = new THREE.Group();
+      const body = M(bodyCol, { roughness: 0.62, metalness: 0.3, flatShading: true }), armor = M(armorCol, { roughness: 0.85, metalness: 0.2, flatShading: true });
+      const tireM = M(0x101010, { roughness: 0.95, flatShading: true }), rimM = M(0x2b2e33, { metalness: 0.6, roughness: 0.45, flatShading: true });
+      const glassM = M(0x07090c, { roughness: 0.08, metalness: 0.7 }), jetM = M(0x3a1a08, { emissive: 0xff6a10, emissiveIntensity: 0 }), nozM = M(0x2a2c30, { metalness: 0.7, roughness: 0.35, side: THREE.DoubleSide });
+      prismIn(g, [[2.35, 0.42], [2.45, 0.72], [2.15, 0.98], [1.0, 1.16], [0.35, 1.56], [-0.95, 1.62], [-1.95, 1.38], [-2.4, 1.12], [-2.45, 0.55], [-2.05, 0.32], [1.95, 0.32]], 1.3, body);   // Rumpf
+      prismIn(g, [[1.1, 1.18], [0.35, 1.6], [-0.95, 1.66], [-1.2, 1.5], [0.2, 1.42]], 0.9, armor);                                  // Dachpanzer
+      for (const sd of [-1, 1]) {
+        prismIn(g, [[2.4, 0.5], [2.42, 0.86], [2.0, 1.04], [1.25, 1.02], [1.08, 0.62]], 0.5, body, sd * 1.0);                    // Kotfluegel vorne
+        prismIn(g, [[2.3, 0.86], [1.95, 1.0], [1.3, 0.99], [1.6, 0.88]], 0.52, armor, sd * 1.0);
+        boxIn(g, sd > 0 ? 0.62 : -0.78, sd > 0 ? 0.78 : -0.62, 0.62, 0.78, -2.05, -1.2, armor);                                // Querlenker zum Rumpf
+        prismIn(g, [[0.9, 0.38], [0.9, 0.98], [-0.6, 1.08], [-1.0, 0.95], [-0.85, 0.38]], 0.22, armor, sd * 0.72);              // Seitenkasten
+        boxIn(g, sd > 0 ? 0.645 : -0.66, sd > 0 ? 0.66 : -0.645, 1.2, 1.38, -0.75, 0.15, glassM);                             // Seitenfenster
+        boxIn(g, sd * 1.0 - 0.22, sd * 1.0 + 0.22, 0.8, 0.88, -2.44, -2.41, mat.glow);                                         // Scheinwerfer
+        boxIn(g, sd * 0.45 - 0.14, sd * 0.45 + 0.14, 0.95, 1.05, 2.42, 2.46, mat.glowRed);                                     // Ruecklicht
+        boxIn(g, sd * 0.92 - 0.35, sd * 0.92 + 0.35, 1.12, 1.2, 0.9, 2.15, armor);                                              // Kotfluegel hinten (Panzerplatte)
+      }
+      boxIn(g, -1.3, 1.3, 0.3, 0.52, -2.62, -2.2, armor);                                                                      // breite Frontschuerze
+      meshIn(g, new THREE.BoxGeometry(1.05, 0.03, 0.74), glassM, 0, 1.38, -0.68, -0.56);                                       // Frontscheibe
+      for (const [x, y, r] of [[0, 0.95, 0.27], [-0.42, 0.62, 0.14], [0.42, 0.62, 0.14]]) {                                   // Duesen (gluehen beim Sprung)
+        meshIn(g, new THREE.CylinderGeometry(r, r * 1.15, 0.4, 14, 1, true).rotateX(Math.PI / 2), nozM, x, y, 2.55);
+        meshIn(g, new THREE.CircleGeometry(r * 0.95, 14), jetM, x, y, 2.45);
+      }
+      mergeStatic(g);
+      // Raeder: vorne r 0,46 / 0,4 breit, hinten r 0,74 / 0,56 breit (Spur passt auf die Hebebuehne)
+      const wheels = [addWheel(g, -1.0, -1.75, 0.46, 0.4, true, tireM, rimM, 7, 14), addWheel(g, 1.0, -1.75, 0.46, 0.4, true, tireM, rimM, 7, 14), addWheel(g, -0.95, 1.55, 0.74, 0.56, false, tireM, rimM, 7, 14), addWheel(g, 0.95, 1.55, 0.74, 0.56, false, tireM, rimM, 7, 14)];
+      return { g, wheels, jetM };
+    }
+    // ---- Rolls-Royce (Stil Phantom): lange Haube, hoher Chromgrill, aufrechte Front, kurzer Hecküberhang, grosse Raeder ----
+    function buildRolls(col) {
+      const g = new THREE.Group();
+      const paint = M(col, { metalness: 0.55, roughness: 0.3 }), chrome = M(0xe8eaec, { metalness: 0.95, roughness: 0.12 }), glass = M(0x0b0e13, { roughness: 0.06, metalness: 0.8 });
+      const tireM = M(0x141414, { roughness: 0.92 }), dark = M(0x1b1c1f, { roughness: 0.6, metalness: 0.3 }), rimM = M(0xdfe2e5, { metalness: 0.9, roughness: 0.2 });
+      const grilleT = canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#dfe2e5"; c.fillRect(0, 0, w, h); c.fillStyle = "#24262a"; for (let x = 2; x < w; x += 5) c.fillRect(x, 0, 3, h); }); grilleT.repeat.set(1, 1);
+      const grille = M(0xffffff, { map: grilleT, metalness: 0.85, roughness: 0.25 });
+      // Oberer Aufbau (volle Breite ab 0,76 m), unten schmaler Kern; Schweller und Ueberhaenge seitlich, Radhaeuser bleiben offen
+      prismIn(g, [[3.05, 0.76], [2.98, 1.06], [1.2, 1.12], [0.45, 1.58], [-1.5, 1.63], [-2.3, 1.22], [-2.98, 1.08], [-3.05, 0.76]], 1.98, paint);
+      boxIn(g, -0.7, 0.7, 0.3, 0.77, -3.0, 3.0, paint);
+      for (const sd of [-1, 1]) {
+        const x0 = sd > 0 ? 0.7 : -0.99, x1 = sd > 0 ? 0.99 : -0.7;
+        for (const [z0, z1] of [[-3.04, -2.27], [-1.27, 1.27], [2.27, 3.04]]) boxIn(g, x0, x1, 0.34, 0.77, z0, z1, paint);
+        boxIn(g, sd * 0.993 - 0.007, sd * 0.993 + 0.007, 1.17, 1.5, -0.42, 1.45, glass);                                   // Seitenfenster
+        boxIn(g, sd * 0.996 - 0.005, sd * 0.996 + 0.005, 1.1, 1.13, -2.95, 2.95, chrome);                                  // Zierleiste
+        boxIn(g, sd * 0.86 - 0.17, sd * 0.86 + 0.17, 0.8, 0.93, -3.08, -3.02, mat.glow);                                   // Scheinwerfer
+        boxIn(g, sd * 0.82 - 0.12, sd * 0.82 + 0.12, 0.74, 1.02, 3.02, 3.08, mat.glowRed);                                 // Ruecklicht
+        boxIn(g, sd * 1.07 - 0.08, sd * 1.07 + 0.08, 1.13, 1.25, -0.62, -0.44, paint);                                     // Spiegel
+        boxIn(g, sd * 0.999 - 0.01, sd * 0.999 + 0.01, 0.98, 1.01, -0.1, 0.12, chrome);                                    // Tuergriffe
+        boxIn(g, sd * 0.999 - 0.01, sd * 0.999 + 0.01, 0.98, 1.01, 1.05, 1.27, chrome);
+      }
+      meshIn(g, new THREE.BoxGeometry(1.8, 0.02, 0.88), glass, 0, 1.36, -0.83, -0.55);                                           // Frontscheibe
+      meshIn(g, new THREE.BoxGeometry(1.7, 0.02, 0.9), glass, 0, 1.43, 1.9, 0.47);                                               // Heckscheibe
+      boxIn(g, -0.36, 0.36, 0.5, 1.04, -3.13, -3.05, grille);                                                                    // Grill (Pantheon)
+      boxIn(g, -0.41, 0.41, 1.04, 1.1, -3.14, -2.98, chrome); boxIn(g, -0.41, -0.36, 0.48, 1.04, -3.14, -3.03, chrome); boxIn(g, 0.36, 0.41, 0.48, 1.04, -3.14, -3.03, chrome);
+      meshIn(g, new THREE.CylinderGeometry(0.018, 0.024, 0.07, 8), chrome, 0, 1.135, -3.0); meshIn(g, new THREE.BoxGeometry(0.03, 0.09, 0.07), chrome, 0, 1.2, -2.99, 0.5);   // Kuehlerfigur
+      boxIn(g, -1.0, 1.0, 0.36, 0.47, -3.14, -3.02, chrome); boxIn(g, -1.0, 1.0, 0.36, 0.47, 3.02, 3.12, chrome);                // Stossstangen
+      boxIn(g, -0.95, 0.95, 0.2, 0.34, -2.8, 2.8, dark);                                                                         // Unterboden
+      mergeStatic(g);
+      const wheels = [[-0.86, -1.78, true], [0.86, -1.78, true], [-0.86, 1.78, false], [0.86, 1.78, false]].map(([x, z, f]) => addWheel(g, x, z, 0.43, 0.3, f, tireM, rimM, 0, 22));
+      return { g, wheels };
+    }
+    // ---- Motorrad: sportliches Naked Bike (Tank, Sitzbank, Motorblock, Auspuff, Gabel, Lenker, Scheinwerfer) ----
+    function buildBike(col) {
+      const g = new THREE.Group();
+      const paint = M(col, { metalness: 0.5, roughness: 0.32 }), black = M(0x141517, { roughness: 0.7 }), metal = M(0x8d9298, { metalness: 0.85, roughness: 0.3 }), chrome = M(0xe8eaec, { metalness: 0.95, roughness: 0.12 });
+      const tireM = M(0x121212, { roughness: 0.9 }), rimM = M(0x2a2c30, { metalness: 0.6, roughness: 0.4 });
+      prismIn(g, [[0.42, 0.72], [0.36, 0.97], [0.0, 1.0], [-0.22, 0.92], [-0.18, 0.72]], 0.36, paint);                           // Tank
+      prismIn(g, [[-0.15, 0.86], [-0.2, 0.92], [-0.7, 0.92], [-0.95, 1.02], [-1.0, 0.96], [-0.7, 0.84]], 0.28, black);            // Sitzbank
+      prismIn(g, [[-0.85, 0.9], [-1.05, 1.02], [-1.12, 0.98], [-0.9, 0.82]], 0.22, paint);                                       // Heckbuerzel
+      prismIn(g, [[0.55, 0.62], [0.45, 0.78], [-0.65, 0.88], [-0.75, 0.74], [0.35, 0.5]], 0.14, metal);                         // Rahmen
+      prismIn(g, [[0.38, 0.28], [0.42, 0.62], [-0.2, 0.7], [-0.3, 0.3]], 0.42, metal);                                           // Motorblock
+      meshIn(g, new THREE.CylinderGeometry(0.055, 0.065, 0.85, 10).rotateX(Math.PI / 2), chrome, 0.2, 0.36, 0.42);               // Auspuff
+      for (const sd of [-1, 1]) meshIn(g, new THREE.CylinderGeometry(0.03, 0.03, 0.8, 8), chrome, sd * 0.1, 0.66, -0.6, 0.38);   // Gabel
+      boxIn(g, -0.38, 0.38, 1.02, 1.05, -0.5, -0.46, black);                                                                     // Lenker
+      meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.08, 14).rotateX(Math.PI / 2), mat.glow, 0, 0.93, -0.62);                // Scheinwerfer
+      boxIn(g, -0.07, 0.07, 0.98, 1.02, 1.1, 1.13, mat.glowRed);                                                                // Ruecklicht
+      prismIn(g, [[0.66, 0.42], [0.72, 0.5], [0.45, 0.52], [0.42, 0.46]], 0.14, paint);                                          // Kotfluegel vorne
+      mergeStatic(g);
+      const wheels = [addWheel(g, 0, -0.72, 0.31, 0.12, true, tireM, rimM, 0, 20), addWheel(g, 0, 0.72, 0.32, 0.18, false, tireM, rimM, 0, 20)];
+      return { g, wheels };
+    }
+    const SPEC_TUMBLER = { name: "Tumbler", wheels: [[-1.0, -1.75], [1.0, -1.75], [-0.95, 1.55], [0.95, 1.55]], wb: 3.3, track: 1.95, pts: [-1.45, 0, 1.45], R: 1.25, circR: 1.15, enter: 3.8,
+      maxN: 24, maxF: 38, acc: 14, steer: 0.72, jump: true, camD: 8.5, camH: 1.3, seat: [0, 1.42, 0.2], bodyH: 1.9, bike: false,
+      exits: [[-2.2, -0.3], [2.2, -0.3], [-2.4, 1.2], [2.4, 1.2], [0, -3.6], [0, 3.6]],
+      msg: "Tumbler: W/S Gas/Bremse, A/D lenken, Shift schneller, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+    const SPEC_ROLLS = { name: "Rolls-Royce", wheels: [[-0.86, -1.78], [0.86, -1.78], [-0.86, 1.78], [0.86, 1.78]], wb: 3.56, track: 1.72, pts: [-1.95, 0, 1.95], R: 1.05, circR: 1.0, enter: 3.8,
+      maxN: 30, maxF: 48, acc: 10, steer: 0.62, jump: false, camD: 9.5, camH: 1.2, seat: [-0.45, 1.32, 0.1], bodyH: 1.8, bike: false,
+      exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -4.0], [0, 4.0]],
+      msg: "Rolls-Royce: W/S Gas/Bremse, A/D lenken, Shift schneller, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+    const SPEC_BIKE = { name: "Motorrad", wheels: [[0, -0.72], [0, 0.72]], wb: 1.44, track: 0, pts: [-0.55, 0.55], R: 0.42, circR: 0.4, enter: 2.5,
+      maxN: 32, maxF: 52, acc: 13, steer: 0.6, jump: false, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.25], bodyH: 1.7, bike: true,
+      exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.8], [0, 1.8]],
+      msg: "Motorrad: W/S Gas/Bremse, A/D lenken, Shift schneller, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
+    function addVehicle(spec, built, x, z, y, h) {
+      built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
+      const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+        pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length };
+      C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; } };
+      VEH.push(C); return C;
+    }
+    {
+      const bays = world.userData.bays, gy = GY + HILL;
+      CAR = addVehicle(SPEC_TUMBLER, buildTumbler(0x16181b, 0x0d0e10), bays[1].x, bays[1].z, gy, Math.PI);
+      for (const [no, col] of [[3, 0x8c1d1d], [4, 0x2b4c7e], [6, 0xc9c9c4], [7, 0x1d3b2a], [9, 0x55585e]]) addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
+      addVehicle(SPEC_BIKE, buildBike(0xb0141e), bays[2].x, bays[2].z, gy, Math.PI);
+      // Drehende Tiefgarage (Batcave): vier Tumbler in dunklen Farben auf den Feldern 0, 1, 3, 4
+      const tt = world.userData.turntable, rr = 60 * CAVE_SC;
+      [[0, 0x16181b, 0x0d0e10], [1, 0x3a3f45, 0x24282c], [3, 0x3b4a2f, 0x283222], [4, 0x6b5d45, 0x4a402f]].forEach(([k, b, a]) => {
+        const ang = (k + 0.5) / 6 * Math.PI * 2;
+        addVehicle(SPEC_TUMBLER, buildTumbler(b, a), tt.position.x + Math.cos(ang) * rr * 0.55, tt.position.z + Math.sin(ang) * rr * 0.55, LY, -ang + Math.PI / 2);
+      });
+      world.userData.vehicles = VEH;
+      world.userData.car = { leave: () => VEH.forEach(v => v.leave()) };
+    }
+    const CAR_STEP = 0.6, CAR_G = 14;
     const carW = (lx, lz) => { const s = Math.sin(CAR.h), c = Math.cos(CAR.h); return [CAR.x + lx * c + lz * s, CAR.z - lx * s + lz * c]; };
     const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
-    // Nur Hindernisse im Umkreis von 14 m pruefen (einmal pro Bild gefiltert), sonst kostet das Auto ca. 1 ms pro Bild
+    // Nur Hindernisse im Umkreis von 14 m pruefen (einmal pro Bild gefiltert), sonst kostet ein Fahrzeug ca. 1 ms pro Bild
     let nearS = solids, nearC = circles;
     function carNear() {
       const x = CAR.x, z = CAR.z, R = 14;
@@ -2411,10 +2500,11 @@
       for (const s of nearS) { if (!s.on || s.y1 > feet + CAR_STEP || s.y1 <= top) continue; if (x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1) top = s.y1; }
       return top;
     }
-    // Wie pushOut, aber mit Radius R, Stufe 0,6 m, Hoehe 1,9 m; die eigenen Parkkreise zaehlen nicht
+    // Wie pushOut, aber mit Radius R, Stufe 0,6 m, Fahrzeughoehe; die eigenen Parkkreise zaehlen nicht
     function carPush(p, feet, R) {
+      const body = CAR.spec.bodyH;
       for (const s of nearS) {
-        if (!s.on || s.y1 <= feet + CAR_STEP || s.y0 >= feet + CAR_BODY) continue;
+        if (!s.on || s.y1 <= feet + CAR_STEP || s.y0 >= feet + body) continue;
         const cx = Math.max(s.x0, Math.min(p.x, s.x1)), cz = Math.max(s.z0, Math.min(p.z, s.z1)), dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
         if (d2 >= R * R) continue;
         if (d2 > 1e-8) { const d = Math.sqrt(d2); p.x = cx + dx / d * R; p.z = cz + dz / d * R; }
@@ -2423,38 +2513,39 @@
       for (const c of nearC) {
         if (CAR.circ && CAR.circ.includes(c)) continue;
         const [cx, cz, r, top] = c;
-        if (top !== undefined && (feet + CAR_STEP >= top || feet < top - 8)) continue;
+        if (r <= 0 || (top !== undefined && (feet + CAR_STEP >= top || feet < top - 8))) continue;
         const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + R;
         if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
       }
     }
     const carSlopeG = (x, z, y) => (y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
-    // Bodenhoehe unter dem Auto: Mitte oder Mittel der vier Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
+    // Bodenhoehe unter dem Fahrzeug: Mitte oder Mittel der Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
     function carGround(feet) {
-      const hs = [[-1.0, -1.75], [1.0, -1.75], [-0.95, 1.55], [0.95, 1.55]].map(([lx, lz]) => { const [x, z] = carW(lx, lz); return carSupport(x, z, feet); });
-      const hc = carSupport(CAR.x, CAR.z, feet), avg = (hs[0] + hs[1] + hs[2] + hs[3]) / 4;
-      return { y: Math.max(hc, avg), pitch: Math.atan2((hs[0] + hs[1]) / 2 - (hs[2] + hs[3]) / 2, 3.3), roll: Math.atan2((hs[1] + hs[3]) / 2 - (hs[0] + hs[2]) / 2, 1.95) };
+      const sp = CAR.spec, hs = sp.wheels.map(([lx, lz]) => { const [x, z] = carW(lx, lz); return carSupport(x, z, feet); });
+      const mean = f => { let t = 0, n = 0; hs.forEach((h, i) => { if (f(sp.wheels[i])) { t += h; n++; } }); return n ? t / n : 0; };
+      const hc = carSupport(CAR.x, CAR.z, feet), avg = mean(() => true);
+      return { y: Math.max(hc, avg), pitch: Math.atan2(mean(([, lz]) => lz < 0) - mean(([, lz]) => lz > 0), sp.wb), roll: sp.track > 0 ? Math.atan2(mean(([lx]) => lx > 0) - mean(([lx]) => lx < 0), sp.track) : 0 };
     }
-    let carPitch = 0, carRoll = 0;
     function carPose(dt) {
       const C = CAR;
       C.g.position.set(C.x, C.y, C.z);
-      C.g.rotation.set(carPitch, C.h, carRoll, "YXZ");
+      C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ");
       for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r; if (w.front) w.piv.rotation.y = C.steer; }
-      C.jet = Math.max(0, C.jet - dt); C.jetM.emissiveIntensity = Math.min(2.5, C.jet * 4);
+      if (C.jetM) { C.jet = Math.max(0, C.jet - dt); C.jetM.emissiveIntensity = Math.min(2.5, C.jet * 4); }
     }
     function carCircles(on) {
-      if (!CAR.circ) CAR.circ = CAR_PTS.map(() => { const c = [0, 0, 0, 0]; circles.push(c); return c; });
-      CAR_PTS.forEach((lz, i) => { const [x, z] = carW(0, lz), c = CAR.circ[i]; c[0] = x; c[1] = z; c[2] = on ? 1.15 : 0; c[3] = CAR.y + 1.8; });
+      const sp = CAR.spec;
+      if (!CAR.circ) CAR.circ = sp.pts.map(() => { const c = [0, 0, 0, 0]; circles.push(c); return c; });
+      sp.pts.forEach((lz, i) => { const [x, z] = carW(0, lz), c = CAR.circ[i]; c[0] = x; c[1] = z; c[2] = on ? sp.circR : 0; c[3] = CAR.y + sp.bodyH - 0.1; });
     }
     function carMsg(t) { if (clock.elapsedTime - CAR.msgT > 2.5) { CAR.msgT = clock.elapsedTime; toast(t); } }
     function useCar() {
       if (!walking || ghost) return false;
-      const C = CAR, p = player.pos;
-      if (C.on) {
+      const p = player.pos;
+      if (CAR && CAR.on) {
         // Aussteigen: links (Fahrerseite), sonst rechts, sonst vorne/hinten
-        const s = Math.sin(C.h), c = Math.cos(C.h);
-        for (const [lx, lz] of [[-2.2, -0.3], [2.2, -0.3], [-2.4, 1.2], [2.4, 1.2], [0, -3.6], [0, 3.6]]) {
+        const C = CAR, s = Math.sin(C.h), c = Math.cos(C.h);
+        for (const [lx, lz] of C.spec.exits) {
           const q = new THREE.Vector3(C.x + lx * c + lz * s, C.y + 0.4, C.z - lx * s + lz * c), top = supportAt(q, C.y + 0.4);
           if (Math.abs(top - C.y) > 0.6) continue;
           q.y = top; const t2 = q.clone(); pushOut(t2, top);
@@ -2463,27 +2554,28 @@
           player.pos.copy(q); player.vy = 0; player.pitch = 0.05;
           camera.fov = 70; camera.updateProjectionMatrix();
           carCircles(true);
-          toast("Ausgestiegen");
+          toast(C.spec.bike ? "Abgestiegen" : "Ausgestiegen");
           return true;
         }
         toast("Hier ist kein Platz zum Aussteigen");
         return true;
       }
-      if (Math.hypot(p.x - C.x, p.z - C.z) < 3.8 && Math.abs(p.y - C.y) < 2) {
-        C.on = true; C.v = 0; keys.clear(); player.yaw = C.h; player.pitch = -0.12; carCircles(false);
-        toast("Tumbler: W/S Gas/Bremse, A/D lenken, Shift schneller, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen");
-        speedEl.hidden = false;
-        return true;
-      }
-      return false;
+      let best = null, bd = 1e9;
+      for (const v of VEH) { const d = Math.hypot(p.x - v.x, p.z - v.z); if (d < v.spec.enter && d < bd && Math.abs(p.y - v.y) < 2) { best = v; bd = d; } }
+      if (!best) return false;
+      CAR = best; const C = best;
+      C.on = true; C.v = 0; keys.clear(); player.yaw = C.h; player.pitch = -0.12; carCircles(false);
+      toast(C.spec.msg);
+      speedEl.hidden = false;
+      return true;
     }
     function carReset() {
       const s = CAR.safe || CAR.home;
       Object.assign(CAR, { x: s.x, z: s.z, y: s.y, h: s.h, v: 0, vy: 0, air: false, wet: false }); player.yaw = s.h;
-      toast("Tumbler zurückgesetzt");
+      toast(CAR.spec.name + " zurückgesetzt");
     }
     function carStep(dt) {
-      const C = CAR; carNear();
+      const C = CAR, sp = C.spec; carNear();
       let th = 0, st = 0;
       if (keys.has("KeyW") || keys.has("ArrowUp")) th += 1;
       if (keys.has("KeyS") || keys.has("ArrowDown")) th -= 1;
@@ -2491,33 +2583,33 @@
       if (keys.has("KeyD") || keys.has("ArrowRight")) st -= 1;
       th -= moveStick.y; st -= moveStick.x;
       look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-      const fast = keys.has("ShiftLeft") || keys.has("ShiftRight"), max = C.wet ? 0.3 : fast ? 38 : 24;   // im Wasser steckt er fest (R setzt zurueck)
+      const fast = keys.has("ShiftLeft") || keys.has("ShiftRight"), max = C.wet ? 0.3 : fast ? sp.maxF : sp.maxN;   // im Wasser steckt man fest (R setzt zurueck)
       // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
-      const steerT = st * 0.72 / (1 + Math.abs(C.v) / 9);   // langsam enger Wendekreis (ca. 3,8 m), schnell ruhig
+      const steerT = st * sp.steer / (1 + Math.abs(C.v) / 9);
       C.steer += (steerT - C.steer) * Math.min(1, dt * 8);
       if (!C.air) {
-        const dh = C.v * Math.tan(C.steer) / 3.3 * dt;
+        const dh = C.v * Math.tan(C.steer) / sp.wb * dt;
         C.h = wrapA(C.h + dh); player.yaw += dh;
-        if (th > 0) C.v += (C.v < -0.2 ? 16 : 14 * (1 - Math.max(0, C.v) / (max + 8))) * dt;
+        if (th > 0) C.v += (C.v < -0.2 ? 16 : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * dt;
         else if (th < 0) C.v -= (C.v > 0.2 ? 16 : 6) * dt;
         else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (2.5 + Math.abs(C.v) * 0.04) * dt);
         if (C.v > max) C.v = Math.max(max, C.v - 14 * dt);
         C.v = Math.max(-8, C.v);
-        // Sprung mit Schub (Tumbler: ohne Rampe)
-        if (player.jump || jumpHeld) {
+        // Sprung mit Schub (nur Tumbler: ohne Rampe)
+        if (sp.jump && (player.jump || jumpHeld)) {
           if (C.v >= 14 && !C.wet) { C.air = true; C.vy = 7.5; C.v += 6; C.jet = 0.9; toast("Sprung!"); }
           else if (player.jump) carMsg("Für den Sprung schneller fahren (ab 50 km/h)");
         }
       }
       player.jump = false;
-      // Bewegen mit Kollision (drei Kreise)
+      // Bewegen mit Kollision (Kreise entlang der Karosserie)
       const fx = -Math.sin(C.h), fz = -Math.cos(C.h), x0 = C.x, z0 = C.z;
       let nx = C.x + fx * C.v * dt, nz = C.z + fz * C.v * dt;
       for (let it = 0; it < 2; it++) {
         let sx = 0, sz = 0;
-        for (const lz of CAR_PTS) {
+        for (const lz of sp.pts) {
           const s = Math.sin(C.h), c = Math.cos(C.h), px = nx + lz * s, pz = nz + lz * c, q = { x: px, z: pz };
-          carPush(q, C.y, CAR_R); sx += q.x - px; sz += q.z - pz;
+          carPush(q, C.y, sp.R); sx += q.x - px; sz += q.z - pz;
         }
         nx += sx; nz += sz;
       }
@@ -2533,17 +2625,18 @@
       // Hoehe: am Boden haften, ueber Kanten abheben, im Flug Schwerkraft
       const gr = carGround(C.y);
       if (!C.air) {
-        if (gr.y >= C.y - 0.5) { C.y = gr.y; C.vy = 0; carPitch += (gr.pitch - carPitch) * Math.min(1, dt * 10); carRoll += (gr.roll - carRoll) * Math.min(1, dt * 10); }
+        if (gr.y >= C.y - 0.5) { C.y = gr.y; C.vy = 0; C.pitch += (gr.pitch - C.pitch) * Math.min(1, dt * 10); C.roll += (gr.roll - C.roll) * Math.min(1, dt * 10); }
         else { C.air = true; C.vy = 0; }
       } else {
         C.vy -= CAR_G * dt; C.y += C.vy * dt;
         const g2 = carGround(C.y);
-        if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; carPitch = g2.pitch; carRoll = g2.roll; }
-        else { carPitch += (Math.atan2(C.vy, Math.max(8, Math.abs(C.v))) * 0.6 - carPitch) * Math.min(1, dt * 3); carRoll *= 0.95; }
+        if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; C.pitch = g2.pitch; C.roll = g2.roll; }
+        else { C.pitch += (Math.atan2(C.vy, Math.max(8, Math.abs(C.v))) * 0.6 - C.pitch) * Math.min(1, dt * 3); C.roll *= 0.95; }
       }
+      if (sp.bike) { const tl = C.steer * Math.min(1, Math.abs(C.v) / 6) * 0.9; C.lean += (tl - C.lean) * Math.min(1, dt * 5); }   // Motorrad legt sich in die Kurve
       // Wasser: Teich, See, Meer
       const surf = waterAt(C.x, C.z), wet = surf !== null && C.y < surf - 0.6;
-      if (wet && !C.wet) toast("Der Tumbler steckt im Wasser – R setzt ihn zurück");
+      if (wet && !C.wet) toast(sp.name + " steckt im Wasser – R setzt zurück");
       C.wet = wet;
       if (wet) C.v *= Math.pow(0.15, dt);
       // sicheren Punkt merken (fuer R)
@@ -2551,10 +2644,10 @@
       if (C.safeT > 0.5 && !C.air && !C.wet) { C.safeT = 0; C.safe = { x: C.x, z: C.z, y: C.y, h: C.h }; }
       // Blick folgt dem Kurs
       if (Math.abs(C.v) > 3 && !C.air) player.yaw += wrapA(C.h - player.yaw) * Math.min(1, dt * 1.2);
-      speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h" + (C.view ? "" : "") ;
+      speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h";
       carPose(dt);
     }
-    // Kamera: hinter dem Auto (stoesst nicht durch Waende/Gelaende) oder Fahrersicht
+    // Kamera: hinter dem Fahrzeug (stoesst nicht durch Waende/Gelaende) oder Fahrersicht
     const camBlocked = (x, y, z) => {
       for (const s of nearS) if (s.on && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && y > s.y0 && y < s.y1) return true;
       for (const [cx, cz, r, top] of nearC) if (r > 0 && (x - cx) ** 2 + (z - cz) ** 2 < r * r && (top === undefined ? y > terrainH(cx, cz) - 3 : y < top && y > top - 8)) return true;
@@ -2568,35 +2661,54 @@
       return true;
     };
     function carCamera() {
-      const C = CAR;
+      const C = CAR, sp = C.spec;
       player.pos.set(C.x, C.y + 0.6, C.z);
       if (C.view === 1) {
-        const s = Math.sin(C.h), c = Math.cos(C.h);
-        camera.position.set(C.x - 0.0 * c + 0.2 * s, C.y + 1.42, C.z + 0.2 * c);
+        const [sx, sy, sz] = sp.seat, s = Math.sin(C.h), c = Math.cos(C.h);
+        camera.position.set(C.x + sx * c + sz * s, C.y + sy, C.z - sx * s + sz * c);
         camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
         return;
       }
-      const D = 8.5, H = Math.max(0.9, Math.min(7, 2.2 - player.pitch * 6)), tx = C.x, ty = C.y + 1.3, tz = C.z;
+      const D = sp.camD, H = Math.max(0.9, Math.min(7, 2.2 - player.pitch * 6)), tx = C.x, ty = C.y + sp.camH, tz = C.z;
       const dx = Math.sin(player.yaw) * D, dy = H - 1.3 + 0.9, dz = Math.cos(player.yaw) * D;
       let k = 1;
       for (let t = 0.12; t <= 1.0001; t += 0.06) if (camBlocked(tx + dx * t, ty + dy * t, tz + dz * t)) { k = Math.max(0.12, t - 0.08); break; }
       camera.position.set(tx + dx * k, ty + dy * k, tz + dz * k);
       camera.lookAt(tx, ty + 0.3, tz);
     }
-    // Jede Bildschleife: Autoaufzug mitnehmen, geparkt am Boden halten (Hebebuehne), Kollisionskreise, Kamera
+    // Jede Bildschleife: Drehscheibe und Autoaufzug mitnehmen, geparkte Fahrzeuge am Boden halten (Hebebuehne), Kreise, Sichtbarkeit, Kamera
+    let vehFrame = 0;
     function carFrame(dt) {
-      const C = CAR, L = CAR_LIFT && CAR_LIFT.L;
-      const inShaft = L && CAR_LIFT.inCar({ x: C.x, y: C.y, z: C.z });
-      if (!C.on && !(inShaft && L.state === "moving") && Math.hypot(player.pos.x - C.x, player.pos.z - C.z) > 80) return;   // geparkt und weit weg: nichts zu tun
-      if (!C.on) carNear();
-      if (inShaft && L.state === "moving") { C.y = L.y; C.air = false; C.vy = 0; }
-      else if (!C.on) {
-        const gr = carGround(C.y);
-        if (gr.y >= C.y - 0.8 && gr.y <= C.y + CAR_STEP) { C.y = gr.y; carPitch = gr.pitch; carRoll = gr.roll; }
-        else if (gr.y < C.y) C.y = Math.max(gr.y, C.y - 9 * dt);
+      const active = VEH.find(v => v.on) || null, L = CAR_LIFT && CAR_LIFT.L, tt = world.userData.turntable, ttR = 60 * CAVE_SC, w = dt * 0.05, bay = world.userData.liftBay;
+      vehFrame++;
+      for (const v of VEH) {
+        v.g.visible = v.on || Math.hypot(camera.position.x - v.x, camera.position.z - v.z) + Math.abs(camera.position.y - v.y) * 0.5 < 160;   // weit weg ausblenden
+        v.spun = Math.abs(v.y - LY) < 0.5 && Math.hypot(v.x - tt.position.x, v.z - tt.position.z) < ttR;
+        if (v.spun && dt > 0) {                                                // Drehscheibe: mitdrehen (wie der Spieler)
+          const c = Math.cos(w), s = Math.sin(w), dx = v.x - tt.position.x, dz = v.z - tt.position.z;
+          v.x = tt.position.x + dx * c + dz * s; v.z = tt.position.z - dx * s + dz * c; v.h += w; if (v.on) player.yaw += w;
+        }
+        if (v.on) continue;
+        const lifting = L && L.state === "moving" && CAR_LIFT.inCar({ x: v.x, y: v.y, z: v.z }), atBay = bay && Math.hypot(v.x - bay.x, v.z - bay.z) < 4;
+        let run = lifting || atBay || !v.settled || (vehFrame + v.idx) % 15 === 0;
+        if (run && !lifting && v.settled && Math.hypot(player.pos.x - v.x, player.pos.z - v.z) > 80) run = false;   // geparkt und weit weg
+        if (!run && !v.spun) continue;
+        CAR = v;
+        if (lifting) { v.y = L.y; v.air = false; v.vy = 0; v.settled = false; }
+        else if (run) {
+          carNear();
+          const gr = carGround(v.y);
+          if (gr.y >= v.y - 0.8 && gr.y <= v.y + CAR_STEP) { v.settled = Math.abs(gr.y - v.y) < 0.005; v.y = gr.y; v.pitch = gr.pitch; v.roll = gr.roll; }
+          else if (gr.y < v.y) { v.settled = false; v.y = Math.max(gr.y, v.y - 9 * dt); }
+          else v.settled = true;
+        }
+        v.v = 0; v.lean = 0; carCircles(true); carPose(dt);
       }
-      if (!C.on) { C.v = 0; carCircles(true); carPose(dt); }
-      else if (walking) { carPose(0); carCamera(); }
+      CAR = active || CAR;
+      if (active) {
+        if (L && L.state === "moving" && CAR_LIFT.inCar({ x: active.x, y: active.y, z: active.z })) { active.y = L.y; active.air = false; active.vy = 0; }
+        if (walking) { carNear(); carPose(0); carCamera(); }
+      }
     }
     // Ansicht von unten: Kamera darf unter das Gelaende (Gelaende ist von unten durchsichtig), Blick auf Garage und Hoehle
     let belowView = false;
@@ -3288,8 +3400,8 @@
         if (L.state === "idle" && L.target !== L.at) L.state = "closing";
         if (L.state === "closing") { L.open[L.at] = Math.max(0, L.open[L.at] - dt / 1.6); if (L.open[L.at] <= 0) {
           L.state = "moving"; L.t = 0; L.from = L.y; L.to = stops[L.target].y;
-          const car = world.userData.car, onIt = car && inCarC({ x: car.x, y: car.y, z: car.z });   // Drehteller: Auto mit dem Bug zum Ausgang
-          L.rotFrom = L.rot; L.rotTo = L.rot + (onIt && Math.sign(-Math.sin(car.h)) !== stops[L.target].side ? Math.PI : 0);
+          const car = (world.userData.vehicles || []).find(v => inCarC({ x: v.x, y: v.y, z: v.z }));   // Drehteller: Fahrzeug mit dem Bug zum Ausgang
+          L.rotFrom = L.rot; L.rotTo = L.rot + (car && Math.sign(-Math.sin(car.h)) !== stops[L.target].side ? Math.PI : 0);
           if (L.rotTo !== L.rotFrom) toast("Drehteller dreht das Auto");
         } }
         else if (L.state === "moving") {
@@ -3297,9 +3409,9 @@
           const nr = lerp(L.rotFrom, L.rotTo, sst(0.1, 0.9, L.t)), da = nr - L.rot; L.rot = nr;
           if (da) {                                                                   // Auto und Spieler auf der Plattform drehen mit
             const c = Math.cos(da), s = Math.sin(da), turn = o => { const dx = o.x - cx, dz = o.z - cz; o.x = cx + dx * c + dz * s; o.z = cz - dx * s + dz * c; };
-            const car = world.userData.car;
-            if (car && inCarC({ x: car.x, y: car.y, z: car.z })) { turn(car); car.h += da; if (car.on) player.yaw += da; }
-            if (walking && !ghost && !(car && car.on) && inCarC(player.pos)) { turn(player.pos); player.yaw += da; }
+            const vs = world.userData.vehicles || [];
+            for (const car of vs) if (inCarC({ x: car.x, y: car.y, z: car.z })) { turn(car); car.h += da; if (car.on) player.yaw += da; }
+            if (walking && !ghost && !vs.some(v => v.on) && inCarC(player.pos)) { turn(player.pos); player.yaw += da; }
           }
           if (L.t >= 1) { L.at = L.target; L.state = "opening"; L.rot = L.rotTo % (Math.PI * 2); }
         }
@@ -3657,7 +3769,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatReturn, WFT, MAIN, ZUF, roadNear, CAR, useCar, carStep, carFrame, carReset, boatFree, waterAt, gates, toggleGate, findAimedGate, updateGates, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatReturn, WFT, MAIN, ZUF, roadNear, VEH, get CAR() { return CAR; }, useCar, carStep, carFrame, carReset, boatFree, waterAt, gates, toggleGate, findAimedGate, updateGates, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
