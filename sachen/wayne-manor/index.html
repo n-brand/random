@@ -558,10 +558,43 @@
       if (!w || w.s < WFT.sP - 1 || (w.s > WFT.sG0 + 0.5 && w.s < WFT.sG1 - 0.5)) return null;   // ueber dem Teich keine Strasse
       return { y: w.y - 0.08, w: 1 - sst(2.9, 6.5, w.d) };
     }
+    // ===================== Hauptstrasse und Zufahrt (E4) =====================
+    // Hauptstrasse geschwungen von Suedwesten (-61/200) zwischen Plateauhang und Kueste (mind. ca. 25 m Abstand) nach Nordosten (256/-217),
+    // Punkte von Nicolas (2026-11-08). Zufahrt vom Fuss der Serpentine (122/1,5) durch das Einfahrtstor (schraeg zum Anwesen, Skizze Nicolas)
+    // bis zur Hauptstrasse (T-Kreuzung). Hoehe: Hauptstrasse = Gelaende entlang der Linie, zweimal gleitend gemittelt (+-35 m);
+    // Zufahrt sanft von der Serpentine zur Kreuzung. Das Gelaende wird wie bei der Serpentine an die Fahrbahn angeglichen.
+    const GATE_C = [147.5, 10.4], GATE_U = [0.605, 0.796];                 // Tormitte, Fahrtrichtung nach aussen (Suedosten)
+    function makeRoad(pts, w, yFn) {
+      const curve = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal");
+      const len = curve.getLength(), n = Math.ceil(len), samples = [], grid = new Map(), G = 10;
+      for (let i = 0; i <= n; i++) { const p = curve.getPointAt(i / n); samples.push([p.x, p.z, i / n * len]); }
+      for (const smp of samples) { const k = Math.floor(smp[0] / G) + "," + Math.floor(smp[1] / G); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(smp); }
+      const R = { curve, len, samples, w, grid, G, ys: null };
+      R.y = s => yFn(R, s);
+      return R;
+    }
+    // Naechster Strassenpunkt (bis max Meter) ueber ein 10-m-Raster: { d, s, y } oder null
+    function roadNear(R, x, z, max) {
+      const G = R.G, gx1 = Math.floor((x + max) / G), gz1 = Math.floor((z + max) / G);
+      let bq = max * max, bs = -1;
+      for (let gx = Math.floor((x - max) / G); gx <= gx1; gx++) for (let gz = Math.floor((z - max) / G); gz <= gz1; gz++) {
+        const L = R.grid.get(gx + "," + gz); if (L) for (const [sx, sz, s] of L) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < bq) { bq = q; bs = s; } }
+      }
+      return bs < 0 ? null : { d: Math.sqrt(bq), s: bs, y: R.y(bs) };
+    }
+    const smooth = (a, r) => a.map((_, i) => { let t = 0, n = 0; for (let k = Math.max(0, i - r); k <= Math.min(a.length - 1, i + r); k++) { t += a[k]; n++; } return t / n; });
+    const profileAt = (R, s) => { const f = clamp01(s / R.len) * (R.ys.length - 1), i = Math.floor(f); return lerp(R.ys[i], R.ys[Math.min(R.ys.length - 1, i + 1)], f - i); };
+    const MAIN = makeRoad([[-61, 200], [0, 168], [48, 138], [78, 108], [100, 78], [128, 55], [172, 36], [210, 0], [232, -60], [244, -130], [256, -217]], 8,
+      (R, s) => { if (!R.ys) R.ys = smooth(smooth(R.samples.map(([x, z]) => genH0(x, z)), 35), 35); return profileAt(R, s); });
+    const MAIN_J = (() => { let b = null, bq = 1e9; for (const smp of MAIN.samples) { const q = (smp[0] - 172) ** 2 + (smp[1] - 36) ** 2; if (q < bq) { bq = q; b = smp; } } return b; })();   // Kreuzung
+    const ZUF = makeRoad([[121, 1.5], [131.5, 2.6], [GATE_C[0] - 6 * GATE_U[0], GATE_C[1] - 6 * GATE_U[1]], GATE_C, [GATE_C[0] + 6 * GATE_U[0], GATE_C[1] + 6 * GATE_U[1]], [MAIN_J[0], MAIN_J[1]]], 7.5,
+      (R, s) => lerp(SERP_FOOT, MAIN.y(MAIN_J[2]), sst(0, R.len, s)));
+    const ROADS2 = [MAIN, ZUF];
     function genH(x, z) {
       let h = genH0(x, z) + serpRug(x, z);
       const r = serpBlend(x, z); if (r) h = lerp(h, r.y, r.w);
       const q = wfBlend(x, z); if (q) h = lerp(h, q.y, q.w);
+      for (const R of [ZUF, MAIN]) { const w = roadNear(R, x, z, R.w / 2 + 5.5); if (w) h = lerp(h, w.y - 0.08, 1 - sst(R.w / 2 + 1.5, R.w / 2 + 5.5, w.d)); }   // E4 (Hauptstrasse zuletzt: an der Kreuzung gilt ihre Hoehe)
       return h;
     }
     function genH0(x, z) {
@@ -586,7 +619,7 @@
     }
     // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
     function forestD(x, z) {
-      if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4) return 0;
+      if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4 || ROADS2.some(R => roadNear(R, x, z, R.w / 2 + 6))) return 0;
       for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
       if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z) < 27 || streamDist(x, z) < 4.5) return 0;
       let d = 0.08 + 0.55 * sst(0.6, 0.75, vnoise(x / 60, z / 60));
@@ -1971,6 +2004,7 @@
     function groundAt(x, z, feet = 0) {
       const sn = serpNear(x, z, SERP_W / 2);
       if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
+      for (const R of ROADS2) { const rn = roadNear(R, x, z, R.w / 2); if (rn && feet > rn.y - 2) return rn.y + 0.12; }   // Hauptstrasse, Zufahrt (E4)
       if (feet < HILL - 1 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return BED - 20;   // A3: Tunnel und Autoaufzug-Schacht
       if (feet < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) return BED - 20;   // A8: Waterfall-Exit-Tunnel (nur Quader)
       if (feet < -20 && waterCaveAt(x, z)) return BED;                          // E2: Grund in den Wasserhoehlen
@@ -2151,7 +2185,7 @@
         ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
         ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
         ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", 125, 0, 1.5, W], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Tumbler (Garage Platz 1)", world.userData.bay1.x + 2.6, GY, world.userData.bay1.z, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Kehre)", -50, -10, -215, W], ["Waterfall Exit (aussen, Westufer)", -134, 0, -186.4, E], ["Felswand West (oben)", -98, 0, -185, W]
+        ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", GATE_C[0] + 11 * GATE_U[0], 0, GATE_C[1] + 11 * GATE_U[1], Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Kreuzung)", MAIN_J[0] + 6, 0, MAIN_J[1] - 4, Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Südwest-Ende)", -58, 0, 196, Math.PI * 0.8], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Tumbler (Garage Platz 1)", world.userData.bay1.x + 2.6, GY, world.userData.bay1.z, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Kehre)", -50, -10, -215, W], ["Waterfall Exit (aussen, Westufer)", -134, 0, -186.4, E], ["Felswand West (oben)", -98, 0, -185, W]
       ];
       for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
       const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-list");
@@ -2892,6 +2926,29 @@
       });
       const shoulderMat = flatMat({ map: gravel, bumpMap: gravel, bumpScale: 1.2, side: THREE.DoubleSide });
       for (const sd of [-1, 1]) { const m = ribbon(SERP.curve, SERP.len, 0.95, shoulderMat, 2, 0, { y: s => SERP.y(s) - 0.05, off: sd * (hw + 0.45) }); m.userData.keep = false; }
+      // E4: Hauptstrasse und Zufahrt; die Zufahrt liegt 2 cm tiefer (an der Kreuzung gewinnt die Hauptstrasse), Leitpfosten alle 40 m
+      // Zufahrt endet am Rand der Hauptstrasse; dort setzt deren Bankett auf der Zufahrtseite aus
+      const jT = MAIN_J[2] / MAIN.len, jW = (ZUF.w / 2 + 1.2) / MAIN.len, jt = MAIN.curve.getTangentAt(jT), jSide = Math.sign((GATE_C[0] - MAIN_J[0]) * -jt.z + (GATE_C[1] - MAIN_J[1]) * jt.x) || 1;
+      for (const R of ROADS2) {
+        const lo = R === ZUF ? 0.03 : 0.05, t1 = R === ZUF ? (R.len - MAIN.w / 2 + 0.15) / R.len : 1;
+        const m = ribbon(R.curve, R.len, R.w, roadMat, 27, 0, { y: s => R.y(s) + lo, t1 }); m.userData.keep = false;
+        for (const sd of [-1, 1]) {
+          const parts = R === MAIN && sd === jSide ? [[0, jT - jW], [jT + jW, 1]] : [[0, R === ZUF ? (R.len - MAIN.w / 2 - 0.9) / R.len : 1]];
+          for (const [a0, a1] of parts) { const b = ribbon(R.curve, R.len, 0.95, shoulderMat, 2, 0, { y: s => R.y(s) + lo - 0.06, off: sd * (R.w / 2 + 0.45), t0: a0, t1: a1 }); b.userData.keep = false; }
+        }
+      }
+      { const postM = M(0xf2f2ee, { roughness: 0.6 }), bandM = M(0x1b1b1b), reflM = M(0xff9a2a, { emissive: 0x6a2a00 });
+        for (let s = 20; s < MAIN.len - 10; s += 40) {
+          const p = MAIN.curve.getPointAt(s / MAIN.len), tg = MAIN.curve.getTangentAt(s / MAIN.len), nl = Math.hypot(tg.x, tg.z), nx = -tg.z / nl, nz = tg.x / nl, y = MAIN.y(s);
+          if (Math.hypot(p.x - MAIN_J[0], p.z - MAIN_J[1]) < 14) continue;                     // Kreuzung frei
+          for (const sd of [-1, 1]) {
+            const x = p.x + nx * sd * (MAIN.w / 2 + 1.1), z = p.z + nz * sd * (MAIN.w / 2 + 1.1), g = Math.min(y, terrainH(x, z));
+            B(x - 0.06, x + 0.06, g - 0.3, y + 1.0, z - 0.06, z + 0.06, postM, false);
+            B(x - 0.065, x + 0.065, y + 0.72, y + 0.86, z - 0.065, z + 0.065, bandM, false, world, false);
+            B(x - 0.07, x + 0.07, y + 0.76, y + 0.82, z - 0.07, z + 0.07, reflM, false, world, false);
+            circles.push([x, z, 0.12, y + 1.0]);
+          }
+        } }
 
       // ---- Felsen: verformte Kugel mit Bruchflaechen, Schichten, Rissen, Moos; viele zu einem Netz ----
       const rockGeos = [];
@@ -3038,28 +3095,35 @@
         for (const im of [body, band, refl]) { im.castShadow = true; im.computeBoundingSphere(); scene.add(im); }
       }
     }
-    // ===================== Tor am Fuss der Serpentine (A6) =====================
-    // Quer zur Strasse bei x GX: Natursteinmauern beidseits (folgen dem Gelaende), zwei Pfeiler mit Laternen, zweifluegeliges Schmiedeeisentor
-    // (oeffnet nach innen/bergseitig, Rechtsklick oder E wie die Felstore), kleines Torhaus aussen. Hier schliesst spaeter die Zufahrt an.
+    // ===================== Tor an der Zufahrt (A6, versetzt in E4) =====================
+    const Bw = B;                                                             // Welt-Quader (im Torblock ist B lokal)
+    // Quer zur Zufahrt bei GATE_C (schraeg zum Anwesen, Skizze Nicolas 2026-11-08): Natursteinmauern beidseits (folgen dem Gelaende),
+    // zwei Pfeiler mit Laternen, zweifluegeliges Schmiedeeisentor (oeffnet nach innen/bergseitig, Rechtsklick oder E), kleines Torhaus aussen.
+    // Gebaut in einer gedrehten Gruppe (lokal: x = Fahrtrichtung nach aussen, z = quer); Kollision als Kreise, das Tor als kleine Quader.
     {
-      const GX = 115, zc = (() => { let best = 1e9, bz = 1.5; for (const [x, z] of SERP.samples) if (Math.abs(x - GX) < best) { best = Math.abs(x - GX); bz = z; } return bz; })();
-      const gy = SERP.y(serpNear(GX, zc, 6).s) + 0.07, OPEN = 4.0;
+      const [GCX, GCZ] = GATE_C, [ux, uz] = GATE_U, toW = (lx, lz) => [GCX + lx * ux - lz * uz, GCZ + lx * uz + lz * ux], tH = (lx, lz) => terrainH(...toW(lx, lz));
+      const GX = 0, zc = 0, OPEN = 4.0, gy = ZUF.y(roadNear(ZUF, GCX, GCZ, 6).s) + 0.12;
+      const GG = new THREE.Group(); GG.position.set(GCX, 0, GCZ); GG.rotation.y = Math.atan2(-uz, ux); GG.userData.dynamic = true; world.add(GG);
+      const GS = new THREE.Group(); GG.add(GS);                                                 // feste Teile (werden unten je Material zusammengefasst)
+      const B = (x0, x1, y0, y1, z0, z1, m, solid, parent = GS, shadow = true) => Bw(x0, x1, y0, y1, z0, z1, m, false, parent, shadow);
+      const ring = (lx, lz0, lz1, r, top) => { for (let z = lz0; z <= lz1 + 1e-6; z += Math.max(0.5, r)) circles.push([...toW(lx, z), r, top]); };
       const stoneM = M(0xffffff, { map: texClone(brickTex, 1 / 1.5, 1 / 1.5), roughness: 0.95 }), capM = M(0xbdb6a6, { roughness: 0.8 }), iron = M(0x1d1f22, { metalness: 0.6, roughness: 0.45 });
       mat.gateLamp = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffc870, emissiveIntensity: 0.15 + night * 2.6 });
       for (const sd of [-1, 1]) for (let a = OPEN + 1.15; a < 16; a += 2) {                   // Mauern
-        const za = zc + sd * a, zb = zc + sd * Math.min(16, a + 2), z0 = Math.min(za, zb), z1 = Math.max(za, zb), g = terrainH(GX, (z0 + z1) / 2);
+        const za = zc + sd * a, zb = zc + sd * Math.min(16, a + 2), z0 = Math.min(za, zb), z1 = Math.max(za, zb), g = tH(GX, (z0 + z1) / 2);
         B(GX - 0.35, GX + 0.35, Math.min(g, gy) - 0.8, g + 2.1, z0, z1, stoneM);
         B(GX - 0.45, GX + 0.45, g + 2.1, g + 2.3, z0 - 0.02, z1 + 0.02, capM, false);
+        ring(GX, z0 + 0.25, z1 - 0.25, 0.45, g + 2.3);
       }
       for (const sd of [-1, 1]) {                                                              // Pfeiler mit Laterne
         const pz = zc + sd * (OPEN + 0.6);
-        B(GX - 0.6, GX + 0.6, gy - 0.8, gy + 3.0, pz - 0.6, pz + 0.6, stoneM);
+        B(GX - 0.6, GX + 0.6, gy - 0.8, gy + 3.0, pz - 0.6, pz + 0.6, stoneM); circles.push([...toW(GX, pz), 0.85, gy + 3.3]);
         B(GX - 0.72, GX + 0.72, gy + 3.0, gy + 3.25, pz - 0.72, pz + 0.72, capM, false);
         B(GX - 0.16, GX + 0.16, gy + 3.25, gy + 3.36, pz - 0.16, pz + 0.16, iron, false);
-        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.42, 0.3), mat.gateLamp); lamp.position.set(GX, gy + 3.57, pz); world.add(lamp);
-        const hat = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.26, 4).rotateY(Math.PI / 4), iron); hat.position.set(GX, gy + 3.91, pz); world.add(hat);
+        const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.42, 0.3), mat.gateLamp); lamp.position.set(GX, gy + 3.57, pz); GG.add(lamp);
+        const hat = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.26, 4).rotateY(Math.PI / 4), iron); hat.position.set(GX, gy + 3.91, pz); GS.add(hat);
       }
-      const g = new THREE.Group(); g.userData.dynamic = true; world.add(g);
+      const g = GG;
       const leaves = [];
       for (const sd of [-1, 1]) {                                                              // Fluegel: Drehpunkt am Pfeiler, reicht bis zur Mitte
         const piv = new THREE.Group(); piv.position.set(GX, gy, zc + sd * OPEN); g.add(piv);
@@ -3075,19 +3139,27 @@
         for (let k = 0; k < 7; k++) { const u = (k + 0.5) / 7, z = lerp(zA, zB, u); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.02, 6, 16).rotateY(Math.PI / 2), iron); ring.position.set(0, 0.78, z); piv.add(ring); }
         leaves.push({ piv, sd });
       }
-      const solid = S(GX - 0.2, GX + 0.2, gy - 0.5, gy + 2.9, zc - OPEN, zc + OPEN);
-      gates.push({ name: "Einfahrtstor", g, open: 0, target: 0, solid, a: [GX, zc - OPEN], b: [GX, zc + OPEN], anim: f => { for (const L of leaves) L.piv.rotation.y = L.sd * f * 1.7; } });
-      // Torhaus aussen, noerdlich der Strasse; Tuer zur Strasse, Fenster zum Tor und nach hinten
-      const hx0 = 117.2, hx1 = 121.4, hz1 = zc - OPEN - 4.6, hz0 = hz1 - 4.4;
-      const hg = Math.max(...[[hx0, hz0], [hx1, hz0], [hx0, hz1], [hx1, hz1]].map(([x, z]) => terrainH(x, z))), fy = hg + 0.2, top = fy + 2.8, xm = (hx0 + hx1) / 2, zm = (hz0 + hz1) / 2;
+      // Torfluegel-Kollision: kleine Quader entlang der Torlinie (gedreht geht kein einzelner Quader), schalten gemeinsam
+      const gateBoxes = []; for (let z = -OPEN; z <= OPEN + 1e-6; z += 0.4) { const [x, zz] = toW(0, z); gateBoxes.push(S(x - 0.2, x + 0.2, gy - 0.5, gy + 2.9, zz - 0.2, zz + 0.2)); }
+      const solid = { set on(v) { for (const b of gateBoxes) b.on = v; }, get on() { return gateBoxes[0].on; } };
+      gates.push({ name: "Einfahrtstor", g, open: 0, target: 0, solid, a: toW(GX, zc - OPEN), b: toW(GX, zc + OPEN), anim: f => { for (const L of leaves) L.piv.rotation.y = L.sd * f * 1.7; } });
+      // Torhaus aussen, links der Zufahrt (von innen gesehen); Tuer zur Strasse, Fenster zum Tor und nach hinten (lokal gebaut)
+      const hx0 = 2.2, hx1 = 6.4, hz1 = zc - OPEN - 4.6, hz0 = hz1 - 4.4, T = 0.4;
+      const hg = Math.max(...[[hx0, hz0], [hx1, hz0], [hx0, hz1], [hx1, hz1]].map(([x, z]) => tH(x, z))), fy = hg + 0.2, top = fy + 2.8, xm = (hx0 + hx1) / 2, zm = (hz0 + hz1) / 2;
       B(hx0 - 0.15, hx1 + 0.15, hg - 1.2, fy, hz0 - 0.15, hz1 + 0.15, capM);
-      wall("x", hx0, hx1, hz1 - 0.2, fy, top, [[xm - 0.55, xm + 0.55, fy, fy + 2.15]], stoneM, 0.4);
-      wall("x", hx0, hx1, hz0 + 0.2, fy, top, [[xm - 0.7, xm + 0.7, fy + 1.0, fy + 1.9, true]], stoneM, 0.4);
-      wall("z", hz0 + 0.4, hz1 - 0.4, hx0 + 0.2, fy, top, [[zm - 0.7, zm + 0.7, fy + 1.0, fy + 1.9, true]], stoneM, 0.4);
-      wall("z", hz0 + 0.4, hz1 - 0.4, hx1 - 0.2, fy, top, [], stoneM, 0.4);
+      B(hx0, xm - 0.55, fy, top, hz1 - T, hz1, stoneM); B(xm + 0.55, hx1, fy, top, hz1 - T, hz1, stoneM); B(xm - 0.55, xm + 0.55, fy + 2.15, top, hz1 - T, hz1, stoneM);   // Strassenseite mit Tuer
+      B(hx0, xm - 0.7, fy, top, hz0, hz0 + T, stoneM); B(xm + 0.7, hx1, fy, top, hz0, hz0 + T, stoneM); B(xm - 0.7, xm + 0.7, fy, fy + 1.0, hz0, hz0 + T, stoneM); B(xm - 0.7, xm + 0.7, fy + 1.9, top, hz0, hz0 + T, stoneM);   // hinten mit Fenster
+      B(hx0, hx0 + T, fy, top, hz0 + T, zm - 0.7, stoneM); B(hx0, hx0 + T, fy, top, zm + 0.7, hz1 - T, stoneM); B(hx0, hx0 + T, fy, fy + 1.0, zm - 0.7, zm + 0.7, stoneM); B(hx0, hx0 + T, fy + 1.9, top, zm - 0.7, zm + 0.7, stoneM);   // zum Tor mit Fenster
+      B(hx1 - T, hx1, fy, top, hz0 + T, hz1 - T, stoneM);
+      for (const [x0, x1, z0, z1] of [[xm - 0.7, xm + 0.7, hz0 + 0.18, hz0 + 0.22], [hx0 + 0.18, hx0 + 0.22, zm - 0.7, zm + 0.7]]) B(x0, x1, fy + 1.0, fy + 1.9, z0, z1, mat.glass, false, GS, false);
       B(hx0, hx1, top, top + 0.15, hz0, hz1, capM, false);
-      gableRoof(hx0, hx1, hz0, hz1, top + 0.15, 1.7, 0.35, mat.slate);
-      const dl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.22), mat.gateLamp); dl.position.set(xm + 0.9, fy + 2.45, hz1 + 0.15); world.add(dl);
+      { const s = new THREE.Shape(), over = 0.35, rise = 1.7; s.moveTo(hz0 - over, 0); s.lineTo(hz1 + over, 0); s.lineTo((hz0 + hz1) / 2, rise); s.closePath();
+        const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: hx1 - hx0 + 2 * over, bevelEnabled: false }), mat.slate); roof.rotation.y = -Math.PI / 2; roof.position.set(hx1 + over, top + 0.15, 0); roof.castShadow = true; GS.add(roof); }
+      for (let x = hx0 + 0.6; x <= hx1 - 0.5; x += 1.0) for (let z = hz0 + 0.6; z <= hz1 - 0.5; z += 1.0) circles.push([...toW(x, z), 0.75, top]);   // Torhaus fest (innen nicht begehbar)
+      const dl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.22), mat.gateLamp); dl.position.set(xm + 0.9, fy + 2.45, hz1 + 0.15); GG.add(dl);
+      // feste Teile je Material zu einem Netz zusammenfassen (die Gruppe ist "dynamisch" wegen der Fluegel und wird sonst nicht zusammengefasst)
+      { GS.updateMatrix(); const byMat = new Map(); GS.children.forEach(o => { o.updateMatrix(); const gg = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); gg.applyMatrix4(o.matrix); for (const k of Object.keys(gg.attributes)) if (!["position", "normal", "uv"].includes(k)) gg.deleteAttribute(k); if (!gg.attributes.uv) gg.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(gg.attributes.position.count * 2), 2)); if (!byMat.has(o.material)) byMat.set(o.material, []); byMat.get(o.material).push(gg); });
+        GS.clear(); for (const [m, list] of byMat) { const mm = new THREE.Mesh(mergeGeometries(list, false), m); mm.castShadow = mm.receiveShadow = true; GS.add(mm); } }
     }
     // ===================== Wasserfall (A7) =====================
     // Bach in der Rinne auf der Erweiterung, Fall ueber die Felswand bei WF_LIP (ca. 25 m) in den Teich, Wasservorhang mit laufender Textur
@@ -3567,7 +3639,7 @@
 
     // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
     if (location.search.includes("debug")) {
-      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatReturn, WFT, CAR, useCar, carStep, carFrame, carReset, boatFree, waterAt, gates, toggleGate, findAimedGate, updateGates, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
+      window.manorDebug = { player, update: updatePlayer, setWalk, startWalk, startGhost, ghostStep, isGhost: () => ghost, terrainH, genH, forestD, LAKES, HOUSE, LIFT, updateLift, useLift, MAPS, showMap, seaD, groundAt, supportAt, SERP, serpNear, carLift: () => CAR_LIFT, WATER_CAVES, SEA_STACKS, waterCaveAt, GARAGE, HILL, plateauH, plateauSD, STOPS, caveAt, caveUpAt, toCave, LY, UY, STW, pickStop, stepStop, BOAT, useBoat, boatStep, boatReturn, WFT, MAIN, ZUF, roadNear, CAR, useCar, carStep, carFrame, carReset, boatFree, waterAt, gates, toggleGate, findAimedGate, updateGates, solids, circles, camera, controls, renderer, scene, mp, mapMesh };
     }
   </script>
 </body>
