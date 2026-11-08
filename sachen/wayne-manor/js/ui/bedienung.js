@@ -77,7 +77,19 @@ const MOUSE_SENS = 0.0025 * 0.5;                                          // fes
 document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS); });
 // Strg+W schliesst den Tab, das kann eine Webseite nicht verhindern: beim Begehen/Geist/Fahren fragt der Browser wenigstens nach (Nicolas)
 addEventListener("beforeunload", e => { if (walking) { e.preventDefault(); e.returnValue = ""; } });
+// Vollbild mit Tastensperre (Nicolas): im Vollbild bekommt die Seite Strg+W & Co. (Keyboard Lock, Chrome/Edge) und verhindert sie;
+// Esc gedrueckt halten verlaesst das Vollbild. Knopf "Vollbild" (Orbit-Leiste und beim Begehen) oder Taste F.
+async function toggleFullscreen() {
+  if (document.fullscreenElement) { try { navigator.keyboard?.unlock?.(); } catch (e) {} return document.exitFullscreen().catch(() => {}); }
+  try { await document.documentElement.requestFullscreen({ navigationUI: "hide" }); } catch (e) { return toast("Vollbild ist hier nicht möglich"); }
+  let locked = false; try { if (navigator.keyboard && navigator.keyboard.lock) { await navigator.keyboard.lock(); locked = true; } } catch (e) {}
+  toast(locked ? "Vollbild: Strg+W ist gesperrt. Esc gedrückt halten zum Verlassen" : "Vollbild (dieser Browser kann Strg+W nicht sperren)");
+}
+for (const id of ["btn-fs", "btn-fs2"]) $(id).addEventListener("click", e => { e.currentTarget.blur(); toggleFullscreen(); });
+document.addEventListener("fullscreenchange", () => { for (const id of ["btn-fs", "btn-fs2"]) $(id).setAttribute("aria-pressed", String(!!document.fullscreenElement)); });
 addEventListener("keydown", e => {
+  if (document.fullscreenElement && (e.ctrlKey || e.metaKey) && !["KeyC", "KeyV", "KeyX", "KeyA"].includes(e.code)) e.preventDefault();   // Vollbild: Strg+W/T/N/R usw. abfangen
+  if (e.code === "KeyF" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { toggleFullscreen(); return; }
   if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
   if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
   if (!walking) return;
