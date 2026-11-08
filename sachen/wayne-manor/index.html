@@ -2047,6 +2047,8 @@
       for (const L of LAKES) if (lakeD(L, x, z) < 1) return WATER_Y;
       return null;
     }
+    // Klippenkante: Schritt nach (nx, nz) verboten, wenn er naeher als m Meter an die Kuestenlinie fuehrt und nicht landeinwaerts geht
+    const coastEdge = (nx, nz, x0, z0, m) => { const s1 = seaD(nx, nz); return s1 > -m && s1 > seaD(x0, z0) - 0.01; };
     function updatePlayer(dt, moveX, moveZ, run) {
       const len = Math.hypot(moveX, moveZ);
       if (len > 1) { moveX /= len; moveZ /= len; }
@@ -2058,6 +2060,8 @@
       pushOut(next, player.pos.y);
       // Steilkueste: oben an der Kante nicht hinunterfallen (Seen im Inland darf man betreten)
       if (player.pos.y > -3 && seaD(next.x, next.z) > -40 && terrainH(next.x, next.z) < WATER_Y - 0.5 && supportAt(next, player.pos.y) < WATER_Y - 0.5) { next.x = player.pos.x; next.z = player.pos.z; }
+      // Klippenkante weiter innen (Nicolas): das Gelaende faellt 4-5 m vor der Kuestenlinie ab, davor steht die Felswand; 5 m Abstand, landeinwaerts geht immer
+      if (player.pos.y > -3 && !swim && coastEdge(next.x, next.z, player.pos.x, player.pos.z, 5)) { next.x = player.pos.x; next.z = player.pos.z; }
       // Steile Haenge sperren: nur das Gelaende zaehlt (Stufen wie der Brunnenrand regelt supportAt)
       const slopeG = (x, z) => (player.pos.y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (player.pos.y < -20 && waterCaveAt(x, z)) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
       const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
@@ -2769,6 +2773,7 @@
         if (moved > 1e-6 && g1 - g0 > 1.0 * moved && C.y < g0 + 0.3) { nx = x0; nz = z0; }
         if (C.y > -3 && seaD(nx, nz) > -40 && terrainH(nx, nz) < WATER_Y - 0.5 && carSupport(nx, nz, C.y) < WATER_Y - 0.5) { nx = x0; nz = z0; }   // Steilkueste
       }
+      if (C.y > -3 && coastEdge(nx, nz, x0, z0, 6)) { nx = x0; nz = z0; if (!C.air) C.v *= 0.3; }   // Klippenkante: Fahrzeuge halten 6 m vor der Kuestenlinie (auch im Flug)
       const far = Math.hypot(nx, nz); if (far > LIMIT) { nx *= LIMIT / far; nz *= LIMIT / far; }
       C.x = nx; C.z = nz;
       if (dt > 0) { const along = ((nx - x0) * fx + (nz - z0) * fz) / dt; if (Math.abs(along) < Math.abs(C.v) - 0.5) C.v = C.air ? along * 0.9 : along; }   // an Hindernissen abbremsen
