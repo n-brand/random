@@ -59,7 +59,10 @@ function buildTheBat() {
     meshIn(g, new THREE.CylinderGeometry(0.7, 0.7, 1.3, 6, 1, true).rotateY(Math.PI / 6).rotateX(Math.PI / 2), podM, sd * PX, PY, PZ);    // Gondel (offen, beidseitig sichtbar: innen war sie aus manchen Winkeln unsichtbar)
     meshIn(g, new THREE.CylinderGeometry(0.7, 0.7, 0.05, 6).rotateY(Math.PI / 6).rotateX(Math.PI / 2), dark, sd * PX, PY, PZ + 0.62);    // Rueckwand
     meshIn(g, new THREE.CylinderGeometry(0.12, 0.12, 0.5, 10).rotateX(Math.PI / 2), frameM, sd * PX, PY, PZ + 0.2);                         // Nabe
-    for (const dx of [-0.13, 0.13]) meshIn(g, new THREE.CylinderGeometry(0.05, 0.05, 1.0, 8), dark, sd * PX + dx, PY - 0.62, PZ - 1.0, Math.PI / 2);   // Kanonen
+    // Kanonen (Nicolas 2026-11-09): unten gekuerzt, dazu innen (zur Kanzel hin) eine zweite, je ein grosses Rohr 0,7 m
+    meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.7, 10), dark, sd * PX, PY - 0.62, PZ - 0.7, Math.PI / 2);                          // unten: ein grosses Rohr (Nicolas)
+    meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.7, 10), dark, sd * (PX - 0.72), PY, PZ - 0.7, Math.PI / 2);                        // innen: ein grosses Rohr
+    boxIn(g, sd * (PX - 0.72) - 0.1, sd * (PX - 0.72) + 0.1, PY - 0.25, PY + 0.25, PZ - 0.45, PZ + 0.3, frameM);           // Halter innen
     boxIn(g, sd * PX - 0.1, sd * PX + 0.1, PY - 0.75, PY - 0.5, PZ - 0.7, PZ + 0.3, frameM);
     boxIn(g, sd * (PX + 0.55) - 0.08, sd * (PX + 0.55) + 0.08, PY - 0.45, PY - 0.3, PZ - 0.66, PZ - 0.63, mat.glow);
   }
@@ -90,7 +93,7 @@ function buildTheBat() {
   g.scale.set(BAT_KX, 1, BAT_KZ);                                                                                         // auf Originalmasse (siehe BAT_KX)
   return { g, rotors, fans, legs, gear, thrustM };
 }
-const BAT_PTS = [[0, 1.3, 0], [0, 1.6, -3.5], [-1.8, 1.25, -4.7], [1.8, 1.25, -4.7], [-1.8, 0.6, -5.6], [1.8, 0.6, -5.6], [-2.5, 1.25, -4.1], [2.5, 1.25, -4.1],
+const BAT_PTS = [[0, 1.3, 0], [0, 1.6, -3.5], [-1.8, 1.25, -4.7], [1.8, 1.25, -4.7], [-1.8, 0.6, -5.2], [1.8, 0.6, -5.2], [-1.08, 1.25, -5.2], [1.08, 1.25, -5.2], [-2.5, 1.25, -4.1], [2.5, 1.25, -4.1],
   [-2.6, 2.1, -0.6], [2.6, 2.1, -0.6], [-2.2, 2.3, 2.0], [2.2, 2.3, 2.0], [0, 3.35, 1.0], [-1.6, 2.3, 4.6], [1.6, 2.3, 4.6], [0, 2.4, 7.9], [-2.4, 2.1, 7.6], [2.4, 2.1, 7.6], [-1.1, 2.2, 7.8], [1.1, 2.2, 7.8]].map(([x, y, z]) => [x * BAT_KX, y, z * BAT_KZ]);   // Pruefpunkte (lokal): Kopf, Gondeln, Kanonen, Panzer, Heck, Beine
 const BAT_FEET = [[-1.1, -1.8], [1.1, -1.8], [-1.1, 2.0], [1.1, 2.0], [0, 0.3]].map(([x, z]) => [x * BAT_KX, z * BAT_KZ]);                                         // Kufen
 const FLY = (() => {
