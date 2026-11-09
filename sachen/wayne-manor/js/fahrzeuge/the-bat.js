@@ -42,10 +42,11 @@ function buildTheBat() {
   boxIn(g, -0.66, 0.66, 2.2, 2.27, -3.25, -3.1, frameM);                                                                  // Rahmen oben vorne
   boxIn(g, -0.25, 0.25, 1.25, 1.75, -2.1, -1.6, dark);                                                                    // Sitz
   // Arme: Streben vom Panzer zu den sechseckigen Gondeln, Gondeln mit Rand, Kanonen darunter, Lampe
+  const podM = M(0x2c2e33, { metalness: 0.45, roughness: 0.55, flatShading: true, side: THREE.DoubleSide });
   const PX = 1.8, PY = 1.25, PZ = -2.6;                                                                 // Gondeln dicht neben dem Kopf, fast so weit vorne (Bild von oben)
   for (const sd of [-1, 1]) {
     beam([sd * 1.0, 2.0, -1.0], [sd * PX, PY + 0.45, PZ + 0.3], 0.2, armor); beam([sd * 0.7, 1.2, -1.2], [sd * PX, PY - 0.35, PZ + 0.3], 0.12, dark);
-    meshIn(g, new THREE.CylinderGeometry(0.7, 0.7, 1.3, 6, 1, true).rotateY(Math.PI / 6).rotateX(Math.PI / 2), armor, sd * PX, PY, PZ);   // Gondel (offen)
+    meshIn(g, new THREE.CylinderGeometry(0.7, 0.7, 1.3, 6, 1, true).rotateY(Math.PI / 6).rotateX(Math.PI / 2), podM, sd * PX, PY, PZ);    // Gondel (offen, beidseitig sichtbar: innen war sie aus manchen Winkeln unsichtbar)
     meshIn(g, new THREE.CylinderGeometry(0.7, 0.7, 0.05, 6).rotateY(Math.PI / 6).rotateX(Math.PI / 2), dark, sd * PX, PY, PZ + 0.62);    // Rueckwand
     meshIn(g, new THREE.CylinderGeometry(0.12, 0.12, 0.5, 10).rotateX(Math.PI / 2), frameM, sd * PX, PY, PZ + 0.2);                         // Nabe
     for (const dx of [-0.13, 0.13]) meshIn(g, new THREE.CylinderGeometry(0.05, 0.05, 1.0, 8), dark, sd * PX + dx, PY - 0.62, PZ - 1.0, Math.PI / 2);   // Kanonen
@@ -114,7 +115,10 @@ function batPose(B, dt) {
 function batCamera(B) {
   player.pos.set(B.x, B.y + 0.6, B.z);
   if (B.view === 1) { const [x, z] = batW(B, 0, -2.0); camera.position.set(x, B.y + 1.9, z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); return; }
-  const D = 14, H = Math.max(1.2, Math.min(10, 3.2 - player.pitch * 8)), tx = B.x, ty = B.y + 1.8, tz = B.z, dx = Math.sin(player.yaw) * D, dz = Math.cos(player.yaw) * D;
+  // Rundum-Ansicht (Nicolas 2026-11-09): Kamera auf einer Kugel um The Bat, Maus hoch/runter bis ueber und unter das Fluggeraet
+  // (Hoehenwinkel e aus player.pitch: Standard -0,2 -> e 0,4 = leicht von oben)
+  const D = 14, e = Math.max(-1.4, Math.min(1.45, 0.2 - player.pitch)), tx = B.x, ty = B.y + 1.8, tz = B.z;
+  const dx = Math.sin(player.yaw) * Math.cos(e) * D, H = Math.sin(e) * D, dz = Math.cos(player.yaw) * Math.cos(e) * D;
   let k = 1;
   for (let t = 0.12; t <= 1.0001; t += 0.06) if (!batAir(tx + dx * t, ty + H * t, tz + dz * t)) { k = Math.max(0.12, t - 0.08); break; }
   camera.position.set(tx + dx * k, ty + H * k, tz + dz * k); camera.lookAt(tx, ty + 0.4, tz);
@@ -175,6 +179,8 @@ function flyStep(dt) {
   const along = B.vx * fx + B.vz * fz, t = performance.now() / 1000;
   B.pitch += ((landed ? 0 : -0.12 * th - along * 0.002 + 0.015 * Math.sin(t * 1.3)) - B.pitch) * Math.min(1, dt * 3);
   B.roll += ((landed ? 0 : st * Math.min(0.35, 0.1 + sp / 80) + 0.012 * Math.sin(t * 1.7)) - B.roll) * Math.min(1, dt * 3);
+  // Beim Vorwaertsfliegen gleitet die Ansicht langsam zurueck hinter The Bat in die Standardhoehe (Nicolas 2026-11-09)
+  if (B.view === 0 && along > 3 && th > 0) { const k = Math.min(1, dt * 0.9); player.yaw += Math.atan2(Math.sin(B.h - player.yaw), Math.cos(B.h - player.yaw)) * k; player.pitch += (-0.2 - player.pitch) * k; }
   batPose(B, dt); batCamera(B);
   speedEl.textContent = Math.round(sp * 3.6) + " km/h · " + Math.max(0, Math.round(B.y - supportAt(new THREE.Vector3(B.x, B.y + 0.6, B.z), B.y + 0.6))) + " m über Boden";
   engineUpdate({ v: sp + Math.abs(B.vy) * 2, throttle: B.thrust, air: false, wet: false });
