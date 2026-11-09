@@ -26,13 +26,17 @@ function buildTheBat() {
   // vorne/Mitte am breitesten, nach hinten schmaler (Mittelteil lang, Seitenplatten kuerzer, breite Platten nur vorne/Mitte)
   // Bauch als Kiel (Nicolas 2026-11-09): von vorne laufen links und rechts spitz nach unten in der Mitte zusammen (V), aus einzelnen
   // schraegen Panzerplatten mit Fugen; nach hinten steigt der Kiel an und wird schmaler
-  for (let zc = -1.25; zc <= 3.0; zc += 0.85) {
-    const yK = 0.98 + Math.max(0, zc + 0.5) * 0.28, yT = 1.95 + Math.max(0, zc) * 0.1, xo = 1.7 - Math.max(0, zc - 0.9) * 0.35;
+  for (let zc = -1.25; zc <= 6.5; zc += 0.85) {                                                                          // laeuft bis ins lange Heck mit (Nicolas)
+    const yT = 1.95 + Math.max(0, zc) * 0.06, yK = Math.min(yT - 0.3, 0.98 + Math.max(0, zc + 0.5) * 0.19), xo = Math.max(0.45, 1.7 - Math.max(0, zc - 0.9) * 0.24);
     const L = Math.hypot(xo - 0.08, yT - yK), a = Math.atan2(yT - yK, xo - 0.08);
     for (const sd of [-1, 1]) { const p = meshIn(g, new THREE.BoxGeometry(L, 0.09, 0.77), armor, sd * (xo + 0.08) / 2, (yT + yK) / 2, zc); p.rotation.z = sd * a; }
     meshIn(g, new THREE.BoxGeometry(0.16, 0.12, 0.77), dark, 0, yK - 0.02, zc);                                         // Kielleiste
   }
-  prismIn(g, [[1.6, 1.9], [0.9, 2.35], [-0.4, 2.85], [-1.8, 3.2], [-2.9, 3.25], [-3.6, 2.95], [-3.95, 2.45], [-3.4, 2.15], [-1.0, 1.85], [1.0, 1.75]], 2.4, armor);   // Panzer Mitte
+  prismIn(g, [[1.6, 1.9], [0.9, 2.35], [-0.4, 2.85], [-1.8, 3.2], [-2.9, 3.25], [-4.2, 3.1], [-4.2, 2.05], [-3.4, 2.05], [-1.0, 1.85], [1.0, 1.75]], 2.4, armor);   // Panzer Mitte
+  // langes Heck (Nicolas 2026-11-09, Skizze): Rumpf laeuft weit nach hinten schmaler und flacher aus
+  prismIn(g, [[-4.0, 3.12], [-5.3, 2.95], [-6.5, 2.6], [-6.7, 2.15], [-4.0, 1.98]], 1.8, armor);
+  prismIn(g, [[-6.3, 2.65], [-7.4, 2.35], [-8.0, 2.05], [-7.7, 1.9], [-6.3, 2.02]], 1.0, armor);
+  for (const sd of [-1, 1]) prismIn(g, [[-2.6, 2.9], [-3.9, 2.85], [-5.0, 2.6], [-5.2, 2.2], [-2.6, 2.0]], 0.5, armor, sd * 1.45);
   for (const sd of [-1, 1]) {
     prismIn(g, [[1.3, 1.8], [0.7, 2.15], [-0.5, 2.55], [-1.9, 2.8], [-2.7, 2.65], [-3.0, 2.3], [-2.6, 2.0], [-1.0, 1.7], [0.8, 1.6]], 1.0, armor, sd * 1.7);
     prismIn(g, [[1.0, 1.75], [0.5, 2.05], [-0.5, 2.35], [-1.6, 2.5], [-2.0, 2.3], [-1.6, 1.95], [-0.4, 1.75], [0.7, 1.6]], 0.36, armor, sd * 2.38);
@@ -40,7 +44,7 @@ function buildTheBat() {
     meshIn(g, new THREE.BoxGeometry(0.8, 0.04, 0.95), hexM, sd * 0.62, 2.66, -0.25, -0.36);                              // Wabengitter vorne auf dem Panzer
     meshIn(g, new THREE.BoxGeometry(0.7, 0.04, 0.8), hexM, sd * 1.6, 2.4, -0.1, -0.3);
   }
-  boxIn(g, -0.12, 0.12, 3.2, 3.36, -0.2, 3.2, frameM); boxIn(g, -0.25, 0.25, 2.62, 2.72, -1.2, -0.5, frameM);             // Mittelgrat, Lueftung
+  boxIn(g, -0.12, 0.12, 3.2, 3.36, -0.2, 3.2, frameM); beam([0, 3.28, 3.2], [0, 2.5, 7.7], 0.22, frameM); boxIn(g, -0.25, 0.25, 2.62, 2.72, -1.2, -0.5, frameM);             // Mittelgrat, Lueftung
   // Kopf (Cockpit): Glaskanzel mit Rahmen, Kinnplatte
   prismIn(g, [[3.3, 1.25], [3.4, 1.6], [3.2, 2.2], [2.6, 2.42], [1.2, 2.45], [1.2, 1.25]], 1.2, glassM);
   boxIn(g, -0.65, 0.65, 0.95, 1.25, -3.45, -1.1, frameM); boxIn(g, -0.45, 0.45, 1.0, 1.45, -3.55, -3.3, frameM);         // Boden, Kinnplatte
@@ -61,38 +65,42 @@ function buildTheBat() {
   }
   mergeStatic(g);
   // Bewegliche Teile: Propeller unter dem Bauch (frei), Propeller in den Gondeln, Beine hinten
-  const rotor = new THREE.Group(); rotor.position.set(0, 0.98, 0.3); g.add(rotor);
-  rotor.add(new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.2, 10), frameM));
-  for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2, b = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.03, 0.24), dark); b.position.set(Math.cos(a) * 0.68, 0, -Math.sin(a) * 0.68); b.rotation.y = a; b.rotation.x = 0.3; rotor.add(b); }
-  const glow = new THREE.Mesh(new THREE.CircleGeometry(1.0, 24).rotateX(Math.PI / 2), thrustM); glow.position.set(0, 0.86, 0.3); g.add(glow);
+  // zwei Propeller unter dem Kiel (Nicolas): vorne und hinten, je mit Schubgluehen
+  const rotors = [[-0.6, 0.72], [3.2, 1.38]].map(([z, y]) => {
+    const r = new THREE.Group(); r.position.set(0, y, z); g.add(r); r.add(new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2, 10), frameM));
+    for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2, b = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.03, 0.2), dark); b.position.set(Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5); b.rotation.y = a; b.rotation.x = 0.3; r.add(b); }
+    const gl = new THREE.Mesh(new THREE.CircleGeometry(0.8, 24).rotateX(Math.PI / 2), thrustM); gl.position.set(0, y - 0.12, z); g.add(gl);
+    return r;
+  });
   const fans = [-1, 1].map(sd => {
     const f = new THREE.Group(); f.position.set(sd * PX, PY, PZ - 0.1); g.add(f);
     for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2, b = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.03), frameM); b.position.set(Math.cos(a) * 0.32, Math.sin(a) * 0.32, 0); b.rotation.z = a - Math.PI / 2; b.rotation.y = 0.4; f.add(b); }
     return f;
   });
-  // Flossen hinten wie eine Schwanzflosse (Nicolas, Skizze von oben): flache Spitzen schraeg nach hinten aussen, schwenken beim Lenken mit
+  // Flossen am Heckende (Nicolas): nicht gezackt, sondern zwei flache Platten mit geraden Kanten uebereinander, schraeg nach hinten aussen
+  // und leicht nach unten; schwenken beim Lenken mit
   const legs = [-1, 1].map(sd => {
-    const lg = new THREE.Group(); lg.position.set(sd * 1.2, 2.15, 2.8); lg.rotation.z = -sd * 0.12; g.add(lg); lg.userData.sd = sd;
-    const sh = new THREE.Shape(); [[0, 0], [sd * 0.65, 0.55], [sd * 1.2, 2.05], [sd * 0.45, 1.3], [0, 1.05]].forEach(([x, z], k) => k ? sh.lineTo(x, z) : sh.moveTo(x, z));
-    lg.add(new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.12, bevelEnabled: false }).rotateX(Math.PI / 2), armor));
-    const edge = new THREE.Shape(); [[sd * 0.65, 0.55], [sd * 1.2, 2.05], [sd * 1.05, 1.95], [sd * 0.55, 0.62]].forEach(([x, z], k) => k ? edge.lineTo(x, z) : edge.moveTo(x, z));
-    const e = new THREE.Mesh(new THREE.ExtrudeGeometry(edge, { depth: 0.16, bevelEnabled: false }).rotateX(Math.PI / 2), dark); e.position.y = 0.02; lg.add(e);
+    const lg = new THREE.Group(); lg.position.set(sd * 0.45, 2.3, 6.2); lg.rotation.z = -sd * 0.16; g.add(lg); lg.userData.sd = sd;
+    for (const [dy, k, m] of [[0, 1, podM], [-0.2, 0.82, dark]]) {
+      const sh = new THREE.Shape(); [[0, 0], [sd * 0.9, 0.3], [sd * 2.0, 1.35], [sd * 1.95, 1.75], [sd * 0.7, 1.6], [0, 1.3]].forEach(([x, z], i) => i ? sh.lineTo(x * k, z * k) : sh.moveTo(x * k, z * k));
+      const p = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: false }).rotateX(Math.PI / 2), m); p.position.set(0, dy, 0.05 * (1 - k)); lg.add(p);
+    }
     return lg;
   });
   g.scale.set(BAT_KX, 1, BAT_KZ);                                                                                         // auf Originalmasse (siehe BAT_KX)
-  return { g, rotor, fans, legs, gear, thrustM };
+  return { g, rotors, fans, legs, gear, thrustM };
 }
 const BAT_PTS = [[0, 1.3, 0], [0, 1.6, -3.5], [-1.8, 1.25, -4.7], [1.8, 1.25, -4.7], [-1.8, 0.6, -5.6], [1.8, 0.6, -5.6], [-2.5, 1.25, -4.1], [2.5, 1.25, -4.1],
-  [-2.6, 2.1, -0.6], [2.6, 2.1, -0.6], [-2.2, 2.3, 2.0], [2.2, 2.3, 2.0], [0, 3.35, 1.0], [0, 2.6, 3.95], [-2.4, 1.95, 4.85], [2.4, 1.95, 4.85]].map(([x, y, z]) => [x * BAT_KX, y, z * BAT_KZ]);   // Pruefpunkte (lokal): Kopf, Gondeln, Kanonen, Panzer, Heck, Beine
+  [-2.6, 2.1, -0.6], [2.6, 2.1, -0.6], [-2.2, 2.3, 2.0], [2.2, 2.3, 2.0], [0, 3.35, 1.0], [-1.6, 2.3, 4.6], [1.6, 2.3, 4.6], [0, 2.4, 7.9], [-2.4, 2.1, 7.6], [2.4, 2.1, 7.6], [-1.1, 2.2, 7.8], [1.1, 2.2, 7.8]].map(([x, y, z]) => [x * BAT_KX, y, z * BAT_KZ]);   // Pruefpunkte (lokal): Kopf, Gondeln, Kanonen, Panzer, Heck, Beine
 const BAT_FEET = [[-1.1, -1.8], [1.1, -1.8], [-1.1, 2.0], [1.1, 2.0], [0, 0.3]].map(([x, z]) => [x * BAT_KX, z * BAT_KZ]);                                         // Kufen
 const FLY = (() => {
   const b = buildTheBat();
   // Standplatz: untere Batcave auf der freien Flaeche vor dem Batcomputer, Nase nach Osten zur Halle und zum See (der Hangar oben ist fuer
   // 8,5 x 5,8 m zu eng und nur 8,5 m hoch). Hinaus geht es ueber den See und durch den Wassertunnel aufs Meer.
-  const F = { g: b.g, rotor: b.rotor, fans: b.fans, legs: b.legs, gear: b.gear, gearT: 0, thrustM: b.thrustM, st: 0, x: -47, y: LY, z: -3, h: -Math.PI / 2, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [] };
+  const F = { g: b.g, rotors: b.rotors, fans: b.fans, legs: b.legs, gear: b.gear, gearT: 0, thrustM: b.thrustM, st: 0, x: -47, y: LY, z: -3, h: -Math.PI / 2, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [] };
   F.home = { x: F.x, y: F.y, z: F.z, h: F.h };
   b.g.userData.dynamic = true; b.g.userData.noLift = true; scene.add(b.g);
-  for (let k = 0; k < 3; k++) { const c = [0, 0, 2.2, 0]; circles.push(c); F.circ.push(c); }                             // Kollision fuer Fussgaenger (Mitte, vorne, hinten)
+  for (let k = 0; k < 4; k++) { const c = [0, 0, 2.2, 0]; circles.push(c); F.circ.push(c); }                             // Kollision fuer Fussgaenger entlang des Rumpfs
   return F;
 })();
 // Welt-Punkt aus lokalem Punkt (vorne = -z)
@@ -115,10 +123,10 @@ function batFree(B, x, y, z, h) {
 }
 function batPose(B, dt) {
   B.g.position.set(B.x, B.y, B.z); B.g.rotation.set(B.pitch, B.h, B.roll, "YXZ");
-  B.spin += dt * (6 + B.thrust * 30); B.rotor.rotation.y = B.spin; for (const f of B.fans) f.rotation.z = B.spin * 1.4;
+  B.spin += dt * (6 + B.thrust * 30); for (const r of B.rotors) r.rotation.y = B.spin; for (const f of B.fans) f.rotation.z = B.spin * 1.4;
   B.gear.position.y = B.gearT * 0.9; B.gear.visible = B.gearT < 0.97;                                                    // Kufen ein-/ausgefahren
-  for (const lg of B.legs) lg.rotation.y = lg.userData.sd * 0.05 + B.st * 0.4;                                       // Beine schwenken beim Lenken mit (wie Ruder) B.thrustM.emissiveIntensity = B.thrust * 2.2;
-  const pts = [[0, 0], [0, -3], [0, 2.8]]; B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on ? 0 : 2.0; c[3] = B.y + 2.6; });
+  for (const lg of B.legs) { lg.rotation.y = 0; lg.rotation.z = -lg.userData.sd * 0.16 + B.st * 0.45; }                // Flossen klappen beim Lenken wie Querruder gegenlaeufig hoch/runter, kein Schwenken zur Seite (Nicolas)                                       // Beine schwenken beim Lenken mit (wie Ruder) B.thrustM.emissiveIntensity = B.thrust * 2.2;
+  const pts = [[0, -2.6], [0, 0], [0, 2.6], [0, 5.6]]; B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on ? 0 : 2.0; c[3] = B.y + 2.6; });
 }
 function batCamera(B) {
   player.pos.set(B.x, B.y + 0.6, B.z);

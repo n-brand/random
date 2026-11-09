@@ -38,6 +38,8 @@ function caveCell(x, z) {
   if (seaTunDist(x, z) < SEA_TUN_W / 2) { const sd = seaD(x, z); return sd > 6 ? 3 : sd > -1.5 ? 4 : 2; }   // 4 = vor der Klippe: nur Grund
   if (x > -32.3 && x < -12 && z > 64 && z < 70) return 1;                  // Wendeplatz reicht 6 m hinter das (geschlossene) Tunnelende
   const [px, py] = toCave(x, z);
+  if (x > 14 && x < 52 && z > 30 && z < 42) return 2;                       // Verbindung See -> Wassertunnel breiter, Felsinsel weg (Nicolas 2026-11-09: The Bat, 5,8 m breit, fliegt hier hinaus)
+  if (x > 40 && x < 66 && z > 26 && z < 52) return 2;                       // (vor der Kartengrenze, sonst ist ab x ca. 50 alles Fels) Kurve in den Wassertunnel weiter (The Bat ist mit dem langen Heck ca. 12 m lang, Nicolas 2026-11-09)
   if (px < 0 || px > 736 || py > 1042) return 0;
   if (inPoly(LOW_FLOOR, px, py)) return 1;                                   // B4: alte Anlegestelle (LOW_DOCK) entfernt
   if (plDist(TUN_PX, px, py) < 4.1 / CAVE_SC) return 1;                      // Kiesstrasse ganz auf Boden (am See hing sie ueber dem Wasser, man fiel durch)
@@ -49,7 +51,6 @@ function caveCell(x, z) {
   if (plDist(TUN_PX, px, py) < 4.3 / CAVE_SC) return 1;                      // Hoehlentunnel breiter (Kiesstrasse 7,5 m)
   if (x > -27.6 && x < -12 && z > 40.5 && z < 70) return 1;               // Wendeplatz (Nicolas, 2026-11-08): Felswand zwischen Gotham-Tunnel und See weg
   if (x > -16.5 && x < 6.5 && z > -21 && z < 6) return 2;                    // Felsblock oestlich vom Wasserband weg, der See geht dort weiter (Nicolas)
-  if (x > 14 && x < 52 && z > 30 && z < 42) return 2;                       // Verbindung See -> Wassertunnel breiter, Felsinsel weg (Nicolas 2026-11-09: The Bat, 5,8 m breit, fliegt hier hinaus)
   if ((x > -64 && x < -47 && z > -24 && z < 11) || (x > -49 && x < -24 && z > -29 && z < -17) || (x > -49 && x < -35 && z > -17.5 && z < -10.5)) return 1;   // Batcave-Ausbau West und Nord (batcave-ausbau.js)
   return 0;
 }
