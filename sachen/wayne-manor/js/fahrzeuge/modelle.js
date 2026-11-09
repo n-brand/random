@@ -317,35 +317,49 @@ function buildDeepSeek() {
   const wheels = [[-1.02, -1.6, true], [1.02, -1.6, true], [-1.02, 1.7, false], [1.02, 1.7, false]].map(([x, z, f]) => addWheel(g, x, z, 0.4, 0.32, f, tireM, rimM, 0, 32));
   return { g, wheels };
 }
-// ---- Nachtfalke (Nicolas 2026-11-09, eigener Entwurf): schwarzes Muscle-Car, lange Haube mit Lufthutze, flaches Fastback-Dach mit kleinen
-// Fenstern, breite Kotfluegel ueber grossen Hinterraedern, Seitenauspuffe, Leuchtband hinten
+// ---- Nachtfalke (Nicolas 2026-11-09, eigener Entwurf im Stil der spaeten 60er Muscle-Cars, ohne Marken): lange Haube mit Powerdome und Lufthutze,
+// Kuehlergrill ueber die ganze Breite mit vier runden Scheinwerfern, Hueftschwung ueber den Hinterraedern, Dach mit Seitenfinnen bis aufs Heck und
+// steiler Heckscheibe dazwischen, Entenbuerzel, Leuchtband hinten, Seitenauspuffe, Boost-Duese unter dem Heck (Leertaste: Flamme und Schub)
 function buildNachtfalke(col = 0x0f1012) {
   const g = new THREE.Group();
   const paint = M(col, { metalness: 0.55, roughness: 0.32, flatShading: true }), dark = M(0x070809, { roughness: 0.7, flatShading: true }), glass = M(0x06090d, { metalness: 0.7, roughness: 0.08 });
-  const chrome = M(0x9aa0a6, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x1b1c1f, { metalness: 0.7, roughness: 0.35 });
-  prismIn(g, [[2.5, 0.32], [2.58, 0.66], [2.35, 0.82], [0.7, 0.92], [0.15, 1.3], [-0.9, 1.34], [-2.05, 1.0], [-2.5, 0.96], [-2.58, 0.55], [-2.35, 0.3]], 1.7, paint);   // Karosserie
+  const chrome = M(0x9aa0a6, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x2a2c30, { metalness: 0.8, roughness: 0.3 });
+  const jetM = M(0x3a1a08, { emissive: 0xff6a10, emissiveIntensity: 0 }), nozM = M(0x2a2c30, { metalness: 0.8, roughness: 0.3, side: THREE.DoubleSide });
+  prismIn(g, [[2.58, 0.3], [2.64, 0.56], [2.6, 0.8], [2.4, 0.88], [0.7, 0.95], [-1.4, 0.98], [-2.5, 1.0], [-2.64, 1.06], [-2.68, 0.96], [-2.64, 0.42], [-2.45, 0.28], [2.3, 0.28]], 1.28, paint);   // Rumpf
+  prismIn(g, [[0.75, 0.94], [0.05, 1.3], [-0.88, 1.31], [-1.15, 0.98]], 1.4, paint);                                    // Kabine
   for (const sd of [-1, 1]) {
-    prismIn(g, [[-0.6, 0.5], [-0.75, 0.98], [-1.6, 1.02], [-2.4, 0.92], [-2.5, 0.5]], 0.22, paint, sd * 0.94);           // breite Kotfluegel hinten
-    prismIn(g, [[2.3, 0.45], [2.25, 0.8], [1.2, 0.86], [0.95, 0.45]], 0.14, paint, sd * 0.9);                            // Kotfluegel vorne
-    sideBox(g, sd * 0.85, sd * 0.86, 1.02, 1.24, -0.75, 0.05, glass);                                                   // kleine Seitenfenster
-    for (const y of [0.33, 0.43]) meshIn(g, new THREE.CylinderGeometry(0.05, 0.06, 1.6, 10), chrome, sd * 0.98, y, 0.1, Math.PI / 2);   // Seitenauspuffe
-    boxIn(g, sd * 0.62 - 0.2, sd * 0.62 + 0.2, 0.66, 0.72, -2.6, -2.56, mat.glow);                                      // Scheinwerfer (schmal)
+    prismIn(g, [[2.55, 0.32], [2.62, 0.8], [2.4, 0.88], [0.7, 0.95], [-1.4, 0.98], [-2.5, 1.0], [-2.62, 0.94], [-2.6, 0.38], [-2.1, 0.38], [-2.05, 0.62], [-1.9, 0.82], [-1.55, 0.92],
+      [-1.2, 0.82], [-1.05, 0.62], [-1.0, 0.36], [1.05, 0.34], [1.1, 0.58], [1.25, 0.76], [1.6, 0.84], [1.95, 0.76], [2.1, 0.58], [2.15, 0.34]], 0.24, paint, sd * 0.79);   // Seitenwand mit Radlaeufen
+    prismIn(g, [[-0.85, 0.5], [-0.92, 0.9], [-1.55, 0.97], [-2.4, 0.96], [-2.5, 0.5], [-2.15, 0.5], [-2.05, 0.7], [-1.85, 0.88], [-1.55, 0.94], [-1.25, 0.88], [-1.05, 0.7], [-0.98, 0.5]], 0.1, paint, sd * 0.95);   // Hueftschwung
+    prismIn(g, [[-0.86, 1.31], [-0.88, 1.31], [-2.35, 1.0], [-2.2, 1.0]], 0.1, paint, sd * 0.65);                         // Seitenfinnen bis aufs Heck
+    sideBox(g, sd * 0.7, sd * 0.71, 1.0, 1.24, -0.32, 0.75, glass);                                                     // Seitenfenster
+    sideBox(g, sd * 0.91, sd * 0.915, 0.86, 0.88, -2.3, 2.3, chrome);                                                   // Zierleiste
+    meshIn(g, new THREE.CylinderGeometry(0.055, 0.065, 1.7, 10), chrome, sd * 0.94, 0.3, 0.02, Math.PI / 2);             // Seitenauspuff
+    for (const x of [0.36, 0.6]) meshIn(g, new THREE.CylinderGeometry(0.075, 0.075, 0.04, 16), mat.glow, sd * x, 0.63, -2.68, Math.PI / 2);   // vier runde Scheinwerfer
+    boxIn(g, sd * 0.25, sd * 0.9, 0.38, 0.45, 2.62, 2.72, chrome);                                                      // Stossstange hinten (Mitte frei fuer die Duese)
   }
-  prismIn(g, [[1.9, 0.86], [1.7, 1.06], [0.9, 1.08], [0.75, 0.93]], 0.7, dark);                                         // Lufthutze
-  boxIn(g, -0.28, 0.28, 0.98, 1.04, -1.92, -1.88, dark);
-  meshIn(g, new THREE.BoxGeometry(1.45, 0.03, 0.75), glass, 0, 1.12, -0.42, -0.62);                                     // Frontscheibe
-  meshIn(g, new THREE.BoxGeometry(1.35, 0.03, 1.2), glass, 0, 1.18, 1.45, 0.33);                                        // Heckscheibe (Fastback)
-  boxIn(g, -0.8, 0.8, 0.8, 0.86, 2.56, 2.6, mat.glowRed);                                                              // Leuchtband hinten
-  boxIn(g, -0.95, 0.95, 0.26, 0.42, -2.66, -2.5, dark); boxIn(g, -0.95, 0.95, 0.26, 0.42, 2.5, 2.64, dark);           // Schuerzen
-  boxIn(g, -0.85, 0.85, 0.96, 1.0, 2.2, 2.5, dark);                                                                     // Heckkante
+  prismIn(g, [[2.2, 0.88], [1.9, 0.98], [0.9, 1.0], [0.75, 0.95]], 0.7, paint);                                         // Powerdome
+  prismIn(g, [[1.95, 0.98], [1.8, 1.08], [1.3, 1.07], [1.2, 1.0]], 0.5, dark);                                          // Lufthutze
+  boxIn(g, -0.84, 0.84, 0.48, 0.78, -2.67, -2.6, dark); for (const y of [0.53, 0.73]) boxIn(g, -0.84, 0.84, y - 0.012, y + 0.012, -2.69, -2.66, chrome);   // Kuehlergrill
+  boxIn(g, -0.02, 0.02, 0.48, 0.78, -2.69, -2.66, chrome); boxIn(g, -0.92, 0.92, 0.36, 0.43, -2.74, -2.62, chrome);    // Mittelsteg, Stossstange vorne
+  prismIn(g, [[0.8, 0.95], [0.76, 0.95], [0.06, 1.315], [0.1, 1.315]], 1.32, glass);                                    // Frontscheibe
+  prismIn(g, [[-0.9, 1.315], [-0.93, 1.315], [-1.2, 0.975], [-1.17, 0.975]], 1.2, glass);                               // Heckscheibe zwischen den Finnen
+  prismIn(g, [[-2.4, 1.0], [-2.66, 1.1], [-2.7, 1.06], [-2.5, 0.99]], 1.74, paint);                                     // Entenbuerzel
+  boxIn(g, -0.9, 0.9, 0.7, 0.9, 2.6, 2.69, dark); boxIn(g, -0.86, 0.86, 0.74, 0.86, 2.68, 2.7, mat.glowRed);           // Leuchtband hinten
+  meshIn(g, new THREE.CylinderGeometry(0.15, 0.18, 0.45, 18, 1, true), nozM, 0, 0.56, 2.75, Math.PI / 2);              // Boost-Duese
+  meshIn(g, new THREE.TorusGeometry(0.165, 0.025, 8, 24), chrome, 0, 0.56, 2.97); meshIn(g, new THREE.CircleGeometry(0.15, 18), jetM, 0, 0.56, 2.62);
   mergeStatic(g);
-  const wheels = [[-0.84, -1.6, true, 0.36, 0.3], [0.84, -1.6, true, 0.36, 0.3], [-0.88, 1.55, false, 0.42, 0.44], [0.88, 1.55, false, 0.42, 0.44]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 24));
-  return { g, wheels };
+  // Flamme (nicht zusammengefasst): zwei Kegel nach hinten, Laenge folgt dem Boost (carPose)
+  const flame = new THREE.Group(); flame.position.set(0, 0.56, 2.95); flame.visible = false; g.add(flame);
+  for (const [r, l, c, o] of [[0.13, 1.5, 0xff6a18, 0.75], [0.07, 0.9, 0xfff0b0, 0.9]])
+    flame.add(new THREE.Mesh(new THREE.ConeGeometry(r, l, 14, 1, true).rotateX(Math.PI / 2).translate(0, 0, l / 2), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
+  const wheels = [[-0.8, -1.6, true, 0.36, 0.28], [0.8, -1.6, true, 0.36, 0.28], [-0.84, 1.55, false, 0.42, 0.4], [0.84, 1.55, false, 0.42, 0.4]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 24));
+  return { g, wheels, jetM, flame };
 }
-const SPEC_NACHTFALKE = { name: "Nachtfalke", wheels: [[-0.84, -1.6], [0.84, -1.6], [-0.88, 1.55], [0.88, 1.55]], wb: 3.15, track: 1.76, pts: [-1.75, 0, 1.75], R: 1.0, circR: 0.95, enter: 3.8,
-  maxN: 34, maxF: 60, acc: 15, steer: 0.66, jump: false, grade: 38, camD: 8.5, camH: 1.1, seat: [-0.4, 1.15, 0.15], bodyH: 1.4, bike: false,
+const SPEC_NACHTFALKE = { name: "Nachtfalke", wheels: [[-0.8, -1.6], [0.8, -1.6], [-0.84, 1.55], [0.84, 1.55]], wb: 3.15, track: 1.66, pts: [-1.75, 0, 1.75], R: 1.0, circR: 0.95, enter: 3.8,
+  maxN: 34, maxF: 60, acc: 15, steer: 0.66, jump: false, boost: true, grade: 38, camD: 8.5, camH: 1.1, seat: [-0.4, 1.15, 0.15], bodyH: 1.4, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
-  msg: "Nachtfalke: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "Nachtfalke: W/S Gas/Bremse, A/D lenken, Leertaste halten = Boost, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.96, -1.52], [0.96, -1.52], [-0.96, 1.48], [0.96, 1.48]], wb: 3.0, track: 1.92, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [0, 1.45, 0.1], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
@@ -380,7 +394,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
