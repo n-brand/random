@@ -216,27 +216,27 @@ function buildGClass(col = 0x17191c) {
   const tireM = M(0x111111, { roughness: 0.95 }), rimM = M(0xb6bac0, { metalness: 0.85, roughness: 0.22 }), R = 0.43;
   const arch = c => [[c - R - 0.13, 0.47], [c - R - 0.1, R + 0.2], [c - R * 0.6, 2 * R + 0.07], [c + R * 0.6, 2 * R + 0.07], [c + R + 0.1, R + 0.2], [c + R + 0.13, 0.47]];   // Radlauf (Profil nach vorne)
   boxIn(g, -0.78, 0.78, 0.45, 1.22, -2.3, 2.3, paint);                                                                    // Rumpf (innen)
-  boxIn(g, -0.93, 0.93, 1.2, 1.98, -0.9, 2.3, paint);                                                                     // Kastenaufbau
-  boxIn(g, -0.76, 0.76, 1.2, 1.25, -2.27, -0.9, paint);                                                                   // Haube (leicht erhoeht)
+  prismIn(g, [[0.9, 1.2], [0.9, 1.3], [0.6, 1.98], [-2.3, 1.98], [-2.3, 1.2]], 1.86, paint);                             // Kastenaufbau, Frontscheibe schraeg (Nicolas: weniger eckig)
+  prismIn(g, [[2.27, 1.2], [2.27, 1.23], [0.9, 1.3], [0.9, 1.2]], 1.52, paint);                                           // Haube, steigt zur Scheibe leicht an
   for (const sd of [-1, 1]) {
     prismIn(g, [[2.3, 0.47], [2.3, 1.22], [-2.3, 1.22], [-2.3, 0.47], ...arch(-1.45), ...arch(1.45)], 0.15, paint, sd * 0.855);   // Seitenwand mit Radlaeufen
     for (const c of [-1.45, 1.45]) prismIn(g, [[c + R + 0.24, 0.52], [c + R + 0.2, R + 0.24], [c + R * 0.62, 2 * R + 0.16], [c - R * 0.62, 2 * R + 0.16], [c - R - 0.2, R + 0.24], [c - R - 0.24, 0.52],
       [c - R - 0.14, 0.52], [c - R - 0.1, R + 0.2], [c - R * 0.6, 2 * R + 0.07], [c + R * 0.6, 2 * R + 0.07], [c + R + 0.1, R + 0.2], [c + R + 0.14, 0.52]], 0.16, trim, sd * 0.99);   // Kotfluegelverbreiterung
     sideBox(g, sd * 0.76, sd * 0.93, 1.12, 1.23, -2.3, -0.9, paint);                                                     // Kotfluegel vorne (Kante)
-    for (const [z0, z1] of [[-0.78, 0.12], [0.3, 1.18], [1.36, 2.16]]) sideBox(g, sd * 0.93, sd * 0.94, 1.32, 1.9, z0, z1, glass);   // drei Seitenfenster
-    for (const z of [-0.88, 0.2, 1.26]) sideBox(g, sd * 0.93, sd * 0.935, 0.52, 1.96, z, z + 0.02, dark);               // Tuerfugen
+    for (const [z0, z1] of [[-0.78, 0.12], [0.3, 1.18], [1.36, 2.16]]) prismIn(g, z0 < 0 ? [[0.62, 1.9], [0.84, 1.34], [-0.12, 1.34], [-0.12, 1.9]] : [[-z0, 1.9], [-z0, 1.34], [-z1, 1.34], [-z1, 1.9]], 0.02, glass, sd * 0.935);   // drei Seitenfenster (vorne schraeg)
+    for (const z of [0.2, 1.26]) sideBox(g, sd * 0.93, sd * 0.935, 0.52, 1.96, z, z + 0.02, dark); sideBox(g, sd * 0.93, sd * 0.935, 0.52, 1.3, -0.88, -0.86, dark);               // Tuerfugen
     sideBox(g, sd * 0.93, sd * 0.945, 1.06, 1.09, -2.25, 2.28, chrome);                                                  // Zierleiste
     for (const z of [0.0, 1.06]) sideBox(g, sd * 0.93, sd * 0.955, 1.15, 1.19, z, z + 0.15, chrome);                    // Tuergriffe
     sideBox(g, sd * 0.93, sd * 1.13, 1.42, 1.56, -0.86, -0.74, paint);                                                  // Spiegel
     sideBox(g, sd * 0.88, sd * 1.06, 0.37, 0.43, -0.85, 0.95, dark);                                                    // Trittbrett
-    sideBox(g, sd * 0.86, sd * 0.95, 1.98, 2.03, -0.9, 2.3, chrome);                                                    // Dachrinne
+    sideBox(g, sd * 0.86, sd * 0.95, 1.98, 2.03, -0.6, 2.3, chrome);                                                    // Dachrinne
     meshIn(g, new THREE.CylinderGeometry(0.15, 0.15, 0.05, 20), mat.glow, sd * 0.64, 0.97, -2.33, Math.PI / 2);         // runde Scheinwerfer
     meshIn(g, new THREE.TorusGeometry(0.16, 0.025, 8, 24), chrome, sd * 0.64, 0.97, -2.355);
     sideBox(g, sd * 0.8, sd * 0.9, 1.23, 1.29, -2.26, -2.12, amber);                                                     // Blinker oben auf dem Kotfluegel
     sideBox(g, sd * 0.7, sd * 0.86, 0.82, 1.18, 2.3, 2.33, mat.glowRed);                                                // Rueckleuchten (hochkant)
   }
-  boxIn(g, -0.8, 0.8, 1.28, 1.92, -0.93, -0.9, glass); boxIn(g, -0.62, 0.62, 1.34, 1.88, 2.3, 2.33, glass);              // Front-, Heckscheibe
-  boxIn(g, -0.94, 0.94, 1.98, 2.02, -0.92, 2.31, dark);                                                                   // Dach
+  prismIn(g, [[0.93, 1.31], [0.88, 1.31], [0.6, 1.93], [0.65, 1.93]], 1.6, glass); boxIn(g, -0.62, 0.62, 1.34, 1.88, 2.3, 2.33, glass);              // Front-, Heckscheibe
+  boxIn(g, -0.94, 0.94, 1.98, 2.02, -0.62, 2.31, dark);                                                                   // Dach
   boxIn(g, -0.44, 0.44, 0.7, 1.13, -2.33, -2.3, dark); for (let x = -0.36; x <= 0.37; x += 0.12) boxIn(g, x - 0.018, x + 0.018, 0.73, 1.1, -2.345, -2.33, chrome);   // Grill mit Streben
   meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.03, 18), chrome, 0, 0.92, -2.36, Math.PI / 2);                      // rundes Emblem
   boxIn(g, -1.0, 1.0, 0.43, 0.68, -2.46, -2.28, dark); boxIn(g, -0.45, 0.45, 0.45, 0.53, -2.48, -2.4, chrome);             // Stossfaenger vorne, Unterfahrschutz
