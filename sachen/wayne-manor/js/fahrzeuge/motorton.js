@@ -25,6 +25,7 @@ const ENG_PROFILES = {
   // Batpod wie ein Tesla (Nicolas 2026-11-09): Motor-/Wechselrichter-Surren, Tonhoehe direkt am Tempo (einige 100 Hz bis ca. 1 kHz),
   // dazu ein feiner hoher Oberton (Wechselrichter, ca. 2-3 kHz), beim Gasgeben lauter, im Stand fast still (ev), leises Rollgeraeusch
   "Nachtfalke": { idle: 34, max: 140, gears: [0, 10, 20, 32, 46], wave: "sawtooth", sub: 0.5, cut0: 260, cut1: 1500, vol: 0.18, noise: 0.07 },   // tiefer V8
+  "Boot": { idle: 58, max: 230, gears: [0, 14], wave: "sawtooth", sub: 0.5, cut0: 420, cut1: 2300, vol: 0.13, noise: 0.09 },   // Aussenborder, Rauschen = Wasser
   "Batpod": { idle: 120, max: 1050, gears: [0, 45], wave: "sine", wave2: "sine", g2: 0.16, sub: 2.67, cut0: 2600, cut1: 7000, vol: 0.045, noise: 0.025, am: 0, soft: true, ev: true },   // Nicolas: leiser,
 };
 function engineNoise(ctx) {

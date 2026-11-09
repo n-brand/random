@@ -52,13 +52,13 @@ function useBoat() {
       best = [q.x, top, q.z]; break;
     }
     if (!best) { toast("Zum Aussteigen näher ans Ufer fahren"); return true; }
-    BOAT.on = false; BOAT.v = 0;
+    BOAT.on = false; BOAT.v = 0; engineStop();
     player.pos.set(best[0], best[1], best[2]); player.vy = 0;
     toast("Ausgestiegen");
     return true;
   }
   if (Math.hypot(p.x - BOAT.x, p.z - BOAT.z) < 4.5 && p.y > SEA_Y - 1.5 && p.y < LY + 1) {   // B1: auch vom Hallenboden (6 m darueber) bis zum Steg (B4)
-    BOAT.on = true; BOAT.v = 0; keys.clear();
+    BOAT.on = true; BOAT.v = 0; keys.clear(); engineStart("Boot");                 // Motorton (Nicolas 2026-11-09)
     player.yaw = BOAT.h;
     toast("Im Boot: W/S Gas und Bremse, A/D lenken, V Kamera, E aussteigen");
     seatBoat();
@@ -84,6 +84,7 @@ function boatStep(dt) {
   if (boatFree(nx, nz, BOAT.h)) { BOAT.x = nx; BOAT.z = nz; } else BOAT.v *= -0.25;
   boatPose();
   seatBoat();
+  engineUpdate({ v: Math.abs(BOAT.v), throttle: Math.abs(th) > 0.1 ? 1 : 0, air: false, wet: false });   // Aussenborder dreht mit Gas und Tempo
 }
 // B5: Spieler mehr als 20 m weg -> Boot zurueck in die Bootsbox (schwimmt man daneben, bleibt es)
 function boatReturn() {

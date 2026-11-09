@@ -228,4 +228,4 @@ function summonBat() {
 }
 batPose(FLY, 0);
 // Verlassen (Esc, Geist, anderes Fahrzeug) setzt auch The Bat ab: bleibt, wo sie ist
-{ const prev = world.userData.car.leave; world.userData.car.leave = () => { prev(); if (FLY.on) { FLY.on = false; FLY.vx = FLY.vy = FLY.vz = 0; FLY.thrust = 0; engineStop(); speedEl.hidden = true; batPose(FLY, 0); } }; }
+{ const prev = world.userData.car.leave; world.userData.car.leave = () => { prev(); if (BOAT.on) { BOAT.on = false; BOAT.v = 0; engineStop(); } if (FLY.on) { FLY.on = false; FLY.vx = FLY.vy = FLY.vz = 0; FLY.thrust = 0; engineStop(); speedEl.hidden = true; batPose(FLY, 0); } }; }
