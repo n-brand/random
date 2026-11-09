@@ -21,14 +21,23 @@
       const [ax, az] = L[i], [bx, bz] = L[i + 1], len = Math.hypot(bx - ax, bz - az), mx = (ax + bx) / 2, mz = (az + bz) / 2; s += len;
       if (Math.hypot(mx - G2[0], mz - G2[1]) < 5.6) continue;                // Westtor (eigene Mauerstuecke)
       const gd = gapD(mx, mz); if (gd < 2.4) continue;                       // Luecke
-      const ga = terrainH(ax, az), gb = terrainH(bx, bz), base = Math.min(ga, gb) - 0.8, crumble = gd < 7 ? (7 - gd) / 4.6 * 1.5 : 0;
-      const top = (ga + gb) / 2 + 2.1 - crumble - (crumble ? 0.25 * Math.sin(i * 2.7) : 0), ang = Math.atan2(-(bz - az), bx - ax);
-      const box = (w, y0, y1, m, s0) => { const g = new THREE.BoxGeometry(len + 0.08, y1 - y0, w).toNonIndexed(), P = g.attributes.position, U = g.attributes.uv;
-        for (let k = 0; k < P.count; k++) U.setXY(k, (s0 + P.getX(k)) + (P.getZ(k) * 0.7), (P.getY(k) + (y0 + y1) / 2));   // UV in Metern
-        g.rotateY(ang).translate(mx, (y0 + y1) / 2, mz); add(g, m); };
-      box(0.7, base, top, stoneM, s);
-      if (!crumble) box(0.9, top, top + 0.2, capM, s);                         // Abdeckung (fehlt an den abgebroeckelten Stuecken)
-      for (let t = 0; t <= 1; t += 0.34) circles.push([ax + (bx - ax) * t, az + (bz - az) * t, 0.45, top + (crumble ? 0 : 0.2)]);
+      // Am Hang (Nicolas 2026-11-09: Stufen mit Luecken, bergseitig zum Drueberspringen): Krone und Abdeckung laufen schraeg mit dem Gelaende
+      // ("raked", keine Stufen); Hoehe an der hoeheren Seite gemessen (1,2 m beidseits), also auch bergseitig mind. 2,1 m; alle ca. 12 m ein Pfeiler
+      const px = -(bz - az) / len, pz = (bx - ax) / len, hi = (x, z) => Math.max(terrainH(x, z), terrainH(x + px * 1.2, z + pz * 1.2), terrainH(x - px * 1.2, z - pz * 1.2));
+      const lo = (x, z) => Math.min(terrainH(x, z), terrainH(x + px * 0.5, z + pz * 0.5), terrainH(x - px * 0.5, z - pz * 0.5));
+      const crumble = gd < 7 ? (7 - gd) / 4.6 * 1.5 : 0, jag = crumble ? 0.25 * Math.sin(i * 2.7) : 0;
+      const tA = hi(ax, az) + 2.1 - crumble - jag, tB = hi(bx, bz) + 2.1 - crumble - jag, base = Math.min(lo(ax, az), lo(bx, bz)) - 0.8, ang = Math.atan2(-(bz - az), bx - ax);
+      const slab = (w, yb, yt, m, s0) => { const g = new THREE.BoxGeometry(len + 0.08, 1, w).toNonIndexed(), P = g.attributes.position, U = g.attributes.uv;
+        for (let k = 0; k < P.count; k++) { const lx = P.getX(k), t = lx / (len + 0.08) + 0.5, y = P.getY(k) > 0 ? yt(t) : yb(t); P.setY(k, y); U.setXY(k, s0 - len + lx + len / 2 + P.getZ(k) * 0.7, y); }
+        g.computeVertexNormals(); g.rotateY(ang).translate(mx, 0, mz); add(g, m); };
+      const top = t => tA + (tB - tA) * t;
+      slab(0.7, () => base, top, stoneM, s);
+      if (!crumble) slab(0.9, top, t => top(t) + 0.2, capM, s);                // Abdeckung, schraeg
+      for (let t = 0; t <= 1; t += 0.34) circles.push([ax + (bx - ax) * t, az + (bz - az) * t, 0.45, top(t) + (crumble ? 0 : 0.2)]);
+      if (!crumble && Math.floor(s / 12) !== Math.floor((s - len) / 12) && Math.hypot(mx - G2[0], mz - G2[1]) > 9) {   // Pfeiler
+        const ph = Math.max(tA, tB) + 0.45, pb = base, g = new THREE.BoxGeometry(1.0, ph - pb, 1.0).toNonIndexed(); g.rotateY(ang).translate(bx, (ph + pb) / 2, bz); add(g, stoneM);
+        const c = new THREE.BoxGeometry(1.2, 0.16, 1.2).toNonIndexed(); c.rotateY(ang).translate(bx, ph + 0.08, bz); add(c, capM); circles.push([bx, bz, 0.7, ph + 0.16]);
+      }
     }
   }
   // Luecken: Schutt (Nord) und umgestuerzter Baum (West)
