@@ -172,7 +172,7 @@ function startGhost() {
   if (world.userData.car) world.userData.car.leave();
   walking = true; ghost = true;
   document.body.classList.add("walk", "ghost");
-  hintEl.innerHTML = "Geist &middot; WASD fliegen (waagrecht) &middot; Leertaste hoch &middot; C runter &middot; Shift schneller &middot; Linksklick Maus übernehmen &middot; Esc zurück";
+  hintEl.innerHTML = "Geist &middot; WASD fliegen (waagrecht) &middot; Leertaste hoch &middot; C runter &middot; Shift schneller &middot; G Begehen hier &middot; Linksklick Maus übernehmen &middot; Esc zurück";
   controls.enabled = false;
   player.pos.set(camera.position.x, camera.position.y - EYE, camera.position.z);
   player.yaw = Math.atan2(-dir.x, -dir.z); player.pitch = Math.max(-1.5, Math.min(1.5, Math.asin(Math.max(-1, Math.min(1, dir.y)))));
@@ -180,7 +180,15 @@ function startGhost() {
   camera.fov = 70; camera.near = 0.15; camera.updateProjectionMatrix();
   camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
-  toast("Geist: durch alles fliegen, Esc führt zurück");
+  toast("Geist: durch alles fliegen, G = hier begehen, Esc führt zurück");
+}
+// Geist -> Begehen an der aktuellen Stelle (Taste G, Nicolas 2026-11-09): landet auf dem Boden unter der Geist-Position, Blick bleibt
+function ghostToWalk() {
+  const p = player.pos.clone(), yaw = player.yaw, pitch = player.pitch;
+  startWalk(p.x, p.z, yaw);
+  player.pos.set(p.x, p.y + 0.3, p.z); player.pos.y = supportAt(player.pos, p.y + 0.3); player.vy = 0; player.pitch = pitch;
+  updatePlayer(0.001, 0, 0, false);
+  toast("Begehen (G = Geist)");
 }
 function ghostStep(dt) {
   let mx = 0, mz = 0, my = 0;

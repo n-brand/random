@@ -63,7 +63,7 @@ function genH0(x, z) {
 }
 // ===================== Grundstuecksmauer: Verlauf (Nicolas 2026-11-09, Skizze) =====================
 // Vom Einfahrtstor (Enden der Tormauern) im Norden um das Anwesen herum, der Wasserfall liegt ausserhalb; Westtor bei WALL_GATE2;
-// im Sueden ca. 35 m innerhalb der Hauptstrasse. Zwei Luecken fuer Fussgaenger im Wald (WALL_GAPS). Gebaut in aussen/grundmauer.js; der Wald haelt Abstand.
+// im Sueden ca. 35 m innerhalb der Hauptstrasse (an der Serpentine naeher, mind. 20 m von beiden). Zwei Luecken fuer Fussgaenger im Wald (WALL_GAPS). Gebaut in aussen/grundmauer.js; der Wald haelt Abstand.
 const WALL_GATE2 = [-190.75, 132.72], WALL_GAPS = [{ x: 80, z: -125, kind: "ruin" }, { x: -198.5, z: 35, kind: "tree" }];
 const WALL_LINES = (() => {
   const [ux, uz] = GATE_U, end = lz => [GATE_C[0] - lz * uz, GATE_C[1] + lz * ux];
@@ -74,7 +74,8 @@ const WALL_LINES = (() => {
   // Sueden: Hauptstrasse um 35 m nach innen versetzt (Seite zur Anwesensmitte), nur bis x 108, dann zum suedlichen Tormauer-Ende
   const S = MAIN.samples, off = [];
   for (let i = 0; i < S.length - 1; i += 12) { const [x, z] = S[i], [x2, z2] = S[Math.min(S.length - 1, i + 1)], l = Math.hypot(x2 - x, z2 - z); let nx = -(z2 - z) / l, nz = (x2 - x) / l;
-    if (nx * (-25 - x) + nz * (30 - z) < 0) { nx = -nx; nz = -nz; } const p = [x + nx * 35, z + nz * 35]; if (p[0] < 108) off.push(p); }
+    if (nx * (-25 - x) + nz * (30 - z) < 0) { nx = -nx; nz = -nz; } let o = 35; while (o > 20 && SERP.samples.some(q => Math.hypot(q[0] - x - nx * o, q[1] - z - nz * o) < 20)) o -= 1;   // Serpentine frei lassen (Nicolas 2026-11-09)
+    const p = [x + nx * o, z + nz * o]; if (p[0] < 108) off.push(p); }
   const south = [WALL_GATE2, [-176, 158], [-130, 170], ...off.filter(p => p[0] > -100), end(16)];
   return [north, south].map(P => resample(chaikin(P), 2));
 })();
