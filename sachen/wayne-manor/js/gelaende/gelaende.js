@@ -4,7 +4,7 @@
 
 // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
 function forestD(x, z) {
-  if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4 || ROADS2.some(R => roadNear(R, x, z, R.w / 2 + 6))) return 0;
+  if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4 || ROADS2.some(R => roadNear(R, x, z, R.w / 2 + 6)) || wallNear(x, z, 3)) return 0;
   for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
   if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z) < 27 || streamDist(x, z) < 4.5) return 0;
   { const w = wfNear(x, z, 8); if ((w && w.s > WFT.sP) || Math.hypot(x - WFT.end[0], z - WFT.end[1]) < 13) return 0; }   // Waterfall-Exit draussen (Sackgasse)

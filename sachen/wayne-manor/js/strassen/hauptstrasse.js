@@ -61,3 +61,28 @@ function genH0(x, z) {
   if (ph > HILL - 6) { const sdd = streamDist(x, z); if (sdd < 4) h -= 1.15 * (1 - sst(1.4, 3.6, sdd)); }   // Bachrinne (A7)
   return h;
 }
+// ===================== Grundstuecksmauer: Verlauf (Nicolas 2026-11-09, Skizze) =====================
+// Vom Einfahrtstor (Enden der Tormauern) im Norden um das Anwesen herum, der Wasserfall liegt ausserhalb; Westtor bei WALL_GATE2;
+// im Sueden ca. 35 m innerhalb der Hauptstrasse. Zwei Luecken fuer Fussgaenger im Wald (WALL_GAPS). Gebaut in aussen/grundmauer.js; der Wald haelt Abstand.
+const WALL_GATE2 = [-190.75, 132.72], WALL_GAPS = [{ x: 80, z: -125, kind: "ruin" }, { x: -198.5, z: 35, kind: "tree" }];
+const WALL_LINES = (() => {
+  const [ux, uz] = GATE_U, end = lz => [GATE_C[0] - lz * uz, GATE_C[1] + lz * ux];
+  const chaikin = P => { for (let it = 0; it < 3; it++) { const Q = [P[0]]; for (let i = 0; i < P.length - 1; i++) { const [a, b] = [P[i], P[i + 1]]; Q.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]); } Q.push(P[P.length - 1]); P = Q; } return P; };
+  const resample = (P, step) => { const out = [P[0]]; let acc = 0; for (let i = 1; i < P.length; i++) { const [a, b] = [P[i - 1], P[i]], l = Math.hypot(b[0] - a[0], b[1] - a[1]); let t = step - acc;
+    while (t <= l) { out.push([a[0] + (b[0] - a[0]) * t / l, a[1] + (b[1] - a[1]) * t / l]); t += step; } acc = l - (t - step); } const last = P[P.length - 1], q = out[out.length - 1]; if (Math.hypot(last[0] - q[0], last[1] - q[1]) > 0.3) out.push(last); return out; };
+  const north = [end(-16), [158, -40], [134, -74], [106, -110], [56, -136], [-20, -150], [-92, -145], [-158, -123], [-186, -103], [-197, -70], [-200, -10], [-198, 75], WALL_GATE2];
+  // Sueden: Hauptstrasse um 35 m nach innen versetzt (Seite zur Anwesensmitte), nur bis x 108, dann zum suedlichen Tormauer-Ende
+  const S = MAIN.samples, off = [];
+  for (let i = 0; i < S.length - 1; i += 12) { const [x, z] = S[i], [x2, z2] = S[Math.min(S.length - 1, i + 1)], l = Math.hypot(x2 - x, z2 - z); let nx = -(z2 - z) / l, nz = (x2 - x) / l;
+    if (nx * (-25 - x) + nz * (30 - z) < 0) { nx = -nx; nz = -nz; } const p = [x + nx * 35, z + nz * 35]; if (p[0] < 108) off.push(p); }
+  const south = [WALL_GATE2, [-176, 158], [-130, 170], ...off.filter(p => p[0] > -100), end(16)];
+  return [north, south].map(P => resample(chaikin(P), 2));
+})();
+const WALL_GRID = new Map();
+for (const L of WALL_LINES) for (const [x, z] of L) { const k = Math.floor(x / 10) + "," + Math.floor(z / 10); if (!WALL_GRID.has(k)) WALL_GRID.set(k, []); WALL_GRID.get(k).push([x, z]); }
+function wallNear(x, z, d) {                                             // Punkt naeher als d an der Mauer, am Westtor oder an einer Luecke (Wald frei halten)
+  if (Math.hypot(x - WALL_GATE2[0], z - WALL_GATE2[1]) < 16 || WALL_GAPS.some(G => Math.hypot(x - G.x, z - G.z) < 8)) return true;
+  const cx = Math.floor(x / 10), cz = Math.floor(z / 10);
+  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const [px, pz] of WALL_GRID.get((cx + i) + "," + (cz + j)) || []) if (Math.hypot(x - px, z - pz) < d + 1) return true;
+  return false;
+}

@@ -121,3 +121,4 @@ body.touch #car-nitro { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 
 #tp-menu .tp-orte { grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); }
 #tp-menu .tp-orte .tp-ic { width: clamp(36px, 3.4vw, 56px); height: clamp(36px, 3.4vw, 56px); }
 @media (max-height: 520px) { #tp-menu { top: calc(env(safe-area-inset-top, 0px) + 52px); transform: translateX(-50%); max-height: calc(100dvh - 64px); } #tp-menu .tp-orte button { flex-direction: row; justify-content: center; padding: 8px; } #tp-menu .tp-orte .tp-ic { width: 28px; height: 28px; } }
+#tp-menu #tp-close { display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 0 2px; }

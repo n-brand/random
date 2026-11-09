@@ -7,17 +7,18 @@ const Bw = B;                                                             // Wel
 // Quer zur Zufahrt bei GATE_C (schraeg zum Anwesen, Skizze Nicolas 2026-11-08): Natursteinmauern beidseits (folgen dem Gelaende),
 // zwei Pfeiler mit Laternen, zweifluegeliges Schmiedeeisentor (oeffnet nach innen/bergseitig, Rechtsklick oder E), kleines Torhaus aussen.
 // Gebaut in einer gedrehten Gruppe (lokal: x = Fahrtrichtung nach aussen, z = quer); Kollision als Kreise, das Tor als kleine Quader.
-{
-  const [GCX, GCZ] = GATE_C, [ux, uz] = GATE_U, toW = (lx, lz) => [GCX + lx * ux - lz * uz, GCZ + lx * uz + lz * ux], tH = (lx, lz) => terrainH(...toW(lx, lz));
-  const GX = 0, zc = 0, OPEN = 4.0, gy = ZUF.y(roadNear(ZUF, GCX, GCZ, 6).s) + 0.12;
+// Nicolas 2026-11-09: als Bauteil fuer mehrere Tore (Einfahrtstor mit Torhaus, Westtor in der Grundstuecksmauer); wing = Laenge der Mauerstuecke je Seite
+mat.gateLamp = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffc870, emissiveIntensity: 0.15 + night * 2.6 });
+function buildGate(C, U, name, gy, wing = 16, house = true) {
+  const [GCX, GCZ] = C, [ux, uz] = U, toW = (lx, lz) => [GCX + lx * ux - lz * uz, GCZ + lx * uz + lz * ux], tH = (lx, lz) => terrainH(...toW(lx, lz));
+  const GX = 0, zc = 0, OPEN = 4.0;
   const GG = new THREE.Group(); GG.position.set(GCX, 0, GCZ); GG.rotation.y = Math.atan2(-uz, ux); GG.userData.dynamic = true; world.add(GG);
   const GS = new THREE.Group(); GG.add(GS);                                                 // feste Teile (werden unten je Material zusammengefasst)
   const B = (x0, x1, y0, y1, z0, z1, m, solid, parent = GS, shadow = true) => Bw(x0, x1, y0, y1, z0, z1, m, false, parent, shadow);
   const ring = (lx, lz0, lz1, r, top) => { for (let z = lz0; z <= lz1 + 1e-6; z += Math.max(0.5, r)) circles.push([...toW(lx, z), r, top]); };
   const stoneM = M(0xffffff, { map: texClone(brickTex, 1 / 1.5, 1 / 1.5), roughness: 0.95 }), capM = M(0xbdb6a6, { roughness: 0.8 }), iron = M(0x1d1f22, { metalness: 0.6, roughness: 0.45 });
-  mat.gateLamp = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffc870, emissiveIntensity: 0.15 + night * 2.6 });
-  for (const sd of [-1, 1]) for (let a = OPEN + 1.15; a < 16; a += 2) {                   // Mauern
-    const za = zc + sd * a, zb = zc + sd * Math.min(16, a + 2), z0 = Math.min(za, zb), z1 = Math.max(za, zb), g = tH(GX, (z0 + z1) / 2);
+  for (const sd of [-1, 1]) for (let a = OPEN + 1.15; a < wing; a += 2) {                   // Mauern
+    const za = zc + sd * a, zb = zc + sd * Math.min(wing, a + 2), z0 = Math.min(za, zb), z1 = Math.max(za, zb), g = tH(GX, (z0 + z1) / 2);
     B(GX - 0.35, GX + 0.35, Math.min(g, gy) - 0.8, g + 2.1, z0, z1, stoneM);
     B(GX - 0.45, GX + 0.45, g + 2.1, g + 2.3, z0 - 0.02, z1 + 0.02, capM, false);
     ring(GX, z0 + 0.25, z1 - 0.25, 0.45, g + 2.3);
@@ -49,8 +50,9 @@ const Bw = B;                                                             // Wel
   // Torfluegel-Kollision: kleine Quader entlang der Torlinie (gedreht geht kein einzelner Quader), schalten gemeinsam
   const gateBoxes = []; for (let z = -OPEN; z <= OPEN + 1e-6; z += 0.4) { const [x, zz] = toW(0, z); gateBoxes.push(S(x - 0.2, x + 0.2, gy - 0.5, gy + 2.9, zz - 0.2, zz + 0.2)); }
   const solid = { set on(v) { for (const b of gateBoxes) b.on = v; }, get on() { return gateBoxes[0].on; } };
-  gates.push({ name: "Einfahrtstor", g, open: 0, target: 0, solid, a: toW(GX, zc - OPEN), b: toW(GX, zc + OPEN), anim: f => { for (const L of leaves) L.piv.rotation.y = L.sd * f * 1.7; } });
+  gates.push({ name, g, open: 0, target: 0, solid, a: toW(GX, zc - OPEN), b: toW(GX, zc + OPEN), anim: f => { for (const L of leaves) L.piv.rotation.y = L.sd * f * 1.7; } });
   // Torhaus aussen, links der Zufahrt (von innen gesehen); Tuer zur Strasse, Fenster zum Tor und nach hinten (lokal gebaut)
+  if (house) {
   const hx0 = 2.2, hx1 = 6.4, hz1 = zc - OPEN - 4.6, hz0 = hz1 - 4.4, T = 0.4;
   const hg = Math.max(...[[hx0, hz0], [hx1, hz0], [hx0, hz1], [hx1, hz1]].map(([x, z]) => tH(x, z))), fy = hg + 0.2, top = fy + 2.8, xm = (hx0 + hx1) / 2, zm = (hz0 + hz1) / 2;
   B(hx0 - 0.15, hx1 + 0.15, hg - 1.2, fy, hz0 - 0.15, hz1 + 0.15, capM);
@@ -64,7 +66,9 @@ const Bw = B;                                                             // Wel
     const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: hx1 - hx0 + 2 * over, bevelEnabled: false }), mat.slate); roof.rotation.y = -Math.PI / 2; roof.position.set(hx1 + over, top + 0.15, 0); roof.castShadow = true; GS.add(roof); }
   for (let x = hx0 + 0.6; x <= hx1 - 0.5; x += 1.0) for (let z = hz0 + 0.6; z <= hz1 - 0.5; z += 1.0) circles.push([...toW(x, z), 0.75, top]);   // Torhaus fest (innen nicht begehbar)
   const dl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.22), mat.gateLamp); dl.position.set(xm + 0.9, fy + 2.45, hz1 + 0.15); GG.add(dl);
+  }
   // feste Teile je Material zu einem Netz zusammenfassen (die Gruppe ist "dynamisch" wegen der Fluegel und wird sonst nicht zusammengefasst)
   { GS.updateMatrix(); const byMat = new Map(); GS.children.forEach(o => { o.updateMatrix(); const gg = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); gg.applyMatrix4(o.matrix); for (const k of Object.keys(gg.attributes)) if (!["position", "normal", "uv"].includes(k)) gg.deleteAttribute(k); if (!gg.attributes.uv) gg.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(gg.attributes.position.count * 2), 2)); if (!byMat.has(o.material)) byMat.set(o.material, []); byMat.get(o.material).push(gg); });
     GS.clear(); for (const [m, list] of byMat) { const mm = new THREE.Mesh(mergeGeometries(list, false), m); mm.castShadow = mm.receiveShadow = true; GS.add(mm); } }
 }
+buildGate(GATE_C, GATE_U, "Einfahrtstor", ZUF.y(roadNear(ZUF, GATE_C[0], GATE_C[1], 6).s) + 0.12);
