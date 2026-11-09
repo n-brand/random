@@ -22,7 +22,9 @@ const ENG_PROFILES = {
   "Motorrad": { idle: 52, max: 235, gears: [0, 7, 14, 22, 32, 44, 60], wave: "sawtooth", sub: 2, cut0: 520, cut1: 2700, vol: 0.14, noise: 0.05 },
   // am = Tiefe des Zuendtakts (Standard 0,35); 0 = gleichmaessig wie ein Elektromotor, kein Anlassen-Bruellen bei start: "soft"
   "The Bat": { idle: 70, max: 160, gears: [0, 90], wave: "sine", sub: 0.5, cut0: 260, cut1: 520, vol: 0.025, noise: 0.03, am: 0, soft: true },   // Nicolas: praktisch lautlos, nur leises Summen
-  "Batpod": { idle: 180, max: 1150, gears: [0, 60], wave: "triangle", sub: 2, cut0: 1400, cut1: 5200, vol: 0.06, noise: 0.025, am: 0.04, soft: true },   // Nicolas: elektrisch, hohes Surren steigt mit dem Tempo
+  // Batpod wie ein Tesla (Nicolas 2026-11-09): Motor-/Wechselrichter-Surren, Tonhoehe direkt am Tempo (einige 100 Hz bis ca. 1 kHz),
+  // dazu ein feiner hoher Oberton (Wechselrichter, ca. 2-3 kHz), beim Gasgeben lauter, im Stand fast still (ev), leises Rollgeraeusch
+  "Batpod": { idle: 120, max: 1050, gears: [0, 45], wave: "sine", wave2: "sine", g2: 0.16, sub: 2.67, cut0: 2600, cut1: 7000, vol: 0.045, noise: 0.025, am: 0, soft: true, ev: true },   // Nicolas: leiser,
 };
 function engineNoise(ctx) {
   if (ENGINE.noiseBuf) return ENGINE.noiseBuf;
@@ -40,7 +42,7 @@ function engineStart(kind) {
   const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = P.cut0; filt.Q.value = 2.2; filt.connect(out);
   const am = ctx.createGain(); am.gain.value = 0.65; am.connect(filt);
   const o1 = ctx.createOscillator(); o1.type = P.wave; o1.frequency.value = P.idle; o1.connect(am);
-  const o2 = ctx.createOscillator(); o2.type = "square"; o2.frequency.value = P.idle * P.sub; const g2 = ctx.createGain(); g2.gain.value = 0.3; o2.connect(g2); g2.connect(am);
+  const o2 = ctx.createOscillator(); o2.type = P.wave2 || "square"; o2.frequency.value = P.idle * P.sub; const g2 = ctx.createGain(); g2.gain.value = P.g2 ?? 0.3; o2.connect(g2); g2.connect(am);
   const lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = P.idle / 2; const lg = ctx.createGain(); lg.gain.value = P.am ?? 0.35; lfo.connect(lg); lg.connect(am.gain);   // Zuendtakt
   const ns = ctx.createBufferSource(); ns.buffer = engineNoise(ctx); ns.loop = true;
   const nf = ctx.createBiquadFilter(); nf.type = "bandpass"; nf.frequency.value = 350; nf.Q.value = 0.7; const ng = ctx.createGain(); ng.gain.value = 0;
@@ -69,7 +71,7 @@ function engineUpdate(C) {
   n.f = f; n.rpm = rpm; n.gear = gi + 1;                                     // fuer ?debug
   n.o1.frequency.setTargetAtTime(f, t, 0.06); n.o2.frequency.setTargetAtTime(f * P.sub, t, 0.06); n.lfo.frequency.setTargetAtTime(f / 2, t, 0.06);
   n.filt.frequency.setTargetAtTime(P.cut0 + (P.cut1 - P.cut0) * rpm * (0.35 + 0.65 * thr), t, 0.08);
-  n.out.gain.setTargetAtTime(P.vol * (0.7 + 0.5 * thr), t, 0.1);
+  n.out.gain.setTargetAtTime(P.ev ? P.vol * (0.08 + 0.92 * Math.min(1, v / 14)) * (0.55 + 0.65 * thr) : P.vol * (0.7 + 0.5 * thr), t, 0.1);   // ev: im Stand fast still
   n.ng.gain.setTargetAtTime(C.air || C.wet ? 0 : P.noise * Math.min(1, v / 18), t, 0.15); n.nf.frequency.setTargetAtTime(280 + v * 22, t, 0.2);
 }
 function engineJet() {                                                       // Schubstoss beim Sprung (Tumbler)
