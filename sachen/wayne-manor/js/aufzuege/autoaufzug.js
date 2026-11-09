@@ -89,7 +89,7 @@
   B(HF_TUN.x0, HF_TUN.x1, HF_Y, HF_Y + 4.8, HF_TUN.z1, HF_TUN.z1 + 0.4, concrete);
   B(HF_TUN.x0, HF_TUN.x1, HF_Y + 4.8, HF_Y + 5.2, HF_TUN.z0 - 0.4, HF_TUN.z1 + 0.4, concrete);
   for (let x = HF_TUN.x0 + 2; x < HF_TUN.x1 - 1; x += 4) B(x - 0.8, x + 0.8, HF_Y + 4.72, HF_Y + 4.8, cz - 0.12, cz + 0.12, mat.glow, false, world, false);
-  // Getarntes Felstor am Portal (faehrt nach oben in den Fels), Felsen rahmen das Portal, steile Felspartie rundherum
+  // Getarntes Felstor (faehrt nach oben in den Fels), hier fuer den Geheimgang in der Batcave
   const rockGate = (name, gx, gz, along, len, h, y0, rotY) => {
     const g = new THREE.Group(); g.position.set(gx, y0, gz); g.rotation.y = rotY; g.userData.dynamic = true; world.add(g);
     const rockM = M(0x77736c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true });
@@ -100,32 +100,33 @@
     const a = along === "z" ? [gx, gz - len / 2] : [gx - len / 2, gz], b = along === "z" ? [gx, gz + len / 2] : [gx + len / 2, gz];
     gates.push({ name, g, open: 0, target: 0, lift: h + 0.3, y0, solid, a, b });
   };
-  rockGate("Felstor", HF_TUN.x0 + 0.5, cz, "z", HF_TUN.z1 - HF_TUN.z0 + 0.4, 4.9, HF_Y - 0.1, Math.PI / 2);
-  // Fels rund um die Tunneloeffnung (das Gelaende ist dort fuer das Portal ausgeschnitten): Scheiben bis knapp unter die Gelaendeoberflaeche
+  // Westweg (Nicolas 2026-11-09, statt Felstor im Einschnitt): Natursteinportal am Tunnelende HF_XP, Stuetzmauern am Einschnitt, Kiesstrasse HFR
+  // bis durch das Westtor; Lampen im verlaengerten Tunnel
   {
-    const portalRock = M(0x8f8b84, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 1 });
-    // Saeulen im 0,8-m-Raster, jede bis knapp ueber das (ausgeschnittene) Gelaende an ihrer Stelle; im Tunnel erst ueber der Decke
-    const st = 0.8;
-    for (let x = HF_PORTAL.x0 + 1.2; x < HF_PORTAL.x1 + 2.2; x += st) for (let z = HF_PORTAL.z0 - 1.2; z < HF_PORTAL.z1 + 1.2; z += st) {
-      const top = Math.min(HILL + 0.1, Math.max(terrainH(x, z), terrainH(x + st, z), terrainH(x, z + st), terrainH(x + st, z + st)) + 0.1);
-      const inTun = z + st > HF_TUN.z0 && z < HF_TUN.z1, bot = inTun ? HF_Y + 4.8 : -0.6;
-      if (top > bot + 0.05) B(x, x + st, bot, top, z, z + st, portalRock, !inTun);
-    }
+    const stoneM = M(0xffffff, { map: texClone(brickTex, 1 / 1.5, 1 / 1.5), roughness: 0.95 }), capM = M(0xbdb6a6, { roughness: 0.8 }), X = HF_XP, Z0 = HF_TUN.z0, Z1 = HF_TUN.z1, HT = HF_Y + 4.8;
+    // Quader mit schraeger Oberkante (folgt dem Gelaende wie die Grundstuecksmauer): along "x" oder "z" von a0 nach a1, Oberkante tA -> tB; fest per S()
+    const raked = (along, a0, a1, yb, tA, tB, c0, c1, m, solid = true) => { const L = a1 - a0, g = new THREE.BoxGeometry(along === "x" ? Math.abs(L) : c1 - c0, 1, along === "x" ? c1 - c0 : Math.abs(L)).toNonIndexed(), P = g.attributes.position, U = g.attributes.uv;
+      for (let k = 0; k < P.count; k++) { const u = (along === "x" ? P.getX(k) : P.getZ(k)) / L + 0.5, y = P.getY(k) > 0 ? tA + (tB - tA) * u : yb; P.setY(k, y); U.setXY(k, a0 + u * L + (along === "x" ? P.getZ(k) : P.getX(k)) * 0.7, y); }
+      g.computeVertexNormals(); g.translate(along === "x" ? (a0 + a1) / 2 : (c0 + c1) / 2, 0, along === "x" ? (c0 + c1) / 2 : (a0 + a1) / 2);
+      const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; world.add(o);
+      if (solid) along === "x" ? S(Math.min(a0, a1), Math.max(a0, a1), yb, Math.max(tA, tB), c0, c1) : S(c0, c1, yb, Math.max(tA, tB), Math.min(a0, a1), Math.max(a0, a1)); };
+    // Portalwand: Oberkante folgt dem Hang (Gelaende 1 m hinter der Wand + 0,3), ueber der Oeffnung mindestens 0,9 m Sturz
+    const top = z => Math.max(genH0(X + 1.0, z) + 0.3, z > Z0 - 0.5 && z < Z1 + 0.5 ? HT + 0.9 : HF_Y + 1.5);
+    for (let z = cz - 8; z < cz + 8 - 1e-6; z += 1) { const z1 = z + 1, open = z1 > Z0 - 0.4 && z < Z1 + 0.4;
+      if (!open) { raked("z", z, z1, HF_Y - 0.5, top(z), top(z1), X - 0.8, X + 0.4, stoneM); raked("z", z, z1, top(z), top(z) + 0.18, top(z1) + 0.18, X - 1.0, X + 0.4, capM, false); } }
+    raked("z", Z0 - 0.4, Z1 + 0.4, HT + 0.4, top(Z0 - 0.4), top(Z1 + 0.4), X - 0.8, X + 0.4, stoneM); raked("z", Z0 - 0.4, Z1 + 0.4, top(Z0 - 0.4), top(Z0 - 0.4) + 0.18, top(Z1 + 0.4) + 0.18, X - 1.0, X + 0.4, capM, false);
+    B(X + 0.4, X + 3.5, HT + 0.4, Math.max(top(Z0), top(Z1)), Z0 - 0.4, Z1 + 0.4, stoneM, false);   // Portalkopf ueber der Tunneldecke (das Gelaende ist dort zur Strasse hin abgesenkt)
+    B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z0 - 0.4, Z0, capM, false); B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z1, Z1 + 0.4, capM, false); B(X - 1.0, X - 0.8, HT, HT + 0.4, Z0, Z1, capM, false);   // Rahmen
+    // Stuetzmauern am Einschnitt, schraeg mit dem urspruenglichen Gelaende, solange der Einschnitt tiefer als 0,4 m ist
+    for (const sd of [-1, 1]) { const zw = sd < 0 ? Z0 - 0.6 : Z1 + 0.6, za = sd < 0 ? Z0 - 1.0 : Z1 + 0.2, zb = sd < 0 ? Z0 - 0.2 : Z1 + 1.0, h0 = x => genH0(x, zw) + 0.35;
+      for (let x = X - 0.8; x > X - 40; x -= 1.5) { const rn = roadNear(HFR, x - 0.75, cz, 8); if (!rn || genH0(x - 0.75, zw) - rn.y < 0.4) break;
+        raked("x", x, x - 1.5, rn.y - 0.6, h0(x), h0(x - 1.5), za, zb, stoneM); raked("x", x, x - 1.5, h0(x), h0(x) + 0.15, h0(x - 1.5) + 0.15, za - 0.1, zb + 0.1, capM, false); } }
+    const kies = canvasTex(256, 256, (g, w, h) => { const rr = rng(777); g.fillStyle = "#8a8070"; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 2600; i++) { const v = 85 + rr() * 90; g.fillStyle = "rgba(" + (v + 10) + "," + (v + 2) + "," + (v - 8) + "," + (0.35 + rr() * 0.5) + ")"; g.beginPath(); g.arc(rr() * w, rr() * h, 0.6 + rr() * 2.2, 0, 7); g.fill(); }
+      for (const x of [70, 186]) { g.fillStyle = "rgba(50,45,40,.18)"; g.fillRect(x - 16, 0, 32, h); } }); kies.repeat.set(1, 1);
+    const kr = ribbon(HFR.curve, HFR.len, HFR.w, flatMat({ map: kies, bumpMap: kies, bumpScale: 1.0, side: THREE.DoubleSide }), 7.5, 0, { y: s => HFR.y(s) + 0.1 }); kr.userData.keep = false;
+    for (let x = HF_TUN.x1 - 22; x > X + 4; x -= 16) { const l = new THREE.PointLight(0xfff0d8, 0, 18, 1.6); l.position.set(x, HF_Y + 3.6, cz); l.userData.I = 22; scene.add(l); caveLights.push(l); }
   }
-  const geos = [], pr = rng(616);
-  const put = (g, x, y, z, rot, yTop = HILL + 0.3) => { g.rotateY(rot); g.translate(x, y, z); const P = g.attributes.position; for (let q = 0; q < P.count; q++) if (P.getY(q) > yTop) P.setY(q, yTop); g.computeVertexNormals(); geos.push(g); };
-  put(makeRock(1.4, 4.2, 1.6, pr()), HF_TUN.x0 - 0.6, 3.6, HF_TUN.z0 - 1.5, Math.PI / 2);
-  put(makeRock(1.4, 4.2, 1.6, pr()), HF_TUN.x0 - 0.6, 3.6, HF_TUN.z1 + 1.5, Math.PI / 2);
-  put(makeRock(4.6, 2.2, 1.8, pr()), HF_TUN.x0 - 0.4, HF_Y + 6.4, cz, Math.PI / 2);
-  for (const sd of [-1, 1]) for (let a = 5.5; a < 12; a += 2.6 + pr() * 1.5) for (const y of [2 + pr() * 3, 11 + pr() * 6]) {
-    const w = 3 + pr() * 3, h = 7 + pr() * 6;
-    put(makeRock(w / 2, h / 2, 1.2 + pr() * 0.6, pr()), -56.6 - pr() * 0.8, y, cz + sd * a, Math.PI / 2 + (pr() - 0.5) * 0.3);
-  }
-  for (const z of [HF_TUN.z0 - 1.5, HF_TUN.z1 + 1.5]) circles.push([HF_TUN.x0 - 0.6, z, 1.3, 9]);
-  // Platz vor dem Tor (hier schliesst spaeter die Zufahrt an)
-  B(-67, HF_TUN.x0 - 0.9, -0.3, 0.05, cz - 1.8, cz + 9, M(0x8b8478, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 0.95 }), false);
-
   // Geheimgang unten: getarnte Felswand am Nordende (von der Auto Repair aus sieht es wie Fels aus)
   rockGate("Felswand (Geheimgang)", (CGB.x0 + CGB.x1) / 2, CGB.z0 + 2.4, "x", CGB.x1 - CGB.x0 + 0.6, LH - 1.2, LY - 0.2, 0);
-  if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.9 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
 }

@@ -139,10 +139,9 @@ const PLATEAU = [[-44, 97], [-46, 30], [-64, 22], [-77, -38], [-77, -69], [-50, 
 const PLATEAU_N = [[-77, -70], [-78, -134], [-100, -156], [-110, -213], [-100, -241], [-72, -249], [-61, -221], [-30, -213], [-17, -204], [-30, -156], [-29, -128], [-13, -109], [-20, -83]];
 const PL_CLIFF = [[-100, -156], [-110, -213]];   // Fallkante des Wasserfalls (A7) bei z -186
 // A3 Autoaufzug: Schacht im Hof westlich der Tiefgarage, Halte Garage (GY + HILL) / Hangfuss (HF_Y) / Batcave (LY).
-// Am Hangfuss Tunnel nach Westen zu einer kurzen steilen Felspartie im Westhang (PL_CLIFF2) mit getarntem Felstor (HF_PORTAL).
+// Am Hangfuss Tunnel nach Westen bis zum Portal im Westhang (Nicolas 2026-11-09: kein Einschnitt mehr, Tunnel bis HF_XP, dann Kiesstrasse HFR zum Westtor).
 const CSH = { x0: -41, x1: -33.7, z0: 36, z1: 40.5 }, CSH_OUT = { x0: -41.3, x1: -33.4, z0: 35.7, z1: 40.8 };
-const HF_Y = 0.15, HF_TUN = { x0: -58.9, x1: -41, z0: 35.6, z1: 40.9 }, HF_PORTAL = { x0: -61, x1: -55.2, z0: 34.6, z1: 41.9 };
-const PL_CLIFF2 = [[-54, 31], [-54, 47]];                                // (Ecke (-64, 27) dafuer nach (-64, 22), Rand zum Haus bleibt > 10 m)
+const HF_Y = 0.15, HF_TUN = { x0: -58.9, x1: -41, z0: 35.6, z1: 40.9 };   // x0 wird in strassen/hauptstrasse.js auf das Portal HF_XP gesetzt
 // Geheimgang unten: nach Westen, dann nach Norden in die Auto Repair. D1: nach Westen auf ca. 10 x 10 m verbreitert (x0 -47,9 -> -53),
 // sonst kann der Tumbler (4,8 m) in der Kurve nicht wenden
 const CGA = { x0: -53, x1: -41, z0: 36, z1: 40.5 }, CGB = { x0: -53, x1: -43.2, z0: 30.5, z1: 40.5 }, CGC = { x0: -53, x1: -43.2, z0: 26, z1: 30.5 }, CGE = { x0: -34.2, x1: -31.5, z0: 35.5, z1: 46.5 };   // CGE (E5): Vorplatz vor dem Osttor zum Hoehlentunnel   // CGC: Vorplatz hinter der Felswand (Auto Repair), sonst 2,8 m Engstelle
@@ -166,7 +165,7 @@ function plateauH(x, z) {
   const dn = polySD(PLATEAU_N, x, z), d = Math.min(plateauSD(x, z) - PL_FLAT, dn);
   if (d <= 0) return HILL;
   // an der Westkante der Erweiterung eine fast senkrechte Felswand (ca. 4 m breit), zu den Enden hin wieder normaler Hang
-  const wall = dn <= d + 0.01 ? 1 - sst(6, 30, segDist(x, z, PL_CLIFF) - dn) : Math.max(0, 1 - sst(3, 14, segDist(x, z, PL_CLIFF2) - d));
+  const wall = dn <= d + 0.01 ? 1 - sst(6, 30, segDist(x, z, PL_CLIFF) - dn) : 0;
   // A5: im Bereich der Serpentine (Osthang, z -60..70) ist der Hang ca. 62 m breit und gleichmaessig (Platz fuer vier Kehren)
   const sz = sst(-75, -55, z) * sst(80, 62, z) * sst(5, 18, x);
   const t = d / lerp(lerp(PL_W * (0.85 + 0.3 * vnoise(x / 70 + 4, z / 70 + 8)), 4, wall), 62, sz);   // Hangbreite leicht wechselnd

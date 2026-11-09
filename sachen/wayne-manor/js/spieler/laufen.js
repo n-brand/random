@@ -38,7 +38,7 @@ function pushOut(p, feet) {
 function groundAt(x, z, feet = 0) {
   const sn = serpNear(x, z, SERP_W / 2);
   if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
-  for (const R of ROADS2) { const rn = roadNear(R, x, z, R.w / 2); if (rn && feet > rn.y - 2) return rn.y + 0.12; }   // Hauptstrasse, Zufahrt (E4)
+  for (const R of [...ROADS2, HFR]) { const rn = roadNear(R, x, z, R.w / 2); if (rn && feet > rn.y - 2) return rn.y + 0.12; }   // Hauptstrasse, Zufahrt (E4), Westweg
   if (feet < HILL - 1 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return BED - 20;   // A3: Tunnel und Autoaufzug-Schacht
   if (feet < 3 && inRect(WF_PORTAL, x, z)) { const w = wfNear(x, z, WF_HW + 1); if (w) return w.y + 0.07; }   // Portalöffnung: Gelaende ist dort ausgeschnitten, es gilt die Fahrbahn
   if (feet < terrainH(x, z) - 1.5) { const w = wfInTunnel(x, z); if (w) return w.y + 0.07; }

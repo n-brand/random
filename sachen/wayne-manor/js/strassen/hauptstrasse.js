@@ -38,6 +38,7 @@ function genH(x, z) {
   let h = genH0(x, z) + serpRug(x, z);
   const r = serpBlend(x, z); if (r) h = lerp(h, r.y, r.w);
   const q = wfBlend(x, z); if (q) h = lerp(h, q.y, q.w);
+  { const w = roadNear(HFR, x, z, HFR.w / 2 + 5.5); if (w && x < HF_XP - 0.3) h = lerp(h, w.y - 0.08, 1 - sst(HFR.w / 2 + 1.5, HFR.w / 2 + 5.5, w.d)); }   // Westweg (Kies), nicht ueber dem Tunnel
   for (const R of [ZUF, MAIN]) { const w = roadNear(R, x, z, R.w / 2 + 5.5); if (w) h = lerp(h, w.y - 0.08, 1 - sst(R.w / 2 + 1.5, R.w / 2 + 5.5, w.d)); }   // E4 (Hauptstrasse zuletzt: an der Kreuzung gilt ihre Hoehe)
   return h;
 }
@@ -87,3 +88,15 @@ function wallNear(x, z, d) {                                             // Punk
   for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const [px, pz] of WALL_GRID.get((cx + i) + "," + (cz + j)) || []) if (Math.hypot(x - px, z - pz) < d + 1) return true;
   return false;
 }
+// ===================== Westweg (Nicolas 2026-11-09): Tunnel vom Autoaufzug (Hangfuss) durch den Westhang, Kiesstrasse bis durch das Westtor =====================
+// Portal HF_XP: erste Stelle nach Westen, an der das Gelaende nur noch 6,4 m ueber dem Tunnelboden liegt (Decke 5,2 m plus Ueberdeckung).
+// Davor ein Einschnitt mit Stuetzmauern (Gelaende per genH an die Strasse angeglichen), dann Kies dem Gelaende nach bis durch das Westtor.
+const HF_CZ = (HF_TUN.z0 + HF_TUN.z1) / 2;
+const HF_XP = (() => { for (let x = HF_TUN.x0; x > -140; x -= 0.5) if (plateauH(x, HF_CZ) < HF_Y + 6.4) return x; return -100; })();   // (genH0 braucht gelaende.js, ausserhalb des Anwesens ist es hier = Plateauhang)
+HF_TUN.x0 = HF_XP;
+const WALL_GATE2_U = (() => {                                            // Westtor: Fahrtrichtung nach aussen (Normale zur Mauer, weg von der Anwesensmitte)
+  const L = WALL_LINES[0], a = L[L.length - 4], b = WALL_LINES[1][3]; let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz); dx /= l; dz /= l;
+  let ux = dz, uz = -dx; if (ux * (WALL_GATE2[0] + 25) + uz * (WALL_GATE2[1] - 30) < 0) { ux = -ux; uz = -uz; } return [ux, uz]; })();
+const HFR = (() => { const [gx, gz] = WALL_GATE2, [ux, uz] = WALL_GATE2_U, g = k => [gx + ux * k, gz + uz * k];
+  return makeRoad([[HF_XP, HF_CZ], [HF_XP - 18, HF_CZ], [HF_XP - 34, HF_CZ + 4], [-120, 58], [-150, 86], g(-16), g(-6), [gx, gz], g(8), g(18)], 6,
+    (R, s) => { if (!R.ys) R.ys = smooth(smooth(R.samples.map(([x, z]) => genH0(x, z)), 8), 8); return lerp(HF_Y, profileAt(R, s), sst(14, 40, s)); }); })();
