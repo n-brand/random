@@ -24,7 +24,14 @@ function buildTheBat() {
   for (const sd of [-1, 1]) { boxIn(gear, sd * 1.1 - 0.07, sd * 1.1 + 0.07, 0, 0.1, -1.9, 2.1, dark); beam([sd * 1.1, 0.05, -1.3], [sd * 0.6, 1.3, -1.3], 0.1, dark, gear); beam([sd * 1.1, 0.05, 1.7], [sd * 0.6, 1.7, 1.7], 0.1, dark, gear); }
   // Bauch schlank (Nicolas: eleganter), steigt nach hinten an; Panzer gewoelbt, hinten hoeher. Grundriss wie ein Fisch (Bild von oben):
   // vorne/Mitte am breitesten, nach hinten schmaler (Mittelteil lang, Seitenplatten kuerzer, breite Platten nur vorne/Mitte)
-  prismIn(g, [[1.4, 1.35], [1.1, 1.2], [-0.6, 1.3], [-2.4, 1.8], [-3.1, 2.15], [-3.0, 2.3], [1.4, 2.05]], 1.5, dark);
+  // Bauch als Kiel (Nicolas 2026-11-09): von vorne laufen links und rechts spitz nach unten in der Mitte zusammen (V), aus einzelnen
+  // schraegen Panzerplatten mit Fugen; nach hinten steigt der Kiel an und wird schmaler
+  for (let zc = -1.25; zc <= 3.0; zc += 0.85) {
+    const yK = 0.98 + Math.max(0, zc + 0.5) * 0.28, yT = 1.95 + Math.max(0, zc) * 0.1, xo = 1.7 - Math.max(0, zc - 0.9) * 0.35;
+    const L = Math.hypot(xo - 0.08, yT - yK), a = Math.atan2(yT - yK, xo - 0.08);
+    for (const sd of [-1, 1]) { const p = meshIn(g, new THREE.BoxGeometry(L, 0.09, 0.77), armor, sd * (xo + 0.08) / 2, (yT + yK) / 2, zc); p.rotation.z = sd * a; }
+    meshIn(g, new THREE.BoxGeometry(0.16, 0.12, 0.77), dark, 0, yK - 0.02, zc);                                         // Kielleiste
+  }
   prismIn(g, [[1.6, 1.9], [0.9, 2.35], [-0.4, 2.85], [-1.8, 3.2], [-2.9, 3.25], [-3.6, 2.95], [-3.95, 2.45], [-3.4, 2.15], [-1.0, 1.85], [1.0, 1.75]], 2.4, armor);   // Panzer Mitte
   for (const sd of [-1, 1]) {
     prismIn(g, [[1.3, 1.8], [0.7, 2.15], [-0.5, 2.55], [-1.9, 2.8], [-2.7, 2.65], [-3.0, 2.3], [-2.6, 2.0], [-1.0, 1.7], [0.8, 1.6]], 1.0, armor, sd * 1.7);
