@@ -88,6 +88,7 @@
   B(HF_TUN.x0, HF_TUN.x1, HF_Y, HF_Y + 4.8, HF_TUN.z0 - 0.4, HF_TUN.z0, concrete);
   B(HF_TUN.x0, HF_TUN.x1, HF_Y, HF_Y + 4.8, HF_TUN.z1, HF_TUN.z1 + 0.4, concrete);
   B(HF_TUN.x0, HF_TUN.x1, HF_Y + 4.8, HF_Y + 5.2, HF_TUN.z0 - 0.4, HF_TUN.z1 + 0.4, concrete);
+  B(CSH.x0 - 0.35, CSH.x0 + 0.1, HF_Y - 0.4, HF_Y + 5.2, HF_TUN.z0 - 0.4, CSH.z0 + 0.05, concrete); B(CSH.x0 - 0.35, CSH.x0 + 0.1, HF_Y - 0.4, HF_Y + 5.2, CSH.z1 - 0.05, HF_TUN.z1 + 0.4, concrete);   // Tunnel breiter als der Schacht: Ecken zur Schachtwand schliessen (Nicolas: Luecken)
   for (let x = HF_TUN.x0 + 2; x < HF_TUN.x1 - 1; x += 4) B(x - 0.8, x + 0.8, HF_Y + 4.72, HF_Y + 4.8, cz - 0.12, cz + 0.12, mat.glow, false, world, false);
   // Getarntes Felstor (faehrt nach oben in den Fels), hier fuer den Geheimgang in der Batcave
   const rockGate = (name, gx, gz, along, len, h, y0, rotY) => {
