@@ -39,6 +39,7 @@ function groundAt(x, z, feet = 0) {
   const sn = serpNear(x, z, SERP_W / 2);
   if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
   for (const R of [...ROADS2, HFR]) { const rn = roadNear(R, x, z, R.w / 2); if (rn && feet > rn.y - 2) return rn.y + 0.12; }   // Hauptstrasse, Zufahrt (E4), Westweg
+  if (inSilo(x, z)) return BED - 20;                                       // Flugzeug-Silo: kein Gelaende (Klappen und Boden sind Quader)
   if (feet < HILL - 1 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return BED - 20;   // A3: Tunnel und Autoaufzug-Schacht
   if (feet < 3 && inRect(WF_PORTAL, x, z)) { const w = wfNear(x, z, WF_HW + 1); if (w) return w.y + 0.07; }   // Portalöffnung: Gelaende ist dort ausgeschnitten, es gilt die Fahrbahn
   if (feet < terrainH(x, z) - 1.5) { const w = wfInTunnel(x, z); if (w) return w.y + 0.07; }
@@ -91,7 +92,7 @@ function updatePlayer(dt, moveX, moveZ, run) {
   // Klippenkante weiter innen (Nicolas): das Gelaende faellt 4-5 m vor der Kuestenlinie ab, davor steht die Felswand; 5 m Abstand, landeinwaerts geht immer
   if (player.pos.y > -3 && !swim && coastEdge(next.x, next.z, player.pos.x, player.pos.z, 5)) { next.x = player.pos.x; next.z = player.pos.z; }
   // Steile Haenge sperren: nur das Gelaende zaehlt (Stufen wie der Brunnenrand regelt supportAt)
-  const slopeG = (x, z) => (player.pos.y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (player.pos.y < 3 && inRect(WF_PORTAL, x, z)) || (player.pos.y < -20 && waterCaveAt(x, z)) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
+  const slopeG = (x, z) => (player.pos.y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (player.pos.y < 3 && inRect(WF_PORTAL, x, z)) || (player.pos.y < -20 && waterCaveAt(x, z)) || (player.pos.y < -8 && caveUpAt(x, z)) || inSilo(x, z, 0.5) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
   const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
   if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
   player.pos.x = next.x; player.pos.z = next.z;

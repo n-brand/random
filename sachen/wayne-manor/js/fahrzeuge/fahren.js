@@ -238,6 +238,7 @@ const camBlocked = (x, y, z) => {
   // unter der Erde nur in Hohlraeumen: Garage, Hangfuss-Tunnel, Schacht, Haus, Waterfall-Exit-Roehre, Hoehlen
   if (y < HILL - 0.6 && y > GY + HILL - 0.5 && inPoly(GARAGE, x, z)) return false;   // nur in Garagenhoehe (darunter liegt die Hoehle)
   if (y < HILL - 0.6 && y > HF_Y - 0.5 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return false;
+  if (inSilo(x, z, -0.8) && y > UY - 1) return false;                     // Flugzeug-Silo (offene Klappen; geschlossen sperren ihre Quader)
   if (inPoly(HOUSE, x, z) && y > HILL + FL0 + 0.3) return false;                   // Haus nur ueber dem Plateau (darunter Garage/Hoehle)
   // Grenzen bewusst weiter innen als die sichtbaren Flaechen (Decken sind unregelmaessig; Nicolas: lieber weiter innen)
   const w = wfNear(x, z, WF_HW - 0.8); if (w && y > w.y - 0.5 && y < w.y + 4.8) return false;

@@ -4,7 +4,7 @@
 
 // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
 function forestD(x, z) {
-  if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4 || ROADS2.some(R => roadNear(R, x, z, R.w / 2 + 6)) || roadNear(HFR, x, z, HFR.w / 2 + 5) || wallNear(x, z, 3)) return 0;
+  if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4 || ROADS2.some(R => roadNear(R, x, z, R.w / 2 + 6)) || roadNear(HFR, x, z, HFR.w / 2 + 5) || wallNear(x, z, 3) || inSilo(x, z, 7)) return 0;
   for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
   if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z) < 27 || streamDist(x, z) < 4.5) return 0;
   { const w = wfNear(x, z, 8); if ((w && w.s > WFT.sP) || Math.hypot(x - WFT.end[0], z - WFT.end[1]) < 13) return 0; }   // Waterfall-Exit draussen (Sackgasse)
@@ -50,6 +50,7 @@ const grassTex = canvasTex(256, 256, (g, w, h) => {
     if (inPool(vx, vz) || Math.hypot(vx - FOUNT.x, vz - FOUNT.z) < FOUNT.r - 0.2) { cut[k] = 1; continue; }   // Becken (Pool, Brunnen)
     if (pos[k * 3 + 1] < -8 && seaD(vx, vz) < 5 && seaTunDist(vx, vz) < SEA_TUN_W / 2 + 1.5) cut[k] = 1;   // Meereshoehle
     if (pos[k * 3 + 1] < SEA_Y + 9 && waterCaveAt(vx, vz, 1.5)) cut[k] = 1;                                // Wasserhoehlen (E2)
+    if (inSilo(vx, vz, 0.6)) cut[k] = 1;                                     // Flugzeug-Silo (Rasenklappen und Kragen decken ab)
     if (vx > HF_XP - 1.5 && vx < HF_XP + 6 && Math.abs(vz - HF_CZ) < 3.2) cut[k] = 1;   // Tunnelmund Westweg (Portalkopf deckt ab)
     if (vx > WF_PORTAL.x0 && vx < WF_PORTAL.x1 && vz > WF_PORTAL.z0 && vz < WF_PORTAL.z1 && pos[k * 3 + 1] < 7.5 && pos[k * 3 + 1] > -1.5) cut[k] = 1;   // Waterfall Exit (A8)
   }
