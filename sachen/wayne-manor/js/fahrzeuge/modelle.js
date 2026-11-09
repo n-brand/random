@@ -374,9 +374,9 @@ function buildAventador(col = 0xe07012) {
   const tab = T => f => { if (f >= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (f >= T[i][0]) { const [f0, a] = T[i - 1], [f1, b] = T[i]; return a + (b - a) * (f0 - f) / (f0 - f1); } return T[T.length - 1][1]; };
   // Loft: Stationen [f, Halbschnitt von unten-Mitte ueber die Seite bis oben-Mitte], gespiegelt; Enden geschlossen
   const loft = (st, m) => { const pos = [], ring = ([f, h]) => [...h, ...h.slice().reverse().map(([x, y]) => [-x, y])].map(([x, y]) => [x, y, -f]);
-    const R = st.map(ring), n = R[0].length, tri = (a, b, c) => pos.push(...a, ...b, ...c);
+    const R = st.map(ring), n = R[0].length, tri = (a, b, c) => pos.push(...a, ...c, ...b);   // Reihenfolge so, dass die Flaechen nach aussen zeigen (vorher sah man hinein)
     for (let i = 0; i < R.length - 1; i++) for (let j = 0; j < n; j++) { const a = R[i][j], b = R[i][(j + 1) % n], c = R[i + 1][(j + 1) % n], d = R[i + 1][j]; tri(a, d, c); tri(a, c, b); }
-    for (const [k, s] of [[0, 1], [R.length - 1, -1]]) { const r = R[k], c = r.reduce((q, p) => [q[0] + p[0] / n, q[1] + p[1] / n, q[2] + p[2] / n], [0, 0, 0]); for (let j = 0; j < n; j++) s > 0 ? tri(c, r[(j + 1) % n], r[j]) : tri(c, r[j], r[(j + 1) % n]); }
+    for (const [k, s] of [[0, 1], [R.length - 1, -1]]) { const r = R[k], c = r.reduce((q, p) => [q[0] + p[0] / n, q[1] + p[1] / n, q[2] + p[2] / n], [0, 0, 0]); for (let j = 0; j < n; j++) s > 0 ? tri(c, r[j], r[(j + 1) % n]) : tri(c, r[(j + 1) % n], r[j]); }
     const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); g.add(new THREE.Mesh(geo, m)); };
   const W = [[1.35, 0.34], [-1.35, 0.36]], arch = f => { let y = 0.14; for (const [c, r] of W) { const R = r + 0.12, d = Math.abs(f - c); if (d < R + 0.06) y = Math.max(y, 0.14 + (2 * r + 0.06 - 0.14) * Math.min(1, (R + 0.06 - d) / 0.2)); } return y; };   // eckige Radlaeufe
   const hwS = tab([[2.39, 0.68], [2.2, 0.8], [1.8, 0.93], [1.35, 0.99], [0.9, 0.96], [0.2, 0.95], [-0.6, 0.99], [-1.35, 1.02], [-2.0, 1.0], [-2.39, 0.95]]);
