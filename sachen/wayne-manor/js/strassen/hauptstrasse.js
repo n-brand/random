@@ -64,7 +64,7 @@ function genH0(x, z) {
 }
 // ===================== Grundstuecksmauer: Verlauf (Nicolas 2026-11-09, Skizze) =====================
 // Vom Einfahrtstor (Enden der Tormauern) im Norden um das Anwesen herum, der Wasserfall liegt ausserhalb; Westtor bei WALL_GATE2;
-// im Sueden ca. 35 m innerhalb der Hauptstrasse (an der Serpentine naeher, mind. 20 m von beiden). Zwei Luecken fuer Fussgaenger im Wald (WALL_GAPS). Gebaut in aussen/grundmauer.js; der Wald haelt Abstand.
+// im Sueden am Hangfuss zwischen Plateau und Hauptstrasse (bis 35 m, mind. 18 m von der Strasse, Serpentine frei). Zwei Luecken fuer Fussgaenger im Wald (WALL_GAPS). Gebaut in aussen/grundmauer.js; der Wald haelt Abstand.
 const WALL_GATE2 = [-199.2, 35], WALL_GAPS = [{ x: 80, z: -125, kind: "ruin" }, { x: -190.75, z: 132.72, kind: "tree" }];   // Nicolas: Westtor und Baum getauscht
 const WALL_LINES = (() => {
   const [ux, uz] = GATE_U, end = lz => [GATE_C[0] - lz * uz, GATE_C[1] + lz * ux];
@@ -75,7 +75,8 @@ const WALL_LINES = (() => {
   // Sueden: Hauptstrasse um 35 m nach innen versetzt (Seite zur Anwesensmitte), nur bis x 108, dann zum suedlichen Tormauer-Ende
   const S = MAIN.samples, off = [];
   for (let i = 0; i < S.length - 1; i += 12) { const [x, z] = S[i], [x2, z2] = S[Math.min(S.length - 1, i + 1)], l = Math.hypot(x2 - x, z2 - z); let nx = -(z2 - z) / l, nz = (x2 - x) / l;
-    if (nx * (-25 - x) + nz * (30 - z) < 0) { nx = -nx; nz = -nz; } let o = 35; while (o > 20 && SERP.samples.some(q => Math.hypot(q[0] - x - nx * o, q[1] - z - nz * o) < 20)) o -= 1;   // Serpentine frei lassen (Nicolas 2026-11-09)
+    if (nx * (-25 - x) + nz * (30 - z) < 0) { nx = -nx; nz = -nz; } let o = 35; while (o > 18 && plateauH(x + nx * o, z + nz * o) > 2.5) o -= 1;   // am Hangfuss statt am Plateauhang (Nicolas 2026-11-09), mind. 18 m zur Strasse
+    while (o > 18 && SERP.samples.some(q => Math.hypot(q[0] - x - nx * o, q[1] - z - nz * o) < 20)) o -= 1;   // Serpentine frei lassen (Nicolas 2026-11-09)
     const p = [x + nx * o, z + nz * o]; if (p[0] < 108) off.push(p); }
   const south = [WALL_GATE2, [-198, 75], [-190.75, 132.72], [-176, 158], [-130, 170], ...off.filter(p => p[0] > -100), end(16)];
   return [north, south].map(P => resample(chaikin(P), 2));

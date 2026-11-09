@@ -14,7 +14,7 @@
   wall("z", CSH.z0, CSH.z1, CSH.x0 - 0.15, LY - 0.3, top, [[CSH.z0, CSH.z1, HF_Y, HF_Y + 4.0]], concrete, 0.3);   // Batcave: Westtor entfernt (Nicolas), dahinter das Versteck
   wall("z", CSH.z0, CSH.z1, CSH.x1 + 0.12, LY - 0.3, top, [[CSH.z0, CSH.z1, GY + HILL, GY + HILL + 3.6], [CSH.z0, CSH.z1, LY, LY + 4.0]], concrete, 0.24);   // E5: auch unten nach Osten offen
   B(CSH_OUT.x0 - 0.2, CSH_OUT.x1 + 0.2, top, HILL + 0.14, CSH_OUT.z0 - 0.2, CSH_OUT.z1 + 0.2, roofM);
-  for (const y of [HF_Y, GY + HILL, LY]) B(CSH.x0 + 0.3, CSH.x1 - 0.3, y + 4.3, y + 4.38, cz - 0.15, cz + 0.15, mat.glow, false, world, false);
+  for (const y of [HF_Y, GY + HILL, LY]) { const ly = Math.min(y + 4.3, HILL - 0.5); B(CSH.x0 + 0.3, CSH.x1 - 0.3, ly, ly + 0.08, cz - 0.15, cz + 0.15, mat.glow, false, world, false); }   // Garage: unter der Rasenflaeche (ragte durch)
   // E5: Batcave-Tor nach Osten zum Hoehlentunnel. Die Plattform dreht sich nicht (Nicolas); wer von der Garage kommt, faehrt unten rueckwaerts hinaus.
   // Das fruehere Westtor (Geheimgang) ist zu; der Raum dahinter ist ein Versteck mit einem schwarzen Tumbler hinter der getarnten Felswand.
   // Plattform (faehrt), gelb-schwarze Kanten, Gelaender an den Laengsseiten
@@ -116,7 +116,17 @@
     for (const [za, zb] of [[cz - 8, Z0 - 0.4], [Z1 + 0.4, cz + 8]]) for (let z = za, n = Math.ceil(zb - za); n > 0; n--) { const z1 = Math.min(zb, z + 1);
       { raked("z", z, z1, HF_Y - 0.5, top(z), top(z1), X - 0.8, X + 0.4, stoneM); raked("z", z, z1, [top(z), top(z1)], top(z) + 0.18, top(z1) + 0.18, X - 1.0, X + 0.4, capM, false); } z = z1; }
     raked("z", Z0 - 0.4, Z1 + 0.4, HT + 0.4, top(Z0 - 0.4), top(Z1 + 0.4), X - 0.8, X + 0.4, stoneM); raked("z", Z0 - 0.4, Z1 + 0.4, [top(Z0 - 0.4), top(Z1 + 0.4)], top(Z0 - 0.4) + 0.18, top(Z1 + 0.4) + 0.18, X - 1.0, X + 0.4, capM, false);
-    raked("x", X + 0.4, X + 8.4, HT + 0.4, top(cz) - 0.1, Math.max(...[-5.4, 0, 5.4].map(d => genH0(X + 8.4, cz + d))) + 0.15, cz - 5.5, cz + 5.5, M(0x5b8c3c, { roughness: 1 }), false);   // Portalkopf (Grasbuckel): deckt den Gelaendeausschnitt ueber dem Tunnelmund, laeuft mit dem Hang
+    // Gelaendestueck ueber dem Tunnelmund (Nicolas: gruener Block haesslich): feines Netz wie das Gelaende (gleiche Grastextur und Farben), ueber
+    // dem Ausschnitt mind. 0,7 m ueber der Tunneldecke, zu den Raendern weich in den Hang; leicht ueber dem Gelaende, damit nichts durchschaut
+    { const x0 = X + 0.3, x1 = X + 10, z0 = cz - 6.5, z1 = cz + 6.5, st = 0.5, nx = Math.round((x1 - x0) / st), nz = Math.round((z1 - z0) / st), pos = [], col = [], uv = [], idx = [];
+      const cA = new THREE.Color(0x5b8c3c), cB = new THREE.Color(0x739c47), cL = new THREE.Color(0x6aa84a), cF = new THREE.Color(0x3b6430), c = new THREE.Color();
+      for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = x0 + i * st, z = z0 + j * st, dz = Math.abs(z - cz);
+        const h = Math.max(terrainH(x, z) + 0.04, HT + 0.7 - Math.max(0, dz - 3.4) * 1.6 - Math.max(0, x - (X + 6.5)) * 1.2);
+        pos.push(x, h, z); uv.push(x / 10, -z / 10);
+        c.copy(cA).lerp(cB, vnoise(x / 40, z / 40)).lerp(cL, 0.7 * Math.max(sst(40, 0, siteDist(x, z)), inLawn(x, z) ? 1 : 0)).lerp(cF, forestD(x, z) * 0.8); col.push(c.r, c.g, c.b); }
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const a = j * (nx + 1) + i, b = a + 1, d = a + nx + 1, e = d + 1; idx.push(a, d, b, b, d, e); }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+      geo.setIndex(idx); geo.computeVertexNormals(); const patch = new THREE.Mesh(geo, M(0xffffff, { map: grassTex, vertexColors: true, roughness: 1 })); patch.receiveShadow = true; world.add(patch); }
     B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z0 - 0.4, Z0, capM, false); B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z1, Z1 + 0.4, capM, false); B(X - 1.0, X - 0.8, HT, HT + 0.4, Z0, Z1, capM, false);   // Rahmen
     // Stuetzmauern am Einschnitt, schraeg mit dem urspruenglichen Gelaende, solange der Einschnitt tiefer als 0,4 m ist
     for (const sd of [-1, 1]) { const zw = sd < 0 ? Z0 - 0.6 : Z1 + 0.6, za = sd < 0 ? Z0 - 1.0 : Z1 + 0.2, zb = sd < 0 ? Z0 - 0.2 : Z1 + 1.0, h0 = x => genH0(x, zw) + 0.35;
