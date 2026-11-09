@@ -21,7 +21,8 @@ function buildTheBat() {
   // Kufen mit Stuetzen zum Bauch
   // (Nicolas: fahren beim Abheben in den Bauch ein und beim Landen wieder aus, eigene Gruppe, siehe batPose)
   const gear = new THREE.Group(); g.add(gear);
-  for (const sd of [-1, 1]) { boxIn(gear, sd * 1.1 - 0.07, sd * 1.1 + 0.07, 0, 0.1, -1.9, 2.1, dark); beam([sd * 1.1, 0.05, -1.3], [sd * 0.6, 1.3, -1.3], 0.1, dark, gear); beam([sd * 1.1, 0.05, 1.7], [sd * 0.6, 1.7, 1.7], 0.1, dark, gear); }
+  // Kufen lang (Nicolas: an die lange Form angepasst), je drei Streben schraeg in die V-Platten des Kiels
+  for (const sd of [-1, 1]) { boxIn(gear, sd * 1.1 - 0.07, sd * 1.1 + 0.07, 0, 0.1, -2.9, 4.3, dark); for (const [z, y] of [[-2.2, 1.35], [1.0, 1.6], [4.0, 2.0]]) beam([sd * 1.1, 0.05, z], [sd * 0.75, y, z], 0.1, dark, gear); }
   // Bauch schlank (Nicolas: eleganter), steigt nach hinten an; Panzer gewoelbt, hinten hoeher. Grundriss wie ein Fisch (Bild von oben):
   // vorne/Mitte am breitesten, nach hinten schmaler (Mittelteil lang, Seitenplatten kuerzer, breite Platten nur vorne/Mitte)
   // Bauch als Kiel (Nicolas 2026-11-09): von vorne laufen links und rechts spitz nach unten in der Mitte zusammen (V), aus einzelnen
@@ -64,8 +65,8 @@ function buildTheBat() {
   const PX = 1.8, PY = 1.25, PZ = -4.1;                                                                 // Gondeln vor dem Cockpit (Nicolas: von oben gesehen vor dem Kopf)
   for (const sd of [-1, 1]) {
     beam([sd * 0.95, 1.95, -1.4], [sd * PX, PY + 0.45 + HD[1], PZ + 0.45 + HD[2]], 0.2, armor); beam([sd * 0.6, 1.2, -2.2], [sd * PX, PY - 0.35, PZ + 0.45], 0.12, dark, hd);   // Arme: oben vom Panzer, unten von der Kanzel
-    meshIn(hd, new THREE.CylinderGeometry(0.7, 0.7, 1.3, 6, 1, true).rotateY(Math.PI / 6).rotateX(Math.PI / 2), podM, sd * PX, PY, PZ);    // Gondel (offen, beidseitig sichtbar: innen war sie aus manchen Winkeln unsichtbar)
-    meshIn(hd, new THREE.CylinderGeometry(0.7, 0.7, 0.05, 6).rotateY(Math.PI / 6).rotateX(Math.PI / 2), dark, sd * PX, PY, PZ + 0.62);    // Rueckwand
+    meshIn(hd, new THREE.CylinderGeometry(0.7, 0.7, 1.82, 6, 1, true).rotateY(Math.PI / 6).rotateX(Math.PI / 2), podM, sd * PX, PY, PZ + 0.26);   // 40 % laenger nach hinten (Nicolas)    // Gondel (offen, beidseitig sichtbar: innen war sie aus manchen Winkeln unsichtbar)
+    meshIn(hd, new THREE.CylinderGeometry(0.7, 0.7, 0.05, 6).rotateY(Math.PI / 6).rotateX(Math.PI / 2), dark, sd * PX, PY, PZ + 1.14);    // Rueckwand
     meshIn(hd, new THREE.CylinderGeometry(0.12, 0.12, 0.5, 10).rotateX(Math.PI / 2), frameM, sd * PX, PY, PZ + 0.2);                         // Nabe
     // Kanonen (Nicolas 2026-11-09): unten gekuerzt, dazu innen (zur Kanzel hin) eine zweite, je ein grosses Rohr 0,7 m
     meshIn(hd, new THREE.CylinderGeometry(0.1, 0.1, 0.7, 10), dark, sd * PX, PY - 0.62, PZ - 0.7, Math.PI / 2);                          // unten: ein grosses Rohr (Nicolas)
@@ -104,7 +105,7 @@ function buildTheBat() {
 }
 const BAT_PTS = [[0, 1.3, 0], [0, 1.15, -3.9], [-1.8, 0.8, -5.1], [1.8, 0.8, -5.1], [-1.8, 0.15, -5.6], [1.8, 0.15, -5.6], [-1.08, 0.8, -6.25], [1.08, 0.8, -6.25], [-2.5, 0.8, -4.5], [2.5, 0.8, -4.5],
   [-2.6, 2.1, -0.6], [2.6, 2.1, -0.6], [-2.2, 2.3, 2.0], [2.2, 2.3, 2.0], [0, 3.35, 1.0], [-1.6, 2.3, 4.6], [1.6, 2.3, 4.6], [-2.5, 2.3, 4.0], [2.5, 2.3, 4.0], [-2.05, 2.2, 5.9], [2.05, 2.2, 5.9], [0, 2.4, 7.9], [-2.4, 2.1, 7.6], [2.4, 2.1, 7.6], [-1.1, 2.2, 7.8], [1.1, 2.2, 7.8]].map(([x, y, z]) => [x * BAT_KX, y, z * BAT_KZ]);   // Pruefpunkte (lokal): Kopf, Gondeln, Kanonen, Panzer, Heck, Beine
-const BAT_FEET = [[-1.1, -1.8], [1.1, -1.8], [-1.1, 2.0], [1.1, 2.0], [0, 0.3]].map(([x, z]) => [x * BAT_KX, z * BAT_KZ]);                                         // Kufen
+const BAT_FEET = [[-1.1, -2.7], [1.1, -2.7], [-1.1, 4.1], [1.1, 4.1], [0, 0.6]].map(([x, z]) => [x * BAT_KX, z * BAT_KZ]);                                         // Kufen
 const FLY = (() => {
   const b = buildTheBat();
   // Standplatz: untere Batcave auf der freien Flaeche vor dem Batcomputer, Nase nach Osten zur Halle und zum See (der Hangar oben ist fuer
