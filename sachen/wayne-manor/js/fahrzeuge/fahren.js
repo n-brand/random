@@ -132,14 +132,14 @@ function carStep(dt) {
   th -= moveStick.y; st -= moveStick.x;
   C.throttle = th > 0.1 ? 1 : 0;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-  // Boost (Nachtfalke, Nicolas 2026-11-09): Leertaste halten = Schub aus der Duese, ca. 4 s Vorrat, laedt in 8 s nach (ab 35 % wieder frei)
+  // Nitro (Nachtfalke, Nicolas 2026-11-09: statt Sprung): Leertaste halten = Schub aus der Duese, ca. 4 s Vorrat, laedt in 8 s nach (ab 35 % wieder frei)
   if (C.boostE === undefined) C.boostE = 1;
   const boosting = !!sp.boost && (player.jump || jumpHeld) && !C.air && !C.wet && th >= 0 && !C.boostLock;
   if (sp.boost) {
     if (boosting && !C.boostOn) engineJet();
     C.boostOn = boosting; C.boostE = clamp01(C.boostE + (boosting ? -dt / 4 : dt / 8));
     if (C.boostE <= 0) C.boostLock = true; else if (C.boostE >= 0.35) C.boostLock = false;
-    if (boosting) C.jet = Math.max(C.jet, 0.5); else if (player.jump && C.boostLock) carMsg("Boost lädt nach");
+    if (boosting) C.jet = Math.max(C.jet, 0.5); else if (player.jump && C.boostLock) carMsg("Nitro lädt nach");
   }
   const max = C.wet ? 0.3 : sp.maxF + (boosting ? 22 : 0);   // nur W beschleunigt bis zum Hoechsttempo, kein Shift (Nicolas 2026-11-09); im Wasser steckt man fest (R setzt zurueck)
   // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
@@ -222,7 +222,9 @@ function carStep(dt) {
   if (C.safeT > 0.5 && !C.air && !C.wet) { C.safeT = 0; C.safe = { x: C.x, z: C.z, y: C.y, h: C.h }; }
   // Blick folgt dem Kurs
   if (Math.abs(C.v) > 3 && !C.air) player.yaw += wrapA(C.h - player.yaw) * Math.min(1, dt * 1.2);
-  speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h" + (C.spec.boost ? " · Boost " + Math.round((C.boostE ?? 1) * 100) + " %" : "");
+  speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h";
+  nitroEl.hidden = !C.spec.boost;
+  if (C.spec.boost) { const b = nitroEl.lastChild.firstChild; b.style.width = Math.round((C.boostE ?? 1) * 100) + "%"; nitroEl.className = C.boostOn ? "on" : C.boostLock ? "lock" : (C.boostE ?? 1) < 1 ? "load" : ""; }
   carPose(dt);
 }
 // Kamera: hinter dem Fahrzeug (stoesst nicht durch Waende/Gelaende) oder Fahrersicht

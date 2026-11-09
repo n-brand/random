@@ -12,6 +12,8 @@
 const speedEl = (() => { const d = document.createElement("div"); d.id = "car-speed"; d.hidden = true;
   d.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:6;padding:6px 14px;border-radius:999px;background:rgba(10,12,16,.72);color:#f4f4f0;font:600 15px system-ui,sans-serif;pointer-events:none";
   document.body.appendChild(d); return d; })();
+// Nitro-Leiste (Nachtfalke, Nicolas 2026-11-09): zeigt den Vorrat, laedt sichtbar nach (orange solange gesperrt), nur im Auto (body.car)
+const nitroEl = (() => { const d = document.createElement("div"); d.id = "car-nitro"; d.hidden = true; d.innerHTML = "<span>NITRO</span><i><b></b></i>"; document.body.appendChild(d); return d; })();
 const VEH = [];
 let CAR = null;
 // Profil in (vorne, hoch) -> Netz: Breite entlang x, vorne = -z
@@ -319,7 +321,7 @@ function buildDeepSeek() {
 }
 // ---- Nachtfalke (Nicolas 2026-11-09, eigener Entwurf im Stil der spaeten 60er Muscle-Cars, ohne Marken): lange Haube mit Powerdome und Lufthutze,
 // Kuehlergrill ueber die ganze Breite mit vier runden Scheinwerfern, Hueftschwung ueber den Hinterraedern, Dach mit Seitenfinnen bis aufs Heck und
-// steiler Heckscheibe dazwischen, Entenbuerzel, Leuchtband hinten, Seitenauspuffe, Boost-Duese unter dem Heck (Leertaste: Flamme und Schub)
+// steiler Heckscheibe dazwischen, Entenbuerzel, Leuchtband hinten, Seitenauspuffe, Nitro-Duese unter dem Heck (Leertaste: Flamme und Schub)
 function buildNachtfalke(col = 0x0f1012) {
   const g = new THREE.Group();
   const paint = M(col, { metalness: 0.55, roughness: 0.32, flatShading: true }), dark = M(0x070809, { roughness: 0.7, flatShading: true }), glass = M(0x06090d, { metalness: 0.7, roughness: 0.08 });
@@ -346,10 +348,10 @@ function buildNachtfalke(col = 0x0f1012) {
   prismIn(g, [[-0.9, 1.315], [-0.93, 1.315], [-1.2, 0.975], [-1.17, 0.975]], 1.2, glass);                               // Heckscheibe zwischen den Finnen
   prismIn(g, [[-2.4, 1.0], [-2.66, 1.1], [-2.7, 1.06], [-2.5, 0.99]], 1.74, paint);                                     // Entenbuerzel
   boxIn(g, -0.9, 0.9, 0.7, 0.9, 2.6, 2.69, dark); boxIn(g, -0.86, 0.86, 0.74, 0.86, 2.68, 2.7, mat.glowRed);           // Leuchtband hinten
-  meshIn(g, new THREE.CylinderGeometry(0.15, 0.18, 0.45, 18, 1, true), nozM, 0, 0.56, 2.75, Math.PI / 2);              // Boost-Duese
+  meshIn(g, new THREE.CylinderGeometry(0.15, 0.18, 0.45, 18, 1, true), nozM, 0, 0.56, 2.75, Math.PI / 2);              // Nitro-Duese
   meshIn(g, new THREE.TorusGeometry(0.165, 0.025, 8, 24), chrome, 0, 0.56, 2.97); meshIn(g, new THREE.CircleGeometry(0.15, 18), jetM, 0, 0.56, 2.62);
   mergeStatic(g);
-  // Flamme (nicht zusammengefasst): zwei Kegel nach hinten, Laenge folgt dem Boost (carPose)
+  // Flamme (nicht zusammengefasst): zwei Kegel nach hinten, Laenge folgt dem Nitro (carPose)
   const flame = new THREE.Group(); flame.position.set(0, 0.56, 2.95); flame.visible = false; g.add(flame);
   for (const [r, l, c, o] of [[0.13, 1.5, 0xff6a18, 0.75], [0.07, 0.9, 0xfff0b0, 0.9]])
     flame.add(new THREE.Mesh(new THREE.ConeGeometry(r, l, 14, 1, true).rotateX(Math.PI / 2).translate(0, 0, l / 2), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })));
@@ -359,7 +361,7 @@ function buildNachtfalke(col = 0x0f1012) {
 const SPEC_NACHTFALKE = { name: "Nachtfalke", wheels: [[-0.8, -1.6], [0.8, -1.6], [-0.84, 1.55], [0.84, 1.55]], wb: 3.15, track: 1.66, pts: [-1.75, 0, 1.75], R: 1.0, circR: 0.95, enter: 3.8,
   maxN: 34, maxF: 60, acc: 15, steer: 0.66, jump: false, boost: true, grade: 38, camD: 8.5, camH: 1.1, seat: [-0.4, 1.15, 0.15], bodyH: 1.4, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
-  msg: "Nachtfalke: W/S Gas/Bremse, A/D lenken, Leertaste halten = Boost, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "Nachtfalke: W/S Gas/Bremse, A/D lenken, Leertaste halten = Nitro, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.96, -1.52], [0.96, -1.52], [-0.96, 1.48], [0.96, 1.48]], wb: 3.0, track: 1.92, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [0, 1.45, 0.1], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],

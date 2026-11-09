@@ -31,7 +31,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | Aufzuege | Rechtsklick auf die Aufzugtuer holt ihn (bzw. faehrt im Aufzug weiter); im Aufzug Tasten 1-5 oder Pfeile, Anzeige rechts | Hinweis bzw. Anzeige antippen |
 | Boot | E einsteigen/aussteigen, W/S Gas, A/D lenken, V Kamera (hinten/Fahrersicht) | Joysticks |
 | The Bat (Batwing, fliegt) | In der Batcave beim Batcomputer oder ueber das T-Menue holen; E ein-/aussteigen (nur gelandet), W/S vor/zurueck, A/D drehen, Leertaste steigen, C sinken, V Kamera hinten/Cockpit, M Ton. Hinaus ueber den See und den Wassertunnel aufs Meer | Joysticks, Sprung/Runter |
-| Fahrzeuge (Tumbler, Rolls-Royce, Motorrad, Batpod, Nachtfalke) | E ein/aus (naechstes Fahrzeug), W/S (nur W, kein Shift), A/D, Leertaste Sprung (Tumbler und Batpod, ab 50 km/h) bzw. Boost halten (Nachtfalke), V Kamera, R zuruecksetzen, L Autoaufzug, 1-3 Halt, M Motorton an/aus | Joysticks, Sprung-Knopf |
+| Fahrzeuge (Tumbler, Rolls-Royce, Motorrad, Batpod, Nachtfalke) | E ein/aus (naechstes Fahrzeug), W/S (nur W, kein Shift), A/D, Leertaste Sprung (Tumbler und Batpod, ab 50 km/h) bzw. Nitro halten (Nachtfalke, Leiste zeigt den Vorrat), V Kamera, R zuruecksetzen, L Autoaufzug, 1-3 Halt, M Motorton an/aus | Joysticks, Sprung-Knopf |
 | Vollbild | Knopf "Vollbild" oder F; sperrt Strg+W (Chrome/Edge), Esc gedrueckt halten zum Verlassen | |
 | Karten | Knopf "Karte" blendet die Lageplaene ein | |
 | Von unten | Knopf "Von unten": Blick unter das Gelaende auf Garage und Hoehle | |

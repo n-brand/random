@@ -87,3 +87,14 @@ body:not(.car) #veh-btns .car-only, body.boat #veh-btns .no-boat { display: none
 #btn-down { display: none; position: fixed; right: 160px; bottom: calc(env(safe-area-inset-bottom, 0px) + 118px); width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; touch-action: none; z-index: 5; }
 body.touch.ghost #btn-down, body.touch.walk.fly #btn-down { display: block; }
 @media (max-width: 600px) { .bar h1 { display: none; } #ghost-tag { top: calc(env(safe-area-inset-top, 0px) + 60px); } }
+/* Nitro-Leiste (Nachtfalke) ueber der Tempoanzeige, am Handy darunter */
+#car-nitro { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(100px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: rgba(10, 12, 16, .72); color: #f4f4f0; font: 700 11px system-ui, sans-serif; letter-spacing: .1em; pointer-events: none; }
+body:not(.car) #car-nitro { display: none; }
+#car-nitro i { display: block; width: 150px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .16); overflow: hidden; }
+#car-nitro b { display: block; height: 100%; width: 100%; border-radius: 4px; background: #3ec8ff; box-shadow: 0 0 8px #3ec8ff; transition: background .2s; }
+#car-nitro.on b { background: #ff9a2e; box-shadow: 0 0 10px #ff7a10; }
+#car-nitro.load b { background: #2a8fc0; box-shadow: none; }
+#car-nitro.lock b { background: #c0502a; box-shadow: none; }
+#car-nitro.lock span::after { content: " LÄDT"; color: #ffb08a; }
+body.touch #car-nitro { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 92px); }
+#car-nitro[hidden] { display: none; }

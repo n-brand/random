@@ -165,7 +165,7 @@ function syncModeClasses() {
   const m = !walking ? "" : FLY.on ? "fly" : BOAT.on ? "boat" : CAR && CAR.on ? "car" : "";
   if (m === modeNow) return; modeNow = m;
   for (const k of ["fly", "boat", "car"]) document.body.classList.toggle(k, k === m);
-  document.body.classList.toggle("drive", !!m); $("btn-jump").textContent = m === "fly" ? "Hoch" : "Sprung";
+  document.body.classList.toggle("drive", !!m); $("btn-jump").textContent = m === "fly" ? "Hoch" : m === "car" && CAR.spec.boost ? "Nitro" : "Sprung";
 }
 $("btn-down").addEventListener("pointerdown", e => { e.preventDefault(); downHeld = true; });
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down").addEventListener(type, () => { downHeld = false; });
