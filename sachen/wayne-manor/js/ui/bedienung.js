@@ -97,11 +97,17 @@ addEventListener("keydown", e => {
   if (ghost && e.code === "KeyE" && !e.repeat) { const ag = findAimedGate(); if (ag && !ag.call && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 12) toggleGate(ag); return; }   // Geist: E schaltet Tore/Tueren/Hebebuehne
   if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
   if (e.code === "KeyE" && !e.repeat) {
-    if (useBoat() || useCar()) return;
+    if (useBoat() || useFly() || useCar()) return;
     const ag = findAimedGate();
     if (ag && !ag.call && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 9) toggleGate(ag);
     // Aufzuege nicht mehr mit E, sondern per Rechtsklick auf die Tuer (Nicolas 2026-11-08, siehe tore.js)
     return;
+  }
+  if (FLY.on) {                                                             // The Bat: V Kamera, M Ton, sonst Flugtasten
+    if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault();
+    if (e.code === "KeyV" && !e.repeat) { FLY.view = FLY.view === 1 ? 0 : 1; player.pitch = FLY.view ? 0 : -0.2; return toast(FLY.view ? "Cockpit" : "Kamera hinter The Bat"); }
+    if (e.code === "KeyM" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("The Bat"); return; }
+    keys.add(e.code); return;
   }
   if (BOAT.on && e.code === "KeyV" && !e.repeat) { BOAT.view = BOAT.view === 1 ? 0 : 1; player.pitch = BOAT.view ? 0 : -0.12; return toast(BOAT.view ? "Fahrersicht" : "Kamera hinter dem Boot"); }
   if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
@@ -153,6 +159,7 @@ for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down")
 function walkStep(dt) {
   if (ghost) return ghostStep(dt);
   if (BOAT.on) return boatStep(dt);
+  if (FLY.on) return flyStep(dt);
   if (CAR.on) return carStep(dt);
   let mx = 0, mz = 0;
   if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;

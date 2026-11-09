@@ -115,7 +115,7 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - CX0) / CELL), Math.floor(
       B(-0.06, 0.06, 1.2, 2.4, -2.4, -1.4, mat.bat, false, g); for (const sx of [-1, 1]) cyl(0.08, 0.08, 1.0, mat.dark, sx * 0.9, 0.5, 0, g, 6); }
     circles.push([x, z, 1.8 * scale, UY + 2]);
   };
-  plane(255, 388, 0.8, 1.15, "bat"); plane(283, 360, 0.5, 1, "jet"); plane(305, 400, 0.3, 0.85, "jet"); plane(568, 372, -0.6, 0.9, "jet"); plane(585, 420, -0.9, 0.9, "bat");
+  plane(283, 360, 0.5, 1, "jet"); plane(305, 400, 0.3, 0.85, "jet"); plane(568, 372, -0.6, 0.9, "jet");   // Platzhalter-Batwings weg: im Hangar West steht The Bat (fahrzeuge/the-bat.js, Nicolas 2026-11-09)
   // E1 (Nicolas, 2026-11-07, Loesung c): Vorraum aus Fels um Treppen- und Aufzugsausgang, Hangartor (Stahl) nach Osten.
   // Vorher stand der Hangar im Treppenhaus und ein Jet direkt im Ausgang.
   {

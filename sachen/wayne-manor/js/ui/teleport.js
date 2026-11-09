@@ -54,9 +54,14 @@ function teleportToPoint(p) {
       b.addEventListener("click", () => { closeTp(); summonVehicle(v); }); vehList.appendChild(b);
       const o = document.createElement("option"); o.value = "v" + i; o.textContent = v.label; vehGroup.appendChild(o);
     });
+    if (typeof FLY !== "undefined") {                                         // Fluggeraet The Bat (eigenes System, siehe the-bat.js)
+      const b = document.createElement("button"); b.type = "button"; const dot = document.createElement("i"); dot.style.background = "#2c2e33"; b.append(dot, "The Bat (Batwing)");
+      b.addEventListener("click", () => { closeTp(); summonBat(); }); vehList.appendChild(b);
+      const o = document.createElement("option"); o.value = "vbat"; o.textContent = "The Bat (Batwing)"; vehGroup.appendChild(o);
+    }
   }
   sel.addEventListener("pointerdown", fillVehicles); sel.addEventListener("focus", fillVehicles);
-  sel.addEventListener("change", () => { const i = sel.value; sel.value = ""; sel.blur(); if (i.startsWith("v")) summonVehicle((world.userData.vehicles || [])[+i.slice(1)]); else if (i !== "") teleportTo(+i); });
+  sel.addEventListener("change", () => { const i = sel.value; sel.value = ""; sel.blur(); if (i === "vbat") summonBat(); else if (i.startsWith("v")) summonVehicle((world.userData.vehicles || [])[+i.slice(1)]); else if (i !== "") teleportTo(+i); });
   // Taste T: Menue auf/zu; Maus wird freigegeben, ohne das Begehen zu beenden
   function closeTp() { menu.hidden = true; }
   window.toggleTp = () => {
