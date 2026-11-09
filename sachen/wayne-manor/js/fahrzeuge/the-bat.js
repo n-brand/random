@@ -6,7 +6,7 @@
 // der Bauch steigt nach hinten an; vorne der Kopf = Cockpit mit Glas (Batman steigt dort ein); links/rechts vorne die Arme = sechseckige
 // Gondeln mit Propeller darin und Kanonen darunter; in der Mitte unter dem Bauch ein frei liegender Propeller; hinten zwei Beine nach
 // aussen, die beim Lenken mitschwenken. Senkrechtstarter: schwebt, steigt, sinkt. Vorne = -z, Kufen bei y 0.
-// Steuerung: E einsteigen/aussteigen (nur gelandet), W/S vor/zurueck, A/D drehen, Leertaste steigen, C (oder Strg) sinken,
+// Steuerung: E einsteigen/aussteigen (nur gelandet), W/S vor/zurueck, A/D drehen, Leertaste steigen, C sinken,
 // V Kamera hinten/Cockpit, M Ton. Kollision: freier Raum (batAir) plus Boden und Wasser unter den Kufen.
 // Originalmasse des Film-Requisits (Nicolas 2026-11-09): 9,14 m lang, 5,18 m breit. Modell gebaut mit 10,45 x 5,28 m -> skaliert.
 const BAT_KX = 5.18 / 5.28, BAT_KZ = 9.14 / 10.45;
@@ -152,7 +152,7 @@ function flyStep(dt) {
   if (keys.has("KeyA") || keys.has("ArrowLeft")) st += 1;
   if (keys.has("KeyD") || keys.has("ArrowRight")) st -= 1;
   if (keys.has("Space") || jumpHeld) up += 1;
-  if (keys.has("KeyC") || keys.has("ControlLeft") || keys.has("ControlRight") || downHeld) up -= 1;
+  if (keys.has("KeyC") || downHeld) up -= 1;                                                             // nur C (Nicolas: kein Strg, Strg loest Browser-Kuerzel aus)
   th -= moveStick.y; st -= moveStick.x;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
   const fast = true, max = 70, acc = 24;                                                                  // nur W, kein Shift (Nicolas 2026-11-09)
