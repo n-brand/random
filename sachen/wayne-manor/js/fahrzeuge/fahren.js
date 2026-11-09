@@ -205,19 +205,12 @@ function carStep(dt) {
   // Hoehe: am Boden haften, ueber Kanten abheben, im Flug Schwerkraft
   const gr = carGround(C.y);
   if (!C.air) {
-    // Wurfbahn (Nicolas 2026-11-09: bei Tempo ueber Kuppen und Kanten abheben statt am Boden zu kleben): ab ca. 30 km/h laeuft ein Schattenpunkt
-    // auf der Wurfbahn mit (Steigtempo vom Boden, gedeckelt gegen Stufen, dann Schwerkraft). Faellt der Boden schneller weg als die Bahn und ist der
-    // Abstand ueber 0,12 m, hebt das Fahrzeug mit diesem Steigtempo ab. Langsam (Aufzuege, Hebebuehne, Stufen) haftet es wie bisher.
-    const fast = Math.abs(C.v) > 8 && dt > 0, vyG = fast ? Math.max(-15, Math.min(15, Math.abs(C.v) * 0.8, (gr.y - C.y) / dt)) : 0;
-    if (fast && C.yB !== undefined && Math.abs(C.yB - gr.y) < 3) { C.vyB -= CAR_G * dt; C.yB += C.vyB * dt; } else C.yB = undefined;
-    if (!fast || C.yB === undefined || gr.y >= C.yB) { C.yB = gr.y; C.vyB = vyG; }
-    if (fast && C.yB - gr.y > 0.12) { C.air = true; C.y = C.yB; C.vy = C.vyB; C.yB = undefined; }
-    else if (gr.y >= C.y - 0.5 || fast) { C.y = gr.y; C.vy = 0; C.pitch += (gr.pitch - C.pitch) * Math.min(1, dt * 10); C.roll += (gr.roll - C.roll) * Math.min(1, dt * 10); }
+    if (gr.y >= C.y - 0.5) { C.y = gr.y; C.vy = 0; C.pitch += (gr.pitch - C.pitch) * Math.min(1, dt * 10); C.roll += (gr.roll - C.roll) * Math.min(1, dt * 10); }
     else { C.air = true; C.vy = 0; }
   } else {
     C.vy -= CAR_G * dt; C.y += C.vy * dt;
     const g2 = carGround(C.y);
-    if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; C.yB = undefined; C.pitch = g2.pitch; C.roll = g2.roll; }
+    if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; C.pitch = g2.pitch; C.roll = g2.roll; }
     else { const tp = Math.max(-0.12, Math.min(0.2, Math.atan2(C.vy, Math.max(8, Math.abs(C.v))) * 0.4));   // im Flug nur leicht neigen (Nicolas: nach tiefen Spruengen kippte die Nase stark nach vorne)
       C.pitch += (tp - C.pitch) * Math.min(1, dt * 2); C.roll *= 0.95; }
   }
