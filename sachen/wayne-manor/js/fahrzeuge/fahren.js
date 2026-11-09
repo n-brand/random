@@ -131,7 +131,7 @@ function carStep(dt) {
   th -= moveStick.y; st -= moveStick.x;
   C.throttle = th > 0.1 ? 1 : 0;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-  const fast = keys.has("ShiftLeft") || keys.has("ShiftRight"), max = C.wet ? 0.3 : fast ? sp.maxF : sp.maxN;   // im Wasser steckt man fest (R setzt zurueck)
+  const max = C.wet ? 0.3 : sp.maxF;   // nur W beschleunigt bis zum Hoechsttempo, kein Shift (Nicolas 2026-11-09); im Wasser steckt man fest (R setzt zurueck)
   // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
   const steerT = st * sp.steer / (1 + Math.abs(C.v) / 14);   // bei Tempo etwas williger (Serpentine r 11 mit ca. 40 km/h)
   C.steer += (steerT - C.steer) * Math.min(1, dt * 8);

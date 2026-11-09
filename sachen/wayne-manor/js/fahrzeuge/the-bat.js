@@ -7,7 +7,7 @@
 // Gondeln mit Propeller darin und Kanonen darunter; in der Mitte unter dem Bauch ein frei liegender Propeller; hinten zwei Beine nach
 // aussen, die beim Lenken mitschwenken. Senkrechtstarter: schwebt, steigt, sinkt. Vorne = -z, Kufen bei y 0.
 // Steuerung: E einsteigen/aussteigen (nur gelandet), W/S vor/zurueck, A/D drehen, Leertaste steigen, C (oder Strg) sinken,
-// Shift schneller, V Kamera hinten/Cockpit, M Ton. Kollision: freier Raum (batAir) plus Boden und Wasser unter den Kufen.
+// V Kamera hinten/Cockpit, M Ton. Kollision: freier Raum (batAir) plus Boden und Wasser unter den Kufen.
 // Originalmasse des Film-Requisits (Nicolas 2026-11-09): 9,14 m lang, 5,18 m breit. Modell gebaut mit 8,58 x 5,6 m -> skaliert.
 const BAT_KX = 5.18 / 5.6, BAT_KZ = 9.14 / 8.58;
 function buildTheBat() {
@@ -136,7 +136,7 @@ function useFly() {
   if (Math.hypot(p.x - B.x, p.z - B.z) > 5.5 || Math.abs(p.y - B.y) > 3) return false;
   if (world.userData.car) world.userData.car.leave();
   B.on = true; B.view = 0; keys.clear(); player.yaw = B.h; player.pitch = -0.2;
-  toast("The Bat: W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, Shift schneller, V Kamera, E aussteigen (gelandet)");
+  toast("The Bat: W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera, E aussteigen (gelandet)");
   engineStart("The Bat"); speedEl.hidden = false; return true;
 }
 function flyStep(dt) {
@@ -150,7 +150,7 @@ function flyStep(dt) {
   if (keys.has("KeyC") || keys.has("ControlLeft") || keys.has("ControlRight") || downHeld) up -= 1;
   th -= moveStick.y; st -= moveStick.x;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-  const fast = keys.has("ShiftLeft") || keys.has("ShiftRight"), max = fast ? 70 : 32, acc = fast ? 24 : 13;
+  const fast = true, max = 70, acc = 24;                                                                  // nur W, kein Shift (Nicolas 2026-11-09)
   B.st += (st - B.st) * Math.min(1, dt * 5);
   const dh = st * 1.15 * dt; B.h = wrapA(B.h + dh); player.yaw += dh;
   const fx = -Math.sin(B.h), fz = -Math.cos(B.h);

@@ -5,7 +5,7 @@
 // ===================== Fahrzeuge (D1, erweitert 2026-11-08) =====================
 // Mehrere fahrbare Fahrzeuge mit gemeinsamer Steuerung: Tumbler (Garage-Platz 1, mit Sprung), Rolls-Royce (Plaetze 3, 4, 6, 7, 9, je eigene
 // Farbe), schwarzer Tumbler und Motorrad auf der drehenden Tiefgarage in der Batcave (drehen mit, auch beim Fahren), Batpod beim Batcomputer.
-// E in der Naehe = ins naechste Fahrzeug einsteigen, im Fahrzeug E = aussteigen. W/S Gas/Bremse (rueckwaerts), A/D lenken, Shift schneller,
+// E in der Naehe = ins naechste Fahrzeug einsteigen, im Fahrzeug E = aussteigen. W/S Gas/Bremse (rueckwaerts), A/D lenken,
 // Leertaste = Sprung mit Schub (nur Tumbler, ab 50 km/h), V = Kamera hinten/Fahrersicht, R = zuruecksetzen, L = Autoaufzug rufen/fahren,
 // 1-3 = Halt im Autoaufzug. Kollision wie beim Laufen (Quader, Kreise, Tore, Leitplanken), Kreise fuer die Karosserie (je Fahrzeug).
 // Das aktive Fahrzeug ist CAR; die Hilfsfunktionen arbeiten auf CAR (fuer geparkte Fahrzeuge wird CAR in carFrame kurz umgesetzt).
@@ -320,35 +320,35 @@ function buildDeepSeek() {
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.96, -1.52], [0.96, -1.52], [-0.96, 1.48], [0.96, 1.48]], wb: 3.0, track: 1.92, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [0, 1.45, 0.1], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
-  msg: "Mercedes-Benz G-Klasse: W/S Gas/Bremse, A/D lenken, Shift schneller, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "Mercedes-Benz G-Klasse: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_GEMINI = { name: "Gemini Concept GT", wheels: [[-0.92, -1.5], [0.92, -1.5], [-0.92, 1.5], [0.92, 1.5]], wb: 3.0, track: 1.84, pts: [-1.6, 0, 1.6], R: 1.1, circR: 1.05, enter: 3.8,
   maxN: 35, maxF: 58, acc: 16, steer: 0.7, jump: true, grade: 45, camD: 8.5, camH: 1.2, seat: [0, 1.2, 0.1], bodyH: 1.6, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
-  msg: "Gemini Concept GT: W/S Gas/Bremse, A/D lenken, Shift schneller, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "Gemini Concept GT: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_CHATGPT = { name: "ChatGPT GPT-6 Concept GT", wheels: [[-0.94, -1.5], [0.94, -1.5], [-0.94, 1.5], [0.94, 1.5]], wb: 3.0, track: 1.88, pts: [-1.65, 0, 1.65], R: 1.08, circR: 1.02, enter: 3.8,
   maxN: 38, maxF: 62, acc: 17, steer: 0.68, jump: false, grade: 42, camD: 8.8, camH: 1.35, seat: [0, 1.2, 0.05], bodyH: 1.5, bike: false,
   exits: [[-2.0, -0.2], [2.0, -0.2], [-2.0, 1.3], [2.0, 1.3], [0, -3.8], [0, 3.8]],
-  msg: "ChatGPT GPT-6 Concept GT: W/S Gas/Bremse, A/D lenken, Shift schneller, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "ChatGPT GPT-6 Concept GT: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_DEEPSEEK = { name: "DeepSeek Concept Car", wheels: [[-1.02, -1.6], [1.02, -1.6], [-1.02, 1.7], [1.02, 1.7]], wb: 3.3, track: 2.04, pts: [-1.9, 0, 1.9], R: 1.1, circR: 1.05, enter: 3.8,
   maxN: 38, maxF: 62, acc: 18, steer: 0.68, jump: true, grade: 45, camD: 8.8, camH: 1.2, seat: [0, 1.1, 0.1], bodyH: 1.3, bike: false,
   exits: [[-2.0, -0.2], [2.0, -0.2], [-2.0, 1.3], [2.0, 1.3], [0, -4.0], [0, 4.0]],
-  msg: "DeepSeek Concept Car: W/S Gas/Bremse, A/D lenken, Shift schneller, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "DeepSeek Concept Car: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_TUMBLER = { name: "Tumbler", wheels: [[-1.0, -1.75], [1.0, -1.75], [-0.95, 1.55], [0.95, 1.55]], wb: 3.3, track: 1.95, pts: [-1.45, 0, 1.45], R: 1.25, circR: 1.15, enter: 3.8,
   maxN: 24, maxF: 38, acc: 14, steer: 0.72, jump: true, grade: 40, camD: 8.5, camH: 1.3, seat: [0, 1.42, 0.2], bodyH: 1.9, bike: false,
   exits: [[-2.2, -0.3], [2.2, -0.3], [-2.4, 1.2], [2.4, 1.2], [0, -3.6], [0, 3.6]],
-  msg: "Tumbler: W/S Gas/Bremse, A/D lenken, Shift schneller, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "Tumbler: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_ROLLS = { name: "Rolls-Royce", wheels: [[-0.86, -1.78], [0.86, -1.78], [-0.86, 1.78], [0.86, 1.78]], wb: 3.56, track: 1.72, pts: [-1.95, 0, 1.95], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 30, maxF: 48, acc: 10, steer: 0.62, jump: false, grade: 35, camD: 9.5, camH: 1.2, seat: [-0.45, 1.32, 0.1], bodyH: 1.8, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -4.0], [0, 4.0]],
-  msg: "Rolls-Royce: W/S Gas/Bremse, A/D lenken, Shift schneller, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+  msg: "Rolls-Royce: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_BIKE = { name: "Motorrad", wheels: [[0, -0.72], [0, 0.72]], wb: 1.44, track: 0, pts: [-0.55, 0.55], R: 0.42, circR: 0.4, enter: 2.5,
   maxN: 32, maxF: 52, acc: 13, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.25], bodyH: 1.7, bike: true,
   exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.8], [0, 1.8]],
-  msg: "Motorrad: W/S Gas/Bremse, A/D lenken, Shift schneller, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
+  msg: "Motorrad: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36, track: 0, pts: [-0.95, 0, 0.95], R: 0.5, circR: 0.5, enter: 2.8,
   maxN: 34, maxF: 56, acc: 15, steer: 0.55, jump: true, grade: 45, camD: 6.5, camH: 1.0, seat: [0, 1.25, 0.15], bodyH: 1.4, bike: true,
   exits: [[-1.1, 0], [1.1, 0], [-1.2, 0.8], [1.2, 0.8], [0, -2.5], [0, 2.5]],
-  msg: "Batpod: W/S Gas/Bremse, A/D lenken, Shift schneller, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
+  msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
   const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,

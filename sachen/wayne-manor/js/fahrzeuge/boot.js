@@ -3,7 +3,7 @@
 "use strict";
 
 // ===================== Boot fahren =====================
-// E in der Naehe (4,5 m) = einsteigen, im Boot E = am Ufer aussteigen. W/S Gas/Bremse, A/D lenken, Shift schneller.
+// E in der Naehe (4,5 m) = einsteigen, im Boot E = am Ufer aussteigen. W/S Gas/Bremse, A/D lenken.
 // Faehrt nur auf Wasser (Hoehlenkanaele, Wassertunnel, Meer), geschlossene Felstore sperren.
 const BOAT = world.userData.boat;
 function boatWater(x, z) {
@@ -60,7 +60,7 @@ function useBoat() {
   if (Math.hypot(p.x - BOAT.x, p.z - BOAT.z) < 4.5 && p.y > SEA_Y - 1.5 && p.y < LY + 1) {   // B1: auch vom Hallenboden (6 m darueber) bis zum Steg (B4)
     BOAT.on = true; BOAT.v = 0; keys.clear();
     player.yaw = BOAT.h;
-    toast("Im Boot: W/S Gas und Bremse, A/D lenken, Shift schneller, V Kamera, E aussteigen");
+    toast("Im Boot: W/S Gas und Bremse, A/D lenken, V Kamera, E aussteigen");
     seatBoat();
     return true;
   }
@@ -74,7 +74,7 @@ function boatStep(dt) {
   if (keys.has("KeyD") || keys.has("ArrowRight")) st -= 1;
   th -= moveStick.y; st -= moveStick.x;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-  const max = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 14 : 8;
+  const max = 14;                                                           // nur W, kein Shift (Nicolas 2026-11-09)
   BOAT.v += th * 5 * dt;
   if (!th) BOAT.v *= Math.pow(0.35, dt);
   BOAT.v = Math.max(-3, Math.min(max, BOAT.v));
