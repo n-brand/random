@@ -6,7 +6,7 @@
 // Zwei Oszillatoren (Grundton + Unterton) mit Zuendtakt-Modulation durch einen Tiefpass, dazu Rollgeraeusch (gefiltertes Rauschen).
 // Drehzahl aus Tempo und Gang (steigt im Gang, faellt beim Hochschalten), Gas macht lauter und heller. Anlassen beim Einsteigen,
 // Schubstoss beim Sprung. Je Fahrzeug eigener Klang (ENG_PROFILES nach spec.name). Taste M = Ton an/aus. Tab versteckt = Pause.
-const ENGINE = { ctx: null, nodes: null, muted: false, noiseBuf: null, master: null, vol: (() => { try { const v = parseFloat(localStorage.getItem("wm-vol")); return isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.7; } catch (e) { return 0.7; } })() };
+const ENGINE = { ctx: null, nodes: null, muted: false, noiseBuf: null, master: null, vol: (() => { try { const v = parseFloat(localStorage.getItem("wm-vol")); return isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.25; } catch (e) { return 0.7; } })() };
 // Alle Motorgeraeusche laufen ueber einen Gesamtregler (Lautstaerke im T-Menue, im Browser gemerkt)
 function engineOut(ctx) { if (!ENGINE.master) { ENGINE.master = ctx.createGain(); ENGINE.master.gain.value = ENGINE.vol; ENGINE.master.connect(ctx.destination); } return ENGINE.master; }
 function setEngineVol(v) {
@@ -24,6 +24,7 @@ const ENG_PROFILES = {
   "The Bat": { idle: 70, max: 160, gears: [0, 90], wave: "sine", sub: 0.5, cut0: 260, cut1: 520, vol: 0.025, noise: 0.03, am: 0, soft: true },   // Nicolas: praktisch lautlos, nur leises Summen
   // Batpod wie ein Tesla (Nicolas 2026-11-09): Motor-/Wechselrichter-Surren, Tonhoehe direkt am Tempo (einige 100 Hz bis ca. 1 kHz),
   // dazu ein feiner hoher Oberton (Wechselrichter, ca. 2-3 kHz), beim Gasgeben lauter, im Stand fast still (ev), leises Rollgeraeusch
+  "Nachtfalke": { idle: 34, max: 140, gears: [0, 10, 20, 32, 46], wave: "sawtooth", sub: 0.5, cut0: 260, cut1: 1500, vol: 0.18, noise: 0.07 },   // tiefer V8
   "Batpod": { idle: 120, max: 1050, gears: [0, 45], wave: "sine", wave2: "sine", g2: 0.16, sub: 2.67, cut0: 2600, cut1: 7000, vol: 0.045, noise: 0.025, am: 0, soft: true, ev: true },   // Nicolas: leiser,
 };
 function engineNoise(ctx) {

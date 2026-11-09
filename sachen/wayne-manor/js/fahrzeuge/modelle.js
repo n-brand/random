@@ -1,4 +1,4 @@
-// Wayne Manor 3D – Fahrzeuge: Modelle (Tumbler, Rolls-Royce, G-Klasse, Motorrad, Batpod, Gemini, ChatGPT GPT-6, DeepSeek), Werte, Aufstellung
+// Wayne Manor 3D – Fahrzeuge: Modelle (Tumbler, Rolls-Royce, G-Klasse, Nachtfalke, Motorrad, Batpod, Gemini, ChatGPT GPT-6, DeepSeek), Werte, Aufstellung
 // Teil der Seite sachen/wayne-manor/ (klassisches Skript, Reihenfolge in index.html; gemeinsame Namen ueber den globalen Bereich)
 "use strict";
 
@@ -317,6 +317,35 @@ function buildDeepSeek() {
   const wheels = [[-1.02, -1.6, true], [1.02, -1.6, true], [-1.02, 1.7, false], [1.02, 1.7, false]].map(([x, z, f]) => addWheel(g, x, z, 0.4, 0.32, f, tireM, rimM, 0, 32));
   return { g, wheels };
 }
+// ---- Nachtfalke (Nicolas 2026-11-09, eigener Entwurf): schwarzes Muscle-Car, lange Haube mit Lufthutze, flaches Fastback-Dach mit kleinen
+// Fenstern, breite Kotfluegel ueber grossen Hinterraedern, Seitenauspuffe, Leuchtband hinten
+function buildNachtfalke(col = 0x0f1012) {
+  const g = new THREE.Group();
+  const paint = M(col, { metalness: 0.55, roughness: 0.32, flatShading: true }), dark = M(0x070809, { roughness: 0.7, flatShading: true }), glass = M(0x06090d, { metalness: 0.7, roughness: 0.08 });
+  const chrome = M(0x9aa0a6, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x1b1c1f, { metalness: 0.7, roughness: 0.35 });
+  prismIn(g, [[2.5, 0.32], [2.58, 0.66], [2.35, 0.82], [0.7, 0.92], [0.15, 1.3], [-0.9, 1.34], [-2.05, 1.0], [-2.5, 0.96], [-2.58, 0.55], [-2.35, 0.3]], 1.7, paint);   // Karosserie
+  for (const sd of [-1, 1]) {
+    prismIn(g, [[-0.6, 0.5], [-0.75, 0.98], [-1.6, 1.02], [-2.4, 0.92], [-2.5, 0.5]], 0.22, paint, sd * 0.94);           // breite Kotfluegel hinten
+    prismIn(g, [[2.3, 0.45], [2.25, 0.8], [1.2, 0.86], [0.95, 0.45]], 0.14, paint, sd * 0.9);                            // Kotfluegel vorne
+    sideBox(g, sd * 0.85, sd * 0.86, 1.02, 1.24, -0.75, 0.05, glass);                                                   // kleine Seitenfenster
+    for (const y of [0.33, 0.43]) meshIn(g, new THREE.CylinderGeometry(0.05, 0.06, 1.6, 10), chrome, sd * 0.98, y, 0.1, Math.PI / 2);   // Seitenauspuffe
+    boxIn(g, sd * 0.62 - 0.2, sd * 0.62 + 0.2, 0.66, 0.72, -2.6, -2.56, mat.glow);                                      // Scheinwerfer (schmal)
+  }
+  prismIn(g, [[1.9, 0.86], [1.7, 1.06], [0.9, 1.08], [0.75, 0.93]], 0.7, dark);                                         // Lufthutze
+  boxIn(g, -0.28, 0.28, 0.98, 1.04, -1.92, -1.88, dark);
+  meshIn(g, new THREE.BoxGeometry(1.45, 0.03, 0.75), glass, 0, 1.12, -0.42, -0.62);                                     // Frontscheibe
+  meshIn(g, new THREE.BoxGeometry(1.35, 0.03, 1.2), glass, 0, 1.18, 1.45, 0.33);                                        // Heckscheibe (Fastback)
+  boxIn(g, -0.8, 0.8, 0.8, 0.86, 2.56, 2.6, mat.glowRed);                                                              // Leuchtband hinten
+  boxIn(g, -0.95, 0.95, 0.26, 0.42, -2.66, -2.5, dark); boxIn(g, -0.95, 0.95, 0.26, 0.42, 2.5, 2.64, dark);           // Schuerzen
+  boxIn(g, -0.85, 0.85, 0.96, 1.0, 2.2, 2.5, dark);                                                                     // Heckkante
+  mergeStatic(g);
+  const wheels = [[-0.84, -1.6, true, 0.36, 0.3], [0.84, -1.6, true, 0.36, 0.3], [-0.88, 1.55, false, 0.42, 0.44], [0.88, 1.55, false, 0.42, 0.44]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 24));
+  return { g, wheels };
+}
+const SPEC_NACHTFALKE = { name: "Nachtfalke", wheels: [[-0.84, -1.6], [0.84, -1.6], [-0.88, 1.55], [0.88, 1.55]], wb: 3.15, track: 1.76, pts: [-1.75, 0, 1.75], R: 1.0, circR: 0.95, enter: 3.8,
+  maxN: 34, maxF: 60, acc: 15, steer: 0.66, jump: false, grade: 38, camD: 8.5, camH: 1.1, seat: [-0.4, 1.15, 0.15], bodyH: 1.4, bike: false,
+  exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
+  msg: "Nachtfalke: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.96, -1.52], [0.96, -1.52], [-0.96, 1.48], [0.96, 1.48]], wb: 3.0, track: 1.92, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [0, 1.45, 0.1], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
@@ -360,6 +389,7 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   const bays = world.userData.bays, gy = GY + HILL;
   CAR = addVehicle(SPEC_TUMBLER, buildTumbler(0x16181b, 0x0d0e10), bays[1].x, bays[1].z, gy, Math.PI, "Tumbler schwarz (Garage Platz 1)", 0x16181b);
   addVehicle(SPEC_GCLASS, buildGClass(0x141a22), bays[2].x, bays[2].z, gy, 0, "Mercedes-Benz G-Klasse (Garage Platz 2)", 0x141a22);   // Nicolas 2026-11-09
+  addVehicle(SPEC_NACHTFALKE, buildNachtfalke(), bays[5].x, bays[5].z + bays[5].d / 2 - 2.8, gy, 0, "Nachtfalke (Garage Platz 5)", 0x0f1012);   // Nicolas 2026-11-09, Front zur Fahrgasse
   for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
