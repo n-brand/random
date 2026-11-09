@@ -105,22 +105,22 @@
   {
     const stoneM = M(0xffffff, { map: texClone(brickTex, 1 / 1.5, 1 / 1.5), roughness: 0.95 }), capM = M(0xbdb6a6, { roughness: 0.8 }), X = HF_XP, Z0 = HF_TUN.z0, Z1 = HF_TUN.z1, HT = HF_Y + 4.8;
     // Quader mit schraeger Oberkante (folgt dem Gelaende wie die Grundstuecksmauer): along "x" oder "z" von a0 nach a1, Oberkante tA -> tB; fest per S()
-    const raked = (along, a0, a1, yb, tA, tB, c0, c1, m, solid = true) => { const L = a1 - a0, g = new THREE.BoxGeometry(along === "x" ? Math.abs(L) : c1 - c0, 1, along === "x" ? c1 - c0 : Math.abs(L)).toNonIndexed(), P = g.attributes.position, U = g.attributes.uv;
-      for (let k = 0; k < P.count; k++) { const u = (along === "x" ? P.getX(k) : P.getZ(k)) / L + 0.5, y = P.getY(k) > 0 ? tA + (tB - tA) * u : yb; P.setY(k, y); U.setXY(k, a0 + u * L + (along === "x" ? P.getZ(k) : P.getX(k)) * 0.7, y); }
+    const raked = (along, a0, a1, yb, tA, tB, c0, c1, m, solid = true) => { const [bA, bB] = Array.isArray(yb) ? yb : [yb, yb]; const L = a1 - a0, g = new THREE.BoxGeometry(along === "x" ? Math.abs(L) : c1 - c0, 1, along === "x" ? c1 - c0 : Math.abs(L)).toNonIndexed(), P = g.attributes.position, U = g.attributes.uv;
+      for (let k = 0; k < P.count; k++) { const u = (along === "x" ? P.getX(k) : P.getZ(k)) / L + 0.5, y = P.getY(k) > 0 ? tA + (tB - tA) * u : bA + (bB - bA) * u; P.setY(k, y); U.setXY(k, a0 + u * L + (along === "x" ? P.getZ(k) : P.getX(k)) * 0.7, y); }
       g.computeVertexNormals(); g.translate(along === "x" ? (a0 + a1) / 2 : (c0 + c1) / 2, 0, along === "x" ? (c0 + c1) / 2 : (a0 + a1) / 2);
       const o = new THREE.Mesh(g, m); o.castShadow = o.receiveShadow = true; world.add(o);
-      if (solid) along === "x" ? S(Math.min(a0, a1), Math.max(a0, a1), yb, Math.max(tA, tB), c0, c1) : S(c0, c1, yb, Math.max(tA, tB), Math.min(a0, a1), Math.max(a0, a1)); };
+      if (solid) along === "x" ? S(Math.min(a0, a1), Math.max(a0, a1), Math.min(bA, bB), Math.max(tA, tB), c0, c1) : S(c0, c1, Math.min(bA, bB), Math.max(tA, tB), Math.min(a0, a1), Math.max(a0, a1)); };
     // Portalwand: Oberkante folgt dem Hang (Gelaende 1 m hinter der Wand + 0,3), ueber der Oeffnung mindestens 0,9 m Sturz
     const top = z => Math.max(genH0(X + 1.0, z) + 0.3, z > Z0 - 0.5 && z < Z1 + 0.5 ? HT + 0.9 : HF_Y + 1.5);
-    for (let z = cz - 8; z < cz + 8 - 1e-6; z += 1) { const z1 = z + 1, open = z1 > Z0 - 0.4 && z < Z1 + 0.4;
-      if (!open) { raked("z", z, z1, HF_Y - 0.5, top(z), top(z1), X - 0.8, X + 0.4, stoneM); raked("z", z, z1, top(z), top(z) + 0.18, top(z1) + 0.18, X - 1.0, X + 0.4, capM, false); } }
-    raked("z", Z0 - 0.4, Z1 + 0.4, HT + 0.4, top(Z0 - 0.4), top(Z1 + 0.4), X - 0.8, X + 0.4, stoneM); raked("z", Z0 - 0.4, Z1 + 0.4, top(Z0 - 0.4), top(Z0 - 0.4) + 0.18, top(Z1 + 0.4) + 0.18, X - 1.0, X + 0.4, capM, false);
-    B(X + 0.4, X + 3.5, HT + 0.4, Math.max(top(Z0), top(Z1)), Z0 - 0.4, Z1 + 0.4, stoneM, false);   // Portalkopf ueber der Tunneldecke (das Gelaende ist dort zur Strasse hin abgesenkt)
+    for (const [za, zb] of [[cz - 8, Z0 - 0.4], [Z1 + 0.4, cz + 8]]) for (let z = za, n = Math.ceil(zb - za); n > 0; n--) { const z1 = Math.min(zb, z + 1);
+      { raked("z", z, z1, HF_Y - 0.5, top(z), top(z1), X - 0.8, X + 0.4, stoneM); raked("z", z, z1, [top(z), top(z1)], top(z) + 0.18, top(z1) + 0.18, X - 1.0, X + 0.4, capM, false); } z = z1; }
+    raked("z", Z0 - 0.4, Z1 + 0.4, HT + 0.4, top(Z0 - 0.4), top(Z1 + 0.4), X - 0.8, X + 0.4, stoneM); raked("z", Z0 - 0.4, Z1 + 0.4, [top(Z0 - 0.4), top(Z1 + 0.4)], top(Z0 - 0.4) + 0.18, top(Z1 + 0.4) + 0.18, X - 1.0, X + 0.4, capM, false);
+    raked("x", X + 0.4, X + 8.4, HT + 0.4, top(cz) - 0.1, Math.max(...[-5.4, 0, 5.4].map(d => genH0(X + 8.4, cz + d))) + 0.15, cz - 5.5, cz + 5.5, M(0x5b8c3c, { roughness: 1 }), false);   // Portalkopf (Grasbuckel): deckt den Gelaendeausschnitt ueber dem Tunnelmund, laeuft mit dem Hang
     B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z0 - 0.4, Z0, capM, false); B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z1, Z1 + 0.4, capM, false); B(X - 1.0, X - 0.8, HT, HT + 0.4, Z0, Z1, capM, false);   // Rahmen
     // Stuetzmauern am Einschnitt, schraeg mit dem urspruenglichen Gelaende, solange der Einschnitt tiefer als 0,4 m ist
     for (const sd of [-1, 1]) { const zw = sd < 0 ? Z0 - 0.6 : Z1 + 0.6, za = sd < 0 ? Z0 - 1.0 : Z1 + 0.2, zb = sd < 0 ? Z0 - 0.2 : Z1 + 1.0, h0 = x => genH0(x, zw) + 0.35;
       for (let x = X - 0.8; x > X - 40; x -= 1.5) { const rn = roadNear(HFR, x - 0.75, cz, 8); if (!rn || genH0(x - 0.75, zw) - rn.y < 0.4) break;
-        raked("x", x, x - 1.5, rn.y - 0.6, h0(x), h0(x - 1.5), za, zb, stoneM); raked("x", x, x - 1.5, h0(x), h0(x) + 0.15, h0(x - 1.5) + 0.15, za - 0.1, zb + 0.1, capM, false); } }
+        raked("x", x, x - 1.5, rn.y - 0.6, h0(x), h0(x - 1.5), za, zb, stoneM); raked("x", x, x - 1.5, [h0(x), h0(x - 1.5)], h0(x) + 0.15, h0(x - 1.5) + 0.15, za - 0.1, zb + 0.1, capM, false); } }
     const kies = canvasTex(256, 256, (g, w, h) => { const rr = rng(777); g.fillStyle = "#8a8070"; g.fillRect(0, 0, w, h);
       for (let i = 0; i < 2600; i++) { const v = 85 + rr() * 90; g.fillStyle = "rgba(" + (v + 10) + "," + (v + 2) + "," + (v - 8) + "," + (0.35 + rr() * 0.5) + ")"; g.beginPath(); g.arc(rr() * w, rr() * h, 0.6 + rr() * 2.2, 0, 7); g.fill(); }
       for (const x of [70, 186]) { g.fillStyle = "rgba(50,45,40,.18)"; g.fillRect(x - 16, 0, 32, h); } }); kies.repeat.set(1, 1);

@@ -357,42 +357,53 @@ const SPEC_NACHTFALKE = { name: "Nachtfalke", wheels: [[-0.8, -1.6], [0.8, -1.6]
   maxN: 34, maxF: 60, acc: 15, steer: 0.66, jump: false, boost: true, grade: 38, camD: 8.5, camH: 1.1, seat: [-0.4, 1.15, 0.15], bodyH: 1.4, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Nachtfalke: W/S Gas/Bremse, A/D lenken, Leertaste halten = Nitro, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
-// ---- Aventador LP 700-4 Coupe (Nicolas 2026-11-09, stilisiert, ohne Logos): flacher Keil, Y-Scheinwerfer, steile Frontscheibe
-// in einer Linie mit dem Dach, Motorabdeckung mit Lamellen, seitliche Lufteinlaesse vor den Hinterraedern und auf den Schultern, Y-Rueckleuchten,
-// Gitter hinten mit sechseckigem Endrohr in der Mitte, Diffusor. 4,78 x 2,03 x 1,14 m, Radstand 2,70 m
+// ---- Aventador LP 700-4 Coupe (Nicolas 2026-11-09, stilisiert, ohne Logos; Masse und Linien nach Seiten- und Draufsicht): Karosserie als Loft
+// aus Querschnitten (von oben spitz zulaufende Nase, breite Hueften, eckige Radlaeufe), Glaskanzel mit langer, flacher Frontscheibe, Dach,
+// Motorabdeckung mit Lamellen, Y-Scheinwerfer, Seiten- und Schulterhutzen, Y-Rueckleuchten, Gitter mit sechseckigem Endrohr, Diffusor.
+// 4,78 x 2,03 x 1,14 m, Radstand 2,70 m. f = vorne (Profil), z = -f
 function buildAventador(col = 0xe07012) {
   const g = new THREE.Group();
-  const paint = M(col, { metalness: 0.5, roughness: 0.28, flatShading: true }), dark = M(0x0b0c0e, { roughness: 0.6, flatShading: true }), glass = M(0x070a0f, { metalness: 0.7, roughness: 0.06 });
-  const chrome = M(0x9ea3a8, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x2a2c30, { metalness: 0.8, roughness: 0.3 });
-  const arch = (c, r) => [[c - r - 0.1, 0.22], [c - r - 0.08, r + 0.18], [c - r * 0.7, r * 1.85], [c, 2 * r + 0.08], [c + r * 0.7, r * 1.85], [c + r + 0.08, r + 0.18], [c + r + 0.1, 0.22]];   // Radlauf, Profil nach vorne
-  prismIn(g, [[2.3, 0.22], [2.38, 0.36], [2.1, 0.5], [1.2, 0.66], [0.78, 0.76], [-1.0, 0.86], [-2.3, 0.9], [-2.43, 0.86], [-2.43, 0.36], [-2.25, 0.2], [2.1, 0.18]], 1.4, paint);   // Rumpf
-  prismIn(g, [[0.8, 0.76], [-0.1, 1.12], [-0.55, 1.14], [-1.2, 1.02], [-1.25, 0.86]], 1.3, paint);                      // Kabine
-  prismIn(g, [[-0.55, 1.14], [-2.25, 0.93], [-2.3, 0.89], [-0.7, 0.88]], 1.18, paint);                                 // Motorabdeckung
+  const paint = M(col, { metalness: 0.5, roughness: 0.28, flatShading: true }), dark = M(0x0b0c0e, { roughness: 0.6, flatShading: true }), glass = M(0x070a0f, { metalness: 0.7, roughness: 0.06, flatShading: true });
+  const chrome = M(0x9ea3a8, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x1d1e21, { metalness: 0.8, roughness: 0.3 });
+  const tab = T => f => { if (f >= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (f >= T[i][0]) { const [f0, a] = T[i - 1], [f1, b] = T[i]; return a + (b - a) * (f0 - f) / (f0 - f1); } return T[T.length - 1][1]; };
+  // Loft: Stationen [f, Halbschnitt von unten-Mitte ueber die Seite bis oben-Mitte], gespiegelt; Enden geschlossen
+  const loft = (st, m) => { const pos = [], ring = ([f, h]) => [...h, ...h.slice().reverse().map(([x, y]) => [-x, y])].map(([x, y]) => [x, y, -f]);
+    const R = st.map(ring), n = R[0].length, tri = (a, b, c) => pos.push(...a, ...b, ...c);
+    for (let i = 0; i < R.length - 1; i++) for (let j = 0; j < n; j++) { const a = R[i][j], b = R[i][(j + 1) % n], c = R[i + 1][(j + 1) % n], d = R[i + 1][j]; tri(a, d, c); tri(a, c, b); }
+    for (const [k, s] of [[0, 1], [R.length - 1, -1]]) { const r = R[k], c = r.reduce((q, p) => [q[0] + p[0] / n, q[1] + p[1] / n, q[2] + p[2] / n], [0, 0, 0]); for (let j = 0; j < n; j++) s > 0 ? tri(c, r[(j + 1) % n], r[j]) : tri(c, r[j], r[(j + 1) % n]); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); g.add(new THREE.Mesh(geo, m)); };
+  const W = [[1.35, 0.34], [-1.35, 0.36]], arch = f => { let y = 0.14; for (const [c, r] of W) { const R = r + 0.12, d = Math.abs(f - c); if (d < R + 0.06) y = Math.max(y, 0.14 + (2 * r + 0.06 - 0.14) * Math.min(1, (R + 0.06 - d) / 0.2)); } return y; };   // eckige Radlaeufe
+  const hwS = tab([[2.39, 0.68], [2.2, 0.8], [1.8, 0.93], [1.35, 0.99], [0.9, 0.96], [0.2, 0.95], [-0.6, 0.99], [-1.35, 1.02], [-2.0, 1.0], [-2.39, 0.95]]);
+  const yTc = tab([[2.39, 0.36], [2.2, 0.5], [1.8, 0.6], [1.14, 0.79], [0.95, 0.84], [-2.39, 0.86]]);
+  const body = []; for (let f = 2.39; f > -2.4; f -= 0.08) { const ff = Math.max(-2.39, f), yb = ff > 2.25 ? 0.18 : arch(ff), hs = hwS(ff), yt = yTc(ff), ye = yt - 0.025, ys = Math.max(yb + 0.04, Math.min(ye - 0.1, 0.6));
+    body.push([ff, [[0, yb], [hs - 0.1, yb], [hs, ys], [hs - 0.13, ye], [0, yt]]]); }
+  loft(body, paint);                                                                                                         // Karosserie
+  const gh = [[1.16, 0.79, 0.78], [0.8, 0.92, 0.8], [0.4, 1.04, 0.8], [0.09, 1.13, 0.79], [-0.26, 1.15, 0.78], [-0.58, 1.12, 0.74], [-0.95, 0.96, 0.62]];
+  loft(gh.map(([f, yt, hb]) => [f, [[0, 0.8], [hb, 0.8], [hb - 0.22, yt - 0.03], [0, yt]]]), glass);                       // Glaskanzel (Front- und Seitenscheiben)
+  loft([[0.06, 1.135, 0.56], [-0.26, 1.162, 0.58], [-0.62, 1.128, 0.55]].map(([f, yt, hw]) => [f, [[0, yt - 0.05], [hw, yt - 0.05], [hw - 0.04, yt], [0, yt + 0.008]]]), paint);   // Dach
+  loft([[-0.5, 1.13], [-1.2, 1.03], [-1.9, 0.94], [-2.3, 0.9]].map(([f, yt]) => [f, [[0, 0.84], [0.62, 0.84], [0.5, yt], [0, yt + 0.01]]]), paint);   // Motorabdeckung
+  for (let k = 0; k < 6; k++) { const z = 0.8 + k * 0.24, y = 1.13 - (z - 0.5) * 0.135 + 0.02; boxAt(g, 0.8, 0.03, 0.06, dark, 0, y, z, 0.135); }   // Lamellen
   for (const sd of [-1, 1]) {
-    prismIn(g, [[2.3, 0.24], [2.36, 0.38], [2.1, 0.52], [1.2, 0.68], [0.78, 0.77], [-1.0, 0.87], [-2.3, 0.91], [-2.42, 0.86], [-2.42, 0.34], [-2.25, 0.22], ...arch(-1.35, 0.36), ...arch(1.35, 0.34), [2.15, 0.22]], 0.3, paint, sd * 0.85);   // Seitenwand mit Radlaeufen
-    prismIn(g, [[-0.3, 0.3], [-0.88, 0.74], [-0.92, 0.74], [-0.92, 0.3]], 0.05, dark, sd * 0.99);                     // Lufteinlass vor dem Hinterrad
-    sideBox(g, sd * 0.62, sd * 0.84, 0.86, 0.95, 0.85, 1.35, dark);                                                      // Lufthutze auf der Schulter
-    prismIn(g, [[0.7, 0.8], [-0.08, 1.09], [-0.5, 1.1], [-1.0, 0.92], [-1.0, 0.82], [0.5, 0.8]], 0.02, glass, sd * 0.66);   // Seitenscheibe
-    sideBox(g, sd * 0.66, sd * 0.9, 0.9, 0.98, -0.42, -0.3, dark);                                                       // Spiegel
-    boxIn(g, sd > 0 ? 0.45 : -0.98, sd > 0 ? 0.98 : -0.45, 0.2, 0.36, -2.38, -2.18, dark);                             // Lufteinlass vorne
-    const y1 = boxAt(g, 0.36, 0.012, 0.035, mat.glow, sd * 0.7, 0.535, -2.05, -0.175); y1.rotation.y = -sd * 0.25;                   // Y-Scheinwerfer
-    const y2 = boxAt(g, 0.035, 0.012, 0.2, mat.glow, sd * 0.62, 0.53, -1.98, -0.175); y2.rotation.y = sd * 0.5;
-    boxAt(g, 0.46, 0.03, 0.34, dark, sd * 0.7, 0.515, -2.03, -0.175);                                                              // Scheinwerfergehaeuse
-    const r1 = boxAt(g, 0.5, 0.04, 0.03, mat.glowRed, sd * 0.68, 0.78, 2.44); r1.rotation.z = -sd * 0.12;                // Y-Rueckleuchten
-    const r2 = boxAt(g, 0.24, 0.04, 0.03, mat.glowRed, sd * 0.86, 0.68, 2.44); r2.rotation.z = sd * 0.8;
-    for (let k = 0; k < 3; k++) boxAt(g, 0.03, 0.14, 0.4, dark, sd * (0.25 + k * 0.18), 0.27, 2.25);                   // Diffusor-Rippen
+    prismIn(g, [[-0.32, 0.34], [-0.86, 0.6], [-1.0, 0.6], [-1.0, 0.3]], 0.05, dark, sd * (hwS(-0.7) - 0.005));             // Seitenhutze vor dem Hinterrad
+    sideBox(g, sd * 0.68, sd * 0.86, 0.86, 0.92, 0.62, 1.05, dark);                                                       // Schulterhutze
+    sideBox(g, sd * 0.78, sd * 1.0, 0.9, 0.98, -0.82, -0.68, paint);                                                      // Spiegel
+    boxAt(g, 0.36, 0.03, 0.3, dark, sd * 0.6, 0.535, -2.02, -0.245);                                                      // Scheinwerfergehaeuse (flach in der Haube)
+    const y1 = boxAt(g, 0.34, 0.012, 0.035, mat.glow, sd * 0.6, 0.553, -2.06, -0.245); y1.rotation.y = -sd * 0.25;       // Y-Scheinwerfer
+    const y2 = boxAt(g, 0.035, 0.012, 0.18, mat.glow, sd * 0.52, 0.56, -1.98, -0.245); y2.rotation.y = sd * 0.5;
+    boxIn(g, sd > 0 ? 0.28 : -0.55, sd > 0 ? 0.55 : -0.28, 0.18, 0.3, -2.37, -2.2, dark);                                 // Lufteinlass vorne
+    const r1 = boxAt(g, 0.46, 0.04, 0.03, mat.glowRed, sd * 0.6, 0.76, 2.4); r1.rotation.z = -sd * 0.12;                 // Y-Rueckleuchten
+    const r2 = boxAt(g, 0.22, 0.04, 0.03, mat.glowRed, sd * 0.78, 0.66, 2.4); r2.rotation.z = sd * 0.8;
+    for (let k = 0; k < 3; k++) boxAt(g, 0.03, 0.14, 0.4, dark, sd * (0.22 + k * 0.17), 0.26, 2.22);                    // Diffusor-Rippen
   }
-  meshIn(g, new THREE.BoxGeometry(1.28, 0.025, 0.97), glass, 0, 0.95, -0.35, -0.38);                                    // Frontscheibe (Linie mit dem Dach)
-  boxIn(g, -0.4, 0.4, 0.2, 0.3, -2.42, -2.28, dark);                                                                     // Frontsplitter Mitte
-  boxIn(g, -0.98, 0.98, 0.34, 0.66, 2.42, 2.45, dark);                                                                   // Gitter hinten
-  meshIn(g, new THREE.CylinderGeometry(0.14, 0.14, 0.12, 6), chrome, 0, 0.45, 2.48, Math.PI / 2); meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.13, 6), dark, 0, 0.45, 2.485, Math.PI / 2);   // Endrohr (sechseckig)
-  for (let k = 0; k < 6; k++) { const z = 0.75 + k * 0.24, y = 1.14 - (z - 0.55) * 0.13 + 0.02; boxAt(g, 0.9, 0.03, 0.06, dark, 0, y, z, 0.128); }   // Lamellen auf der Motorabdeckung
-  boxAt(g, 1.1, 0.03, 0.22, dark, 0, 0.93, 2.18);                                                                        // Heckspoiler (flach)
+  boxIn(g, -0.26, 0.26, 0.17, 0.26, -2.38, -2.25, dark);                                                                 // Frontsplitter Mitte
+  boxIn(g, -0.86, 0.86, 0.3, 0.7, 2.37, 2.41, dark);                                                                     // Gitter hinten
+  meshIn(g, new THREE.CylinderGeometry(0.14, 0.14, 0.12, 6), chrome, 0, 0.44, 2.44, Math.PI / 2); meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.13, 6), dark, 0, 0.44, 2.445, Math.PI / 2);   // Endrohr (sechseckig)
+  boxAt(g, 1.0, 0.03, 0.22, dark, 0, 0.9, 2.16);                                                                         // Heckspoiler (flach)
   mergeStatic(g);
-  const wheels = [[-0.84, -1.35, true, 0.34, 0.26], [0.84, -1.35, true, 0.34, 0.26], [-0.86, 1.35, false, 0.36, 0.34], [0.86, 1.35, false, 0.36, 0.34]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 28));
+  const wheels = [[-0.84, -1.35, true, 0.34, 0.26], [0.84, -1.35, true, 0.34, 0.26], [-0.87, 1.35, false, 0.36, 0.34], [0.87, 1.35, false, 0.36, 0.34]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 28));
   return { g, wheels };
 }
-const SPEC_AVENTADOR = { name: "Aventador LP 700-4", wheels: [[-0.84, -1.35], [0.84, -1.35], [-0.86, 1.35], [0.86, 1.35]], wb: 2.7, track: 1.7, pts: [-1.6, 0, 1.6], R: 1.0, circR: 0.95, enter: 3.8,
+const SPEC_AVENTADOR = { name: "Aventador LP 700-4", wheels: [[-0.84, -1.35], [0.84, -1.35], [-0.87, 1.35], [0.87, 1.35]], wb: 2.7, track: 1.7, pts: [-1.6, 0, 1.6], R: 1.0, circR: 0.95, enter: 3.8,
   maxN: 40, maxF: 90, acc: 12, steer: 0.68, jump: false, grade: 35, camD: 8.0, camH: 1.0, seat: [-0.38, 0.95, 0.2], bodyH: 1.15, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Aventador LP 700-4: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };

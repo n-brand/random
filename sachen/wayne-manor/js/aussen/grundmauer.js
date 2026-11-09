@@ -50,7 +50,7 @@
     }
     if (G.kind !== "tree") continue;
     // Stamm quer durch die Luecke (ca. 35 Grad zur Mauer), Wurzelteller draussen hochgestellt, Krone innen am Boden
-    const L = WALL_LINES[0]; let bi = 0, bd = 1e9; L.forEach(([x, z], i) => { const d = Math.hypot(x - G.x, z - G.z); if (d < bd) { bd = d; bi = i; } });
+    let L = WALL_LINES[0], bi = 0, bd = 1e9; for (const LL of WALL_LINES) LL.forEach(([x, z], i) => { const d = Math.hypot(x - G.x, z - G.z); if (d < bd) { bd = d; bi = i; L = LL; } });
     const [p, q] = [L[Math.max(0, bi - 1)], L[Math.min(L.length - 1, bi + 1)]], wa = Math.atan2(q[1] - p[1], q[0] - p[0]), ta = wa + 0.6;
     const dir = [Math.cos(ta), Math.sin(ta)]; let out = [dir[1], -dir[0]]; if (out[0] * (G.x + 25) + out[1] * (G.z - 30) < 0) out = [-out[0], -out[1]];
     const sgn = Math.sign(dir[0] * out[0] + dir[1] * out[1]) || 1, root = [G.x + dir[0] * 5 * sgn, G.z + dir[1] * 5 * sgn], tip = [G.x - dir[0] * 6 * sgn, G.z - dir[1] * 6 * sgn];

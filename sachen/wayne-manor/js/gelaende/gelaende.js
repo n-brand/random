@@ -50,6 +50,7 @@ const grassTex = canvasTex(256, 256, (g, w, h) => {
     if (inPool(vx, vz) || Math.hypot(vx - FOUNT.x, vz - FOUNT.z) < FOUNT.r - 0.2) { cut[k] = 1; continue; }   // Becken (Pool, Brunnen)
     if (pos[k * 3 + 1] < -8 && seaD(vx, vz) < 5 && seaTunDist(vx, vz) < SEA_TUN_W / 2 + 1.5) cut[k] = 1;   // Meereshoehle
     if (pos[k * 3 + 1] < SEA_Y + 9 && waterCaveAt(vx, vz, 1.5)) cut[k] = 1;                                // Wasserhoehlen (E2)
+    if (vx > HF_XP - 1.5 && vx < HF_XP + 6 && Math.abs(vz - HF_CZ) < 3.2) cut[k] = 1;   // Tunnelmund Westweg (Portalkopf deckt ab)
     if (vx > WF_PORTAL.x0 && vx < WF_PORTAL.x1 && vz > WF_PORTAL.z0 && vz < WF_PORTAL.z1 && pos[k * 3 + 1] < 7.5 && pos[k * 3 + 1] > -1.5) cut[k] = 1;   // Waterfall Exit (A8)
   }
   let n = 0;
