@@ -15,21 +15,21 @@ function caveCellUp(x, z) {
   if (px < 0 || px > 736) return 0;
   return inPoly(UP_FLOOR, px, py) || inPoly(AIR_EXIT, px, py) ? 1 : 0;
 }
-const UCX0 = -142, UCNX = Math.ceil((CX0 + CNX * CELL - UCX0) / CELL);   // Raster oben nach Westen bis zum Flugzeug-Silo verlaengert (Nicolas 2026-11-09)
-const CMU = new Uint8Array(UCNX * CNZ);
-for (let j = 0; j < CNZ; j++) for (let i = 0; i < UCNX; i++) CMU[j * UCNX + i] = caveCellUp(UCX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL);
-const cmuAt = (i, j) => (i < 0 || j < 0 || i >= UCNX || j >= CNZ) ? 0 : CMU[j * UCNX + i];
+const UCX0 = -150, UCNX = Math.ceil((CX0 + CNX * CELL - UCX0) / CELL), UCNZ = Math.ceil((150 - CZ0) / CELL);   // Raster oben nach Westen bis zum Flugzeug-Silo verlaengert (Nicolas 2026-11-09)
+const CMU = new Uint8Array(UCNX * UCNZ);
+for (let j = 0; j < UCNZ; j++) for (let i = 0; i < UCNX; i++) CMU[j * UCNX + i] = caveCellUp(UCX0 + (i + 0.5) * CELL, CZ0 + (j + 0.5) * CELL);
+const cmuAt = (i, j) => (i < 0 || j < 0 || i >= UCNX || j >= UCNZ) ? 0 : CMU[j * UCNX + i];
 function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor((z - CZ0) / CELL)); }
 {
   const inShaft = (x, z) => x > SHAFT_OUT[0] - 0.3 && x < SHAFT_OUT[1] + 0.3 && z > SHAFT_OUT[2] - 0.3 && z < SHAFT_OUT[3] + 0.3;
   const hole = (x, z) => inShaft(x, z) || inRect(STW, x, z);
   const jit = (x, z) => [x + (vnoise(x * 0.45 + 13, z * 0.45) - 0.5) * 0.7, z + (vnoise(x * 0.45, z * 0.45 + 17) - 0.5) * 0.7];
-  const ceilY = (x, z) => UY + UH - 2.2 * vnoise(x * 0.12 + 40, z * 0.12) - 1.0 * vnoise(x * 0.4 + 9, z * 0.4);
+  const ceilY = (x, z) => UY + UH - 2.2 * vnoise(x * 0.12 + 40, z * 0.12) - 1.0 * vnoise(x * 0.4 + 9, z * 0.4) + (axtIn(x, z, 0.6) || inRect(HGX, x, z, 0.6) ? 3 : 0);   // Gang und Hangar-Erweiterung 3 m hoeher (The Bat)
   const rock = [], floor = [];
   const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
   const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.5, z * 0.5];
   const corner = (i, j) => jit(UCX0 + i * CELL, CZ0 + j * CELL);
-  for (let j = 0; j < CNZ; j++) for (let i = 0; i < UCNX; i++) {
+  for (let j = 0; j < UCNZ; j++) for (let i = 0; i < UCNX; i++) {
     if (!CMU[j * UCNX + i]) continue;
     const c = [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)], cx = UCX0 + (i + 0.5) * CELL, cz = CZ0 + (j + 0.5) * CELL;
     if (!hole(cx, cz)) push(floor, c.map(([x, z]) => [x, UY, z]), uvFlat);
@@ -52,17 +52,17 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
   mk(floor, M(0xffffff, { map: grate, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide }));
   // Kollision: Boden (ohne Treppen- und Schachtloch), Felswaende
   const X = i => UCX0 + i * CELL, Z = j => CZ0 + j * CELL;
-  const rowRuns = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= UCNX; i++) { const ok = i < UCNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
+  const rowRuns = (test, fn) => { for (let j = 0; j < UCNZ; j++) { let s = -1; for (let i = 0; i <= UCNX; i++) { const ok = i < UCNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
   rowRuns((i, j) => CMU[j * UCNX + i] === 1 && !hole(X(i) + CELL / 2, Z(j) + CELL / 2), (a, b, j) => S(X(a), X(b), UY - 0.5, UY, Z(j), Z(j + 1)));
   const WM = 0.4;                                                          // wie unten: Kollision nach innen geschoben
-  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j - 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j) - 0.3 + WM, Z(j) + WM));
-  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j + 1), (a, b, j) => S(X(a), X(b), UY, UY + UH, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM));
+  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j - 1), (a, b, j) => S(X(a), X(b), UY, UY + UH + 3, Z(j) - 0.3 + WM, Z(j) + WM));
+  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j + 1), (a, b, j) => S(X(a), X(b), UY, UY + UH + 3, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM));
   for (let i = 0; i < UCNX; i++) for (const d of [-1, 1]) {
     let s = -1;
-    for (let j = 0; j <= CNZ; j++) {
-      const ok = j < CNZ && CMU[j * UCNX + i] && !cmuAt(i + d, j);
+    for (let j = 0; j <= UCNZ; j++) {
+      const ok = j < UCNZ && CMU[j * UCNX + i] && !cmuAt(i + d, j);
       if (ok && s < 0) s = j;
-      if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 + WM : xl - WM, d < 0 ? xl + WM : xl + 0.3 - WM, UY, UY + UH, Z(s), Z(j)); s = -1; }
+      if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 + WM : xl - WM, d < 0 ? xl + WM : xl + 0.3 - WM, UY, UY + UH + 3, Z(s), Z(j)); s = -1; }
     }
   }
 
@@ -143,7 +143,7 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
   {
     const [ax, az] = AXT.a, [bx, bz] = AXT.b, L = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / L, uz = (bz - az) / L;
     let t1 = 0; while (t1 < L && inRect(HGX, ax + ux * t1, az + uz * t1)) t1 += 0.25; t1 += 1.2;   // Tuer kurz nach dem Hangarrand
-    const dx = ax + ux * t1, dz = az + uz * t1, W = AXT.hw * 2 + 1.0, H = 6.2;
+    const dx = ax + ux * t1, dz = az + uz * t1, W = AXT.hw * 2 + 1.0, H = 11.6;
     const rockM = M(0x6f6b64, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true });
     const door = new THREE.Group(); door.position.set(dx, UY, dz); door.rotation.y = Math.atan2(ux, uz) + Math.PI / 2; door.userData.dynamic = true; world.add(door);
     const slab = new THREE.Mesh(new THREE.BoxGeometry(W, H, 1.0), rockM); slab.position.y = H / 2; slab.castShadow = slab.receiveShadow = true; door.add(slab);
@@ -159,8 +159,10 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
     rim += 0.1; SILO.rim = rim;
     const y0 = UY + UH - 4;
     const wt = rim - 0.38;                                                    // Wandkrone unter dem Rasenkragen (getarnt)
-    B(cx - R - T, cx - R, y0, wt, cz - R - T, cz + R + T, concrete); B(cx + R, cx + R + T, y0, wt, cz - R - T, cz + R + T, concrete);
-    B(cx - R, cx + R, y0, wt, cz - R - T, cz - R, concrete); B(cx - R, cx + R, y0, wt, cz + R, cz + R + T, concrete);
+    // Betonwaende; wo der Gang ankommt, offen bis zur Gangdecke (Sturz darueber)
+    const yG = UY + UH - 0.3, side = (alongX, fixed, lo, hi) => { let q = lo; while (q < hi - 1e-6) { const gang = alongX ? axtIn(q + 0.25, fixed, 0.5) : axtIn(fixed, q + 0.25, 0.5); let e = q; while (e < hi - 1e-6 && (alongX ? axtIn(e + 0.25, fixed, 0.5) : axtIn(fixed, e + 0.25, 0.5)) === gang) e += 0.5; e = Math.min(e, hi);
+        const yb = gang ? yG : y0; alongX ? B(q, e, yb, wt, fixed < cz ? fixed - T : fixed, fixed < cz ? fixed : fixed + T, concrete) : B(fixed < cx ? fixed - T : fixed, fixed < cx ? fixed : fixed + T, yb, wt, q, e, concrete); q = e; } };
+    side(false, cx - R, cz - R - T, cz + R + T); side(false, cx + R, cz - R - T, cz + R + T); side(true, cz - R, cx - R, cx + R); side(true, cz + R, cx - R, cx + R);
     for (let y = y0 + 1.5; y < rim - 1; y += 3) for (const sd of [-1, 1]) B(cx - R + 0.05, cx + R - 0.05, y, y + 0.08, cz + sd * R - 0.03, cz + sd * R + 0.03, mat.glowOrange, false, world, false);   // Leuchtstreifen
     B(cx - 8, cx + 8, UY, UY + 0.04, cz - 8, cz + 8, M(0x3a3d42, { roughness: 0.8 }), false);                                    // Landeplatz
     const ring = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.15, 6, 48).rotateX(Math.PI / 2), M(0xf2c230, { roughness: 0.6 })); ring.position.set(cx, UY + 0.06, cz); world.add(ring);

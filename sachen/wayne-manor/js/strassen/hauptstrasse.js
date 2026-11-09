@@ -104,6 +104,6 @@ const HFR = (() => { const [gx, gz] = WALL_GATE2, [ux, uz] = WALL_GATE2_U, g = k
 // ===================== Flugzeug-Ausgang (Nicolas 2026-11-09): Hangar West vergroessert (leer), Gang zum Silo unter der Wiese =====================
 // HGX = Erweiterung des Hangars West (obere Hoehle, nur Raum), AXT = Gang (8,4 m breit) vom Hangar schraeg zum Silo, SILO = 20 x 20 m Schacht
 // von UY bis an die Oberflaeche, oben zwei getarnte Rasenklappen. Gang, Erweiterung und Silo gehoeren zum Raster der oberen Hoehle (hoehle-oben.js).
-const HGX = { x0: -70, x1: -46, z0: 26.5, z1: 46 }, AXT = { a: [-46.95, 35.65], b: [-130.62, 124.85], hw: 4.2 }, SILO = { x: -130.62, z: 124.85, h: 10 };
+const HGX = { x0: -70, x1: -46, z0: 26.5, z1: 46 }, AXT = { a: [-52.4, 41.5], b: [-130.62, 124.85], hw: 7 }, SILO = { x: -130.62, z: 124.85, h: 15 };   // Nicolas: fuer The Bat groesser (Gang 14 m, Silo 30 x 30 m)
 function axtIn(x, z, m = 0) { const [ax, az] = AXT.a, [bx, bz] = AXT.b, dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)); return Math.hypot(x - ax - dx * t, z - az - dz * t) < AXT.hw + m; }
 const inSilo = (x, z, m = 0) => Math.abs(x - SILO.x) < SILO.h + m && Math.abs(z - SILO.z) < SILO.h + m;
