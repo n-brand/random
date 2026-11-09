@@ -29,9 +29,10 @@
   </div>
 
   <div class="hud">
-    <button type="button" id="btn-lift">Aufzug (E)</button>
-    <button type="button" id="btn-fs2" aria-pressed="false">Vollbild (F)</button>
-    <button type="button" id="btn-exit">Beenden (Esc)</button>
+    <button type="button" id="btn-act" title="Einsteigen/Aussteigen, Tor schalten (Taste E)">Aktion<span class="k"> (E)</span></button>
+    <button type="button" id="btn-tp" title="Teleport-Menue, Fahrzeuge holen, Lautstaerke (Taste T)">Menü<span class="k"> (T)</span></button>
+    <button type="button" id="btn-fs2" aria-pressed="false">Vollbild<span class="k"> (F)</span></button>
+    <button type="button" id="btn-exit">Beenden<span class="k"> (Esc)</span></button>
   </div>
   <div id="cross"></div>
   <div id="ghost-tag">Geist</div>
@@ -42,11 +43,13 @@
   <div id="lift-panel" hidden></div>
   <button type="button" id="door-hint" hidden></button>
   <!-- TEST: Teleport-Menue (Taste T), wird ganz am Ende entfernt -->
-  <div id="tp-menu" hidden><div class="tp-head">Teleport (Test) &middot; T oder Esc schließt</div><label class="tp-vol">Lautstärke <input id="tp-vol" type="range" min="0" max="100" step="5" value="70" aria-label="Lautstärke"><span id="tp-vol-v">70 %</span></label><details id="tp-orte"><summary>Orte</summary><div class="tp-list tp-orte"></div></details><details id="tp-veh"><summary>Fahrzeuge (zu dir holen)</summary><div class="tp-list tp-veh"></div></details></div>
+  <div id="tp-menu" hidden><div class="tp-head">Teleport (Test) &middot; T oder Esc schließt</div><button type="button" id="tp-close" aria-label="Menü schließen">&times;</button><label class="tp-vol">Lautstärke <input id="tp-vol" type="range" min="0" max="100" step="5" value="70" aria-label="Lautstärke"><span id="tp-vol-v">70 %</span></label><details id="tp-orte"><summary>Orte</summary><div class="tp-list tp-orte"></div></details><details id="tp-veh"><summary>Fahrzeuge (zu dir holen)</summary><div class="tp-list tp-veh"></div></details></div>
   <div class="stick" id="stick-move"><span></span></div>
   <div class="stick" id="stick-look"><span></span></div>
   <button type="button" id="btn-jump">Sprung</button>
   <button type="button" id="btn-down">Runter</button>
+  <!-- Handy: Fahrzeug-Tasten (V, R, L, M) als Knoepfe, sichtbar nur im Fahrzeug -->
+  <div id="veh-btns" role="group" aria-label="Fahrzeug"><button type="button" data-key="KeyV">Kamera</button><button type="button" data-key="KeyR" class="car-only">Reset</button><button type="button" data-key="KeyL" class="car-only">Lift</button><button type="button" data-key="KeyM" class="no-boat">Ton</button></div>
 
   <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
 

@@ -211,4 +211,4 @@ $("btn-ghost").addEventListener("click", e => { e.currentTarget.blur(); startGho
 $("btn-walk-top").addEventListener("click", () => showMap((mapIdx + 1) % (MAPS.length + 1)));
 showMap(MAPS.length);                                                     // Start ohne Karte (Wunsch von Nicolas)
 $("btn-exit").addEventListener("click", () => setWalk(false));
-$("btn-lift").addEventListener("click", useLift);
+// (Knopf "Aktion (E)" und "Menü (T)": siehe ui/bedienung.js)

@@ -73,7 +73,17 @@ body.drawing #draw-colors { display: flex; }
 /* Geistmodus: Anzeige oben, kein Aufzug-Knopf, am Handy Hoch/Runter statt Sprung */
 #ghost-tag { display: none; position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 12px); transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 16px; font-weight: 800; letter-spacing: .08em; color: #bfe3ff; pointer-events: none; z-index: 6; }
 body.ghost #ghost-tag { display: block; }
-body.ghost #btn-lift { display: none; }
+/* Handy (Nicolas 2026-11-09): Knopfleiste kompakt, Fahrzeug-Knoepfe, Hoch/Runter auch beim Fliegen, Schliessen im Menue */
+body.touch .hud .k { display: none; }
+body.touch.walk .bar a { display: none; }
+body.touch #car-speed { bottom: auto !important; top: calc(env(safe-area-inset-top, 0px) + 58px); font-size: 13px !important; }
+body.touch .hud { gap: 6px; right: 8px; }
+body.touch .hud button { padding: 8px 11px; font-size: .85rem; }
+#veh-btns { display: none; position: fixed; right: 26px; bottom: calc(env(safe-area-inset-bottom, 0px) + 162px); flex-direction: column; gap: 8px; z-index: 5; }
+body.touch.walk.drive #veh-btns { display: flex; }
+#veh-btns button { width: 64px; height: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; touch-action: manipulation; }
+body:not(.car) #veh-btns .car-only, body.boat #veh-btns .no-boat { display: none; }
+#tp-menu #tp-close { position: absolute; top: 6px; right: 8px; width: 36px; height: 36px; padding: 0; font-size: 1.4rem; line-height: 1; }
 #btn-down { display: none; position: fixed; right: 160px; bottom: calc(env(safe-area-inset-bottom, 0px) + 118px); width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; touch-action: none; z-index: 5; }
-body.touch.ghost #btn-down { display: block; }
+body.touch.ghost #btn-down, body.touch.walk.fly #btn-down { display: block; }
 @media (max-width: 600px) { .bar h1 { display: none; } #ghost-tag { top: calc(env(safe-area-inset-top, 0px) + 60px); } }

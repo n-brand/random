@@ -1,4 +1,4 @@
-// Orbit-Ansicht: Rechtsklick (ohne Ziehen) auf einen Ort kopiert die genauen Koordinaten
+// Orbit-Ansicht: Rechtsklick (ohne Ziehen) oder am Handy langer Druck auf einen Ort kopiert die genauen Koordinaten
 // und die aktuelle Kameraansicht in die Zwischenablage. Rechts ziehen verschiebt die Ansicht weiterhin.
 // Einbinden (in jeder 3D-Seite, nach dem Anlegen von renderer, scene, camera und controls):
 //   import { installOrbitPick } from "../../shared/orbit-pick.js";
@@ -53,11 +53,24 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
 
   el.addEventListener("pointerdown", e => { if (e.button === 2) down = [e.clientX, e.clientY]; }, true);
   el.addEventListener("contextmenu", e => { if (controls.enabled) e.preventDefault(); });
-  el.addEventListener("pointerup", async e => {
+  // Handy: langer Druck (0,55 s, ohne Ziehen) wirkt wie der Rechtsklick (Nicolas 2026-11-09)
+  let lp = null;
+  el.addEventListener("pointerdown", e => {
+    if (e.pointerType !== "touch" || !controls.enabled) return;
+    clearTimeout(lp?.t); const x = e.clientX, y = e.clientY;
+    lp = { id: e.pointerId, x, y, t: setTimeout(() => { lp = null; pickAt(x, y); }, 550) };
+  }, true);
+  const lpCancel = e => { if (lp && (e.type !== "pointermove" || (e.pointerId === lp.id && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10))) { clearTimeout(lp.t); lp = null; } };
+  for (const t of ["pointermove", "pointerup", "pointercancel"]) el.addEventListener(t, lpCancel, true);
+  el.addEventListener("pointerup", e => {
     if (e.button !== 2 || !down) return;
     const moved = Math.hypot(e.clientX - down[0], e.clientY - down[1]);
     down = null;
     if (moved > 5 || !controls.enabled) return;                      // gezogen = verschieben, im Laufmodus aus
+    pickAt(e.clientX, e.clientY);
+  }, true);
+  async function pickAt(cx, cy) {
+    const e = { clientX: cx, clientY: cy };
     const r = el.getBoundingClientRect();
     ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     camera.updateMatrixWorld();
@@ -93,5 +106,5 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
     m.style.display = "flex";
     const w = m.offsetWidth, h = m.offsetHeight;
     m.style.left = Math.min(innerWidth - w - 6, e.clientX + 8) + "px"; m.style.top = Math.min(innerHeight - h - 6, e.clientY + 8) + "px";
-  }, true);
+  }
 }

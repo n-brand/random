@@ -154,6 +154,19 @@ function joystick(el) {
 const moveStick = joystick($("stick-move")), lookStick = joystick($("stick-look"));
 $("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.jump = true; jumpHeld = true; });
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
+// Handy und Maus (Nicolas 2026-11-09): Knoepfe loesen dieselben Tasten aus wie die Tastatur (E, T, V, R, L, M)
+const pressKey = code => { window.dispatchEvent(new KeyboardEvent("keydown", { code })); window.dispatchEvent(new KeyboardEvent("keyup", { code })); };
+$("btn-act").addEventListener("click", e => { e.currentTarget.blur(); pressKey("KeyE"); });
+$("btn-tp").addEventListener("click", e => { e.currentTarget.blur(); toggleTp(); });
+for (const b of document.querySelectorAll("#veh-btns button")) b.addEventListener("click", () => { b.blur(); pressKey(b.dataset.key); });
+// Modus als Klasse am body (fuer die Handy-Knoepfe): car, boat, fly, drive; Sprung-Knopf heisst beim Fliegen "Hoch"
+let modeNow = "";
+function syncModeClasses() {
+  const m = !walking ? "" : FLY.on ? "fly" : BOAT.on ? "boat" : CAR && CAR.on ? "car" : "";
+  if (m === modeNow) return; modeNow = m;
+  for (const k of ["fly", "boat", "car"]) document.body.classList.toggle(k, k === m);
+  document.body.classList.toggle("drive", !!m); $("btn-jump").textContent = m === "fly" ? "Hoch" : "Sprung";
+}
 $("btn-down").addEventListener("pointerdown", e => { e.preventDefault(); downHeld = true; });
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down").addEventListener(type, () => { downHeld = false; });
 function walkStep(dt) {

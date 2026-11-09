@@ -8,6 +8,7 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   if (walking) walkStep(dt);
   else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (!belowView && camera.position.y < gy) camera.position.y = gy; }
+  syncModeClasses();                                                         // Handy-Knoepfe je nach Modus (Fahrzeug, Boot, The Bat)
   // Unter Wasser: blauer, dichter Nebel (wie im Pool der Villa)
   {
     const cw = walking && !ghost ? waterAt(camera.position.x, camera.position.z) : null, uw = cw !== null && camera.position.y < cw;
