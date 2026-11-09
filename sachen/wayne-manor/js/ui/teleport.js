@@ -21,10 +21,10 @@ function teleportToPoint(p) {
   ];
   // Symbole (24er-Raster, Linien in currentColor; Fahrzeuge in ihrer Farbe)
   const ICONS = {
-    manor: '<path d="M3 21h18M5 21V10l3-3 3 3v11M13 21v-8l3-3 3 3v8M8 3v4M16 6v4M8 14h0M16 16h0" />',
-    cave: '<path d="M2 20c2-9 6-14 10-14s8 5 10 14z" /><path d="M7.5 13c1 .2 1.6.8 1.8 1.6.6-.7 1.6-.9 2.7-.3.9-.7 2.1-.5 2.7.3.2-.8.8-1.4 1.8-1.6-.6 1.5-1.4 2.5-2.6 3-1 .3-1.6 1-1.9 1.7-.3-.7-.9-1.4-1.9-1.7-1.2-.5-2-1.5-2.6-3z" fill="currentColor" stroke="none" />',
-    fall: '<path d="M6 21l3.5-7h-2L11 8H9.5L12 3l2.5 5H13l3.5 6h-2L18 21z" /><path d="M2 21h20M20 6v8M18.5 9v5" />',
-    cross: '<path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke-dasharray="1.5 1.5" />',
+    manor: '<path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /><path d="M16 6V3.5h2V8" />',
+    cave: '<path d="M12 8.5c1 0 1.7.8 1.8 1.7l2-2.7c1.6 1.4 3.6 2 6.2 1.8-1.7 1.4-2.4 3.2-2.1 5.3-1.4-1.3-3.2-1.6-4.9-.9.1 1.5-.8 2.9-3 4.3-2.2-1.4-3.1-2.8-3-4.3-1.7-.7-3.5-.4-4.9.9.3-2.1-.4-3.9-2.1-5.3 2.6.2 4.6-.4 6.2-1.8l2 2.7c.1-.9.8-1.7 1.8-1.7z" fill="currentColor" stroke="none" /><path d="M11 8.6l-.4-1.6M13 8.6l.4-1.6" />',
+    fall: '<path d="M12 2.5c3.5 4.6 6 8 6 11.2a6 6 0 0 1-12 0C6 10.5 8.5 7.1 12 2.5z" /><path d="M9.2 14.2a3 3 0 0 0 2.6 2.8" />',
+    cross: '<path d="M7 21L10 3M17 21L14 3" /><path d="M12 4.5v2.5M12 10v3M12 16.5v3.5" />',
     car: '<path d="M3 15v-3l2-4.5h10l3 4.5 3 .8V15z" fill="currentColor" stroke="none" /><circle cx="7" cy="16" r="2.2" /><circle cx="17" cy="16" r="2.2" />',
     bike: '<circle cx="5.5" cy="16" r="3.2" /><circle cx="18.5" cy="16" r="3.2" /><path d="M5.5 16l4-6h5l4 6M9.5 10l3 6M13 7h3l-1.5 3" />',
     bat: '<path d="M12 7c1.2 0 2 1 2 2l4-1.5c1 2 2.5 3 4 3.5-1.6 1.1-2.4 2.6-2.6 4.5-1-1-2.4-1.4-3.6-1-.5-1.3-1.7-2-3.8-2s-3.3.7-3.8 2c-1.2-.4-2.6 0-3.6 1-.2-1.9-1-3.4-2.6-4.5 1.5-.5 3-1.5 4-3.5L10 9c0-1 .8-2 2-2z" fill="currentColor" stroke="none" />',

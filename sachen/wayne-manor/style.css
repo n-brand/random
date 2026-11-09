@@ -114,3 +114,10 @@ body.touch #car-nitro { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 
 #car-nitro.load span::after { content: " LÄDT"; color: #9fdcff; }
 #tp-menu .tp-veh .tp-ic { width: 34px; height: 24px; padding: 2px 5px; border-radius: 6px; background: rgba(235, 238, 242, .9); }
 #tp-menu .tp-veh .tp-ic svg { filter: none; }
+/* T-Menue passt sich dem Bildschirm an (Nicolas 2026-11-09): Breite und Spalten wachsen mit, Hoehe bleibt im Bild, Schrift skaliert leicht */
+#tp-menu { width: min(calc(100% - 24px), max(560px, 62vw)); max-width: 1180px; max-height: calc(100dvh - 110px); padding: clamp(10px, 1.4vw, 18px); font-size: clamp(.85rem, .78rem + .25vw, 1rem); }
+#tp-menu button { font-size: inherit; }
+#tp-menu .tp-veh { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
+#tp-menu .tp-orte { grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); }
+#tp-menu .tp-orte .tp-ic { width: clamp(36px, 3.4vw, 56px); height: clamp(36px, 3.4vw, 56px); }
+@media (max-height: 520px) { #tp-menu { top: calc(env(safe-area-inset-top, 0px) + 52px); transform: translateX(-50%); max-height: calc(100dvh - 64px); } #tp-menu .tp-orte button { flex-direction: row; justify-content: center; padding: 8px; } #tp-menu .tp-orte .tp-ic { width: 28px; height: 28px; } }
