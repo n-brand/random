@@ -161,7 +161,7 @@ function carStep(dt) {
     if (th > 0) C.v += (C.v < -0.2 ? 16 : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * grip * dt;
     else if (th < 0) C.v -= (C.v > 0.2 ? 16 : 6) * dt;
     else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (2.5 + Math.abs(C.v) * 0.04) * dt);
-    if (boosting) C.v += 16 * dt;
+    if (boosting) C.v += 80 * dt;                                              // Nitro 5-mal so stark (Nicolas 2026-11-09)
     if (C.v > max) C.v = Math.max(max, C.v - (C.slope < -0.05 ? 4 : 14) * dt);   // bergab darf man etwas ueber das Hoechsttempo rollen
     C.v = Math.max(th < 0 ? -8 : -16, C.v);                                     // rueckwaerts den Hang hinunter auch schneller
     // Sprung mit Schub (nur Tumbler: ohne Rampe)
