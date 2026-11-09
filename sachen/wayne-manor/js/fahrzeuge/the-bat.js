@@ -139,7 +139,7 @@ function batPose(B, dt) {
   B.spin += dt * (6 + B.thrust * 30); for (const r of B.rotors) r.rotation.y = B.spin; for (const f of B.fans) f.rotation.z = B.spin * 1.4;
   B.gear.position.y = B.gearT * 0.9; B.gear.visible = B.gearT < 0.97;                                                    // Kufen ein-/ausgefahren
   for (const lg of B.legs) { lg.rotation.y = 0; lg.rotation.z = -lg.userData.sd * 0.45 + B.st * 0.45; }                // Flossen klappen beim Lenken wie Querruder gegenlaeufig hoch/runter, kein Schwenken zur Seite (Nicolas)                                       // Beine schwenken beim Lenken mit (wie Ruder) B.thrustM.emissiveIntensity = B.thrust * 2.2;
-  const pts = [[0, -2.6], [0, 0], [0, 2.6], [0, 5.6]]; B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on ? 0 : 2.0; c[3] = B.y + 2.6; });
+  const pts = [[0, -2.6], [0, 0], [0, 2.6], [0, 5.6]]; B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on || B.landing ? 0 : 2.0; c[3] = B.y + 2.6; });
 }
 function batCamera(B) {
   player.pos.set(B.x, B.y + 0.6, B.z);
@@ -168,7 +168,7 @@ function useFly() {
   }
   if (Math.hypot(p.x - B.x, p.z - B.z) > 5.5 || Math.abs(p.y - B.y) > 3) return false;
   if (world.userData.car) world.userData.car.leave();
-  B.on = true; B.view = 0; keys.clear(); player.yaw = B.h; player.pitch = -0.2;
+  B.on = true; B.landing = null; B.view = 0; keys.clear(); player.yaw = B.h; player.pitch = -0.2;
   toast("The Bat: W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera, E aussteigen (gelandet)");
   engineStart("The Bat"); speedEl.hidden = false; return true;
 }
@@ -219,12 +219,27 @@ function summonBat() {
   if (!walking || ghost) { toast("Zuerst „Begehen“ starten, dann The Bat holen"); return false; }
   const B = FLY, p = player.pos; if (B.on) return toast("Du sitzt schon in The Bat"), false;
   batNear({ x: p.x, z: p.z });
+  // Nicolas 2026-11-09: wenn ueber dir genug Platz ist, erscheint The Bat hoch ueber dir und landet langsam auf dir (danach direkt drin)
+  for (let k = 0; k < 8; k++) for (let dy = 0; dy <= 1.0; dy += 0.2) {                // 8 Ausrichtungen, bis 1 m Unebenheit
+    const h = player.yaw + k * Math.PI / 4, ty = supportAt(new THREE.Vector3(p.x, p.y + 1, p.z), p.y + 1) + 0.02 + dy; let H = 0;
+    if (!batFree(B, p.x, ty, p.z, h)) continue;
+    for (let d = 2; d <= 30; d += 2) { if (!batFree(B, p.x, ty + d, p.z, h)) break; H = d; }
+    if (H >= 8) { Object.assign(B, { x: p.x, y: ty + H, z: p.z, h, vx: 0, vy: 0, vz: 0, gearT: 1, landing: { y: ty } }); batPose(B, 0); engineStart("The Bat"); toast("The Bat landet über dir"); return true; } }
   for (const [r, a] of [[7, 0], [7, Math.PI], [7, Math.PI / 2], [7, -Math.PI / 2], [10, 0], [10, Math.PI]]) {
     const ang = player.yaw + a, x = p.x - Math.sin(ang) * r, z = p.z - Math.cos(ang) * r, h = player.yaw;
     const y = supportAt(new THREE.Vector3(x, p.y + 1, z), p.y + 1);
     if (Math.abs(y - p.y) < 2.5 && batFree(B, x, y + 0.02, z, h)) { Object.assign(B, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, gearT: 0 }); batPose(B, 0); toast("The Bat ist gelandet (E einsteigen)"); return true; }
   }
   toast("Hier ist kein Platz für The Bat"); return false;
+}
+// Landeanflug nach dem Holen (siehe summonBat): sinkt langsam (zum Schluss sanfter), Kufen fahren aus; steht der Spieler darunter, sitzt er danach drin
+function batLandStep(dt) {
+  const B = FLY, L = B.landing; if (!L) return;
+  B.y = Math.max(L.y, B.y - Math.min(7, 0.8 + (B.y - L.y) * 0.7) * dt); B.thrust = 0.5; if (B.y - L.y < 4) B.gearT = Math.max(0, B.gearT - dt * 1.3);
+  batPose(B, dt);
+  if (B.y > L.y + 1e-3) return;
+  B.landing = null; B.gearT = 0; B.thrust = 0; batPose(B, 0); engineStop();
+  if (!useFly()) toast("The Bat ist gelandet (E einsteigen)");
 }
 batPose(FLY, 0);
 // Verlassen (Esc, Geist, anderes Fahrzeug) setzt auch The Bat ab: bleibt, wo sie ist

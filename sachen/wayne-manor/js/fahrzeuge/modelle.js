@@ -206,39 +206,45 @@ function buildBatpod() {
 const sideBox = (g, xa, xb, y0, y1, z0, z1, m) => boxIn(g, Math.min(xa, xb), Math.max(xa, xb), y0, y1, z0, z1, m);
 // Quader aus Mittelpunkt und Groesse (x quer, y hoch, z hinten), optional um die Querachse geneigt
 const boxAt = (g, sx, sy, sz, m, x, y, z, rx = 0) => meshIn(g, new THREE.BoxGeometry(sx, sy, sz), m, x, y, z, rx);
-// ---- Mercedes-Benz G-Klasse (Nicolas 2026-11-09, neu aufgebaut): kantiger Gelaendewagen, Kastenaufbau bis zum Heck, steile Frontscheibe,
-// Seitenwaende mit Radlaeufen, aufgesetzte Kotfluegelverbreiterungen, runde Scheinwerfer, Reserverad an der Hecktuer
+// ---- Mercedes-Benz G-Klasse (Nicolas 2026-11-09, nach Seiten- und Frontfoto; stilisiert, ohne Stern): Kastenaufbau, hohe gerade Haube (Gurtlinie
+// 1,22 m), drei Seitenfenster mit Saeulen, Tuerfugen, Zierleiste, aufgesetzte schwarze Kotfluegelverbreiterungen, runde Scheinwerfer mit Chromring,
+// Blinker oben auf den Kotfluegeln, Grill mit senkrechten Streben, Trittbretter, Reserverad mit Chromdeckel. 4,66 x 1,86 x 2,0 m, Raeder r 0,43
 function buildGClass(col = 0x17191c) {
   const g = new THREE.Group();
-  const paint = M(col, { metalness: 0.55, roughness: 0.3, flatShading: true }), dark = M(0x101113, { roughness: 0.75, flatShading: true }), trim = M(0x1c1e21, { roughness: 0.7, flatShading: true });
-  const chrome = M(0xd5d8dc, { metalness: 0.9, roughness: 0.2 }), glass = M(0x080d14, { metalness: 0.65, roughness: 0.12 }), tireM = M(0x111111, { roughness: 0.95 }), rimM = M(0xb6bac0, { metalness: 0.85, roughness: 0.22 });
-  const arch = c => [[c + 0.58, 0.45], [c + 0.55, 0.72], [c + 0.4, 0.93], [c, 1.03], [c - 0.4, 0.93], [c - 0.55, 0.72], [c - 0.58, 0.45]];   // Radlauf im Profil (vorne = +f)
-  boxIn(g, -0.78, 0.78, 0.42, 1.06, -2.3, 2.3, paint);                                                                    // Rumpf (innen, zwischen den Raedern)
-  boxIn(g, -0.92, 0.92, 1.04, 2.0, -0.95, 2.3, paint);                                                                    // Kastenaufbau bis zum Heck
-  boxIn(g, -0.92, 0.92, 0.98, 1.08, -2.3, -0.95, paint);                                                                  // Haube
+  const paint = M(col, { metalness: 0.55, roughness: 0.3, flatShading: true }), dark = M(0x0e0f11, { roughness: 0.75, flatShading: true }), trim = M(0x1b1d20, { roughness: 0.7, flatShading: true });
+  const chrome = M(0xd5d8dc, { metalness: 0.9, roughness: 0.2 }), glass = M(0x0b1018, { metalness: 0.6, roughness: 0.1 }), amber = M(0xf0b060, { roughness: 0.4, emissive: 0x3a2000 });
+  const tireM = M(0x111111, { roughness: 0.95 }), rimM = M(0xb6bac0, { metalness: 0.85, roughness: 0.22 }), R = 0.43;
+  const arch = c => [[c - R - 0.13, 0.47], [c - R - 0.1, R + 0.2], [c - R * 0.6, 2 * R + 0.07], [c + R * 0.6, 2 * R + 0.07], [c + R + 0.1, R + 0.2], [c + R + 0.13, 0.47]];   // Radlauf (Profil nach vorne)
+  boxIn(g, -0.78, 0.78, 0.45, 1.22, -2.3, 2.3, paint);                                                                    // Rumpf (innen)
+  boxIn(g, -0.93, 0.93, 1.2, 1.98, -0.9, 2.3, paint);                                                                     // Kastenaufbau
+  boxIn(g, -0.76, 0.76, 1.2, 1.25, -2.27, -0.9, paint);                                                                   // Haube (leicht erhoeht)
   for (const sd of [-1, 1]) {
-    prismIn(g, [[2.3, 0.45], [2.3, 1.06], [-2.3, 1.06], [-2.3, 0.45], ...arch(-1.45).reverse(), ...arch(1.45).reverse()], 0.14, paint, sd * 0.85);   // Seitenwand mit Radlaeufen
-    for (const c of [-1.45, 1.45]) prismIn(g, [[c + 0.66, 0.5], [c + 0.64, 0.78], [c + 0.46, 1.1], [c - 0.46, 1.1], [c - 0.64, 0.78], [c - 0.66, 0.5], [c - 0.58, 0.5], [c - 0.55, 0.74], [c - 0.4, 1.0],
-      [c + 0.4, 1.0], [c + 0.55, 0.74], [c + 0.58, 0.5]], 0.2, trim, sd * 1.02);                                             // Kotfluegelverbreiterung
-    sideBox(g, sd * 0.92, sd * 0.93, 1.22, 1.86, -0.82, 0.12, glass); sideBox(g, sd * 0.92, sd * 0.93, 1.22, 1.86, 0.28, 1.22, glass); sideBox(g, sd * 0.92, sd * 0.93, 1.3, 1.86, 1.4, 2.12, glass);   // Seitenscheiben
-    sideBox(g, sd * 0.92, sd * 0.935, 1.1, 1.13, -0.95, 2.3, chrome);                                                     // Zierleiste
-    for (const z of [-0.2, 1.05]) sideBox(g, sd * 0.92, sd * 0.945, 1.18, 1.22, z, z + 0.16, chrome);                     // Tuergriffe
-    sideBox(g, sd * 0.92, sd * 1.12, 1.45, 1.62, -0.93, -0.8, dark);                                                      // Spiegel an der A-Saeule
-    sideBox(g, sd * 0.9, sd * 1.1, 0.38, 0.45, -0.88, 0.88, chrome);                                                      // Trittbrett
-    sideBox(g, sd * 0.86, sd * 0.94, 2.0, 2.05, -0.95, 2.3, chrome);                                                      // Dachreling
-    meshIn(g, new THREE.CylinderGeometry(0.13, 0.13, 0.06, 18), mat.glow, sd * 0.68, 0.82, -2.32, Math.PI / 2);           // runde Scheinwerfer
-    meshIn(g, new THREE.TorusGeometry(0.135, 0.02, 6, 18), chrome, sd * 0.68, 0.82, -2.35);
-    sideBox(g, sd * 0.74, sd * 0.9, 1.08, 1.13, -2.28, -2.12, mat.glow);                                                  // Blinker oben auf dem Kotfluegel
-    sideBox(g, sd * 0.62, sd * 0.88, 0.75, 1.15, 2.3, 2.33, mat.glowRed);                                                 // Rueckleuchten
+    prismIn(g, [[2.3, 0.47], [2.3, 1.22], [-2.3, 1.22], [-2.3, 0.47], ...arch(-1.45), ...arch(1.45)], 0.15, paint, sd * 0.855);   // Seitenwand mit Radlaeufen
+    for (const c of [-1.45, 1.45]) prismIn(g, [[c + R + 0.24, 0.52], [c + R + 0.2, R + 0.24], [c + R * 0.62, 2 * R + 0.16], [c - R * 0.62, 2 * R + 0.16], [c - R - 0.2, R + 0.24], [c - R - 0.24, 0.52],
+      [c - R - 0.14, 0.52], [c - R - 0.1, R + 0.2], [c - R * 0.6, 2 * R + 0.07], [c + R * 0.6, 2 * R + 0.07], [c + R + 0.1, R + 0.2], [c + R + 0.14, 0.52]], 0.16, trim, sd * 0.99);   // Kotfluegelverbreiterung
+    sideBox(g, sd * 0.76, sd * 0.93, 1.12, 1.23, -2.3, -0.9, paint);                                                     // Kotfluegel vorne (Kante)
+    for (const [z0, z1] of [[-0.78, 0.12], [0.3, 1.18], [1.36, 2.16]]) sideBox(g, sd * 0.93, sd * 0.94, 1.32, 1.9, z0, z1, glass);   // drei Seitenfenster
+    for (const z of [-0.88, 0.2, 1.26]) sideBox(g, sd * 0.93, sd * 0.935, 0.52, 1.96, z, z + 0.02, dark);               // Tuerfugen
+    sideBox(g, sd * 0.93, sd * 0.945, 1.06, 1.09, -2.25, 2.28, chrome);                                                  // Zierleiste
+    for (const z of [0.0, 1.06]) sideBox(g, sd * 0.93, sd * 0.955, 1.15, 1.19, z, z + 0.15, chrome);                    // Tuergriffe
+    sideBox(g, sd * 0.93, sd * 1.13, 1.42, 1.56, -0.86, -0.74, paint);                                                  // Spiegel
+    sideBox(g, sd * 0.88, sd * 1.06, 0.37, 0.43, -0.85, 0.95, dark);                                                    // Trittbrett
+    sideBox(g, sd * 0.86, sd * 0.95, 1.98, 2.03, -0.9, 2.3, chrome);                                                    // Dachrinne
+    meshIn(g, new THREE.CylinderGeometry(0.15, 0.15, 0.05, 20), mat.glow, sd * 0.64, 0.97, -2.33, Math.PI / 2);         // runde Scheinwerfer
+    meshIn(g, new THREE.TorusGeometry(0.16, 0.025, 8, 24), chrome, sd * 0.64, 0.97, -2.355);
+    sideBox(g, sd * 0.8, sd * 0.9, 1.23, 1.29, -2.26, -2.12, amber);                                                     // Blinker oben auf dem Kotfluegel
+    sideBox(g, sd * 0.7, sd * 0.86, 0.82, 1.18, 2.3, 2.33, mat.glowRed);                                                // Rueckleuchten (hochkant)
   }
-  boxIn(g, -0.8, 0.8, 1.12, 1.88, -0.98, -0.95, glass); boxIn(g, -0.6, 0.6, 1.3, 1.86, 2.3, 2.33, glass);                 // Front-, Heckscheibe
-  boxIn(g, -0.93, 0.93, 2.0, 2.04, -0.98, 2.32, dark);                                                                    // Dach
-  boxIn(g, -0.5, 0.5, 0.58, 1.0, -2.33, -2.3, dark); for (let x = -0.4; x <= 0.41; x += 0.2) boxIn(g, x - 0.02, x + 0.02, 0.6, 0.98, -2.345, -2.33, chrome);   // Grill mit Streben
-  meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.03, 16), chrome, 0, 0.79, -2.36, Math.PI / 2);                        // rundes Emblem
-  boxIn(g, -1.0, 1.0, 0.36, 0.56, -2.46, -2.3, dark); boxIn(g, -1.0, 1.0, 0.36, 0.56, 2.3, 2.46, dark);                  // Stossfaenger
-  meshIn(g, new THREE.TorusGeometry(0.4, 0.13, 10, 24), tireM, 0, 1.3, 2.46); meshIn(g, new THREE.CylinderGeometry(0.28, 0.28, 0.14, 12), rimM, 0, 1.3, 2.42, Math.PI / 2);   // Reserverad
+  boxIn(g, -0.8, 0.8, 1.28, 1.92, -0.93, -0.9, glass); boxIn(g, -0.62, 0.62, 1.34, 1.88, 2.3, 2.33, glass);              // Front-, Heckscheibe
+  boxIn(g, -0.94, 0.94, 1.98, 2.02, -0.92, 2.31, dark);                                                                   // Dach
+  boxIn(g, -0.44, 0.44, 0.7, 1.13, -2.33, -2.3, dark); for (let x = -0.36; x <= 0.37; x += 0.12) boxIn(g, x - 0.018, x + 0.018, 0.73, 1.1, -2.345, -2.33, chrome);   // Grill mit Streben
+  meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, 0.03, 18), chrome, 0, 0.92, -2.36, Math.PI / 2);                      // rundes Emblem
+  boxIn(g, -1.0, 1.0, 0.43, 0.68, -2.46, -2.28, dark); boxIn(g, -0.45, 0.45, 0.45, 0.53, -2.48, -2.4, chrome);             // Stossfaenger vorne, Unterfahrschutz
+  boxIn(g, -1.0, 1.0, 0.43, 0.66, 2.28, 2.44, dark);                                                                      // Stossfaenger hinten
+  meshIn(g, new THREE.TorusGeometry(0.37, 0.12, 10, 28), tireM, 0, 1.3, 2.46); meshIn(g, new THREE.CylinderGeometry(0.38, 0.38, 0.14, 28), chrome, 0, 1.3, 2.48, Math.PI / 2);   // Reserverad mit Chromdeckel
+  boxIn(g, -0.86, 0.86, 0.28, 0.45, -1.9, 1.9, dark);                                                                     // Unterboden
   mergeStatic(g);
-  const wheels = [[-0.94, -1.45, true], [0.94, -1.45, true], [-0.94, 1.45, false], [0.94, 1.45, false]].map(([x, z, f]) => addWheel(g, x, z, 0.49, 0.32, f, tireM, rimM, 0, 24));
+  const wheels = [[-0.94, -1.45, true], [0.94, -1.45, true], [-0.94, 1.45, false], [0.94, 1.45, false]].map(([x, z, f]) => addWheel(g, x, z, R, 0.3, f, tireM, rimM, 0, 24));
   return { g, wheels };
 }
 // ---- Gemini Concept GT (Nicolas 2026-11-09, Entwurf von Gemini): flacher Sportwagen, Glaskanzel, blaue Felgen, Splitter und Spoiler ----
@@ -408,7 +414,7 @@ const SPEC_AVENTADOR = { name: "Aventador LP 700-4", wheels: [[-0.84, -1.35], [0
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Aventador LP 700-4: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.94, -1.45], [0.94, -1.45], [-0.94, 1.45], [0.94, 1.45]], wb: 2.9, track: 1.88, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
-  maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [-0.42, 1.5, 0.15], bodyH: 2.1, bike: false,
+  maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [-0.42, 1.55, 0.15], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Mercedes-Benz G-Klasse: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_GEMINI = { name: "Gemini Concept GT", wheels: [[-0.92, -1.5], [0.92, -1.5], [-0.92, 1.5], [0.92, 1.5]], wb: 3.0, track: 1.84, pts: [-1.6, 0, 1.6], R: 1.1, circR: 1.05, enter: 3.8,

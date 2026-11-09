@@ -174,6 +174,7 @@ function walkStep(dt) {
   if (ghost) return ghostStep(dt);
   if (BOAT.on) return boatStep(dt);
   if (FLY.on) return flyStep(dt);
+  if (FLY.landing) batLandStep(dt);                                       // The Bat landet nach dem Holen (siehe the-bat.js)
   if (CAR.on) return carStep(dt);
   let mx = 0, mz = 0;
   if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1;
