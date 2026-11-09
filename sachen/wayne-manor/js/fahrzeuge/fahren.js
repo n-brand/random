@@ -132,16 +132,19 @@ function carStep(dt) {
   th -= moveStick.y; st -= moveStick.x;
   C.throttle = th > 0.1 ? 1 : 0;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-  // Nitro (Nachtfalke, Nicolas 2026-11-09: statt Sprung): Leertaste halten = Schub aus der Duese, ca. 4 s Vorrat, laedt in 8 s nach (ab 35 % wieder frei)
-  if (C.boostE === undefined) C.boostE = 1;
-  const boosting = !!sp.boost && (player.jump || jumpHeld) && !C.air && !C.wet && th >= 0 && !C.boostLock;
+  // Nitro (Nachtfalke, Nicolas 2026-11-09: statt Sprung): Leertaste halten = Schub aus der Duese, die Leiste leert sich (ca. 4 s Vorrat);
+  // nach dem Loslassen 2 s Pause, dann laedt sie Stueck fuer Stueck nach (alle 0,6 s ein Zehntel)
+  if (C.boostE === undefined) { C.boostE = 1; C.boostT = 0; }
+  const boosting = !!sp.boost && (player.jump || jumpHeld) && !C.air && !C.wet && th >= 0 && C.boostE > 0;
   if (sp.boost) {
     if (boosting && !C.boostOn) engineJet();
-    C.boostOn = boosting; C.boostE = clamp01(C.boostE + (boosting ? -dt / 4 : dt / 8));
-    if (C.boostE <= 0) C.boostLock = true; else if (C.boostE >= 0.35) C.boostLock = false;
-    if (boosting) C.jet = Math.max(C.jet, 0.5); else if (player.jump && C.boostLock) carMsg("Nitro lädt nach");
+    C.boostOn = boosting;
+    if (boosting) { C.boostE = Math.max(0, C.boostE - dt / 4); C.boostT = -2; C.jet = Math.max(C.jet, 0.5); }
+    else if (C.boostE < 1) { C.boostT += dt; if (C.boostT >= 0.6) { C.boostT -= 0.6; C.boostE = Math.min(1, Math.floor(C.boostE * 10 + 1e-6) / 10 + 0.1); } }
+    C.boostLock = C.boostE <= 0;
+    if (player.jump && C.boostE <= 0) carMsg("Nitro leer – lädt nach");
   }
-  const max = C.wet ? 0.3 : sp.maxF + (boosting ? 22 : 0);   // nur W beschleunigt bis zum Hoechsttempo, kein Shift (Nicolas 2026-11-09); im Wasser steckt man fest (R setzt zurueck)
+  const max = C.wet ? 0.3 : sp.maxF + (boosting ? 40 / 3.6 : 0);   // Nitro: 40 km/h ueber dem Hoechsttempo ; sonst nur W bis zum Hoechsttempo, im Wasser steckt man fest
   // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
   const steerT = st * sp.steer / (1 + Math.abs(C.v) / 14);   // bei Tempo etwas williger (Serpentine r 11 mit ca. 40 km/h)
   C.steer += (steerT - C.steer) * Math.min(1, dt * 8);
@@ -154,14 +157,14 @@ function carStep(dt) {
     const hx = -Math.sin(C.h), hz = -Math.cos(C.h), gF = carSlopeG(C.x + hx * 1.2, C.z + hz * 1.2, C.y), gB = carSlopeG(C.x - hx * 1.2, C.z - hz * 1.2, C.y);
     const onTerrain = gF > -50 && gB > -50 && Math.abs(gF - C.y) < 2 && Math.abs(gB - C.y) < 2;
     const slope = onTerrain ? Math.atan2(gF - gB, 2.4) : 0, maxG = (sp.grade || 40) * Math.PI / 180;
-    const grip = th > 0 && slope > 0 ? clamp01((maxG - slope) / 0.14) : 1;   // 8 Grad Uebergang bis zum Durchdrehen
+    const grip = boosting ? 1 : th > 0 && slope > 0 ? clamp01((maxG - slope) / 0.14) : 1;   // 8 Grad Uebergang bis zum Durchdrehen
     const held = th === 0 && Math.abs(C.v) < 0.6 && slope < maxG;            // Stillstand ohne Gas: Bremse haelt
     if (held) C.v = 0; else C.v -= SLOPE_G * Math.sin(slope) * dt;
     C.slope = slope;
     if (th > 0) C.v += (C.v < -0.2 ? 16 : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * grip * dt;
     else if (th < 0) C.v -= (C.v > 0.2 ? 16 : 6) * dt;
     else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (2.5 + Math.abs(C.v) * 0.04) * dt);
-    if (boosting) C.v += 80 * dt;                                              // Nitro 5-mal so stark (Nicolas 2026-11-09)
+    if (boosting && C.v < max) C.v = Math.min(max, C.v + 80 * dt);                                            // Nitro 5-mal so stark (Nicolas 2026-11-09)
     if (C.v > max) C.v = Math.max(max, C.v - (C.slope < -0.05 ? 4 : 14) * dt);   // bergab darf man etwas ueber das Hoechsttempo rollen
     C.v = Math.max(th < 0 ? -8 : -16, C.v);                                     // rueckwaerts den Hang hinunter auch schneller
     // Sprung mit Schub (nur Tumbler: ohne Rampe)
@@ -185,7 +188,7 @@ function carStep(dt) {
   const moved = Math.hypot(nx - x0, nz - z0);
   if (!C.air) {
     const g0 = carSlopeG(x0, z0, C.y), g1 = carSlopeG(nx, nz, C.y);
-    if (moved > 1e-6 && g1 - g0 > WALL_TAN * moved && C.y < g0 + 0.3) {
+    if (!boosting && moved > 1e-6 && g1 - g0 > WALL_TAN * moved && C.y < g0 + 0.3) {   // mit Nitro kommt man jede Gelaendewand hoch
       // Echte Wand (ueber ca. 65 Grad): nicht hart stoppen, sondern entlang der Hoehenlinie abgleiten (Anteil bergauf entfernen)
       const e = 0.4, gx = carSlopeG(x0 + e, z0, C.y) - carSlopeG(x0 - e, z0, C.y), gz = carSlopeG(x0, z0 + e, C.y) - carSlopeG(x0, z0 - e, C.y), gl = Math.hypot(gx, gz);
       let mx = nx - x0, mz = nz - z0;

@@ -14,18 +14,23 @@ function teleportToPoint(p) {
 // TEST: Teleport-Ziele zum Testen (wird ganz am Ende entfernt). [Name, x, y, z, Blickrichtung]
 {
   const cm = (px, py) => caveMp(px, py), W = Math.PI / 2, E = -Math.PI / 2, N = 0, S = Math.PI;
+  // Nicolas 2026-11-09: nur noch vier Orte, jeder mit Symbol (Bilder erkennt man schneller als Text). [Name, x, y, z, Blick, Symbol]
   const TP = [
-    ["Rondell (vor dem Haus)", 18, 0, 0, W], ["Halle EG", -30, FL0, 0, W], ["Aufzug EG", -49, FL0, SHAFT.cz, W], ["1. Obergeschoss", -45, FL1, 3, W],
-    ["Dach / 2. OG", -45, TF, SHAFT.cz, E], ["Theater", -44, TF, 10, N], ["Observatorium", -40, TF2, 0, N], ["Landeplatz", -18, HP, 42, W],
-    ["Veranda", DOORS[1].a0 + 2, 0.42, -33, N], ["Labyrinth (Eingang Süd)", DOORS[1].a0 + 2, 0, -41, N], ["Pool", -12, 0, 70, N], ["Tennis/Basketball", -45, 0, 66, S],
-    ["Tiefgarage", -28, GY, 32.7, E],
-    ["Höhle unten: Drehplattform", -32, LY, 12.5, W], ["Höhle unten: Batcomputer", -50, LY, -6, W],
-    ["Höhle unten: Anlegestelle (Weg)", ...(([x, z]) => [x, LY, z])(cm(340, 485)), E], ["Höhle unten: Steg", ...(([x, z]) => [x, SEA_Y + 0.5, z])(cm(300, 507)), E], ["Tunnel Süd (Gotham Exit)", ...(([x, z]) => [x, LY, z])(cm(40, 453)), N],
-    ["Tunnel Nord (Waterfall Exit)", ...(([x, z]) => [x, LY, z])(cm(690, 482)), S],
-    ["Höhle oben: Forschung", ...(([x, z]) => [x - 4, UY, z])(cm(382, 422)), E], ["Höhle oben: Hangar", ...(([x, z]) => [x, UY, z])(cm(270, 420)), W], ["Höhle oben: Vorraum Treppe", -46, UY, 18, E],
-    ["Höhle oben: Training", ...(([x, z]) => [x, UY, z])(cm(500, 478)), N],
-    ["Klippe über der Meereshöhle", 100, 0, 96, -3 * Math.PI / 4], ["Wasserfall-Teich", -127, 0, -160, N], ["Wasserfall oben (Bach)", -88, 0, -184, W], ["Plateau Nord (Wald)", -55, 0, -180, N], ["Serpentine oben (Rondell)", 20, 0, 0, E], ["Serpentine unten (Hangfuss)", 106, 0, 2, W], ["Einfahrtstor (aussen)", GATE_C[0] + 11 * GATE_U[0], 0, GATE_C[1] + 11 * GATE_U[1], Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Kreuzung)", MAIN_J[0] + 6, 0, MAIN_J[1] - 4, Math.atan2(GATE_U[0], GATE_U[1])], ["Hauptstrasse (Südwest-Ende)", -58, 0, 196, Math.PI * 0.8], ["Autoaufzug (Garage)", -31, GY, 38.25, W], ["Hangfuss-Platz (Felstor)", -68, 0, 38.25, E], ["Auto Repair (Geheimgang)", -42, LY, 29.5, N], ["Waterfall Exit (Tunnel unten)", -25.8, LY, -42, N], ["Waterfall Exit (Tunnel Mitte)", ...(() => { const p = WFT.curve.getPointAt(WFT.sP / 2 / WFT.len), t = WFT.curve.getTangentAt(WFT.sP / 2 / WFT.len); return [p.x, WFT.y(WFT.sP / 2), p.z, Math.atan2(-t.x, -t.z)]; })()], ["Waterfall Exit (aussen, Westufer)", -134, 0, -186.4, E], ["Felswand West (oben)", -98, 0, -185, W]
+    ["Wayne Manor", 18, 0, 0, W, "manor"], ["Batcave", -50, LY, -6, W, "cave"], ["Wald am Wasserfall", -127, 0, -160, N, "fall"],
+    ["Kreuzung", MAIN_J[0] + 6, 0, MAIN_J[1] - 4, Math.atan2(GATE_U[0], GATE_U[1]), "cross"]
   ];
+  // Symbole (24er-Raster, Linien in currentColor; Fahrzeuge in ihrer Farbe)
+  const ICONS = {
+    manor: '<path d="M3 21h18M5 21V10l3-3 3 3v11M13 21v-8l3-3 3 3v8M8 3v4M16 6v4M8 14h0M16 16h0" />',
+    cave: '<path d="M2 20c2-9 6-14 10-14s8 5 10 14z" /><path d="M7.5 13c1 .2 1.6.8 1.8 1.6.6-.7 1.6-.9 2.7-.3.9-.7 2.1-.5 2.7.3.2-.8.8-1.4 1.8-1.6-.6 1.5-1.4 2.5-2.6 3-1 .3-1.6 1-1.9 1.7-.3-.7-.9-1.4-1.9-1.7-1.2-.5-2-1.5-2.6-3z" fill="currentColor" stroke="none" />',
+    fall: '<path d="M6 21l3.5-7h-2L11 8H9.5L12 3l2.5 5H13l3.5 6h-2L18 21z" /><path d="M2 21h20M20 6v8M18.5 9v5" />',
+    cross: '<path d="M9 3v6H3M15 3v6h6M9 21v-6H3M15 21v-6h6" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke-dasharray="1.5 1.5" />',
+    car: '<path d="M3 15v-3l2-4.5h10l3 4.5 3 .8V15z" fill="currentColor" stroke="none" /><circle cx="7" cy="16" r="2.2" /><circle cx="17" cy="16" r="2.2" />',
+    bike: '<circle cx="5.5" cy="16" r="3.2" /><circle cx="18.5" cy="16" r="3.2" /><path d="M5.5 16l4-6h5l4 6M9.5 10l3 6M13 7h3l-1.5 3" />',
+    bat: '<path d="M12 7c1.2 0 2 1 2 2l4-1.5c1 2 2.5 3 4 3.5-1.6 1.1-2.4 2.6-2.6 4.5-1-1-2.4-1.4-3.6-1-.5-1.3-1.7-2-3.8-2s-3.3.7-3.8 2c-1.2-.4-2.6 0-3.6 1-.2-1.9-1-3.4-2.6-4.5 1.5-.5 3-1.5 4-3.5L10 9c0-1 .8-2 2-2z" fill="currentColor" stroke="none" />',
+  };
+  const icon = (k, col) => { const sp = document.createElement("span"); sp.className = "tp-ic"; if (col) sp.style.color = col;
+    sp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k] + "</svg>"; return sp; };
   for (const t of TP) if (t[2] > -6 && plateauH(t[1], t[3]) > HILL - 0.5) t[2] += HILL;   // Ziele auf dem Plateau (A2)
   const sel = $("teleport"), menu = $("tp-menu"), list = menu.querySelector(".tp-orte"), dOrte = $("tp-orte"), dVeh = $("tp-veh");
   dOrte.addEventListener("toggle", () => { if (dOrte.open) dVeh.open = false; });   // immer nur ein Bereich offen
@@ -40,9 +45,9 @@ function teleportToPoint(p) {
     updatePlayer(0.001, 0, 0, false);
     toast("Teleport: " + t[0]);
   }
-  TP.forEach(([name], i) => {
+  TP.forEach(([name, , , , , ic], i) => {
     const o = document.createElement("option"); o.value = String(i); o.textContent = name; sel.appendChild(o);
-    const b = document.createElement("button"); b.type = "button"; b.textContent = name; b.addEventListener("click", () => { closeTp(); teleportTo(i); }); list.appendChild(b);
+    const b = document.createElement("button"); b.type = "button"; b.append(icon(ic), name); b.addEventListener("click", () => { closeTp(); teleportTo(i); }); list.appendChild(b);
   });
   const vehList = menu.querySelector(".tp-veh"), vehGroup = document.createElement("optgroup"); vehGroup.label = "Fahrzeuge"; sel.appendChild(vehGroup);
   function fillVehicles() {
@@ -50,12 +55,12 @@ function teleportToPoint(p) {
     vehList.textContent = ""; vehGroup.textContent = "";
     vs.forEach((v, i) => {
       const b = document.createElement("button"); b.type = "button";
-      const dot = document.createElement("i"); dot.style.background = "#" + v.color.toString(16).padStart(6, "0"); b.append(dot, v.label);
+      const col = "#" + v.color.toString(16).padStart(6, "0"); b.append(icon(v.spec.bike ? "bike" : "car", col), v.label);
       b.addEventListener("click", () => { closeTp(); summonVehicle(v); }); vehList.appendChild(b);
       const o = document.createElement("option"); o.value = "v" + i; o.textContent = v.label; vehGroup.appendChild(o);
     });
     if (typeof FLY !== "undefined") {                                         // Fluggeraet The Bat (eigenes System, siehe the-bat.js)
-      const b = document.createElement("button"); b.type = "button"; const dot = document.createElement("i"); dot.style.background = "#2c2e33"; b.append(dot, "The Bat (Batwing)");
+      const b = document.createElement("button"); b.type = "button"; b.append(icon("bat", "#3a3d44"), "The Bat (Batwing)");
       b.addEventListener("click", () => { closeTp(); summonBat(); }); vehList.appendChild(b);
       const o = document.createElement("option"); o.value = "vbat"; o.textContent = "The Bat (Batwing)"; vehGroup.appendChild(o);
     }
