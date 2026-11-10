@@ -552,7 +552,7 @@ function buildSpectre(col = 0xd2aa3c) {
   const wellM = M(0x0c0d0f, { roughness: 0.9, side: THREE.DoubleSide });                                                          // Radhaeuser (Nicolas: man sah hinter den Reifen durch)
   for (const z of [-1.72, 1.6]) for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(R + 0.08, R + 0.08, 0.3, 28, 1, true, -0.3, Math.PI + 0.6).rotateZ(Math.PI / 2), wellM, sd * 0.71, R, z);   // schmaler, bleibt hinter der Karosserie (Nicolas: von aussen sichtbar)
     meshIn(g, new THREE.CircleGeometry(R + 0.08, 28, -0.3, Math.PI + 0.6).rotateY(Math.PI / 2), wellM, sd * 0.56, R, z); }
-  for (const z of [-1.72, 1.6]) boxIn(g, -0.56, 0.56, 0.05, 2 * R + 0.06, z - R - 0.06, z + R + 0.06, dark);   // dunkler Block zwischen den Raedern wie beim Polizeiauto: man sieht nicht unter das Auto (Nicolas)
+  for (const z of [-1.72, 1.6]) boxIn(g, -0.72, 0.72, 0.19, 2 * R + 0.08, z - R - 0.17, z + R + 0.17, dark);   // Wand hinter jedem Rad ab Wagenboden, ueber den ganzen Radlauf: kein Durchblick (Nicolas)
   mergeStatic(g);
   const wheels = [[-0.9, -1.72, true], [0.9, -1.72, true], [-0.9, 1.6, false], [0.9, 1.6, false]].map(([x, z, f]) => addWheel(g, x, z, R, 0.3, f, tireM, rimM, 0, 28));
   // Felgen-Design (Nicolas, Foto): dunkle Scheibe mit sieben breiten hellen Speichen als geschwungene Blaetter, dunkle Nabe mit Silberring, aussen
