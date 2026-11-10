@@ -513,7 +513,7 @@ function buildSpectre(col = 0xd2aa3c) {
   const hw = tabF([[2.6, 0.7], [2.44, 0.87], [2.1, 0.96], [1.7, 1.0], [0.9, 0.99], [0, 0.98], [-0.9, 1.0], [-1.6, 1.03], [-2.2, 1.0], [-2.55, 0.95], [-2.74, 0.84]]);
   const yT = tabF([[2.6, 0.9], [2.35, 1.02], [1.7, 1.13], [0.8, 1.2], [0, 1.22], [-1.2, 1.23], [-2.3, 1.23], [-2.6, 1.19], [-2.74, 1.04]]);   // Nicolas: mehr Volumen ueber dem Vorderrad und hinter dem Hinterrad
   const body = [], cap = []; for (let f = 2.6; f > -2.75; f -= 0.08) { const ff = Math.max(-2.74, f), yb = ff > 2.45 || ff < -2.6 ? 0.26 : Math.max(0.28, arch(ff)), hs = hw(ff), yt = yT(ff), ye = yt - 0.03, ys = Math.max(yb + 0.05, Math.min(ye - 0.14, 0.62));
-    body.push([ff, [[0, yb], [hs - 0.1, yb], [hs, ys], [hs - 0.12, ye], [0, yt]]]); if ((ff > 0.78 && ff < 2.54) || (ff < -2.0 && ff > -2.7)) cap.push([ff, [[0, yt - 0.01], [hs - 0.17, yt - 0.01], [hs - 0.17, yt + 0.012], [0, yt + 0.016]]]); }
+    body.push([ff, [[0, yb], [hs - 0.1, yb], [hs, ys], [hs - 0.12, ye], [0, yt]]]); if ((ff > 0.78 && ff < 2.54) || (ff < -2.0 && ff > -2.7)) { const cw = ff < 0 ? 0.6 : hs - 0.17; cap.push([ff, [[0, yt - 0.01], [cw, yt - 0.01], [cw, yt + 0.012], [0, yt + 0.016]]]); } }   // Heckdeckel so schmal wie das Dach, die Schultern bleiben gold (Nicolas)
   loftIn(g, body, paint);                                                                                                      // Karosserie gold
   loftIn(g, cap, black);                                                                                                       // Haube und Heckdeckel schwarz (Nicolas: Heck wie Foto)
   const roofY = tabF([[0.8, 1.19], [0.5, 1.38], [0.1, 1.53], [-0.5, 1.55], [-1.2, 1.46], [-1.9, 1.32], [-2.55, 1.21]]), gh = [], ws = [];
@@ -539,6 +539,9 @@ function buildSpectre(col = 0xd2aa3c) {
   meshIn(g, new THREE.ConeGeometry(0.035, 0.13, 6), chrome, 0, 0.97, -2.45);                                                 // Kuehlerfigur (stilisiert)
   boxIn(g, -0.8, 0.8, 0.26, 0.42, -2.62, -2.5, dark); boxIn(g, -0.62, 0.62, 0.43, 0.45, -2.63, -2.58, chrome);             // Lufteinlass, Zierleiste
   boxIn(g, -0.78, 0.78, 0.24, 0.34, 2.62, 2.76, dark); boxIn(g, -0.7, 0.7, 0.35, 0.37, 2.66, 2.77, chrome); boxIn(g, -0.22, 0.22, 0.62, 0.7, 2.745, 2.76, dark);   // Diffusor, Chromleiste, Kennzeichenfeld (leer)                                                                     // Heckschuerze
+  const wellM = M(0x0c0d0f, { roughness: 0.9, side: THREE.DoubleSide });                                                          // Radhaeuser (Nicolas: man sah hinter den Reifen durch)
+  for (const z of [-1.72, 1.6]) for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(R + 0.1, R + 0.1, 0.46, 28, 1, true, -0.3, Math.PI + 0.6).rotateZ(Math.PI / 2), wellM, sd * 0.79, R, z);
+    meshIn(g, new THREE.CircleGeometry(R + 0.1, 28, -0.3, Math.PI + 0.6).rotateY(Math.PI / 2), wellM, sd * 0.56, R, z); }
   mergeStatic(g);
   const wheels = [[-0.9, -1.72, true], [0.9, -1.72, true], [-0.9, 1.6, false], [0.9, 1.6, false]].map(([x, z, f]) => addWheel(g, x, z, R, 0.3, f, tireM, rimM, 0, 28));
   // Felgen-Design (Nicolas, Foto): dunkle Scheibe mit sieben breiten hellen Speichen als geschwungene Blaetter, dunkle Nabe mit Silberring, aussen
