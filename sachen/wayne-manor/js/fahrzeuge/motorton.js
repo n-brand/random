@@ -19,6 +19,7 @@ function setEngineVol(v) {
 const ENG_PROFILES = {
   "Tumbler": { idle: 36, max: 118, gears: [0, 9, 18, 28, 40], wave: "sawtooth", sub: 0.5, cut0: 240, cut1: 1150, vol: 0.2, noise: 0.09 },
   "Rolls-Royce": { idle: 30, max: 92, gears: [0, 12, 24, 37, 52], wave: "triangle", sub: 0.5, cut0: 200, cut1: 650, vol: 0.13, noise: 0.045 },
+  "Boxer-Streetfighter": { idle: 44, max: 190, gears: [0, 8, 16, 25, 36, 50, 72], wave: "sawtooth", sub: 2, cut0: 430, cut1: 2300, vol: 0.15, noise: 0.05 },   // Boxer-Zweizylinder, tiefer und stampfender
   "Motorrad": { idle: 52, max: 235, gears: [0, 7, 14, 22, 32, 44, 60], wave: "sawtooth", sub: 2, cut0: 520, cut1: 2700, vol: 0.14, noise: 0.05 },
   // am = Tiefe des Zuendtakts (Standard 0,35); 0 = gleichmaessig wie ein Elektromotor, kein Anlassen-Bruellen bei start: "soft"
   "The Bat": { idle: 70, max: 160, gears: [0, 90], wave: "sine", sub: 0.5, cut0: 260, cut1: 520, vol: 0.025, noise: 0.03, am: 0, soft: true },   // Nicolas: praktisch lautlos, nur leises Summen

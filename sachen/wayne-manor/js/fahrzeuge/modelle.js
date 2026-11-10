@@ -202,6 +202,57 @@ function buildBatpod() {
   return { g, wheels };
 }
 
+// ---- Boxer-Streetfighter (Nicolas 2026-11-10, Fotos Seite/schraeg; stilisiert, ohne Logos und Schriftzuege): Umriss nach dem Seitenfoto
+// (1 px = 1,6 mm, Radstand 1,52 m): hoher flacher Tank in Carbon mit weissen Schraegstreifen, vorne schraeg abfallend, kleine Lampenmaske, flacher Sitz,
+// kurzes hohes Heck, Boxermotor mit Zylindern seitlich heraus, zwei Endtoepfe links schraeg nach oben, blaue Gabel, dickes Hinterrad mit blauer
+// 5-Speichen-Felge, Vorderrad schwarz. Profil-Koordinaten [f vorne, y hoch], vorne = -z
+function buildStreetfighter() {
+  const g = new THREE.Group();
+  const carbon = M(0x1b1d21, { metalness: 0.5, roughness: 0.35, flatShading: true }), white = M(0xe9ecef, { roughness: 0.45 }), black = M(0x0e0f11, { roughness: 0.7 }), seatM = M(0x09090a, { roughness: 0.95 });
+  const eng = M(0x5f646b, { metalness: 0.75, roughness: 0.35, flatShading: true }), blue = M(0x1f6fd8, { metalness: 0.75, roughness: 0.25 }), ti = M(0xb08a4a, { metalness: 0.85, roughness: 0.3 }), steel = M(0xb9bdc2, { metalness: 0.9, roughness: 0.22 });
+  const tireM = M(0x111111, { roughness: 0.9 }), WF = 0.76, RF = 0.3, RR = 0.33;
+  const tube = (p, q, r, m, seg = 10) => { const d = new THREE.Vector3(q[0] - p[0], q[1] - p[1], q[2] - p[2]), len = d.length(), o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), m); o.position.set((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(o); return o; };
+  const path = (pts, r, m) => { for (let k = 0; k < pts.length - 1; k++) { tube(pts[k], pts[k + 1], r, m); meshIn(g, new THREE.SphereGeometry(r, 10, 8), m, ...pts[k + 1]); } };
+  const chai = (p, n = 2) => { for (let k = 0; k < n; k++) p = p.flatMap((a, i) => { const b = p[(i + 1) % p.length]; return [[a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]]; }); return p; };   // Ecken abrunden (Nicolas: zu eckig)
+  const rp = (pts, w, m, b = 0.04) => { const sh = new THREE.Shape(); chai(pts).forEach(([f, y], i) => i ? sh.lineTo(f, y) : sh.moveTo(f, y)); const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: w - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b * 0.5, bevelSegments: 4 }).rotateY(Math.PI / 2).translate(-(w - 2 * b) / 2, 0, 0), m); g.add(o); return o; };   // Profil rund, Seitenkanten gerundet
+  const P = (x, f, y) => [x, y, -f];                                                                                           // Punkt aus (quer, vorne, hoch)
+  rp([[-0.22, 0.63], [0.44, 0.63], [0.53, 0.75], [0.45, 0.88], [0.3, 0.92], [-0.16, 0.92], [-0.26, 0.86]], 0.46, carbon, 0.06);   // Tank/Verkleidung, oben flach, vorne schraeg
+  for (const sd of [-1, 1]) for (let k = 0; k < 7; k++) { const f0 = -0.12 + k * 0.075, yt = 0.87 - k * 0.01; prismIn(g, [[f0, yt], [f0 + 0.045, yt], [Math.min(f0 + 0.2, 0.44), 0.665], [Math.min(f0 + 0.155, 0.43), 0.665]], 0.004, white, sd * 0.234); }   // weisse Schraegstreifen
+  for (let k = 0; k < 7; k++) { const f0 = -0.12 + k * 0.075; boxIn(g, -0.19, 0.19, 0.948, 0.953, -f0 - 0.045, -f0, white); }   // Streifen laufen ueber den Tank
+  rp([[0.36, 0.645], [0.45, 0.645], [0.525, 0.75], [0.47, 0.83], [0.38, 0.78]], 0.47, white, 0.055);                             // weisse Front der Verkleidung
+  rp([[0.44, 0.69], [0.58, 0.71], [0.62, 0.8], [0.52, 0.89], [0.43, 0.85]], 0.22, carbon, 0.05);                             // Lampenmaske
+  boxIn(g, -0.07, 0.07, 0.74, 0.8, -0.603, -0.595, mat.glow);                                                                 // Scheinwerfer (Schlitz)
+  rp([[-0.14, 0.88], [-0.46, 0.84], [-0.55, 0.86], [-0.58, 0.81], [-0.2, 0.79]], 0.27, seatM, 0.04);                        // Sitz flach
+  rp([[-0.22, 0.69], [-0.6, 0.78], [-0.65, 0.83], [-0.58, 0.86], [-0.25, 0.81]], 0.2, carbon, 0.05);                          // kurzes hohes Heck
+  boxIn(g, -0.05, 0.05, 0.805, 0.83, 0.628, 0.635, mat.glowRed);                                                              // Ruecklicht
+  prismIn(g, [[-0.14, 0.27], [0.27, 0.25], [0.36, 0.42], [0.22, 0.63], [-0.16, 0.62]], 0.34, eng);                            // Motorgehaeuse
+  prismIn(g, [[-0.2, 0.38], [0.08, 0.38], [0.14, 0.63], [-0.22, 0.63]], 0.4, black);                                         // schwarze Seitenteile (Luftfilter)
+  for (const sd of [-1, 1]) {
+    meshIn(g, new THREE.CylinderGeometry(0.1, 0.11, 0.07, 16).rotateZ(Math.PI / 2), eng, sd * 0.2, 0.45, -0.22);            // Boxer-Zylinder, nur knapp seitlich (Nicolas: von oben nichts breit)
+    boxAt(g, 0.04, 0.19, 0.24, black, sd * 0.25, 0.46, -0.23);      // Zylinderkopf, Deckel
+    for (let k = 0; k < 4; k++) boxAt(g, 0.004, 0.012, 0.12, eng, sd * 0.202, 0.45 + k * 0.035, 0.03);                        // Gitter am Seitenteil
+    path([P(sd * 0.2, 0.3, 0.36), P(sd * 0.17, 0.28, 0.22), P(sd * 0.14, 0.18, 0.17), P(sd * 0.08, -0.05, 0.18)], 0.03, ti);   // Kruemmer unter den Motor
+    tube(P(sd * 0.2, 0.505, 0.98), P(sd * 0.2, 0.664, 0.55), 0.03, blue); tube(P(sd * 0.2, 0.664, 0.55), P(sd * 0.2, 0.76, 0.3), 0.024, black);   // Gabel blau, unten schwarz
+    meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.03, 12), blue, sd * 0.2, 1.0, -0.5);                                  // Gabelkappe
+    tube(P(sd * 0.2, 0.52, 0.9), P(sd * 0.27, 0.48, 0.88), 0.018, black); tube(P(sd * 0.25, 0.485, 0.88), P(sd * 0.33, 0.47, 0.875), 0.024, seatM);   // Lenkerstummel, Griff
+  }
+  meshIn(g, new THREE.BoxGeometry(0.48, 0.05, 0.12), black, 0, 0.96, -0.5);                                                   // obere Gabelbruecke
+  path([P(-0.08, -0.05, 0.18), P(-0.15, -0.26, 0.22), P(-0.18, -0.3, 0.46), P(-0.17, -0.34, 0.6), P(-0.17, -0.36, 0.71)], 0.035, ti);               // Sammler links hoch
+  for (const [x, dy] of [[-0.17, 0], [-0.17, 0.11]]) { tube(P(x, -0.34, 0.6 + dy), P(x, -0.58, 0.785 + dy), 0.055, steel, 16); tube(P(x, -0.58, 0.785 + dy), P(x, -0.6, 0.8 + dy), 0.048, black, 16); }   // zwei Endtoepfe schraeg nach oben
+  tube(P(0.17, -0.1, 0.36), P(0.17, -WF, RR), 0.055, black); tube(P(0.17, -0.1, 0.36), P(0.1, 0.1, 0.4), 0.04, black);         // Einarm-Schwinge rechts
+  tube(P(-0.17, -0.18, 0.44), P(-0.19, -0.5, 0.36), 0.025, black); tube(P(-0.19, -0.5, 0.36), P(-0.19, -WF, RR), 0.025, black); tube(P(-0.17, -0.18, 0.44), P(-0.19, -0.5, 0.62), 0.02, black);   // Strebe links (Fussraste, Bremse)
+  tube(P(0, 0.5, 0.84), P(0, 0.36, 0.56), 0.04, black); tube(P(0, -0.2, 0.7), P(0, -0.1, 0.4), 0.035, black);               // Rahmen
+  rp([[0.6, 0.6], [0.78, 0.66], [0.94, 0.56], [0.91, 0.52], [0.77, 0.6], [0.62, 0.56]], 0.34, black, 0.02);                // Kotfluegel vorne
+  mergeStatic(g);
+  const wheels = [addWheel(g, 0, -WF, RF, 0.3, true, tireM, black, 0, 28), addWheel(g, 0, WF, RR, 0.3, false, tireM, black, 0, 28)];
+  for (const [w, rimC, wd] of [[wheels[0], black, 0.3], [wheels[1], blue, 0.3]]) for (const sx of [-1, 1]) {                // Felgen: 5 Speichen, Ring, Nabe, Bremsscheibe
+    const F = new THREE.Group(), r = w.r; F.position.x = sx * (wd / 2 + 0.006); w.spin.add(F);
+    F.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, 0.006, 28).rotateZ(Math.PI / 2), steel));
+    F.add(new THREE.Mesh(new THREE.TorusGeometry(r * 0.6, 0.02, 6, 32).rotateY(Math.PI / 2), rimC));
+    for (let k = 0; k < 5; k++) { const sp = new THREE.Group(); sp.rotation.x = k / 5 * Math.PI * 2; sp.add(new THREE.Mesh(new THREE.BoxGeometry(0.02, r * 0.52, 0.045).translate(sx * 0.01, r * 0.33, 0), rimC)); F.add(sp); }
+    F.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16).rotateZ(Math.PI / 2), rimC)); }
+  return { g, wheels };
+}
 // Quader quer zur Fahrtrichtung zwischen zwei x-Werten in beliebiger Reihenfolge (fuer Teile mit sd * ..., sonst negative Breite = unsichtbar)
 const sideBox = (g, xa, xb, y0, y1, z0, z1, m) => boxIn(g, Math.min(xa, xb), Math.max(xa, xb), y0, y1, z0, z1, m);
 // Quader aus Mittelpunkt und Groesse (x quer, y hoch, z hinten), optional um die Querachse geneigt
@@ -607,6 +658,10 @@ const SPEC_BIKE = { name: "Motorrad", wheels: [[0, -0.72], [0, 0.72]], wb: 1.44,
   maxN: 32, maxF: 52, acc: 13, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.25], bodyH: 1.7, bike: true,
   exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.8], [0, 1.8]],
   msg: "Motorrad: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
+const SPEC_STREETFIGHTER = { name: "Boxer-Streetfighter", wheels: [[0, -0.76], [0, 0.76]], wb: 1.52, track: 0, pts: [-0.6, 0.6], R: 0.44, circR: 0.42, enter: 2.5,
+  maxN: 34, maxF: 72, acc: 16, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.34, 0.36], bodyH: 1.6, bike: true,
+  exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.9], [0, 1.9]],
+  msg: "Boxer-Streetfighter: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36, track: 0, pts: [-0.95, 0, 0.95], R: 0.5, circR: 0.5, enter: 2.8,
   maxN: 34, maxF: 56, acc: 15, steer: 0.55, jump: true, grade: 45, camD: 6.5, camH: 1.0, seat: [0, 1.25, 0.15], bodyH: 1.4, bike: true,
   exits: [[-1.1, 0], [1.1, 0], [-1.2, 0.8], [1.2, 0.8], [0, -2.5], [0, 2.5]],
@@ -628,6 +683,7 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
   addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, 0, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
+  addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), RON.x + 13, RON.z, HILL, 0, "Boxer-Streetfighter (Rondell)", 0x1f6fd8);   // Nicolas 2026-11-10, neben dem Spectre
   for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
