@@ -6,7 +6,7 @@
 // der Bauch steigt nach hinten an; vorne der Kopf = Cockpit mit Glas (Batman steigt dort ein); links/rechts vorne die Arme = sechseckige
 // Gondeln mit Propeller darin und Kanonen darunter; in der Mitte unter dem Bauch ein frei liegender Propeller; hinten zwei Beine nach
 // aussen, die beim Lenken mitschwenken. Senkrechtstarter: schwebt, steigt, sinkt. Vorne = -z, Kufen bei y 0.
-// Steuerung: E einsteigen/aussteigen (nur gelandet), W/S vor/zurueck, A/D drehen, Leertaste steigen, C sinken,
+// Steuerung: Rechtsklick einsteigen, Shift aussteigen (nur gelandet), W/S vor/zurueck, A/D drehen, Leertaste steigen, C sinken,
 // V Kamera hinten/Cockpit, M Ton. Kollision: freier Raum (batAir) plus Boden und Wasser unter den Kufen.
 // Originalmasse des Film-Requisits (Nicolas 2026-11-09): 9,14 m lang, 5,18 m breit. Modell gebaut mit 10,45 x 5,28 m -> skaliert.
 const BAT_KX = 5.18 / 5.28, BAT_KZ = 9.14 / 10.45, BAT_ZC = 1.2;   // BAT_ZC: Dreh- und Kameramittelpunkt in der Rumpfmitte statt vorne (Nicolas 2026-11-10, lokal vor dem Skalieren)
@@ -172,7 +172,7 @@ function useFly() {
   if (Math.hypot(p.x - B.x, p.z - B.z) > 5.5 || Math.abs(p.y - B.y) > 3) return false;
   if (world.userData.car) world.userData.car.leave();
   B.on = true; B.landing = null; B.view = 0; keys.clear(); player.yaw = B.h; player.pitch = -0.2;
-  toast("The Bat: W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera, E aussteigen (gelandet)");
+  toast("The Bat: W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera, Shift aussteigen (gelandet)");
   engineStart("The Bat"); speedEl.hidden = false; return true;
 }
 function flyStep(dt) {
@@ -231,7 +231,7 @@ function summonBat() {
   for (const [r, a] of [[7, 0], [7, Math.PI], [7, Math.PI / 2], [7, -Math.PI / 2], [10, 0], [10, Math.PI]]) {
     const ang = player.yaw + a, x = p.x - Math.sin(ang) * r, z = p.z - Math.cos(ang) * r, h = player.yaw;
     const y = supportAt(new THREE.Vector3(x, p.y + 1, z), p.y + 1);
-    if (Math.abs(y - p.y) < 2.5 && batFree(B, x, y + 0.02, z, h)) { Object.assign(B, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, gearT: 0 }); batPose(B, 0); toast("The Bat ist gelandet (E einsteigen)"); return true; }
+    if (Math.abs(y - p.y) < 2.5 && batFree(B, x, y + 0.02, z, h)) { Object.assign(B, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, gearT: 0 }); batPose(B, 0); toast("The Bat ist gelandet (Rechtsklick einsteigen)"); return true; }
   }
   toast("Hier ist kein Platz für The Bat"); return false;
 }
@@ -242,7 +242,7 @@ function batLandStep(dt) {
   batPose(B, dt);
   if (B.y > L.y + 1e-3) return;
   B.landing = null; B.gearT = 0; B.thrust = 0; batPose(B, 0); engineStop();
-  if (!useFly()) toast("The Bat ist gelandet (E einsteigen)");
+  if (!useFly()) toast("The Bat ist gelandet (Rechtsklick einsteigen)");
 }
 batPose(FLY, 0);
 // Verlassen (Esc, Geist, anderes Fahrzeug) setzt auch The Bat ab: bleibt, wo sie ist

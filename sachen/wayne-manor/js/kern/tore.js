@@ -14,6 +14,16 @@ function findAimedGate() {
 // Aufzuege per Rechtsklick (Nicolas 2026-11-08, statt Taste E): Tueren des Personenaufzugs als Ziel; der Autoaufzug traegt sich in autoaufzug.js ein.
 // Solche Eintraege haben call statt open/target und werden in updateGates uebersprungen.
 gates.push({ name: "Aufzug", g: doorG, call: () => useLift(), verbs: ["holen / fahren", "holen / fahren"], a: [SHAFT.cx, SHAFT.cz], b: [SHAFT.cx, SHAFT.cz] });
+// Fahrzeuge (Nicolas 2026-11-10): Rechtsklick aufs Fahrzeug = einsteigen, Shift = aussteigen, E nicht mehr fuer Fahrzeuge
+function findAimedVehicle() {
+  if (!walking || ghost || (CAR && CAR.on) || BOAT.on || FLY.on) return null;
+  gateRay.setFromCamera(gateCenter, camera); gateRay.far = 14;
+  const list = [...VEH.map(v => [v.g, v]), [BOAT.g, BOAT], [FLY.g, FLY]], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
+  if (!hit) return null; const e = list.find(([g]) => { for (let o = hit.object; o; o = o.parent) if (o === g) return true; return false; }); return e ? e[1] : null;
+}
+function enterVehicle(v) { const ok = v === BOAT ? useBoat() : v === FLY ? useFly() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
+const vehName = v => v === BOAT ? "Boot" : v === FLY ? "The Bat" : v.label.replace(/ \(.*\)$/, "");
+let aimedVeh = null;
 function toggleGate(t) {
   if (!t) return;
   if (t.call) return t.call();
@@ -24,11 +34,12 @@ function toggleGate(t) {
 // Rechtsklick ueber mousedown (wie die Villa): bei gefangener Maus schickt der Browser kein contextmenu
 renderer.domElement.addEventListener("contextmenu", e => { if (walking) e.preventDefault(); });
 renderer.domElement.addEventListener("mousedown", e => { if (!walking || e.button !== 2) return; e.preventDefault(); const g = findAimedGate();
-  if (g || !ghost) return toggleGate(g);
+  if (g) return toggleGate(g);
+  if (!ghost) { const v = findAimedVehicle(); if (v) enterVehicle(v); return; }
   // Geist ohne Tor im Ziel (Nicolas 2026-11-10): Menue wie in der Orbit-Ansicht (Koordinaten kopieren, hierhin teleportieren); bei gefangener Maus am Fadenkreuz
   const locked = !!document.pointerLockElement; if (dragging) stopDrag();
   const r = renderer.domElement.getBoundingClientRect(); orbitPick.pickAt(locked ? r.left + r.width / 2 : e.clientX, locked ? r.top + r.height / 2 : e.clientY); });
-$("door-hint").addEventListener("click", () => toggleGate(aimedGate));
+$("door-hint").addEventListener("click", () => aimedGate ? toggleGate(aimedGate) : aimedVeh && enterVehicle(aimedVeh));
 function updateGates(dt) {
   for (const t of gates) {
     if (t.call) continue;
@@ -41,8 +52,9 @@ function updateGates(dt) {
   gateHintClock += dt;
   if (gateHintClock < 0.15) return;
   gateHintClock = 0;
-  aimedGate = findAimedGate();
+  aimedGate = findAimedGate(); aimedVeh = aimedGate ? null : findAimedVehicle();
   const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : aimedGate.call ? "Rechtsklick: " : "Rechtsklick/E: ") + aimedGate.name + " " + (aimedGate.verbs || ["öffnen", "schließen"])[aimedGate.target ? 1 : 0] : "";
-  if (hint.hidden !== !aimedGate) hint.hidden = !aimedGate;
-  if (aimedGate && hint.textContent !== txt) hint.textContent = txt;
+  const vtxt = !aimedGate && aimedVeh ? (touch ? "Tippen: " : "Rechtsklick: ") + "einsteigen (" + vehName(aimedVeh) + ")" : "", show = !!(aimedGate || aimedVeh);
+  if (hint.hidden !== !show) hint.hidden = !show;
+  if (show && hint.textContent !== (txt || vtxt)) hint.textContent = txt || vtxt;
 }

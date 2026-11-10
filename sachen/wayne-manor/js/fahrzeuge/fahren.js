@@ -59,7 +59,7 @@ function carCircles(on) {
   sp.pts.forEach((lz, i) => { const [x, z] = carW(0, lz), c = CAR.circ[i]; c[0] = x; c[1] = z; c[2] = on ? sp.circR : 0; c[3] = CAR.y + sp.bodyH - 0.1; });
 }
 function carMsg(t) { if (clock.elapsedTime - CAR.msgT > 2.5) { CAR.msgT = clock.elapsedTime; toast(t); } }
-function useCar() {
+function useCar(want) {
   if (!walking || ghost) return false;
   const p = player.pos;
   if (CAR && CAR.on) {
@@ -81,7 +81,7 @@ function useCar() {
     return true;
   }
   let best = null, bd = 1e9;
-  for (const v of VEH) { const d = Math.hypot(p.x - v.x, p.z - v.z); if (d < v.spec.enter && d < bd && Math.abs(p.y - v.y) < 2) { best = v; bd = d; } }
+  for (const v of VEH) { const d = Math.hypot(p.x - v.x, p.z - v.z); if ((!want || v === want) && d < v.spec.enter + (want ? 1.5 : 0) && d < bd && Math.abs(p.y - v.y) < 2) { best = v; bd = d; } }   // want: das angezielte Fahrzeug (Rechtsklick)
   if (!best) return false;
   CAR = best; const C = best;
   C.on = true; C.v = 0; keys.clear(); player.yaw = C.h; player.pitch = -0.12; carCircles(false);
@@ -112,7 +112,7 @@ function summonVehicle(v) {
     Object.assign(v, { v: 0, vy: 0, air: false, wet: false, settled: false, steer: 0, lean: 0, pitch: gr.pitch, roll: gr.roll, safe: { x: v.x, z: v.z, y: v.y, h: v.h } });
     carCircles(true); carPose(0); v.g.visible = true;
     CAR = prev;
-    toast(v.label + " steht vor dir (E einsteigen)");
+    toast(v.label + " steht vor dir (Rechtsklick einsteigen)");
     return true;
   }
   Object.assign(v, saved); CAR = prev;

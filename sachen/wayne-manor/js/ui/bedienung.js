@@ -72,7 +72,8 @@ renderer.domElement.addEventListener("mousedown", e => {
   document.body.classList.add("looking");
   renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
 });
-document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement && dragging) { stopDrag(); setWalk(false); } });
+// Maus frei ohne eigenes Freigeben: Esc beendet das Begehen. Verliert das Fenster dabei den Fokus (Win+Shift+S Screenshot, Alt+Tab), bleibt man drin (Nicolas 2026-11-10)
+document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement || !dragging) return; stopDrag(); setTimeout(() => { if (!walking) return; if (document.hasFocus()) setWalk(false); else toast("Maus freigegeben (Linksklick übernimmt wieder)"); }, 250); });
 const MOUSE_SENS = 0.0025 * 0.5;                                          // fest 50 % (Wunsch von Nicolas, nicht einstellbar)
 document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS); });
 // Strg+W schliesst den Tab, das kann eine Webseite nicht verhindern: beim Begehen/Geist/Fahren fragt der Browser wenigstens nach (Nicolas)
@@ -98,7 +99,6 @@ addEventListener("keydown", e => {
   if (ghost && e.code === "KeyE" && !e.repeat) { const ag = findAimedGate(); if (ag && !ag.call && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 12) toggleGate(ag); return; }   // Geist: E schaltet Tore/Tueren/Hebebuehne
   if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
   if (e.code === "KeyE" && !e.repeat) {
-    if (useBoat() || useFly() || useCar()) return;
     const ag = findAimedGate();
     if (ag && !ag.call && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 9) toggleGate(ag);
     // Aufzuege nicht mehr mit E, sondern per Rechtsklick auf die Tuer (Nicolas 2026-11-08, siehe tore.js)
@@ -136,7 +136,11 @@ addEventListener("keydown", e => {
   keys.add(e.code);
   if (e.code === "Space") { player.jump = true; e.preventDefault(); }
 });
-addEventListener("keyup", e => keys.delete(e.code));
+// Shift allein (ohne andere Taste dazwischen, ohne Win/Alt/Strg) = aussteigen; Win+Shift+S (Screenshot) loest es nicht aus
+let shiftTap = false;
+addEventListener("keydown", e => { shiftTap = (e.code === "ShiftLeft" || e.code === "ShiftRight") && !e.repeat ? !(e.metaKey || e.altKey || e.ctrlKey) : e.repeat && shiftTap && e.code.startsWith("Shift"); }, true);
+addEventListener("blur", () => { shiftTap = false; });
+addEventListener("keyup", e => { keys.delete(e.code); if (!e.code.startsWith("Shift") || !shiftTap || !walking || ghost) return; shiftTap = false; if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (CAR && CAR.on) useCar(); });
 addEventListener("blur", () => keys.clear());
 function joystick(el) {
   const knob = el.querySelector("span"), state = { x: 0, y: 0, id: null };
@@ -159,7 +163,7 @@ $("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
 // Handy und Maus (Nicolas 2026-11-09): Knoepfe loesen dieselben Tasten aus wie die Tastatur (E, T, V, R, L, M)
 const pressKey = code => { window.dispatchEvent(new KeyboardEvent("keydown", { code })); window.dispatchEvent(new KeyboardEvent("keyup", { code })); };
-$("btn-act").addEventListener("click", e => { e.currentTarget.blur(); pressKey("KeyE"); });
+$("btn-act").addEventListener("click", e => { e.currentTarget.blur(); if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (CAR && CAR.on) useCar(); else if (!aimedGate && !useBoat() && !useFly() && !useCar()) pressKey("KeyE"); });   // Handy: Aktion = ein-/aussteigen oder Tor
 $("btn-tp").addEventListener("click", e => { e.currentTarget.blur(); toggleTp(); });
 for (const b of document.querySelectorAll("#veh-btns button")) b.addEventListener("click", () => { b.blur(); pressKey(b.dataset.key); });
 // Modus als Klasse am body (fuer die Handy-Knoepfe): car, boat, fly, drive; Sprung-Knopf heisst beim Fliegen "Hoch"

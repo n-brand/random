@@ -60,7 +60,7 @@ function useBoat() {
   if (Math.hypot(p.x - BOAT.x, p.z - BOAT.z) < 4.5 && p.y > SEA_Y - 1.5 && p.y < LY + 1) {   // B1: auch vom Hallenboden (6 m darueber) bis zum Steg (B4)
     BOAT.on = true; BOAT.v = 0; keys.clear(); engineStart("Boot");                 // Motorton (Nicolas 2026-11-09)
     player.yaw = BOAT.h;
-    toast("Im Boot: W/S Gas und Bremse, A/D lenken, V Kamera, E aussteigen");
+    toast("Im Boot: W/S Gas und Bremse, A/D lenken, V Kamera, Shift aussteigen");
     seatBoat();
     return true;
   }
