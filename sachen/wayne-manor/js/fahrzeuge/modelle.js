@@ -525,7 +525,6 @@ function buildSpectre(col = 0xd2aa3c) {
   loftIn(g, rf, black);                                                                                                        // Dach schwarz
   for (const sd of [-1, 1]) {
     const x = sd * (hw(0) - 0.01);
-    for (const z of [-0.86, 0.67]) sideBox(g, x, x + sd * 0.012, 0.32, 1.2, z, z + 0.015, dark);                              // Tuerfugen (eine lange Tuer)
     sideBox(g, x, x + sd * 0.025, 1.04, 1.07, -0.78, -0.42, chrome);                                                       // Tuergriff
     sideBox(g, sd * 0.78, sd * 0.84, 1.22, 1.25, -0.72, 1.3, chrome);                                    // Chromlinie unter den Fenstern
     sideBox(g, sd * 0.8, sd * 0.98, 1.19, 1.23, -0.74, -0.68, paint); sideBox(g, sd * 0.94, sd * 1.12, 1.2, 1.33, -0.74, -0.6, paint);   // Spiegel: Arm auf der Gurtlinie, Gehaeuse aussen                                                     // Spiegel
