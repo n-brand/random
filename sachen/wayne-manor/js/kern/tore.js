@@ -5,11 +5,22 @@
 // Tore in der Hoehle: zielen (Fadenkreuz bzw. Bildmitte) und nah genug (60 m, die Kanaele sind nur vom Ufer aus zu sehen) -> Hinweis, Rechtsklick oder Tipp darauf schaltet
 const gateRay = new THREE.Raycaster(), gateCenter = new THREE.Vector2(0, 0);
 let aimedGate = null, gateHintClock = 0;
+// Regel (Nicolas 2026-11-10, gilt auch fuer kuenftige Tueren, Tore, Rampen): angezielt ist ein Tor, wenn man auf das Tor selbst ODER auf seine
+// Flaeche im geschlossenen Zustand schaut (Box beim ersten Aufruf, alle starten zu) - offen also auch auf die Oeffnung, das "Loch".
+// Hinweis und Funktion erst in der Naehe: Abstand des Spielers zur Box hoechstens t.near (Vorgabe 8 m, ueber Wasser/Kanaele mehr).
+const gateV = new THREE.Vector3(), gateNear = t => t.near ?? (/^Felstor \(Lake|^Felswand \(SE|^Felswand \(NE/.test(t.name) ? 30 : 8);
+function gateBox(t) { if (!t.box) { t.g.updateMatrixWorld(true); t.box = new THREE.Box3().setFromObject(t.g).expandByScalar(0.25); } return t.box; }
 function findAimedGate() {
   if (!walking) return null;                                                 // auch im Geistmodus (Nicolas 2026-11-08: Tueren und Hebebuehne bedienen)
   gateRay.setFromCamera(gateCenter, camera); gateRay.far = 60;
-  const hit = gateRay.intersectObjects(gates.map(t => t.g), true)[0];
-  return hit ? gates.find(t => { for (let o = hit.object; o; o = o.parent) if (o === t.g) return true; return false; }) : null;
+  const hit = gateRay.intersectObjects(gates.map(t => t.g), true)[0], p = player.pos; let best = null, bd = 1e9;
+  for (const t of gates) {
+    const b = gateBox(t); if (b.isEmpty() || b.distanceToPoint(p) > gateNear(t)) continue;
+    let d = 1e9; if (hit) for (let o = hit.object; o; o = o.parent) if (o === t.g) { d = hit.distance; break; }
+    const q = gateRay.ray.intersectBox(b, gateV); if (q) d = Math.min(d, q.distanceTo(gateRay.ray.origin));
+    if (d < bd && d <= 60) { bd = d; best = t; }
+  }
+  return best;
 }
 // Aufzuege per Rechtsklick (Nicolas 2026-11-08, statt Taste E): Tueren des Personenaufzugs als Ziel; der Autoaufzug traegt sich in autoaufzug.js ein.
 // Solche Eintraege haben call statt open/target und werden in updateGates uebersprungen.

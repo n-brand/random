@@ -696,8 +696,8 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
-  addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, 0, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
-  addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), RON.x + 13, RON.z, HILL, 0, "Boxer-Streetfighter (Rondell)", 0x1f6fd8);   // Nicolas 2026-11-10, neben dem Spectre
+  addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, Math.PI, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
+  addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), bays[4].x, bays[4].z + bays[4].d / 2 - 1.5, gy, 0, "Boxer-Streetfighter (Garage Platz 4)", 0x1f6fd8);   // Nicolas 2026-11-10: in der Garage, Front zur Fahrgasse
   for (const [no, col, nm] of [[9, 0x55585e, "grau"]])   // Nicolas 2026-11-10: nur noch der graue (rot, blau, silber, dunkelgruen entfernt)
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),

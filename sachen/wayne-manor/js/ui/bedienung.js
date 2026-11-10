@@ -96,11 +96,11 @@ addEventListener("keydown", e => {
   if (e.code === "KeyG" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (ghost) ghostToWalk(); else startGhost(); return; }   // G: Geist an/aus (Nicolas 2026-11-09)
   if (!walking) return;
   if (e.code === "Escape") return setWalk(false);
-  if (ghost && e.code === "KeyE" && !e.repeat) { const ag = findAimedGate(); if (ag && !ag.call && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 12) toggleGate(ag); return; }   // Geist: E schaltet Tore/Tueren/Hebebuehne
+  if (ghost && e.code === "KeyE" && !e.repeat) { const ag = findAimedGate(); if (ag && !ag.call) toggleGate(ag); return; }   // Geist: E schaltet Tore/Tueren/Hebebuehne
   if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
   if (e.code === "KeyE" && !e.repeat) {
     const ag = findAimedGate();
-    if (ag && !ag.call && Math.hypot(player.pos.x - (ag.a[0] + ag.b[0]) / 2, player.pos.z - (ag.a[1] + ag.b[1]) / 2) < 9) toggleGate(ag);
+    if (ag && !ag.call) toggleGate(ag);                                          // Naehe regelt findAimedGate (gateNear)
     // Aufzuege nicht mehr mit E, sondern per Rechtsklick auf die Tuer (Nicolas 2026-11-08, siehe tore.js)
     return;
   }
