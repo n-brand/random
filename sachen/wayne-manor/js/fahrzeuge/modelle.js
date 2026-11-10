@@ -696,7 +696,7 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
   addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, 0, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
   addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), RON.x + 13, RON.z, HILL, 0, "Boxer-Streetfighter (Rondell)", 0x1f6fd8);   // Nicolas 2026-11-10, neben dem Spectre
-  for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
+  for (const [no, col, nm] of [[9, 0x55585e, "grau"]])   // Nicolas 2026-11-10: nur noch der graue (rot, blau, silber, dunkelgruen entfernt)
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
   // gegenueber auf den Feldern 0 und 3, beide schauen nach aussen; die farbigen Tumbler sind weg
