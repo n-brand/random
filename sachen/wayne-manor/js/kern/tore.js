@@ -22,7 +22,11 @@ function toggleGate(t) {
 }
 // Rechtsklick ueber mousedown (wie die Villa): bei gefangener Maus schickt der Browser kein contextmenu
 renderer.domElement.addEventListener("contextmenu", e => { if (walking) e.preventDefault(); });
-renderer.domElement.addEventListener("mousedown", e => { if (!walking || e.button !== 2) return; e.preventDefault(); toggleGate(findAimedGate()); });
+renderer.domElement.addEventListener("mousedown", e => { if (!walking || e.button !== 2) return; e.preventDefault(); const g = findAimedGate();
+  if (g || !ghost) return toggleGate(g);
+  // Geist ohne Tor im Ziel (Nicolas 2026-11-10): Menue wie in der Orbit-Ansicht (Koordinaten kopieren, hierhin teleportieren); bei gefangener Maus am Fadenkreuz
+  const locked = !!document.pointerLockElement; if (dragging) stopDrag();
+  const r = renderer.domElement.getBoundingClientRect(); orbitPick.pickAt(locked ? r.left + r.width / 2 : e.clientX, locked ? r.top + r.height / 2 : e.clientY); });
 $("door-hint").addEventListener("click", () => toggleGate(aimedGate));
 function updateGates(dt) {
   for (const t of gates) {

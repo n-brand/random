@@ -5,8 +5,8 @@
 // Orbit-Rechtsklick -> "Hierhin teleportieren" (Nicolas 2026-11-08): Begehen am getroffenen Punkt, Blick in die bisherige Kamerarichtung
 function teleportToPoint(p) {
   if (belowView) $("btn-below").click();
-  const dir = controls.target.clone().sub(camera.position);
-  startWalk(p.x, p.z, Math.atan2(-dir.x, -dir.z));
+  const dir = controls.target.clone().sub(camera.position), yaw = walking ? player.yaw : Math.atan2(-dir.x, -dir.z);   // im Geist: Blickrichtung des Geists
+  startWalk(p.x, p.z, yaw);
   player.pos.set(p.x, p.y + 0.3, p.z); player.pos.y = supportAt(player.pos, p.y + 0.3); player.vy = 0;
   updatePlayer(0.001, 0, 0, false);
   toast("Teleport hierhin");

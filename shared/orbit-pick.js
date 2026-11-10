@@ -12,7 +12,7 @@ export const PICK_ICONS = {
   pin: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>',
 };
 
-export function installOrbitPick({ renderer, camera, controls, scene, title = document.title, actions = null }) {
+export function installOrbitPick({ renderer, camera, controls, scene, title = document.title, actions = null, mode = null }) {
   const el = renderer.domElement, ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   let down = null;
   // Kontextmenue (nur mit actions)
@@ -79,7 +79,7 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
     const tgt = controls.target, cam = camera.position, off = cam.clone().sub(tgt), dist = off.length();
     const azimut = (THREE.MathUtils.radToDeg(Math.atan2(off.x, off.z)) + 360) % 360, neigung = THREE.MathUtils.radToDeg(Math.asin(off.y / (dist || 1)));
     const lines = [
-      `${title} - Orbit-Ansicht`,
+      `${title} - ${mode ? mode() : "Orbit-Ansicht"}`,
       hit ? `Punkt: ${vec(hit.point)}` : "Punkt: (nichts getroffen)",
       hit && hit.object.name ? `Objekt: ${hit.object.name}` : null,
       `Kamera: ${vec(cam)}`,
@@ -107,4 +107,5 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
     const w = m.offsetWidth, h = m.offsetHeight;
     m.style.left = Math.min(innerWidth - w - 6, e.clientX + 8) + "px"; m.style.top = Math.min(innerHeight - h - 6, e.clientY + 8) + "px";
   }
+  return { pickAt };                                                    // Seiten koennen das Menue selbst oeffnen (z. B. Wayne Manor im Geistmodus)
 }
