@@ -210,13 +210,13 @@ function buildStreetfighter() {
   const g = new THREE.Group();
   const carbon = M(0x1b1d21, { metalness: 0.5, roughness: 0.35, flatShading: true }), white = M(0xe9ecef, { roughness: 0.45 }), black = M(0x0e0f11, { roughness: 0.7 }), seatM = M(0x09090a, { roughness: 0.95 });
   const eng = M(0x5f646b, { metalness: 0.75, roughness: 0.35, flatShading: true }), blue = M(0x1f6fd8, { metalness: 0.75, roughness: 0.25 }), ti = M(0xb08a4a, { metalness: 0.85, roughness: 0.3 }), steel = M(0xb9bdc2, { metalness: 0.9, roughness: 0.22 });
-  const tireM = M(0x111111, { roughness: 0.9 }), WF = 0.76, RF = 0.3, RR = 0.33;
+  const tireM = M(0x111111, { roughness: 0.9 }), WF = 0.76, RF = 0.33, RR = 0.33;   // beide Raeder gleich gross (Nicolas)
   const tube = (p, q, r, m, seg = 10) => { const d = new THREE.Vector3(q[0] - p[0], q[1] - p[1], q[2] - p[2]), len = d.length(), o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg), m); o.position.set((p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.add(o); return o; };
   const path = (pts, r, m) => { for (let k = 0; k < pts.length - 1; k++) { tube(pts[k], pts[k + 1], r, m); meshIn(g, new THREE.SphereGeometry(r, 10, 8), m, ...pts[k + 1]); } };
   const chai = (p, n = 2) => { for (let k = 0; k < n; k++) p = p.flatMap((a, i) => { const b = p[(i + 1) % p.length]; return [[a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]]; }); return p; };   // Ecken abrunden (Nicolas: zu eckig)
   const rp = (pts, w, m, b = 0.04) => { const sh = new THREE.Shape(); chai(pts).forEach(([f, y], i) => i ? sh.lineTo(f, y) : sh.moveTo(f, y)); const o = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: w - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b * 0.5, bevelSegments: 4 }).rotateY(Math.PI / 2).translate(-(w - 2 * b) / 2, 0, 0), m); g.add(o); return o; };   // Profil rund, Seitenkanten gerundet
   const P = (x, f, y) => [x, y, -f];                                                                                           // Punkt aus (quer, vorne, hoch)
-  const tT = tabF([[0.61, 0.72], [0.56, 0.83], [0.46, 0.885], [0.32, 0.9], [0.13, 0.885], [-0.02, 0.855], [-0.15, 0.83], [-0.22, 0.81]]), tW = tabF([[0.61, 0.08], [0.54, 0.17], [0.4, 0.225], [0.15, 0.235], [-0.1, 0.21], [-0.22, 0.15]]), tB = tabF([[0.61, 0.66], [0.4, 0.73], [-0.22, 0.6]]);   // Bauch steigt nach vorne steil an (Nicolas)   // Masse aus dem Seitenfoto (in Hinterrad-Durchmessern)   // Tank rund (Nicolas, Skizze/Foto)
+  const tT = tabF([[0.61, 0.74], [0.56, 0.87], [0.47, 0.93], [0.37, 0.94], [0.22, 0.9], [0.07, 0.84], [-0.08, 0.79], [-0.22, 0.765]]), tW = tabF([[0.61, 0.08], [0.54, 0.17], [0.4, 0.225], [0.15, 0.235], [-0.1, 0.21], [-0.22, 0.15]]), tB = tabF([[0.61, 0.66], [0.4, 0.73], [-0.22, 0.6]]);   // Bauch steigt nach vorne steil an (Nicolas)   // Masse aus dem Seitenfoto; Oberlinie: Mulde am Sitz, steil hoch zum Hoechstpunkt kurz vor der Gabel (Nicolas, Skizze)   // Tank rund (Nicolas, Skizze/Foto)
   const tank = loftIn(g, Array.from({ length: 28 }, (_, k) => { const ff = 0.61 - k * 0.03, w = tW(ff), yt = tT(ff), yb = tB(ff), h = yt - yb; return [ff, [[0, yb], [w * 0.8, yb], [w, yb + 0.25 * h], [w, yb + 0.58 * h], [w * 0.88, yb + 0.84 * h], [w * 0.55, yt - 0.01], [0, yt]]]; }), carbon);
   { const rc = new THREE.Raycaster(), q = [], hit = (o, d, e) => { rc.set(o, d); const h = rc.intersectObject(tank)[0]; return h ? [h.point.x - d.x * e, h.point.y - d.y * e, h.point.z - d.z * e] : null; };   // weisse Streifen liegen auf der Woelbung
     const quad = (a, b, c, d) => { if (a && b && c && d) q.push(...a, ...b, ...c, ...a, ...c, ...d); };
@@ -227,9 +227,9 @@ function buildStreetfighter() {
       for (let n = 0; n < N; n++) quad(T(n / N, 0), T((n + 1) / N, 0), T((n + 1) / N, 1), T(n / N, 1)); }
     const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(q, 3)); geo.computeVertexNormals(); g.add(new THREE.Mesh(geo, M(0xe9ecef, { roughness: 0.45, side: THREE.DoubleSide }))); }
   rp([[0.3, 0.55], [0.5, 0.56], [0.56, 0.66], [0.34, 0.66]], 0.42, white, 0.04);                                            // weisse Seitenteile vorne unter dem Tank
-  rp([[0.55, 0.66], [0.74, 0.68], [0.71, 0.76], [0.57, 0.82], [0.5, 0.8]], 0.22, carbon, 0.04);                             // Lampenmaske
-  boxIn(g, -0.06, 0.06, 0.69, 0.725, -0.747, -0.74, mat.glow);                                                                 // Scheinwerfer (Schlitz)
-  rp([[-0.19, 0.79], [-0.25, 0.765], [-0.33, 0.775], [-0.39, 0.82], [-0.37, 0.79], [-0.26, 0.735], [-0.19, 0.75]], 0.27, seatM, 0.035);   // Sitz: tief vorne, nach hinten schraeg hoch (Nicolas)                        // Sitz flach
+  rp([[0.55, 0.69], [0.74, 0.71], [0.71, 0.78], [0.57, 0.84], [0.5, 0.82]], 0.22, carbon, 0.04);                             // Lampenmaske
+  boxIn(g, -0.06, 0.06, 0.72, 0.755, -0.747, -0.74, mat.glow);                                                                 // Scheinwerfer (Schlitz)
+  rp([[-0.18, 0.765], [-0.26, 0.74], [-0.34, 0.755], [-0.39, 0.8], [-0.37, 0.77], [-0.26, 0.71], [-0.18, 0.725]], 0.27, seatM, 0.035);   // Sitz: tief vorne, nach hinten schraeg hoch (Nicolas)                        // Sitz flach
   rp([[-0.2, 0.62], [-0.36, 0.58], [-0.5, 0.66], [-0.6, 0.77], [-0.6, 0.83], [-0.42, 0.855], [-0.37, 0.8], [-0.25, 0.75], [-0.2, 0.77]], 0.22, carbon, 0.05);   // Heck steigt nach hinten an                          // kurzes hohes Heck
   boxIn(g, -0.05, 0.05, 0.79, 0.815, 0.63, 0.637, mat.glowRed);                                                              // Ruecklicht
   rp([[-0.32, 0.22], [0.3, 0.19], [0.4, 0.2], [0.41, 0.47], [0.5, 0.64], [0.3, 0.7], [-0.2, 0.6], [-0.38, 0.54], [-0.34, 0.32]], 0.36, eng, 0.05);   // Kasten (Motor, Seitenteile) genau im Umriss des Fotos (Nicolas): vorne senkrecht, unten flach, hinten schraeg hoch
@@ -238,7 +238,7 @@ function buildStreetfighter() {
     meshIn(g, new THREE.CylinderGeometry(0.1, 0.11, 0.07, 16).rotateZ(Math.PI / 2), eng, sd * 0.2, 0.45, -0.22);            // Boxer-Zylinder, nur knapp seitlich (Nicolas: von oben nichts breit)
     boxAt(g, 0.04, 0.19, 0.24, black, sd * 0.25, 0.46, -0.23);      // Zylinderkopf, Deckel
     for (let k = 0; k < 4; k++) boxAt(g, 0.004, 0.012, 0.12, eng, sd * 0.202, 0.45 + k * 0.035, 0.03);                        // Gitter am Seitenteil
-    tube(P(sd * 0.2, 0.42, 0.93), P(sd * 0.2, 0.564, 0.55), 0.03, blue); tube(P(sd * 0.2, 0.564, 0.55), P(sd * 0.2, 0.66, 0.3), 0.024, black);   // Gabel blau, unten schwarz
+    tube(P(sd * 0.2, 0.42, 0.93), P(sd * 0.2, 0.564, 0.55), 0.03, blue); tube(P(sd * 0.2, 0.564, 0.55), P(sd * 0.2, 0.66, 0.33), 0.024, black);   // Gabel blau, unten schwarz
     meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.03, 12), blue, sd * 0.2, 0.95, -0.42);                                  // Gabelkappe
     tube(P(sd * 0.2, 0.44, 0.87), P(sd * 0.27, 0.4, 0.86), 0.018, black); tube(P(sd * 0.25, 0.405, 0.86), P(sd * 0.33, 0.39, 0.855), 0.024, seatM);   // Lenkerstummel, Griff
   }
