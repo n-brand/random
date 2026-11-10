@@ -6,7 +6,7 @@
 "use strict";
 
 {
-  const F = GRAMP.F, P = GRAMP.P, Y0 = GY + HILL, L = F.z1 - F.z0, TOP = HILL + 0.02, TP = HILL - 0.42, concrete = mat.concrete, cx = (F.x0 + F.x1) / 2;
+  const F = GRAMP.F, P = GRAMP.P, Y0 = GY + HILL, L = F.z1 - F.z0, TOP = HILL + 0.02, TP = HILL - 0.42, concrete = mat.garageWall, cx = (F.x0 + F.x1) / 2;
   // Grube unter der Klappe und Wendeplatz: Boden, Waende (Oberkante knapp unter dem Rasen), Decke ueber dem Wendeplatz
   B(F.x0, F.x1, Y0 - 0.3, Y0, F.z0, P.z0, concrete); B(P.x0, P.x1, Y0 - 0.3, Y0, P.z0, P.z1, mat.floorStone);
   B(F.x0 - 0.4, F.x0, Y0, TOP, F.z0 - 0.4, P.z0, concrete); B(F.x1, F.x1 + 0.4, Y0, TOP, F.z0 - 0.4, P.z0, concrete); B(F.x1, F.x1 + 0.4, Y0, TP, P.z0, P.z1 + 0.4, concrete);   // Seitenwaende bis unter den Rasenkragen (Nicolas: Luecken mit Himmel), Ost laeuft am Wendeplatz weiter
