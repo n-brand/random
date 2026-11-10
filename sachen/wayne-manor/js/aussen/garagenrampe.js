@@ -23,21 +23,21 @@
     for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { if (GRAMP.inF(x0 + (i + 0.5) * st, z0 + (j + 0.5) * st, -0.01)) continue; const a = j * (nx + 1) + i, b = a + 1, d = a + nx + 1, e = d + 1; idx.push(a, d, b, b, d, e); }
     const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     geo.setIndex(idx); geo.computeVertexNormals(); const m = new THREE.Mesh(geo, M(0xffffff, { map: grassTex, vertexColors: true, roughness: 1 })); m.receiveShadow = true; world.add(m); }
-  // Klappe (Gruppe dreht um das Scharnier am Nordende) und Rolltor in der Garagen-Ostwand
-  const g = new THREE.Group(); g.userData.dynamic = true; world.add(g);
+  // Klappe (dreht um das Scharnier am Nordende) und Rolltor in der Garagen-Ostwand: zwei eigene Tore (Nicolas: einzeln oeffnen)
+  const g = new THREE.Group(), gd = new THREE.Group(); g.userData.dynamic = gd.userData.dynamic = true; world.add(g, gd);
   const gc = new THREE.Color(0x5b8c3c).lerp(new THREE.Color(0x6aa84a), 0.7), grassM = M(gc.getHex(), { map: texClone(grassTex, 0.1, 0.1), roughness: 1 });
   const piv = new THREE.Group(); piv.position.set(cx, HILL + 0.03, F.z0); g.add(piv);
   { const w = F.x1 - F.x0 - 0.06, bg = new THREE.BoxGeometry(w, 0.3, L - 0.04); boxUV(bg, w, 0.3, L); const p = new THREE.Mesh(bg, [concrete, concrete, grassM, concrete, concrete, concrete]); p.position.set(0, -0.15, L / 2); p.castShadow = p.receiveShadow = true; piv.add(p);
     for (const sd of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, L - 0.1), M(0xf2c230, { roughness: 0.6 })); r.position.set(sd * (w / 2 - 0.3), -0.33, L / 2); piv.add(r); } }   // gelbe Kanten unten (sichtbar, wenn offen)
   const DH = 3.6, door = new THREE.Mesh(new THREE.BoxGeometry(0.1, DH, GRAMP.D1 - GRAMP.D0).translate(0, -DH / 2, 0), M(0x7c8189, { metalness: 0.5, roughness: 0.5, map: canvasTex(16, 64, (c2, w, hh) => { c2.fillStyle = "#c8ccd2"; c2.fillRect(0, 0, w, hh); c2.fillStyle = "#8a8f96"; for (let y = 0; y < hh; y += 4) c2.fillRect(0, y, w, 1); }) }));
-  door.position.set(4.5, Y0 + DH, (GRAMP.D0 + GRAMP.D1) / 2); door.castShadow = true; g.add(door);
+  door.position.set(4.5, Y0 + DH, (GRAMP.D0 + GRAMP.D1) / 2); door.castShadow = true; gd.add(door);
   const doorS = S(4.25, 4.75, Y0, Y0 + DH, GRAMP.D0, GRAMP.D1);
-  const anim = f => { GRAMP.f = Math.min(1, f / 0.6); piv.rotation.x = GRAMP.ang(); const o = Math.max(0, Math.min(1, (f - 0.55) / 0.45)); door.scale.y = Math.max(0.04, 1 - o); doorS.y0 = Y0 + DH * o; doorS.on = o < 0.999; };
-  anim(0);
-  const inDoor = (x, z, m) => x > 4.5 - m && x < 4.5 + m && z > GRAMP.D0 && z < GRAMP.D1, onIt = (x, y, z, m) => (GRAMP.inF(x, z, m) && y < HILL - 0.2 && y > GRAMP.y(z) - 1) || (inDoor(x, z, m + 0.3) && y < Y0 + 3);   // nur wer wirklich auf der Klappe oder im Tor steht
-  GRAMP.near = p => Math.max(F.x0 - p.x, p.x - P.x1, 0) ** 2 + Math.max(F.z0 - p.z, p.z - P.z1, 0) ** 2 < 15 * 15 && Math.abs(p.y - HILL + 2) < 8;
-  GRAMP.gate = { name: "Garagenrampe", g, open: 0, target: 0, dur: 8, anim, a: [cx, F.z0 + 6], b: [8, (GRAMP.D0 + GRAMP.D1) / 2], verbs: ["öffnen", "schließen"],
-    block: () => (!VEH.some(v => v.on) && onIt(player.pos.x, player.pos.y, player.pos.z, 0.2)) || VEH.some(v => onIt(v.x, v.y, v.z, 0.5)),
-    blockMsg: "Garagenrampe stoppt: erst von der Klappe bzw. aus dem Tor fahren" };   // im Fahrzeug zaehlt nur das Fahrzeug (player.pos bleibt am Einstiegsort)
-  gates.push(GRAMP.gate);
+  const animF = f => { GRAMP.f = f; piv.rotation.x = GRAMP.ang(); }, animD = o => { door.scale.y = Math.max(0.04, 1 - o); doorS.y0 = Y0 + DH * o; doorS.on = o < 0.999; };
+  animF(0); animD(0);
+  const inDoor = (x, z, m) => x > 4.5 - m && x < 4.5 + m && z > GRAMP.D0 && z < GRAMP.D1, onF = (x, y, z, m) => GRAMP.inF(x, z, m) && y < HILL - 0.2 && y > GRAMP.y(z) - 1, onD = (x, y, z, m) => inDoor(x, z, m + 0.3) && y < Y0 + 3;   // nur wer wirklich auf der Klappe oder im Tor steht
+  const blk = on => () => (!VEH.some(v => v.on) && on(player.pos.x, player.pos.y, player.pos.z, 0.2)) || VEH.some(v => on(v.x, v.y, v.z, 0.5));   // im Fahrzeug zaehlt nur das Fahrzeug (player.pos bleibt am Einstiegsort)
+  GRAMP.near = p => Math.max(P.x0 - p.x, p.x - P.x1, 0) ** 2 + Math.max(F.z0 - p.z, p.z - P.z1, 0) ** 2 < 15 * 15 && Math.abs(p.y - HILL + 2) < 8;
+  GRAMP.gate = { name: "Garagenrampe (Klappe)", g, open: 0, target: 0, dur: 6, anim: animF, a: [cx, F.z0 + 6], b: [cx, F.z1 - 6], verbs: ["öffnen", "schließen"], block: blk(onF), blockMsg: "Garagenrampe stoppt: erst von der Klappe fahren" };
+  GRAMP.door = { name: "Garagentor (Rampe)", g: gd, open: 0, target: 0, dur: 3, anim: animD, a: [4.5, GRAMP.D0], b: [4.5, GRAMP.D1], verbs: ["öffnen", "schließen"], block: blk(onD), blockMsg: "Garagentor stoppt: erst aus dem Tor fahren" };
+  gates.push(GRAMP.gate, GRAMP.door);
 }
