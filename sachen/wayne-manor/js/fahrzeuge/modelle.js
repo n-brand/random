@@ -240,7 +240,7 @@ function buildStreetfighter() {
     for (let k = 0; k < 4; k++) boxAt(g, 0.004, 0.012, 0.12, eng, sd * 0.202, 0.45 + k * 0.035, 0.03);                        // Gitter am Seitenteil
     tube(P(sd * 0.2, 0.42, 0.93), P(sd * 0.2, 0.564, 0.55), 0.03, blue); tube(P(sd * 0.2, 0.564, 0.55), P(sd * 0.2, 0.66, 0.33), 0.024, black);   // Gabel blau, unten schwarz
     meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.03, 12), blue, sd * 0.2, 0.95, -0.42);                                  // Gabelkappe
-    tube(P(sd * 0.2, 0.44, 0.87), P(sd * 0.27, 0.4, 0.86), 0.018, black); tube(P(sd * 0.25, 0.405, 0.86), P(sd * 0.33, 0.39, 0.855), 0.024, seatM);   // Lenkerstummel, Griff
+    tube(P(sd * 0.2, 0.44, 0.87), P(sd * 0.32, 0.41, 0.865), 0.021, black); tube(P(sd * 0.3, 0.415, 0.865), P(sd * 0.45, 0.39, 0.86), 0.03, seatM, 12); tube(P(sd * 0.3, 0.44, 0.875), P(sd * 0.43, 0.47, 0.87), 0.007, steel);   // Lenkerstummel, Griffe (14 cm, Nicolas: groesser), Hebel   // Lenkerstummel, Griff
   }
   meshIn(g, new THREE.BoxGeometry(0.48, 0.05, 0.12), black, 0, 0.91, -0.43);                                                   // obere Gabelbruecke
   path([P(-0.24, 0.15, 0.45), P(-0.2, 0.27, 0.3), P(-0.17, 0.24, 0.22), P(-0.16, 0.06, 0.2), P(-0.16, -0.17, 0.21), P(-0.17, -0.3, 0.27), P(-0.18, -0.32, 0.48), P(-0.19, -0.34, 0.6)], 0.032, ti);   // Auspuff nur links (Nicolas, Foto): vom Zylinderkopf nach vorne unten, unter dem Motor nach hinten, vor dem Hinterrad hoch
