@@ -9,7 +9,7 @@
 // Steuerung: E einsteigen/aussteigen (nur gelandet), W/S vor/zurueck, A/D drehen, Leertaste steigen, C sinken,
 // V Kamera hinten/Cockpit, M Ton. Kollision: freier Raum (batAir) plus Boden und Wasser unter den Kufen.
 // Originalmasse des Film-Requisits (Nicolas 2026-11-09): 9,14 m lang, 5,18 m breit. Modell gebaut mit 10,45 x 5,28 m -> skaliert.
-const BAT_KX = 5.18 / 5.28, BAT_KZ = 9.14 / 10.45;
+const BAT_KX = 5.18 / 5.28, BAT_KZ = 9.14 / 10.45, BAT_ZC = 1.2;   // BAT_ZC: Dreh- und Kameramittelpunkt in der Rumpfmitte statt vorne (Nicolas 2026-11-10, lokal vor dem Skalieren)
 function buildTheBat() {
   const g = new THREE.Group();
   const armor = M(0x2c2e33, { metalness: 0.45, roughness: 0.55, flatShading: true }), dark = M(0x18191c, { metalness: 0.5, roughness: 0.5, flatShading: true });
@@ -100,17 +100,18 @@ function buildTheBat() {
     }
     return lg;
   });
+  for (const o of g.children) o.position.z -= BAT_ZC;                                                                    // Ursprung = Rumpfmitte
   g.scale.set(BAT_KX, 1, BAT_KZ);                                                                                         // auf Originalmasse (siehe BAT_KX)
   return { g, rotors, fans, legs, gear, thrustM };
 }
 const BAT_PTS = [[0, 1.3, 0], [0, 1.15, -3.9], [-1.8, 0.8, -5.1], [1.8, 0.8, -5.1], [-1.8, 0.15, -5.6], [1.8, 0.15, -5.6], [-1.08, 0.8, -6.25], [1.08, 0.8, -6.25], [-2.5, 0.8, -4.5], [2.5, 0.8, -4.5],
-  [-2.6, 2.1, -0.6], [2.6, 2.1, -0.6], [-2.2, 2.3, 2.0], [2.2, 2.3, 2.0], [0, 3.35, 1.0], [-1.6, 2.3, 4.6], [1.6, 2.3, 4.6], [-2.5, 2.3, 4.0], [2.5, 2.3, 4.0], [-2.05, 2.2, 5.9], [2.05, 2.2, 5.9], [0, 2.4, 7.9], [-2.4, 2.1, 7.6], [2.4, 2.1, 7.6], [-1.1, 2.2, 7.8], [1.1, 2.2, 7.8]].map(([x, y, z]) => [x * BAT_KX, y, z * BAT_KZ]);   // Pruefpunkte (lokal): Kopf, Gondeln, Kanonen, Panzer, Heck, Beine
-const BAT_FEET = [[-1.1, -2.7], [1.1, -2.7], [-1.1, 4.1], [1.1, 4.1], [0, 0.6]].map(([x, z]) => [x * BAT_KX, z * BAT_KZ]);                                         // Kufen
+  [-2.6, 2.1, -0.6], [2.6, 2.1, -0.6], [-2.2, 2.3, 2.0], [2.2, 2.3, 2.0], [0, 3.35, 1.0], [-1.6, 2.3, 4.6], [1.6, 2.3, 4.6], [-2.5, 2.3, 4.0], [2.5, 2.3, 4.0], [-2.05, 2.2, 5.9], [2.05, 2.2, 5.9], [0, 2.4, 7.9], [-2.4, 2.1, 7.6], [2.4, 2.1, 7.6], [-1.1, 2.2, 7.8], [1.1, 2.2, 7.8]].map(([x, y, z]) => [x * BAT_KX, y, (z - BAT_ZC) * BAT_KZ]);   // Pruefpunkte (lokal): Kopf, Gondeln, Kanonen, Panzer, Heck, Beine
+const BAT_FEET = [[-1.1, -2.7], [1.1, -2.7], [-1.1, 4.1], [1.1, 4.1], [0, 0.6]].map(([x, z]) => [x * BAT_KX, (z - BAT_ZC) * BAT_KZ]);                                         // Kufen
 const FLY = (() => {
   const b = buildTheBat();
   // Standplatz: untere Batcave auf der freien Flaeche vor dem Batcomputer, Nase nach Osten zur Halle und zum See (der Hangar oben ist fuer
   // 8,5 x 5,8 m zu eng und nur 8,5 m hoch). Hinaus geht es ueber den See und durch den Wassertunnel aufs Meer.
-  const F = { g: b.g, rotors: b.rotors, fans: b.fans, legs: b.legs, gear: b.gear, gearT: 0, thrustM: b.thrustM, st: 0, x: -47, y: LY, z: -3, h: -Math.PI / 2, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [] };
+  const F = { g: b.g, rotors: b.rotors, fans: b.fans, legs: b.legs, gear: b.gear, gearT: 0, thrustM: b.thrustM, st: 0, x: -47 - BAT_ZC * BAT_KZ, y: LY, z: -3, h: -Math.PI / 2, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [] };
   F.home = { x: F.x, y: F.y, z: F.z, h: F.h };
   b.g.userData.dynamic = true; b.g.userData.noLift = true; scene.add(b.g);
   for (let k = 0; k < 4; k++) { const c = [0, 0, 2.2, 0]; circles.push(c); F.circ.push(c); }                             // Kollision fuer Fussgaenger entlang des Rumpfs
@@ -139,18 +140,20 @@ function batPose(B, dt) {
   B.spin += dt * (6 + B.thrust * 30); for (const r of B.rotors) r.rotation.y = B.spin; for (const f of B.fans) f.rotation.z = B.spin * 1.4;
   B.gear.position.y = B.gearT * 0.9; B.gear.visible = B.gearT < 0.97;                                                    // Kufen ein-/ausgefahren
   for (const lg of B.legs) { lg.rotation.y = 0; lg.rotation.z = -lg.userData.sd * 0.45 + B.st * 0.45; }                // Flossen klappen beim Lenken wie Querruder gegenlaeufig hoch/runter, kein Schwenken zur Seite (Nicolas)                                       // Beine schwenken beim Lenken mit (wie Ruder) B.thrustM.emissiveIntensity = B.thrust * 2.2;
-  const pts = [[0, -2.6], [0, 0], [0, 2.6], [0, 5.6]]; B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on || B.landing ? 0 : 2.0; c[3] = B.y + 2.6; });
+  const pts = [[0, -2.6], [0, 0], [0, 2.6], [0, 5.6]].map(([x, z]) => [x, z - BAT_ZC * BAT_KZ]); B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on || B.landing ? 0 : 2.0; c[3] = B.y + 2.6; });
 }
 function batCamera(B) {
   player.pos.set(B.x, B.y + 0.6, B.z);
-  if (B.view === 1) { const [x, z] = batW(B, 0, -2.3); camera.position.set(x, B.y + 1.45, z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); return; }
+  if (B.view === 1) { const [x, z] = batW(B, 0, -2.3 - BAT_ZC * BAT_KZ); camera.position.set(x, B.y + 1.45, z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); return; }
   // Rundum-Ansicht (Nicolas 2026-11-09): Kamera auf einer Kugel um The Bat, Maus hoch/runter bis ueber und unter das Fluggeraet
   // (Hoehenwinkel e aus player.pitch: Standard -0,2 -> e 0,4 = leicht von oben)
-  const D = 14, e = Math.max(-1.4, Math.min(1.45, 0.2 - player.pitch)), tx = B.x, ty = B.y + 1.8, tz = B.z;
-  const dx = Math.sin(player.yaw) * Math.cos(e) * D, H = Math.sin(e) * D, dz = Math.cos(player.yaw) * Math.cos(e) * D;
-  let k = 1;
-  for (let t = 0.12; t <= 1.0001; t += 0.06) if (!batAir(tx + dx * t, ty + H * t, tz + dz * t)) { k = Math.max(0.12, t - 0.08); break; }
-  camera.position.set(tx + dx * k, ty + H * k, tz + dz * k); camera.lookAt(tx, ty + 0.4, tz);
+  // Nicolas 2026-11-10: weiter weg (gross), Mittelpunkt Rumpfmitte; nie naeher als DMIN (sonst Ansicht im Rumpf), statt naeher ruecken wird die Kamera angehoben
+  const D = 21, DMIN = 10.5, tx = B.x, ty = B.y + 1.8, tz = B.z;
+  for (let e = Math.max(-1.4, Math.min(1.45, 0.2 - player.pitch)); ; e = Math.min(1.45, e + 0.1)) {
+    const dx = Math.sin(player.yaw) * Math.cos(e) * D, H = Math.sin(e) * D, dz = Math.cos(player.yaw) * Math.cos(e) * D;
+    let k = 1; for (let t = 0.12; t <= 1.0001; t += 0.04) if (!batAir(tx + dx * t, ty + H * t, tz + dz * t)) { k = t - 0.05; break; }
+    if (k * D >= DMIN || e >= 1.45) { k = Math.max(k, DMIN / D); camera.position.set(tx + dx * k, ty + H * k, tz + dz * k); break; } }
+  camera.lookAt(tx, ty + 0.4, tz);
 }
 function useFly() {
   if (!walking || ghost) return false;
@@ -158,7 +161,7 @@ function useFly() {
   if (B.on) {
     batNear(B);
     if (batFree(B, B.x, B.y - 0.15, B.z, B.h)) { toast("Zum Aussteigen landen (C sinken)"); return true; }
-    for (const [lx, lz] of [[3.4, 0.5], [-3.4, 0.5], [0, 5.2], [3.4, -2.5], [-3.4, -2.5]]) {
+    for (const [lx, lz] of [[3.4, 0.5], [-3.4, 0.5], [0, 5.2], [3.4, -2.5], [-3.4, -2.5]].map(([x, z]) => [x, z - BAT_ZC * BAT_KZ])) {
       const [x, z] = batW(B, lx, lz), q = new THREE.Vector3(x, B.y + 1.5, z), top = supportAt(q, B.y + 1.5);
       if (Math.abs(top - B.y) > 1.2) continue;
       B.on = false; B.vx = B.vz = B.vy = 0; B.thrust = 0; B.gearT = 0; engineStop(); batPose(B, 0);
