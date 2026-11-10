@@ -22,9 +22,9 @@
   const L = { y: stops[0].y, at: 0, target: 0, state: "idle", t: 0, from: stops[0].y, to: stops[0].y, open: stops.map((_, i) => i === 0 ? 1 : 0), rot: 0, rotFrom: 0, rotTo: 0 };
   const plat = new THREE.Group(); plat.position.set(cx, L.y, cz); plat.userData.dynamic = true; world.add(plat);
   const hx = (CSH.x1 - CSH.x0) / 2 - 0.06, hz = (CSH.z1 - CSH.z0) / 2 - 0.06;
-  B(-hx, hx, -0.3, 0, -hz, hz, mat.steel, false, plat);
+  B(-hx, hx, -0.3, 0.04, -hz, hz, mat.steel, false, plat);   // Deck 4 cm ueber der Haltestelle: unten lag es genau auf dem Batcave-Boden (flimmerte, Nicolas 2026-11-10)
   for (const s of [-1, 1]) {
-    B(s * hx - 0.25, s * hx + 0.25, 0, 0.02, -hz, hz, stripe, false, plat, false);
+    B(s * hx - 0.25, s * hx + 0.25, 0.04, 0.06, -hz, hz, stripe, false, plat, false);
     for (let k = 0; k < 6; k++) B(-hx + 0.4 + k * (2 * hx - 0.8) / 5 - 0.04, -hx + 0.4 + k * (2 * hx - 0.8) / 5 + 0.04, 0, 1.0, s * (hz - 0.08) - 0.04, s * (hz - 0.08) + 0.04, mat.steel, false, plat);
     B(-hx + 0.36, hx - 0.36, 0.95, 1.02, s * (hz - 0.08) - 0.04, s * (hz - 0.08) + 0.04, stripe, false, plat);
   }
