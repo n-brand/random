@@ -496,13 +496,14 @@ const SPEC_TANK = { name: "Panzer", wheels: [[-1.4, -2.4], [1.4, -2.4], [-1.4, 2
 // ---- Rolls-Royce Cullinan mit Tuning-Bodykit (Nicolas 2026-11-10, stilisiert, ohne Logos/Embleme): hoher Luxus-SUV, aufrechte Front mit hohem
 // Chromgrill, Kuehlerfigur, schmale LED-Scheinwerfer, Carbon-Kit (Splitter, Kotfluegelverbreiterungen, Schweller, Haubenluefter, Dachspoiler,
 // Diffusor), vier Endrohre, grosse dunkle Felgen. Ca. 5,35 x 2,1 x 1,84 m, Radstand 3,3 m
-function buildCullinan(col = 0x2b4472) {
+function buildCullinan(col = 0xd2aa3c) {
   const g = new THREE.Group();
-  const paint = M(col, { metalness: 0.6, roughness: 0.25, flatShading: true }), carbon = M(0x141516, { metalness: 0.4, roughness: 0.35, flatShading: true }), glass = M(0x080c12, { metalness: 0.65, roughness: 0.08 });
-  const chrome = M(0xdfe2e6, { metalness: 0.95, roughness: 0.15 }), accent = M(0xd8a24a, { metalness: 0.7, roughness: 0.3 }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x1d1e21, { metalness: 0.85, roughness: 0.25 }), R = 0.46;
+  const paint = M(col, { metalness: 0.35, roughness: 0.3, flatShading: true }), carbon = M(0x141516, { metalness: 0.4, roughness: 0.35, flatShading: true }), glass = M(0x080c12, { metalness: 0.65, roughness: 0.08 });
+  const chrome = M(0xdfe2e6, { metalness: 0.95, roughness: 0.15 }), accent = M(0xc9ccd0, { metalness: 0.9, roughness: 0.2 }), black = M(0x0b0c0e, { metalness: 0.6, roughness: 0.2, flatShading: true }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x1d1e21, { metalness: 0.85, roughness: 0.25 }), R = 0.46;
   const arch = c => [[c - R - 0.12, 0.42], [c - R - 0.1, R + 0.22], [c - R * 0.62, 2 * R + 0.09], [c + R * 0.62, 2 * R + 0.09], [c + R + 0.1, R + 0.22], [c + R + 0.12, 0.42]];
   const top = [[2.67, 0.36], [2.69, 0.98], [2.58, 1.12], [1.3, 1.2], [-2.55, 1.24], [-2.67, 1.08], [-2.67, 0.42], [-2.45, 0.34]];
-  prismIn(g, [...top, [2.5, 0.34]], 1.62, paint);                                                                           // Rumpf
+  prismIn(g, [...top, [2.5, 0.34]], 1.62, paint);
+  prismIn(g, [[2.7, 0.97], [2.59, 1.135], [1.3, 1.215], [1.3, 1.19], [2.56, 1.11], [2.67, 0.96]], 1.9, black);              // Haube schwarz (zweifarbig, Nicolas: Farbe wie Foto)                                                                           // Rumpf
   for (const sd of [-1, 1]) {
     prismIn(g, [[2.66, 0.42], [2.66, 0.98], [2.56, 1.12], [1.3, 1.2], [-2.55, 1.24], [-2.65, 1.08], [-2.65, 0.42], ...arch(-1.65).reverse(), ...arch(1.65).reverse()], 0.2, paint, sd * 0.91);   // Seitenwand mit Radlaeufen
     for (const c of [-1.65, 1.65]) prismIn(g, [[c + R + 0.24, 0.48], [c + R + 0.2, R + 0.26], [c + R * 0.64, 2 * R + 0.18], [c - R * 0.64, 2 * R + 0.18], [c - R - 0.2, R + 0.26], [c - R - 0.24, 0.48],
@@ -582,7 +583,7 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
-  addVehicle(SPEC_CULLINAN, buildCullinan(), RON.x + 10, RON.z, HILL, 0, "Cullinan Tuning (Rondell)", 0x2b4472);   // Nicolas 2026-11-10, auf dem Rondell vor dem Haupteingang
+  addVehicle(SPEC_CULLINAN, buildCullinan(), RON.x + 10, RON.z, HILL, 0, "Cullinan Tuning (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10, auf dem Rondell vor dem Haupteingang
   for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
