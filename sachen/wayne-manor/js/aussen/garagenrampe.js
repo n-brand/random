@@ -11,7 +11,7 @@
   B(F.x0, F.x1, Y0 - 0.3, Y0, F.z0, P.z0, concrete); B(P.x0, P.x1, Y0 - 0.3, Y0, P.z0, P.z1, mat.floorStone);
   B(F.x0 - 0.4, F.x0, Y0, TOP, F.z0 - 0.4, P.z0, concrete); B(F.x1, F.x1 + 0.4, Y0, TOP, F.z0 - 0.4, P.z0, concrete); B(F.x1, F.x1 + 0.4, Y0, TP, P.z0, P.z1 + 0.4, concrete);   // Seitenwaende bis unter den Rasenkragen (Nicolas: Luecken mit Himmel), Ost laeuft am Wendeplatz weiter
   B(F.x0, F.x1, Y0, TOP, F.z0 - 0.4, F.z0, concrete);                                                                         // Nordwand unter dem Scharnier
-  B(P.x0, F.x0, Y0, TP, P.z0 - 0.4, P.z0, concrete); B(P.x0, F.x1, Y0, TP, P.z1, P.z1 + 0.4, concrete);                      // Wendeplatz Nord (bis zur Klappe) und Sued
+  B(P.x0, F.x0, Y0, TP, P.z0 - 0.4, P.z0, concrete); B(4.2, F.x1, Y0, TP, 52.95, P.z1 + 0.4, concrete);                      // Wendeplatz Nord (bis zur Klappe) und Sued (bis an die Garagenecke, Nicolas: Loch neben dem Tor)
   B(P.x0, F.x1 + 0.4, HILL - 0.42, HILL - 0.08, P.z0, P.z1 + 0.4, concrete); B(F.x0 - 0.4, F.x1 + 0.4, HILL - 0.42, TOP, P.z0, P.z0 + 0.4, concrete);   // Decke (Rasen bleibt darueber), Vorderkante bis unter den Rasenkragen
   for (let x = P.x0 + 2; x < P.x1 - 1; x += 4) for (let z = P.z0 + 2.5; z < P.z1 - 1; z += 4) B(x - 0.7, x + 0.7, HILL - 0.47, HILL - 0.42, z - 0.08, z + 0.08, mat.glow, false, world, false);   // Deckenlampen
   for (const x of [F.x0 + 0.02, F.x1 - 0.02]) for (let z = F.z0 + 2; z < P.z0; z += 5) B(x - 0.03, x + 0.03, Y0 + 0.9, Y0 + 1.0, z - 0.6, z + 0.6, mat.glow, false, world, false);   // Leuchten in der Grube
