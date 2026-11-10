@@ -229,9 +229,9 @@ function buildStreetfighter() {
   rp([[0.3, 0.55], [0.5, 0.56], [0.56, 0.66], [0.34, 0.66]], 0.42, white, 0.04);                                            // weisse Seitenteile vorne unter dem Tank
   rp([[0.6, 0.7], [0.76, 0.73], [0.8, 0.8], [0.7, 0.86], [0.6, 0.84]], 0.22, carbon, 0.05);                             // Lampenmaske
   boxIn(g, -0.07, 0.07, 0.74, 0.79, -0.823, -0.815, mat.glow);                                                                 // Scheinwerfer (Schlitz)
-  rp([[-0.2, 0.83], [-0.46, 0.8], [-0.55, 0.82], [-0.58, 0.77], [-0.22, 0.75]], 0.27, seatM, 0.04);                        // Sitz flach
-  rp([[-0.22, 0.65], [-0.6, 0.74], [-0.65, 0.79], [-0.58, 0.82], [-0.25, 0.77]], 0.2, carbon, 0.05);                          // kurzes hohes Heck
-  boxIn(g, -0.05, 0.05, 0.77, 0.79, 0.648, 0.655, mat.glowRed);                                                              // Ruecklicht
+  rp([[-0.2, 0.79], [-0.32, 0.765], [-0.46, 0.79], [-0.55, 0.835], [-0.53, 0.8], [-0.32, 0.735], [-0.2, 0.75]], 0.27, seatM, 0.035);   // Sitz: tief vorne, nach hinten schraeg hoch (Nicolas)                        // Sitz flach
+  rp([[-0.18, 0.62], [-0.36, 0.6], [-0.6, 0.77], [-0.63, 0.83], [-0.57, 0.86], [-0.46, 0.8], [-0.3, 0.75], [-0.18, 0.78]], 0.2, carbon, 0.05);   // Heck steigt nach hinten an                          // kurzes hohes Heck
+  boxIn(g, -0.05, 0.05, 0.8, 0.825, 0.633, 0.64, mat.glowRed);                                                              // Ruecklicht
   prismIn(g, [[-0.14, 0.27], [0.27, 0.25], [0.36, 0.42], [0.22, 0.6], [-0.16, 0.59]], 0.34, eng);                            // Motorgehaeuse
   prismIn(g, [[-0.2, 0.38], [0.08, 0.38], [0.14, 0.6], [-0.22, 0.6]], 0.4, black);                                         // schwarze Seitenteile (Luftfilter)
   for (const sd of [-1, 1]) {
@@ -244,19 +244,25 @@ function buildStreetfighter() {
   }
   meshIn(g, new THREE.BoxGeometry(0.48, 0.05, 0.12), black, 0, 0.91, -0.52);                                                   // obere Gabelbruecke
   path([P(-0.24, 0.15, 0.45), P(-0.2, 0.27, 0.3), P(-0.17, 0.24, 0.22), P(-0.16, 0.06, 0.2), P(-0.16, -0.17, 0.21), P(-0.17, -0.3, 0.27), P(-0.18, -0.32, 0.48), P(-0.19, -0.34, 0.6)], 0.032, ti);   // Auspuff nur links (Nicolas, Foto): vom Zylinderkopf nach vorne unten, unter dem Motor nach hinten, vor dem Hinterrad hoch
-  tube(P(-0.19, -0.34, 0.6), P(-0.195, -0.38, 0.64), 0.04, ti); tube(P(-0.195, -0.38, 0.64), P(-0.195, -0.6, 0.7), 0.058, steel, 16); tube(P(-0.195, -0.6, 0.7), P(-0.195, -0.62, 0.705), 0.05, black, 16);   // ein Endtopf knapp unter und neben dem Sattel (Nicolas)
+  tube(P(-0.19, -0.34, 0.6), P(-0.195, -0.37, 0.63), 0.04, ti); tube(P(-0.195, -0.37, 0.63), P(-0.195, -0.57, 0.78), 0.058, steel, 16); tube(P(-0.195, -0.57, 0.78), P(-0.195, -0.59, 0.795), 0.05, black, 16);   // ein Endtopf knapp unter und neben dem Sattel (Nicolas)
   tube(P(0.17, -0.1, 0.36), P(0.17, -WF, RR), 0.055, black); tube(P(0.17, -0.1, 0.36), P(0.1, 0.1, 0.4), 0.04, black);         // Einarm-Schwinge rechts
-  tube(P(-0.17, -0.18, 0.44), P(-0.19, -0.5, 0.36), 0.025, black); tube(P(-0.19, -0.5, 0.36), P(-0.19, -WF, RR), 0.025, black); tube(P(-0.17, -0.18, 0.44), P(-0.19, -0.5, 0.62), 0.02, black);   // Strebe links (Fussraste, Bremse)
+  { const X = -0.2, N = [[-0.08, 0.52], [-0.08, 0.36], [-0.24, 0.49], [-0.24, 0.35], [-0.38, 0.45], [-0.38, 0.33], [-0.54, 0.41], [-0.54, 0.31]], Q = ([f, y]) => P(X, f, y);   // flache Fachwerk-Strebe links vom Motor zur Hinterachse (Nicolas, Foto)
+    for (const [u, v] of [[0, 2], [2, 4], [4, 6], [1, 3], [3, 5], [5, 7], [0, 1], [6, 7], [1, 2], [3, 4], [5, 6]]) tube(Q(N[u]), Q(N[v]), 0.016, black, 6);
+    tube(Q(N[6]), P(X, -WF, RR + 0.04), 0.02, black, 6); tube(Q(N[7]), P(X, -WF, RR - 0.03), 0.02, black, 6);   // zur Achse
+    boxAt(g, 0.03, 0.09, 0.12, steel, X - 0.01, 0.42, 0.62); meshIn(g, new THREE.CylinderGeometry(0.018, 0.018, 0.1, 8).rotateZ(Math.PI / 2), steel, X - 0.06, 0.43, 0.5); meshIn(g, new THREE.SphereGeometry(0.022, 8, 6), M(0xd0202a, { roughness: 0.4 }), X - 0.02, 0.36, 0.6); }   // Bremssattel-Halter, Fussraste, rote Schraube
   tube(P(0, 0.52, 0.8), P(0, 0.36, 0.56), 0.04, black); tube(P(0, -0.2, 0.7), P(0, -0.1, 0.4), 0.035, black);               // Rahmen
-  rp([[0.6, 0.6], [0.78, 0.66], [0.94, 0.56], [0.91, 0.52], [0.77, 0.6], [0.62, 0.56]], 0.34, black, 0.02);                // Kotfluegel vorne
   mergeStatic(g);
   const wheels = [addWheel(g, 0, -WF, RF, 0.3, true, tireM, black, 0, 28), addWheel(g, 0, WF, RR, 0.3, false, tireM, black, 0, 28)];
-  for (const [w, rimC, wd] of [[wheels[0], black, 0.3], [wheels[1], blue, 0.3]]) for (const sx of [-1, 1]) {                // Felgen: 5 Speichen, Ring, Nabe, Bremsscheibe
-    const F = new THREE.Group(), r = w.r; F.position.x = sx * (wd / 2 + 0.006); w.spin.add(F);
-    F.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.55, r * 0.55, 0.006, 28).rotateZ(Math.PI / 2), steel));
+  const discM = M(0xa9adb3, { metalness: 0.85, roughness: 0.3, side: THREE.DoubleSide });
+  for (const [w, rimC, wd, discs] of [[wheels[0], black, 0.3, [-1, 1]], [wheels[1], blue, 0.3, [-1]]]) { w.spin.remove(w.spin.children[1]); const r = w.r;   // Felgen offen (Nicolas: man sieht durch): keine volle Scheibe
+    w.spin.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.6, r * 0.6, wd - 0.02, 32, 1, true).rotateZ(Math.PI / 2), M(rimC.color.getHex(), { metalness: 0.75, roughness: 0.3, side: THREE.DoubleSide })));   // Felgenbett
+    for (const sx of discs) { const d = new THREE.Mesh(new THREE.RingGeometry(r * 0.22, r * (discs.length > 1 ? 0.5 : 0.42), 28).rotateY(Math.PI / 2), discM); d.position.x = sx * 0.06; w.spin.add(d); }   // Bremsscheibe als Ring
+    for (const sx of [-1, 1]) {                // je Seite: 5 Speichen, Ring, Nabe
+    const F = new THREE.Group(); F.position.x = sx * (wd / 2 + 0.006); w.spin.add(F);
     F.add(new THREE.Mesh(new THREE.TorusGeometry(r * 0.6, 0.02, 6, 32).rotateY(Math.PI / 2), rimC));
     for (let k = 0; k < 5; k++) { const sp = new THREE.Group(); sp.rotation.x = k / 5 * Math.PI * 2; sp.add(new THREE.Mesh(new THREE.BoxGeometry(0.02, r * 0.52, 0.045).translate(sx * 0.01, r * 0.33, 0), rimC)); F.add(sp); }
-    F.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16).rotateZ(Math.PI / 2), rimC)); }
+    F.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16).rotateZ(Math.PI / 2), rimC)); } }
+  for (const w of wheels) w.spin.add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.32, 10).rotateZ(Math.PI / 2), black));   // Achse
   return { g, wheels };
 }
 // Quader quer zur Fahrtrichtung zwischen zwei x-Werten in beliebiger Reihenfolge (fuer Teile mit sd * ..., sonst negative Breite = unsichtbar)
