@@ -689,17 +689,17 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
 }
 {
   const bays = world.userData.bays, gy = GY + HILL;
-  CAR = addVehicle(SPEC_TUMBLER, buildTumbler(0x16181b, 0x0d0e10), bays[1].x, bays[1].z, gy, Math.PI, "Tumbler schwarz (Garage Platz 1)", 0x16181b);
-  addVehicle(SPEC_GCLASS, buildGClass(0x141a22), bays[2].x, bays[2].z, gy, Math.PI, "Mercedes-Benz G-Klasse (Garage Platz 2)", 0x141a22);   // Nicolas 2026-11-09, Front zur Fahrgasse (wie der Tumbler)
-  addVehicle(SPEC_NACHTFALKE, buildNachtfalke(), bays[5].x, bays[5].z + bays[5].d / 2 - 2.8, gy, 0, "Nachtfalke (Garage Platz 5)", 0x0f1012);   // Nicolas 2026-11-09, Front zur Fahrgasse
-  addVehicle(SPEC_AVENTADOR, buildAventador(), bays[8].x, bays[8].z + bays[8].d / 2 - 2.6, gy, 0, "Aventador LP 700-4 (Garage Platz 8)", 0xe07012);   // Nicolas 2026-11-09, Front zur Fahrgasse
+  CAR = addVehicle(SPEC_TUMBLER, buildTumbler(0x16181b, 0x0d0e10), bays[1].x, bays[1].z, gy, bays[1].h, "Tumbler schwarz (Garage Platz 1)", 0x16181b);
+  addVehicle(SPEC_GCLASS, buildGClass(0x141a22), bays[2].x, bays[2].z, gy, bays[2].h, "Mercedes-Benz G-Klasse (Garage Platz 2)", 0x141a22);   // Nicolas 2026-11-09, Front zur Fahrgasse (wie der Tumbler)
+  addVehicle(SPEC_NACHTFALKE, buildNachtfalke(), bays[5].x, bays[5].z, gy, bays[5].h, "Nachtfalke (Garage Platz 5)", 0x0f1012);   // Nicolas 2026-11-09, Front zur Fahrgasse
+  addVehicle(SPEC_AVENTADOR, buildAventador(), bays[8].x, bays[8].z, gy, bays[8].h, "Aventador LP 700-4 (Garage Platz 8)", 0xe07012);   // Nicolas 2026-11-09, Front zur Fahrgasse
   { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
   addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, Math.PI, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
-  addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), bays[4].x, bays[4].z + bays[4].d / 2 - 1.5, gy, 0, "Boxer-Streetfighter (Garage Platz 4)", 0x1f6fd8);   // Nicolas 2026-11-10: in der Garage, Front zur Fahrgasse
+  addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), bays[4].x, bays[4].z, gy, bays[4].h, "Boxer-Streetfighter (Garage Platz 4)", 0x1f6fd8);   // Nicolas 2026-11-10: in der Garage, Front zur Fahrgasse
   for (const [no, col, nm] of [[9, 0x55585e, "grau"]])   // Nicolas 2026-11-10: nur noch der graue (rot, blau, silber, dunkelgruen entfernt)
-    addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
+    addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z, gy, bays[no].h, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
   // gegenueber auf den Feldern 0 und 3, beide schauen nach aussen; die farbigen Tumbler sind weg
   const tt = world.userData.turntable, rr = 60 * CAVE_SC, ttPos = k => { const ang = (k + 0.5) / 6 * Math.PI * 2; return [tt.position.x + Math.cos(ang) * rr * 0.55, tt.position.z + Math.sin(ang) * rr * 0.55, Math.atan2(-Math.cos(ang), -Math.sin(ang))]; };

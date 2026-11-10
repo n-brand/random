@@ -101,8 +101,8 @@ const TSTAIR = { x0: -37.4, x1: -31.3, z0: 8.9, z1: 13.1 };              // 1. O
 const OSTAIR = { x0: -37.4, x1: -31.3, z0: 13.5, z1: 17.7 };             // 2. OG -> Observatory
 // Tiefgarage (Karte "Garage", gleiche Orientierung); Ein- und Ausfahrt sind seit A1 zu (nur Treppe und Aufzug)
 const gmp = (gx, gy) => mp(337 + (gx - 200) * 0.697, 827 + (gy - 166) * 0.697);
-// Nicolas 2026-11-10 (Skizze): vergroessert, Nord bis z 7,5 (kurz vor dem Brunnenbecken), Sued durchgehend bis z 55,3, Kerbe in der Mitte gefuellt; Ostwand x 4,7 mit Tor zur Garagenrampe
-const GARAGE = [[37.5, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 156], [380.1, 156], [380.1, 441], [37.5, 441]].map(([gx, gy]) => gmp(gx, gy));
+// Nicolas 2026-11-10 (Skizze): vergroessert, Nord bis z 7,5 (kurz vor dem Brunnenbecken), Sued durchgehend bis z 61,5 (Nicolas: etwas laenger als der Spectre), Kerbe in der Mitte gefuellt; Ostwand x 4,7 mit Tor zur Garagenrampe
+const GARAGE = [[-7.3, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 156], [380.1, 156], [380.1, 441], [-7.3, 441]].map(([gx, gy]) => gmp(gx, gy));
 const GSTAIR = { x0: -46.4, x1: -38.6, z0: 14.6, z1: 16.8 };             // Garage -> EG (gerade, steigt nach Westen)
 const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deckenloch lang genug fuer Kopffreiheit (Koerper 1,8 m)
 {
@@ -267,21 +267,21 @@ const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deck
       const carOpen = axis === "z" && Math.abs(L - CSH.x1) < 0.2 ? [[CSH.z0, CSH.z1, GY, GY + 3.6]] : axis === "z" && Math.abs(L - 4.7) < 0.2 ? [[GRAMP.D0, GRAMP.D1, GY, GY + 3.6]] : [];   // A3: Tor zum Autoaufzug; Ostwand: Tor zur Garagenrampe
       wall(axis, a0, a1, L + s * 0.25, GY, -0.02, carOpen, mat.garageWall, 0.5); gEdges.push({ axis, a0, a1, L, s, open: carOpen });
     }
-    // Stellplaetze 1-9 (Karte "Garage"), Linien, Nummern, einige Autos
-    const BAYS = [[1, 259, 390, 299, 412.5], [2, 257.5, 338.5, 297.5, 360], [3, 117.5, 387.5, 157.5, 410], [4, 115, 337.5, 155, 360], [5, 112.5, 279, 152.5, 301],
-      [6, 112.5, 225, 152.5, 247.5], [7, 112.5, 177.5, 152.5, 200], [8, 50, 307.5, 90, 330], [9, 52.5, 253.5, 92.5, 275]];
-    const paint = M(0xeeeeea, { roughness: 0.6 });
-    for (const [no, g0, h0, g1, h1] of BAYS) {
-      const R = rectW(gmp(g0, h0), gmp(g1, h1)), y = GY + 0.005;
-      (world.userData.bays ??= {})[no] = { x: (R.x0 + R.x1) / 2, z: (R.z0 + R.z1) / 2 + 0.2, w: R.x1 - R.x0, d: R.z1 - R.z0 };   // Fahrzeuge (Tumbler, Rolls-Royce, Motorrad)
-      if (no === 1) world.userData.bay1 = world.userData.bays[1];
-      B(R.x0, R.x1, y, y + 0.01, R.z0, R.z0 + 0.1, paint, false, world, false); B(R.x0, R.x1, y, y + 0.01, R.z1 - 0.1, R.z1, paint, false, world, false);
-      B(R.x0, R.x0 + 0.1, y, y + 0.01, R.z0, R.z1, paint, false, world, false); B(R.x1 - 0.1, R.x1, y, y + 0.01, R.z0, R.z1, paint, false, world, false);
-      const t = canvasTex(64, 64, (g, w, h) => { g.fillStyle = "#3a3d44"; g.fillRect(0, 0, w, h); g.fillStyle = "#f2f2ee"; g.font = "800 48px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(String(no), w / 2, h / 2 + 3); });
-      t.repeat.set(1, 1);
-      const lab = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), flatMat({ map: t }));
-      lab.position.set((R.x0 + R.x1) / 2, GY + 0.02, R.z0 + 0.8); lab.userData.keep = true; world.add(lab);
-    }
+    // Stellplaetze (Nicolas 2026-11-10): alle nebeneinander an den Waenden, 3,2 x 6,4 m, 1 m Abstand, 1 m von der Wand (vor den Pfeilern),
+    // Front zur Hallenmitte (h); frei bleiben Tor zur Rampe, Autoaufzug, Treppenraum und die Ecken
+    { const paint = M(0xeeeeea, { roughness: 0.6 }), XW = GARAGE[0][0], XE = Math.max(...GARAGE.map(p => p[0])), ZS = Math.max(...GARAGE.map(p => p[1])), ZN = Math.min(...GARAGE.filter(p => p[0] > -35.5).map(p => p[1]));
+      const OFF = 1.5, BW = 3.2, BD = 6.4, PITCH = 4.2, bays = (world.userData.bays = {}); let no = 0;
+      const row = (h, a0, a1, fix) => { for (let c = a0 + BW / 2; c + BW / 2 <= a1 + 1e-6; c += PITCH) { const along = h === 0 || h === Math.PI, x = along ? c : fix, z = along ? fix : c; bays[++no] = { x, z, w: along ? BW : BD, d: along ? BD : BW, h }; } };
+      row(Math.PI, XW - 0.3, XE - OFF - BD - 0.6, ZN + OFF + BD / 2);                                                  // Nordwand
+      row(Math.PI / 2, ZN + OFF + BD + 0.8, GRAMP.D0 - 2, XE - OFF - BD / 2);                                          // Ostwand bis vor das Rampentor
+      row(0, XW + OFF + BD + 0.8, XE - 1, ZS - OFF - BD / 2);                                                          // Suedwand
+      row(-Math.PI / 2, 22.5, CSH.z0 - 2.5, XW + OFF + BD / 2); row(-Math.PI / 2, CSH.z1 + 2.5, ZS - OFF - BD - 0.8, XW + OFF + BD / 2);   // Westwand ohne Autoaufzug
+      world.userData.bay1 = bays[1];
+      for (const [k, b] of Object.entries(bays)) { const y = GY + 0.005, x0 = b.x - b.w / 2, x1 = b.x + b.w / 2, z0 = b.z - b.d / 2, z1 = b.z + b.d / 2;
+        B(x0, x1, y, y + 0.01, z0, z0 + 0.1, paint, false, world, false); B(x0, x1, y, y + 0.01, z1 - 0.1, z1, paint, false, world, false);
+        B(x0, x0 + 0.1, y, y + 0.01, z0, z1, paint, false, world, false); B(x1 - 0.1, x1, y, y + 0.01, z0, z1, paint, false, world, false);
+        const t = canvasTex(64, 64, (g, w, h) => { g.fillStyle = "#3a3d44"; g.fillRect(0, 0, w, h); g.fillStyle = "#f2f2ee"; g.font = "800 44px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(k, w / 2, h / 2 + 3); });
+        const lab = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), flatMat({ map: t })), e = BD / 2 - 0.8; lab.position.set(b.x - Math.sin(b.h) * e, GY + 0.02, b.z - Math.cos(b.h) * e); lab.userData.keep = true; world.add(lab); } }
     // Gym und Werkstatt entfernt (Nicolas 2026-11-10: einfach leerer Platz)
     // Treppe Garage -> EG (26 Stufen, steigt nach Westen), Gelaender oben am Loch
     const gr = (FL0 - GY) / 26;
