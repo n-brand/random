@@ -232,7 +232,7 @@ function buildStreetfighter() {
   rp([[-0.18, 0.765], [-0.26, 0.74], [-0.34, 0.755], [-0.39, 0.8], [-0.37, 0.77], [-0.26, 0.71], [-0.18, 0.725]], 0.27, seatM, 0.035);   // Sitz: tief vorne, nach hinten schraeg hoch (Nicolas)                        // Sitz flach
   rp([[-0.2, 0.62], [-0.36, 0.58], [-0.5, 0.66], [-0.6, 0.77], [-0.6, 0.83], [-0.42, 0.855], [-0.37, 0.8], [-0.25, 0.75], [-0.2, 0.77]], 0.22, carbon, 0.05);   // Heck steigt nach hinten an                          // kurzes hohes Heck
   boxIn(g, -0.05, 0.05, 0.79, 0.815, 0.63, 0.637, mat.glowRed);                                                              // Ruecklicht
-  rp([[-0.32, 0.22], [0.3, 0.19], [0.4, 0.2], [0.41, 0.47], [0.5, 0.64], [0.3, 0.7], [-0.2, 0.6], [-0.38, 0.54], [-0.34, 0.32]], 0.36, eng, 0.05);   // Kasten (Motor, Seitenteile) genau im Umriss des Fotos (Nicolas): vorne senkrecht, unten flach, hinten schraeg hoch
+  rp([[-0.32, 0.22], [0.0, 0.19], [0.1, 0.24], [0.2, 0.36], [0.3, 0.52], [0.38, 0.64], [0.4, 0.7], [0.3, 0.7], [-0.2, 0.6], [-0.38, 0.54], [-0.34, 0.32]], 0.36, eng, 0.05);   // vorne im Bogen weggeschnitten, Vorderrad frei (Nicolas)   // Kasten (Motor, Seitenteile) genau im Umriss des Fotos (Nicolas): vorne senkrecht, unten flach, hinten schraeg hoch
   rp([[-0.22, 0.38], [0.06, 0.36], [0.16, 0.6], [-0.24, 0.6]], 0.39, black, 0.03);                                       // schwarze Seitenteile (Luftfilter)
   for (const sd of [-1, 1]) {
     meshIn(g, new THREE.CylinderGeometry(0.1, 0.11, 0.07, 16).rotateZ(Math.PI / 2), eng, sd * 0.2, 0.45, -0.22);            // Boxer-Zylinder, nur knapp seitlich (Nicolas: von oben nichts breit)

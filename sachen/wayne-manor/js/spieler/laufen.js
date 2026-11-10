@@ -37,6 +37,7 @@ function pushOut(p, feet) {
 // Boden ohne Quader: unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
 function groundAt(x, z, feet = 0) {
   const sn = serpNear(x, z, SERP_W / 2);
+  if (feet > HILL - 3 && Math.hypot(x - RON.x, z - RON.z) < RON.r - 0.3) { const fd = Math.hypot(x - FOUNT.x, z - FOUNT.z); return fd < FOUNT.r - 0.4 ? FOUNT.floor + HILL : fd < FOUNT.r ? FOUNT.rim + HILL : HILL + 0.05; }   // Rondell eben wie der Kiesbelag (Nicolas: Rolls stand schief, Serpentinen-Anfang/Angleichung)
   if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
   for (const R of [...ROADS2, HFR]) { const rn = roadNear(R, x, z, R.w / 2); if (rn && feet > rn.y - 2) return rn.y + 0.12; }   // Hauptstrasse, Zufahrt (E4), Westweg
   if (inSilo(x, z)) return BED - 20;                                       // Flugzeug-Silo: kein Gelaende (Klappen und Boden sind Quader)
