@@ -225,8 +225,8 @@ function carStep(dt) {
   // sicheren Punkt merken (fuer R)
   C.safeT += dt;
   if (C.safeT > 0.5 && !C.air && !C.wet) { C.safeT = 0; C.safe = { x: C.x, z: C.z, y: C.y, h: C.h }; }
-  // Blick folgt dem Kurs
-  if (Math.abs(C.v) > 3 && !C.air) player.yaw += wrapA(C.h - player.yaw) * Math.min(1, dt * 1.2);
+  // Blick folgt dem Kurs; rueckwaerts schwenkt die Kamera nach vorne und schaut nach hinten (Nicolas 2026-11-10)
+  if (Math.abs(C.v) > 3 && !C.air) player.yaw += wrapA(C.h + (C.v < 0 ? Math.PI : 0) - player.yaw) * Math.min(1, dt * 1.2);
   speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h";
   nitroEl.hidden = !C.spec.boost;
   if (C.spec.boost) { const b = nitroEl.lastChild.firstChild; b.style.width = Math.round((C.boostE ?? 1) * 100) + "%"; nitroEl.className = C.boostOn ? "on" : C.boostLock ? "lock" : (C.boostE ?? 1) < 1 ? "load" : ""; }
