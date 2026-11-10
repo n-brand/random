@@ -530,8 +530,8 @@ function buildSpectre(col = 0xd2aa3c) {
     sideBox(g, sd * 0.8, sd * 0.98, 1.19, 1.23, -0.74, -0.68, paint); sideBox(g, sd * 0.94, sd * 1.12, 1.2, 1.33, -0.74, -0.6, paint);   // Spiegel: Arm auf der Gurtlinie, Gehaeuse aussen                                                     // Spiegel
     sideBox(g, sd * 0.47, sd * 0.74, 0.845, 0.865, -2.56, -2.5, mat.glow);                                                  // Tagfahrlicht (schmal, oben)
     sideBox(g, sd * 0.5, sd * 0.73, 0.66, 0.74, -2.6, -2.52, dark); sideBox(g, sd * 0.53, sd * 0.7, 0.68, 0.72, -2.61, -2.59, mat.glow);   // Hauptscheinwerfer darunter
-    sideBox(g, sd * 0.6, sd * 0.7, 0.78, 1.04, 2.745, 2.765, mat.glowRed); sideBox(g, sd * 0.585, sd * 0.715, 0.765, 1.055, 2.74, 2.75, chrome);   // schmale Rueckleuchten hochkant, Chromrahmen
-    sideBox(g, sd * 0.86, sd * 0.93, 0.8, 1.04, 2.42, 2.66, mat.glowRed);                                                   // Rueckleuchten ziehen um die Ecke (von der Seite sichtbar)                                                    // Rueckleuchten
+    sideBox(g, sd * 0.72, sd * 0.82, 0.78, 1.08, 2.745, 2.765, mat.glowRed); sideBox(g, sd * 0.705, sd * 0.835, 0.765, 1.095, 2.74, 2.75, chrome);   // schmale Rueckleuchten hochkant, Chromrahmen
+    prismIn(g, [[-2.73, 1.09], [-2.42, 1.09], [-2.73, 0.78]], 0.05, mat.glowRed, sd * 0.875);                                // Rueckleuchte um die Ecke: Keil, oben breit, nach unten spitz (Nicolas, Skizze)                                                    // Rueckleuchten
     sideBox(g, sd * 0.94, sd * 1.0, 0.24, 0.27, -1.0, 0.9, chrome);                                                         // Schwellerleiste
   }
   boxIn(g, -0.42, 0.42, 0.5, 0.92, -2.64, -2.56, chrome); boxIn(g, -0.36, 0.36, 0.54, 0.88, -2.65, -2.63, dark);          // hoher Chromgrill
