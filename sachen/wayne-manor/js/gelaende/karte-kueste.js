@@ -128,7 +128,7 @@ function seaTunDist(x, z) {
 const POOL = (() => { const [ax, az] = mp(90, 912), [bx, bz] = mp(140, 985); return { x0: Math.min(ax, bx), x1: Math.max(ax, bx), z0: Math.min(az, bz), z1: Math.max(az, bz), floor: -1.6, water: 0.12 }; })();
 const FOUNT = (() => { const [x, z] = mp(500, 1000); return { x, z, r: 30 * SC, floor: -1.0, water: 0.36, rim: 0.42 }; })();
 const inPool = (x, z) => x > POOL.x0 && x < POOL.x1 && z > POOL.z0 && z < POOL.z1;
-const GY = -4.0;                                                          // Boden der Tiefgarage
+const GY = -5.5;                                                          // Boden der Tiefgarage (Nicolas 2026-11-10: 1,5 m tiefer, Decke hoeher)
 const siteDist = (x, z) => Math.hypot(Math.max(SITE.x0 - x, 0, x - SITE.x1), Math.max(SITE.z0 - z, 0, z - SITE.z1));
 const inLawn = (x, z) => LAWNS.some(l => Math.hypot((x - l.cx) / l.rx, (z - l.cz) / l.rz) < 1);
 // Plateau (A2): Umriss von Nicolas (Skizze plateau-wasserfall.webp, grob), flach bis PL_FLAT Meter ausserhalb der Linie

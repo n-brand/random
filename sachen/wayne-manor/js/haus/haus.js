@@ -282,17 +282,7 @@ const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deck
       const lab = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), flatMat({ map: t }));
       lab.position.set((R.x0 + R.x1) / 2, GY + 0.02, R.z0 + 0.8); lab.userData.keep = true; world.add(lab);
     }
-    // Gym (Bank, Hantelstaender, Laufband), Werkstatt (Hebebuehne, Werkbank)
-    const GYM = rectW(gmp(307.5, 169), gmp(370, 217.5)), WS = rectW(gmp(222.5, 215), gmp(272.5, 282.5));
-    room(GYM, GY, -0.02, [{ side: "x0", a0: GYM.z0 + 1, a1: GYM.z0 + 2.6, h: 2.6 }], mat.concrete, 0.25);
-    { const cx = (GYM.x0 + GYM.x1) / 2, cz = (GYM.z0 + GYM.z1) / 2;
-      B(cx - 0.3, cx + 0.3, GY, GY + 0.5, cz - 1, cz + 1, mat.cloth); B(cx + 1.2, cx + 1.5, GY, GY + 1.8, cz - 1.2, cz + 1.2, mat.steel);
-      B(cx - 2.2, cx - 1.4, GY, GY + 0.3, cz - 1.5, cz + 1.5, mat.dark); }
-    { const cx = (WS.x0 + WS.x1) / 2, cz = (WS.z0 + WS.z1) / 2;
-      for (const sz of [-1.5, 1.5]) B(cx - 1.6, cx - 1.3, GY, GY + 2.2, cz + sz - 0.15, cz + sz + 0.15, mat.steel);
-      B(cx - 1.2, cx + 1.2, GY + 1.2, GY + 1.35, cz - 2.2, cz + 2.2, mat.steel, false);
-      B(WS.x1 - 0.9, WS.x1 - 0.3, GY, GY + 0.95, WS.z0 + 0.5, WS.z1 - 0.5, mat.wood);
-      B(WS.x1 - 0.32, WS.x1 - 0.28, GY + 1.2, GY + 2.4, WS.z0 + 0.5, WS.z1 - 0.5, M(0xb33b2e)); }
+    // Gym und Werkstatt entfernt (Nicolas 2026-11-10: einfach leerer Platz)
     // Treppe Garage -> EG (26 Stufen, steigt nach Westen), Gelaender oben am Loch
     const gr = (FL0 - GY) / 26;
     for (let i = 0; i < 26; i++) B(GSTAIR.x1 - (i + 1) * 0.3, GSTAIR.x1 - i * 0.3, GY, GY + (i + 1) * gr, GSTAIR.z0, GSTAIR.z1, mat.floorStone);
