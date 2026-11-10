@@ -736,14 +736,15 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
     addVehicle(SPEC_TAXI, buildTaxi(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Taxi (Hauptstrasse)", 0xf2c218); }
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
   addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, Math.PI, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
-  addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), bays[4].x, bays[4].z, gy, bays[4].h, "Boxer-Streetfighter (Garage Platz 4)", 0x1f6fd8);   // Nicolas 2026-11-10: in der Garage, Front zur Fahrgasse
+  { const b = bays[4], q = (k) => [b.x + Math.cos(b.h) * k, b.z - Math.sin(b.h) * k];   // Nicolas 2026-11-10: beide Motorraeder nebeneinander auf Platz 4, Front zur Fahrgasse
+    const [x1, z1] = q(-0.8), [x2, z2] = q(0.8);
+    addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), x1, z1, gy, b.h, "Boxer-Streetfighter (Garage Platz 4)", 0x1f6fd8);
+    addVehicle(SPEC_BIKE, buildBike(0xb0141e), x2, z2, gy, b.h, "Motorrad rot (Garage Platz 4)", 0xb0141e); }   // vorher Batcave-Drehscheibe Feld 3
   for (const [no, col, nm] of [[9, 0x55585e, "grau"]])   // Nicolas 2026-11-10: nur noch der graue (rot, blau, silber, dunkelgruen entfernt)
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z, gy, bays[no].h, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
-  // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
-  // gegenueber auf den Feldern 0 und 3, beide schauen nach aussen; die farbigen Tumbler sind weg
+  // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler auf Feld 0, schaut nach aussen (rotes Motorrad seit 2026-11-10 in der Garage)
   const tt = world.userData.turntable, rr = 60 * CAVE_SC, ttPos = k => { const ang = (k + 0.5) / 6 * Math.PI * 2; return [tt.position.x + Math.cos(ang) * rr * 0.55, tt.position.z + Math.sin(ang) * rr * 0.55, Math.atan2(-Math.cos(ang), -Math.sin(ang))]; };
   { const [x, z, h] = ttPos(0); addVehicle(SPEC_TUMBLER, buildTumbler(0x16181b, 0x0d0e10), x, z, LY, h, "Tumbler schwarz (Batcave Drehscheibe)", 0x16181b); }
-  { const [x, z, h] = ttPos(3); addVehicle(SPEC_BIKE, buildBike(0xb0141e), x, z, LY, h, "Motorrad rot (Batcave Drehscheibe)", 0xb0141e); }
   // Versteck hinter der getarnten Felswand (frueher Geheimgang zum Autoaufzug, Nicolas 2026-11-08): schwarzer Tumbler, Bug zur Felswand
   addVehicle(SPEC_TUMBLER, buildTumbler(0x0e0f12, 0x08090b), -47.5, 36.8, LY, 0, "Tumbler schwarz (Versteck hinter der Felswand)", 0x0e0f12);
   // Batpod (schwarz) in der Batcave vor dem Batcomputer, Front nach Osten Richtung Hoehle
