@@ -513,6 +513,43 @@ const SPEC_POLICE = { name: "Gotham Police", wheels: [[-0.82, -1.45], [0.82, -1.
   maxN: 34, maxF: 58, acc: 13, steer: 0.66, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.5, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gotham Police: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen (Blaulicht blinkt beim Fahren)" };
+// ---- Gotham Taxi (Nicolas 2026-11-10, eigener Entwurf, ohne Marken): gelbe Limousine mit Stufenheck, schwarz-weisses Schachbrettband an den Seiten,
+// "GOTHAM CAB" auf den Tueren und hinten, beleuchtetes TAXI-Schild auf dem Dach, Chromstossstangen, Radkappen
+function buildTaxi() {
+  const g = new THREE.Group();
+  const paint = M(0xf2c218, { metalness: 0.35, roughness: 0.35, flatShading: true }), dark = M(0x0a0b0c, { roughness: 0.7, flatShading: true });
+  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.1 }), chrome = M(0xc4c8cc, { metalness: 0.9, roughness: 0.22 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0xc0c4c8, { metalness: 0.85, roughness: 0.25 });
+  const checker = (() => { const t = canvasTex(256, 16, (c, W, H) => { for (let i = 0; i < 32; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? "#f4f4f0" : "#111"; c.fillRect(i * 8, j * 8, 8, 8); } }); t.repeat.set(1, 1); return M(0xffffff, { map: t, roughness: 0.5 }); })();
+  const text = (str, col) => { const t = canvasTex(512, 96, (c, W, H) => { c.clearRect(0, 0, W, H); c.textAlign = "center"; c.textBaseline = "middle"; let p = 76; c.font = "bold " + p + "px Arial, sans-serif"; while (c.measureText(str).width > W - 30) { p -= 2; c.font = "bold " + p + "px Arial, sans-serif"; } c.fillStyle = col; c.fillText(str, W / 2, H / 2 + 3); });
+    t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.45 }); };
+  prismIn(g, [[2.5, 0.32], [2.55, 0.62], [2.35, 0.8], [1.0, 0.86], [-1.75, 0.9], [-2.35, 0.88], [-2.5, 0.62], [-2.4, 0.32]], 1.82, paint);   // Karosserie mit Stufenheck
+  prismIn(g, [[1.0, 0.86], [0.4, 1.34], [-0.95, 1.37], [-1.65, 0.9]], 1.62, glass);                                       // Kabine (Glas)
+  boxIn(g, -0.79, 0.79, 1.34, 1.39, -0.35, 0.95, paint);                                                                 // Dach gelb
+  for (const sd of [-1, 1]) {
+    const band = meshIn(g, new THREE.PlaneGeometry(4.6, 0.09), checker, sd * 0.912, 0.64, 0); band.rotation.y = sd * Math.PI / 2;   // Schachbrettband
+    const t = meshIn(g, new THREE.PlaneGeometry(1.7, 0.32), text("GOTHAM CAB", "#111"), sd * 0.913, 0.45, 0.15); t.rotation.y = sd * Math.PI / 2;   // Schriftzug Tuer
+    sideBox(g, sd * 0.81, sd * 0.82, 0.92, 1.3, -0.25, 0.95, dark); sideBox(g, sd * 0.81, sd * 0.82, 0.92, 1.33, 0.25, 0.32, dark);   // Tuerholme
+    sideBox(g, sd * 0.91, sd * 0.92, 0.36, 0.9, 0.3, 0.32, dark); sideBox(g, sd * 0.91, sd * 0.92, 0.36, 0.9, -0.95, -0.93, dark);   // Tuerfugen
+    sideBox(g, sd * 0.91, sd * 0.94, 0.78, 0.8, -0.2, 0.05, chrome); sideBox(g, sd * 0.91, sd * 0.94, 0.78, 0.8, 0.6, 0.85, chrome);   // Tuergriffe
+    boxIn(g, sd * 0.62 - 0.16, sd * 0.62 + 0.16, 0.6, 0.74, -2.56, -2.52, mat.glow);                                    // Scheinwerfer
+    boxIn(g, sd * 0.3 - 0.1, sd * 0.3 + 0.1, 0.62, 0.72, -2.56, -2.53, mat.glow);                                       // Zusatzscheinwerfer
+    boxIn(g, sd * 0.66 - 0.16, sd * 0.66 + 0.16, 0.62, 0.8, 2.47, 2.51, mat.glowRed);                                   // Rueckleuchten
+    sideBox(g, sd * 0.88, sd * 1.0, 1.02, 1.12, -0.95, -0.8, paint);                                                     // Spiegel
+  }
+  boxIn(g, -0.92, 0.92, 0.3, 0.42, -2.62, -2.5, chrome); boxIn(g, -0.92, 0.92, 0.3, 0.42, 2.48, 2.6, chrome);            // Stossstangen (Chrom)
+  boxIn(g, -0.4, 0.4, 0.46, 0.6, -2.57, -2.52, dark); for (let x = -0.35; x <= 0.36; x += 0.07) boxIn(g, x - 0.01, x + 0.01, 0.47, 0.59, -2.58, -2.57, chrome);   // Grill
+  { const t = meshIn(g, new THREE.PlaneGeometry(1.0, 0.18), text("GOTHAM CAB", "#111"), 0, 0.72, 2.512); }               // Schriftzug hinten
+  mergeStatic(g);
+  // TAXI-Schild auf dem Dach (nicht zusammengefasst: eigene Materialien je Seite), leuchtet
+  const lit = (() => { const t = canvasTex(256, 80, (c, W, H) => { c.fillStyle = "#fff6c8"; c.fillRect(0, 0, W, H); c.fillStyle = "#111"; c.font = "bold 62px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("TAXI", W / 2, H / 2 + 3); }); t.repeat.set(1, 1); return new THREE.MeshBasicMaterial({ map: t }); })();
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.24, 0.26), [dark, dark, M(0xf4e6a0, { emissive: 0x6a5a20 }), dark, lit, lit]); sign.position.set(0, 1.51, 0.3); g.add(sign);
+  const wheels = [[-0.82, -1.5, true], [0.82, -1.5, true], [-0.82, 1.5, false], [0.82, 1.5, false]].map(([x, z, f]) => addWheel(g, x, z, 0.34, 0.24, f, tireM, rimM, 0, 24));
+  return { g, wheels };
+}
+const SPEC_TAXI = { name: "Gotham Taxi", wheels: [[-0.82, -1.5], [0.82, -1.5], [-0.82, 1.5], [0.82, 1.5]], wb: 3.0, track: 1.64, pts: [-1.7, 0, 1.7], R: 1.0, circR: 0.95, enter: 3.8,
+  maxN: 30, maxF: 50, acc: 11, steer: 0.68, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.65, bike: false,
+  exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
+  msg: "Gotham Taxi: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 // ---- Panzer (Nicolas 2026-11-10, eigener Entwurf): Wanne mit schraegem Bug, Ketten mit je 6 Laufrollen und Antriebsrad, Kettenschuerzen,
 // Turm mit langem Rohr (dreht beim Fahren mit der Blickrichtung), Kommandantenluke, Tarnfarbe oliv. Ca. 6,8 x 3,4 x 2,5 m (Rohr ragt 3 m vor)
 function buildTank(col = 0x4d5a36) {
@@ -695,6 +732,8 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   addVehicle(SPEC_AVENTADOR, buildAventador(), bays[8].x, bays[8].z, gy, bays[8].h, "Aventador LP 700-4 (Garage Platz 8)", 0xe07012);   // Nicolas 2026-11-09, Front zur Fahrgasse
   { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }
+  { const S = MAIN.samples, p = S[Math.max(0, (MAIN_J[2] | 0) - 58)] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 54)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: Taxi hinter dem Polizeiauto am Strassenrand
+    addVehicle(SPEC_TAXI, buildTaxi(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Taxi (Hauptstrasse)", 0xf2c218); }
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
   addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, Math.PI, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
   addVehicle(SPEC_STREETFIGHTER, buildStreetfighter(), bays[4].x, bays[4].z, gy, bays[4].h, "Boxer-Streetfighter (Garage Platz 4)", 0x1f6fd8);   // Nicolas 2026-11-10: in der Garage, Front zur Fahrgasse
