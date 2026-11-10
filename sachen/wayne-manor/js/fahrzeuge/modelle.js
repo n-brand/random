@@ -512,6 +512,8 @@ function buildSpectre(col = 0xd2aa3c) {
   const W = [[1.72, R], [-1.6, R]], arch = f => { let y = 0.16; for (const [c, r] of W) { const d = Math.abs(f - c), RR = r + 0.1; if (d < RR + 0.05) y = Math.max(y, 0.16 + (2 * r + 0.06 - 0.16) * Math.sqrt(Math.max(0, 1 - (d / (RR + 0.05)) ** 2))); } return y; };   // runde Radlaeufe
   const hw = tabF([[2.6, 0.7], [2.44, 0.87], [2.1, 0.96], [1.7, 1.0], [0.9, 0.99], [0, 0.98], [-0.9, 1.0], [-1.6, 1.03], [-2.2, 1.0], [-2.55, 0.95], [-2.74, 0.84]]);
   const yT = tabF([[2.6, 1.0], [2.4, 1.08], [1.7, 1.14], [0.8, 1.2], [0, 1.22], [-1.2, 1.23], [-2.3, 1.23], [-2.6, 1.19], [-2.74, 1.04]]);   // Nicolas: mehr Volumen ueber dem Vorderrad und hinter dem Hinterrad
+  const noseF = (x, y) => { for (let f = 2.6; f > 1.6; f -= 0.005) { const hs = hw(f), ye = yT(f) - 0.03, ys = Math.max(0.25, Math.min(ye - 0.14, 0.62)), w = y <= ys ? hs : hs - 0.12 * (y - ys) / (ye - ys); if (w >= Math.abs(x)) return f; } return 1.6; };
+  const nose = (xa, xb, y0, y1, d, m) => { const st = 0.02, x0 = Math.min(xa, xb), x1 = Math.max(xa, xb); for (let x = x0; x < x1 - 1e-6; x += st) { const xm = Math.min(x1, x + st), fz = Math.max(noseF(x, (y0 + y1) / 2), noseF(xm, (y0 + y1) / 2)); boxIn(g, x, xm, y0, y1, -fz - d, -fz + 0.03, m); } };   // Nicolas: nichts steht seitlich heraus
   const body = [], cap = []; for (let f = 2.6; f > -2.75; f -= 0.08) { const ff = Math.max(-2.74, f), yb = ff > 2.45 || ff < -2.6 ? 0.2 : Math.max(0.19, arch(ff)), hs = hw(ff), yt = yT(ff), ye = yt - 0.03, ys = Math.max(yb + 0.05, Math.min(ye - 0.14, 0.62));
     body.push([ff, [[0, yb], [hs - 0.1, yb], [hs, ys], [hs - 0.12, ye], [0, yt]]]); if ((ff > 0.78 && ff < 2.54) || (ff < -2.0 && ff > -2.7)) { const cw = ff < 0 ? 0.6 : hs - 0.17; cap.push([ff, [[0, yt - 0.01], [cw, yt - 0.01], [cw, yt + 0.012], [0, yt + 0.016]]]); } }   // Heckdeckel so schmal wie das Dach, die Schultern bleiben gold (Nicolas)
   loftIn(g, body, paint);                                                                                                      // Karosserie gold
@@ -528,8 +530,8 @@ function buildSpectre(col = 0xd2aa3c) {
     sideBox(g, x, x + sd * 0.025, 1.04, 1.07, -0.78, -0.42, chrome);                                                       // Tuergriff
     sideBox(g, sd * 0.78, sd * 0.84, 1.22, 1.25, -0.72, 1.3, chrome);                                    // Chromlinie unter den Fenstern
     sideBox(g, sd * 0.8, sd * 0.98, 1.19, 1.23, -0.74, -0.68, paint); sideBox(g, sd * 0.94, sd * 1.12, 1.2, 1.33, -0.74, -0.6, paint);   // Spiegel: Arm auf der Gurtlinie, Gehaeuse aussen                                                     // Spiegel
-    sideBox(g, sd * 0.48, sd * 0.84, 0.925, 0.945, -2.62, -2.56, mat.glow);                                                  // Tagfahrlicht: schmaler Strich oben, vom Grill bis zur Ecke
-    sideBox(g, sd * 0.5, sd * 0.82, 0.72, 0.84, -2.62, -2.55, dark); for (const k of [0, 1, 2]) sideBox(g, sd * (0.56 + k * 0.08), sd * (0.6 + k * 0.08), 0.76, 0.8, -2.625, -2.615, mat.glow);   // Scheinwerferband darunter mit drei Lichtern
+    nose(sd * 0.48, sd * 0.8, 0.925, 0.945, 0.012, mat.glow);                                                                // Tagfahrlicht: schmaler Strich, folgt der Rundung
+    nose(sd * 0.5, sd * 0.8, 0.72, 0.84, 0.01, dark); for (const k of [0, 1, 2]) nose(sd * (0.56 + k * 0.07), sd * (0.6 + k * 0.07), 0.76, 0.8, 0.016, mat.glow);   // Scheinwerferband mit drei Lichtern
     { // Rueckleuchte als ein Stueck um die Ecke (Nicolas): hinten schmal hochkant bis an die Kante, auf der Seite ein Keil (oben breit, unten spitz), buendig auf der Karosserie
       const surfX = (f, y) => { const hs = hw(f), ye = yT(f) - 0.03, ys = Math.max(0.25, Math.min(ye - 0.14, 0.62)); return (y <= ys ? hs : hs - 0.12 * (y - ys) / (ye - ys)) + 0.006; };
       const P = (f, y) => [sd * surfX(f, y), y, -f], zr = 2.746, xr = y => sd * (surfX(-2.74, y) - 0.008), q = [];
@@ -540,12 +542,13 @@ function buildSpectre(col = 0xd2aa3c) {
       g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xff3b30, side: THREE.DoubleSide }))); }
     sideBox(g, sd * 0.93, sd * 1.02, 0.17, 0.29, -1.12, 0.98, silver); sideBox(g, sd * 1.02, sd * 1.025, 0.24, 0.26, -1.05, 0.9, chrome);   // silberner Schweller (Nicolas, Foto)
   }
-  boxIn(g, -0.45, 0.45, 0.5, 0.99, -2.67, -2.57, chrome); boxIn(g, -0.39, 0.39, 0.55, 0.94, -2.68, -2.66, M(0x8e9399, { metalness: 0.2, roughness: 0.35 }));   // hoher Chromgrill, Rahmen breit
-  for (let x = -0.35; x <= 0.36; x += 0.035) boxIn(g, x - 0.008, x + 0.008, 0.56, 0.93, -2.69, -2.68, chrome);            // dichte senkrechte Streben (hell)
-  meshIn(g, new THREE.CylinderGeometry(0.018, 0.024, 0.07, 8), chrome, 0, 1.075, -2.5); meshIn(g, new THREE.BoxGeometry(0.03, 0.09, 0.07), chrome, 0, 1.14, -2.49, 0.5);   // Kuehlerfigur wie beim Rolls-Royce (stilisiert)
-  boxIn(g, -0.88, 0.88, 0.17, 0.25, -2.66, -2.2, silver);                                                                // silberne Frontlippe
-  boxIn(g, -0.86, 0.86, 0.26, 0.44, -2.6, -2.56, dark); for (const y of [0.3, 0.4]) boxIn(g, -0.8, 0.8, y, y + 0.015, -2.615, -2.605, chrome);   // Lufteinlass buendig mit zwei Chromleisten
-  boxIn(g, -0.86, 0.86, 0.18, 0.36, 2.5, 2.8, silver); boxIn(g, -0.7, 0.7, 0.37, 0.39, 2.66, 2.79, chrome); boxIn(g, -0.22, 0.22, 0.62, 0.7, 2.745, 2.76, dark);   // silberner Diffusor, Chromleiste, Kennzeichenfeld (leer)
+  boxIn(g, -0.45, 0.45, 0.5, 0.99, -2.66, -2.57, silver); boxIn(g, -0.39, 0.39, 0.55, 0.94, -2.67, -2.65, M(0xd3d7dc, { roughness: 0.35 }));   // hoher Grill silbern wie das Unterteil
+  for (let x = -0.35; x <= 0.36; x += 0.035) boxIn(g, x - 0.008, x + 0.008, 0.56, 0.93, -2.68, -2.67, silver);            // dichte senkrechte Streben
+  meshIn(g, new THREE.CylinderGeometry(0.018, 0.024, 0.07, 8), silver, 0, 1.075, -2.5); meshIn(g, new THREE.BoxGeometry(0.03, 0.09, 0.07), silver, 0, 1.14, -2.49, 0.5);   // Kuehlerfigur (stilisiert), silbern
+  nose(-0.86, 0.86, 0.17, 0.25, 0.04, silver);                                                                           // silberne Frontlippe (folgt der Nase)
+  nose(-0.82, 0.82, 0.27, 0.44, 0.01, dark); for (const y of [0.3, 0.4]) nose(-0.78, 0.78, y, y + 0.015, 0.018, silver);   // Lufteinlass mit zwei silbernen Leisten
+  { const st = []; for (let f = -2.3; f >= -2.84; f -= 0.04) { const k = Math.max(0, -2.4 - f), yb = 0.18 + k * 0.45, w = Math.min(hw(Math.max(-2.74, f)) + 0.012, 1.0) - (f < -2.74 ? (-2.74 - f) * 1.5 : 0); st.push([f, [[0, yb], [w, yb], [w, yb + 0.15], [0, yb + 0.15]]]); } loftIn(g, st, silver); }   // Diffusor silbern, steigt nach hinten schraeg an, von der Seite sichtbar (Nicolas)
+  boxIn(g, -0.7, 0.7, 0.44, 0.46, 2.76, 2.85, chrome); boxIn(g, -0.22, 0.22, 0.62, 0.7, 2.745, 2.76, dark);   // silberner Diffusor, Chromleiste, Kennzeichenfeld (leer)
   const wellM = M(0x0c0d0f, { roughness: 0.9, side: THREE.DoubleSide });                                                          // Radhaeuser (Nicolas: man sah hinter den Reifen durch)
   for (const z of [-1.72, 1.6]) for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(R + 0.08, R + 0.08, 0.3, 28, 1, true, -0.3, Math.PI + 0.6).rotateZ(Math.PI / 2), wellM, sd * 0.71, R, z);   // schmaler, bleibt hinter der Karosserie (Nicolas: von aussen sichtbar)
     meshIn(g, new THREE.CircleGeometry(R + 0.08, 28, -0.3, Math.PI + 0.6).rotateY(Math.PI / 2), wellM, sd * 0.56, R, z); }
