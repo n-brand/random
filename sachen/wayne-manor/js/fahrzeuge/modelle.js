@@ -511,17 +511,17 @@ function buildSpectre(col = 0xd2aa3c) {
   const chrome = M(0xdfe2e6, { metalness: 0.95, roughness: 0.15 }), dark = M(0x111214, { roughness: 0.6, flatShading: true }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0xb9bdc3, { metalness: 0.9, roughness: 0.2 }), R = 0.45;
   const W = [[1.72, R], [-1.6, R]], arch = f => { let y = 0.16; for (const [c, r] of W) { const d = Math.abs(f - c), RR = r + 0.1; if (d < RR + 0.05) y = Math.max(y, 0.16 + (2 * r + 0.06 - 0.16) * Math.sqrt(Math.max(0, 1 - (d / (RR + 0.05)) ** 2))); } return y; };   // runde Radlaeufe
   const hw = tabF([[2.6, 0.7], [2.44, 0.87], [2.1, 0.96], [1.7, 1.0], [0.9, 0.99], [0, 0.98], [-0.9, 1.0], [-1.6, 1.03], [-2.2, 1.0], [-2.55, 0.95], [-2.74, 0.84]]);
-  const yT = tabF([[2.6, 0.9], [2.35, 1.02], [1.7, 1.13], [0.8, 1.2], [0, 1.22], [-1.2, 1.23], [-2.3, 1.23], [-2.6, 1.19], [-2.74, 1.04]]);   // Nicolas: mehr Volumen ueber dem Vorderrad und hinter dem Hinterrad
-  const body = [], cap = []; for (let f = 2.6; f > -2.75; f -= 0.08) { const ff = Math.max(-2.74, f), yb = ff > 2.45 || ff < -2.6 ? 0.26 : Math.max(0.28, arch(ff)), hs = hw(ff), yt = yT(ff), ye = yt - 0.03, ys = Math.max(yb + 0.05, Math.min(ye - 0.14, 0.62));
+  const yT = tabF([[2.6, 1.0], [2.4, 1.08], [1.7, 1.14], [0.8, 1.2], [0, 1.22], [-1.2, 1.23], [-2.3, 1.23], [-2.6, 1.19], [-2.74, 1.04]]);   // Nicolas: mehr Volumen ueber dem Vorderrad und hinter dem Hinterrad
+  const body = [], cap = []; for (let f = 2.6; f > -2.75; f -= 0.08) { const ff = Math.max(-2.74, f), yb = ff > 2.45 || ff < -2.6 ? 0.2 : Math.max(0.19, arch(ff)), hs = hw(ff), yt = yT(ff), ye = yt - 0.03, ys = Math.max(yb + 0.05, Math.min(ye - 0.14, 0.62));
     body.push([ff, [[0, yb], [hs - 0.1, yb], [hs, ys], [hs - 0.12, ye], [0, yt]]]); if ((ff > 0.78 && ff < 2.54) || (ff < -2.0 && ff > -2.7)) { const cw = ff < 0 ? 0.6 : hs - 0.17; cap.push([ff, [[0, yt - 0.01], [cw, yt - 0.01], [cw, yt + 0.012], [0, yt + 0.016]]]); } }   // Heckdeckel so schmal wie das Dach, die Schultern bleiben gold (Nicolas)
   loftIn(g, body, paint);                                                                                                      // Karosserie gold
   loftIn(g, cap, black);                                                                                                       // Haube und Heckdeckel schwarz (Nicolas: Heck wie Foto)
-  const roofY = tabF([[0.8, 1.19], [0.5, 1.38], [0.1, 1.53], [-0.5, 1.55], [-1.2, 1.46], [-1.9, 1.32], [-2.55, 1.21]]), gh = [], ws = [];
-  for (let f = 0.8; f > -2.56; f -= 0.08) { const ff = Math.max(-2.55, f), hb = hw(ff) - 0.2, yt = roofY(ff), ht = Math.min(hb, 0.66); const sec = [ff, [[0, yT(ff) - 0.02], [hb, yT(ff) - 0.02], [ht, Math.max(yt - 0.02, yT(ff))], [0, yt]]]; gh.push(sec);
-    if (ff > 0.16 && ff < 0.79) ws.push([ff, [[0, yT(ff) + 0.004], [hb - 0.13, yT(ff) + 0.004], [ht - 0.11, Math.max(yt - 0.02, yT(ff)) + 0.008], [0, yt + 0.008]]]); }   // Frontscheibe eingesetzt: Rahmen und A-Saeulen bleiben in Wagenfarbe
+  const roofY = tabF([[0.95, 1.2], [0.55, 1.43], [0.1, 1.58], [-0.5, 1.6], [-1.2, 1.52], [-1.9, 1.38], [-2.4, 1.27], [-2.62, 1.22]]), gh = [], ws = [];   // Nicolas: Dach hoeher und als langer Bogen bis ans Heck
+  for (let f = 0.95; f > -2.63; f -= 0.08) { const ff = Math.max(-2.62, f), hb = hw(ff) - 0.2, yt = roofY(ff), ht = Math.min(hb, 0.66); const sec = [ff, [[0, yT(ff) - 0.02], [hb, yT(ff) - 0.02], [ht, Math.max(yt - 0.02, yT(ff))], [0, yt]]]; gh.push(sec);
+    if (ff > 0.16 && ff < 0.94) ws.push([ff, [[0, yT(ff) + 0.004], [hb - 0.13, yT(ff) + 0.004], [ht - 0.11, Math.max(yt - 0.02, yT(ff)) + 0.008], [0, yt + 0.008]]]); }   // Frontscheibe eingesetzt: Rahmen und A-Saeulen bleiben in Wagenfarbe
   loftIn(g, gh, paint); loftIn(g, ws, glass);                                                                                  // Frontscheibe, Fastback-Dach gold (Seitenfenster unten)
-  for (const sd of [-1, 1]) prismIn(g, [[0.68, 1.24], [0.32, 1.42], [-0.4, 1.47], [-1.0, 1.39], [-1.26, 1.25]], 0.03, glass, sd * 0.745);   // Seitenfenster
-  const rf = []; for (let f = 0.14; f > -2.52; f -= 0.08) rf.push([f, [[0, roofY(f) - 0.005], [0.6, roofY(f) - 0.03], [0.6, roofY(f) - 0.01], [0, roofY(f) + 0.012]]]);
+  for (const sd of [-1, 1]) prismIn(g, [[0.84, 1.26], [0.4, 1.47], [-0.4, 1.54], [-1.0, 1.46], [-1.3, 1.28]], 0.03, glass, sd * 0.745);   // Seitenfenster
+  const rf = []; for (let f = 0.14; f > -2.6; f -= 0.08) rf.push([f, [[0, roofY(f) - 0.005], [0.6, roofY(f) - 0.03], [0.6, roofY(f) - 0.01], [0, roofY(f) + 0.012]]]);
   loftIn(g, rf, black);                                                                                                        // Dach schwarz
   for (const sd of [-1, 1]) {
     const x = sd * (hw(0) - 0.01);
@@ -530,8 +530,9 @@ function buildSpectre(col = 0xd2aa3c) {
     sideBox(g, sd * 0.8, sd * 0.98, 1.19, 1.23, -0.74, -0.68, paint); sideBox(g, sd * 0.94, sd * 1.12, 1.2, 1.33, -0.74, -0.6, paint);   // Spiegel: Arm auf der Gurtlinie, Gehaeuse aussen                                                     // Spiegel
     sideBox(g, sd * 0.47, sd * 0.74, 0.845, 0.865, -2.56, -2.5, mat.glow);                                                  // Tagfahrlicht (schmal, oben)
     sideBox(g, sd * 0.5, sd * 0.73, 0.66, 0.74, -2.6, -2.52, dark); sideBox(g, sd * 0.53, sd * 0.7, 0.68, 0.72, -2.61, -2.59, mat.glow);   // Hauptscheinwerfer darunter
-    sideBox(g, sd * 0.6, sd * 0.7, 0.78, 1.04, 2.745, 2.765, mat.glowRed); sideBox(g, sd * 0.585, sd * 0.715, 0.765, 1.055, 2.74, 2.75, chrome);   // schmale Rueckleuchten hochkant, Chromrahmen                                                    // Rueckleuchten
-    sideBox(g, sd * 0.9, sd * 0.98, 0.3, 0.33, -1.0, 0.9, chrome);                                                         // Schwellerleiste
+    sideBox(g, sd * 0.6, sd * 0.7, 0.78, 1.04, 2.745, 2.765, mat.glowRed); sideBox(g, sd * 0.585, sd * 0.715, 0.765, 1.055, 2.74, 2.75, chrome);   // schmale Rueckleuchten hochkant, Chromrahmen
+    sideBox(g, sd * 0.86, sd * 0.93, 0.8, 1.04, 2.42, 2.66, mat.glowRed);                                                   // Rueckleuchten ziehen um die Ecke (von der Seite sichtbar)                                                    // Rueckleuchten
+    sideBox(g, sd * 0.94, sd * 1.0, 0.24, 0.27, -1.0, 0.9, chrome);                                                         // Schwellerleiste
   }
   boxIn(g, -0.42, 0.42, 0.5, 0.92, -2.64, -2.56, chrome); boxIn(g, -0.36, 0.36, 0.54, 0.88, -2.65, -2.63, dark);          // hoher Chromgrill
   for (let x = -0.32; x <= 0.33; x += 0.058) boxIn(g, x - 0.01, x + 0.01, 0.55, 0.87, -2.66, -2.64, chrome);              // Streben
