@@ -508,7 +508,7 @@ const tabF = T => f => { if (f >= T[0][0]) return T[0][1]; for (let i = 1; i < T
 function buildSpectre(col = 0xd2aa3c) {
   const g = new THREE.Group();
   const paint = M(col, { metalness: 0.35, roughness: 0.3, flatShading: true }), black = M(0x0b0c0e, { metalness: 0.6, roughness: 0.18, flatShading: true }), glass = M(0x070a0f, { metalness: 0.7, roughness: 0.06, flatShading: true });
-  const chrome = M(0xdfe2e6, { metalness: 0.95, roughness: 0.15 }), dark = M(0x111214, { roughness: 0.6, flatShading: true }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x26272a, { metalness: 0.85, roughness: 0.25 }), R = 0.47;
+  const chrome = M(0xdfe2e6, { metalness: 0.95, roughness: 0.15 }), dark = M(0x111214, { roughness: 0.6, flatShading: true }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0xb9bdc3, { metalness: 0.9, roughness: 0.2 }), R = 0.47;
   const W = [[1.72, R], [-1.6, R]], arch = f => { let y = 0.16; for (const [c, r] of W) { const d = Math.abs(f - c), RR = r + 0.1; if (d < RR + 0.05) y = Math.max(y, 0.16 + (2 * r + 0.06 - 0.16) * Math.sqrt(Math.max(0, 1 - (d / (RR + 0.05)) ** 2))); } return y; };   // runde Radlaeufe
   const hw = tabF([[2.6, 0.7], [2.44, 0.87], [2.1, 0.96], [1.7, 1.0], [0.9, 0.99], [0, 0.98], [-0.9, 1.0], [-1.6, 1.03], [-2.15, 0.98], [-2.45, 0.86], [-2.6, 0.68]]);
   const yT = tabF([[2.6, 0.82], [2.3, 0.95], [1.6, 1.08], [0.8, 1.18], [0, 1.22], [-1.2, 1.23], [-2.2, 1.22], [-2.5, 1.12], [-2.6, 0.95]]);
@@ -517,8 +517,9 @@ function buildSpectre(col = 0xd2aa3c) {
   loftIn(g, body, paint);                                                                                                      // Karosserie gold
   loftIn(g, cap, black);                                                                                                       // Haube und Heckdeckel schwarz
   const roofY = tabF([[0.8, 1.19], [0.5, 1.38], [0.1, 1.53], [-0.5, 1.55], [-1.2, 1.46], [-1.9, 1.31], [-2.45, 1.21]]), gh = [], ws = [];
-  for (let f = 0.8; f > -2.46; f -= 0.08) { const ff = Math.max(-2.45, f), hb = hw(ff) - 0.2, yt = roofY(ff), ht = Math.min(hb, 0.66); const sec = [ff, [[0, yT(ff) - 0.02], [hb, yT(ff) - 0.02], [ht, Math.max(yt - 0.02, yT(ff))], [0, yt]]]; (ff > 0.12 ? ws : gh).push(sec); if (Math.abs(ff - 0.12) < 0.05) ws.push(sec); }
-  loftIn(g, ws, glass); loftIn(g, gh, paint);                                                                                  // Frontscheibe, Fastback-Dach gold (Seitenfenster unten)
+  for (let f = 0.8; f > -2.46; f -= 0.08) { const ff = Math.max(-2.45, f), hb = hw(ff) - 0.2, yt = roofY(ff), ht = Math.min(hb, 0.66); const sec = [ff, [[0, yT(ff) - 0.02], [hb, yT(ff) - 0.02], [ht, Math.max(yt - 0.02, yT(ff))], [0, yt]]]; gh.push(sec);
+    if (ff > 0.16 && ff < 0.79) ws.push([ff, [[0, yT(ff) + 0.004], [hb - 0.13, yT(ff) + 0.004], [ht - 0.11, Math.max(yt - 0.02, yT(ff)) + 0.008], [0, yt + 0.008]]]); }   // Frontscheibe eingesetzt: Rahmen und A-Saeulen bleiben in Wagenfarbe
+  loftIn(g, gh, paint); loftIn(g, ws, glass);                                                                                  // Frontscheibe, Fastback-Dach gold (Seitenfenster unten)
   for (const sd of [-1, 1]) prismIn(g, [[0.68, 1.24], [0.32, 1.42], [-0.4, 1.47], [-1.0, 1.39], [-1.26, 1.25]], 0.03, glass, sd * 0.745);   // Seitenfenster
   const rf = []; for (let f = 0.14; f > -2.42; f -= 0.08) rf.push([f, [[0, roofY(f) - 0.005], [0.6, roofY(f) - 0.03], [0.6, roofY(f) - 0.01], [0, roofY(f) + 0.012]]]);
   loftIn(g, rf, black);                                                                                                        // Dach schwarz
