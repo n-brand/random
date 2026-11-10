@@ -413,6 +413,39 @@ const SPEC_AVENTADOR = { name: "Aventador LP 700-4", wheels: [[-0.84, -1.35], [0
   maxN: 40, maxF: 90, acc: 12, steer: 0.68, jump: false, grade: 35, camD: 8.0, camH: 1.0, seat: [-0.38, 0.95, 0.2], bodyH: 1.15, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Aventador LP 700-4: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+// ---- Polizeiauto "GOTHAM POLICE" (Nicolas 2026-11-10, eigener Entwurf): Limousine schwarz mit weissen Tueren, Schriftzug auf beiden Tueren und
+// hinten, Lichtbalken rot/blau (blinkt, solange jemand faehrt), Rammschutz vorne, Antenne
+function buildPolice() {
+  const g = new THREE.Group();
+  const paint = M(0x111317, { metalness: 0.5, roughness: 0.35, flatShading: true }), white = M(0xf2f3f5, { metalness: 0.3, roughness: 0.4, flatShading: true }), dark = M(0x0a0b0c, { roughness: 0.7, flatShading: true });
+  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.1 }), chrome = M(0xa8adb3, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0x9ea3a8, { metalness: 0.8, roughness: 0.3 });
+  const red = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2 }), blue = new THREE.MeshStandardMaterial({ color: 0x0a1a5a, emissive: 0x2a5cff, emissiveIntensity: 0.2 });
+  const text = (w, h, size) => { const t = canvasTex(512, 128, (c, W, H) => { c.fillStyle = "#f2f3f5"; c.fillRect(0, 0, W, H); c.fillStyle = "#14243f"; c.font = "bold " + size + "px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("GOTHAM POLICE", W / 2, H / 2 + 4); c.fillRect(20, H - 18, W - 40, 6); }); t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.4 }); };
+  prismIn(g, [[2.45, 0.3], [2.5, 0.6], [2.3, 0.8], [1.0, 0.88], [-2.0, 0.92], [-2.42, 0.86], [-2.48, 0.45], [-2.3, 0.3]], 1.8, paint);   // Karosserie
+  prismIn(g, [[1.0, 0.88], [0.35, 1.36], [-1.0, 1.39], [-1.75, 0.92]], 1.64, glass);                                    // Kabine (Glas)
+  boxIn(g, -0.8, 0.8, 1.36, 1.41, -0.3, 0.98, white);                                                                   // Dach weiss
+  for (const sd of [-1, 1]) {
+    sideBox(g, sd * 0.9, sd * 0.905, 0.38, 0.86, -0.95, 1.1, white);                                                    // weisse Tueren
+    const t = meshIn(g, new THREE.PlaneGeometry(1.9, 0.38), text(1.9, 0.38, 64), sd * 0.912, 0.6, 0.07); t.rotation.y = sd * Math.PI / 2;   // Schriftzug
+    sideBox(g, sd * 0.81, sd * 0.82, 0.95, 1.3, -0.25, 0.95, dark);                                                     // Tuerholm zwischen den Scheiben
+    boxIn(g, sd * 0.52 - 0.2, sd * 0.52 + 0.2, 0.62, 0.72, -2.51, -2.47, mat.glow);                                     // Scheinwerfer
+    boxIn(g, sd * 0.62 - 0.18, sd * 0.62 + 0.18, 0.68, 0.8, 2.43, 2.47, mat.glowRed);                                   // Rueckleuchten
+    boxIn(g, sd * 0.32 - 0.06, sd * 0.32 + 0.06, 0.2, 0.7, -2.68, -2.6, dark);                                          // Rammschutz Streben
+    boxIn(g, sd * 0.38 - 0.3, sd * 0.38 + 0.3, 1.43, 1.55, 0.25, 0.53, sd < 0 ? red : blue);                            // Lichtbalken
+  }
+  boxIn(g, -0.52, 0.52, 0.32, 0.42, -2.7, -2.58, dark); boxIn(g, -0.52, 0.52, 0.58, 0.66, -2.7, -2.58, dark);           // Rammschutz Querholme
+  boxIn(g, -0.12, 0.12, 1.41, 1.5, 0.25, 0.53, dark);                                                                   // Lichtbalken Mitte
+  boxIn(g, -0.8, 0.8, 0.45, 0.6, -2.55, -2.45, chrome); boxIn(g, -0.9, 0.9, 0.3, 0.45, 2.42, 2.55, dark);               // Grill, Stossfaenger hinten
+  { const t = meshIn(g, new THREE.PlaneGeometry(1.0, 0.2), text(1.0, 0.2, 64), 0, 0.82, 2.475); }                        // Schriftzug hinten
+  meshIn(g, new THREE.CylinderGeometry(0.008, 0.008, 0.7, 4), dark, 0.5, 1.75, 0.9);                                    // Antenne
+  mergeStatic(g);
+  const wheels = [[-0.82, -1.45, true], [0.82, -1.45, true], [-0.82, 1.5, false], [0.82, 1.5, false]].map(([x, z, f]) => addWheel(g, x, z, 0.34, 0.24, f, tireM, rimM, 0, 24));
+  return { g, wheels, beacon: [red, blue] };
+}
+const SPEC_POLICE = { name: "Gotham Police", wheels: [[-0.82, -1.45], [0.82, -1.45], [-0.82, 1.5], [0.82, 1.5]], wb: 2.95, track: 1.64, pts: [-1.7, 0, 1.7], R: 1.0, circR: 0.95, enter: 3.8,
+  maxN: 34, maxF: 58, acc: 13, steer: 0.66, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.5, bike: false,
+  exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
+  msg: "Gotham Police: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen (Blaulicht blinkt beim Fahren)" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.94, -1.45], [0.94, -1.45], [-0.94, 1.45], [0.94, 1.45]], wb: 2.9, track: 1.88, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [-0.42, 1.55, 0.15], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
@@ -447,7 +480,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
@@ -458,6 +491,8 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   addVehicle(SPEC_GCLASS, buildGClass(0x141a22), bays[2].x, bays[2].z, gy, Math.PI, "Mercedes-Benz G-Klasse (Garage Platz 2)", 0x141a22);   // Nicolas 2026-11-09, Front zur Fahrgasse (wie der Tumbler)
   addVehicle(SPEC_NACHTFALKE, buildNachtfalke(), bays[5].x, bays[5].z + bays[5].d / 2 - 2.8, gy, 0, "Nachtfalke (Garage Platz 5)", 0x0f1012);   // Nicolas 2026-11-09, Front zur Fahrgasse
   addVehicle(SPEC_AVENTADOR, buildAventador(), bays[8].x, bays[8].z + bays[8].d / 2 - 2.6, gy, 0, "Aventador LP 700-4 (Garage Platz 8)", 0xe07012);   // Nicolas 2026-11-09, Front zur Fahrgasse
+  { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
+    addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0x111317); }
   for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
