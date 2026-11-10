@@ -35,7 +35,7 @@ function carPush(p, feet, R) {
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
   }
 }
-const carSlopeG = (x, z, y) => (y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
+const carSlopeG = (x, z, y) => (y < HILL - 0.2 && (GRAMP.inF(x, z) || GRAMP.inP(x, z))) || (y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
 // Bodenhoehe unter dem Fahrzeug: Mitte oder Mittel der Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
 function carGround(feet) {
   const sp = CAR.spec, hs = sp.wheels.map(([lx, lz]) => { const [x, z] = carW(lx, lz); return carSupport(x, z, feet); });
@@ -239,6 +239,8 @@ const camBlocked = (x, y, z) => {
   if (y >= terrainH(x, z) + 0.2) return false;                           // ueber dem Gelaende frei
   // unter der Erde nur in Hohlraeumen: Garage, Hangfuss-Tunnel, Schacht, Haus, Waterfall-Exit-Roehre, Hoehlen
   if (y < HILL - 0.6 && y > GY + HILL - 0.5 && inPoly(GARAGE, x, z)) return false;   // nur in Garagenhoehe (darunter liegt die Hoehle)
+  if (y < HILL - 0.6 && y > GY + HILL - 0.5 && GRAMP.inP(x, z, -0.5)) return false;   // Garagenrampe: Wendeplatz
+  if (GRAMP.inF(x, z, -0.5) && y > GRAMP.y(z) + 0.3) return false;                  // ueber der (offenen) Klappe frei bis zum Himmel (Nicolas: Kamera wackelte)
   if (y < HILL - 0.6 && y > HF_Y - 0.5 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return false;
   if (inSilo(x, z, -0.8) && y > UY - 1) return false;
   if (y > UY - 1 && y < UY + UH + 1.2 && (axtIn(x, z, -1.2) || inRect(HGX, x, z, -1.2))) return false;   // Gang und Hangar-Erweiterung (hoehere Decke)                     // Flugzeug-Silo (offene Klappen; geschlossen sperren ihre Quader)
@@ -280,7 +282,7 @@ function carFrame(dt) {
       v.x = tt.position.x + dx * c + dz * s; v.z = tt.position.z - dx * s + dz * c; v.h += w; if (v.on) player.yaw += w;
     }
     if (v.on) continue;
-    const lifting = L && L.state === "moving" && CAR_LIFT.inCar({ x: v.x, y: v.y, z: v.z }), atBay = bay && Math.hypot(v.x - bay.x, v.z - bay.z) < 4;
+    const lifting = L && L.state === "moving" && CAR_LIFT.inCar({ x: v.x, y: v.y, z: v.z }), atBay = (bay && Math.hypot(v.x - bay.x, v.z - bay.z) < 4) || GRAMP.inF(v.x, v.z, 1.5);   // Hebebuehne, Garagenrampe: jedes Bild
     let run = lifting || atBay || !v.settled || (vehFrame + v.idx) % 15 === 0;
     if (run && !lifting && v.settled && Math.hypot(player.pos.x - v.x, player.pos.z - v.z) > 80) run = false;   // geparkt und weit weg
     if (!run && !v.spun) continue;

@@ -101,8 +101,9 @@ const TSTAIR = { x0: -37.4, x1: -31.3, z0: 8.9, z1: 13.1 };              // 1. O
 const OSTAIR = { x0: -37.4, x1: -31.3, z0: 13.5, z1: 17.7 };             // 2. OG -> Observatory
 // Tiefgarage (Karte "Garage", gleiche Orientierung); Ein- und Ausfahrt sind seit A1 zu (nur Treppe und Aufzug)
 const gmp = (gx, gy) => mp(337 + (gx - 200) * 0.697, 827 + (gy - 166) * 0.697);
+// Nicolas 2026-11-10: Suedost-Ecke bis z 53 vergroessert (Tor zum Wendeplatz der Garagenrampe)
 const GARAGE = [[102.5, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 217.5], [272.5, 217.5], [272.5, 282.5], [230, 282.5], [230, 316], [312.5, 316],
-  [312.5, 441], [102.5, 441], [102.5, 360], [37.5, 360], [37.5, 216], [102.5, 216]].map(([gx, gy]) => gmp(gx, gy));
+  [312.5, 441], [53.9, 441], [53.9, 360], [37.5, 360], [37.5, 216], [102.5, 216]].map(([gx, gy]) => gmp(gx, gy));
 const GSTAIR = { x0: -46.4, x1: -38.6, z0: 14.6, z1: 16.8 };             // Garage -> EG (gerade, steigt nach Westen)
 const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deckenloch lang genug fuer Kopffreiheit (Koerper 1,8 m)
 {
@@ -258,7 +259,7 @@ const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deck
       const a0 = axis === "x" ? Math.min(ax, bx) : Math.min(az, bz), a1 = axis === "x" ? Math.max(ax, bx) : Math.max(az, bz);
       const L = axis === "x" ? az : ax, mid = (a0 + a1) / 2;
       const s = (axis === "x" ? inPoly(GARAGE, mid, L + 0.3) : inPoly(GARAGE, L + 0.3, mid)) ? 1 : -1;
-      const carOpen = axis === "z" && Math.abs(L - CSH.x1) < 0.2 ? [[CSH.z0, CSH.z1, GY, GY + 3.6]] : [];   // A3: Tor zum Autoaufzug
+      const carOpen = axis === "z" && Math.abs(L - CSH.x1) < 0.2 ? [[CSH.z0, CSH.z1, GY, GY + 3.6]] : axis === "z" && Math.abs(L - 4.7) < 0.2 ? [[GRAMP.D0, GRAMP.D1, GY, GY + 3.6]] : [];   // A3: Tor zum Autoaufzug; Ostwand: Tor zur Garagenrampe
       wall(axis, a0, a1, L + s * 0.25, GY, -0.02, carOpen, mat.concrete, 0.5);
     }
     // Stellplaetze 1-9 (Karte "Garage"), Linien, Nummern, einige Autos

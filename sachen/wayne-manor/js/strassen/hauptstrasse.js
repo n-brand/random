@@ -107,3 +107,11 @@ const HFR = (() => { const [gx, gz] = WALL_GATE2, [ux, uz] = WALL_GATE2_U, g = k
 const HGX = { x0: -70, x1: -46, z0: 26.5, z1: 46 }, AXT = { a: [-52.4, 41.5], b: [-130.62, 124.85], hw: 7 }, SILO = { x: -130.62, z: 124.85, h: 15 };   // Nicolas: fuer The Bat groesser (Gang 14 m, Silo 30 x 30 m)
 function axtIn(x, z, m = 0) { const [ax, az] = AXT.a, [bx, bz] = AXT.b, dx = bx - ax, dz = bz - az, t = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)); return Math.hypot(x - ax - dx * t, z - az - dz * t) < AXT.hw + m; }
 const inSilo = (x, z, m = 0) => Math.abs(x - SILO.x) < SILO.h + m && Math.abs(z - SILO.z) < SILO.h + m;
+// ===================== Garagenrampe (Nicolas 2026-11-10): Klapprampe im Rasen oestlich vom Haus, Wendeplatz, Rolltor in die vergroesserte Garage =====================
+// Klappe F (Scharnier am Nordende auf HILL, Suedende sinkt auf den Garagenboden), Wendeplatz P auf Garagenhoehe unter fester Decke, Tor in der Garagen-Ostwand (z D0..D1).
+// GRAMP.f = Klappenstellung 0 (zu) .. 1 (offen), wird von aussen/garagenrampe.js gesetzt; y(z) = Oberkante der Klappe
+const GRAMP = { F: { x0: 12, x1: 19, z0: 16.5, z1: 39.2 }, P: { x0: 4.75, x1: 19, z0: 39.2, z1: 53.2 }, D0: 46.5, D1: 52.7, f: 0,
+  inF(x, z, m = 0) { const F = this.F; return x > F.x0 - m && x < F.x1 + m && z > F.z0 - m && z < F.z1 + m; },
+  inP(x, z, m = 0) { const P = this.P; return x > P.x0 - m && x < P.x1 + m && z > P.z0 - m && z < P.z1 + m; },
+  ang() { return this.f * Math.asin(-GY / (this.F.z1 - this.F.z0)); },
+  y(z) { const a = this.ang(), s = z - this.F.z0; return s <= (this.F.z1 - this.F.z0) * Math.cos(a) ? HILL - s * Math.tan(a) : GY + HILL; } };

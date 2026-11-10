@@ -16,6 +16,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
   unten drehende Tiefgarage, Medical Bay, Auto Repair mit Auffahr-Hebebuehne, Hoehlensee mit Steg und Boot,
   Felstor zum Lake Exit, Wassertunnel zur Steilkueste, Tunnel nach Gotham und zum Waterfall Exit.
 - **Autoaufzug** Garage - Hangfuss - Batcave (mit Drehteller), Personenaufzug vom Haus bis in die Hoehle.
+- **Garagenrampe**: Klappe im Rasen oestlich vom Haus senkt sich zur Rampe, unten Wendeplatz und Rolltor in die Tiefgarage (Rechtsklick/E, im Fahrzeug L).
 - **Landschaft:** Steilkueste mit Felswand, Wasserhoehlen und Felsnadeln, Bucht mit Landzungen, Wasserfall,
   Wald, Seen, Meer mit Wellen; Tag und Nacht.
 
