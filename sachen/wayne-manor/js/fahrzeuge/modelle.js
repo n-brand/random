@@ -448,6 +448,51 @@ const SPEC_POLICE = { name: "Gotham Police", wheels: [[-0.82, -1.45], [0.82, -1.
   maxN: 34, maxF: 58, acc: 13, steer: 0.66, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.5, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gotham Police: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen (Blaulicht blinkt beim Fahren)" };
+// ---- Panzer (Nicolas 2026-11-10, eigener Entwurf): Wanne mit schraegem Bug, Ketten mit je 6 Laufrollen und Antriebsrad, Kettenschuerzen,
+// Turm mit langem Rohr (dreht beim Fahren mit der Blickrichtung), Kommandantenluke, Tarnfarbe oliv. Ca. 6,8 x 3,4 x 2,5 m (Rohr ragt 3 m vor)
+function buildTank(col = 0x4d5a36) {
+  const g = new THREE.Group();
+  const paint = M(col, { roughness: 0.8, metalness: 0.2, flatShading: true }), dark = M(0x2a2e24, { roughness: 0.85, flatShading: true }), track = M(0x1b1b1b, { roughness: 0.95, flatShading: true });
+  const steel = M(0x5a5f63, { metalness: 0.6, roughness: 0.5, flatShading: true }), tireM = M(0x161616, { roughness: 0.9 }), rimM = M(0x4a5532, { roughness: 0.7, metalness: 0.2 });
+  prismIn(g, [[3.4, 0.7], [3.0, 1.35], [-2.9, 1.45], [-3.3, 1.2], [-3.3, 0.6], [-2.9, 0.45], [2.9, 0.45]], 2.3, paint);     // Wanne
+  for (const sd of [-1, 1]) {
+    const X = sd * 1.4;
+    boxAt(g, 0.62, 0.08, 5.6, track, X, 0.04, 0);                                                                         // Kette unten
+    boxAt(g, 0.62, 0.08, 6.0, track, X, 0.98, 0);                                                                         // Kette oben
+    const f = boxAt(g, 0.62, 0.08, 1.15, track, X, 0.5, -3.05, 0.95); const b = boxAt(g, 0.62, 0.08, 1.1, track, X, 0.52, 3.05, -1.0);   // Kette vorne/hinten schraeg
+    sideBox(g, sd * 1.12, sd * 1.72, 1.02, 1.12, -3.2, 3.2, paint);                                                       // Kettenblech oben
+    sideBox(g, sd * 1.7, sd * 1.75, 0.62, 1.1, -3.1, 3.1, paint);                                                         // Kettenschuerze
+    meshIn(g, new THREE.CylinderGeometry(0.42, 0.42, 0.5, 14).rotateZ(Math.PI / 2), steel, X, 0.55, -2.75);                // Antriebsrad vorne
+    meshIn(g, new THREE.CylinderGeometry(0.36, 0.36, 0.5, 14).rotateZ(Math.PI / 2), steel, X, 0.55, 2.75);                 // Leitrad hinten
+    boxAt(g, 0.5, 0.3, 0.2, dark, sd * 0.85, 1.4, -2.95);                                                                  // Scheinwerferkasten
+    boxAt(g, 0.3, 0.12, 0.04, mat.glow, sd * 0.85, 1.42, -3.06);
+    boxAt(g, 0.18, 0.12, 0.04, mat.glowRed, sd * 0.9, 1.25, 3.31);
+  }
+  boxAt(g, 1.6, 0.25, 0.9, dark, 0, 1.55, 2.4);                                                                           // Motordeck-Gitter
+  mergeStatic(g);
+  // Turm (eigene Gruppe, dreht)
+  const turret = new THREE.Group(); turret.position.set(0, 1.58, 0.35); g.add(turret);
+  const T = new THREE.Group(); turret.add(T);
+  prismIn(T, [[1.25, 0.0], [1.0, 0.58], [-1.15, 0.66], [-1.55, 0.42], [-1.55, 0.0]], 1.8, paint);   // schmaler als die Wanne
+  meshIn(T, new THREE.CylinderGeometry(1.0, 1.05, 0.16, 24), dark, 0, -0.06, 0);                                          // Drehkranz                               // Turmkoerper
+  for (const sd of [-1, 1]) prismIn(T, [[1.25, 0.0], [1.0, 0.56], [0.1, 0.6], [-0.1, 0.0]], 0.2, paint, sd * 0.98);         // Wangen
+  meshIn(T, new THREE.CylinderGeometry(0.42, 0.42, 0.16, 16), dark, -0.45, 0.78, 0.3);                                     // Kommandantenluke
+  meshIn(T, new THREE.CylinderGeometry(0.3, 0.3, 0.12, 12), dark, 0.5, 0.74, 0.5);
+  boxAt(T, 0.6, 0.42, 0.5, dark, 0, 0.3, -1.4);                                                                          // Blende
+  meshIn(T, new THREE.CylinderGeometry(0.1, 0.12, 4.2, 12), steel, 0, 0.32, -3.7, Math.PI / 2);                             // Rohr
+  meshIn(T, new THREE.CylinderGeometry(0.17, 0.17, 0.5, 12), steel, 0, 0.32, -3.0, Math.PI / 2);                             // Rauchabsauger
+  meshIn(T, new THREE.CylinderGeometry(0.14, 0.12, 0.3, 12), dark, 0, 0.32, -5.9, Math.PI / 2);                              // Muendung
+  meshIn(T, new THREE.CylinderGeometry(0.01, 0.01, 1.4, 4), dark, 0.8, 1.4, 1.2);                                         // Antenne
+  for (const o of [...T.children]) o.castShadow = true;
+  // Laufrollen (6 je Seite, drehen mit), rund ueber addWheel
+  const wheels = [];
+  for (const sd of [-1, 1]) for (let k = 0; k < 6; k++) wheels.push(addWheel(g, sd * 1.4, -2.0 + k * 0.8, 0.36, 0.48, false, tireM, rimM, 0, 16));
+  return { g, wheels, turret };
+}
+const SPEC_TANK = { name: "Panzer", wheels: [[-1.4, -2.4], [1.4, -2.4], [-1.4, 2.4], [1.4, 2.4]], wb: 4.8, track: 2.8, pts: [-2.3, 0, 2.3], R: 1.7, circR: 1.7, enter: 4.5,
+  maxN: 14, maxF: 18, acc: 6, steer: 0.95, jump: false, grade: 42, camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
+  exits: [[-2.6, 0], [2.6, 0], [-2.6, 1.5], [2.6, 1.5], [0, -4.5], [0, 4.5]],
+  msg: "Panzer: W/S Gas/Bremse, A/D lenken, Maus dreht den Turm, V Kamera, R zurücksetzen, E aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.94, -1.45], [0.94, -1.45], [-0.94, 1.45], [0.94, 1.45]], wb: 2.9, track: 1.88, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [-0.42, 1.55, 0.15], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
@@ -482,7 +527,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, turret: built.turret || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
@@ -495,6 +540,7 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   addVehicle(SPEC_AVENTADOR, buildAventador(), bays[8].x, bays[8].z + bays[8].d / 2 - 2.6, gy, 0, "Aventador LP 700-4 (Garage Platz 8)", 0xe07012);   // Nicolas 2026-11-09, Front zur Fahrgasse
   { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }
+  { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
   for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
