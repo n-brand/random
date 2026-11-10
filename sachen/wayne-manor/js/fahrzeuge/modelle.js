@@ -514,7 +514,7 @@ function buildSpectre(col = 0xd2aa3c) {
   const yT = tabF([[2.6, 1.0], [2.4, 1.08], [1.7, 1.14], [0.8, 1.2], [0, 1.22], [-1.2, 1.23], [-2.3, 1.23], [-2.6, 1.19], [-2.74, 1.04]]);   // Nicolas: mehr Volumen ueber dem Vorderrad und hinter dem Hinterrad
   const noseF = (x, y) => { for (let f = 2.6; f > 1.6; f -= 0.005) { const hs = hw(f), ye = yT(f) - 0.03, ys = Math.max(0.25, Math.min(ye - 0.14, 0.62)), w = y <= ys ? hs : hs - 0.12 * (y - ys) / (ye - ys); if (w >= Math.abs(x)) return f; } return 1.6; };
   const nose = (xa, xb, y0, y1, d, m) => { const st = 0.02, x0 = Math.min(xa, xb), x1 = Math.max(xa, xb); for (let x = x0; x < x1 - 1e-6; x += st) { const xm = Math.min(x1, x + st), fz = Math.max(noseF(x, (y0 + y1) / 2), noseF(xm, (y0 + y1) / 2)); boxIn(g, x, xm, y0, y1, -fz - d, -fz + 0.03, m); } };   // Nicolas: nichts steht seitlich heraus
-  const body = [], cap = []; for (let f = 2.6; f > -2.75; f -= 0.08) { const ff = Math.max(-2.74, f), yb = ff > 2.45 || ff < -2.6 ? 0.2 : Math.max(0.19, arch(ff)), hs = hw(ff), yt = yT(ff), ye = yt - 0.03, ys = Math.max(yb + 0.05, Math.min(ye - 0.14, 0.62));
+  const body = [], cap = []; for (let f = 2.6; f > -2.75; f -= 0.08) { const ff = Math.max(-2.74, f), yb = ff < -2.4 ? Math.max(arch(ff), 0.28 + (-2.4 - ff) * 0.45) : ff > 2.45 ? 0.2 : Math.max(0.19, arch(ff)), hs = hw(ff), yt = yT(ff), ye = yt - 0.03, ys = Math.max(yb + 0.05, Math.min(ye - 0.14, 0.62));
     body.push([ff, [[0, yb], [hs - 0.1, yb], [hs, ys], [hs - 0.12, ye], [0, yt]]]); if ((ff > 0.78 && ff < 2.54) || (ff < -2.0 && ff > -2.7)) { const cw = ff < 0 ? 0.6 : hs - 0.17; cap.push([ff, [[0, yt - 0.01], [cw, yt - 0.01], [cw, yt + 0.012], [0, yt + 0.016]]]); } }   // Heckdeckel so schmal wie das Dach, die Schultern bleiben gold (Nicolas)
   loftIn(g, body, paint);                                                                                                      // Karosserie gold
   loftIn(g, cap, black);                                                                                                       // Haube und Heckdeckel schwarz (Nicolas: Heck wie Foto)
@@ -536,8 +536,8 @@ function buildSpectre(col = 0xd2aa3c) {
       const surfX = (f, y) => { const hs = hw(f), ye = yT(f) - 0.03, ys = Math.max(0.25, Math.min(ye - 0.14, 0.62)); return (y <= ys ? hs : hs - 0.12 * (y - ys) / (ye - ys)) + 0.006; };
       const P = (f, y) => [sd * surfX(f, y), y, -f], zr = 2.746, xr = y => sd * (surfX(-2.74, y) - 0.008), q = [];
       const tri = (a, b, c) => q.push(...(sd > 0 ? [...a, ...b, ...c] : [...a, ...c, ...b]));
-      tri(P(-2.74, 1.0), P(-2.74, 0.78), P(-2.42, 1.0));                                                                       // Seite (Keil)
-      const A = [sd * 0.7, 0.78, zr], Bq = [xr(0.78), 0.78, zr], Cq = [xr(1.0), 1.0, zr], Dq = [sd * 0.7, 1.0, zr]; tri(A, Bq, Cq); tri(A, Cq, Dq);   // hinten
+      for (let i = 0; i < 12; i++) { const fa = -2.74 + i / 12 * 0.38, fb = -2.74 + (i + 1) / 12 * 0.38, ta = 1.0 - i / 12 * 0.06, ba = 0.8 + i / 12 * 0.14, tb = 1.0 - (i + 1) / 12 * 0.06, bb = 0.8 + (i + 1) / 12 * 0.14; tri(P(fa, ta), P(fa, ba), P(fb, tb)); tri(P(fa, ba), P(fb, bb), P(fb, tb)); }   // Seite: Keil nach vorne spitz, in Streifen auf der gewoelbten Flanke                                                                       // Seite (Keil)
+      const A = [sd * 0.7, 0.8, zr], Bq = [xr(0.8), 0.8, zr], Cq = [xr(1.0), 1.0, zr], Dq = [sd * 0.7, 1.0, zr]; tri(A, Bq, Cq); tri(A, Cq, Dq);   // hinten
       const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(q, 3)); geo.computeVertexNormals();
       g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xff3b30, side: THREE.DoubleSide }))); }
     sideBox(g, sd * 0.93, sd * 1.02, 0.17, 0.29, -1.12, 0.98, silver); sideBox(g, sd * 1.02, sd * 1.025, 0.24, 0.26, -1.05, 0.9, chrome);   // silberner Schweller (Nicolas, Foto)
