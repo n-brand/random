@@ -31,6 +31,7 @@ const ENG_PROFILES = {
   "Gotham Police": { idle: 38, max: 150, gears: [0, 10, 21, 33, 47], wave: "sawtooth", sub: 0.5, cut0: 280, cut1: 1500, vol: 0.16, noise: 0.07 },   // V8
   "Panzer": { idle: 26, max: 70, gears: [0, 5, 10, 15], wave: "sawtooth", sub: 0.5, cut0: 180, cut1: 700, vol: 0.2, noise: 0.12 },   // schwerer Diesel, Kettenrasseln
   "Rolls-Royce Spectre": { idle: 90, max: 650, gears: [0, 60], wave: "sine", wave2: "sine", g2: 0.12, sub: 2, cut0: 1600, cut1: 4500, vol: 0.04, noise: 0.03, am: 0, soft: true, ev: true },   // elektrisch, leises Surren
+  "Kampfjet": { idle: 520, max: 1900, gears: [0, 1], wave: "sine", wave2: "triangle", g2: 0.25, sub: 0.5, cut0: 900, cut1: 4200, vol: 0.05, noise: 0.24, am: 0, soft: true, jet: true },   // Duesentriebwerk: Turbinenpfeifen + Schubrauschen, beide am Schub
   "Boot": { idle: 58, max: 230, gears: [0, 14], wave: "sawtooth", sub: 0.5, cut0: 420, cut1: 2300, vol: 0.13, noise: 0.09 },   // Aussenborder, Rauschen = Wasser
   "Batpod": { idle: 120, max: 1050, gears: [0, 45], wave: "sine", wave2: "sine", g2: 0.16, sub: 2.67, cut0: 2600, cut1: 7000, vol: 0.045, noise: 0.025, am: 0, soft: true, ev: true },   // Nicolas: leiser,
 };
@@ -72,6 +73,12 @@ function engineUpdate(C) {
   const n = ENGINE.nodes; if (!n) return;
   const P = n.P, v = Math.abs(C.v), t = ENGINE.ctx.currentTime, thr = C.throttle || 0;
   if (performance.now() - n.started < 900) return;                         // Anlassen laeuft noch
+  if (P.jet) {                                                             // Duese: Drehzahl folgt dem Schub (traege), Rauschen = Schubstrahl, auch in der Luft
+    n.spool = (n.spool ?? 0.15) + (0.15 + 0.85 * thr - (n.spool ?? 0.15)) * 0.04; const s = n.spool, f = P.idle + (P.max - P.idle) * s; n.f = f;
+    n.o1.frequency.setTargetAtTime(f, t, 0.1); n.o2.frequency.setTargetAtTime(f * P.sub, t, 0.1); n.filt.frequency.setTargetAtTime(P.cut0 + (P.cut1 - P.cut0) * s, t, 0.1);
+    n.out.gain.setTargetAtTime(P.vol * (0.6 + 0.6 * s), t, 0.1); n.ng.gain.setTargetAtTime(P.noise * (0.12 + 0.88 * s * s), t, 0.15); n.nf.frequency.setTargetAtTime(380 + 1500 * s, t, 0.2);
+    return;
+  }
   let gi = 0; while (gi < P.gears.length - 2 && v > P.gears[gi + 1]) gi++;
   const frac = clamp01((v - P.gears[gi]) / (P.gears[gi + 1] - P.gears[gi]));
   const rpm = C.air ? 1 : clamp01(0.06 + (gi > 0 ? 0.32 + frac * 0.6 : frac * 0.9));

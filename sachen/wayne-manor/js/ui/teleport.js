@@ -28,6 +28,7 @@ function teleportToPoint(p) {
     car: '<path d="M3 15v-3l2-4.5h10l3 4.5 3 .8V15z" fill="currentColor" stroke="none" /><circle cx="7" cy="16" r="2.2" /><circle cx="17" cy="16" r="2.2" />',
     bike: '<circle cx="5.5" cy="16" r="3.2" /><circle cx="18.5" cy="16" r="3.2" /><path d="M5.5 16l4-6h5l4 6M9.5 10l3 6M13 7h3l-1.5 3" />',
     bat: '<path d="M12 7c1.2 0 2 1 2 2l4-1.5c1 2 2.5 3 4 3.5-1.6 1.1-2.4 2.6-2.6 4.5-1-1-2.4-1.4-3.6-1-.5-1.3-1.7-2-3.8-2s-3.3.7-3.8 2c-1.2-.4-2.6 0-3.6 1-.2-1.9-1-3.4-2.6-4.5 1.5-.5 3-1.5 4-3.5L10 9c0-1 .8-2 2-2z" fill="currentColor" stroke="none" />',
+    jet: '<path d="M12 2.5c.8 0 1.3 1.2 1.4 3l.2 3.6 7.4 5.6v1.8l-7.3-2.4-.3 4 2.4 1.9v1.5L12 20.6l-3.8.9V20l2.4-1.9-.3-4-7.3 2.4v-1.8l7.4-5.6.2-3.6c.1-1.8.6-3 1.4-3z" fill="currentColor" stroke="none" />',   // Flugzeug von oben (Kampfjet)
   };
   const icon = (k, col) => { const sp = document.createElement("span"); sp.className = "tp-ic"; if (col) sp.style.color = col;
     sp.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k] + "</svg>"; return sp; };
@@ -64,9 +65,14 @@ function teleportToPoint(p) {
       b.addEventListener("click", () => { closeTp(); summonBat(); }); vehList.appendChild(b);
       const o = document.createElement("option"); o.value = "vbat"; o.textContent = "The Bat (Batwing)"; vehGroup.appendChild(o);
     }
+    if (typeof JET !== "undefined") {                                         // Kampfjet (jet.js): zu gross zum Holen, der Spieler geht hin
+      const b = document.createElement("button"); b.type = "button"; b.append(icon("jet", "#8b9198"), "Kampfjet (hingehen)");
+      b.addEventListener("click", () => { closeTp(); goToJet(); }); vehList.appendChild(b);
+      const o = document.createElement("option"); o.value = "vjet"; o.textContent = "Kampfjet (hingehen)"; vehGroup.appendChild(o);
+    }
   }
   sel.addEventListener("pointerdown", fillVehicles); sel.addEventListener("focus", fillVehicles);
-  sel.addEventListener("change", () => { const i = sel.value; sel.value = ""; sel.blur(); if (i === "vbat") summonBat(); else if (i.startsWith("v")) summonVehicle((world.userData.vehicles || [])[+i.slice(1)]); else if (i !== "") teleportTo(+i); });
+  sel.addEventListener("change", () => { const i = sel.value; sel.value = ""; sel.blur(); if (i === "vbat") summonBat(); else if (i === "vjet") goToJet(); else if (i.startsWith("v")) summonVehicle((world.userData.vehicles || [])[+i.slice(1)]); else if (i !== "") teleportTo(+i); });
   // Taste T: Menue auf/zu; Maus wird freigegeben, ohne das Begehen zu beenden
   function closeTp() { menu.hidden = true; }
   $("tp-close").addEventListener("click", closeTp);                          // Handy: kein Esc/T

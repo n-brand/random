@@ -27,9 +27,9 @@ function findAimedGate() {
 gates.push({ name: "Aufzug", g: doorG, call: () => useLift(), verbs: ["holen / fahren", "holen / fahren"], a: [SHAFT.cx, SHAFT.cz], b: [SHAFT.cx, SHAFT.cz] });
 // Fahrzeuge (Nicolas 2026-11-10): Rechtsklick aufs Fahrzeug = einsteigen, Shift = aussteigen, E nicht mehr fuer Fahrzeuge
 function findAimedVehicle() {
-  if (!walking || ghost || (CAR && CAR.on) || BOAT.on || FLY.on) return null;
+  if (!walking || ghost || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on) return null;
   gateRay.setFromCamera(gateCenter, camera); gateRay.far = 14;
-  const list = [...VEH.map(v => [v.g, v]), [BOAT.g, BOAT], [FLY.g, FLY]], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
+  const list = [...VEH.map(v => [v.g, v]), [BOAT.g, BOAT], [FLY.g, FLY], [JET.g, JET]], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
   if (!hit) return null; const e = list.find(([g]) => { for (let o = hit.object; o; o = o.parent) if (o === g) return true; return false; }); return e ? e[1] : null;
 }
 // Einparken (Nicolas 2026-11-10): im Fahrzeug in der Tiefgarage auf einen freien Stellplatz zielen (Fadenkreuz, bei freier Maus der Zeiger) -> blaues P-Schild
@@ -56,8 +56,8 @@ function parkInBay(b) {
   player.yaw = C.h; player.pitch = -0.12; carPose(0); baySign.visible = false; aimedBay = null;
   toast("Eingeparkt auf Platz " + b.n);
 }
-function enterVehicle(v) { const ok = v === BOAT ? useBoat() : v === FLY ? useFly() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
-const vehName = v => v === BOAT ? "Boot" : v === FLY ? "The Bat" : v.label.replace(/ \(.*\)$/, "");
+function enterVehicle(v) { const ok = v === BOAT ? useBoat() : v === FLY ? useFly() : v === JET ? useJet() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
+const vehName = v => v === BOAT ? "Boot" : v === FLY ? "The Bat" : v === JET ? "Kampfjet" : v.label.replace(/ \(.*\)$/, "");
 let aimedVeh = null;
 function toggleGate(t) {
   if (!t) return;

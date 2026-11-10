@@ -110,6 +110,13 @@ addEventListener("keydown", e => {
     if (e.code === "KeyM" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("The Bat"); return; }
     keys.add(e.code); return;
   }
+  if (JET.on) {                                                             // Kampfjet: V Kamera, M Ton, sonst Flugtasten
+    if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault();
+    if (e.code === "KeyV" && !e.repeat) { JET.view = JET.view === 1 ? 0 : 1; player.yaw = JET.h; return toast(JET.view ? "Cockpit" : "Kamera hinter dem Jet"); }
+    if (e.code === "KeyM" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("Kampfjet"); return; }
+    if (e.code === "KeyR" && !e.repeat) return jetReset();                     // R: zurueck an den Standplatz
+    keys.add(e.code); return;
+  }
   if (BOAT.on && e.code === "KeyV" && !e.repeat) { BOAT.view = BOAT.view === 1 ? 0 : 1; player.pitch = BOAT.view ? 0 : -0.12; return toast(BOAT.view ? "Fahrersicht" : "Kamera hinter dem Boot"); }
   if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
   if (CAR.on) {
@@ -140,7 +147,7 @@ addEventListener("keydown", e => {
 let shiftTap = false;
 addEventListener("keydown", e => { shiftTap = (e.code === "ShiftLeft" || e.code === "ShiftRight") && !e.repeat ? !(e.metaKey || e.altKey || e.ctrlKey) : e.repeat && shiftTap && e.code.startsWith("Shift"); }, true);
 addEventListener("blur", () => { shiftTap = false; });
-addEventListener("keyup", e => { keys.delete(e.code); if (!e.code.startsWith("Shift") || !shiftTap || !walking || ghost) return; shiftTap = false; if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (CAR && CAR.on) useCar(); });
+addEventListener("keyup", e => { keys.delete(e.code); if (!e.code.startsWith("Shift") || !shiftTap || !walking || ghost) return; shiftTap = false; if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); });
 addEventListener("blur", () => keys.clear());
 function joystick(el) {
   const knob = el.querySelector("span"), state = { x: 0, y: 0, id: null };
@@ -163,16 +170,16 @@ $("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
 // Handy und Maus (Nicolas 2026-11-09): Knoepfe loesen dieselben Tasten aus wie die Tastatur (E, T, V, R, L, M)
 const pressKey = code => { window.dispatchEvent(new KeyboardEvent("keydown", { code })); window.dispatchEvent(new KeyboardEvent("keyup", { code })); };
-$("btn-act").addEventListener("click", e => { e.currentTarget.blur(); if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (CAR && CAR.on) useCar(); else if (!aimedGate && !useBoat() && !useFly() && !useCar()) pressKey("KeyE"); });   // Handy: Aktion = ein-/aussteigen oder Tor
+$("btn-act").addEventListener("click", e => { e.currentTarget.blur(); if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); else if (!aimedGate && !useBoat() && !useFly() && !useJet() && !useCar()) pressKey("KeyE"); });   // Handy: Aktion = ein-/aussteigen oder Tor
 $("btn-tp").addEventListener("click", e => { e.currentTarget.blur(); toggleTp(); });
 for (const b of document.querySelectorAll("#veh-btns button")) b.addEventListener("click", () => { b.blur(); pressKey(b.dataset.key); });
 // Modus als Klasse am body (fuer die Handy-Knoepfe): car, boat, fly, drive; Sprung-Knopf heisst beim Fliegen "Hoch"
 let modeNow = "";
 function syncModeClasses() {
-  const m = !walking ? "" : FLY.on ? "fly" : BOAT.on ? "boat" : CAR && CAR.on ? "car" : "";
-  if (m === modeNow) return; modeNow = m;
+  const m = !walking ? "" : FLY.on || JET.on ? "fly" : BOAT.on ? "boat" : CAR && CAR.on ? "car" : "";
+  if (m + JET.on === modeNow) return; modeNow = m + JET.on;
   for (const k of ["fly", "boat", "car"]) document.body.classList.toggle(k, k === m);
-  document.body.classList.toggle("drive", !!m); $("btn-jump").textContent = m === "fly" ? "Hoch" : m === "car" && CAR.spec.boost ? "Nitro" : "Sprung";
+  document.body.classList.toggle("drive", !!m); document.body.classList.toggle("jet", JET.on); $("btn-jump").textContent = JET.on ? "Schub +" : m === "fly" ? "Hoch" : m === "car" && CAR.spec.boost ? "Nitro" : "Sprung"; $("btn-down").textContent = JET.on ? "Schub −" : "Runter";   // Kampfjet: Knoepfe = Schub
 }
 $("btn-down").addEventListener("pointerdown", e => { e.preventDefault(); downHeld = true; });
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down").addEventListener(type, () => { downHeld = false; });
@@ -180,6 +187,7 @@ function walkStep(dt) {
   if (ghost) return ghostStep(dt);
   if (BOAT.on) return boatStep(dt);
   if (FLY.on) return flyStep(dt);
+  if (JET.on) return jetStep(dt);
   if (FLY.landing) batLandStep(dt);                                       // The Bat landet nach dem Holen (siehe the-bat.js)
   if (CAR.on) return carStep(dt);
   let mx = 0, mz = 0;
