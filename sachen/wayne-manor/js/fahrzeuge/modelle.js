@@ -56,7 +56,7 @@ function addWheel(g, x, z, r, w, front, tireM, rimM, lugs = 0, seg = 16) {
   for (let k = 0; k < lugs; k++) { const a = k / lugs * Math.PI * 2, b = new THREE.BoxGeometry(w * 0.82, 0.07, r * 0.25).rotateX(-a).translate(0, Math.cos(a) * r * 0.97, Math.sin(a) * r * 0.97).toNonIndexed(); parts.push(b); }   // Stollen nur auf der Laufflaeche
   for (const p of parts) { for (const k of Object.keys(p.attributes)) if (!["position", "normal", "uv"].includes(k)) p.deleteAttribute(k); p.clearGroups(); }
   const t = new THREE.Mesh(mergeGeometries(parts, false), tireM); t.castShadow = true; spin.add(t);
-  spin.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.62, r * 0.62, w + 0.02, 8).rotateZ(Math.PI / 2), rimM));
+  spin.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.64, r * 0.64, w + 0.02, 24).rotateZ(Math.PI / 2), rimM));   // Felge rund (Nicolas: bei 8 Ecken sah man neben der Felge den Boden)
   return { piv, spin, r, front };
 }
 // ---- Tumbler: schwarz, kantig, breite Front mit Vorderraedern unter Kotfluegeln, sehr grosse Hinterraeder, Duesen hinten ----
@@ -541,6 +541,13 @@ function buildSpectre(col = 0xd2aa3c) {
   boxIn(g, -0.75, 0.75, 0.24, 0.4, 2.5, 2.62, dark);                                                                     // Heckschuerze
   mergeStatic(g);
   const wheels = [[-0.9, -1.72, true], [0.9, -1.72, true], [-0.9, 1.6, false], [0.9, 1.6, false]].map(([x, z, f]) => addWheel(g, x, z, R, 0.3, f, tireM, rimM, 0, 28));
+  // Felgen-Design (Nicolas, Foto): dunkle Scheibe mit sieben breiten hellen Speichen als geschwungene Blaetter, dunkle Nabe mit Silberring, aussen
+  const faceM = M(0x15161a, { metalness: 0.7, roughness: 0.3 }), bladeM = M(0xe4e7eb, { metalness: 0.25, roughness: 0.3, emissive: 0x2a2c30, side: THREE.DoubleSide });
+  for (const w of wheels) { const sx = Math.sign(w.piv.position.x), ox = sx * 0.165, F = new THREE.Group(); F.position.x = ox; w.spin.add(F);
+    F.add(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.63, R * 0.63, 0.012, 32).rotateZ(Math.PI / 2), faceM));
+    for (let k = 0; k < 7; k++) { const sh = new THREE.Shape(); sh.moveTo(0.06, -0.02); sh.lineTo(R * 0.6, -0.05); sh.lineTo(R * 0.6, 0.06); sh.lineTo(0.06, 0.03); sh.closePath();
+      const b = new THREE.Mesh(new THREE.ShapeGeometry(sh), bladeM); b.rotation.y = sx * Math.PI / 2; const piv = new THREE.Group(); piv.rotation.x = k / 7 * Math.PI * 2; piv.position.x = sx * 0.008; piv.add(b); b.rotation.z = 0.25; F.add(piv); }
+    F.add(new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.03, 20).rotateZ(Math.PI / 2), faceM)); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.008, 6, 24).rotateY(Math.PI / 2), bladeM); ring.position.x = sx * 0.016; F.add(ring); }
   return { g, wheels };
 }
 const SPEC_SPECTRE = { name: "Rolls-Royce Spectre", wheels: [[-0.9, -1.72], [0.9, -1.72], [-0.9, 1.6], [0.9, 1.6]], wb: 3.32, track: 1.8, pts: [-1.85, 0, 1.85], R: 1.05, circR: 1.0, enter: 3.8,
