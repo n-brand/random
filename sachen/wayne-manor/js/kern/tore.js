@@ -38,7 +38,7 @@ let aimedVeh = null;
 function toggleGate(t) {
   if (!t) return;
   if (t.call) return t.call();
-  t.target = t.target ? 0 : 1;
+  t.target = t.target ? 0 : 1; t.wantClose = false;
   if (t.target && t.also) for (const o of t.also) o.target = 1;           // gekoppelt oeffnen (Garagenrampe: Klappe und Rolltor), schliessen einzeln
   toast(t.name + (t.msgs ? t.msgs[t.target ? 0 : 1] : t.target ? " öffnet sich" : " schließt sich"));
 }
@@ -54,6 +54,9 @@ $("door-hint").addEventListener("click", () => aimedGate ? toggleGate(aimedGate)
 function updateGates(dt) {
   for (const t of gates) {
     if (t.call) continue;
+    // Zurueckfahren (t.retry, Nicolas 2026-11-10): blockiert beim Schliessen -> wieder auf; 1 s frei -> schliesst von selbst, wieder blockiert -> wieder auf
+    if (t.retry && t.target < t.open && t.block && t.block()) { t.target = 1; t.wantClose = true; t.clear = 0; }
+    if (t.retry && t.wantClose && t.target) { t.clear = t.block() ? 0 : t.clear + dt; if (t.clear >= 1) { t.target = 0; t.wantClose = false; } }
     if (t.open !== t.target && t.target < t.open && t.block && t.block()) { if (!t.blocked) toast(t.blockMsg); t.blocked = true; continue; }   // C1: Sicherheitsstopp
     t.blocked = false;
     if (t.open !== t.target) { t.open = t.target > t.open ? Math.min(1, t.open + dt / (t.dur || 4)) : Math.max(0, t.open - dt / (t.dur || 4)); if (t.anim) t.anim(sst(0, 1, t.open)); else t.g.position.y = (t.y0 ?? BED) + sst(0, 1, t.open) * t.lift;
