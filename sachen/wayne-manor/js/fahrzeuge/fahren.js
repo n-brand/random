@@ -238,8 +238,10 @@ const camBlocked = (x, y, z) => {
   for (const [cx, cz, r, top] of nearC) if (r > 0 && (x - cx) ** 2 + (z - cz) ** 2 < r * r && (top === undefined ? y > terrainH(cx, cz) - 3 : y < top && y > top - 8)) return true;
   if (y >= terrainH(x, z) + 0.2) return false;                           // ueber dem Gelaende frei
   // unter der Erde nur in Hohlraeumen: Garage, Hangfuss-Tunnel, Schacht, Haus, Waterfall-Exit-Roehre, Hoehlen
-  if (y < HILL - 0.6 && y > GY + HILL - 0.5 && inPoly(GARAGE, x, z)) return false;   // nur in Garagenhoehe (darunter liegt die Hoehle)
-  if (y < HILL - 0.6 && y > GY + HILL - 0.5 && GRAMP.inP(x, z, -0.5)) return false;   // Garagenrampe: Wendeplatz
+  // Garage: nur in Garagenhoehe und mind. 1,2 m vom Rand (der Umriss schliesst die Waende ein; Nicolas: man sah durch die Wand)
+  if (y < HILL - 0.6 && y > GY + HILL - 0.5 && [[-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2], [1.2, 1.2]].every(([a, b]) => inPoly(GARAGE, x + a, z + b))) return false;
+  if (y < HILL - 0.6 && y > GY + HILL - 0.5 && GRAMP.inP(x, z, -1.2)) return false;   // Garagenrampe: Wendeplatz
+  if (GRAMP.door && GRAMP.door.open > 0.9 && x > 2 && x < 7.5 && z > GRAMP.D0 + 0.8 && z < GRAMP.D1 - 0.8 && y > GY + HILL - 0.5 && y < GY + HILL + 3) return false;   // durchs offene Rampentor
   if (GRAMP.inF(x, z, -0.5) && y > GRAMP.y(z) + 0.3) return false;                  // ueber der (offenen) Klappe frei bis zum Himmel (Nicolas: Kamera wackelte)
   if (y < HILL - 0.6 && y > HF_Y - 0.5 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return false;
   if (inSilo(x, z, -0.8) && y > UY - 1) return false;
