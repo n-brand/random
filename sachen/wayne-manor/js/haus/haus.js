@@ -291,6 +291,7 @@ const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deck
     // Tiefgaragen-Look (Nicolas 2026-11-10): Wandpfeiler alle ca. 6,5 m (nicht in Toren, Plaetzen, Treppe, Raeumen), unten gelb-schwarz,
     // dunkler Sockelstreifen 1,2 m mit gelber Linie an allen Waenden, Unterzuege unter der Decke (ohne Kollision), Pfeile zu Rampe und Autoaufzug
     { const hazM = M(0xffffff, { roughness: 0.7, map: canvasTex(64, 64, (g, w, h) => { g.fillStyle = "#f2c230"; g.fillRect(0, 0, w, h); g.fillStyle = "#1c1d20"; for (let k = -2; k < 4; k++) { g.beginPath(); g.moveTo(k * 32, h); g.lineTo(k * 32 + 16, h); g.lineTo(k * 32 + 16 + h, 0); g.lineTo(k * 32 + h, 0); g.fill(); } }, 1 / 0.45, 1 / 0.45) });
+      const pilM = mat.garageWall.clone(); pilM.color.setHex(0xeadcc4);   // Pfeiler und Unterzuege: gleicher Beton, etwas waermer (Nicolas: andere Farbe, nicht zu sehr)
       const sockM = M(0x4c4f55, { roughness: 0.85 }), lineM = M(0xf2c230, { roughness: 0.6 }), bayR = Object.values(world.userData.bays).map(b => [b.x - b.w / 2 - 0.3, b.x + b.w / 2 + 0.3, b.z - b.d / 2 - 0.5, b.z + b.d / 2 + 0.3]);
       const free = (x0, x1, z0, z1) => !solids.some(q => q.y0 < GY + 1.5 && q.y1 > GY + 0.3 && q.x0 < x1 - 0.05 && q.x1 > x0 + 0.05 && q.z0 < z1 - 0.05 && q.z1 > z0 + 0.05) && !bayR.some(b => b[0] < x1 && b[1] > x0 && b[2] < z1 && b[3] > z0);
       const box = (e, a, b, d0, d1, y0, y1, m, solid) => { const p = e.L + e.s * d0, q = e.L + e.s * d1, [c0, c1] = [Math.min(p, q), Math.max(p, q)]; return e.axis === "x" ? B(a, b, y0, y1, c0, c1, m, solid) : B(c0, c1, y0, y1, a, b, m, solid); };
@@ -302,11 +303,11 @@ const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deck
         for (let i = 1; i <= n; i++) { const c = e.a0 + len * i / (n + 1); if (holes.some(h => c > h[0] - 1 && c < h[1] + 1)) continue;
           const p = e.L + e.s * 0.5, q = e.L + e.s * 0.95, [c0, c1] = [Math.min(p, q), Math.max(p, q)];
           if (!(e.axis === "x" ? free(c - 0.3, c + 0.3, c0, c1) : free(c0, c1, c - 0.3, c + 0.3))) continue;
-          box(e, c - 0.3, c + 0.3, 0.5, 0.95, GY, -0.3, mat.garageWall, true); box(e, c - 0.32, c + 0.32, 0.5, 0.97, GY, GY + 0.9, hazM, false); } }   // Wandpfeiler
+          box(e, c - 0.3, c + 0.3, 0.5, 0.95, GY, -0.3, pilM, true); box(e, c - 0.32, c + 0.32, 0.5, 0.97, GY, GY + 0.9, hazM, false); } }   // Wandpfeiler
       const ga = GARAGE.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
       for (let x = ga[0] + 6; x < ga[1] - 1; x += 6) { let z0 = null;   // Unterzuege Nord-Sued, wo die Garage ist (nicht ueber dem Treppenloch)
         for (let z = ga[2]; z <= ga[3] + 0.25; z += 0.25) { const inn = z <= ga[3] && inPoly(GARAGE, x - 0.3, z) && inPoly(GARAGE, x + 0.3, z) && !(x > GHOLE[0] - 0.5 && x < GHOLE[1] + 0.5 && z > GHOLE[2] - 0.5 && z < GHOLE[3] + 0.5);
-          if (inn && z0 === null) z0 = z; if (!inn && z0 !== null) { if (z - z0 > 1) B(x - 0.2, x + 0.2, -0.72, -0.3, z0 + 0.5, z - 0.5, mat.garageWall, false); z0 = null; } } }
+          if (inn && z0 === null) z0 = z; if (!inn && z0 !== null) { if (z - z0 > 1) B(x - 0.2, x + 0.2, -0.72, -0.3, z0 + 0.5, z - 0.5, pilM, false); z0 = null; } } }
       const arrow = (x, z, rot, txt) => { const t = canvasTex(256, 128, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = "rgba(242,242,236,.92)"; g.beginPath(); g.moveTo(20, 50); g.lineTo(170, 50); g.lineTo(170, 22); g.lineTo(236, 64); g.lineTo(170, 106); g.lineTo(170, 78); g.lineTo(20, 78); g.fill();
         g.font = "800 30px system-ui, sans-serif"; g.textAlign = "center"; g.fillStyle = "#1c1d20"; g.fillText(txt, 95, 75); });
         const m = new THREE.Mesh(new THREE.PlaneGeometry(4, 2).rotateX(-Math.PI / 2).rotateY(rot), M(0xffffff, { map: t, transparent: true, roughness: 0.6 })); m.position.set(x, GY + 0.02, z); m.userData.keep = true; world.add(m); };

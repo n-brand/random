@@ -32,6 +32,30 @@ function findAimedVehicle() {
   const list = [...VEH.map(v => [v.g, v]), [BOAT.g, BOAT], [FLY.g, FLY]], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
   if (!hit) return null; const e = list.find(([g]) => { for (let o = hit.object; o; o = o.parent) if (o === g) return true; return false; }); return e ? e[1] : null;
 }
+// Einparken (Nicolas 2026-11-10): im Fahrzeug in der Tiefgarage auf einen freien Stellplatz zielen (Fadenkreuz, bei freier Maus der Zeiger) -> blaues P-Schild
+// ueber dem Platz und Hinweis; Rechtsklick stellt das Fahrzeug sofort mit dem Heck zur Wand hinein (bays[n].h = Front zur Hallenmitte), man bleibt sitzen
+const bayMouse = new THREE.Vector2(0, 0), bayPt = new THREE.Vector3(), bayPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+renderer.domElement.addEventListener("mousemove", e => { const r = renderer.domElement.getBoundingClientRect(); bayMouse.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); });
+const baySign = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = "#1f5fd0"; g.beginPath(); g.roundRect(6, 6, w - 12, h - 12, 18); g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 6; g.stroke();
+  g.fillStyle = "#fff"; g.font = "900 88px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("P", w / 2, h / 2 + 5); }), depthTest: false, transparent: true }));
+baySign.scale.set(1.4, 1.4, 1); baySign.renderOrder = 10; baySign.visible = false; baySign.userData.noLift = true; scene.add(baySign);
+let aimedBay = null;
+const bayFree = (b, me) => !VEH.some(v => v !== me && Math.abs(v.x - b.x) < b.w / 2 + 0.4 && Math.abs(v.z - b.z) < b.d / 2 + 0.4 && Math.abs(v.y - GY - HILL) < 2);
+function findAimedBay() {
+  const C = CAR, bays = world.userData.bays;
+  if (!walking || ghost || !C || !C.on || !bays || C.y > HILL - 2 || !inPoly(GARAGE, C.x, C.z)) return null;
+  gateRay.setFromCamera(document.pointerLockElement ? gateCenter : bayMouse, camera); bayPlane.constant = -(GY + HILL);
+  if (!gateRay.ray.intersectPlane(bayPlane, bayPt) || bayPt.distanceTo(camera.position) > 45) return null;
+  for (const [n, b] of Object.entries(bays)) if (Math.abs(bayPt.x - b.x) < b.w / 2 && Math.abs(bayPt.z - b.z) < b.d / 2) return bayFree(b, C) ? Object.assign(b, { n }) : null;
+  return null;
+}
+function parkInBay(b) {
+  const C = CAR; C.x = b.x; C.z = b.z; C.h = b.h; C.y = GY + HILL; carNear();
+  const gr = carGround(C.y + 0.3); C.y = gr.y;
+  Object.assign(C, { v: 0, vy: 0, air: false, wet: false, settled: false, steer: 0, lean: 0, pitch: gr.pitch, roll: gr.roll, safe: { x: C.x, z: C.z, y: C.y, h: C.h } });
+  player.yaw = C.h; player.pitch = -0.12; carPose(0); baySign.visible = false; aimedBay = null;
+  toast("Eingeparkt auf Platz " + b.n);
+}
 function enterVehicle(v) { const ok = v === BOAT ? useBoat() : v === FLY ? useFly() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
 const vehName = v => v === BOAT ? "Boot" : v === FLY ? "The Bat" : v.label.replace(/ \(.*\)$/, "");
 let aimedVeh = null;
@@ -46,11 +70,12 @@ function toggleGate(t) {
 renderer.domElement.addEventListener("contextmenu", e => { if (walking) e.preventDefault(); });
 renderer.domElement.addEventListener("mousedown", e => { if (!walking || e.button !== 2) return; e.preventDefault(); const g = findAimedGate();
   if (g) return toggleGate(g);
+  { const b = findAimedBay(); if (b) return parkInBay(b); }
   if (!ghost) { const v = findAimedVehicle(); if (v) enterVehicle(v); return; }
   // Geist ohne Tor im Ziel (Nicolas 2026-11-10): Menue wie in der Orbit-Ansicht (Koordinaten kopieren, hierhin teleportieren); bei gefangener Maus am Fadenkreuz
   const locked = !!document.pointerLockElement; if (dragging) stopDrag();
   const r = renderer.domElement.getBoundingClientRect(); orbitPick.pickAt(locked ? r.left + r.width / 2 : e.clientX, locked ? r.top + r.height / 2 : e.clientY); });
-$("door-hint").addEventListener("click", () => aimedGate ? toggleGate(aimedGate) : aimedVeh && enterVehicle(aimedVeh));
+$("door-hint").addEventListener("click", () => aimedGate ? toggleGate(aimedGate) : aimedVeh ? enterVehicle(aimedVeh) : aimedBay && parkInBay(aimedBay));
 function updateGates(dt) {
   for (const t of gates) {
     if (t.call) continue;
@@ -66,9 +91,10 @@ function updateGates(dt) {
   gateHintClock += dt;
   if (gateHintClock < 0.15) return;
   gateHintClock = 0;
-  aimedGate = findAimedGate(); aimedVeh = aimedGate ? null : findAimedVehicle();
+  aimedGate = findAimedGate(); aimedVeh = aimedGate ? null : findAimedVehicle(); aimedBay = aimedGate ? null : findAimedBay();
+  baySign.visible = !!aimedBay; if (aimedBay) baySign.position.set(aimedBay.x, GY + HILL + 1.6, aimedBay.z);
   const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : aimedGate.call ? "Rechtsklick: " : "Rechtsklick/E: ") + aimedGate.name + " " + (aimedGate.verbs || ["öffnen", "schließen"])[aimedGate.target ? 1 : 0] : "";
-  const vtxt = !aimedGate && aimedVeh ? (touch ? "Tippen: " : "Rechtsklick: ") + "einsteigen (" + vehName(aimedVeh) + ")" : "", show = !!(aimedGate || aimedVeh);
+  const vtxt = !aimedGate && aimedVeh ? (touch ? "Tippen: " : "Rechtsklick: ") + "einsteigen (" + vehName(aimedVeh) + ")" : aimedBay ? (touch ? "Tippen: " : "Rechtsklick: ") + "einparken (Platz " + aimedBay.n + ")" : "", show = !!(aimedGate || aimedVeh || aimedBay);
   if (hint.hidden !== !show) hint.hidden = !show;
   if (show && hint.textContent !== (txt || vtxt)) hint.textContent = txt || vtxt;
 }
