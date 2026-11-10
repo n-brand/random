@@ -39,5 +39,6 @@
   GRAMP.near = p => Math.max(P.x0 - p.x, p.x - P.x1, 0) ** 2 + Math.max(F.z0 - p.z, p.z - P.z1, 0) ** 2 < 15 * 15 && Math.abs(p.y - HILL + 2) < 8;
   GRAMP.gate = { name: "Garagenrampe (Klappe)", g, open: 0, target: 0, dur: 6, anim: animF, a: [cx, F.z0 + 6], b: [cx, F.z1 - 6], verbs: ["öffnen", "schließen"], block: blk(onF), blockMsg: "Garagenrampe stoppt: erst von der Klappe fahren" };
   GRAMP.door = { name: "Garagentor (Rampe)", g: gd, open: 0, target: 0, dur: 3, anim: animD, a: [4.5, GRAMP.D0], b: [4.5, GRAMP.D1], verbs: ["öffnen", "schließen"], block: blk(onD), blockMsg: "Garagentor stoppt: erst aus dem Tor fahren" };
+  GRAMP.gate.also = [GRAMP.door]; GRAMP.door.also = [GRAMP.gate];   // Nicolas: zusammen oeffnen, einzeln schliessen
   gates.push(GRAMP.gate, GRAMP.door);
 }

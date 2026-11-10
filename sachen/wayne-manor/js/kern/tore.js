@@ -18,6 +18,7 @@ function toggleGate(t) {
   if (!t) return;
   if (t.call) return t.call();
   t.target = t.target ? 0 : 1;
+  if (t.target && t.also) for (const o of t.also) o.target = 1;           // gekoppelt oeffnen (Garagenrampe: Klappe und Rolltor), schliessen einzeln
   toast(t.name + (t.msgs ? t.msgs[t.target ? 0 : 1] : t.target ? " öffnet sich" : " schließt sich"));
 }
 // Rechtsklick ueber mousedown (wie die Villa): bei gefangener Maus schickt der Browser kein contextmenu
