@@ -101,9 +101,8 @@ const TSTAIR = { x0: -37.4, x1: -31.3, z0: 8.9, z1: 13.1 };              // 1. O
 const OSTAIR = { x0: -37.4, x1: -31.3, z0: 13.5, z1: 17.7 };             // 2. OG -> Observatory
 // Tiefgarage (Karte "Garage", gleiche Orientierung); Ein- und Ausfahrt sind seit A1 zu (nur Treppe und Aufzug)
 const gmp = (gx, gy) => mp(337 + (gx - 200) * 0.697, 827 + (gy - 166) * 0.697);
-// Nicolas 2026-11-10: Suedost-Ecke bis z 53 vergroessert (Tor zum Wendeplatz der Garagenrampe)
-const GARAGE = [[102.5, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 217.5], [272.5, 217.5], [272.5, 282.5], [230, 282.5], [230, 316], [312.5, 316],
-  [312.5, 441], [53.9, 441], [53.9, 360], [37.5, 360], [37.5, 216], [102.5, 216]].map(([gx, gy]) => gmp(gx, gy));
+// Nicolas 2026-11-10 (Skizze): vergroessert, Nord bis z 7,5 (kurz vor dem Brunnenbecken), Sued durchgehend bis z 55,3, Kerbe in der Mitte gefuellt; Ostwand x 4,7 mit Tor zur Garagenrampe
+const GARAGE = [[37.5, 165], [277.5, 165], [277.5, 58.5], [375, 58.5], [375, 156], [380.1, 156], [380.1, 441], [37.5, 441]].map(([gx, gy]) => gmp(gx, gy));
 const GSTAIR = { x0: -46.4, x1: -38.6, z0: 14.6, z1: 16.8 };             // Garage -> EG (gerade, steigt nach Westen)
 const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deckenloch lang genug fuer Kopffreiheit (Koerper 1,8 m)
 {
