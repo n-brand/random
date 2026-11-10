@@ -493,48 +493,59 @@ const SPEC_TANK = { name: "Panzer", wheels: [[-1.4, -2.4], [1.4, -2.4], [-1.4, 2
   maxN: 14, maxF: 18, acc: 6, steer: 0.95, jump: false, grade: 42, camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
   exits: [[-2.6, 0], [2.6, 0], [-2.6, 1.5], [2.6, 1.5], [0, -4.5], [0, 4.5]],
   msg: "Panzer: W/S Gas/Bremse, A/D lenken, Maus dreht den Turm, V Kamera, R zurücksetzen, E aussteigen" };
-// ---- Rolls-Royce Cullinan mit Tuning-Bodykit (Nicolas 2026-11-10, stilisiert, ohne Logos/Embleme): hoher Luxus-SUV, aufrechte Front mit hohem
-// Chromgrill, Kuehlerfigur, schmale LED-Scheinwerfer, Carbon-Kit (Splitter, Kotfluegelverbreiterungen, Schweller, Haubenluefter, Dachspoiler,
-// Diffusor), vier Endrohre, grosse dunkle Felgen. Ca. 5,35 x 2,1 x 1,84 m, Radstand 3,3 m
-function buildCullinan(col = 0xd2aa3c) {
+// Glatter Koerper aus Querschnitten (wie beim Aventador): Stationen [f, Halbschnitt von unten-Mitte ueber die Seite bis oben-Mitte], gespiegelt, Enden zu
+function loftIn(g, st, m) {
+  const pos = [], ring = ([f, h]) => [...h, ...h.slice().reverse().map(([x, y]) => [-x, y])].map(([x, y]) => [x, y, -f]);
+  const R = st.map(ring), n = R[0].length, tri = (a, b, c) => pos.push(...a, ...c, ...b);
+  for (let i = 0; i < R.length - 1; i++) for (let j = 0; j < n; j++) { const a = R[i][j], b = R[i][(j + 1) % n], c = R[i + 1][(j + 1) % n], d = R[i + 1][j]; tri(a, d, c); tri(a, c, b); }
+  for (const [k, s] of [[0, 1], [R.length - 1, -1]]) { const r = R[k], c = r.reduce((q, p) => [q[0] + p[0] / n, q[1] + p[1] / n, q[2] + p[2] / n], [0, 0, 0]); for (let j = 0; j < n; j++) s > 0 ? tri(c, r[j], r[(j + 1) % n]) : tri(c, r[(j + 1) % n], r[j]); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); const o = new THREE.Mesh(geo, m); g.add(o); return o;
+}
+const tabF = T => f => { if (f >= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (f >= T[i][0]) { const [f0, a] = T[i - 1], [f1, b] = T[i]; return a + (b - a) * (f0 - f) / (f0 - f1); } return T[T.length - 1][1]; };
+// ---- Rolls-Royce Spectre (Nicolas 2026-11-10, Fotos vorne und oben; stilisiert, ohne Logos/Schriftzug): grosses Coupe mit einer Tuer je Seite,
+// von oben rund (schmale Nase und Heck, breite Hueften), Fastback, zweifarbig Gold mit schwarzer Haube, schwarzem Dach und schwarzem Heckdeckel,
+// hoher Chromgrill, geteilte Scheinwerfer (schmales Tagfahrlicht oben), Kuehlerfigur stilisiert, Chromlinie unter den Fenstern. Profil nach Seitenfoto: Gurtlinie bis 1,22 m, Fastback bis ans Heck. Ca. 5,2 x 2,0 x 1,56 m
+function buildSpectre(col = 0xd2aa3c) {
   const g = new THREE.Group();
-  const paint = M(col, { metalness: 0.35, roughness: 0.3, flatShading: true }), carbon = M(0x141516, { metalness: 0.4, roughness: 0.35, flatShading: true }), glass = M(0x080c12, { metalness: 0.65, roughness: 0.08 });
-  const chrome = M(0xdfe2e6, { metalness: 0.95, roughness: 0.15 }), accent = M(0xc9ccd0, { metalness: 0.9, roughness: 0.2 }), black = M(0x0b0c0e, { metalness: 0.6, roughness: 0.2, flatShading: true }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x1d1e21, { metalness: 0.85, roughness: 0.25 }), R = 0.46;
-  const arch = c => [[c - R - 0.12, 0.42], [c - R - 0.1, R + 0.22], [c - R * 0.62, 2 * R + 0.09], [c + R * 0.62, 2 * R + 0.09], [c + R + 0.1, R + 0.22], [c + R + 0.12, 0.42]];
-  const top = [[2.67, 0.36], [2.69, 0.98], [2.58, 1.12], [1.3, 1.2], [-2.55, 1.24], [-2.67, 1.08], [-2.67, 0.42], [-2.45, 0.34]];
-  prismIn(g, [...top, [2.5, 0.34]], 1.62, paint);
-  prismIn(g, [[2.7, 0.97], [2.59, 1.135], [1.3, 1.215], [1.3, 1.19], [2.56, 1.11], [2.67, 0.96]], 1.9, black);              // Haube schwarz (zweifarbig, Nicolas: Farbe wie Foto)                                                                           // Rumpf
+  const paint = M(col, { metalness: 0.35, roughness: 0.3, flatShading: true }), black = M(0x0b0c0e, { metalness: 0.6, roughness: 0.18, flatShading: true }), glass = M(0x070a0f, { metalness: 0.7, roughness: 0.06, flatShading: true });
+  const chrome = M(0xdfe2e6, { metalness: 0.95, roughness: 0.15 }), dark = M(0x111214, { roughness: 0.6, flatShading: true }), tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x26272a, { metalness: 0.85, roughness: 0.25 }), R = 0.47;
+  const W = [[1.72, R], [-1.6, R]], arch = f => { let y = 0.16; for (const [c, r] of W) { const d = Math.abs(f - c), RR = r + 0.1; if (d < RR + 0.05) y = Math.max(y, 0.16 + (2 * r + 0.06 - 0.16) * Math.sqrt(Math.max(0, 1 - (d / (RR + 0.05)) ** 2))); } return y; };   // runde Radlaeufe
+  const hw = tabF([[2.6, 0.7], [2.44, 0.87], [2.1, 0.96], [1.7, 1.0], [0.9, 0.99], [0, 0.98], [-0.9, 1.0], [-1.6, 1.03], [-2.15, 0.98], [-2.45, 0.86], [-2.6, 0.68]]);
+  const yT = tabF([[2.6, 0.82], [2.3, 0.95], [1.6, 1.08], [0.8, 1.18], [0, 1.22], [-1.2, 1.23], [-2.2, 1.22], [-2.5, 1.12], [-2.6, 0.95]]);
+  const body = [], cap = []; for (let f = 2.6; f > -2.61; f -= 0.08) { const ff = Math.max(-2.6, f), yb = Math.abs(ff) > 2.45 ? 0.26 : Math.max(0.28, arch(ff)), hs = hw(ff), yt = yT(ff), ye = yt - 0.03, ys = Math.max(yb + 0.05, Math.min(ye - 0.14, 0.62));
+    body.push([ff, [[0, yb], [hs - 0.1, yb], [hs, ys], [hs - 0.12, ye], [0, yt]]]); if (ff > 0.78 && ff < 2.54) cap.push([ff, [[0, yt - 0.01], [hs - 0.17, yt - 0.01], [hs - 0.17, yt + 0.012], [0, yt + 0.016]]]); }
+  loftIn(g, body, paint);                                                                                                      // Karosserie gold
+  loftIn(g, cap, black);                                                                                                       // Haube und Heckdeckel schwarz
+  const roofY = tabF([[0.8, 1.19], [0.5, 1.38], [0.1, 1.53], [-0.5, 1.55], [-1.2, 1.46], [-1.9, 1.31], [-2.45, 1.21]]), gh = [], ws = [];
+  for (let f = 0.8; f > -2.46; f -= 0.08) { const ff = Math.max(-2.45, f), hb = hw(ff) - 0.2, yt = roofY(ff), ht = Math.min(hb, 0.66); const sec = [ff, [[0, yT(ff) - 0.02], [hb, yT(ff) - 0.02], [ht, Math.max(yt - 0.02, yT(ff))], [0, yt]]]; (ff > 0.12 ? ws : gh).push(sec); if (Math.abs(ff - 0.12) < 0.05) ws.push(sec); }
+  loftIn(g, ws, glass); loftIn(g, gh, paint);                                                                                  // Frontscheibe, Fastback-Dach gold (Seitenfenster unten)
+  for (const sd of [-1, 1]) prismIn(g, [[0.68, 1.24], [0.32, 1.42], [-0.4, 1.47], [-1.0, 1.39], [-1.26, 1.25]], 0.03, glass, sd * 0.745);   // Seitenfenster
+  const rf = []; for (let f = 0.14; f > -2.42; f -= 0.08) rf.push([f, [[0, roofY(f) - 0.005], [0.6, roofY(f) - 0.03], [0.6, roofY(f) - 0.01], [0, roofY(f) + 0.012]]]);
+  loftIn(g, rf, black);                                                                                                        // Dach schwarz
   for (const sd of [-1, 1]) {
-    prismIn(g, [[2.66, 0.42], [2.66, 0.98], [2.56, 1.12], [1.3, 1.2], [-2.55, 1.24], [-2.65, 1.08], [-2.65, 0.42], ...arch(-1.65).reverse(), ...arch(1.65).reverse()], 0.2, paint, sd * 0.91);   // Seitenwand mit Radlaeufen
-    for (const c of [-1.65, 1.65]) prismIn(g, [[c + R + 0.24, 0.48], [c + R + 0.2, R + 0.26], [c + R * 0.64, 2 * R + 0.18], [c - R * 0.64, 2 * R + 0.18], [c - R - 0.2, R + 0.26], [c - R - 0.24, 0.48],
-      [c - R - 0.12, 0.48], [c - R - 0.1, R + 0.22], [c - R * 0.62, 2 * R + 0.09], [c + R * 0.62, 2 * R + 0.09], [c + R + 0.1, R + 0.22], [c + R + 0.12, 0.48]], 0.14, carbon, sd * 1.04);   // Carbon-Verbreiterungen
-    sideBox(g, sd * 0.96, sd * 1.06, 0.3, 0.44, -0.95, 1.0, carbon); sideBox(g, sd * 1.04, sd * 1.065, 0.36, 0.39, -0.9, 0.95, accent);   // Schweller mit Zierlinie
-    prismIn(g, [[1.24, 1.21], [0.62, 1.76], [-0.15, 1.78], [-0.15, 1.21]], 0.02, glass, sd * 0.86);                          // Seitenscheiben vorne
-    prismIn(g, [[-0.25, 1.21], [-0.25, 1.78], [-1.55, 1.78], [-1.55, 1.23]], 0.02, glass, sd * 0.86); prismIn(g, [[-1.65, 1.23], [-1.65, 1.77], [-2.3, 1.72], [-2.42, 1.26]], 0.02, glass, sd * 0.86);
-    sideBox(g, sd * 0.86, sd * 1.06, 1.42, 1.56, 0.95, 1.08, paint);                                                     // Spiegel
-    boxIn(g, sd * 0.68 - 0.24, sd * 0.68 + 0.24, 0.86, 0.92, -2.7, -2.66, mat.glow);                                      // LED-Scheinwerfer
-    boxIn(g, sd * 0.68 - 0.24, sd * 0.68 + 0.24, 0.8, 0.83, -2.69, -2.67, accent);
-    boxIn(g, sd * 0.72 - 0.16, sd * 0.72 + 0.16, 0.92, 1.12, 2.66, 2.7, mat.glowRed);                                     // Rueckleuchten hochkant
-    for (const o of [0.22, 0.42]) meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.25, 14), chrome, sd * o, 0.4, 2.72, Math.PI / 2);   // vier Endrohre
-    boxIn(g, sd * 0.42 - 0.11, sd * 0.42 + 0.11, 1.15, 1.2, -2.1, -1.5, carbon);                                          // Haubenluefter
+    const x = sd * (hw(0) - 0.01);
+    for (const z of [-0.86, 0.67]) sideBox(g, x, x + sd * 0.012, 0.32, 1.2, z, z + 0.015, dark);                              // Tuerfugen (eine lange Tuer)
+    sideBox(g, x, x + sd * 0.025, 1.04, 1.07, -0.78, -0.42, chrome);                                                       // Tuergriff
+    sideBox(g, sd * 0.78, sd * 0.84, 1.22, 1.25, -0.72, 1.3, chrome);                                    // Chromlinie unter den Fenstern
+    sideBox(g, sd * 0.8, sd * 0.98, 1.19, 1.23, -0.74, -0.68, paint); sideBox(g, sd * 0.94, sd * 1.12, 1.2, 1.33, -0.74, -0.6, paint);   // Spiegel: Arm auf der Gurtlinie, Gehaeuse aussen                                                     // Spiegel
+    sideBox(g, sd * 0.47, sd * 0.74, 0.845, 0.865, -2.56, -2.5, mat.glow);                                                  // Tagfahrlicht (schmal, oben)
+    sideBox(g, sd * 0.5, sd * 0.73, 0.66, 0.74, -2.6, -2.52, dark); sideBox(g, sd * 0.53, sd * 0.7, 0.68, 0.72, -2.61, -2.59, mat.glow);   // Hauptscheinwerfer darunter
+    sideBox(g, sd * 0.5, sd * 0.62, 0.75, 1.02, 2.52, 2.6, mat.glowRed);                                                    // Rueckleuchten
+    sideBox(g, sd * 0.9, sd * 0.98, 0.3, 0.33, -1.0, 0.9, chrome);                                                         // Schwellerleiste
   }
-  prismIn(g, [[1.3, 1.2], [0.62, 1.78], [-2.32, 1.78], [-2.48, 1.24]], 1.7, paint);                                        // Aufbau (hinter den Scheiben)
-  prismIn(g, [[1.32, 1.2], [1.28, 1.2], [0.6, 1.79], [0.64, 1.79]], 1.66, glass);                                          // Frontscheibe
-  boxIn(g, -0.86, 0.86, 1.78, 1.84, -0.62, 2.35, carbon); boxAt(g, 1.6, 0.06, 0.4, carbon, 0, 1.82, 2.4, 0.12);           // Dach, Dachspoiler
-  boxIn(g, -0.62, 0.62, 1.3, 1.74, 2.66, 2.69, glass);                                                                    // Heckscheibe
-  boxIn(g, -0.44, 0.44, 0.6, 1.14, -2.73, -2.67, chrome); boxIn(g, -0.38, 0.38, 0.64, 1.1, -2.735, -2.72, carbon);        // hoher Grill
-  for (let x = -0.33; x <= 0.34; x += 0.066) boxIn(g, x - 0.012, x + 0.012, 0.65, 1.09, -2.745, -2.73, chrome);           // senkrechte Streben
-  meshIn(g, new THREE.ConeGeometry(0.04, 0.14, 6), chrome, 0, 1.2, -2.66);                                                 // Kuehlerfigur (stilisiert)
-  boxIn(g, -1.04, 1.04, 0.28, 0.4, -2.85, -2.62, carbon); boxIn(g, -0.9, 0.9, 0.29, 0.31, -2.88, -2.84, accent);          // Frontsplitter
-  boxIn(g, -1.0, 1.0, 0.3, 0.5, 2.62, 2.78, carbon); for (const x of [-0.6, -0.3, 0, 0.3, 0.6]) boxIn(g, x - 0.02, x + 0.02, 0.26, 0.5, 2.6, 2.84, carbon);   // Diffusor
+  boxIn(g, -0.42, 0.42, 0.5, 0.92, -2.64, -2.56, chrome); boxIn(g, -0.36, 0.36, 0.54, 0.88, -2.65, -2.63, dark);          // hoher Chromgrill
+  for (let x = -0.32; x <= 0.33; x += 0.058) boxIn(g, x - 0.01, x + 0.01, 0.55, 0.87, -2.66, -2.64, chrome);              // Streben
+  meshIn(g, new THREE.ConeGeometry(0.035, 0.13, 6), chrome, 0, 0.97, -2.45);                                                 // Kuehlerfigur (stilisiert)
+  boxIn(g, -0.8, 0.8, 0.26, 0.42, -2.62, -2.5, dark); boxIn(g, -0.62, 0.62, 0.43, 0.45, -2.63, -2.58, chrome);             // Lufteinlass, Zierleiste
+  boxIn(g, -0.75, 0.75, 0.24, 0.4, 2.5, 2.62, dark);                                                                     // Heckschuerze
   mergeStatic(g);
-  const wheels = [[-0.95, -1.65, true], [0.95, -1.65, true], [-0.95, 1.65, false], [0.95, 1.65, false]].map(([x, z, f]) => addWheel(g, x, z, R, 0.34, f, tireM, rimM, 0, 28));
+  const wheels = [[-0.9, -1.72, true], [0.9, -1.72, true], [-0.9, 1.6, false], [0.9, 1.6, false]].map(([x, z, f]) => addWheel(g, x, z, R, 0.3, f, tireM, rimM, 0, 28));
   return { g, wheels };
 }
-const SPEC_CULLINAN = { name: "Cullinan (Tuning)", wheels: [[-0.95, -1.65], [0.95, -1.65], [-0.95, 1.65], [0.95, 1.65]], wb: 3.3, track: 1.9, pts: [-1.85, 0, 1.85], R: 1.08, circR: 1.05, enter: 3.8,
-  maxN: 30, maxF: 70, acc: 12, steer: 0.62, jump: false, grade: 38, camD: 9.5, camH: 1.4, seat: [-0.45, 1.5, 0.2], bodyH: 1.9, bike: false,
-  exits: [[-2.1, -0.2], [2.1, -0.2], [-2.1, 1.3], [2.1, 1.3], [0, -4.0], [0, 4.0]],
-  msg: "Cullinan (Tuning): W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
+const SPEC_SPECTRE = { name: "Rolls-Royce Spectre", wheels: [[-0.9, -1.72], [0.9, -1.72], [-0.9, 1.6], [0.9, 1.6]], wb: 3.32, track: 1.8, pts: [-1.85, 0, 1.85], R: 1.05, circR: 1.0, enter: 3.8,
+  maxN: 30, maxF: 70, acc: 14, steer: 0.62, jump: false, grade: 36, camD: 9.5, camH: 1.2, seat: [-0.45, 1.2, 0.3], bodyH: 1.6, bike: false,
+  exits: [[-2.0, -0.2], [2.0, -0.2], [-2.0, 1.3], [2.0, 1.3], [0, -4.0], [0, 4.0]],
+  msg: "Rolls-Royce Spectre: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.94, -1.45], [0.94, -1.45], [-0.94, 1.45], [0.94, 1.45]], wb: 2.9, track: 1.88, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
   maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [-0.42, 1.55, 0.15], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
@@ -583,7 +594,7 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
   { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }
   { const x = -150, z = 33; addVehicle(SPEC_TANK, buildTank(), x, z, terrainH(x, z), Math.PI / 2, "Panzer (Kiesweg West)", 0x4d5a36); }   // Nicolas 2026-11-10, am Kiesweg zum Westtor, Bug nach Westen
-  addVehicle(SPEC_CULLINAN, buildCullinan(), RON.x + 10, RON.z, HILL, 0, "Cullinan Tuning (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10, auf dem Rondell vor dem Haupteingang
+  addVehicle(SPEC_SPECTRE, buildSpectre(), RON.x + 10, RON.z, HILL, 0, "Rolls-Royce Spectre (Rondell)", 0xd2aa3c);   // Nicolas 2026-11-10 (statt Cullinan), auf dem Rondell vor dem Haupteingang
   for (const [no, col, nm] of [[3, 0x8c1d1d, "rot"], [4, 0x2b4c7e, "blau"], [6, 0xc9c9c4, "silber"], [7, 0x1d3b2a, "dunkelgrün"], [9, 0x55585e, "grau"]])
     addVehicle(SPEC_ROLLS, buildRolls(col), bays[no].x, bays[no].z + bays[no].d / 2 - 3.3, gy, 0, "Rolls-Royce " + nm + " (Garage Platz " + no + ")", col);   // Front zur Fahrgasse (-z), Heck am hinteren Platzrand (6,1 m lang)
   // Drehende Tiefgarage (Batcave, Nicolas 2026-11-08): nur noch der schwarze Tumbler und das rote Motorrad (vorher Garage Platz 2),
