@@ -206,6 +206,7 @@ function buildBatpod() {
 // (1 px = 1,6 mm, Radstand 1,52 m): hoher flacher Tank in Carbon mit weissen Schraegstreifen, vorne schraeg abfallend, kleine Lampenmaske, flacher Sitz,
 // kurzes hohes Heck, Boxermotor mit Zylindern seitlich heraus, zwei Endtoepfe links schraeg nach oben, blaue Gabel, dickes Hinterrad mit blauer
 // 5-Speichen-Felge, Vorderrad schwarz. Profil-Koordinaten [f vorne, y hoch], vorne = -z
+const SF_K = 1.15;
 function buildStreetfighter() {
   const g = new THREE.Group();
   const carbon = M(0x1b1d21, { metalness: 0.5, roughness: 0.35, flatShading: true }), white = M(0xe9ecef, { roughness: 0.45 }), black = M(0x0e0f11, { roughness: 0.7 }), seatM = M(0x09090a, { roughness: 0.95 });
@@ -251,10 +252,10 @@ function buildStreetfighter() {
     tube(Q(N[6]), P(X, -WF, RR + 0.04), 0.02, black, 6); tube(Q(N[7]), P(X, -WF, RR - 0.03), 0.02, black, 6);   // zur Achse
     boxAt(g, 0.03, 0.09, 0.12, steel, X - 0.01, 0.42, 0.62); meshIn(g, new THREE.CylinderGeometry(0.018, 0.018, 0.1, 8).rotateZ(Math.PI / 2), steel, X - 0.06, 0.43, 0.5); meshIn(g, new THREE.SphereGeometry(0.022, 8, 6), M(0xd0202a, { roughness: 0.4 }), X - 0.02, 0.36, 0.6); }   // Bremssattel-Halter, Fussraste, rote Schraube
   tube(P(0, 0.43, 0.8), P(0, 0.36, 0.56), 0.04, black); tube(P(0, -0.2, 0.7), P(0, -0.1, 0.4), 0.035, black);               // Rahmen
-  mergeStatic(g);
-  const wheels = [addWheel(g, 0, -0.66, RF, 0.3, true, tireM, black, 0, 28), addWheel(g, 0, WF, RR, 0.3, false, tireM, black, 0, 28)];
+  mergeStatic(g); for (const o of g.children) o.scale.x = 0.82;                                                             // etwas duenner (Nicolas)
+  const wheels = [addWheel(g, 0, -0.66, RF, 0.26, true, tireM, black, 0, 28), addWheel(g, 0, WF, RR, 0.26, false, tireM, black, 0, 28)];
   const discM = M(0xa9adb3, { metalness: 0.85, roughness: 0.3, side: THREE.DoubleSide });
-  for (const [w, rimC, wd, discs] of [[wheels[0], black, 0.3, [-1, 1]], [wheels[1], blue, 0.3, [-1]]]) { w.spin.remove(w.spin.children[1]); const r = w.r;   // Felgen offen (Nicolas: man sieht durch): keine volle Scheibe
+  for (const [w, rimC, wd, discs] of [[wheels[0], black, 0.26, [-1, 1]], [wheels[1], blue, 0.26, [-1]]]) { w.spin.remove(w.spin.children[1]); const r = w.r;   // Felgen offen (Nicolas: man sieht durch): keine volle Scheibe
     w.spin.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.6, r * 0.6, wd - 0.02, 32, 1, true).rotateZ(Math.PI / 2), M(rimC.color.getHex(), { metalness: 0.75, roughness: 0.3, side: THREE.DoubleSide })));   // Felgenbett
     for (const sx of discs) { const d = new THREE.Mesh(new THREE.RingGeometry(r * 0.22, r * (discs.length > 1 ? 0.5 : 0.42), 28).rotateY(Math.PI / 2), discM); d.position.x = sx * 0.06; w.spin.add(d); }   // Bremsscheibe als Ring
     for (const sx of [-1, 1]) {                // je Seite: 5 Speichen, Ring, Nabe
@@ -263,6 +264,7 @@ function buildStreetfighter() {
     for (let k = 0; k < 5; k++) { const sp = new THREE.Group(); sp.rotation.x = k / 5 * Math.PI * 2; sp.add(new THREE.Mesh(new THREE.BoxGeometry(0.02, r * 0.52, 0.045).translate(sx * 0.01, r * 0.33, 0), rimC)); F.add(sp); }
     F.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16).rotateZ(Math.PI / 2), rimC)); } }
   for (const w of wheels) w.spin.add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.32, 10).rotateZ(Math.PI / 2), black));   // Achse
+  g.scale.setScalar(SF_K);                                                                                                   // alles 15 % groesser (Nicolas: neben dem Spectre zu klein)
   return { g, wheels };
 }
 // Quader quer zur Fahrtrichtung zwischen zwei x-Werten in beliebiger Reihenfolge (fuer Teile mit sd * ..., sonst negative Breite = unsichtbar)
@@ -670,8 +672,8 @@ const SPEC_BIKE = { name: "Motorrad", wheels: [[0, -0.72], [0, 0.72]], wb: 1.44,
   maxN: 32, maxF: 52, acc: 13, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.25], bodyH: 1.7, bike: true,
   exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.8], [0, 1.8]],
   msg: "Motorrad: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
-const SPEC_STREETFIGHTER = { name: "Boxer-Streetfighter", wheels: [[0, -0.66], [0, 0.76]], wb: 1.42, track: 0, pts: [-0.6, 0.6], R: 0.44, circR: 0.42, enter: 2.5,
-  maxN: 34, maxF: 72, acc: 16, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.3, 0.36], bodyH: 1.55, bike: true,
+const SPEC_STREETFIGHTER = { name: "Boxer-Streetfighter", wheels: [[0, -0.66 * SF_K], [0, 0.76 * SF_K]], wb: 1.42 * SF_K, track: 0, pts: [-0.7, 0.7], R: 0.46, circR: 0.45, enter: 2.6,
+  maxN: 34, maxF: 72, acc: 16, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.41], bodyH: 1.75, bike: true,
   exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.9], [0, 1.9]],
   msg: "Boxer-Streetfighter: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, E absteigen" };
 const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36, track: 0, pts: [-0.95, 0, 0.95], R: 0.5, circR: 0.5, enter: 2.8,
