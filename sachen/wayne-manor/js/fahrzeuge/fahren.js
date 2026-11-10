@@ -35,7 +35,7 @@ function carPush(p, feet, R) {
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
   }
 }
-const carSlopeG = (x, z, y) => (y < HILL - 0.2 && (GRAMP.inF(x, z) || GRAMP.inP(x, z))) || (y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
+const carSlopeG = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : (y < HILL - 0.2 && GRAMP.inP(x, z)) || (y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
 // Bodenhoehe unter dem Fahrzeug: Mitte oder Mittel der Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
 function carGround(feet) {
   const sp = CAR.spec, hs = sp.wheels.map(([lx, lz]) => { const [x, z] = carW(lx, lz); return carSupport(x, z, feet); });
