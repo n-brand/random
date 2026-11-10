@@ -539,8 +539,8 @@ function buildSpectre(col = 0xd2aa3c) {
   boxIn(g, -0.8, 0.8, 0.26, 0.42, -2.62, -2.5, dark); boxIn(g, -0.62, 0.62, 0.43, 0.45, -2.63, -2.58, chrome);             // Lufteinlass, Zierleiste
   boxIn(g, -0.78, 0.78, 0.24, 0.34, 2.62, 2.76, dark); boxIn(g, -0.7, 0.7, 0.35, 0.37, 2.66, 2.77, chrome); boxIn(g, -0.22, 0.22, 0.62, 0.7, 2.745, 2.76, dark);   // Diffusor, Chromleiste, Kennzeichenfeld (leer)                                                                     // Heckschuerze
   const wellM = M(0x0c0d0f, { roughness: 0.9, side: THREE.DoubleSide });                                                          // Radhaeuser (Nicolas: man sah hinter den Reifen durch)
-  for (const z of [-1.72, 1.6]) for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(R + 0.1, R + 0.1, 0.46, 28, 1, true, -0.3, Math.PI + 0.6).rotateZ(Math.PI / 2), wellM, sd * 0.79, R, z);
-    meshIn(g, new THREE.CircleGeometry(R + 0.1, 28, -0.3, Math.PI + 0.6).rotateY(Math.PI / 2), wellM, sd * 0.56, R, z); }
+  for (const z of [-1.72, 1.6]) for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(R + 0.08, R + 0.08, 0.3, 28, 1, true, -0.3, Math.PI + 0.6).rotateZ(Math.PI / 2), wellM, sd * 0.71, R, z);   // schmaler, bleibt hinter der Karosserie (Nicolas: von aussen sichtbar)
+    meshIn(g, new THREE.CircleGeometry(R + 0.08, 28, -0.3, Math.PI + 0.6).rotateY(Math.PI / 2), wellM, sd * 0.56, R, z); }
   mergeStatic(g);
   const wheels = [[-0.9, -1.72, true], [0.9, -1.72, true], [-0.9, 1.6, false], [0.9, 1.6, false]].map(([x, z, f]) => addWheel(g, x, z, R, 0.3, f, tireM, rimM, 0, 28));
   // Felgen-Design (Nicolas, Foto): dunkle Scheibe mit sieben breiten hellen Speichen als geschwungene Blaetter, dunkle Nabe mit Silberring, aussen
