@@ -227,13 +227,13 @@ function buildStreetfighter() {
       for (let n = 0; n < N; n++) quad(T(n / N, 0), T((n + 1) / N, 0), T((n + 1) / N, 1), T(n / N, 1)); }
     const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(q, 3)); geo.computeVertexNormals(); g.add(new THREE.Mesh(geo, M(0xe9ecef, { roughness: 0.45, side: THREE.DoubleSide }))); }
   rp([[0.3, 0.55], [0.5, 0.56], [0.56, 0.66], [0.34, 0.66]], 0.42, white, 0.04);                                            // weisse Seitenteile vorne unter dem Tank
-  rp([[0.6, 0.7], [0.76, 0.73], [0.8, 0.8], [0.7, 0.86], [0.6, 0.84]], 0.22, carbon, 0.05);                             // Lampenmaske
-  boxIn(g, -0.07, 0.07, 0.74, 0.79, -0.823, -0.815, mat.glow);                                                                 // Scheinwerfer (Schlitz)
-  rp([[-0.2, 0.79], [-0.32, 0.765], [-0.46, 0.79], [-0.55, 0.835], [-0.53, 0.8], [-0.32, 0.735], [-0.2, 0.75]], 0.27, seatM, 0.035);   // Sitz: tief vorne, nach hinten schraeg hoch (Nicolas)                        // Sitz flach
-  rp([[-0.18, 0.62], [-0.36, 0.6], [-0.6, 0.77], [-0.63, 0.83], [-0.57, 0.86], [-0.46, 0.8], [-0.3, 0.75], [-0.18, 0.78]], 0.2, carbon, 0.05);   // Heck steigt nach hinten an                          // kurzes hohes Heck
-  boxIn(g, -0.05, 0.05, 0.8, 0.825, 0.633, 0.64, mat.glowRed);                                                              // Ruecklicht
-  prismIn(g, [[-0.14, 0.27], [0.27, 0.25], [0.36, 0.42], [0.22, 0.6], [-0.16, 0.59]], 0.34, eng);                            // Motorgehaeuse
-  prismIn(g, [[-0.2, 0.38], [0.08, 0.38], [0.14, 0.6], [-0.22, 0.6]], 0.4, black);                                         // schwarze Seitenteile (Luftfilter)
+  rp([[0.55, 0.66], [0.74, 0.68], [0.71, 0.76], [0.57, 0.82], [0.5, 0.8]], 0.22, carbon, 0.04);                             // Lampenmaske
+  boxIn(g, -0.06, 0.06, 0.69, 0.725, -0.747, -0.74, mat.glow);                                                                 // Scheinwerfer (Schlitz)
+  rp([[-0.19, 0.79], [-0.25, 0.765], [-0.33, 0.775], [-0.39, 0.82], [-0.37, 0.79], [-0.26, 0.735], [-0.19, 0.75]], 0.27, seatM, 0.035);   // Sitz: tief vorne, nach hinten schraeg hoch (Nicolas)                        // Sitz flach
+  rp([[-0.2, 0.62], [-0.36, 0.58], [-0.5, 0.66], [-0.6, 0.77], [-0.6, 0.83], [-0.42, 0.855], [-0.37, 0.8], [-0.25, 0.75], [-0.2, 0.77]], 0.22, carbon, 0.05);   // Heck steigt nach hinten an                          // kurzes hohes Heck
+  boxIn(g, -0.05, 0.05, 0.79, 0.815, 0.63, 0.637, mat.glowRed);                                                              // Ruecklicht
+  rp([[-0.32, 0.22], [0.3, 0.19], [0.4, 0.2], [0.41, 0.47], [0.53, 0.6], [0.3, 0.62], [-0.2, 0.62], [-0.38, 0.54], [-0.34, 0.32]], 0.36, eng, 0.05);   // Kasten (Motor, Seitenteile) genau im Umriss des Fotos (Nicolas): vorne senkrecht, unten flach, hinten schraeg hoch
+  rp([[-0.22, 0.38], [0.06, 0.36], [0.16, 0.6], [-0.24, 0.6]], 0.39, black, 0.03);                                       // schwarze Seitenteile (Luftfilter)
   for (const sd of [-1, 1]) {
     meshIn(g, new THREE.CylinderGeometry(0.1, 0.11, 0.07, 16).rotateZ(Math.PI / 2), eng, sd * 0.2, 0.45, -0.22);            // Boxer-Zylinder, nur knapp seitlich (Nicolas: von oben nichts breit)
     boxAt(g, 0.04, 0.19, 0.24, black, sd * 0.25, 0.46, -0.23);      // Zylinderkopf, Deckel
