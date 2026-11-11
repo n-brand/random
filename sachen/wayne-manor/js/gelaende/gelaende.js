@@ -39,7 +39,7 @@ const TB = 64, TBN = T_N / TB;                                           // 64 Z
 const TERR = { blocks: [], detail: (() => { try { const v = localStorage.getItem("wm-detail"); if (v === "niedrig" || v === "mittel" || v === "hoch") return v; } catch (e) {} return TILES.mobile ? "niedrig" : "mittel"; })(), queue: [], tris: 0 };
 const TERR_F = { niedrig: 0.03, mittel: 0.015, hoch: 0.008 };
 function setTerrainDetail(v) { if (!TERR_F[v]) return; TERR.detail = v; try { localStorage.setItem("wm-detail", v); } catch (e) {} TILES.cx = NaN; }
-function terrainBlocks(pos, nrm, col, cut, mtl) {
+function terrainBlocks(pos, nrm, col, cut, colAt, mtl) {
   for (let bj = 0; bj < TBN; bj++) for (let bi = 0; bi < TBN; bi++) {
     const i0 = bi * TB, j0 = bj * TB; let hasCut = false, y0 = 1e9, y1 = -1e9;
     for (let j = j0; j <= j0 + TB; j++) for (let i = i0; i <= i0 + TB; i++) { const k = j * TN1 + i; if (cut[k]) hasCut = true; y0 = Math.min(y0, TH[k]); y1 = Math.max(y1, TH[k]); }
@@ -50,7 +50,7 @@ function terrainBlocks(pos, nrm, col, cut, mtl) {
   function build(b, S) {
     const n = TB / S + 1, P = new Float32Array(n * n * 3), N = new Float32Array(n * n * 3), Cc = new Float32Array(n * n * 3), U = new Float32Array(n * n * 2), I = [];
     for (let v = 0; v < n; v++) for (let u = 0; u < n; u++) {
-      const k = (b.j0 + v * S) * TN1 + b.i0 + u * S, q = v * n + u;
+      const k = (b.j0 + v * S) * TN1 + b.i0 + u * S, q = v * n + u; colAt(k);
       P.set(pos.subarray(k * 3, k * 3 + 3), q * 3); N.set(nrm.subarray(k * 3, k * 3 + 3), q * 3); Cc.set(col.subarray(k * 3, k * 3 + 3), q * 3);
       U[q * 2] = P[q * 3] / 10; U[q * 2 + 1] = -P[q * 3 + 2] / 10;
     }
@@ -98,7 +98,7 @@ function terrainBlocks(pos, nrm, col, cut, mtl) {
         const dx = Math.max(x0 - fx, 0, fx - x1), dz = Math.max(z0 - fz, 0, fz - z1), dy = Math.max(b.y0 - fy, 0, fy - b.y1), d = Math.hypot(dx, dy, dz);
         let S = 1; if (!b.hasCut) while (S < 8 && b.cell * S * 2 <= d * f) S *= 2;
         b.want = S; b.d = d; if (b.mesh) b.mesh.visible = d < (TILES.fogFar || 1e9) + 50;   // K5: hinter dem Nebel nicht zeichnen
-        if (S !== b.S) q.push(b);
+        if (S !== b.S && (b.mesh || d < (TILES.fogFar || 1e9) + 200)) q.push(b);   // K7: Bloecke hinter dem Nebel erst bauen, wenn man naeher kommt
       }
       q.sort((a, c) => a.d - c.d); TERR.queue = q;
     },
@@ -146,7 +146,10 @@ const grassTex = canvasTex(256, 256, (g, w, h) => {
   const C = h => new THREE.Color(h), cMeadowA = C(0x5b8c3c), cMeadowB = C(0x739c47), cLawn = C(0x6aa84a), cForest = C(0x3b6430),
     cSand = C(0xb0a27a), cBed = C(0x5d5a46), cRock = C(0x85827c), cSnow = C(0xf2f4f6), c = new THREE.Color(),
     cPassGrey = C(0x8a8780), cPassBrown = C(0x7d6c5a), cPassBeige = C(0xa99e88), cPassDark = C(0x56534f), pc = new THREE.Color();
-  for (let k = 0; k < TN1 * TN1; k++) {
+  // K7 (2026-11-11): Farbe erst, wenn ein Block den Punkt wirklich zeichnet (weit weg nur jeder 4./8. Punkt), gleiche Formel wie vorher
+  const cdone = new Uint8Array(TN1 * TN1);
+  function terrColor(k) {
+    cdone[k] = 1;
     const x = pos[k * 3], h = pos[k * 3 + 1], z = pos[k * 3 + 2];
     c.copy(cMeadowA).lerp(cMeadowB, vnoise(x / 40, z / 40));
     c.lerp(cLawn, 0.7 * Math.max(sst(40, 0, siteDist(x, z)), inLawn(x, z) ? 1 : 0));
@@ -171,7 +174,7 @@ const grassTex = canvasTex(256, 256, (g, w, h) => {
   // und Farben, die Form aendert sich nicht). Jeder Block hat eine Detailstufe (Schritt 1, 2, 4, 8 Zellen) nach Abstand zur Kamera und Einstellung
   // Gelaende-Detail; Bloecke mit Ausschnitt (Pool, Portal, Silo ...) immer Schritt 1. Gegen Risse: Randpunkte eines feineren Blocks liegen auf der
   // Kante des groeberen Nachbarn (Hoehe dort linear zwischen dessen Punkten). Laufen/Fahren rechnen weiter mit terrainH (volles Raster).
-  terrainBlocks(pos, g.attributes.normal.array, col, cut, M(0xffffff, { map: grassTex, vertexColors: true, roughness: 1 }));
+  terrainBlocks(pos, g.attributes.normal.array, col, cut, k => cdone[k] || terrColor(k), M(0xffffff, { map: grassTex, vertexColors: true, roughness: 1 }));
   g.dispose();
 }
 // Seen (Wasserflaeche etwas groesser als der Uferrand, der Rand verschwindet im Gelaende)

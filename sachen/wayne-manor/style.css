@@ -69,7 +69,19 @@ body.walk #draw-layer, body.walk #draw-colors { display: none; }
 body.drawing #draw-colors { display: flex; }
 #draw-colors button { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .25); background: var(--c); cursor: pointer; transition: transform .15s ease; }
 #draw-colors button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .6); transform: scale(1.15); }
-#loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); background: #0b0d12; z-index: 9; }
+#loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--muted); z-index: 20; padding: 24px;
+  background: radial-gradient(ellipse at 50% 35%, #1f2532 0%, #0f1218 55%, #07080b 100%); }
+#loading .ld-box { width: min(520px, 100%); text-align: center; }
+#loading .ld-title { font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #e9e3cf; text-shadow: 0 2px 18px rgba(0, 0, 0, .7); }
+#loading .ld-sub { margin: 2px 0 26px; font-size: .9rem; letter-spacing: .5em; color: var(--accent); }
+#loading .ld-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+#loading .ld-bar i { display: block; height: 100%; width: 4%; background: linear-gradient(90deg, #c9a227, var(--accent)); border-radius: 3px; transition: width .25s ease-out; }
+#loading .ld-step { margin: 10px 0 26px; font-size: .9rem; color: #c7ccd6; min-height: 1.4em; }
+#loading .ld-tips { list-style: none; margin: 0; padding: 14px 16px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 12px; background: rgba(255, 255, 255, .03); font-size: .85rem; line-height: 1.9; text-align: left; }
+#loading .ld-tips b { color: #e9e3cf; }
+#loading .ld-touch { display: none; }
+@media (pointer: coarse) { #loading .ld-pc { display: none; } #loading .ld-touch { display: block; font-size: .95rem; } #loading .ld-box { width: min(440px, 100%); } }
+@media (max-height: 460px) { #loading .ld-sub { margin-bottom: 12px; } #loading .ld-step { margin-bottom: 10px; } #loading .ld-tips { line-height: 1.5; padding: 8px 12px; } }
 /* Geistmodus: Anzeige oben, kein Aufzug-Knopf, am Handy Hoch/Runter statt Sprung */
 #ghost-tag { display: none; position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 12px); transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 16px; font-weight: 800; letter-spacing: .08em; color: #bfe3ff; pointer-events: none; z-index: 6; }
 body.ghost #ghost-tag { display: block; }

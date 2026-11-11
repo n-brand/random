@@ -65,7 +65,7 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 | K4 ✅ | **Gelände in Kacheln mit LOD** (ersetzt das 640er-Netz; bestehender Bereich aus den heutigen Punkten, Variante A), Höhen-Merker, Ausschnitte, Grenze 700 m fällt, Stufen Gelände-Detail | Keine Risse; Bild im bestehenden Bereich unverändert; Wege, Rampe, Portale, Küste, Silo |
 | K5 ✅ (ohne Fernring) | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
 | K6 ✅ | **Einstellungen** (Ladeweite, Grafik, Lautstärke, FPS) | Wert bleibt nach Neuladen, Wirkung sofort |
-| K7 | **Ladescreen PC/Handy** mit echtem Fortschritt, Start nur mit nahen Kacheln | unter 3 s bis spielbar |
+| K7 ✅ | **Ladescreen PC/Handy** mit echtem Fortschritt, Start nur mit nahen Kacheln | unter 3 s bis spielbar |
 | K8 | **Handy messen** (echtes Gerät von Nicolas) und Vorgaben anpassen | mind. 30 FPS am Handy |
 
 ## Risiken

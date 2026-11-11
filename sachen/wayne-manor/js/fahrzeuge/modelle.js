@@ -592,10 +592,31 @@ function buildTank(col = 0x4d5a36) {
   // Laufrollen (6 je Seite, drehen mit), rund ueber addWheel
   const wheels = [];
   for (const sd of [-1, 1]) for (let k = 0; k < 6; k++) wheels.push(addWheel(g, sd * 1.4, -2.0 + k * 0.8, 0.36, 0.48, false, tireM, rimM, 0, 16));
-  return { g, wheels, turret, gun };
+  // Rohr darf nie in die Wanne (Nicolas 2026-11-11): tiefster Rohrwinkel je Turmdrehung (1-Grad-Schritte), aus der Oberkante der Wanne
+  // (Deck, Bug-Schraege, Motordeck, Scheinwerferkaesten, Kettenbleche) und Punkten entlang des Rohrs (Radius 0,15 + 3 cm Luft)
+  const top = (x, z) => {                                                  // Oberkante der Wanne an (x, z), lokal, -1 = nichts
+    let h = -1, ax = Math.abs(x);
+    if (ax <= 1.15 && z >= -3.4 && z <= 3.3) h = z < -3.0 ? 0.7 + (z + 3.4) / 0.4 * 0.65 : 1.35 + (z + 3.0) / 5.9 * 0.1;
+    if (ax > 1.12 && ax <= 1.75 && Math.abs(z) <= 3.2) h = Math.max(h, 1.12);
+    if (ax <= 0.8 && z >= 1.95 && z <= 2.85) h = Math.max(h, 1.675);
+    if (ax >= 0.6 && ax <= 1.1 && z >= -3.05 && z <= -2.85) h = Math.max(h, 1.55);
+    return h;
+  };
+  const gunMin = new Float32Array(360);
+  for (let a = 0; a < 360; a++) {
+    const psi = a * Math.PI / 180, sn = Math.sin(psi), cs = Math.cos(psi), px = -1.3 * sn, pz = 0.35 - 1.3 * cs, py = 1.58 + 0.32;
+    let p = -0.45;
+    for (; p < 0.6; p += 0.005) {
+      let ok = true;
+      for (let t = 0.4; t <= 4.75 && ok; t += 0.1) { const x = px - sn * Math.cos(p) * t, z = pz - cs * Math.cos(p) * t, y = py + Math.sin(p) * t; if (y - 0.18 < top(x, z)) ok = false; }
+      if (ok) break;
+    }
+    gunMin[a] = p;
+  }
+  return { g, wheels, turret, gun, gunMin };
 }
 const SPEC_TANK = { name: "Panzer", wheels: [[-1.4, -2.4], [1.4, -2.4], [-1.4, 2.4], [1.4, 2.4]], wb: 4.8, track: 2.8, pts: [-2.3, 0, 2.3], R: 1.7, circR: 1.7, enter: 4.5,
-  maxN: 14, maxF: 18, revMax: 18, acc: 6, steer: 0.95, jump: false, grade: 42, camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
+  maxN: 14, maxF: 18, revMax: 18, acc: 6, steer: 0.95, jump: false, grade: 75, tracks: true, camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
   exits: [[-2.6, 0], [2.6, 0], [-2.6, 1.5], [2.6, 1.5], [0, -4.5], [0, 4.5]],
   msg: "Panzer: W/S Gas/Bremse, A/D lenken, Maus dreht den Turm, V Kamera, R zurücksetzen, Shift aussteigen" };
 // Glatter Koerper aus Querschnitten (wie beim Aventador): Stationen [f, Halbschnitt von unten-Mitte ueber die Seite bis oben-Mitte], gespiegelt, Enden zu
@@ -722,7 +743,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, turret: built.turret || null, gun: built.gun || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;

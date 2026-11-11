@@ -56,11 +56,12 @@ const tileDir = new THREE.Vector3();
 // Jedes Bild: Fokus = Kamera (gilt fuer Begehen, Fahren, Fliegen, Orbit, Geist)
 function tilesUpdate() {
   const t0 = performance.now(), p = camera.position;
+  if (TILES.fogFar === undefined) tilesView();                            // Nebelweite schon beim ersten Planen bekannt (Gelaende hinter dem Nebel wartet)
   camera.getWorldDirection(tileDir);
   const ci = Math.floor(p.x / TILE * 2), ck = Math.floor(p.z / TILE * 2);  // neu planen, sobald man eine halbe Kachel weiter ist (und alle 30 Bilder)
   if (ci !== TILES.cx || ck !== TILES.cz || ++TILES.frame % 30 === 0) { TILES.cx = ci; TILES.cz = ck; tilesPlan(p.x, p.z, tileDir.x, tileDir.z); }
   const q = TILES.queue;
-  while (q.length && (TILES.startup || performance.now() - t0 < TILES.budget)) {
+  while (q.length && (TILES.startup ? q[0].pri < 320 : performance.now() - t0 < TILES.budget)) {   // K7: beim Start nur die Naehe sofort, der Rest im Zeitbudget
     const { L, i, k } = q.shift(), key = tileKey(i, k);
     if (L.cells.has(key)) continue;
     let c = L.cache.get(key);

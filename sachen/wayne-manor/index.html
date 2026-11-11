@@ -9,7 +9,27 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="loading">Lade Wayne Manor...</div>
+  <!-- Ladebildschirm (K7): Fortschritt je Skript, Tipps getrennt fuer PC und Handy (CSS pointer: coarse) -->
+  <div id="loading" role="status" aria-live="polite">
+    <div class="ld-box">
+      <div class="ld-title">Wayne Manor</div>
+      <div class="ld-sub">3D</div>
+      <div class="ld-bar"><i></i></div>
+      <div class="ld-step">Lade …</div>
+      <ul class="ld-tips ld-pc">
+        <li><b>WASD</b> gehen, <b>Linksklick</b> übernimmt die Maus</li>
+        <li><b>Rechtsklick</b> auf ein Fahrzeug steigt ein, <b>Shift</b> steigt aus</li>
+        <li><b>T</b> öffnet das Menü mit Orten, Fahrzeugen und Einstellungen</li>
+        <li><b>G</b> Geist: durch alles fliegen · <b>F3</b> Messanzeige</li>
+      </ul>
+      <ul class="ld-tips ld-touch">
+        <li><b>Linker Stick</b> gehen, <b>rechter Stick</b> umsehen</li>
+        <li><b>Aktion</b> steigt ein und aus, öffnet Tore</li>
+        <li><b>Menü</b>: Orte, Fahrzeuge, Einstellungen</li>
+        <li>Handy <b>quer</b> halten für mehr Übersicht</li>
+      </ul>
+    </div>
+  </div>
   <div class="bar">
     <a href="../../">&larr; random<span>.</span></a>
     <h1>Wayne Manor &middot; 3D</h1>
@@ -124,7 +144,18 @@
       "ui/einstellungen.js",
       "kern/start.js"
     ];
-    for (const f of FILES) { const s = document.createElement("script"); s.src = "js/" + f; s.async = false; document.body.appendChild(s); }
+    // K7: Skripte parallel holen, in fester Reihenfolge ausfuehren (async = false); nach jedem Skript Balken und Schritt weiterstellen
+    // (zwischen zwei Skripten zeichnet der Browser). Zeiten je Datei (ab Ende des vorigen) in window.LOADT
+    const NAMES = { kern: "Grundlagen", gelaende: "Gelände, Küste und Wald", strassen: "Strassen", haus: "Haus und Garage", aufzuege: "Aufzüge", ui: "Bedienung", aussen: "Aussenanlage", hoehle: "Batcave", spieler: "Spieler", fahrzeuge: "Fahrzeuge" };
+    const LD = window.LOADT = { t0: performance.now(), times: [] }, bar = document.querySelector("#loading .ld-bar i"), step = document.querySelector("#loading .ld-step");
+    const label = f => (f === "kern/start.js" ? "Welt zusammensetzen" : NAMES[f.split("/")[0]] || "Lade") + " …";
+    let prev = performance.now(); step.textContent = label(FILES[0]);
+    FILES.forEach((f, n) => {
+      const el = document.createElement("script"); el.src = "js/" + f; el.async = false;
+      el.onload = () => { const now = performance.now(); LD.times.push([f, Math.round(now - prev)]); prev = now; bar.style.width = Math.round(4 + (n + 1) / FILES.length * 92) + "%"; if (FILES[n + 1]) step.textContent = label(FILES[n + 1]); else LD.total = Math.round(now - LD.t0); };
+      el.onerror = () => { step.textContent = "Fehler beim Laden: " + f + " (Seite neu laden)"; };
+      document.body.appendChild(el);
+    });
   </script>
 </body>
 </html>

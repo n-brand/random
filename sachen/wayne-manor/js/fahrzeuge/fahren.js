@@ -56,7 +56,8 @@ function carPose(dt) {
     // Gewuenschte Richtung in den Wannen-Rahmen drehen: daraus Turmdrehung (um die Wannen-Hochachse) und Rohrwinkel (-26 bis +34 Grad, damit es auch an steilen Haengen waagrecht bleibt)
     const ce = Math.cos(C.elev), d = tankDir.set(-Math.sin(C.tw) * ce, Math.sin(C.elev), -Math.cos(C.tw) * ce).applyQuaternion(tankQ.copy(C.g.quaternion).invert());
     C.turret.rotation.y = Math.atan2(-d.x, -d.z);
-    if (C.gun) C.gun.rotation.x = Math.max(-0.45, Math.min(0.6, Math.atan2(d.y, Math.hypot(d.x, d.z))));
+    if (C.gun) { const a = ((Math.round(C.turret.rotation.y * 180 / Math.PI) % 360) + 360) % 360, lo = C.gunMin ? C.gunMin[a] : -0.45;   // nie in die Wanne: tiefster Winkel je Turmdrehung
+      C.gun.rotation.x = Math.max(lo, Math.min(0.6, Math.atan2(d.y, Math.hypot(d.x, d.z)))); }
   }
   if (C.beacon) { const t = clock.elapsedTime * 6, k = C.on ? 1 : 0; C.beacon[0].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 1 : 0); C.beacon[1].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 0 : 1); }   // Blaulicht
   if (C.jetM) { C.jet = Math.max(0, C.jet - dt); C.jetM.emissiveIntensity = Math.min(2.5, C.jet * 4); }
@@ -170,7 +171,8 @@ function carStep(dt) {
     const slope = onTerrain ? Math.atan2(gF - gB, 2.4) : 0, maxG = (sp.grade || 40) * Math.PI / 180;
     const grip = boosting ? 1 : th > 0 && slope > 0 ? clamp01((maxG - slope) / 0.14) : 1;   // 8 Grad Uebergang bis zum Durchdrehen
     const held = th === 0 && Math.abs(C.v) < 0.6 && slope < maxG;            // Stillstand ohne Gas: Bremse haelt
-    if (held) C.v = 0; else C.v -= SLOPE_G * Math.sin(slope) * dt;
+    const crawl = sp.tracks && th > 0 && slope > 0.05;                        // Ketten (Panzer, Nicolas 2026-11-11): mit Gas kein Zurueckrollen, steil nur im Kriechtempo
+    if (held) C.v = 0; else if (crawl) C.v = Math.min(C.v, Math.max(1.5, max * (1 - slope / maxG))); else C.v -= SLOPE_G * Math.sin(slope) * dt;
     C.slope = slope;
     const brk = (sp.brake || 28) + Math.abs(C.v) * 0.2;                     // Bremse (Nicolas 2026-11-11: Bremsweg zu lang; vorher 16 m/s²): 100 km/h -> ca. 13 m, 200 km/h -> ca. 45 m
     if (th > 0) C.v += (C.v < -0.2 ? brk : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * grip * dt;
@@ -200,13 +202,14 @@ function carStep(dt) {
   const moved = Math.hypot(nx - x0, nz - z0);
   if (!C.air) {
     const g0 = carSlopeG(x0, z0, C.y), g1 = carSlopeG(nx, nz, C.y);
-    if (!boosting && moved > 1e-6 && g1 - g0 > WALL_TAN * moved && C.y < g0 + 0.3) {   // mit Nitro kommt man jede Gelaendewand hoch
+    const wallT = CAR.spec.tracks ? Math.tan(80 * Math.PI / 180) : WALL_TAN;   // Ketten: erst ab 80 Grad Wand
+    if (!boosting && moved > 1e-6 && g1 - g0 > wallT * moved && C.y < g0 + 0.3) {   // mit Nitro kommt man jede Gelaendewand hoch
       // Echte Wand (ueber ca. 65 Grad): nicht hart stoppen, sondern entlang der Hoehenlinie abgleiten (Anteil bergauf entfernen)
       const e = 0.4, gx = carSlopeG(x0 + e, z0, C.y) - carSlopeG(x0 - e, z0, C.y), gz = carSlopeG(x0, z0 + e, C.y) - carSlopeG(x0, z0 - e, C.y), gl = Math.hypot(gx, gz);
       let mx = nx - x0, mz = nz - z0;
       if (gl > 1e-6 && Math.abs(gx) < 50 && Math.abs(gz) < 50) { const ux = gx / gl, uz = gz / gl, up = mx * ux + mz * uz; if (up > 0) { mx -= ux * up; mz -= uz * up; } }
       const sx = x0 + mx * 0.9, sz = z0 + mz * 0.9;
-      if (carSlopeG(sx, sz, C.y) - g0 <= WALL_TAN * Math.hypot(mx, mz) + 0.02) { nx = sx; nz = sz; } else { nx = x0; nz = z0; }
+      if (carSlopeG(sx, sz, C.y) - g0 <= wallT * Math.hypot(mx, mz) + 0.02) { nx = sx; nz = sz; } else { nx = x0; nz = z0; }
     }
     if (C.y > -3 && seaD(nx, nz) > -40 && terrainH(nx, nz) < WATER_Y - 0.5 && carSupport(nx, nz, C.y) < WATER_Y - 0.5) { nx = x0; nz = z0; }   // Steilkueste
   }
