@@ -28,6 +28,7 @@
     <a href="../../../">← Übersicht</a>
     <a href="../">Wayne Manor</a>
     <a class="tab" href="./">← Karte</a>
+    <button type="button" id="typen" class="tab" style="cursor:pointer;font:inherit;background:none">Gebäudetypen einklappen</button>
     <h1>Gotham-Seitenansicht (Ebenen)</h1>
     <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
   </header>
@@ -39,6 +40,14 @@
   <script>
     "use strict";
     const S = GOTHAM.schnitt, H = GOTHAM.hoehen, svg = document.getElementById("cut"), NS = "http://www.w3.org/2000/svg";
+    // Block "Alle Gebaeudetypen" (gruppe "typen") ein-/ausklappen (Nicolas 2026-11-11); eingeklappt rueckt alles danach nach links, Zustand im Browser
+    let TYP_AN = true; try { TYP_AN = localStorage.getItem("gotham-schnitt-typen") !== "0"; } catch (e) {}
+    { const btn = document.getElementById("typen"); btn.textContent = TYP_AN ? "Gebäudetypen einklappen" : "Gebäudetypen ausklappen";
+      btn.onclick = () => { try { localStorage.setItem("gotham-schnitt-typen", TYP_AN ? "0" : "1"); } catch (e) {} location.reload(); }; }
+    if (!TYP_AN) { const B = S.teile.filter(t => t.gruppe === "typen"), b0 = Math.min(...B.map(t => t.x0)), b1 = Math.max(...B.map(t => t.x1 || t.x0)), dx = b1 - b0 + 40;
+      const sh = v => v >= b1 ? v - dx : v;
+      S.teile = S.teile.filter(t => t.gruppe !== "typen").map(t => { const u = { ...t }; if (u.x0 !== undefined) { const moved = u.x0 >= b1; u.x0 = sh(u.x0); if (u.x1 !== undefined && moved) u.x1 -= dx; }
+        if (u.punkte) u.punkte = u.punkte.map(p => [sh(p[0]), p[1]]); return u; }); }
     const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
     const XMAX = Math.max(...S.teile.map(t => t.x1 || 0)), K = 14, Y = y => -y * K, TOP = 80, BOT = -36, XL = -170, XR = XMAX + 470;   // 14 Bildpunkte je Meter senkrecht
     const fm = v => (v > 0 ? "+" : v < 0 ? "−" : "") + String(Math.abs(Math.round(v * 10) / 10)).replace(".", ",") + " m";
