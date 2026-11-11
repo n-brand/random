@@ -31,7 +31,7 @@ function frame() {
   {
     const cw = walking && !ghost ? waterAt(camera.position.x, camera.position.z) : null, uw = cw !== null && camera.position.y < cw;
     if (uw) { scene.fog.color.set(0x0c3d55); scene.background.set(0x0c3d55); scene.fog.near = 0.5; scene.fog.far = 12; }
-    else if (scene.fog.far < 100) { scene.fog.near = 350; scene.fog.far = 1500; applyNight(); }
+    else if (scene.fog.far < 100) { scene.fog.near = TILES.fogNear; scene.fog.far = TILES.fogFar; applyNight(); }   // K5: Nebel der Ladeweite
   }
   updateLift(dt);
   updateLiftPanel();

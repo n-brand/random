@@ -97,7 +97,7 @@ function terrainBlocks(pos, nrm, col, cut, mtl) {
         const x0 = TX[b.i0], x1 = TX[b.i0 + TB], z0 = TX[b.j0], z1 = TX[b.j0 + TB];
         const dx = Math.max(x0 - fx, 0, fx - x1), dz = Math.max(z0 - fz, 0, fz - z1), dy = Math.max(b.y0 - fy, 0, fy - b.y1), d = Math.hypot(dx, dy, dz);
         let S = 1; if (!b.hasCut) while (S < 8 && b.cell * S * 2 <= d * f) S *= 2;
-        b.want = S; b.d = d;
+        b.want = S; b.d = d; if (b.mesh) b.mesh.visible = d < (TILES.fogFar || 1e9) + 50;   // K5: hinter dem Nebel nicht zeichnen
         if (S !== b.S) q.push(b);
       }
       q.sort((a, c) => a.d - c.d); TERR.queue = q;

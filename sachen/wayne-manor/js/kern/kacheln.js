@@ -15,8 +15,8 @@ const TILES = {
 };
 TILES.budget = TILES.mobile ? 2 : 4;                                       // ms pro Bild fuer den Aufbau
 TILES.cacheMax = TILES.mobile ? 16 : 48;                                   // ausgeblendete Zellen im Zwischenspeicher je Ebene
-// Ladeweite in Kacheln (128 m). Vorgabe bis K5 (Nebel folgt der Ladeweite) so, dass der Wald wie bisher bis in den Nebel reicht.
-TILES.range = (() => { try { const v = parseInt(localStorage.getItem("wm-range"), 10); if (v >= 2 && v <= 12) return v; } catch (e) {} return TILES.mobile ? 4 : 8; })();
+// Ladeweite in Kacheln (128 m), Vorgabe PC 7 (896 m), Handy 4 (512 m). Seit K5 folgen Nebel und Sichtweite der Ladeweite (tilesView).
+TILES.range = (() => { try { const v = parseInt(localStorage.getItem("wm-range"), 10); if (v >= 2 && v <= 12) return v; } catch (e) {} return TILES.mobile ? 4 : 7; })();
 function setTileRange(n) { TILES.range = Math.max(2, Math.min(12, n | 0)); try { localStorage.setItem("wm-range", String(TILES.range)); } catch (e) {} TILES.cx = NaN; }
 
 // Ebene anmelden. bounds = [x0, x1, z0, z1] (Weltmeter), ausserhalb gibt es nichts zu bauen.
@@ -70,6 +70,17 @@ function tilesUpdate() {
   }
   for (const t of TILES.tasks) while ((TILES.startup || performance.now() - t0 < TILES.budget) && t.step());
   TILES.startup = false;
+  tilesView();
   TILES.ms = performance.now() - t0;
+}
+// K5 (2026-11-11): Nebel ist an der Ladegrenze dicht (Nebelfarbe = Himmel, darum keine sichtbare Kante), die Kamera zeichnet nur bis knapp dahinter.
+// Orbit-Ansicht: weit herausgezoomt reicht der Nebel mindestens bis 600 m hinter das Ziel. Unter Wasser setzt die Bildschleife eigenen Nebel.
+function tilesView() {
+  let far = TILES.range * TILE + 150;
+  if (!walking) far = Math.max(far, camera.position.distanceTo(controls.target) + 600);
+  far = Math.round(far / 25) * 25;
+  TILES.fogFar = far; TILES.fogNear = far * 0.3;
+  if (scene.fog.far >= 100 && scene.fog.far !== far) { scene.fog.near = TILES.fogNear; scene.fog.far = far; }
+  if (camera.far !== far + 60) { camera.far = far + 60; camera.updateProjectionMatrix(); }
 }
 const tilesLoaded = () => TILES.layers.reduce((n, L) => n + L.cells.size, 0);

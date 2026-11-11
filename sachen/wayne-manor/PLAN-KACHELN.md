@@ -63,7 +63,7 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 | K2 ✅ | **Kollisions-Raster** (16-m-Zellen) für Quader und Kreise | Verhalten unverändert: alle Teleport-Ziele, Garage, Höhlen, Mauer, Fahrzeuge; Zeit pro Schritt kleiner |
 | K3 ✅ | **Kachel-Verwaltung** (Ring, Warteschlange, Zeitbudget, Cache) und **Wald pro Kachel** | Bäume erscheinen und verschwinden um den Spieler, kein Ruckeln, Bäume nach Neuladen gleich |
 | K4 ✅ | **Gelände in Kacheln mit LOD** (ersetzt das 640er-Netz; bestehender Bereich aus den heutigen Punkten, Variante A), Höhen-Merker, Ausschnitte, Grenze 700 m fällt, Stufen Gelände-Detail | Keine Risse; Bild im bestehenden Bereich unverändert; Wege, Rampe, Portale, Küste, Silo |
-| K5 | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
+| K5 ✅ (ohne Fernring) | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
 | K6 | **Einstellungen** (Ladeweite, Grafik, Lautstärke, FPS) | Wert bleibt nach Neuladen, Wirkung sofort |
 | K7 | **Ladescreen PC/Handy** mit echtem Fortschritt, Start nur mit nahen Kacheln | unter 3 s bis spielbar |
 | K8 | **Handy messen** (echtes Gerät von Nicolas) und Vorgaben anpassen | mind. 30 FPS am Handy |
@@ -76,6 +76,10 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 ## Stand K4 (2026-11-11)
 
 Gelände als 100 Blöcke zu 64 x 64 Zellen des bisherigen Rasters (in der Mitte 128 x 128 m), Schritt 1/2/4/8 je Block. Pixelvergleich alt/neu: Start- und Nahansichten identisch, Fernsichten < 0,4 % der Pixel (gröbere Stufe im Nebel), alle Ränder zwischen Stufen passen auf 0,007 mm. Gelände-Dreiecke: Niedrig ca. 160 Tsd., Mittel ca. 440-560 Tsd., Hoch ca. 700 Tsd. (vorher immer 819 Tsd.); ganze Szene ca. 2,1 statt 2,8-3,0 Mio. Dreiecke, dafür ca. 20-60 Zeichenaufrufe mehr. Bildzeit am PC im Rahmen der Messgenauigkeit gleich. Die Laufgrenze 700 m und das Gelände ausserhalb ±1500 m kommen mit K5 (Fernring) bzw. Gotham.
+
+## Stand K5 (2026-11-11)
+
+Nebel und Sichtweite folgen der Ladeweite (Nebel dicht bei Ladeweite + 150 m, Kamera zeichnet bis 60 m dahinter; Orbit weit herausgezoomt mind. 600 m hinter das Ziel), Gelände-Blöcke hinter dem Nebel werden nicht gezeichnet. Vorgabe Ladeweite PC 7 (896 m, Nebel dicht bei 1050 m statt 1500 m), Handy 4. **Fernring verschoben:** ausserhalb ±1500 m gibt es noch nichts zu sehen und alles liegt im Nebel; der grobe Horizont kommt mit dem Gelände für Gotham (dann auch Laufgrenze 700 m weg).
 
 ## Fragen an Nicolas
 
