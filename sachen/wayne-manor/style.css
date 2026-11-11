@@ -24,8 +24,8 @@ body.walk .panel, body.walk footer, body.walk .bar h1 { display: none; }
 .hud button { background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(8px); }
 #cross { display: none; position: fixed; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border: 2px solid rgba(255, 255, 255, .8); border-radius: 50%; pointer-events: none; }
 body.walk.looking #cross { display: block; }
-/* Zielvisier im Panzer (Nicolas 2026-11-11): Mitte des Bildschirms, daneben Tastenhinweis */
-#tank-sight { display: none; position: fixed; left: 50%; top: 50%; width: 140px; height: 140px; margin: -70px; z-index: 3; pointer-events: none; color: #9dff8a; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .9)); }
+/* Zielvisier im Panzer (Nicolas 2026-11-11): mittig, etwas ueber der Bildmitte (36 %, ueber dem Turm), daneben Tastenhinweis */
+#tank-sight { display: none; position: fixed; left: 50%; top: 36%; width: 140px; height: 140px; margin: -70px; z-index: 3; pointer-events: none; color: #9dff8a; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .9)); }
 #tank-sight svg { display: block; }
 #tank-sight span { position: absolute; left: 150px; top: 58px; white-space: nowrap; padding: 3px 9px; border-radius: 6px; background: rgba(10, 12, 16, .65); color: #e8ffe2; font: 600 13px/1.4 system-ui, sans-serif; }
 @media (pointer: coarse) { #tank-sight span { display: none; } }
