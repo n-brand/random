@@ -425,7 +425,7 @@ function buildNachtfalke(col = 0x0f1012) {
   return { g, wheels, jetM, flame };
 }
 const SPEC_NACHTFALKE = { name: "Nachtfalke", wheels: [[-0.8, -1.6], [0.8, -1.6], [-0.84, 1.55], [0.84, 1.55]], wb: 3.15, track: 1.66, pts: [-1.75, 0, 1.75], R: 1.0, circR: 0.95, enter: 3.8,
-  maxN: 34, maxF: 60, acc: 15, steer: 0.66, jump: false, boost: true, grade: 38, camD: 8.5, camH: 1.1, seat: [-0.4, 1.15, 0.15], bodyH: 1.4, bike: false,
+  maxN: 34, maxF: 44.4, acc: 15, steer: 0.66, jump: false, boost: true, grade: 38, camD: 8.5, camH: 1.1, seat: [-0.4, 1.15, 0.15], bodyH: 1.4, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Nachtfalke: W/S Gas/Bremse, A/D lenken, Leertaste halten = Nitro, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 // ---- Aventador LP 700-4 Coupe (Nicolas 2026-11-09, stilisiert, ohne Logos; Masse und Linien nach Seiten- und Draufsicht): Karosserie als Loft
@@ -475,7 +475,7 @@ function buildAventador(col = 0xe07012) {
   return { g, wheels };
 }
 const SPEC_AVENTADOR = { name: "Aventador LP 700-4", wheels: [[-0.84, -1.35], [0.84, -1.35], [-0.87, 1.35], [0.87, 1.35]], wb: 2.7, track: 1.7, pts: [-1.6, 0, 1.6], R: 1.0, circR: 0.95, enter: 3.8,
-  maxN: 40, maxF: 90, acc: 12, steer: 0.68, jump: false, grade: 35, camD: 8.0, camH: 1.0, seat: [-0.38, 0.95, 0.2], bodyH: 1.15, bike: false,
+  maxN: 40, maxF: 61.1, acc: 12, steer: 0.68, jump: false, grade: 35, camD: 8.0, camH: 1.0, seat: [-0.38, 0.95, 0.2], bodyH: 1.15, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Aventador LP 700-4: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 // ---- Polizeiauto "GOTHAM POLICE" (Nicolas 2026-11-10, eigener Entwurf): Limousine weiss mit dunkelblauem Band, grosses POLICE und GOTHAM CITY, Schriftzug auf beiden Tueren und
@@ -510,7 +510,7 @@ function buildPolice() {
   return { g, wheels, beacon: [red, blue] };
 }
 const SPEC_POLICE = { name: "Gotham Police", wheels: [[-0.82, -1.45], [0.82, -1.45], [-0.82, 1.5], [0.82, 1.5]], wb: 2.95, track: 1.64, pts: [-1.7, 0, 1.7], R: 1.0, circR: 0.95, enter: 3.8,
-  maxN: 34, maxF: 58, acc: 13, steer: 0.66, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.5, bike: false,
+  maxN: 34, maxF: 41.7, acc: 13, steer: 0.66, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.5, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gotham Police: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen (Blaulicht blinkt beim Fahren)" };
 // ---- Gotham Taxi (Nicolas 2026-11-10, eigener Entwurf, ohne Marken): gelbe Limousine mit Stufenheck, schwarz-weisses Schachbrettband an den Seiten,
@@ -547,7 +547,7 @@ function buildTaxi() {
   return { g, wheels };
 }
 const SPEC_TAXI = { name: "Gotham Taxi", wheels: [[-0.82, -1.5], [0.82, -1.5], [-0.82, 1.5], [0.82, 1.5]], wb: 3.0, track: 1.64, pts: [-1.7, 0, 1.7], R: 1.0, circR: 0.95, enter: 3.8,
-  maxN: 30, maxF: 50, acc: 11, steer: 0.68, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.65, bike: false,
+  maxN: 30, maxF: 36.1, acc: 11, steer: 0.68, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.65, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gotham Taxi: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 // ---- Panzer (Nicolas 2026-11-10, eigener Entwurf): Wanne mit schraegem Bug, Ketten mit je 6 Laufrollen und Antriebsrad, Kettenschuerzen,
@@ -706,43 +706,43 @@ function buildSpectre(col = 0xd2aa3c) {
   return { g, wheels };
 }
 const SPEC_SPECTRE = { name: "Rolls-Royce Spectre", wheels: [[-0.9, -1.72], [0.9, -1.72], [-0.9, 1.6], [0.9, 1.6]], wb: 3.32, track: 1.8, pts: [-1.85, 0, 1.85], R: 1.05, circR: 1.0, enter: 3.8,
-  maxN: 30, maxF: 70, acc: 24, steer: 0.62, jump: false, grade: 36, camD: 9.5, camH: 1.2, seat: [-0.45, 1.2, 0.3], bodyH: 1.6, bike: false,
+  maxN: 30, maxF: 44.4, acc: 27, steer: 0.62, jump: false, grade: 36, camD: 9.5, camH: 1.2, seat: [-0.45, 1.2, 0.3], bodyH: 1.6, bike: false,
   exits: [[-2.0, -0.2], [2.0, -0.2], [-2.0, 1.3], [2.0, 1.3], [0, -4.0], [0, 4.0]],
   msg: "Rolls-Royce Spectre: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.94, -1.45], [0.94, -1.45], [-0.94, 1.45], [0.94, 1.45]], wb: 2.9, track: 1.88, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
-  maxN: 22, maxF: 36, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [-0.42, 1.55, 0.15], bodyH: 2.05, bike: false,
+  maxN: 22, maxF: 30.6, acc: 10, steer: 0.58, jump: false, grade: 38, camD: 9.0, camH: 1.4, seat: [-0.42, 1.55, 0.15], bodyH: 2.05, bike: false,
   exits: [[-2.2, -0.2], [2.2, -0.2], [-2.2, 1.3], [2.2, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Mercedes-Benz G-Klasse: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_GEMINI = { name: "Gemini Concept GT", wheels: [[-0.92, -1.5], [0.92, -1.5], [-0.92, 1.5], [0.92, 1.5]], wb: 3.0, track: 1.84, pts: [-1.6, 0, 1.6], R: 1.1, circR: 1.05, enter: 3.8,
-  maxN: 35, maxF: 58, acc: 16, steer: 0.7, jump: true, grade: 45, camD: 8.5, camH: 1.2, seat: [0, 1.2, 0.1], bodyH: 1.6, bike: false,
+  maxN: 35, maxF: 44.4, acc: 16, steer: 0.7, jump: true, grade: 45, camD: 8.5, camH: 1.2, seat: [0, 1.2, 0.1], bodyH: 1.6, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gemini Concept GT: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_CHATGPT = { name: "ChatGPT GPT-6 Concept GT", wheels: [[-0.94, -1.5], [0.94, -1.5], [-0.94, 1.5], [0.94, 1.5]], wb: 3.0, track: 1.88, pts: [-1.65, 0, 1.65], R: 1.08, circR: 1.02, enter: 3.8,
-  maxN: 38, maxF: 62, acc: 17, steer: 0.68, jump: false, grade: 42, camD: 8.8, camH: 1.35, seat: [0, 1.2, 0.05], bodyH: 1.5, bike: false,
+  maxN: 38, maxF: 47.2, acc: 17, steer: 0.68, jump: false, grade: 42, camD: 8.8, camH: 1.35, seat: [0, 1.2, 0.05], bodyH: 1.5, bike: false,
   exits: [[-2.0, -0.2], [2.0, -0.2], [-2.0, 1.3], [2.0, 1.3], [0, -3.8], [0, 3.8]],
   msg: "ChatGPT GPT-6 Concept GT: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_DEEPSEEK = { name: "DeepSeek Concept Car", wheels: [[-1.02, -1.6], [1.02, -1.6], [-1.02, 1.7], [1.02, 1.7]], wb: 3.3, track: 2.04, pts: [-1.9, 0, 1.9], R: 1.1, circR: 1.05, enter: 3.8,
-  maxN: 38, maxF: 62, acc: 18, steer: 0.68, jump: true, grade: 45, camD: 8.8, camH: 1.2, seat: [0, 1.1, 0.1], bodyH: 1.3, bike: false,
+  maxN: 38, maxF: 47.2, acc: 18, steer: 0.68, jump: true, grade: 45, camD: 8.8, camH: 1.2, seat: [0, 1.1, 0.1], bodyH: 1.3, bike: false,
   exits: [[-2.0, -0.2], [2.0, -0.2], [-2.0, 1.3], [2.0, 1.3], [0, -4.0], [0, 4.0]],
   msg: "DeepSeek Concept Car: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_TUMBLER = { name: "Tumbler", wheels: [[-1.0, -1.75], [1.0, -1.75], [-0.95, 1.55], [0.95, 1.55]], wb: 3.3, track: 1.95, pts: [-1.45, 0, 1.45], R: 1.25, circR: 1.15, enter: 3.8,
-  maxN: 24, maxF: 38, acc: 14, steer: 0.72, jump: true, grade: 40, camD: 8.5, camH: 1.3, seat: [0, 1.42, 0.2], bodyH: 1.9, bike: false,
+  maxN: 24, maxF: 30.6, acc: 14, steer: 0.72, jump: true, grade: 40, camD: 8.5, camH: 1.3, seat: [0, 1.42, 0.2], bodyH: 1.9, bike: false,
   exits: [[-2.2, -0.3], [2.2, -0.3], [-2.4, 1.2], [2.4, 1.2], [0, -3.6], [0, 3.6]],
   msg: "Tumbler: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_ROLLS = { name: "Rolls-Royce", wheels: [[-0.86, -1.78], [0.86, -1.78], [-0.86, 1.78], [0.86, 1.78]], wb: 3.56, track: 1.72, pts: [-1.95, 0, 1.95], R: 1.05, circR: 1.0, enter: 3.8,
-  maxN: 30, maxF: 48, acc: 10, steer: 0.62, jump: false, grade: 35, camD: 9.5, camH: 1.2, seat: [-0.45, 1.32, 0.1], bodyH: 1.8, bike: false,
+  maxN: 30, maxF: 36.1, acc: 10, steer: 0.62, jump: false, grade: 35, camD: 9.5, camH: 1.2, seat: [-0.45, 1.32, 0.1], bodyH: 1.8, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -4.0], [0, 4.0]],
   msg: "Rolls-Royce: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_BIKE = { name: "Motorrad", wheels: [[0, -0.72], [0, 0.72]], wb: 1.44, track: 0, pts: [-0.55, 0.55], R: 0.42, circR: 0.4, enter: 2.5,
-  maxN: 32, maxF: 52, acc: 13, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.25], bodyH: 1.7, bike: true,
+  maxN: 32, maxF: 38.9, acc: 13, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.25], bodyH: 1.7, bike: true,
   exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.8], [0, 1.8]],
   msg: "Motorrad: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 const SPEC_STREETFIGHTER = { name: "Boxer-Streetfighter", wheels: [[0, -0.66 * SF_K], [0, 0.76 * SF_K]], wb: 1.42 * SF_K, track: 0, pts: [-0.7, 0.7], R: 0.46, circR: 0.45, enter: 2.6,
-  maxN: 34, maxF: 72, acc: 16, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.41], bodyH: 1.75, bike: true,
+  maxN: 34, maxF: 50, acc: 16, steer: 0.6, jump: false, grade: 45, camD: 5.5, camH: 1.0, seat: [0, 1.42, 0.41], bodyH: 1.75, bike: true,
   exits: [[-1.0, 0], [1.0, 0], [-1.1, 0.6], [1.1, 0.6], [0, -1.9], [0, 1.9]],
   msg: "Boxer-Streetfighter: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36, track: 0, pts: [-0.95, 0, 0.95], R: 0.5, circR: 0.5, enter: 2.8,
-  maxN: 34, maxF: 56, acc: 15, steer: 0.55, jump: true, grade: 45, camD: 6.5, camH: 1.0, seat: [0, 1.25, 0.15], bodyH: 1.4, bike: true,
+  maxN: 34, maxF: 41.7, acc: 15, steer: 0.55, jump: true, grade: 45, camD: 6.5, camH: 1.0, seat: [0, 1.25, 0.15], bodyH: 1.4, bike: true,
   exits: [[-1.1, 0], [1.1, 0], [-1.2, 0.8], [1.2, 0.8], [0, -2.5], [0, 2.5]],
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
