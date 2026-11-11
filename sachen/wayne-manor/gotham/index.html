@@ -273,7 +273,7 @@
       const d = path(s.pts, s.geschlossen);
       el("path", { d, fill: "none", stroke: "#15171a", "stroke-width": s.w + 5, "stroke-linejoin": "round" }, L.strassen);
       const p = el("path", { d, fill: "none", stroke: s.besteht ? "#d9d9d9" : "#a7adb5", "stroke-width": s.w, "stroke-linejoin": "round" }, L.strassen);
-      p.dataset.info = `<b>${s.name}</b><br>Breite ${s.w} m · ${Math.round(lineLen(s.pts))} m lang${s.zweistock ? "<br>Zweistöckig: oben normaler Verkehr, 6,5 m darunter die untere Strasse (Obdachlose, Club-Eingang)" : ""}`;
+      p.dataset.info = `<b>${s.name}</b><br>Breite ${s.w} m · ${Math.round(lineLen(s.pts))} m lang${s.zweistock ? "<br>Zweistöckig: oben normaler Verkehr, 4 m darunter (Höhe Tiefgarage 1) die untere Strasse (Obdachlose, Club-Eingang)" : ""}`;
       if (s.zweistock) { el("path", { d, fill: "none", stroke: "#e8c547", "stroke-width": 3, "stroke-dasharray": "14 10", "pointer-events": "none" }, L.strassen);
         const n = Math.floor(s.pts.length / 5); for (let i = 0; i < s.pts.length; i += 5) for (const sd of [-1, 1]) { const a = s.pts[Math.max(0, i - 1)], b = s.pts[Math.min(s.pts.length - 1, i + 1)], ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1;
           el("circle", { cx: s.pts[i][0] - uz / l * sd * (s.w / 2 - 3), cy: s.pts[i][1] + ux / l * sd * (s.w / 2 - 3), r: 1.6, fill: "#111", "pointer-events": "none" }, L.strassen); } }

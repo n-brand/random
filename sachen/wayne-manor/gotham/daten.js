@@ -16,7 +16,7 @@
 //                netz erzeugt die Nebenstrassen des Bezirks (verzogenes, gedrehtes Raster mit Luecken, festem Zufall). Wohlstand steuert die
 //                automatischen Fuellbauten (reich = Tuerme, arm = kleine Mietshaeuser, Fabrikviertel = Hallen).
 //   hauptstrasse { id, name, w, linie, zweistock?, geschlossen? }  zweistock = oben normaler Verkehr, darunter die untere Strasse
-//                (Lower Level, 6,5 m tiefer: Obdachlose, Club-Eingang)
+//                (Lower Level, 4 m tiefer = Hoehe Tiefgarage 1, 3,2 m licht: Obdachlose, Club-Eingang)
 //   bruecke      { name, w, seite: "west"|"ost", z } (quer ueber den Fluss bei z) oder { seite: "nord", x } oder { name, w, linie }.
 //                Haengebruecke (Vorbild Williamsburg/Manhattan Bridge): Fahrbahn auf Strassenhoehe, Tuerme stehen automatisch an den Ufern.
 //   Uferpunkte   in Linien darf statt x stehen: "W" = Westufer der Insel, "O" = Ostufer, "Wa"/"Oa" = gegenueberliegendes Ufer (Festland),
@@ -177,9 +177,9 @@ const GOTHAM = {
     { id: "museum-1", typ: "freizeit", name: "Kunstmuseum", x: -1700, z: -1160, w: 100, d: 60, h: 25 },
     { id: "museum-2", typ: "freizeit", name: "Naturkundemuseum", x: -2350, z: -1150, w: 90, d: 70, h: 25 },
     { id: "event", typ: "freizeit", name: "Eventgebäude (Spendengala, Hochzeit)", x: -1900, z: -560, w: 90, d: 60, h: 20 },
-    { id: "pinguin", typ: "freizeit", name: "Club des Pinguins (Eingang an der unteren Uferstrasse)", x: -1090, z: 470, w: 50, d: 40, h: 12, ebene: -6.5,
+    { id: "pinguin", typ: "freizeit", name: "Club des Pinguins (Eingang an der unteren Uferstrasse)", x: -1090, z: 470, w: 50, d: 40, h: 12, ebene: -4,
       notiz: "Eingang an der unteren Strasse (Lower Level) unter der Uferstrasse Ost. Geht über mehrere Ebenen nach unten (siehe Seitenansicht)." },
-    { id: "obdachlos", typ: "freizeit", name: "Obdachlosenlager (untere Strasse)", x: -1170, z: -320, w: 30, d: 120, ebene: -6.5,
+    { id: "obdachlos", typ: "freizeit", name: "Obdachlosenlager (untere Strasse)", x: -1170, z: -320, w: 30, d: 120, ebene: -4,
       notiz: "Unter der zweistöckigen Uferstrasse Ost: oben normaler Verkehr, unten Lager mit Feuertonnen." },
     // --- Banken ---
     { id: "bank-g1", typ: "bank", name: "Grossbank (Tresorkeller)", x: -1700, z: -380, w: 60, d: 50, h: 120 },
@@ -248,8 +248,8 @@ const GOTHAM = {
       { y: 28, name: "Wayne Manor: Plateau / Erdgeschoss (Welt 25)" },
       { y: 18, name: "Klippenkante bei der Manor, höchste Stelle (Welt 15)" },
       { y: 0, name: "Strasse = Brückenfahrbahn" },
-      { y: -4, name: "Tiefgarage 1" },
-      { y: -6.5, name: "Untere Strasse (Lower Level)" },
+      { y: -4, name: "Tiefgarage 1 = untere Strasse" },
+      { y: -4.5, name: "Untere Strasse (Lower Level, Fahrbahn)" },
       { y: -7.5, name: "Tiefgarage 2" },
       { y: -10.5, name: "Club: Bar" },
       { y: -14, name: "U-Bahn-Bahnsteig / Batman-Basis (Halle)" },
@@ -291,11 +291,11 @@ const GOTHAM = {
       { typ: "raum", name: "Batman-Basis (Lichtdecke)", x0: 270, x1: 440, y0: -14, y1: -7.5, farbe: "#ff4fd8", licht: true },
       { typ: "gebaeude", name: "Mietshaus (Narrows)", x0: 370, x1: 440, y0: 0, y1: 16 },
       // zweistoeckige Strasse mit Club
-      { typ: "deck", name: "Zweistöckige Strasse: oben normaler Verkehr", x0: 450, x1: 700, y0: -1.5, y1: 0 },
-      { typ: "strasse", name: "Untere Strasse (Lower Level)", x0: 450, x1: 700, y0: -7, y1: -6.5 },
-      { typ: "raum", name: "Obdachlose", x0: 460, x1: 540, y0: -6.5, y1: -3 },
-      { typ: "raum", name: "Club-Eingang", x0: 610, x1: 690, y0: -6.5, y1: -2.5, farbe: "#5fd3e6" },
-      { typ: "raum", name: "Club: Bar", x0: 600, x1: 760, y0: -10.5, y1: -7, farbe: "#5fd3e6" },
+      { typ: "deck", name: "Zweistöckige Strasse: oben normaler Verkehr", x0: 450, x1: 700, y0: -0.8, y1: 0 },
+      { typ: "strasse", name: "Untere Strasse (Lower Level)", x0: 450, x1: 700, y0: -4.5, y1: -4 },
+      { typ: "raum", name: "Obdachlose", x0: 460, x1: 540, y0: -4, y1: -1.3 },
+      { typ: "raum", name: "Club-Eingang", x0: 610, x1: 690, y0: -4, y1: -1.2, farbe: "#5fd3e6" },
+      { typ: "raum", name: "Club: Bar", x0: 600, x1: 760, y0: -10.5, y1: -4.6, farbe: "#5fd3e6" },
       { typ: "raum", name: "Club: Tanzfläche", x0: 600, x1: 780, y0: -14.5, y1: -10.5, farbe: "#5fd3e6" },
       { typ: "raum", name: "Club: Keller / VIP", x0: 620, x1: 740, y0: -18.5, y1: -14.5, farbe: "#5fd3e6" },
       // U-Bahn
@@ -313,7 +313,7 @@ const GOTHAM = {
       { typ: "gebaeude", name: "Bank (Midtown)", x0: 1270, x1: 1380, y0: 0, y1: 60 },
       { typ: "raum", name: "Tiefgarage", x0: 1270, x1: 1380, y0: -7.5, y1: 0, farbe: "#9aa4b2" },
       { typ: "raum", name: "Tresorkeller", x0: 1280, x1: 1370, y0: -12, y1: -7.5, farbe: "#3ddc97" },
-      { typ: "deck", name: "Uferstrasse Ost (oben)", x0: 1390, x1: 1534, y0: -1.5, y1: 0 },
+      { typ: "deck", name: "Uferstrasse Ost (oben)", x0: 1390, x1: 1534, y0: -0.8, y1: 0 },
       // Zum Vergleich: Wayne Manor an der Steilkueste (anderer Ort, gleiche Hoehen). Werte aus dem Spiel: Plateau HILL 25, Klippe Welt 1-15,
       // Meer SEA_Y -34, Batcave unten LY -28 (10 m hoch), oben UY -16 (8,5 m), Tiefgarage GY -5,5 unter dem Plateau
       { typ: "titel", name: "Zum Vergleich: Wayne Manor an der Steilküste", x0: 1860, x1: 2240, y0: 60, y1: 60 },
@@ -327,7 +327,7 @@ const GOTHAM = {
       { typ: "raum", name: "Batcave oben", x0: 2030, x1: 2230, y0: -13, y1: -4.5, farbe: "#c58cff" },
       { typ: "raum", name: "Batcave unten", x0: 2000, x1: 2230, y0: -25, y1: -15, farbe: "#c58cff" },
       { typ: "wasser", name: "Höhlensee", x0: 1965, x1: 2060, y0: -31, y1: -31 },
-      { typ: "strasse", name: "Uferstrasse Ost (unten)", x0: 1390, x1: 1534, y0: -7, y1: -6.5 },
+      { typ: "strasse", name: "Uferstrasse Ost (unten)", x0: 1390, x1: 1534, y0: -4.5, y1: -4 },
     ],
   },
 };
