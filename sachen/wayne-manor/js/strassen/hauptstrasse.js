@@ -106,6 +106,9 @@ function wallNear(x, z, d) {                                             // Punk
 // Davor ein Einschnitt mit Stuetzmauern (Gelaende per genH an die Strasse angeglichen), dann Kies dem Gelaende nach bis durch das Westtor.
 const HF_CZ = (HF_TUN.z0 + HF_TUN.z1) / 2;
 const HF_XP = (() => { for (let x = HF_TUN.x0; x > -140; x -= 0.5) if (plateauH(x, HF_CZ) < HF_Y + 6.4) return x; return -100; })();   // (genH0 braucht gelaende.js, ausserhalb des Anwesens ist es hier = Plateauhang)
+// Gelaende ueber dem Tunnelmund (Portalkopf): urspruenglicher Hang (genH0), mind. 0,9 m ueber der Tunneldecke (Nicolas 2026-11-11: vorher flach
+// auf 5,65 m -> Mulde hinter der Portalwand, in die Autos rutschten). Gilt fuer das Gelaendestueck (autoaufzug.js), groundAt und carSlopeG; null = ausserhalb
+const hfCap = (x, z) => x > HF_XP + 0.3 && x < HF_XP + 10 && Math.abs(z - HF_CZ) < 6.5 ? Math.max(genH0(x, z), HF_Y + 5.2 + 0.9) : null;
 HF_TUN.x0 = HF_XP - 1.0;                                                // Tunnel-Rechteck reicht bis vor die Portalwand (dort kein Gelaende)
 const WALL_GATE2_U = (() => {                                            // Westtor: Fahrtrichtung nach aussen (Normale zur Mauer, weg von der Anwesensmitte)
   const L = WALL_LINES[0], a = L[L.length - 4], b = WALL_LINES[1][3]; let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz); dx /= l; dz /= l;

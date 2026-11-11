@@ -34,7 +34,7 @@ function carPush(p, feet, R) {
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
   }
 }
-const carSlopeG = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : (y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, y) || (y < HILL - 3 && inRect(CSH_OUT, x, z)) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
+const carSlopeG = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : y > HF_Y + 5.3 && hfCap(x, z) !== null ? Math.max(terrainH(x, z), hfCap(x, z)) + 0.04 : (y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, y) || (y < HILL - 3 && inRect(CSH_OUT, x, z)) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
 // Bodenhoehe unter dem Fahrzeug: Mitte oder Mittel der Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
 const hullE = new THREE.Euler(), hullV = new THREE.Vector3();
 // Mit der tatsaechlichen (weich nachgefuehrten) Neigung nochmals pruefen, dass kein Punkt unter der Wanne im Boden steckt
