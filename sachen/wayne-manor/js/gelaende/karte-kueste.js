@@ -142,6 +142,9 @@ const PL_CLIFF = [[-100, -156], [-110, -213]];   // Fallkante des Wasserfalls (A
 // Am Hangfuss Tunnel nach Westen bis zum Portal im Westhang (Nicolas 2026-11-09: kein Einschnitt mehr, Tunnel bis HF_XP, dann Kiesstrasse HFR zum Westtor).
 const CSH = { x0: -41, x1: -33.7, z0: 36, z1: 40.5 }, CSH_OUT = { x0: -41.3, x1: -33.4, z0: 35.7, z1: 40.8 };
 const HF_Y = 0.15, HF_TUN = { x0: -58.9, x1: -41, z0: 35.6, z1: 40.9 };   // x0 wird in strassen/hauptstrasse.js auf das Portal HF_XP gesetzt
+// Im Tunnel = im Rechteck UND unter der Tunneldecke (Oberkante HF_Y + 5,2). Nicolas 2026-11-11: vorher galt alles unter HILL - 1 als Tunnel;
+// am Westweg liegt der Hang ueber dem Tunnel aber nur 6-12 m hoch -> man fiel oben durch das Gelaende in den Tunnel
+const inHfTun = (x, z, y) => y < HF_Y + 5.3 && inRect(HF_TUN, x, z);
 // Geheimgang unten: nach Westen, dann nach Norden in die Auto Repair. D1: nach Westen auf ca. 10 x 10 m verbreitert (x0 -47,9 -> -53),
 // sonst kann der Tumbler (4,8 m) in der Kurve nicht wenden
 const CGA = { x0: -53, x1: -41, z0: 36, z1: 40.5 }, CGB = { x0: -53, x1: -43.2, z0: 30.5, z1: 40.5 }, CGC = { x0: -53, x1: -43.2, z0: 26, z1: 30.5 }, CGE = { x0: -34.2, x1: -31.5, z0: 35.5, z1: 46.5 };   // CGE (E5): Vorplatz vor dem Osttor zum Hoehlentunnel   // CGC: Vorplatz hinter der Felswand (Auto Repair), sonst 2,8 m Engstelle

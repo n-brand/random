@@ -34,7 +34,7 @@ function carPush(p, feet, R) {
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
   }
 }
-const carSlopeG = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : (y < HILL - 0.2 && GRAMP.inP(x, z)) || (y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
+const carSlopeG = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : (y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, y) || (y < HILL - 3 && inRect(CSH_OUT, x, z)) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
 // Bodenhoehe unter dem Fahrzeug: Mitte oder Mittel der Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
 const hullE = new THREE.Euler(), hullV = new THREE.Vector3();
 // Mit der tatsaechlichen (weich nachgefuehrten) Neigung nochmals pruefen, dass kein Punkt unter der Wanne im Boden steckt
@@ -168,7 +168,10 @@ function carStep(dt) {
   }
   const max = C.wet ? 0.3 : sp.maxF + (boosting ? 40 / 3.6 : 0);   // Nitro: 40 km/h ueber dem Hoechsttempo ; sonst nur W bis zum Hoechsttempo, im Wasser steckt man fest
   // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
-  const steerT = st * sp.steer / (1 + Math.abs(C.v) / 14);   // bei Tempo etwas williger (Serpentine r 11 mit ca. 40 km/h)
+  // Anlaufzeit (Nicolas 2026-11-11): kurz A/D tippen lenkt nur leicht, erst gehalten voller Einschlag (25 % -> 100 % in 0,45 s, weich)
+  if (st && Math.sign(st) === C.stDir) C.stHold = (C.stHold || 0) + dt; else { C.stHold = 0; C.stDir = Math.sign(st); }
+  const hk = Math.min(1, C.stHold / 0.45), stF = st ? 0.25 + 0.75 * hk * hk * (3 - 2 * hk) : 0;
+  const steerT = st * stF * sp.steer / (1 + Math.abs(C.v) / 14);   // bei Tempo etwas williger (Serpentine r 11 mit ca. 40 km/h)
   C.steer += (steerT - C.steer) * Math.min(1, dt * 8);
   if (!C.air) {
     const dh = C.v * Math.tan(C.steer) / sp.wb * dt;
@@ -267,7 +270,7 @@ const camBlocked = (x, y, z) => {
   if (y < HILL - 0.6 && y > GY + HILL - 0.5 && GRAMP.inP(x, z, -1.2)) return false;   // Garagenrampe: Wendeplatz
   if (GRAMP.door && GRAMP.door.open > 0.9 && x > 2 && x < 7.5 && z > GRAMP.D0 + 0.8 && z < GRAMP.D1 - 0.8 && y > GY + HILL - 0.5 && y < GY + HILL + 3) return false;   // durchs offene Rampentor
   if (GRAMP.inF(x, z, -0.5) && y > GRAMP.y(z) + 0.3) return false;                  // ueber der (offenen) Klappe frei bis zum Himmel (Nicolas: Kamera wackelte)
-  if (y < HILL - 0.6 && y > HF_Y - 0.5 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) return false;
+  if (y > HF_Y - 0.5 && (inHfTun(x, z, y) || (y < HILL - 0.6 && inRect(CSH_OUT, x, z)))) return false;
   if (inSilo(x, z, -0.8) && y > UY - 1) return false;
   if (y > UY - 1 && y < UY + UH + 1.2 && (axtIn(x, z, -1.2) || inRect(HGX, x, z, -1.2))) return false;   // Gang und Hangar-Erweiterung (hoehere Decke)                     // Flugzeug-Silo (offene Klappen; geschlossen sperren ihre Quader)
   if (inPoly(HOUSE, x, z) && y > HILL + FL0 + 0.3) return false;                   // Haus nur ueber dem Plateau (darunter Garage/Hoehle)

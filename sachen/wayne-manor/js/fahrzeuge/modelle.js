@@ -706,7 +706,7 @@ function buildSpectre(col = 0xd2aa3c) {
   return { g, wheels };
 }
 const SPEC_SPECTRE = { name: "Rolls-Royce Spectre", wheels: [[-0.9, -1.72], [0.9, -1.72], [-0.9, 1.6], [0.9, 1.6]], wb: 3.32, track: 1.8, pts: [-1.85, 0, 1.85], R: 1.05, circR: 1.0, enter: 3.8,
-  maxN: 30, maxF: 70, acc: 14, steer: 0.62, jump: false, grade: 36, camD: 9.5, camH: 1.2, seat: [-0.45, 1.2, 0.3], bodyH: 1.6, bike: false,
+  maxN: 30, maxF: 70, acc: 24, steer: 0.62, jump: false, grade: 36, camD: 9.5, camH: 1.2, seat: [-0.45, 1.2, 0.3], bodyH: 1.6, bike: false,
   exits: [[-2.0, -0.2], [2.0, -0.2], [-2.0, 1.3], [2.0, 1.3], [0, -4.0], [0, 4.0]],
   msg: "Rolls-Royce Spectre: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
 const SPEC_GCLASS = { name: "Mercedes-Benz G-Klasse", wheels: [[-0.94, -1.45], [0.94, -1.45], [-0.94, 1.45], [0.94, 1.45]], wb: 2.9, track: 1.88, pts: [-1.6, 0, 1.6], R: 1.05, circR: 1.0, enter: 3.8,
