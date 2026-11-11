@@ -24,6 +24,7 @@
     <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
     <button type="button" id="btn-fs" aria-pressed="false" title="Vollbild (Taste F): sperrt Strg+W, Esc gedrückt halten zum Verlassen">Vollbild</button>
     <button type="button" id="btn-draw" aria-pressed="false" title="Farbig einzeichnen, nochmal klicken löscht die Zeichnung">Zeichnen</button>
+    <button type="button" id="btn-settings" title="Ladeweite, Gelände-Detail, Schatten, Auflösung, Lautstärke, Messanzeige">Einstellungen</button>
     <!-- TEST: Teleport zum Testen, wird ganz am Ende entfernt -->
     <select id="teleport" aria-label="Teleport (Test)"><option value="">Teleport (Test)…</option></select>
   </div>
@@ -43,7 +44,20 @@
   <div id="lift-panel" hidden></div>
   <button type="button" id="door-hint" hidden></button>
   <!-- TEST: Teleport-Menue (Taste T), wird ganz am Ende entfernt -->
-  <div id="tp-menu" hidden><div class="tp-head">Teleport (Test) &middot; T oder Esc schließt</div><button type="button" id="tp-close" aria-label="Menü schließen">&times;</button><label class="tp-vol">Lautstärke <input id="tp-vol" type="range" min="0" max="100" step="5" value="25" aria-label="Lautstärke"><span id="tp-vol-v">25 %</span></label><details id="tp-orte"><summary>Orte</summary><div class="tp-list tp-orte"></div></details><details id="tp-veh"><summary>Fahrzeuge (zu dir holen)</summary><div class="tp-list tp-veh"></div></details></div>
+  <div id="tp-menu" hidden><div class="tp-head">Teleport (Test) &middot; T oder Esc schließt</div><button type="button" id="tp-close" aria-label="Menü schließen">&times;</button><button type="button" id="tp-settings" class="tp-set">Einstellungen (Ladeweite, Grafik, Lautstärke)</button><details id="tp-orte"><summary>Orte</summary><div class="tp-list tp-orte"></div></details><details id="tp-veh"><summary>Fahrzeuge (zu dir holen)</summary><div class="tp-list tp-veh"></div></details></div>
+  <!-- Einstellungen (K6) -->
+  <div id="settings" role="dialog" aria-label="Einstellungen" hidden>
+    <div class="tp-head">Einstellungen &middot; Esc schließt</div>
+    <button type="button" id="set-close" aria-label="Einstellungen schließen">&times;</button>
+    <div class="set-row"><span class="set-l">Ladeweite</span><input id="set-range" type="range" min="2" max="12" step="1" aria-label="Ladeweite"><span id="set-range-v" class="set-v"></span></div>
+    <p class="set-note">Wie weit Wald und Gelände geladen werden; dahinter liegt Nebel. Weniger = schneller (Handy 3-4, PC 6-8).</p>
+    <div class="set-row"><span class="set-l">Gelände-Detail</span><div class="set-seg" id="set-detail"><button type="button" data-v="niedrig">Niedrig</button><button type="button" data-v="mittel">Mittel</button><button type="button" data-v="hoch">Hoch</button></div></div>
+    <div class="set-row"><span class="set-l">Auflösung</span><div class="set-seg" id="set-res"><button type="button" data-v="niedrig">Niedrig</button><button type="button" data-v="mittel">Mittel</button><button type="button" data-v="hoch">Hoch</button><button type="button" data-v="max">Max</button></div></div>
+    <label class="set-row set-check"><span class="set-l">Schatten</span><input id="set-shadow" type="checkbox"></label>
+    <label class="set-row tp-vol"><span class="set-l">Lautstärke</span><input id="tp-vol" type="range" min="0" max="100" step="5" value="25" aria-label="Lautstärke"><span id="tp-vol-v">25 %</span></label>
+    <label class="set-row set-check"><span class="set-l">Messanzeige (F3)</span><input id="set-perf" type="checkbox"></label>
+    <button type="button" id="set-reset" class="set-reset">Auf Vorgaben zurücksetzen</button>
+  </div>
   <div class="stick" id="stick-move"><span></span></div>
   <div class="stick" id="stick-look"><span></span></div>
   <button type="button" id="btn-jump">Sprung</button>
@@ -107,6 +121,7 @@
       "aufzuege/autoaufzug.js", "aussen/garagenrampe.js",
       "strassen/waterfall-exit-bau.js",
       "gelaende/steilkueste.js",
+      "ui/einstellungen.js",
       "kern/start.js"
     ];
     for (const f of FILES) { const s = document.createElement("script"); s.src = "js/" + f; s.async = false; document.body.appendChild(s); }

@@ -29,6 +29,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | Begehen | Knopf "Begehen", Linksklick faengt die Maus, WASD, Leertaste springt, Shift rennt | Joysticks, Sprung-Knopf |
 | Geist (fliegen) | Knopf "Geist" oder Taste G (G im Geist = hier begehen), WASD waagrecht, Leertaste hoch, C runter, Shift schneller, E/Rechtsklick Tor/Tuer/Hebebuehne | Joysticks, Sprung/Runter |
 | Messanzeige (FPS, Bildzeit, Zeichenaufrufe) | Taste F3 | Seite mit `?perf` öffnen |
+| Einstellungen (Ladeweite, Gelände-Detail, Auflösung, Schatten, Lautstärke, Messanzeige) | Knopf "Einstellungen" oder im Menü (T), Esc schließt | gleiche Knöpfe |
 | Tore, Hebebuehne | Zielen, Rechtsklick oder E | Hinweis antippen |
 | Aufzuege | Rechtsklick auf die Aufzugtuer holt ihn (bzw. faehrt im Aufzug weiter); im Aufzug Tasten 1-5 oder Pfeile, Anzeige rechts | Hinweis bzw. Anzeige antippen |
 | Boot | Rechtsklick einsteigen, Shift aussteigen, W/S Gas, A/D lenken, V Kamera (hinten/Fahrersicht) | Joysticks |

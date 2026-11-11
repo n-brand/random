@@ -91,6 +91,7 @@ document.addEventListener("fullscreenchange", () => { for (const id of ["btn-fs"
 addEventListener("keydown", e => {
   if (document.fullscreenElement && (e.ctrlKey || e.metaKey) && !["KeyC", "KeyV", "KeyX", "KeyA"].includes(e.code)) e.preventDefault();   // Vollbild: Strg+W/T/N/R usw. abfangen
   if (e.code === "KeyF" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { toggleFullscreen(); return; }
+  if (window.settingsOpen && settingsOpen()) { if (e.code === "Escape" || e.code === "KeyT") closeSettings(); return; }   // K6: Einstellungen offen
   if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
   if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
   if (e.code === "KeyG" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (ghost) ghostToWalk(); else startGhost(); return; }   // G: Geist an/aus (Nicolas 2026-11-09)
