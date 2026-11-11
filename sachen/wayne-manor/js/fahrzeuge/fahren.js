@@ -47,7 +47,8 @@ function carPose(dt) {
   C.g.position.set(C.x, C.y, C.z);
   C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ");
   for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r; if (w.front) w.piv.rotation.y = C.steer; }
-  if (C.turret) { const want = C.on ? wrapA(player.yaw - C.h) : 0, cur = C.turret.rotation.y; C.turret.rotation.y = cur + Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(want - cur))); }   // Panzerturm folgt der Blickrichtung (langsam)
+  // Panzerturm (Nicolas 2026-11-11): zielt in Weltrichtung (Blickrichtung), Lenken dreht nur die Wanne darunter; geparkt dreht er langsam nach vorne
+  if (C.turret) { if (C.tw === undefined) C.tw = C.h + C.turret.rotation.y; const want = C.on ? player.yaw : C.h; C.tw += Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(want - C.tw))); C.turret.rotation.y = wrapA(C.tw - C.h); }   // Panzerturm folgt der Blickrichtung (langsam)
   if (C.beacon) { const t = clock.elapsedTime * 6, k = C.on ? 1 : 0; C.beacon[0].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 1 : 0); C.beacon[1].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 0 : 1); }   // Blaulicht
   if (C.jetM) { C.jet = Math.max(0, C.jet - dt); C.jetM.emissiveIntensity = Math.min(2.5, C.jet * 4); }
   if (C.flame) { const k = C.boostOn ? 0.85 + 0.3 * Math.random() : Math.min(1, C.jet * 2); C.flame.visible = k > 0.02; C.flame.scale.set(0.8 + 0.3 * k, 0.8 + 0.3 * k, k); }
@@ -151,7 +152,7 @@ function carStep(dt) {
   C.steer += (steerT - C.steer) * Math.min(1, dt * 8);
   if (!C.air) {
     const dh = C.v * Math.tan(C.steer) / sp.wb * dt;
-    C.h = wrapA(C.h + dh); player.yaw += dh;
+    C.h = wrapA(C.h + dh); if (!C.turret) player.yaw += dh;   // Panzer: Lenken dreht nur die Wanne, Blick und Turm bleiben
     // Hang (Nicolas 2026-11-08): Hangabtrieb statt harter Sperre. Steigung aus dem Gelaende vor/hinter dem Fahrzeug (nur auf freiem
     // Gelaende; Tunnel, Hallen, Hoehle liefern -100 bzw. liegen weit weg). Bergauf bremst die Schwerkraft, bergab wird man schneller;
     // ueber der Grenzsteigung des Fahrzeugs (spec.grade) drehen die Raeder durch: kein Vortrieb mehr, man rollt mit Schwung weiter und dann zurueck.
@@ -226,7 +227,8 @@ function carStep(dt) {
   C.safeT += dt;
   if (C.safeT > 0.5 && !C.air && !C.wet) { C.safeT = 0; C.safe = { x: C.x, z: C.z, y: C.y, h: C.h }; }
   // Blick folgt dem Kurs; rueckwaerts schwenkt die Kamera nach vorne und schaut nach hinten (Nicolas 2026-11-10)
-  if (Math.abs(C.v) > 3 && !C.air) player.yaw += wrapA(C.h + (C.v < 0 ? Math.PI : 0) - player.yaw) * Math.min(1, dt * 1.2);
+  if (Math.abs(C.v) > 3 && !C.air && !C.turret) player.yaw +=   // Panzer: Kamera bleibt beim Turm (Maus zielt)
+    wrapA(C.h + (C.v < 0 ? Math.PI : 0) - player.yaw) * Math.min(1, dt * 1.2);
   speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h";
   nitroEl.hidden = !C.spec.boost;
   if (C.spec.boost) { const b = nitroEl.lastChild.firstChild; b.style.width = Math.round((C.boostE ?? 1) * 100) + "%"; nitroEl.className = C.boostOn ? "on" : C.boostLock ? "lock" : (C.boostE ?? 1) < 1 ? "load" : ""; }
