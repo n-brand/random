@@ -250,9 +250,9 @@ const GOTHAM = {
       { y: 0, name: "Strasse = Brückenfahrbahn" },
       { y: -4, name: "Tiefgarage 1 = untere Strasse" },
       { y: -4.5, name: "Untere Strasse (Lower Level, Fahrbahn)" },
-      { y: -7.5, name: "Tiefgarage 2" },
+      { y: -7.5, name: "Tiefgarage 2 = U-Bahn-Bahnsteig" },
       { y: -10.5, name: "Club: Bar" },
-      { y: -14, name: "U-Bahn-Bahnsteig / Batman-Basis (Halle)" },
+      { y: -14, name: "Batman-Basis (Halle unter dem Container)" },
       { y: -14.5, name: "Club: Tanzfläche" },
       { y: -18.5, name: "Club: Keller / VIP" },
       { y: -16, name: "Geheimer Wayne-Stock (direkt unter Tiefgarage 2)" },
@@ -303,8 +303,8 @@ const GOTHAM = {
       { typ: "raum", name: "Club: Tanzfläche", x0: 600, x1: 780, y0: -14.5, y1: -10.5, farbe: "#5fd3e6" },
       { typ: "raum", name: "Club: Keller / VIP", x0: 620, x1: 740, y0: -18.5, y1: -14.5, farbe: "#5fd3e6" },
       // U-Bahn
-      { typ: "raum", name: "U-Bahn-Station", x0: 800, x1: 940, y0: -17, y1: -10, farbe: "#ff5a5a" },
-      { typ: "raum", name: "Bahnsteig", x0: 800, x1: 940, y0: -14, y1: -13.4, farbe: "#ffb3b3" },
+      { typ: "raum", name: "U-Bahn-Station (Strecken dazwischen frei tiefer)", x0: 800, x1: 940, y0: -8.6, y1: -1.2, farbe: "#ff5a5a" },
+      { typ: "raum", name: "Bahnsteig", x0: 800, x1: 870, y0: -8.1, y1: -7.5, farbe: "#ffb3b3" },
       { typ: "strasse", name: "Strasse", x0: 700, x1: 980, y0: -0.6, y1: 0 },
       // Wayne Tower
       { typ: "gebaeude", name: "Wayne Tower (320 m, oben abgeschnitten)", x0: 990, x1: 1150, y0: 0, y1: 75, farbe: "#e8c547" },

@@ -331,7 +331,7 @@
     for (const s of U.stationen) {
       const x = U.cx + Math.cos(s.a * Math.PI / 180) * U.rx, z = U.cz + Math.sin(s.a * Math.PI / 180) * U.rz;
       const c = el("circle", { cx: x, cy: z, r: s.haupt ? 34 : 22, fill: "#fff", stroke: "#ff5a5a", "stroke-width": 8 }, L.ubahn);
-      c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 14 m unter der Strasse${s.notiz ? "<br>" + s.notiz : ""}`;
+      c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 7,5 m unter der Strasse (Höhe Tiefgarage 2)${s.notiz ? "<br>" + s.notiz : ""}`;
       el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: "#ffb3b3", stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = "U " + s.name;
     }
     for (const g of U.graffiti) { const t = el("text", { x: g.x, y: g.z, "font-size": 34, fill: "#ff4fd8", "font-weight": 800 }, L.ubahn); t.textContent = "✎ " + g.text; t.dataset.info = `<b>Graffiti „${g.text}“</b> im U-Bahn-Tunnel`; }
