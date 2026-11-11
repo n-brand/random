@@ -11,7 +11,7 @@ Koordinaten wie im Spiel: Meter, Rondell = 0/0, **Norden = -z (oben)**, Osten = 
 
 ## Phase 0 – Technik zuerst (ohne die geht Gotham nicht)
 
-Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst:
+Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst (ausführlich in **`PLAN-KACHELN.md`**, Schritte K1-K8):
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
