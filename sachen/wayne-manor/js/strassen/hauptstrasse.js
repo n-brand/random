@@ -87,7 +87,11 @@ const WALL_LINES = (() => {
     while (o > 18 && SERP.samples.some(q => Math.hypot(q[0] - x - nx * o, q[1] - z - nz * o) < 20)) o -= 1;   // Serpentine frei lassen (Nicolas 2026-11-09)
     const p = [x + nx * o, z + nz * o]; if (p[0] < 108) off.push(p); }
   const south = [WALL_GATE2, [-198, 75], [-190.75, 132.72], [-176, 158], [-130, 170], ...off.filter(p => p[0] > -100), end(16)];
-  return [north, south].map(P => resample(chaikin(P), 2));
+  const [N2, S2] = [north, south].map(P => resample(chaikin(P), 2));
+  // Suedstueck vom Punkt (45/117) bis zur Tormauer gerade (Nicolas 2026-11-11: Schlangenlinie um die Serpentine weg);
+  // gemessen mind. 17,7 m zur Serpentinen-Mitte (vorher ca. 12 m) und 13,9 m zur Hauptstrassen-Mitte
+  const A = [45, 117]; let k = 0; S2.forEach((p, i) => { if (Math.hypot(p[0] - A[0], p[1] - A[1]) < Math.hypot(S2[k][0] - A[0], S2[k][1] - A[1])) k = i; });
+  return [N2, [...S2.slice(0, k), ...resample([S2[k], S2[S2.length - 1]], 2)]];
 })();
 const WALL_GRID = new Map();
 for (const L of WALL_LINES) for (const [x, z] of L) { const k = Math.floor(x / 10) + "," + Math.floor(z / 10); if (!WALL_GRID.has(k)) WALL_GRID.set(k, []); WALL_GRID.get(k).push([x, z]); }
