@@ -46,13 +46,13 @@ Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst 
 
 Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume nur wo genannt.
 
-- **Wayne Tower** im Zentrum (ca. 320 m). Befahrbare Tiefgarage (2 Ebenen) **neben dem Turm**; **direkt unter dem Turm ein geheimer Stock** (0 bis -8 m) (Vorbild `karten/planung/wayne-geheimstock-vorbild.png`: weite niedrige Halle, viele runde Pfeiler, runde Deckenlampen) mit dem Tumbler, weiteren Prototypen und Gadgets; darunter der Kanal-Hub (-3, siehe Phase 4).
+- **Wayne Tower** im Zentrum (ca. 320 m, logisch ca. 80 Stockwerke à 4 m). Befahrbare Tiefgarage (2 Ebenen) **neben dem Turm**; **direkt unter dem Turm ein geheimer Stock** (0 bis -8 m) (Vorbild `karten/planung/wayne-geheimstock-vorbild.png`: weite niedrige Halle, viele runde Pfeiler, runde Deckenlampen) mit dem Tumbler, weiteren Prototypen und Gadgets; darunter der Kanal-Hub (-3, siehe Phase 4).
 - **Polizeipräsidium** mit Batsignal auf dem Dach (leuchtet nachts, schaltbar).
 - **Arkham Asylum** auf der Arkham-Insel.
 - **Hafen** mit Containerterminal, Kränen, Lagerhallen.
 - Gericht, Kathedrale/Kirche, **Eventgebäude** (Spendengala, Hochzeit), 2 Museen.
 - 3 Krankenhäuser, 2 Kinderheime, 3 Kinderkrippen.
-- **American-Football-Stadion**, oben offen (kein Dach).
+- **American-Football-Stadion**, oben offen (kein Dach), Ränge bis ca. 40 m (Seitenansicht).
 - **Banken:** 3 Grossbanken mit Tresorkellern (voller Tresore; Tresorkeller auf der Höhe der Tiefgarage 1, direkt daneben), 4 kleine Banken mit nur 3 Automaten, 12 Bankautomaten in der Stadt.
 - **Hotels:** 2 Luxushotels, 3 Billighotels.
 - **Läden:** 3 Juweliere, 2 Massschneider (teuer), 2 normale und 3 billige Kleiderläden, 2 Waffenläden.
