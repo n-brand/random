@@ -274,7 +274,7 @@
       const d = path(s.pts, s.geschlossen);
       el("path", { d, fill: "none", stroke: "#15171a", "stroke-width": s.w + 5, "stroke-linejoin": "round" }, L.strassen);
       const p = el("path", { d, fill: "none", stroke: s.besteht ? "#d9d9d9" : "#a7adb5", "stroke-width": s.w, "stroke-linejoin": "round" }, L.strassen);
-      p.dataset.info = `<b>${s.name}</b><br>Breite ${s.w} m · ${Math.round(lineLen(s.pts))} m lang${s.zweistock ? "<br>Zweistöckig: oben normaler Verkehr, 4 m darunter (Höhe Tiefgarage 1) die untere Strasse (Obdachlose, Club-Eingang)" : ""}`;
+      p.dataset.info = `<b>${s.name}</b><br>Breite ${s.w} m · ${Math.round(lineLen(s.pts))} m lang${s.zweistock ? "<br>Zweistöckig: oben normaler Verkehr, 5,5 m darunter (Höhe Tiefgarage 1) die untere Strasse (Obdachlose, Club-Eingang)" : ""}`;
       if (s.zweistock) { el("path", { d, fill: "none", stroke: "#e8c547", "stroke-width": 3, "stroke-dasharray": "14 10", "pointer-events": "none" }, L.strassen);
         const n = Math.floor(s.pts.length / 5); for (let i = 0; i < s.pts.length; i += 5) for (const sd of [-1, 1]) { const a = s.pts[Math.max(0, i - 1)], b = s.pts[Math.min(s.pts.length - 1, i + 1)], ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1;
           el("circle", { cx: s.pts[i][0] - uz / l * sd * (s.w / 2 - 3), cy: s.pts[i][1] + ux / l * sd * (s.w / 2 - 3), r: 1.6, fill: "#111", "pointer-events": "none" }, L.strassen); } }
@@ -331,7 +331,7 @@
     for (const s of U.stationen) {
       const x = U.cx + Math.cos(s.a * Math.PI / 180) * U.rx, z = U.cz + Math.sin(s.a * Math.PI / 180) * U.rz;
       const c = el("circle", { cx: x, cy: z, r: s.haupt ? 34 : 22, fill: "#fff", stroke: "#ff5a5a", "stroke-width": 8 }, L.ubahn);
-      c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 7,5 m unter der Strasse (Höhe Tiefgarage 2)${s.notiz ? "<br>" + s.notiz : ""}`;
+      c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 11 m unter der Strasse (Höhe Tiefgarage 2)${s.notiz ? "<br>" + s.notiz : ""}`;
       el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: "#ffb3b3", stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = "U " + s.name;
     }
     for (const g of U.graffiti) { const t = el("text", { x: g.x, y: g.z, "font-size": 34, fill: "#ff4fd8", "font-weight": 800 }, L.ubahn); t.textContent = "✎ " + g.text; t.dataset.info = `<b>Graffiti „${g.text}“</b> im U-Bahn-Tunnel`; }
