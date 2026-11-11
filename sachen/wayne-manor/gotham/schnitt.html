@@ -7,14 +7,17 @@
   <style>
     :root { --bg: #0f1216; --panel: #181c22; --line: #2a3039; --text: #e6e9ee; --muted: #9aa4b2; --acc: #e8c547; color-scheme: dark; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
     header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
     header a { color: var(--muted); text-decoration: none; }
     header a.tab { color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }
     header h1 { font-size: 16px; margin: 0; }
     header .hint { color: var(--muted); font-size: 12px; }
-    main { position: relative; overflow: auto; padding: 8px 16px; }
-    svg { width: 100%; min-width: 900px; height: auto; display: block; }
+    main { position: relative; overflow: auto; padding: 8px 16px; min-height: 0; cursor: grab; }
+    main.drag { cursor: grabbing; }
+    svg { display: block; max-width: none; }
+    .zoom { position: fixed; right: 18px; bottom: 44px; display: grid; gap: 4px; z-index: 3; }
+    .zoom button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 18px; cursor: pointer; }
     #tip { position: fixed; pointer-events: none; background: #000d; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 300px; display: none; z-index: 2; }
     footer { padding: 6px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); background: var(--panel); }
     footer a { color: var(--muted); }
@@ -25,9 +28,10 @@
     <a href="../">← Wayne Manor</a>
     <a class="tab" href="./">← Karte</a>
     <h1>Gotham-Seitenansicht (Ebenen)</h1>
-    <span class="hint">Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht nur schematisch. Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
+    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht nur schematisch. Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
   </header>
-  <main><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
+  <main id="main"><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
+  <div class="zoom"><button id="zin" title="Grösser">+</button><button id="zout" title="Kleiner">−</button></div>
   <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · 0 m = Strassenebene = Fahrbahn der Brücken</footer>
 
   <script src="daten.js"></script>
@@ -39,6 +43,19 @@
     const fm = v => (v > 0 ? "+" : v < 0 ? "−" : "") + String(Math.abs(Math.round(v * 10) / 10)).replace(".", ",") + " m";
     const welt = v => "Welt-y " + String(Math.round((v + H.strasse) * 10) / 10).replace(".", ",");
     svg.setAttribute("viewBox", `${XL} ${Y(TOP)} ${XR - XL} ${(TOP - BOT) * K}`);
+    // Anzeige groesser als das Fenster: waagrecht und senkrecht scrollen (Massstab im Browser gemerkt)
+    let SC = 0.9; try { SC = +localStorage.getItem("gotham-schnitt-sc") || 0.9; } catch (e) {}
+    const size = () => { svg.style.width = Math.round((XR - XL) * SC) + "px"; svg.style.height = Math.round((TOP - BOT) * K * SC) + "px"; try { localStorage.setItem("gotham-schnitt-sc", SC); } catch (e) {} };
+    size();
+    const main = document.getElementById("main");
+    const zoomBy = f => { const cx = main.scrollLeft + main.clientWidth / 2, cy = main.scrollTop + main.clientHeight / 2, old = SC; SC = Math.max(0.35, Math.min(2.5, SC * f)); size(); main.scrollLeft = cx * SC / old - main.clientWidth / 2; main.scrollTop = cy * SC / old - main.clientHeight / 2; };
+    document.getElementById("zin").onclick = () => zoomBy(1.25); document.getElementById("zout").onclick = () => zoomBy(0.8);
+    let drag = null;
+    main.addEventListener("pointerdown", e => { if (e.button) return; drag = [e.clientX, e.clientY, main.scrollLeft, main.scrollTop]; main.classList.add("drag"); });
+    addEventListener("pointermove", e => { if (!drag) return; main.scrollLeft = drag[2] - (e.clientX - drag[0]); main.scrollTop = drag[3] - (e.clientY - drag[1]); });
+    addEventListener("pointerup", () => { drag = null; main.classList.remove("drag"); });
+    // Start: Strassenebene ungefaehr in der Fenstermitte
+    requestAnimationFrame(() => { main.scrollTop = (Y(0) - Y(TOP)) * SC - main.clientHeight * 0.45; });
     const defs = el("defs", {});
     { const p = el("pattern", { id: "draht", width: 5, height: 5, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 5, height: 5, fill: "#2a2418" }, p); el("path", { d: "M0 0H5M0 0V5", stroke: "#c9a85a", "stroke-width": .8 }, p); }
     { const p = el("pattern", { id: "pflaster", width: 9, height: 6, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 9, height: 6, fill: "#d4d3cc" }, p); el("path", { d: "M0 0H9M0 3H9M4.5 0V3M0 3V6", stroke: "#8f8d86", "stroke-width": .7 }, p); }
@@ -58,7 +75,7 @@
       const x = t.x0, w = t.x1 - t.x0, y = Y(t.y1), h = (t.y1 - t.y0) * K, txt = `<b>${(t.name || t.typ).replace(/\n/g, " ")}</b><br>${fm(t.y0)} bis ${fm(t.y1)} (${welt(t.y0)} bis ${String(t.y1 + H.strasse).replace(".", ",")})<br>Höhe ${String(Math.round((t.y1 - t.y0) * 10) / 10).replace(".", ",")} m`;
       let n;
       if (t.typ === "kabel") {   // Tragseil: vom Turm (Seite der Kaimauer) zur Flussmitte hinunter
-        const tw = t.x1 < 900 ? t.x1 : t.x0, far = t.x1 < 900 ? t.x0 : t.x1;
+        const tw = t.x1 < 1440 ? t.x1 : t.x0, far = t.x1 < 1440 ? t.x0 : t.x1;
         el("path", { d: `M${tw} ${Y(t.y1)}Q${(tw + far) / 2} ${Y(t.y0 - 6)} ${far} ${Y(t.y0 + 12)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2 });
         for (let s = 1; s < 8; s++) { const u = s / 8, xx = tw + (far - tw) * u, yy = (1 - u) * (1 - u) * Y(t.y1) + 2 * u * (1 - u) * Y(t.y0 - 6) + u * u * Y(t.y0 + 12); el("line", { x1: xx, y1: yy, x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }); }
         continue;
@@ -75,6 +92,14 @@
         el("line", { x1: x, y1: a, x2: x, y2: b, stroke: "#ffd36b", "stroke-width": 2 });
         for (const yy of [a, b]) el("line", { x1: x - 7, y1: yy, x2: x + 7, y2: yy, stroke: "#ffd36b", "stroke-width": 2 });
         const tx = el("text", { x: x - 6, y: (a + b) / 2, "font-size": 13, fill: "#ffd36b", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", transform: `rotate(-90 ${x - 6} ${(a + b) / 2})` }); tx.textContent = t.name; continue; }
+      if (t.typ === "auto") {   // Groessenvergleich: Fahrzeug in echten Proportionen (waagrecht gleicher Massstab wie senkrecht)
+        const L = t.laenge * K, Hh = t.hoehe * K, x0 = t.x0, yb = Y(t.y0), r = 0.36 * K;
+        const g = el("g", {});
+        el("path", { d: `M${x0} ${yb - r * .9}L${x0} ${yb - Hh * .55}Q${x0 + L * .04} ${yb - Hh * .62} ${x0 + L * .3} ${yb - Hh * .62}L${x0 + L * .42} ${yb - Hh}L${x0 + L * .8} ${yb - Hh * .98}Q${x0 + L * .97} ${yb - Hh * .7} ${x0 + L} ${yb - Hh * .55}L${x0 + L} ${yb - r * .9}Z`, fill: t.farbe || "#d2aa3c", stroke: "#111", "stroke-width": 1.2 }, g);
+        for (const f of [.18, .8]) el("circle", { cx: x0 + L * f, cy: yb - r, r, fill: "#1b1d20", stroke: "#9aa0a8", "stroke-width": 1.2 }, g);
+        el("line", { x1: x0 + L + 6, y1: yb, x2: x0 + L + 6, y2: yb - Hh, stroke: "#ffd36b", "stroke-width": 1.2 }, g);
+        el("text", { x: x0 + L + 10, y: yb - Hh / 2 + 4, "font-size": 10, fill: "#ffd36b", stroke: "#000", "stroke-width": 2.5, "paint-order": "stroke" }, g).textContent = String(t.hoehe).replace(".", ",") + " m";
+        info(g, `<b>${t.name}</b><br>${String(t.hoehe).replace(".", ",")} m hoch, ${String(t.laenge).replace(".", ",")} m lang (hier in echten Proportionen)`); continue; }
       if (t.typ === "titel") { el("text", { x: (t.x0 + t.x1) / 2, y: Y(t.y0), "font-size": 18, fill: "#e8c547", "text-anchor": "middle", "font-weight": 700 }).textContent = t.name; continue; }
       if (t.typ === "profil") { n = el("polygon", { points: t.punkte.map(p => p[0] + "," + Y(p[1])).join(" "), fill: t.farbe || FARBE.grund, stroke: "#2a2620", "stroke-width": 1.5 });
         info(n, `<b>${t.name}</b>`); label(t.name, t.punkte[6][0] + 70, Y(0), 170, "#e6e9ee"); continue; }
@@ -101,9 +126,9 @@
       else if (t.typ === "gebaeude") label(t.name, x + w / 2, y - 6, w * 1.4);
       else if (t.typ === "raum" || t.typ === "rohr") label(t.name, x + w / 2, y + h / 2 + 5, w, "#fff");
       else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");
-      else if (t.typ === "schacht" || t.typ === "gitter") label(t.name, x + w / 2 + 34, y + h / 2, 160, "#d8dce0");
+      else if ((t.typ === "schacht" || t.typ === "gitter") && h > 90) label(t.name, x + w / 2 + 34, y + h / 2, 160, "#d8dce0");
     }
-    el("line", { x1: 1830, y1: Y(TOP), x2: 1830, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
+    el("line", { x1: 2910, y1: Y(TOP), x2: 2910, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
     // Wasserlinie
     const WY = H.wasser - H.strasse; el("line", { x1: 0, y1: Y(WY), x2: XMAX, y2: Y(WY), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
 
@@ -129,7 +154,7 @@
     });
     el("text", { x: XC - 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Abstände zwischen den Ebenen";
     el("text", { x: 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Westen";
-    el("text", { x: 1790, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
+    el("text", { x: 2870, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
   </script>
 </body>
 </html>
