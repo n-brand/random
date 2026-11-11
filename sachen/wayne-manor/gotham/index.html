@@ -297,7 +297,7 @@
 
     // ---------- Kanalisation und Gullideckel ----------
     const K = G.kanal, KS = K.hauptsammler.map(id => roadById[id]).filter(Boolean);
-    for (const s of KS) { const p = el("path", { d: path(s.pts, s.geschlossen), fill: "none", stroke: "#7bd88f", "stroke-width": 9 }, L.kanal); p.dataset.info = `<b>Hauptsammler unter ${s.name}</b><br>begehbar, ca. 6 m hoch, Sohle 27 m unter der Strasse`; }
+    for (const s of KS) { const p = el("path", { d: path(s.pts, s.geschlossen), fill: "none", stroke: "#7bd88f", "stroke-width": 9 }, L.kanal); p.dataset.info = `<b>Hauptsammler unter ${s.name}</b><br>begehbar, ca. 6 m hoch, Sohle 28,5 m unter der Strasse (gleicher Boden wie der Hub)`; }
     { const h = el("circle", { cx: K.hub.x, cy: K.hub.z, r: K.hub.r, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); h.dataset.info = `<b>${K.hub.name}</b>`; }
     // Auslaesse mit Gitter: wo ein Hauptsammler die Insel verlaesst
     const gitter = [];
