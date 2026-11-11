@@ -10,5 +10,6 @@ Alle Vorlagen liegen hier (fuenf Dateien, dazu Skizzen unter `planung/`):
 
 Hinweis: Auf allen Karten zeigt der Kompass Norden nach rechts, Westen nach oben, Osten nach unten, Sueden nach links.
 - `planung/wayne-logo-vorbild.png` - Vorbild fuer das Wayne-Logo an der Fassade (Schriftzug WAYNE, darunter W-Emblem mit seitlichen Strichen), von Nicolas 2026-11-11; fuer den Wayne Tower in Gotham
-- `planung/batcave-vorbild-halle.webp` - Vorbild Batcave-Halle (von Nicolas 2026-11-11): hohe runde Halle mit Holz-/Betonpfeilern, Stahlstegen mit Gelaendern auf zwei Ebenen, Gitterboden, Wasserfall in einen gemauerten Kanal
-- `planung/batcave-vorbild-rundbau.png` - Vorbild Rundbau im Schnitt (von Nicolas 2026-11-11): mehrere gebogene Geschosse um einen Kern aus Pfeilern, oben Plattform mit Fahrzeug, Roehre/Bruecke darueber
+- `planung/schurkenbasis-vorbild-halle.webp` - Vorbild Schurkenbasis im Kanal-Hub unter dem Wayne Tower (von Nicolas 2026-11-11): hohe runde Halle mit Pfeilern, Stahlstegen mit Gelaendern auf mehreren Ebenen, Gitterboden, Wasserfall in einen gemauerten Kanal
+- `planung/schurkenbasis-vorbild-rundbau.png` - Schurkenbasis als Rundbau im Schnitt (von Nicolas 2026-11-11): gebogene Geschosse um einen Kern aus Pfeilern; das Fahrzeug oben steht fuer den Tumbler im geheimen Wayne-Stock direkt darueber
+- `planung/wayne-geheimstock-vorbild.png` - Vorbild geheimer Wayne-Stock unter dem Wayne Tower (von Nicolas 2026-11-11): weite niedrige Halle mit vielen runden Pfeilern, runden Deckenlampen, grauen Waenden, glaenzendem Boden
