@@ -621,7 +621,7 @@ const SPEC_TAXI = { name: "Gotham Taxi", wheels: [[-0.82, -1.5], [0.82, -1.5], [
 // ---- Panzer (Nicolas 2026-11-10, eigener Entwurf; 2026-11-11 realistischer, Grundform und Masse bleiben): Wanne mit schraegem Bug, Ketten aus
 // einzelnen Gliedern (laufen um Treibrad vorne mit Zaehnen und Leitrad hinten, oben auf Stuetzrollen), 6 Laufrollen je Seite mit Naben,
 // Schuerzen in Segmenten mit Schrauben und Gummilappen, Kotfluegel, Staukisten, Fahrerluke mit Winkelspiegeln, Motordeck mit Lamellen,
-// Abgasgitter, Abschlepphaken; Turm facettiert mit Hecküberhang, Staukorb, Kommandantenkuppel mit MG, Zielgeraet, Nebelwerfer, Antennen;
+// Abgasgitter, Abschlepphaken; Turm facettiert mit Hecküberhang, Staukorb, Kommandantenkuppel mit MG, Zielgeraet, Nebelwerfer (Antennen entfernt, Nicolas 2026-11-11);
 // Kanone mit Blende, Rauchabsauger, Waermeschutzhuelle, Muendung. Ca. 6,8 x 3,5 x 2,5 m (Rohr ragt ca. 3 m vor)
 function buildTank(col = 0x4d5a36) {
   const g = new THREE.Group();
@@ -684,7 +684,6 @@ function buildTank(col = 0x4d5a36) {
   meshIn(T, new THREE.CylinderGeometry(0.3, 0.3, 0.06, 14), paint2, 0.5, 0.7, 0.5);                                      // Ladeschuetzenluke
   boxAt(T, 0.36, 0.28, 0.4, paint, 0.52, 0.8, -0.65); boxAt(T, 0.3, 0.2, 0.02, glassM, 0.52, 0.82, -0.86);                 // Zielgeraet (Richtschuetze)
   for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) { const tb = meshIn(T, new THREE.CylinderGeometry(0.05, 0.05, 0.28, 8), dark, sd * (0.86 - k * 0.0), 0.36 + k * 0.08, -0.55 - k * 0.05, -0.9); tb.rotation.z = sd * 0.5; }   // Nebelwerfer
-  for (const sd of [-1, 1]) meshIn(T, new THREE.CylinderGeometry(0.008, 0.012, 1.9, 4), dark, sd * 0.7, 1.55, 1.4);   // Antennen hinten
   mergeStatic(T);
   // Kanone als eigene Gruppe mit Drehpunkt an der Blende (Nicolas 2026-11-11: Rohr in der Hoehe verstellbar, bleibt in Weltlage)
   const gun = new THREE.Group(); gun.position.set(0, 0.32, -1.3); T.add(gun);

@@ -41,10 +41,13 @@ const hullE = new THREE.Euler(), hullV = new THREE.Vector3();
 // Mit der tatsaechlichen (weich nachgefuehrten) Neigung nochmals pruefen, dass kein Punkt unter der Wanne im Boden steckt
 function hullLift(C) { const sp = C.spec; if (!sp.hull) return; hullE.set(C.pitch, C.h, C.roll, "YXZ"); for (const [lx, ly, lz] of sp.hull) { const o = hullV.set(lx, ly, lz).applyEuler(hullE); C.y = Math.max(C.y, carSupport(C.x + o.x, C.z + o.z, C.y + o.y) - o.y); } }
 function carGround(feet) {
-  const sp = CAR.spec, hs = sp.wheels.map(([lx, lz]) => { const [x, z] = carW(lx, lz); return carSupport(x, z, feet); });
+  // unter der Erde (Silo, Hoehle, Garage) zaehlt ein Rad, das weit ueber dem Fahrzeug Halt findet, nicht: es steckt in Wand oder Fels (Nicolas 2026-11-11:
+  // im Silo las das Hinterrad die Rasenhoehe draussen, der Panzer stand senkrecht). An der Oberflaeche (auch steile Haenge) unveraendert.
+  const deep = feet < terrainH(CAR.x, CAR.z) - 3, hc0 = carSupport(CAR.x, CAR.z, feet);
+  const sp = CAR.spec, hs = sp.wheels.map(([lx, lz]) => { const [x, z] = carW(lx, lz), h = carSupport(x, z, feet); return deep && h > feet + CAR_STEP + 0.5 ? hc0 : h; });
   const mean = f => { let t = 0, n = 0; hs.forEach((h, i) => { if (f(sp.wheels[i])) { t += h; n++; } }); return n ? t / n : 0; };
   const hc = carSupport(CAR.x, CAR.z, feet), avg = mean(() => true);
-  const r = { y: Math.max(hc, avg), pitch: Math.atan2(mean(([, lz]) => lz < 0) - mean(([, lz]) => lz > 0), sp.wb), roll: sp.track > 0 ? Math.atan2(mean(([lx]) => lx > 0) - mean(([lx]) => lx < 0), sp.track) : 0 };
+  const r = { hc, y: Math.max(hc, avg), pitch: Math.atan2(mean(([, lz]) => lz < 0) - mean(([, lz]) => lz > 0), sp.wb), roll: sp.track > 0 ? Math.atan2(mean(([lx]) => lx > 0) - mean(([lx]) => lx < 0), sp.track) : 0 };
   // spec.hull (Panzer, Nicolas 2026-11-11): Punkte unter der Wanne; liegt dort das Gelaende hoeher als die Ebene durch die Raeder (Kuppe, Kante,
   // Tunnelmund), wird das Fahrzeug so weit angehoben, dass nichts im Boden steckt
   if (sp.hull) {
@@ -52,6 +55,15 @@ function carGround(feet) {
     for (const [lx, ly, lz] of sp.hull) { const o = hullV.set(lx, ly, lz).applyEuler(hullE); r.y = Math.max(r.y, carSupport(CAR.x + o.x, CAR.z + o.z, feet + o.y) - o.y); }
   }
   return r;
+}
+// Offenes Silo: Bodenfahrzeuge (nicht The Bat/Jet) halten am Rand, solange die Rasenklappe nicht ganz zu ist; Pruefpunkte = Kollisionskreise
+// des Fahrzeugs (Mitte + vorne/hinten) mit Radius und 0,5 m Abstand. Wer schon drin ist (Klappe unter ihm geoeffnet), darf hinaus.
+let siloGate = null;
+function siloEdge(nx, nz, x0, z0, C) {
+  if (siloGate === null) siloGate = gates.find(t => t.name === "Rasenklappe (Silo)") || false;
+  if (!siloGate || siloGate.open < 0.01 || C.y < SILO.rim - 4) return false;
+  const sp = C.spec, m = sp.R + 0.5, fx = Math.sin(C.h), fz = Math.cos(C.h), hit = (x, z) => sp.pts.some(lz => inSilo(x + fx * lz, z + fz * lz, m));
+  return hit(nx, nz) && !hit(x0, z0);
 }
 const tankDir = new THREE.Vector3(), tankQ = new THREE.Quaternion();
 function carPose(dt) {
@@ -228,18 +240,26 @@ function carStep(dt) {
     if (C.y > -3 && seaD(nx, nz) > -40 && terrainH(nx, nz) < WATER_Y - 0.5 && carSupport(nx, nz, C.y) < WATER_Y - 0.5) { nx = x0; nz = z0; }   // Steilkueste
   }
   if (C.y > -3 && coastEdge(nx, nz, x0, z0, 6)) { nx = x0; nz = z0; if (!C.air) C.v *= 0.3; }   // Klippenkante: Fahrzeuge halten 6 m vor der Kuestenlinie (auch im Flug)
+  if (siloEdge(nx, nz, x0, z0, C)) { nx = x0; nz = z0; if (!C.air) C.v *= 0.3; }                 // offenes Silo: am Rand anhalten (Nicolas 2026-11-11)
   const far = Math.hypot(nx, nz); if (far > LIMIT) { nx *= LIMIT / far; nz *= LIMIT / far; }
   C.x = nx; C.z = nz;
   if (dt > 0) { const along = ((nx - x0) * fx + (nz - z0) * fz) / dt; if (Math.abs(along) < Math.abs(C.v) - 0.5) C.v = C.air ? along * 0.9 : along; }   // an Hindernissen abbremsen
   // Hoehe: am Boden haften, ueber Kanten abheben, im Flug Schwerkraft
+  // Kippschutz (Nicolas 2026-11-11, Panzer stand senkrecht im Silo): liegt der Boden unter der Mitte mehr als 0,6 m unter der Ebene der Raeder und
+  // steht das Fahrzeug schraeg, haengt es ueber einer Kante (kein Hang): dann faellt es (Flug mit begrenzter Neigung) bis die Mitte aufsetzt
+  const overEdge = q => q.hc < q.y - 0.6 && Math.max(Math.abs(q.pitch), Math.abs(q.roll)) > 0.35;
   const gr = carGround(C.y);
   if (!C.air) {
-    if (gr.y >= C.y - 0.5) { C.y = gr.y; C.vy = 0; C.pitch += (gr.pitch - C.pitch) * Math.min(1, dt * 10); C.roll += (gr.roll - C.roll) * Math.min(1, dt * 10); hullLift(C); }
+    if (gr.y >= C.y - 0.5 && !overEdge(gr)) { const lim = ((sp.grade || 40) + 10) * Math.PI / 180, cg = v => Math.max(-lim, Math.min(lim, v));   // Neigung hoechstens Steigvermoegen + 10 Grad (Kante statt Hang)
+      C.y = gr.y; C.vy = 0; C.pitch += (cg(gr.pitch) - C.pitch) * Math.min(1, dt * 10); C.roll += (cg(gr.roll) - C.roll) * Math.min(1, dt * 10); hullLift(C); }
     else { C.air = true; C.vy = 0; }
   } else {
     C.vy -= CAR_G * dt; C.y += C.vy * dt;
-    const g2 = carGround(C.y);
-    if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; C.pitch = g2.pitch; C.roll = g2.roll; hullLift(C); }
+    const g2 = carGround(C.y), e2 = overEdge(g2), land = e2 ? g2.hc : g2.y, cl = v => e2 ? Math.max(-0.35, Math.min(0.35, v)) : v;
+    if (C.y <= land) { C.y = land; C.air = false; C.vy = 0; C.pitch = cl(g2.pitch); C.roll = cl(g2.roll); if (!e2) hullLift(C); }
+    if (C.y <= land + 0.01 && e2) {   // haengt nach dem Fallen noch an der Kante: zur tieferen Seite schieben (in 25-cm-Schritten, hoechstens 6 m), bis es ganz aufsetzt
+      const a = -Math.sign(g2.pitch), b = Math.abs(g2.roll) > 0.1 ? -Math.sign(g2.roll) : 0, n = Math.hypot(a, b) || 1, dx = (-Math.sin(C.h) * a + Math.cos(C.h) * b) / n, dz = (-Math.cos(C.h) * a - Math.sin(C.h) * b) / n;
+      for (let k = 0; k < 24; k++) { C.x += dx * 0.25; C.z += dz * 0.25; const g3 = carGround(C.y); if (!overEdge(g3)) { C.y = Math.max(C.y, g3.y); C.pitch = g3.pitch; C.roll = g3.roll; break; } } }
     else { const tp = Math.max(-0.12, Math.min(0.2, Math.atan2(C.vy, Math.max(8, Math.abs(C.v))) * 0.4));   // im Flug nur leicht neigen (Nicolas: nach tiefen Spruengen kippte die Nase stark nach vorne)
       C.pitch += (tp - C.pitch) * Math.min(1, dt * 2); C.roll *= 0.95; }
   }
@@ -249,6 +269,9 @@ function carStep(dt) {
   if (wet && !C.wet) toast(sp.name + " steckt im Wasser – R setzt zurück");
   C.wet = wet;
   if (wet) C.v *= Math.pow(0.15, dt);
+  // steht es trotzdem lange sehr steil (Raupen ab 80, sonst ab 60 Grad), zurueck an den letzten sicheren Punkt
+  C.tipT = Math.max(Math.abs(C.pitch), Math.abs(C.roll)) > (sp.tracks ? 1.4 : 1.05) ? (C.tipT || 0) + dt : 0;
+  if (C.tipT > 1.5) { C.tipT = 0; carReset(); return; }
   // sicheren Punkt merken (fuer R)
   C.safeT += dt;
   if (C.safeT > 0.5 && !C.air && !C.wet) { C.safeT = 0; C.safe = { x: C.x, z: C.z, y: C.y, h: C.h }; }
