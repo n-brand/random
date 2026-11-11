@@ -36,7 +36,7 @@
     <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Das Stadion ist längs geschnitten (West → Ost, Draufsicht darüber). Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
   </header>
   <main id="main"><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
-  <button type="button" id="typen">Gebäudetypen einklappen</button>
+  <button type="button" id="typen">Gebäudetypen + Stadion einklappen</button>
   <div class="zoom"><button id="zin" title="Grösser">+</button><button id="zout" title="Kleiner">−</button></div>
   <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · 0 m = Strassenebene = Fahrbahn der Brücken</footer>
 
@@ -46,7 +46,7 @@
     const S = GOTHAM.schnitt, H = GOTHAM.hoehen, svg = document.getElementById("cut"), NS = "http://www.w3.org/2000/svg";
     // Block "Alle Gebaeudetypen" (gruppe "typen") ein-/ausklappen (Nicolas 2026-11-11); eingeklappt rueckt alles danach nach links, Zustand im Browser
     let TYP_AN = true; try { TYP_AN = localStorage.getItem("gotham-schnitt-typen") !== "0"; } catch (e) {}
-    { const btn = document.getElementById("typen"); btn.textContent = TYP_AN ? "Gebäudetypen einklappen" : "Gebäudetypen ausklappen";
+    { const btn = document.getElementById("typen"); btn.textContent = TYP_AN ? "Gebäudetypen + Stadion einklappen" : "Gebäudetypen + Stadion ausklappen";
       btn.onclick = () => { try { localStorage.setItem("gotham-schnitt-typen", TYP_AN ? "0" : "1"); } catch (e) {} location.reload(); }; }
     if (!TYP_AN) { const B = S.teile.filter(t => t.gruppe === "typen"), b0 = Math.min(...B.map(t => t.x0)), b1 = Math.max(...B.map(t => t.x1 || t.x0)), dx = b1 - b0 + 40;
       const sh = v => v >= b1 ? v - dx : v;
@@ -183,6 +183,13 @@
           for (let yy = Y(t.y0), k = 0; yy > y + 2; k++) { const fh = k === 0 && t.eg ? t.eg * K : gh; el("line", { x1: x, y1: yy, x2: x + w, y2: yy, stroke: "#1b1d20", "stroke-width": 1, opacity: .7, "pointer-events": "none" });
             for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy - fh * 0.72, width: 7, height: fh * 0.45, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" }); yy -= fh; } }
         else for (let yy = y + 10; yy < y + h - 6; yy += 16) for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy, width: 7, height: 8, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" });
+        if (t.laden) { const fh = (t.eg || t.geschoss) * K, y0 = Y(t.y0);   // Laden im Erdgeschoss: eigene Farbe, Schaufenster, Tuer, Markise; darueber Wohnungen
+          el("rect", { x, y: y0 - fh, width: w, height: fh, fill: t.ladenFarbe || "#d94f2b", stroke: "#1b1d20", "stroke-width": 2, "pointer-events": "none" });
+          el("rect", { x: x + 6, y: y0 - fh * 0.68, width: w * 0.55, height: fh * 0.5, fill: "#ffe2a8", opacity: .85, "pointer-events": "none" });
+          el("rect", { x: x + w - 6 - w * 0.2, y: y0 - fh * 0.7, width: w * 0.2, height: fh * 0.7, fill: "#3a2a1f", "pointer-events": "none" });
+          el("path", { d: `M${x - 4} ${y0 - fh * 0.8}h${w + 8}l-6 10h${-(w - 4)}z`, fill: "#2f8f4a", stroke: "#1b1d20", "pointer-events": "none" });
+          label(t.laden, x + w / 2, y0 - fh * 0.86, w, "#fff", 18);
+          if (t.wohnung) for (let k = 1; t.y0 + (k + 0.5) * t.geschoss <= t.y1 + 0.01; k++) label("Wohnung", x + w / 2, y0 - fh - (k - 0.5) * t.geschoss * K + 5, w, "#3a2a1f", 14); }
         if (t.y1 >= 70) el("path", { d: `M${x - 6} ${y + 10}l${w / 4 + 6} -8l${w / 4} 8l${w / 4} -8l${w / 4 + 6} 8`, fill: "none", stroke: "#0b1424", "stroke-width": 6 }); }
       else n = el("rect", { x, y, width: w, height: Math.max(h, 2), fill: FARBE[t.typ] || "#888", stroke: t.typ === "grund" || t.typ === "luft" ? "none" : "#111", "stroke-width": 1.5 });
       if (t.name) info(n, txt);
@@ -190,7 +197,7 @@
       else if (t.typ === "turm") label("Turm", x + w / 2, Y(t.y1) - 8, 60, "#d9dde3");
       if (t.typ === "gebaeude" && t.geschoss) { const H = t.echt || t.y1 - t.y0, N = t.eg ? 1 + Math.floor((H - t.eg) / t.geschoss + 0.01) : Math.floor(H / t.geschoss + 0.01);   // Anzahl Stockwerke (logisch)
         const fm1 = v => String(v).replace(".", ",");
-        label(`≈ ${N} Stockwerke\n(je ${fm1(t.geschoss)} m${t.eg ? ", EG " + fm1(t.eg) + " m" : ""})`, x + w / 2, Y((t.y0 + Math.min(t.y1, t.y0 + 30)) / 2), w * 1.2, "#ffe9a8", 26); }
+        label(t.laden ? `${N} Stockwerke\n(1 Laden + ${N - 1} Wohnungen,\nje ${fm1(t.geschoss)} m)` : `≈ ${N} Stockwerke\n(je ${fm1(t.geschoss)} m${t.eg ? ", EG " + fm1(t.eg) + " m" : ""})`, t.laden ? x + w + 84 : x + w / 2, Y((t.y0 + Math.min(t.y1, t.y0 + 30)) / 2), w * 1.2, "#ffe9a8", 26); }
       if (t.typ === "gebaeude") label(t.name, x + w / 2, y - 6, w * 1.4);
       else if (t.typ === "raum" || t.typ === "rohr") label(t.name, x + w / 2, y + h / 2 + 5, w, "#fff");
       else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");
