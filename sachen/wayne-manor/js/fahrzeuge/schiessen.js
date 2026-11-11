@@ -95,6 +95,9 @@ function vehRepair(v) {
 // Zoom beim Zielen (Nicolas 2026-11-11): Mausrad im Panzer, 1x bis 6x (Sichtwinkel 70 / Zoom), Maus dreht dann entsprechend feiner;
 // beim Aussteigen zurueck auf 1x. Anzeige im Visier-Hinweis.
 const zoomK = () => SHOT.zoom;
+// TEST (Nicolas 2026-11-11, "nur zum Testen"): nach einem Schuss nach 0,35 s automatisch auf 1x rauszoomen. Gefaellt es nicht: AUTO_UNZOOM = false
+// bzw. die zwei markierten Stellen entfernen (siehe CLAUDE.md).
+const AUTO_UNZOOM = true;
 addEventListener("wheel", e => { if (!(CAR && CAR.on && CAR.turret)) return; e.preventDefault(); SHOT.zoomT = Math.max(1, Math.min(6, SHOT.zoomT * (e.deltaY < 0 ? 1.25 : 0.8))); if (SHOT.zoomT < 1.05) SHOT.zoomT = 1; }, { passive: false });
 // ---- jedes Bild (nach carFrame) ----
 function shotsStep(dt) {
@@ -106,6 +109,7 @@ function shotsStep(dt) {
     if (SHOT.aim) { const dx = SHOT.aim.x - shotA.x, dz = SHOT.aim.z - shotA.z; C.elev += (Math.max(-0.4, Math.min(0.55, Math.atan2(SHOT.aim.y - shotA.y, Math.hypot(dx, dz)))) - C.elev) * Math.min(1, dt * 8); }   // Rohr hebt/senkt sich zum Ziel
     // gezoomt: Kamera in die Zieloptik oben am Turm (sonst sah man den eigenen Turm gross), Blick in Turmrichtung
     if (SHOT.zoomT > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9)); camera.position.copy(shotB); camera.rotation.set(player.pitch + 0.12, player.yaw, 0, "YXZ"); }
+    if (SHOT.unzoom > 0 && (SHOT.unzoom -= dt) <= 0) SHOT.zoomT = 1;   // TEST Auto-Rauszoomen
     SHOT.zoom += (SHOT.zoomT - SHOT.zoom) * Math.min(1, dt * 10); const fov = 70 / SHOT.zoom; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
     if (label) label.textContent = (SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Leertaste: schießen") + (SHOT.zoomT > 1 ? " · " + SHOT.zoomT.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
     if ((keys.has("Space") || jumpHeld) && SHOT.cd === 0 && SHOT.aim) {
@@ -114,7 +118,7 @@ function shotsStep(dt) {
       SHOT.shells.push({ o: shell, p: mz.clone(), dir, s: 0, from: C });
       SHOT.fx.push({ o: fxAddMesh(fxGeo, fxAdd(0xffc070), mz, 0.6), t0: now, life: 0.12, grow: 4, fade: true });   // Muendungsblitz
       for (let i = 0; i < 3; i++) SHOT.fx.push({ o: fxAddMesh(fxGeo, fxSmoke(0x8a8780), mz.clone().addScaledVector(dir, 0.6 + i * 0.7), 0.4), t0: now, life: 1.6, grow: 2.2, fade: true, vy: 0.8 });
-      SHOT.recoil = 1; shotSound(0.6, 0.9);
+      SHOT.recoil = 1; shotSound(0.6, 0.9); if (AUTO_UNZOOM && SHOT.zoomT > 1) SHOT.unzoom = 0.35;   // TEST Auto-Rauszoomen
     }
     if (C.gun.userData.z0 === undefined) C.gun.userData.z0 = C.gun.position.z;
     SHOT.recoil = Math.max(0, SHOT.recoil - dt * 2.5); C.gun.position.z = C.gun.userData.z0 + Math.sin(Math.min(1, SHOT.recoil) * Math.PI / 2) * 0.45;   // Rueckstoss
