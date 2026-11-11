@@ -42,13 +42,22 @@ function carGround(feet) {
   const hc = carSupport(CAR.x, CAR.z, feet), avg = mean(() => true);
   return { y: Math.max(hc, avg), pitch: Math.atan2(mean(([, lz]) => lz < 0) - mean(([, lz]) => lz > 0), sp.wb), roll: sp.track > 0 ? Math.atan2(mean(([lx]) => lx > 0) - mean(([lx]) => lx < 0), sp.track) : 0 };
 }
+const tankDir = new THREE.Vector3(), tankQ = new THREE.Quaternion();
 function carPose(dt) {
   const C = CAR;
   C.g.position.set(C.x, C.y, C.z);
-  C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ");
+  C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ"); C.g.updateMatrix();
   for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r; if (w.front) w.piv.rotation.y = C.steer; }
   // Panzerturm (Nicolas 2026-11-11): zielt in Weltrichtung (Blickrichtung), Lenken dreht nur die Wanne darunter; geparkt dreht er langsam nach vorne
-  if (C.turret) { if (C.tw === undefined) C.tw = C.h + C.turret.rotation.y; if (C.on) C.tw = player.yaw; else C.tw += Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(C.h - C.tw))); C.turret.rotation.y = wrapA(C.tw - C.h); }   // Turm folgt der Maus ohne Verzoegerung (Nicolas 2026-11-11)   // Panzerturm folgt der Blickrichtung (langsam)
+  if (C.turret) {
+    if (C.tw === undefined) C.tw = C.h + C.turret.rotation.y;
+    if (C.on) C.tw = player.yaw; else C.tw += Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(C.h - C.tw)));   // Turm folgt der Maus ohne Verzoegerung
+    // Stabilisiert (Nicolas 2026-11-11): Turm-Richtung und Rohrhoehe gelten in der Welt (C.tw, C.elev), egal wie die Wanne am Hang steht.
+    // Gewuenschte Richtung in den Wannen-Rahmen drehen: daraus Turmdrehung (um die Wannen-Hochachse) und Rohrwinkel (-26 bis +34 Grad, damit es auch an steilen Haengen waagrecht bleibt)
+    const ce = Math.cos(C.elev), d = tankDir.set(-Math.sin(C.tw) * ce, Math.sin(C.elev), -Math.cos(C.tw) * ce).applyQuaternion(tankQ.copy(C.g.quaternion).invert());
+    C.turret.rotation.y = Math.atan2(-d.x, -d.z);
+    if (C.gun) C.gun.rotation.x = Math.max(-0.45, Math.min(0.6, Math.atan2(d.y, Math.hypot(d.x, d.z))));
+  }
   if (C.beacon) { const t = clock.elapsedTime * 6, k = C.on ? 1 : 0; C.beacon[0].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 1 : 0); C.beacon[1].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 0 : 1); }   // Blaulicht
   if (C.jetM) { C.jet = Math.max(0, C.jet - dt); C.jetM.emissiveIntensity = Math.min(2.5, C.jet * 4); }
   if (C.flame) { const k = C.boostOn ? 0.85 + 0.3 * Math.random() : Math.min(1, C.jet * 2); C.flame.visible = k > 0.02; C.flame.scale.set(0.8 + 0.3 * k, 0.8 + 0.3 * k, k); }
@@ -165,11 +174,11 @@ function carStep(dt) {
     C.slope = slope;
     const brk = (sp.brake || 28) + Math.abs(C.v) * 0.2;                     // Bremse (Nicolas 2026-11-11: Bremsweg zu lang; vorher 16 m/s²): 100 km/h -> ca. 13 m, 200 km/h -> ca. 45 m
     if (th > 0) C.v += (C.v < -0.2 ? brk : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * grip * dt;
-    else if (th < 0) C.v -= (C.v > 0.2 ? brk : 6) * dt;
+    else if (th < 0) C.v -= (C.v > 0.2 ? brk : sp.revMax ? sp.acc * (1 - Math.max(0, -C.v) / (sp.revMax + 8)) : 6) * dt;   // spec.revMax: rueckwaerts wie vorwaerts (Panzer, Nicolas 2026-11-11)
     else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (3 + Math.abs(C.v) * 0.06) * dt);   // Ausrollen ohne Gas etwas kuerzer
     if (boosting && C.v < max) C.v = Math.min(max, C.v + 80 * dt);                                            // Nitro 5-mal so stark (Nicolas 2026-11-09)
     if (C.v > max) C.v = Math.max(max, C.v - (C.slope < -0.05 ? 4 : 14) * dt);   // bergab darf man etwas ueber das Hoechsttempo rollen
-    C.v = Math.max(th < 0 ? -8 : -16, C.v);                                     // rueckwaerts den Hang hinunter auch schneller
+    C.v = Math.max(th < 0 ? -(sp.revMax || 8) : -Math.max(16, sp.revMax || 0), C.v);                                     // rueckwaerts den Hang hinunter auch schneller
     // Sprung mit Schub (nur Tumbler: ohne Rampe)
     if (sp.jump && (player.jump || jumpHeld)) {
       if (C.v >= 14 && !C.wet) { C.air = true; C.vy = 7.5; C.v += C.jetM ? 6 : 3; C.jet = 0.9; toast("Sprung!"); if (C.jetM) engineJet(); }   // Batpod: Sprung ohne Duese/Schub

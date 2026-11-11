@@ -580,19 +580,22 @@ function buildTank(col = 0x4d5a36) {
   for (const sd of [-1, 1]) prismIn(T, [[1.25, 0.0], [1.0, 0.56], [0.1, 0.6], [-0.1, 0.0]], 0.2, paint, sd * 0.98);         // Wangen
   meshIn(T, new THREE.CylinderGeometry(0.42, 0.42, 0.16, 16), dark, -0.45, 0.78, 0.3);                                     // Kommandantenluke
   meshIn(T, new THREE.CylinderGeometry(0.3, 0.3, 0.12, 12), dark, 0.5, 0.74, 0.5);
-  boxAt(T, 0.6, 0.42, 0.5, dark, 0, 0.3, -1.4);                                                                          // Blende
-  meshIn(T, new THREE.CylinderGeometry(0.1, 0.12, 4.2, 12), steel, 0, 0.32, -3.7, Math.PI / 2);                             // Rohr
-  meshIn(T, new THREE.CylinderGeometry(0.17, 0.17, 0.5, 12), steel, 0, 0.32, -3.0, Math.PI / 2);                             // Rauchabsauger
-  meshIn(T, new THREE.CylinderGeometry(0.14, 0.12, 0.3, 12), dark, 0, 0.32, -5.9, Math.PI / 2);                              // Muendung
+  // Kanone als eigene Gruppe mit Drehpunkt an der Blende (Nicolas 2026-11-11: Rohr in der Hoehe verstellbar, bleibt in Weltlage)
+  const gun = new THREE.Group(); gun.position.set(0, 0.32, -1.3); T.add(gun);
+  boxAt(gun, 0.6, 0.42, 0.5, dark, 0, -0.02, -0.1);                                                                       // Blende
+  meshIn(gun, new THREE.CylinderGeometry(0.1, 0.12, 4.2, 12), steel, 0, 0, -2.4, Math.PI / 2);                             // Rohr
+  meshIn(gun, new THREE.CylinderGeometry(0.17, 0.17, 0.5, 12), steel, 0, 0, -1.7, Math.PI / 2);                             // Rauchabsauger
+  meshIn(gun, new THREE.CylinderGeometry(0.14, 0.12, 0.3, 12), dark, 0, 0, -4.6, Math.PI / 2);                              // Muendung
+  for (const o of gun.children) o.castShadow = true;
   meshIn(T, new THREE.CylinderGeometry(0.01, 0.01, 1.4, 4), dark, 0.8, 1.4, 1.2);                                         // Antenne
   for (const o of [...T.children]) o.castShadow = true;
   // Laufrollen (6 je Seite, drehen mit), rund ueber addWheel
   const wheels = [];
   for (const sd of [-1, 1]) for (let k = 0; k < 6; k++) wheels.push(addWheel(g, sd * 1.4, -2.0 + k * 0.8, 0.36, 0.48, false, tireM, rimM, 0, 16));
-  return { g, wheels, turret };
+  return { g, wheels, turret, gun };
 }
 const SPEC_TANK = { name: "Panzer", wheels: [[-1.4, -2.4], [1.4, -2.4], [-1.4, 2.4], [1.4, 2.4]], wb: 4.8, track: 2.8, pts: [-2.3, 0, 2.3], R: 1.7, circR: 1.7, enter: 4.5,
-  maxN: 14, maxF: 18, acc: 6, steer: 0.95, jump: false, grade: 42, camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
+  maxN: 14, maxF: 18, revMax: 18, acc: 6, steer: 0.95, jump: false, grade: 42, camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
   exits: [[-2.6, 0], [2.6, 0], [-2.6, 1.5], [2.6, 1.5], [0, -4.5], [0, 4.5]],
   msg: "Panzer: W/S Gas/Bremse, A/D lenken, Maus dreht den Turm, V Kamera, R zurücksetzen, Shift aussteigen" };
 // Glatter Koerper aus Querschnitten (wie beim Aventador): Stationen [f, Halbschnitt von unten-Mitte ueber die Seite bis oben-Mitte], gespiegelt, Enden zu
@@ -719,7 +722,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, turret: built.turret || null, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, turret: built.turret || null, gun: built.gun || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
