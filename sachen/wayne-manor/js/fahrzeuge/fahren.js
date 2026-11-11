@@ -23,6 +23,7 @@ function carPush(p, feet, R) {
     if (!s.on || s.y1 <= feet + CAR_STEP || s.y0 >= feet + body) continue;
     const cx = Math.max(s.x0, Math.min(p.x, s.x1)), cz = Math.max(s.z0, Math.min(p.z, s.z1)), dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
     if (d2 >= R * R) continue;
+    if (inSilo(cx, cz, 1)) { const tg = terrainH(cx, cz); if (feet > tg - 3 && s.y1 <= tg + 0.5) continue; }   // Silo-Wandkrone und Rasenklappe liegen buendig im Rasen (nur hier, Stuetzmauern sperren weiter; Nicolas 2026-11-11: Panzer kam am Hang nicht drauf, gemessen wird ab der Fahrzeugmitte)
     if (d2 > 1e-8) { const d = Math.sqrt(d2); p.x = cx + dx / d * R; p.z = cz + dz / d * R; }
     else { const out = [[p.x - s.x0, -1, 0], [s.x1 - p.x, 1, 0], [p.z - s.z0, 0, -1], [s.z1 - p.z, 0, 1]].sort((a, b) => a[0] - b[0])[0]; p.x += out[1] * (out[0] + R); p.z += out[2] * (out[0] + R); }
   }
