@@ -56,7 +56,7 @@ function carPose(dt) {
     // Gewuenschte Richtung in den Wannen-Rahmen drehen: daraus Turmdrehung (um die Wannen-Hochachse) und Rohrwinkel (-26 bis +34 Grad, damit es auch an steilen Haengen waagrecht bleibt)
     const ce = Math.cos(C.elev), d = tankDir.set(-Math.sin(C.tw) * ce, Math.sin(C.elev), -Math.cos(C.tw) * ce).applyQuaternion(tankQ.copy(C.g.quaternion).invert());
     C.turret.rotation.y = Math.atan2(-d.x, -d.z);
-    if (C.gun) { const a = ((Math.round(C.turret.rotation.y * 180 / Math.PI) % 360) + 360) % 360, lo = C.gunMin ? C.gunMin[a] : -0.45;   // nie in die Wanne: tiefster Winkel je Turmdrehung
+    if (C.gun) { const ad = ((C.turret.rotation.y * 180 / Math.PI) % 360 + 360) % 360, a0 = Math.floor(ad) % 360, fr = ad - Math.floor(ad), lo = C.gunMin ? C.gunMin[a0] * (1 - fr) + C.gunMin[(a0 + 1) % 360] * fr : -0.45;   // zwischen den Graden weich   // nie in die Wanne: tiefster Winkel je Turmdrehung
       C.gun.rotation.x = Math.max(lo, Math.min(0.6, Math.atan2(d.y, Math.hypot(d.x, d.z)))); }
   }
   if (C.beacon) { const t = clock.elapsedTime * 6, k = C.on ? 1 : 0; C.beacon[0].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 1 : 0); C.beacon[1].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 0 : 1); }   // Blaulicht

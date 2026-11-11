@@ -613,6 +613,10 @@ function buildTank(col = 0x4d5a36) {
     }
     gunMin[a] = p;
   }
+  // Glatter Verlauf (Nicolas 2026-11-11: Rohr zitterte beim Drehen an Kanten): erst Maximum ueber +-6 Grad, dann Mittel ueber +-6 Grad.
+  // Das Mittel der Maxima ist an jeder Stelle mindestens so hoch wie der echte Mindestwinkel, das Rohr kommt also nie tiefer als erlaubt.
+  { const W = 6, mx = gunMin.map((_, a) => { let m = -9; for (let d = -W; d <= W; d++) m = Math.max(m, gunMin[(a + d + 360) % 360]); return m; });
+    for (let a = 0; a < 360; a++) { let t = 0; for (let d = -W; d <= W; d++) t += mx[(a + d + 360) % 360]; gunMin[a] = t / (2 * W + 1); } }
   return { g, wheels, turret, gun, gunMin };
 }
 const SPEC_TANK = { name: "Panzer", wheels: [[-1.4, -2.4], [1.4, -2.4], [-1.4, 2.4], [1.4, 2.4]], wb: 4.8, track: 2.8, pts: [-2.3, 0, 2.3], R: 1.7, circR: 1.7, enter: 4.5,
