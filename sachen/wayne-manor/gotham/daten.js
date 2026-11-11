@@ -153,6 +153,10 @@ const GOTHAM = {
   kanal: {
     hauptsammler: ["ring", "uptown-ave", "gotham-blvd", "parkrow", "crosstown", "sued-road", "ufer-ost", "ufer-west"],
     gulliAbstand: 70,
+    // Nebensammler (Nicolas 2026-11-11): unter den Gullideckeln, flach (Scheitel ca. 1,2 m unter der Strasse), begehbar ca. 2,2 m hoch, mit Gefaelle
+    // bergab zum Hauptsammler (Wasser fliesst dorthin, man kommt als Person bis in den Hauptsammler). Nur unter Nebenstrassen, die einen
+    // Hauptsammler beruehren, und nur die letzten `laenge` m vor der Einmuendung, davon nur `anteil` (nicht unter jeder Strasse).
+    neben: { laenge: 150, anteil: 0.5, hoehe: 2.2, scheitel: -1.2 },   // anteil = Anteil der einmuendenden Nebenstrassen mit Nebensammler (fest ausgewaehlt)
     auslass: { rohr: 6, wand: 14, wasser: 36, tiefe: 24 },   // Rohrdurchmesser, Breite Stirnwand, Breite am Wasser, Tiefe der Nische (m)
     hub: { name: "Zentraler Knoten unter dem Wayne Tower (grösster Teil des Netzes, Schurkenbasis)", x: -2050, z: -100, r: 170 },
   },
@@ -255,6 +259,7 @@ const GOTHAM = {
       { y: -11, name: "Tiefgarage 2 = U-Bahn-Bahnsteig" },
       { y: -17.5, name: "Club: Keller / VIP" },
       { y: -13.5, name: "Club: Tanzfläche" },
+      { y: -1.2, name: "Nebensammler: Scheitel unter dem Gullideckel" },
       { y: -8, name: "Geheimer Wayne-Stock (direkt unter dem Wayne Tower)" },
       { y: -17, name: "Kanal-Sohle (Hauptsammler) = Boden Kanal-Hub / Schurkenbasis" },
       { y: -10, name: "Kanal-Auslass (Rohr oben)" },
@@ -328,22 +333,31 @@ const GOTHAM = {
       { typ: "auto", name: "Rolls-Royce Spectre (Batman-Basis)", x0: 610, y0: -5.5, laenge: 5.34, hoehe: 1.6 },
       { typ: "auto", name: "Rolls-Royce Spectre (Tiefgarage Wayne Tower)", x0: 1940, y0: -5.5, laenge: 5.34, hoehe: 1.6 },
       { typ: "auto", name: "Rolls-Royce Spectre (Brücke)", x0: 3000, y0: 0, laenge: 5.34, hoehe: 1.6 },
+      // Detail (Nicolas 2026-11-11): Gullideckel -> Nebensammler (flach, Gefaelle) -> Hauptsammler, in echten Proportionen mit Person 1,8 m
+      { typ: "titel", name: "Detail: Gullideckel → Nebensammler → Hauptsammler", x0: 3260, x1: 3880, y0: 14, y1: 14 },
+      { typ: "grund", x0: 3240, x1: 3900, y0: -60, y1: 0 },
+      { typ: "strasse", name: "Nebenstrasse", x0: 3260, x1: 3880, y0: -0.6, y1: 0 },
+      { typ: "neben", name: "Nebensammler (begehbar, 2,2 m, Gefälle zum Hauptsammler)", x0: 3280, x1: 3770, ya: -3.4, yb: -11, h: 2.2 },
+      { typ: "schacht", name: "Gullideckel + Leiter", x0: 3300, x1: 3313, y0: -1.3, y1: 0 },
+      { typ: "schacht", name: "Gullideckel + Leiter", x0: 3520, x1: 3533, y0: -4.9, y1: 0 },
+      { typ: "person", name: "Person (1,8 m)", x0: 3360, y0: -4.64, hoehe: 1.8 },
+      { typ: "rohr", name: "Hauptsammler", x0: 3740, x1: 3880, y0: -17, y1: -11 },
       // Zum Vergleich: Wayne Manor an der Steilkueste (anderer Ort, gleiche Hoehen). Werte aus dem Spiel: Plateau HILL 25, Klippe Welt 1-15,
       // Meer SEA_Y -34, Batcave unten LY -28 (10 m hoch), oben UY -16 (8,5 m), Tiefgarage GY -5,5 unter dem Plateau
-      { typ: "titel", name: "Zum Vergleich: Wayne Manor an der Steilküste", x0: 3240, x1: 3620, y0: 73, y1: 73 },
-      { typ: "luft", x0: 3240, x1: 3330, y0: -18, y1: 8 },
-      { typ: "wasser", name: "Meer", x0: 3240, x1: 3330, y0: -22, y1: -18 },
+      { typ: "titel", name: "Zum Vergleich: Wayne Manor an der Steilküste", x0: 3940, x1: 4320, y0: 73, y1: 73 },
+      { typ: "luft", x0: 3940, x1: 4030, y0: -18, y1: 8 },
+      { typ: "wasser", name: "Meer", x0: 3940, x1: 4030, y0: -22, y1: -18 },
       { typ: "profil", name: "Steilküste (Fels, 35-49 m über dem Meer)", farbe: "#5b5246",
-        punkte: [[3330, -60], [3330, -18], [3324, -9], [3332, 2], [3326, 13], [3333, 24], [3329, 31], [3365, 33], [3390, 41], [3620, 41], [3620, -60], [3240, -60], [3240, -22], [3330, -22]] },
+        punkte: [[4030, -60], [4030, -18], [4024, -9], [4032, 2], [4026, 13], [4033, 24], [4029, 31], [4065, 33], [4090, 41], [4320, 41], [4320, -60], [3940, -60], [3940, -22], [4030, -22]] },
       // gemessen im Spiel (Orbit-Punkt von Nicolas, x 52 / z 227): Kante Welt +1, Meer -34, Grund am Fuss -38
-      { typ: "mass", name: "35 m (gemessen bei x 52 / z 227: Kante Welt +1)", x0: 3265, y0: -18, y1: 17 },
-      { typ: "mass", name: "49 m (höchste Stelle, Kante Welt +15)", x0: 3295, y0: -18, y1: 31 },
-      { typ: "raum", name: "Tiefgarage Manor", x0: 3440, x1: 3570, y0: 35.5, y1: 40.6, farbe: "#9aa4b2" },
-      { typ: "gebaeude", name: "Wayne Manor", x0: 3430, x1: 3580, y0: 41, y1: 51, farbe: "#d8d2c4" },
-      { typ: "schacht", name: "Aufzug", x0: 3530, x1: 3540, y0: -12, y1: 41, farbe: "#e8c547" },
-      { typ: "raum", name: "Batcave oben", x0: 3410, x1: 3610, y0: 0, y1: 8.5, farbe: "#c58cff" },
-      { typ: "raum", name: "Batcave unten", x0: 3380, x1: 3610, y0: -12, y1: -2, farbe: "#c58cff" },
-      { typ: "wasser", name: "Höhlensee", x0: 3345, x1: 3440, y0: -18, y1: -18 },
+      { typ: "mass", name: "35 m (gemessen bei x 52 / z 227: Kante Welt +1)", x0: 3965, y0: -18, y1: 17 },
+      { typ: "mass", name: "49 m (höchste Stelle, Kante Welt +15)", x0: 3995, y0: -18, y1: 31 },
+      { typ: "raum", name: "Tiefgarage Manor", x0: 4140, x1: 4270, y0: 35.5, y1: 40.6, farbe: "#9aa4b2" },
+      { typ: "gebaeude", name: "Wayne Manor", x0: 4130, x1: 4280, y0: 41, y1: 51, farbe: "#d8d2c4" },
+      { typ: "schacht", name: "Aufzug", x0: 4230, x1: 4240, y0: -12, y1: 41, farbe: "#e8c547" },
+      { typ: "raum", name: "Batcave oben", x0: 4110, x1: 4310, y0: 0, y1: 8.5, farbe: "#c58cff" },
+      { typ: "raum", name: "Batcave unten", x0: 4080, x1: 4310, y0: -12, y1: -2, farbe: "#c58cff" },
+      { typ: "wasser", name: "Höhlensee", x0: 4045, x1: 4140, y0: -18, y1: -18 },
       { typ: "strasse", name: "Uferstrasse Ost (unten)", x0: 2524, x1: 2754, y0: -6, y1: -5.5 },
     ],
   },

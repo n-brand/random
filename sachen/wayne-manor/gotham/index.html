@@ -319,10 +319,21 @@
     const U = G.ubahn, ringF = (x, z) => ((x - U.cx) / U.rx) ** 2 + ((z - U.cz) / U.rz) ** 2 - 1;
     for (const s of KS) for (let i = 1; i < s.pts.length; i++) { const a = s.pts[i - 1], b = s.pts[i]; if (ringF(a[0], a[1]) * ringF(b[0], b[1]) < 0) {
       const c = el("circle", { cx: b[0], cy: b[1], r: 16, fill: "#ff5a5a", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Übergang U-Bahn ↔ Kanal</b><br>unter ${s.name}`; } }
-    // Gullideckel auf den Strassen mit Kanal darunter
+    // Nebensammler (Nicolas 2026-11-11): Nebenstrassen, die an einem Hauptsammler enden, die letzten K.neben.laenge m vor der Einmuendung;
+    // Punkte in Fliessrichtung (oben -> Hauptsammler)
+    const ksNear = (x, z, pad) => KS.some(s => { for (let j = 1; j < s.pts.length; j++) if (segDist(x, z, s.pts[j - 1], s.pts[j]) < s.w / 2 + pad) return true; return false; });
+    const NSA = [];
+    for (const s of NEBEN) { const P = s.pts; for (const rev of [false, true]) { const Q = rev ? [...P].reverse() : P, e = Q[Q.length - 1]; if (!ksNear(e[0], e[1], 10) || ((Math.sin(e[0] * 12.9898 + e[1] * 78.233) * 43758.5453) % 1 + 1) % 1 >= (K.neben.anteil ?? 1)) continue;
+      let acc = 0, k = Q.length - 1; while (k > 0 && acc < K.neben.laenge) { acc += Math.hypot(Q[k][0] - Q[k - 1][0], Q[k][1] - Q[k - 1][1]); k--; } if (acc > 20) NSA.push(Q.slice(k)); } }
+    { const p = el("path", { d: NSA.map(q => path(q)).join(""), fill: "none", stroke: "#7bd88f", "stroke-width": 3.5, opacity: .9 }, L.kanal);
+      p.dataset.info = `<b>Nebensammler</b> (${NSA.length} Stück, je bis ${K.neben.laenge} m)<br>flach unter der Nebenstrasse (Scheitel ca. ${String(-K.neben.scheitel).replace(".", ",")} m tief), ${String(K.neben.hoehe).replace(".", ",")} m hoch, begehbar<br>Gefälle: Wasser fliesst in den Hauptsammler`;
+      const ar = []; for (const q of NSA) { let acc = 25; for (let i = 1; i < q.length; i++) { const l = Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1]); acc += l; if (acc >= 60) { acc = 0; const ux = (q[i][0] - q[i - 1][0]) / (l || 1), uz = (q[i][1] - q[i - 1][1]) / (l || 1), x = q[i][0], z = q[i][1];
+        ar.push(`M${f1(x - ux * 5 - uz * 3.5)} ${f1(z - uz * 5 + ux * 3.5)}L${f1(x + ux * 3)} ${f1(z + uz * 3)}L${f1(x - ux * 5 + uz * 3.5)} ${f1(z - uz * 5 - ux * 3.5)}`); } } }
+      el("path", { d: ar.join(""), fill: "none", stroke: "#cfeedd", "stroke-width": 1.6, "pointer-events": "none" }, L.kanal); }
+    // Gullideckel auf den Strassen mit Kanal darunter (Haupt- und Nebensammler)
     let gn = 0; const gd = [];
-    for (const s of KS) { let acc = rr(0, K.gulliAbstand); for (let i = 1; i < s.pts.length; i++) { acc += Math.hypot(s.pts[i][0] - s.pts[i - 1][0], s.pts[i][1] - s.pts[i - 1][1]); if (acc >= K.gulliAbstand && inIsland(s.pts[i][0], s.pts[i][1])) { acc = 0; gn++; gd.push(`M${f1(s.pts[i][0] - 2.5)} ${f1(s.pts[i][1])}a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0`); } } }
-    el("path", { d: gd.join(""), fill: "#c0c4c8", stroke: "#000", "stroke-width": 1 }, L.gulli).dataset.info = `<b>Gullideckel</b> (${gn} Stück, alle ${K.gulliAbstand} m auf den Strassen mit Kanal)<br>nur mit Spezialwerkzeug (Gullihaken) zu öffnen, darunter Leiter in den Kanal`;
+    for (const s of [...KS, ...NSA.map(q => ({ pts: q }))]) { let acc = rr(0, K.gulliAbstand); for (let i = 1; i < s.pts.length; i++) { acc += Math.hypot(s.pts[i][0] - s.pts[i - 1][0], s.pts[i][1] - s.pts[i - 1][1]); if (acc >= K.gulliAbstand && inIsland(s.pts[i][0], s.pts[i][1])) { acc = 0; gn++; gd.push(`M${f1(s.pts[i][0] - 2.5)} ${f1(s.pts[i][1])}a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0`); } } }
+    el("path", { d: gd.join(""), fill: "#c0c4c8", stroke: "#000", "stroke-width": 1 }, L.gulli).dataset.info = `<b>Gullideckel</b> (${gn} Stück, alle ${K.gulliAbstand} m auf den Strassen mit Haupt- oder Nebensammler)<br>nur mit Spezialwerkzeug (Gullihaken) zu öffnen, darunter Leiter in den Nebensammler, von dort weiter bis in den Hauptsammler`;
 
     // ---------- U-Bahn-Ring ----------
     const ring = []; for (let a = 0; a <= 360; a += 4) ring.push([U.cx + Math.cos(a * Math.PI / 180) * U.rx, U.cz + Math.sin(a * Math.PI / 180) * U.rz]);
