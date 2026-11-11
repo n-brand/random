@@ -62,7 +62,7 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 | K1 ✅ | **FPS-/Messanzeige** (Bildrate, Bildzeit, Zeichenaufrufe, Dreiecke, geladene Kacheln), ein- und ausblendbar | Werte vor dem Umbau festhalten, PC und Handy-Emulation |
 | K2 ✅ | **Kollisions-Raster** (16-m-Zellen) für Quader und Kreise | Verhalten unverändert: alle Teleport-Ziele, Garage, Höhlen, Mauer, Fahrzeuge; Zeit pro Schritt kleiner |
 | K3 ✅ | **Kachel-Verwaltung** (Ring, Warteschlange, Zeitbudget, Cache) und **Wald pro Kachel** | Bäume erscheinen und verschwinden um den Spieler, kein Ruckeln, Bäume nach Neuladen gleich |
-| K4 | **Gelände in Kacheln mit LOD** (ersetzt das 640er-Netz; bestehender Bereich aus den heutigen Punkten, Variante A), Höhen-Merker, Ausschnitte, Grenze 700 m fällt, Stufen Gelände-Detail | Keine Risse; Bild im bestehenden Bereich unverändert; Wege, Rampe, Portale, Küste, Silo |
+| K4 ✅ | **Gelände in Kacheln mit LOD** (ersetzt das 640er-Netz; bestehender Bereich aus den heutigen Punkten, Variante A), Höhen-Merker, Ausschnitte, Grenze 700 m fällt, Stufen Gelände-Detail | Keine Risse; Bild im bestehenden Bereich unverändert; Wege, Rampe, Portale, Küste, Silo |
 | K5 | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
 | K6 | **Einstellungen** (Ladeweite, Grafik, Lautstärke, FPS) | Wert bleibt nach Neuladen, Wirkung sofort |
 | K7 | **Ladescreen PC/Handy** mit echtem Fortschritt, Start nur mit nahen Kacheln | unter 3 s bis spielbar |
@@ -72,6 +72,10 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 
 - Mit Variante A ändert K4 die bestehende Geländeform nicht. Risiko bleibt bei den Kachelrändern (Risse) und den Ausschnitten; darum K4 als eigener Schritt mit vielen Prüfstellen.
 - Web Worker (Rechnen im Hintergrund-Thread) bringt hier vorerst wenig, weil die Höhenformel an vielen gemeinsamen Funktionen hängt. Erst nötig, wenn das Zeitbudget nicht reicht.
+
+## Stand K4 (2026-11-11)
+
+Gelände als 100 Blöcke zu 64 x 64 Zellen des bisherigen Rasters (in der Mitte 128 x 128 m), Schritt 1/2/4/8 je Block. Pixelvergleich alt/neu: Start- und Nahansichten identisch, Fernsichten < 0,4 % der Pixel (gröbere Stufe im Nebel), alle Ränder zwischen Stufen passen auf 0,007 mm. Gelände-Dreiecke: Niedrig ca. 160 Tsd., Mittel ca. 440-560 Tsd., Hoch ca. 700 Tsd. (vorher immer 819 Tsd.); ganze Szene ca. 2,1 statt 2,8-3,0 Mio. Dreiecke, dafür ca. 20-60 Zeichenaufrufe mehr. Bildzeit am PC im Rahmen der Messgenauigkeit gleich. Die Laufgrenze 700 m und das Gelände ausserhalb ±1500 m kommen mit K5 (Fernring) bzw. Gotham.
 
 ## Fragen an Nicolas
 

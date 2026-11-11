@@ -17,7 +17,8 @@ function perfFrame(ms) {
   PERF.el.textContent = (PERF.n * 1000 / span).toFixed(0) + " FPS   " + (PERF.sum / PERF.n).toFixed(1) + " ms (max " + PERF.max.toFixed(1) + ")\n" +
     r.render.calls + " Aufrufe   " + (r.render.triangles / 1e6).toFixed(2) + " Mio. Dreiecke\n" + r.memory.geometries + " Geom.   " + r.memory.textures + " Tex.   " + mem + "\n" +
     "Kollision " + (solids.length + circles.length) + " / " + COLL.cells.size + " Zellen\n" +
-    "Kacheln " + tilesLoaded() + " geladen, " + TILES.queue.length + " warten, Ladeweite " + TILES.range + " (" + TILES.range * TILE + " m)";
+    "Kacheln " + tilesLoaded() + " geladen, " + TILES.queue.length + " warten, Ladeweite " + TILES.range + " (" + TILES.range * TILE + " m)\n" +
+    "Gelaende " + TERR.detail + ": " + (TERR.tris / 1e3).toFixed(0) + " Tsd. Dreiecke, " + TERR.queue.length + " warten";
   PERF.n = 0; PERF.sum = 0; PERF.max = 0; PERF.t0 = now;
 }
 addEventListener("keydown", e => { if (e.code === "F3") { e.preventDefault(); perfToggle(); } });

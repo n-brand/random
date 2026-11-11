@@ -10,6 +10,7 @@ const TILE = 128;
 const TILES = {
   mobile: matchMedia("(pointer: coarse)").matches,
   layers: [], frame: 0, cx: NaN, cz: NaN, queue: [], ms: 0, built: 0,
+  tasks: [],                                                              // weitere Aufgaben mit plan(fx, fy, fz, dx, dz) und step() -> true, solange es Arbeit gibt (Gelaende K4)
   startup: true,                                                          // erster Durchlauf ohne Zeitbudget (Bild beim Start sofort vollstaendig)
 };
 TILES.budget = TILES.mobile ? 2 : 4;                                       // ms pro Bild fuer den Aufbau
@@ -48,6 +49,7 @@ function tilesPlan(fx, fz, dx, dz) {
   }
   q.sort((a, b) => a.pri - b.pri);
   TILES.queue = q;
+  for (const t of TILES.tasks) t.plan(fx, camera.position.y, fz, dx, dz);
 }
 
 const tileDir = new THREE.Vector3();
@@ -66,6 +68,7 @@ function tilesUpdate() {
     L.cells.set(key, c);
     if (c.obj) scene.add(c.obj);
   }
+  for (const t of TILES.tasks) while ((TILES.startup || performance.now() - t0 < TILES.budget) && t.step());
   TILES.startup = false;
   TILES.ms = performance.now() - t0;
 }

@@ -34,6 +34,81 @@ function terrainH(x, z) {
   const a = TH[k], b = TH[k + 1], c = TH[k + TN1], d = TH[k + TN1 + 1];
   return fx + fz <= 1 ? a + (b - a) * fx + (c - a) * fz : d + (c - d) * (1 - fx) + (b - d) * (1 - fz);
 }
+// Gelaende-Bloecke (K4). TB Zellen je Block, Schritt S je Block; TERR_F = erlaubter Punktabstand / Abstand zur Kamera (Gelaende-Detail)
+const TB = 64, TBN = T_N / TB;                                           // 64 Zellen = 128 m in der Mitte (32 gab zu viele Zeichenaufrufe)
+const TERR = { blocks: [], detail: (() => { try { const v = localStorage.getItem("wm-detail"); if (v === "niedrig" || v === "mittel" || v === "hoch") return v; } catch (e) {} return TILES.mobile ? "niedrig" : "mittel"; })(), queue: [], tris: 0 };
+const TERR_F = { niedrig: 0.03, mittel: 0.015, hoch: 0.008 };
+function setTerrainDetail(v) { if (!TERR_F[v]) return; TERR.detail = v; try { localStorage.setItem("wm-detail", v); } catch (e) {} TILES.cx = NaN; }
+function terrainBlocks(pos, nrm, col, cut, mtl) {
+  for (let bj = 0; bj < TBN; bj++) for (let bi = 0; bi < TBN; bi++) {
+    const i0 = bi * TB, j0 = bj * TB; let hasCut = false, y0 = 1e9, y1 = -1e9;
+    for (let j = j0; j <= j0 + TB; j++) for (let i = i0; i <= i0 + TB; i++) { const k = j * TN1 + i; if (cut[k]) hasCut = true; y0 = Math.min(y0, TH[k]); y1 = Math.max(y1, TH[k]); }
+    TERR.blocks.push({ bi, bj, i0, j0, hasCut, y0, y1, S: 0, want: 1, d: 0, mesh: null, cell: (TX[i0 + TB] - TX[i0]) / TB });
+  }
+  const B = (bi, bj) => bi >= 0 && bj >= 0 && bi < TBN && bj < TBN ? TERR.blocks[bj * TBN + bi] : null;
+  // Netz eines Blocks mit Schritt S bauen (Dreiecke wie das alte Netz: a c b / b c d, Ausschnitte weglassen)
+  function build(b, S) {
+    const n = TB / S + 1, P = new Float32Array(n * n * 3), N = new Float32Array(n * n * 3), Cc = new Float32Array(n * n * 3), U = new Float32Array(n * n * 2), I = [];
+    for (let v = 0; v < n; v++) for (let u = 0; u < n; u++) {
+      const k = (b.j0 + v * S) * TN1 + b.i0 + u * S, q = v * n + u;
+      P.set(pos.subarray(k * 3, k * 3 + 3), q * 3); N.set(nrm.subarray(k * 3, k * 3 + 3), q * 3); Cc.set(col.subarray(k * 3, k * 3 + 3), q * 3);
+      U[q * 2] = P[q * 3] / 10; U[q * 2 + 1] = -P[q * 3 + 2] / 10;
+    }
+    const ck = (u, v) => cut[(b.j0 + v * S) * TN1 + b.i0 + u * S];
+    for (let v = 0; v < n - 1; v++) for (let u = 0; u < n - 1; u++) {
+      const a = v * n + u, bb = a + 1, c = a + n, d = c + 1;
+      if (!(ck(u, v) || ck(u + 1, v) || ck(u, v + 1))) I.push(a, c, bb);
+      if (!(ck(u + 1, v) || ck(u, v + 1) || ck(u + 1, v + 1))) I.push(bb, c, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setAttribute("normal", new THREE.BufferAttribute(N, 3));
+    g.setAttribute("color", new THREE.BufferAttribute(Cc, 3)); g.setAttribute("uv", new THREE.BufferAttribute(U, 2));
+    g.setIndex(I); g.computeBoundingSphere(); g.computeBoundingBox();
+    if (b.mesh) { TERR.tris -= b.mesh.geometry.index.count / 3; b.mesh.geometry.dispose(); b.mesh.geometry = g; }
+    else { b.mesh = new THREE.Mesh(g, mtl); b.mesh.name = "Gelaende " + b.bi + "," + b.bj; b.mesh.receiveShadow = b.mesh.castShadow = true; b.mesh.userData.keep = true; scene.add(b.mesh); }
+    TERR.tris += I.length / 3; b.S = S;
+  }
+  // Randpunkte an groebere Nachbarn anlegen (sonst Risse). Seiten: 0 West (u = 0), 1 Ost, 2 Nord (v = 0), 3 Sued
+  function fixEdges(b) {
+    if (!b.mesh) return;
+    const S = b.S, n = TB / S + 1, P = b.mesh.geometry.attributes.position, A = P.array;
+    const nb = [B(b.bi - 1, b.bj), B(b.bi + 1, b.bj), B(b.bi, b.bj - 1), B(b.bi, b.bj + 1)];
+    for (let side = 0; side < 4; side++) {
+      const Sn = nb[side] && nb[side].mesh ? nb[side].S : S, along = side < 2;   // West/Ost: Kante laeuft entlang j
+      for (let t = 0; t < n; t++) {
+        const u = side === 0 ? 0 : side === 1 ? n - 1 : t, v = side === 2 ? 0 : side === 3 ? n - 1 : t, q = v * n + u;
+        const gi = b.i0 + u * S, gj = b.j0 + v * S, off = along ? gj - b.j0 : gi - b.i0;
+        let h = TH[gj * TN1 + gi];
+        if (Sn > S && off % Sn) {
+          const a0 = off - off % Sn, a1 = a0 + Sn;
+          if (along) { const ja = b.j0 + a0, jb = b.j0 + a1, w = (TX[gj] - TX[ja]) / (TX[jb] - TX[ja]); h = TH[ja * TN1 + gi] * (1 - w) + TH[jb * TN1 + gi] * w; }
+          else { const ia = b.i0 + a0, ib = b.i0 + a1, w = (TX[gi] - TX[ia]) / (TX[ib] - TX[ia]); h = TH[gj * TN1 + ia] * (1 - w) + TH[gj * TN1 + ib] * w; }
+        }
+        A[q * 3 + 1] = h;
+      }
+    }
+    P.needsUpdate = true;
+  }
+  // Gewuenschte Stufe je Block (bei jedem Neuplanen der Kacheln), Umbau nach Vorrang mit dem Kachel-Zeitbudget
+  TILES.tasks.push({
+    plan(fx, fy, fz) {
+      const f = TERR_F[TERR.detail], q = [];
+      for (const b of TERR.blocks) {
+        const x0 = TX[b.i0], x1 = TX[b.i0 + TB], z0 = TX[b.j0], z1 = TX[b.j0 + TB];
+        const dx = Math.max(x0 - fx, 0, fx - x1), dz = Math.max(z0 - fz, 0, fz - z1), dy = Math.max(b.y0 - fy, 0, fy - b.y1), d = Math.hypot(dx, dy, dz);
+        let S = 1; if (!b.hasCut) while (S < 8 && b.cell * S * 2 <= d * f) S *= 2;
+        b.want = S; b.d = d;
+        if (S !== b.S) q.push(b);
+      }
+      q.sort((a, c) => a.d - c.d); TERR.queue = q;
+    },
+    step() {
+      const b = TERR.queue.shift(); if (!b) return false;
+      if (b.want !== b.S) { build(b, b.want); for (const o of [b, B(b.bi - 1, b.bj), B(b.bi + 1, b.bj), B(b.bi, b.bj - 1), B(b.bi, b.bj + 1)]) if (o) fixEdges(o); }
+      return true;
+    },
+  });
+}
 const grassTex = canvasTex(256, 256, (g, w, h) => {
   g.fillStyle = "#dcdcdc"; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 4000; i++) { const v = 175 + r1() * 80; g.fillStyle = `rgba(${v - 12},${v},${v - 22},.5)`; g.fillRect(r1() * w, r1() * h, 1 + r1() * 2, 2 + r1() * 4); }
@@ -92,10 +167,12 @@ const grassTex = canvasTex(256, 256, (g, w, h) => {
     }
     col.set([c.r, c.g, c.b], k * 3);
   }
-  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
-  const terrain = new THREE.Mesh(g, M(0xffffff, { map: grassTex, vertexColors: true, roughness: 1 }));
-  terrain.receiveShadow = terrain.castShadow = true;
-  scene.add(terrain);
+  // K4 (2026-11-11): statt eines Netzes 640 x 640 jetzt Bloecke zu 32 x 32 Zellen desselben Rasters (Variante A: gleiche Punkte, gleiche Normalen
+  // und Farben, die Form aendert sich nicht). Jeder Block hat eine Detailstufe (Schritt 1, 2, 4, 8 Zellen) nach Abstand zur Kamera und Einstellung
+  // Gelaende-Detail; Bloecke mit Ausschnitt (Pool, Portal, Silo ...) immer Schritt 1. Gegen Risse: Randpunkte eines feineren Blocks liegen auf der
+  // Kante des groeberen Nachbarn (Hoehe dort linear zwischen dessen Punkten). Laufen/Fahren rechnen weiter mit terrainH (volles Raster).
+  terrainBlocks(pos, g.attributes.normal.array, col, cut, M(0xffffff, { map: grassTex, vertexColors: true, roughness: 1 }));
+  g.dispose();
 }
 // Seen (Wasserflaeche etwas groesser als der Uferrand, der Rand verschwindet im Gelaende)
 for (const L of LAKES) {
