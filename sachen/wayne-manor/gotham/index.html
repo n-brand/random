@@ -154,7 +154,8 @@
     for (const [S, a, b, h, n] of [[RW, -2800, 2100, false, WA.west.name], [RE, -2800, 1700, false, WA.ost.name], [RN, -3700, -600, true, WA.nord.name]]) {
       const p = el("polygon", { points: pts(riverPoly(S, a, b, h)), fill: WATER }, base); p.dataset.info = `<b>${n}</b><br>Breite ${Math.round(S(h ? -2000 : 0)[1])} m (variiert)`; }
     el("polygon", { points: pts(roh), fill: WATER }, base);
-    el("polygon", { points: pts(insel), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 5 }, base);
+    el("polygon", { points: pts(insel), fill: "none", stroke: "#b8a77c", "stroke-width": 14, "stroke-linejoin": "round" }, base).dataset.info = "<b>Kies/Sand am Ufer</b><br>knapp über dem Wasser am Fuss der Kaimauer, dann wird der Fluss weich tiefer";
+    el("polygon", { points: pts(insel), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 3 }, base);
     for (const i of G.inseln) el("path", { d: path(smooth(i.poly, 10, true), true), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 5 }, base);
 
     // Bezirke

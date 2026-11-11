@@ -61,6 +61,18 @@
         for (let s = 1; s < 8; s++) { const u = s / 8, xx = tw + (far - tw) * u, yy = (1 - u) * (1 - u) * Y(t.y1) + 2 * u * (1 - u) * Y(t.y0 - 6) + u * u * Y(t.y0 + 12); el("line", { x1: xx, y1: yy, x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }); }
         continue;
       }
+      if (t.typ === "ufer") {   // Kiesstreifen an der Mauer, dann weiche Boeschung bis zum Grund
+        const WYr = H.wasser - H.strasse, top = WYr + t.kies, west = t.seite === "west", wall = west ? t.x1 : t.x0, dir = west ? -1 : 1, L = t.x1 - t.x0, P = [];
+        P.push([wall, top]); P.push([wall + dir * t.strand, top - 0.3]);
+        for (let s = 0; s <= 1.001; s += 0.05) { const e = 0.5 - 0.5 * Math.cos(Math.PI * s); P.push([wall + dir * (t.strand + s * (L * 0.82 - t.strand)), (top - 0.3) + (t.y0 - top + 0.3) * e]); }
+        P.push([wall + dir * L, t.y0], [wall + dir * L, t.y0 - 1], [wall, t.y0 - 1]);
+        n = el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: "#6f6248", stroke: "#3b3226", "stroke-width": 1 });
+        el("path", { d: "M" + P.slice(0, 8).map(p => p[0] + " " + Y(p[1])).join("L"), fill: "none", stroke: "#cdb98a", "stroke-width": 5, "pointer-events": "none" });
+        info(n, `<b>${t.name}</b><br>Kies/Sand ca. ${String(t.kies).replace(".", ",")} m über dem Wasser, dann weich tiefer bis zum Grund (${fm(t.y0)})`); continue; }
+      if (t.typ === "mass") { const x = t.x0, a = Y(t.y0), b = Y(t.y1);
+        el("line", { x1: x, y1: a, x2: x, y2: b, stroke: "#ffd36b", "stroke-width": 2 });
+        for (const yy of [a, b]) el("line", { x1: x - 7, y1: yy, x2: x + 7, y2: yy, stroke: "#ffd36b", "stroke-width": 2 });
+        const tx = el("text", { x: x - 6, y: (a + b) / 2, "font-size": 13, fill: "#ffd36b", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", transform: `rotate(-90 ${x - 6} ${(a + b) / 2})` }); tx.textContent = t.name; continue; }
       if (t.typ === "titel") { el("text", { x: (t.x0 + t.x1) / 2, y: Y(t.y0), "font-size": 18, fill: "#e8c547", "text-anchor": "middle", "font-weight": 700 }).textContent = t.name; continue; }
       if (t.typ === "profil") { n = el("polygon", { points: t.punkte.map(p => p[0] + "," + Y(p[1])).join(" "), fill: t.farbe || FARBE.grund, stroke: "#2a2620", "stroke-width": 1.5 });
         info(n, `<b>${t.name}</b>`); label(t.name, t.punkte[6][0] + 70, Y(0), 170, "#e6e9ee"); continue; }

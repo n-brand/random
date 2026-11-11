@@ -263,6 +263,7 @@ const GOTHAM = {
       { y: -13, name: "Batcave oben (Welt −16)" },
       { y: -25, name: "Batcave unten (Welt −28)" },
       { y: -31, name: "Wasserspiegel (Fluss, Meer) / Auslass-Sohle" },
+      { y: -35, name: "Meeresgrund am Fuss der Manor-Klippe (Welt −38)" },
       { y: -43, name: "Flussgrund" },
     ],
     teile: [
@@ -273,6 +274,9 @@ const GOTHAM = {
       { typ: "luft", x0: 0, x1: 250, y0: -31, y1: 0 }, { typ: "luft", x0: 1550, x1: 1800, y0: -31, y1: 0 },
       { typ: "mauer", name: "Kaimauer", x0: 250, x1: 266, y0: -43, y1: 0 },
       { typ: "mauer", name: "Kaimauer", x0: 1534, x1: 1550, y0: -43, y1: 0 },
+      // Flussufer (Nicolas 2026-11-11): am Fuss der Kaimauer ein Streifen Kies/Sand knapp ueber dem Wasser, dann weich tiefer bis zum Grund
+      { typ: "ufer", name: "Kies/Sand am Ufer, dann tiefer", seite: "west", x0: 0, x1: 250, y0: -43, kies: 0.6, strand: 28 },
+      { typ: "ufer", name: "Kies/Sand am Ufer, dann tiefer", seite: "ost", x0: 1550, x1: 1800, y0: -43, kies: 0.6, strand: 28 },
       { typ: "deck", name: "Westbrücke (Fahrbahn)", x0: 0, x1: 330, y0: -1.5, y1: 0 },
       { typ: "turm", name: "Brückenturm", x0: 232, x1: 248, y0: -31, y1: 62 },
       { typ: "deck", name: "Highway-Brücke (Fahrbahn)", x0: 1470, x1: 1800, y0: -1.5, y1: 0 },
@@ -318,9 +322,12 @@ const GOTHAM = {
       // Meer SEA_Y -34, Batcave unten LY -28 (10 m hoch), oben UY -16 (8,5 m), Tiefgarage GY -5,5 unter dem Plateau
       { typ: "titel", name: "Zum Vergleich: Wayne Manor an der Steilküste", x0: 1860, x1: 2240, y0: 60, y1: 60 },
       { typ: "luft", x0: 1860, x1: 1950, y0: -31, y1: 0 },
-      { typ: "wasser", name: "Meer", x0: 1860, x1: 1950, y0: -43, y1: -31 },
+      { typ: "wasser", name: "Meer", x0: 1860, x1: 1950, y0: -35, y1: -31 },
       { typ: "profil", name: "Steilküste (Fels, 35-49 m über dem Meer)", farbe: "#5b5246",
-        punkte: [[1950, -60], [1950, -31], [1944, -22], [1952, -11], [1946, 0], [1953, 11], [1949, 18], [1985, 20], [2010, 28], [2240, 28], [2240, -60], [1860, -60], [1860, -43], [1950, -43]] },
+        punkte: [[1950, -60], [1950, -31], [1944, -22], [1952, -11], [1946, 0], [1953, 11], [1949, 18], [1985, 20], [2010, 28], [2240, 28], [2240, -60], [1860, -60], [1860, -35], [1950, -35]] },
+      // gemessen im Spiel (Orbit-Punkt von Nicolas, x 52 / z 227): Kante Welt +1, Meer -34, Grund am Fuss -38
+      { typ: "mass", name: "35 m (gemessen bei x 52 / z 227: Kante Welt +1)", x0: 1885, y0: -31, y1: 4 },
+      { typ: "mass", name: "49 m (höchste Stelle, Kante Welt +15)", x0: 1915, y0: -31, y1: 18 },
       { typ: "raum", name: "Tiefgarage Manor", x0: 2060, x1: 2190, y0: 22.5, y1: 27.6, farbe: "#9aa4b2" },
       { typ: "gebaeude", name: "Wayne Manor", x0: 2050, x1: 2200, y0: 28, y1: 38, farbe: "#d8d2c4" },
       { typ: "schacht", name: "Aufzug", x0: 2150, x1: 2160, y0: -25, y1: 28, farbe: "#e8c547" },
