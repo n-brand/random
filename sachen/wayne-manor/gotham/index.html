@@ -143,6 +143,7 @@
     svg.insertBefore(base, svg.firstChild);
     // Gitter-Symbol (Stil: rostiger Rahmen, feines Drahtgitter)
     const defs = el("defs", {});
+    { const p = el("pattern", { id: "pflaster", width: 2.4, height: 1.6, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 2.4, height: 1.6, fill: "#d4d3cc" }, p); el("path", { d: "M0 0H2.4M0 .8H2.4M1.2 0V.8M0 .8V1.6", stroke: "#8f8d86", "stroke-width": .18 }, p); }
     { const p = el("pattern", { id: "draht", width: 6, height: 6, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 6, height: 6, fill: "#2a2418" }, p); el("path", { d: "M0 0H6M0 0V6", stroke: "#c9a85a", "stroke-width": 0.9 }, p); }
     const cp = el("clipPath", { id: "clipInsel" }, defs); el("polygon", { points: pts(insel) }, cp);
 
@@ -300,9 +301,18 @@
     // Auslaesse mit Gitter: wo ein Hauptsammler die Insel verlaesst
     const gitter = [];
     for (const s of KS) { if (s.geschlossen) continue; const P = s.pts; for (const [a, b] of [[P[0], P[1]], [P[P.length - 1], P[P.length - 2]]]) if (!inIsland(a[0], a[1]) || Math.min(Math.abs(a[0] - bankW(a[1])), Math.abs(a[0] - bankE(a[1])), Math.abs(a[1] - bankN(a[0])), Math.abs(a[1] - CS(a[0])[0])) < 140) gitter.push([a, b]); }
-    for (const [a, b] of gitter) { const ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1;
-      const g = el("polygon", { points: pts(rectCorners(a[0], a[1], 22, 30, ux / l, uz / l)), fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 4 }, L.kanal);
-      g.dataset.info = "<b>Kanal-Auslass mit Gitter</b><br>in der Kaimauer, 13 m über dem Wasser<br>Stil: rostiger Stahlrahmen, feines quadratisches Drahtgitter, Kette"; }
+    // Auslass wie im Foto (Stirnwand mit Rohr, Pflaster-Trichter zum Wasser, Treppe), Nische in der Kaimauer am Ufer
+    const AU = K.auslass;
+    for (const [a, b] of gitter) { const l = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, ox = (a[0] - b[0]) / l, oz = (a[1] - b[1]) / l, vx = -oz, vz = ox;
+      let B = [a[0], a[1]]; for (let s = 0; s < 400 && inIsland(B[0], B[1]); s += 2) B = [a[0] + ox * s, a[1] + oz * s];
+      const N = [B[0] - ox * AU.tiefe, B[1] - oz * AU.tiefe], P = (q, k) => [q[0] + vx * k, q[1] + vz * k];
+      el("path", { d: path([a, N]), fill: "none", stroke: "#7bd88f", "stroke-width": 9 }, L.kanal);
+      const g = el("polygon", { points: pts([P(N, -AU.wand / 2), P(N, AU.wand / 2), P(B, AU.wasser / 2), P(B, -AU.wasser / 2)]), fill: "url(#pflaster)", stroke: "#8f8d86", "stroke-width": 1.5 }, L.kanal);
+      el("path", { d: path([P(N, -AU.wand / 2 - 1), P(N, AU.wand / 2 + 1)]), stroke: "#e6e6e0", "stroke-width": 3, fill: "none", "pointer-events": "none" }, L.kanal);
+      el("circle", { cx: N[0] + ox * 1.6, cy: N[1] + oz * 1.6, r: AU.rohr / 2, fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 1, "pointer-events": "none" }, L.kanal);
+      const s0 = P(N, AU.wand / 2 + .5), s1 = P(B, AU.wasser / 2 - 1.5);   // Treppe an der rechten Fluegelwand
+      for (let t = 0; t <= 1.001; t += 1 / 10) { const q = [s0[0] + (s1[0] - s0[0]) * t, s0[1] + (s1[1] - s0[1]) * t]; el("path", { d: path([q, [q[0] - vx * 2, q[1] - vz * 2]]), stroke: "#f2f2ee", "stroke-width": .9, fill: "none", "pointer-events": "none" }, L.kanal); }
+      g.dataset.info = `<b>Kanal-Auslass</b> (Foto von Nicolas, grösser)<br>Betonstirnwand mit Rohr ${AU.rohr} m und Gitter, Pflaster-Trichter ${AU.wand} → ${AU.wasser} m breit, ${AU.tiefe} m tief, Treppe<br>auf Wasserhöhe in einer Nische der Kaimauer (Absturzschacht vom Sammler)`; }
     // Uebergaenge U-Bahn <-> Kanal: wo ein Hauptsammler den Ring kreuzt
     const U = G.ubahn, ringF = (x, z) => ((x - U.cx) / U.rx) ** 2 + ((z - U.cz) / U.rz) ** 2 - 1;
     for (const s of KS) for (let i = 1; i < s.pts.length; i++) { const a = s.pts[i - 1], b = s.pts[i]; if (ringF(a[0], a[1]) * ringF(b[0], b[1]) < 0) {

@@ -35,15 +35,16 @@
     "use strict";
     const S = GOTHAM.schnitt, H = GOTHAM.hoehen, svg = document.getElementById("cut"), NS = "http://www.w3.org/2000/svg";
     const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
-    const K = 14, Y = y => -y * K, TOP = 80, BOT = -60, XL = -170, XR = 2260;   // 14 Bildpunkte je Meter senkrecht
+    const XMAX = Math.max(...S.teile.map(t => t.x1 || 0)), K = 14, Y = y => -y * K, TOP = 80, BOT = -60, XL = -170, XR = XMAX + 470;   // 14 Bildpunkte je Meter senkrecht
     const fm = v => (v > 0 ? "+" : v < 0 ? "−" : "") + String(Math.abs(Math.round(v * 10) / 10)).replace(".", ",") + " m";
     const welt = v => "Welt-y " + String(Math.round((v + H.strasse) * 10) / 10).replace(".", ",");
     svg.setAttribute("viewBox", `${XL} ${Y(TOP)} ${XR - XL} ${(TOP - BOT) * K}`);
     const defs = el("defs", {});
     { const p = el("pattern", { id: "draht", width: 5, height: 5, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 5, height: 5, fill: "#2a2418" }, p); el("path", { d: "M0 0H5M0 0V5", stroke: "#c9a85a", "stroke-width": .8 }, p); }
+    { const p = el("pattern", { id: "pflaster", width: 9, height: 6, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 9, height: 6, fill: "#d4d3cc" }, p); el("path", { d: "M0 0H9M0 3H9M4.5 0V3M0 3V6", stroke: "#8f8d86", "stroke-width": .7 }, p); }
     { const p = el("pattern", { id: "leiter", width: 8, height: 10, patternUnits: "userSpaceOnUse" }, defs); el("path", { d: "M1 0V10M7 0V10M1 5H7", stroke: "#d8dce0", "stroke-width": 1.2 }, p); }
     { const g = el("linearGradient", { id: "himmel", x1: 0, y1: 0, x2: 0, y2: 1 }, defs); el("stop", { offset: 0, "stop-color": "#0b1424" }, g); el("stop", { offset: 1, "stop-color": "#1e2c44" }, g); }
-    el("rect", { x: 0, y: Y(TOP), width: 1800, height: TOP * K, fill: "url(#himmel)" });
+    el("rect", { x: 0, y: Y(TOP), width: XMAX, height: TOP * K, fill: "url(#himmel)" });
 
     const FARBE = { grund: "#3b3226", luft: "#1a2638", wasser: "#1d3b55", mauer: "#6b6f75", deck: "#b9bfc7", strasse: "#8a8f96", turm: "#5e6670", gebaeude: "#7f7b74" };
     const tip = document.getElementById("tip");
@@ -59,6 +60,17 @@
         el("path", { d: `M${tw} ${Y(t.y1)}Q${(tw + far) / 2} ${Y(t.y0 - 6)} ${far} ${Y(t.y0 + 12)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2 });
         for (let s = 1; s < 8; s++) { const u = s / 8, xx = tw + (far - tw) * u, yy = (1 - u) * (1 - u) * Y(t.y1) + 2 * u * (1 - u) * Y(t.y0 - 6) + u * u * Y(t.y0 + 12); el("line", { x1: xx, y1: yy, x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }); }
         continue;
+      }
+      if (t.typ === "titel") { el("text", { x: (t.x0 + t.x1) / 2, y: Y(t.y0), "font-size": 18, fill: "#e8c547", "text-anchor": "middle", "font-weight": 700 }).textContent = t.name; continue; }
+      if (t.typ === "profil") { n = el("polygon", { points: t.punkte.map(p => p[0] + "," + Y(p[1])).join(" "), fill: t.farbe || FARBE.grund, stroke: "#2a2620", "stroke-width": 1.5 });
+        info(n, `<b>${t.name}</b>`); label(t.name, t.punkte[6][0] + 70, Y(0), 170, "#e6e9ee"); continue; }
+      if (t.typ === "auslass") {   // Pflaster-Trichter zum Wasser, Stirnwand mit rundem Rohr und Gitter, Treppe
+        const west = t.seite === "west", wx = west ? t.x1 - 14 : t.x0 + 14, tip = west ? t.x0 : t.x1, r = (t.y1 - t.y0) / 2 * K * .75, cy = (Y(t.y1) + Y(t.y0)) / 2;
+        el("path", { d: `M${wx} ${Y(t.y0)}L${tip} ${Y(t.y0) + 3}L${wx} ${Y(t.y0) - 6}Z`, fill: "url(#pflaster)", stroke: "#8f8d86" });
+        n = el("rect", { x: west ? wx : wx - 14, y: Y(t.y1 + 2), width: 14, height: (t.y1 + 2 - t.y0) * K, fill: "#d9d9d2", stroke: "#8f8d86", "stroke-width": 1.5 });
+        el("circle", { cx: wx + (west ? 7 : -7), cy, r, fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 3, "pointer-events": "none" });
+        for (let s = 0; s < 6; s++) el("rect", { x: west ? wx - 18 - s * 6 : wx + 12 + s * 6, y: Y(t.y0 + 1 + s * 1.2), width: 7, height: 1.2 * K, fill: "#e6e6e0", stroke: "#8f8d86", "stroke-width": .8, "pointer-events": "none" });
+        info(n, txt); label("Auslass", wx + (west ? -30 : 30), Y(t.y1 + 2) - 6, 80, "#d8dce0"); continue;
       }
       if (t.typ === "rohr") { n = el("rect", { x, y, width: w, height: h, rx: h / 2, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 3 }); el("line", { x1: x, y1: Y(t.y0) - 6, x2: x + w, y2: Y(t.y0) - 6, stroke: "#5a7a3a", "stroke-width": 5 }); }
       else if (t.typ === "gitter") n = el("rect", { x, y, width: w, height: h, fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 3 });
@@ -77,8 +89,9 @@
       else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");
       else if (t.typ === "schacht" || t.typ === "gitter") label(t.name, x + w / 2 + 34, y + h / 2, 160, "#d8dce0");
     }
+    el("line", { x1: 1830, y1: Y(TOP), x2: 1830, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
     // Wasserlinie
-    el("line", { x1: 0, y1: Y(-40), x2: 1800, y2: Y(-40), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
+    el("line", { x1: 0, y1: Y(-40), x2: XMAX, y2: Y(-40), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
 
     // Massstab links: alle 5 m, beschriftet alle 10 m (relativ und Welt-y)
     for (let v = BOT; v <= TOP; v += 5) {
@@ -89,9 +102,9 @@
     el("line", { x1: 0, y1: Y(TOP), x2: 0, y2: Y(BOT), stroke: "#9aa4b2", "stroke-width": 2 });
 
     // Masskette rechts: Ebenen mit Abstaenden
-    const E = [...S.ebenen].sort((a, b) => b.y - a.y), XC = 1830; let lastY = -1e9;
+    const E = [...S.ebenen].sort((a, b) => b.y - a.y), XC = XMAX + 30; let lastY = -1e9;
     E.forEach((e, i) => {
-      el("line", { x1: 0, y1: Y(e.y), x2: XC, y2: Y(e.y), stroke: "#ffffff22", "stroke-width": 1, "stroke-dasharray": "4 6" });
+      el("line", { x1: 0, y1: Y(e.y), x2: XC, y2: Y(e.y), stroke: "#ffffff1c", "stroke-width": 1, "stroke-dasharray": "4 6" });
       el("line", { x1: XC - 8, y1: Y(e.y), x2: XC + 8, y2: Y(e.y), stroke: "#e8c547", "stroke-width": 2 });
       const ly = Math.max(Y(e.y) + 5, lastY + 17); lastY = ly;
       if (ly - Y(e.y) > 6) el("line", { x1: XC + 8, y1: Y(e.y), x2: XC + 92, y2: ly - 4, stroke: "#e8c54788", "stroke-width": 1 });

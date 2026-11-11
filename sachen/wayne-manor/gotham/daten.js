@@ -141,11 +141,15 @@ const GOTHAM = {
   },
 
   // Kanalisation (Nicolas 2026-11-11): nur unter den hier genannten Hauptstrassen (nicht unter jeder Strasse, das waere zu viel),
-  // begehbar, 6 m hoch. Gullideckel auf diesen Strassen (Abstand) - nur mit Spezialwerkzeug (Gullihaken) zu oeffnen, darunter Leiter in den Kanal. Auslaesse an Fluss und Meer mit Gitter (Stil: rostiger Stahlrahmen, feines quadratisches
-  // Drahtgitter, Kette; Foto von Nicolas). Uebergaenge zur U-Bahn automatisch, wo ein Hauptsammler den U-Bahn-Ring kreuzt.
+  // begehbar, 6 m hoch. Gullideckel auf diesen Strassen (Abstand) - nur mit Spezialwerkzeug (Gullihaken) zu oeffnen, darunter Leiter in den Kanal.
+  // Auslaesse (Foto von Nicolas, nur groesser): wo ein Sammler die Insel verlaesst, faellt er in einem Absturzschacht auf Wasserhoehe;
+  // dort eine Betonstirnwand mit grossem runden Rohr und Gitter davor (rostiger Stahlrahmen, quadratisches Gitter), trichterfoermige
+  // Fluegelwaende aus Pflastersteinen, gepflasterte Sohle bis ins Wasser, Betontreppe an einer Fluegelwand. Liegt in einer Nische der Kaimauer.
+  // Uebergaenge zur U-Bahn automatisch, wo ein Hauptsammler den U-Bahn-Ring kreuzt.
   kanal: {
     hauptsammler: ["ring", "uptown-ave", "gotham-blvd", "parkrow", "crosstown", "sued-road", "ufer-ost", "ufer-west"],
     gulliAbstand: 70,
+    auslass: { rohr: 6, wand: 14, wasser: 36, tiefe: 24 },   // Rohrdurchmesser, Breite Stirnwand, Breite am Wasser, Tiefe der Nische (m)
     hub: { name: "Zentraler Knoten unter dem Wayne Tower (grösster Teil des Netzes, Schurkenbasis)", x: -2050, z: -100, r: 170 },
   },
 
@@ -239,6 +243,9 @@ const GOTHAM = {
   schnitt: {
     ebenen: [   // Masskette rechts (Boden bzw. Oberkante der Ebene)
       { y: 62, name: "Brückentürme (Spitze)" },
+      { y: 29, name: "Wayne Manor: Dach (Welt 35)" },
+      { y: 19, name: "Wayne Manor: Plateau / Erdgeschoss (Welt 25)" },
+      { y: 9, name: "Klippenkante bei der Manor, höchste Stelle (Welt 15)" },
       { y: 0, name: "Strasse = Brückenfahrbahn" },
       { y: -4, name: "Tiefgarage 1" },
       { y: -6.5, name: "Untere Strasse (Lower Level)" },
@@ -250,7 +257,11 @@ const GOTHAM = {
       { y: -20, name: "Geheimer Wayne-Stock" },
       { y: -27, name: "Kanal-Sohle (Hauptsammler)" },
       { y: -31, name: "Kanal-Hub / Schurkenbasis" },
-      { y: -40, name: "Wasserspiegel (Fluss, Meer)" },
+      { y: -32, name: "Kanal-Auslass (Rohr oben)" },
+      { y: -5, name: "Klippenkante bei der Manor, tiefste Stelle (Welt 1)" },
+      { y: -22, name: "Batcave oben (Welt −16)" },
+      { y: -34, name: "Batcave unten (Welt −28)" },
+      { y: -40, name: "Wasserspiegel (Fluss, Meer) / Auslass-Sohle" },
       { y: -52, name: "Flussgrund" },
     ],
     teile: [
@@ -266,9 +277,11 @@ const GOTHAM = {
       { typ: "deck", name: "Highway-Brücke (Fahrbahn)", x0: 1470, x1: 1800, y0: -1.5, y1: 0 },
       { typ: "turm", name: "Brückenturm", x0: 1552, x1: 1568, y0: -40, y1: 62 },
       { typ: "kabel", x0: 0, x1: 240, y0: 2, y1: 62 }, { typ: "kabel", x0: 1560, x1: 1800, y0: 2, y1: 62 },
-      // Kanal: Hauptsammler quer durch, Auslass mit Gitter in beiden Kaimauern
+      // Kanal: Hauptsammler quer durch, an beiden Ufern Absturzschacht und Auslass auf Wasserhoehe
       { typ: "rohr", name: "Hauptsammler (begehbar, 6 m)", x0: 250, x1: 1550, y0: -27, y1: -21 },
-      { typ: "gitter", name: "Auslass mit Gitter", x0: 250, x1: 266, y0: -27, y1: -21 }, { typ: "gitter", name: "Auslass mit Gitter", x0: 1534, x1: 1550, y0: -27, y1: -21 },
+      { typ: "schacht", name: "Absturzschacht", x0: 266, x1: 280, y0: -40, y1: -21, farbe: "#7bd88f" }, { typ: "schacht", name: "Absturzschacht", x0: 1520, x1: 1534, y0: -40, y1: -21, farbe: "#7bd88f" },
+      { typ: "auslass", name: "Kanal-Auslass (Rohr 6 m, Gitter, Pflaster, Treppe)", x0: 200, x1: 280, y0: -40, y1: -32, seite: "west" },
+      { typ: "auslass", name: "Kanal-Auslass (Rohr 6 m, Gitter, Pflaster, Treppe)", x0: 1520, x1: 1600, y0: -40, y1: -32, seite: "ost" },
       { typ: "schacht", name: "Gullideckel + Leiter", x0: 345, x1: 353, y0: -21, y1: 0 }, { typ: "schacht", name: "Gullideckel + Leiter", x0: 1180, x1: 1188, y0: -21, y1: 0 },
       // Narrows
       { typ: "strasse", name: "Uferstrasse West", x0: 266, x1: 360, y0: -0.6, y1: 0 },
@@ -300,6 +313,19 @@ const GOTHAM = {
       { typ: "raum", name: "Tiefgarage", x0: 1270, x1: 1380, y0: -7.5, y1: 0, farbe: "#9aa4b2" },
       { typ: "raum", name: "Tresorkeller", x0: 1280, x1: 1370, y0: -12, y1: -7.5, farbe: "#3ddc97" },
       { typ: "deck", name: "Uferstrasse Ost (oben)", x0: 1390, x1: 1534, y0: -1.5, y1: 0 },
+      // Zum Vergleich: Wayne Manor an der Steilkueste (anderer Ort, gleiche Hoehen). Werte aus dem Spiel: Plateau HILL 25, Klippe Welt 1-15,
+      // Meer SEA_Y -34, Batcave unten LY -28 (10 m hoch), oben UY -16 (8,5 m), Tiefgarage GY -5,5 unter dem Plateau
+      { typ: "titel", name: "Zum Vergleich: Wayne Manor an der Steilküste", x0: 1860, x1: 2240, y0: 60, y1: 60 },
+      { typ: "luft", x0: 1860, x1: 1950, y0: -40, y1: 0 },
+      { typ: "wasser", name: "Meer", x0: 1860, x1: 1950, y0: -52, y1: -40 },
+      { typ: "profil", name: "Steilküste (Fels, 35-49 m über dem Meer)", farbe: "#5b5246",
+        punkte: [[1950, -60], [1950, -40], [1944, -31], [1952, -20], [1946, -9], [1953, 2], [1949, 9], [1985, 11], [2010, 19], [2240, 19], [2240, -60], [1860, -60], [1860, -52], [1950, -52]] },
+      { typ: "raum", name: "Tiefgarage Manor", x0: 2060, x1: 2190, y0: 13.5, y1: 18.6, farbe: "#9aa4b2" },
+      { typ: "gebaeude", name: "Wayne Manor", x0: 2050, x1: 2200, y0: 19, y1: 29, farbe: "#d8d2c4" },
+      { typ: "schacht", name: "Aufzug", x0: 2150, x1: 2160, y0: -34, y1: 19, farbe: "#e8c547" },
+      { typ: "raum", name: "Batcave oben", x0: 2030, x1: 2230, y0: -22, y1: -13.5, farbe: "#c58cff" },
+      { typ: "raum", name: "Batcave unten", x0: 2000, x1: 2230, y0: -34, y1: -24, farbe: "#c58cff" },
+      { typ: "wasser", name: "Höhlensee", x0: 1965, x1: 2060, y0: -40, y1: -40 },
       { typ: "strasse", name: "Uferstrasse Ost (unten)", x0: 1390, x1: 1534, y0: -7, y1: -6.5 },
     ],
   },

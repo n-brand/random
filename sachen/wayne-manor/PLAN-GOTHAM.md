@@ -65,7 +65,7 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
-| U1 | **Abwasserkanäle** | Ein zusammenhängendes Netz nur unter ausgewählten Hauptstrassen (nicht unter jeder Strasse; Liste `kanal.hauptsammler` in der Karte), begehbar, ca. 6 m hoch, Sohle 27 m unter der Strasse, Rinne mit fliessendem Wasser, Stege. Wo ein Sammler die Insel verlässt: **Auslass mit Gitter** in der Kaimauer, ca. 13 m über dem Wasser. **Gitter-Stil** (Foto von Nicolas): rostiger Stahlrahmen, feines quadratisches Drahtgitter, Ketten |
+| U1 | **Abwasserkanäle** | Ein zusammenhängendes Netz nur unter ausgewählten Hauptstrassen (nicht unter jeder Strasse; Liste `kanal.hauptsammler` in der Karte), begehbar, ca. 6 m hoch, Sohle 27 m unter der Strasse, Rinne mit fliessendem Wasser, Stege. Wo ein Sammler die Insel verlässt, fällt er in einem Absturzschacht auf Wasserhöhe: **Auslass wie im Foto von Nicolas, nur grösser** (Nische in der Kaimauer): Betonstirnwand mit rundem Rohr (6 m) und Gitter davor (rostiger Stahlrahmen, quadratisches Gitter wie im ersten Foto), trichterförmige Flügelwände aus Pflastersteinen (14 m an der Wand, 36 m am Wasser, 24 m tief), gepflasterte Sohle bis ins Wasser, Betontreppe an einer Flügelwand |
 | U1b | **Gullideckel** | Auf allen Strassen mit Kanal darunter (alle ca. 70 m). Öffnen nur mit einem **Spezialwerkzeug (Gullihaken)** aus dem Inventar (S1), darunter Leiter in den Kanal |
 | U2 | Übergänge | Von den U-Bahn-Tunneln kommt man an 4 Stellen in die Kanäle |
 | U3 | **Kanal-Hub unter dem Wayne Tower** | Grösster Teil des Netzes; dort die **Basis der Bösen**: Waffen unter Planen, herumliegende Waffen, Tisch mit Computer, Boxsack, Gitterboden, teils mit fliessendem Abwasser darunter |
