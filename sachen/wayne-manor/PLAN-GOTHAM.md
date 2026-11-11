@@ -121,4 +121,4 @@ Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, be
 1. Lage und Grösse von Gotham so wie in der Karte? (ca. 1,9 x 3 km, ca. 1 km westlich der Manor)
 2. Darf die Küste nach Westen verlängert werden und der Wald zwischen Manor und Gotham dafür weichen (Highway, Flüsse)?
 3. „Chevrollette co“ und „Kameras“ – was genau?
-4. Kampfjet: Bäume, die die F-22-Sitzung für die Anflugschneise entfernt hat, wieder herstellen und den Jet später auf die Militärinsel stellen?
+4. Kampfjet später auf die Militärinsel stellen? (Die Anflugschneise im Wald ist seit 2026-11-11 wieder zu, Bäume stehen wie vorher.)
