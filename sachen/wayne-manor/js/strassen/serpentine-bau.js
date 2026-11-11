@@ -90,6 +90,10 @@
     if (yTop < Infinity) { const P = g.attributes.position; for (let k = 0; k < P.count; k++) if (P.getY(k) > yTop) P.setY(k, yTop); g.computeVertexNormals(); }
     rockGeos.push(g);
   };
+  // Kollision ueber die ganze Felsform (Nicolas 2026-11-11: man fuhr durch laengliche Felsen, ein Kreis in der Mitte reichte nicht): Kreise entlang der
+  // Laengsachse (nach rotY gedreht), Radius folgt der Ellipse und bleibt etwas innerhalb der sichtbaren Flaeche (Regel Barrieren weiter innen)
+  const rockCirc = (cx, cz, w, d, rot, top) => { const L = Math.max(w, d) / 2, Sh = Math.min(w, d) / 2, ax = w >= d ? [Math.cos(rot), -Math.sin(rot)] : [Math.sin(rot), Math.cos(rot)];
+    for (let u = -L * 0.8; u <= L * 0.8 + 1e-6; u += Math.max(0.4, Sh * 0.6)) circles.push([cx + ax[0] * u, cz + ax[1] * u, Math.max(0.4, Sh * 0.85 * Math.sqrt(Math.max(0, 1 - (u / L) ** 2))), top]); };
   // Bergseitig im Einschnitt und talseitig unter dem Fahrbahnrand
   let i = 18;
   while (i < NS - 6) {
@@ -102,19 +106,20 @@
         const gap = oi.d + 2 - 2 * hw, d = Math.max(1.4, gap - 1.4), w = 5 + fr() * 5, h = oi.y - y0 + 0.4;
         const off = hw + 0.8 + d / 2, cx = x0 + nx * off, cz = z0 + nz * off;
         placeRock(makeRock(w / 2, h / 2, d / 2, fr()), cx, y0 - 0.7 + h / 2, cz, rot, oi.y - 0.35);
-        for (const q of [-0.3, 0, 0.3]) circles.push([cx + tx * q * w, cz + tz * q * w, d * 0.42, y0 + h * 0.6]);
+        rockCirc(cx, cz, w, d, rot, y0 + h * 0.6);
       } else if (oi.d < 16 && oi.y < y0 - 1.5) {                          // Talseite mit Strasse darunter: dort steht schon deren Felsabbruch
       } else if (dp < 0.8 && fr() < 0.93) {                               // Bergseite frei: Felswand im Einschnitt (fast durchgehend)
         const cut = Math.max(0, -dp), w = 4.5 + fr() * 5, d = 2.5 + fr() * 3.5, h = Math.min(11, Math.max(3.2, cut + 2.5 + fr() * 4.5));
         const off = hw + 1.25 + d * 0.42, cx = x0 + nx * off, cz = z0 + nz * off;
         if (otherRoad(cx, cz, s0) < hw + 1.1 + d * 0.5 || plateauH(cx, cz) > HILL - 2) continue;
         placeRock(makeRock(w / 2, h / 2, d / 2, fr()), cx, y0 - 1 + h * 0.36, cz, rot);
-        for (const q of [-0.3, 0, 0.3]) circles.push([cx + tx * q * w, cz + tz * q * w, d * 0.42, y0 + h * 0.85]);
+        rockCirc(cx, cz, w, d, rot, y0 + h * 0.85);
       } else if (dp > 2.5 && fr() < 0.6) {                                // Talseite: Felsabbruch unter dem Rand
         const w = 4 + fr() * 6, d = 3 + fr() * 4, h = Math.min(14, dp + 3 + fr() * 3);
         const off = hw + 1.7 + d * 0.45, cx = x0 + nx * off, cz = z0 + nz * off;
         if (otherRoad(cx, cz, s0) < hw + 1.1 + d * 0.5) continue;
         placeRock(makeRock(w / 2, h / 2, d / 2, fr()), cx, y0 - 0.5 - h * 0.45, cz, rot, y0 - 0.35);
+        rockCirc(cx, cz, w, d, rot, y0 - 0.35);                            // von unten gesperrt, von der Fahrbahn darueber nicht
       }
     }
     i += 3 + Math.floor(fr() * 5);
@@ -127,8 +132,9 @@
     const y = terrainH(x, z), sn = serpNear(x, z, 30), rot = sn ? -Math.atan2(...(() => { const q = Math.max(1, Math.min(NS - 2, Math.round(sn.s))); return [S2[q + 1][1] - S2[q - 1][1], S2[q + 1][0] - S2[q - 1][0]]; })()) : fr() * 6;
     // nicht ueber eine hoeher liegende Fahrbahn in der Naehe hinausragen
     let yTop = Infinity; for (const [sx, sz, s] of S2) { const ry = SERP.y(s); if (ry > y && Math.hypot(x - sx, z - sz) < 13) yTop = Math.min(yTop, ry - 0.35); }
-    placeRock(makeRock(w / 2, h / 2, d / 2, fr()), x, y - h * 0.15, z, rot + (fr() - 0.5) * 0.6, yTop);
-    circles.push([x, z, Math.min(w, d) * 0.45, y + h * 0.8]); n++;
+    const gR = makeRock(w / 2, h / 2, d / 2, fr()), rr = rot + (fr() - 0.5) * 0.6;   // gleiche Zufallsreihenfolge wie vorher (gleiche Felsen)
+    placeRock(gR, x, y - h * 0.15, z, rr, yTop);
+    rockCirc(x, z, w, d, rr, Math.min(yTop, y + h * 0.8)); n++;
   }
   // Einzelne grosse Brocken neben der Strasse und zwischen den Schleifen
   for (let k = 0, n = 0; k < 400 && n < 18; k++) {

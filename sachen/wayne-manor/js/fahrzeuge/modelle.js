@@ -478,120 +478,231 @@ const SPEC_AVENTADOR = { name: "Aventador LP 700-4", wheels: [[-0.84, -1.35], [0
   maxN: 40, maxF: 61.1, acc: 12, steer: 0.68, jump: false, grade: 35, camD: 8.0, camH: 1.0, seat: [-0.38, 0.95, 0.2], bodyH: 1.15, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Aventador LP 700-4: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
-// ---- Polizeiauto "GOTHAM POLICE" (Nicolas 2026-11-10, eigener Entwurf): Limousine weiss mit dunkelblauem Band, grosses POLICE und GOTHAM CITY, Schriftzug auf beiden Tueren und
-// hinten, Lichtbalken rot/blau (blinkt, solange jemand faehrt), Rammschutz vorne, Antenne
+// ---- Limousinen-Bausatz (Nicolas 2026-11-11: Polizeiauto und Taxi realistischer wie der Spectre, Grundform bleibt): Karosserie als Loft aus
+// Querschnitten alle 6 cm (von oben gerundete Ecken, Gurtlinie, Charakterlinie, runde Radlaeufe), Kabine als zweiter Loft (Saeulen in Wagenfarbe,
+// Scheiben eingesetzt bzw. auf der Flaeche), Teile vorne/hinten folgen der Rundung (face), Aufkleber/Fenster/Fugen liegen auf der Flaeche (skin),
+// Radhaeuser geschlossen (Regel Radhaus). o: f vorne/hinten (fF, fR), Radstellen wf, Radius r, Tabellen hw/yT/yb/roof, Scheibenfuss fw/fr.
+function sedanKit(o, paint, glass, dark) {
+  const g = new THREE.Group(), hw = tabF(o.hw), yT = tabF(o.yT), ybT = tabF(o.yb), roof = tabF(o.roof), R = o.r, ARCH = 2 * R + 0.08;
+  const arch = f => { let y = ybT(f); for (const c of o.wf) { const d = Math.abs(f - c), RR = R + 0.16; if (d < RR) y = Math.max(y, ybT(f) + (ARCH - ybT(f)) * Math.sqrt(1 - (d / RR) ** 2)); } return y; };
+  const sec = f => { const hs = hw(f), yb = arch(f), ye = yT(f), p = [[0, yb], [hs - 0.08, yb], [hs - 0.01, yb + 0.07], [hs, o.ys || 0.6], [hs - 0.03, ye - 0.06], [hs - 0.1, ye], [0, ye + 0.03]];
+    for (let i = 2; i < p.length; i++) p[i][1] = Math.max(p[i][1], p[i - 1][1] + 0.015); return p; };
+  const smooth = m => { const gg = mergeVertices(m.geometry.deleteAttribute("normal")); gg.computeVertexNormals(); m.geometry = gg; return m; };
+  const FS = []; for (let f = o.fF; f > o.fR; f -= 0.06) FS.push(f); FS.push(o.fR);
+  smooth(loftIn(g, FS.map(f => [f, sec(f)]), paint));                                                                          // Karosserie
+  const bodyX = (f, y) => { const p = sec(f); if (y <= p[1][1]) return y < p[0][1] ? -1 : p[1][0]; for (let i = 1; i < p.length - 1; i++) { const [xa, ya] = p[i], [xb, yb] = p[i + 1]; if (y <= yb) return xa + (xb - xa) * (y - ya) / Math.max(1e-6, yb - ya); } return 0; };
+  const endF = (x, y, s) => { for (let k = 0; k < 160; k++) { const f = s > 0 ? o.fF - k * 0.005 : o.fR + k * 0.005; if (bodyX(f, y) >= Math.abs(x)) return f; } return s > 0 ? o.fF - 0.8 : o.fR + 0.8; };
+  // Teil vorne (s 1) oder hinten (s -1) auf der Rundung, in 2-cm-Stuecken: steht d vor, 3 cm in der Karosserie
+  const face = (s, xa, xb, y0, y1, d, m) => { const x0 = Math.min(xa, xb), x1 = Math.max(xa, xb); for (let x = x0; x < x1 - 1e-6; x += 0.02) { const xm = Math.min(x1, x + 0.02), ym = (y0 + y1) / 2,
+    fz = s > 0 ? Math.max(endF(x, ym, 1), endF(xm, ym, 1)) : Math.min(endF(x, ym, -1), endF(xm, ym, -1)); s > 0 ? boxIn(g, x, xm, y0, y1, -fz - d, -fz + 0.03, m) : boxIn(g, x, xm, y0, y1, -fz - 0.03, -fz + d, m); } };
+  // Haut auf einer Seitenflaeche: f von fa bis fb, y von lo(f) bis hi(f), x = xf(f, y) + off; UV u laeuft lesbar (rechts = vorne bzw. hinten)
+  const skin = (sd, fa, fb, lo, hi, xf, m, off = 0.006, nf = 24, ny = 6) => { const f0 = Math.min(fa, fb), f1 = Math.max(fa, fb), q = [], uv = [], L = typeof lo === "function" ? lo : () => lo, H = typeof hi === "function" ? hi : () => hi, yA = L(f0), yZ = H(f0);
+    const P = (f, y) => [sd * (xf(f, y) + off), y, -f], U = f => sd > 0 ? (f - f0) / (f1 - f0) : (f1 - f) / (f1 - f0);
+    for (let i = 0; i < nf; i++) { const fa_ = f0 + (f1 - f0) * i / nf, fb_ = f0 + (f1 - f0) * (i + 1) / nf;
+      for (let j = 0; j < ny; j++) { const Y = (f, k) => { const l = L(f), h = H(f); return l + (h - l) * k / ny; }, la = L(fa_), ha = H(fa_), lb = L(fb_), hb = H(fb_); if (ha - la < 0.01 || hb - lb < 0.01) continue;
+        if (o.clip !== false && xf === bodyX && (Y(fa_, j) < arch(fa_) + 0.01 || Y(fb_, j) < arch(fb_) + 0.01)) continue;
+        const a = P(fa_, Y(fa_, j)), b = P(fb_, Y(fb_, j)), c = P(fb_, Y(fb_, j + 1)), d = P(fa_, Y(fa_, j + 1)), va = (Y(fa_, j) - L(fa_)) / (H(fa_) - L(fa_)), vb = (Y(fa_, j + 1) - L(fa_)) / (H(fa_) - L(fa_)),
+          vc = (Y(fb_, j) - L(fb_)) / (H(fb_) - L(fb_)), vd = (Y(fb_, j + 1) - L(fb_)) / (H(fb_) - L(fb_)), ua = U(fa_), ub = U(fb_);
+        if (sd > 0) { q.push(...a, ...b, ...c, ...a, ...c, ...d); uv.push(ua, va, ub, vc, ub, vd, ua, va, ub, vd, ua, vb); } else { q.push(...a, ...c, ...b, ...a, ...d, ...c); uv.push(ua, va, ub, vd, ub, vc, ua, va, ua, vb, ub, vd); } } }
+    if (!q.length) return null; const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(q, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals(); const me = new THREE.Mesh(geo, m); g.add(me); return me; };
+  // Kabine: von der Frontscheibe (fw) bis zur Heckscheibe (fr), oben schmaler (Dachkante hw - 0,36), Seiten leicht eingezogen
+  const gy0 = f => yT(f) - 0.02, gy1 = f => Math.max(roof(f) - 0.025, yT(f)), hb = f => hw(f) - 0.09, ht = f => hw(f) - 0.36;
+  const glassX = (f, y) => hb(f) + (ht(f) - hb(f)) * Math.min(1, Math.max(0, (y - gy0(f)) / Math.max(0.01, gy1(f) - gy0(f))));
+  const GS = []; for (let f = o.fw; f > o.fr; f -= 0.05) GS.push(f); GS.push(o.fr);
+  smooth(loftIn(g, GS.map(f => [f, [[0, gy0(f)], [hb(f), gy0(f)], [ht(f), gy1(f)], [0, roof(f)]]]), paint));                  // Kabine in Wagenfarbe (Saeulen, Dach)
+  const pane = (fa, fb) => { const S = []; for (let f = fa; f > fb; f -= 0.04) S.push(f); S.push(fb); loftIn(g, S.map(f => [f, [[0, gy0(f) + 0.024], [hb(f) - 0.1, gy0(f) + 0.024], [ht(f) - 0.08, Math.max(gy1(f) + 0.008, gy0(f) + 0.04)], [0, Math.max(roof(f) + 0.008, gy0(f) + 0.05)]]]), glass); };
+  let pa = o.fw - 0.02, pb = o.fr + 0.02; while (roof(pa) - yT(pa) < 0.06) pa -= 0.01; while (roof(pb) - yT(pb) < 0.06) pb += 0.01; pane(pa, o.ws); pane(o.rs, pb);                                                                           // Front- und Heckscheibe mit Rahmen
+  const sideGlass = glass.clone(); sideGlass.polygonOffset = true; sideGlass.polygonOffsetFactor = -3; sideGlass.polygonOffsetUnits = -3;
+  const tall = f => roof(f) - yT(f) > 0.22;   // Fenster nur, wo die Kabine hoch genug ist (sonst knickt die Flaeche an der Scheibenwurzel)
+  for (const [fa0, fb0] of o.win) { let fa = fa0, fb = fb0; while (fa > fb && !tall(fa)) fa -= 0.01; while (fb < fa && !tall(fb)) fb += 0.01;
+    for (const sd of [-1, 1]) skin(sd, fa, fb, f => yT(f) + 0.04, f => roof(f) - 0.065, glassX, sideGlass, 0.01, 40, 3); }   // Seitenfenster
+  // Radhaeuser: dunkle Wand hinter jedem Rad ueber den ganzen Radlauf (Regel Radhaus), Schale innen
+  const wellM = M(0x0c0d0f, { roughness: 0.9, side: THREE.DoubleSide }), wx = o.track / 2 - o.tw / 2 - 0.01;
+  for (const f of o.wf) { boxIn(g, -wx, wx, ybT(f), ARCH, -f - R - 0.16, -f + R + 0.16, wellM);
+    const xo = hw(f) - 0.04; for (const sd of [-1, 1]) meshIn(g, new THREE.CylinderGeometry(R + 0.1, R + 0.1, xo - wx, 24, 1, true, 0.35, Math.PI - 0.7).rotateZ(Math.PI / 2), wellM, sd * (wx + xo) / 2, R, -f); }
+  return { g, hw, yT, roof, arch, sec, bodyX, glassX, endF, face, skin, wellM };
+}
+// Rad mit Radkappe/Felgenblende aussen (dreht mit): Scheibe, Loecher bzw. Rippen, Nabe
+function sedanCap(w, tw, rimC, capC, holes) {
+  const F = new THREE.Group(), sx = Math.sign(w.piv.position.x), r = w.r; F.position.x = sx * (tw / 2 + 0.012); w.spin.add(F);
+  const rim = M(rimC, { metalness: 0.8, roughness: 0.3 }), cap = M(capC, { metalness: 0.9, roughness: 0.2 }), dk = M(0x16171a, { roughness: 0.7 });
+  F.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.66, r * 0.66, 0.012, 28).rotateZ(Math.PI / 2), rim));
+  for (let k = 0; k < holes; k++) { const a = k / holes * Math.PI * 2, h = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.09, r * 0.09, 0.014, 10).rotateZ(Math.PI / 2), dk); h.position.set(sx * 0.002, Math.cos(a) * r * 0.42, Math.sin(a) * r * 0.42); F.add(h); }
+  const c = new THREE.Mesh(new THREE.SphereGeometry(r * 0.24, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).rotateZ(-sx * Math.PI / 2), cap); c.position.x = sx * 0.004; F.add(c);
+}
+const SEDAN = { fF: 2.52, fR: -2.5, r: 0.34, wf: [1.45, -1.5], ys: 0.6, track: 1.64, tw: 0.24, fw: 1.05, fr: -1.75, ws: 0.36, rs: -1.18,
+  hw: [[2.52, 0.66], [2.48, 0.8], [2.4, 0.87], [2.2, 0.9], [1.4, 0.91], [0, 0.915], [-1.5, 0.915], [-2.25, 0.9], [-2.42, 0.86], [-2.5, 0.74]],
+  yT: [[2.52, 0.7], [2.47, 0.8], [2.35, 0.86], [2.0, 0.9], [1.1, 0.95], [0, 0.98], [-1.7, 0.99], [-2.2, 0.99], [-2.42, 0.95], [-2.5, 0.86]],
+  yb: [[2.52, 0.42], [2.45, 0.31], [2.3, 0.25], [-2.3, 0.25], [-2.45, 0.31], [-2.5, 0.42]],
+  roof: [[1.05, 0.95], [0.75, 1.13], [0.45, 1.32], [0.25, 1.39], [0, 1.41], [-0.9, 1.41], [-1.15, 1.37], [-1.45, 1.17], [-1.75, 0.99]],
+  win: [[1.0, -0.31], [-0.4, -1.4]] };
+// ---- Polizeiauto "Gotham Police" (Nicolas 2026-11-10, eigener Entwurf; 2026-11-11 als Loft): weisse Limousine, dunkelblaues Band, POLICE / GOTHAM CITY
+// auf beiden Seiten und hinten (Canvas, auf der Flaeche), Lichtbalken rot/blau (blinkt beim Fahren), Rammschutz aus Rohr, Suchscheinwerfer, Antenne
 function buildPolice() {
-  const g = new THREE.Group();
-  const paint = M(0xeef0f2, { metalness: 0.4, roughness: 0.35, flatShading: true }), white = M(0x1b2c4f, { metalness: 0.3, roughness: 0.4, flatShading: true }), dark = M(0x0a0b0c, { roughness: 0.7, flatShading: true });
-  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.1 }), chrome = M(0xa8adb3, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0x9ea3a8, { metalness: 0.8, roughness: 0.3 });
-  const red = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2 }), blue = new THREE.MeshStandardMaterial({ color: 0x0a1a5a, emissive: 0x2a5cff, emissiveIntensity: 0.2 });
+  const paint = M(0xeef0f2, { metalness: 0.4, roughness: 0.32 }), blue = M(0x1b2c4f, { metalness: 0.3, roughness: 0.4 }), dark = M(0x0a0b0c, { roughness: 0.7 });
+  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), chrome = M(0xa8adb3, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0x2a2c30, { metalness: 0.6, roughness: 0.4 });
+  const red = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 }), blu = new THREE.MeshStandardMaterial({ color: 0x0a1a5a, emissive: 0x2a5cff, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 });
+  const amber = M(0xffa020, { emissive: 0x6a3a00 });
   const text = (big, small) => { const t = canvasTex(512, 160, (c, W, H) => { c.clearRect(0, 0, W, H); c.textAlign = "center"; c.textBaseline = "middle"; const fit = (str, px, max) => { let p = px; c.font = "bold " + p + "px Arial, sans-serif"; while (c.measureText(str).width > max) { p -= 2; c.font = "bold " + p + "px Arial, sans-serif"; } };
     c.fillStyle = "#1b2c4f"; c.fillRect(0, 108, W, 52); fit(big, 96, W - 60); c.lineWidth = 6; c.strokeStyle = "#1b2c4f"; c.strokeText(big, W / 2, 56); c.fillStyle = "#e08a2c"; c.fillText(big, W / 2, 56); fit(small, 34, W - 60); c.fillStyle = "#ffffff"; c.fillText(small, W / 2, 135); });
-    t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.4 }); };
-  prismIn(g, [[2.45, 0.3], [2.5, 0.6], [2.3, 0.8], [1.0, 0.88], [-2.0, 0.92], [-2.42, 0.86], [-2.48, 0.45], [-2.3, 0.3]], 1.8, paint);   // Karosserie
-  prismIn(g, [[1.0, 0.88], [0.35, 1.36], [-1.0, 1.39], [-1.75, 0.92]], 1.64, glass);                                    // Kabine (Glas)
-  boxIn(g, -0.8, 0.8, 1.36, 1.41, -0.3, 0.98, paint);                                                                   // Dach weiss
+    t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 }); };
+  const k = sedanKit(SEDAN, paint, glass, dark), g = k.g, word = text("POLICE", "GOTHAM CITY");
   for (const sd of [-1, 1]) {
-    sideBox(g, sd * 0.9, sd * 0.906, 0.37, 0.56, -2.3, 2.3, white);                                                    // dunkelblaues Band
-    const t = meshIn(g, new THREE.PlaneGeometry(1.9, 0.59), text("POLICE", "GOTHAM CITY"), sd * 0.912, 0.66, 0.07); t.rotation.y = sd * Math.PI / 2;   // Schriftzug
-    sideBox(g, sd * 0.81, sd * 0.82, 0.95, 1.3, -0.25, 0.95, dark);                                                     // Tuerholm zwischen den Scheiben
-    boxIn(g, sd * 0.52 - 0.2, sd * 0.52 + 0.2, 0.62, 0.72, -2.51, -2.47, mat.glow);                                     // Scheinwerfer
-    boxIn(g, sd * 0.62 - 0.18, sd * 0.62 + 0.18, 0.68, 0.8, 2.43, 2.47, mat.glowRed);                                   // Rueckleuchten
-    boxIn(g, sd * 0.32 - 0.06, sd * 0.32 + 0.06, 0.2, 0.7, -2.68, -2.6, dark);                                          // Rammschutz Streben
-    boxIn(g, sd * 0.38 - 0.3, sd * 0.38 + 0.3, 1.43, 1.55, 0.25, 0.53, sd < 0 ? red : blue);                            // Lichtbalken
+    k.skin(sd, -2.32, 2.36, 0.37, 0.56, k.bodyX, blue, 0.004, 60, 2);                                                   // dunkelblaues Band (setzt an den Radlaeufen aus)
+    k.skin(sd, -1.02, 0.88, 0.365, 0.955, k.bodyX, word, 0.008, 30, 8);                                                  // Schriftzug
+    for (const f of [1.0, -0.36]) k.skin(sd, f, f - 0.012, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, dark, 0.009, 1, 6);   // Tuerfugen
+    k.skin(sd, -1.15, -1.162, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, dark, 0.009, 1, 6);
+    for (const f of [-0.12, -1.0]) k.skin(sd, f, f - 0.16, 0.8, 0.84, k.bodyX, dark, 0.014, 2, 1);                       // Tuergriffe
+    sideBox(g, sd * (k.hw(0.85) - 0.06), sd * (k.hw(0.85) + 0.1), 0.97, 1.0, -0.88, -0.8, dark); sideBox(g, sd * (k.hw(0.85) + 0.06), sd * (k.hw(0.85) + 0.2), 0.96, 1.1, -0.92, -0.78, dark);   // Spiegel
+    k.face(1, sd * 0.42, sd * 0.78, 0.63, 0.74, 0.012, mat.glow); k.face(1, sd * 0.78, sd * 0.84, 0.63, 0.7, 0.012, amber);   // Scheinwerfer, Blinker
+    k.face(-1, sd * 0.5, sd * 0.84, 0.72, 0.86, 0.012, mat.glowRed);                                                      // Rueckleuchten
+    for (const y of [0.42, 0.66]) meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.5, 10).rotateZ(Math.PI / 2), dark, sd * 0.3, y, -2.66);   // Rammschutz Querrohre
+    meshIn(g, new THREE.CylinderGeometry(0.04, 0.04, 0.5, 10), dark, sd * 0.32, 0.5, -2.68); meshIn(g, new THREE.CylinderGeometry(0.025, 0.025, 0.16, 8).rotateX(Math.PI / 2), dark, sd * 0.32, 0.42, -2.58);   // Rammschutz Pfosten, Halter
+    boxIn(g, sd * 0.5 - 0.04, sd * 0.5 + 0.04, 1.41, 1.45, -0.38, -0.3, dark);                                            // Fuesse Lichtbalken
+    const lens = meshIn(g, new THREE.CapsuleGeometry(0.075, 0.42, 4, 12).rotateZ(Math.PI / 2), sd < 0 ? red : blu, sd * 0.38, 1.53, -0.39); lens.scale.z = 1.25;   // Lichtbalken rot/blau
   }
-  boxIn(g, -0.52, 0.52, 0.32, 0.42, -2.7, -2.58, dark); boxIn(g, -0.52, 0.52, 0.58, 0.66, -2.7, -2.58, dark);           // Rammschutz Querholme
-  boxIn(g, -0.12, 0.12, 1.41, 1.5, 0.25, 0.53, dark);                                                                   // Lichtbalken Mitte
-  boxIn(g, -0.8, 0.8, 0.45, 0.6, -2.55, -2.45, chrome); boxIn(g, -0.9, 0.9, 0.3, 0.45, 2.42, 2.55, dark);               // Grill, Stossfaenger hinten
-  { const t = meshIn(g, new THREE.PlaneGeometry(0.9, 0.28), text("POLICE", "GOTHAM CITY"), 0, 0.68, 2.475); }                        // Schriftzug hinten
-  meshIn(g, new THREE.CylinderGeometry(0.008, 0.008, 0.7, 4), dark, 0.5, 1.75, 0.9);                                    // Antenne
+  k.face(1, -0.4, 0.4, 0.5, 0.66, 0.008, dark); for (let x = -0.36; x <= 0.37; x += 0.06) k.face(1, x - 0.008, x + 0.008, 0.51, 0.65, 0.016, chrome);   // Grill
+  k.face(1, -0.86, 0.86, 0.27, 0.45, 0.04, dark); k.face(-1, -0.88, 0.88, 0.27, 0.47, 0.04, dark);                          // Stossfaenger
+  k.face(-1, -0.22, 0.22, 0.5, 0.62, 0.008, M(0xe6e8ea, { roughness: 0.5 }));                                               // Kennzeichenfeld
+  boxIn(g, -0.75, 0.75, 1.45, 1.49, -0.47, -0.31, dark); boxIn(g, -0.12, 0.12, 1.49, 1.59, -0.44, -0.34, dark);             // Lichtbalken Traeger und Mitte
+  meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.12, 12).rotateX(Math.PI / 2), chrome, -0.88, 1.06, -0.98); meshIn(g, new THREE.CircleGeometry(0.055, 12), mat.glow, -0.88, 1.06, -1.045, Math.PI); boxIn(g, -0.86, -0.8, 0.94, 1.03, -0.99, -0.95, dark);   // Suchscheinwerfer (Fahrerseite)
+  { const t = meshIn(g, new THREE.PlaneGeometry(0.9, 0.28), text("POLICE", "GOTHAM CITY"), 0, 0.76, -k.endF(0, 0.76, -1) + 0.012); }   // Schriftzug hinten
+  meshIn(g, new THREE.CylinderGeometry(0.006, 0.006, 0.8, 4), dark, 0.5, 1.38, 2.05);                                     // Antenne
   mergeStatic(g);
   const wheels = [[-0.82, -1.45, true], [0.82, -1.45, true], [-0.82, 1.5, false], [0.82, 1.5, false]].map(([x, z, f]) => addWheel(g, x, z, 0.34, 0.24, f, tireM, rimM, 0, 24));
-  return { g, wheels, beacon: [red, blue] };
+  for (const w of wheels) sedanCap(w, 0.24, 0x2a2c30, 0xc8ccd0, 6);                                                        // schwarze Stahlfelge, Chromkappe
+  return { g, wheels, beacon: [red, blu] };
 }
 const SPEC_POLICE = { name: "Gotham Police", wheels: [[-0.82, -1.45], [0.82, -1.45], [-0.82, 1.5], [0.82, 1.5]], wb: 2.95, track: 1.64, pts: [-1.7, 0, 1.7], R: 1.0, circR: 0.95, enter: 3.8,
   maxN: 34, maxF: 41.7, acc: 13, steer: 0.66, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.5, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gotham Police: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen (Blaulicht blinkt beim Fahren)" };
-// ---- Gotham Taxi (Nicolas 2026-11-10, eigener Entwurf, ohne Marken): gelbe Limousine mit Stufenheck, schwarz-weisses Schachbrettband an den Seiten,
-// "GOTHAM CAB" auf den Tueren und hinten, beleuchtetes TAXI-Schild auf dem Dach, Chromstossstangen, Radkappen
+// ---- Gotham Taxi (Nicolas 2026-11-10, eigener Entwurf, ohne Marken; 2026-11-11 als Loft): gelbe Limousine mit Stufenheck, Schachbrettband ueber den
+// Radlaeufen, "GOTHAM CAB" auf den Tueren und hinten, beleuchtetes TAXI-Schild auf dem Dach, Chromstossstangen und Grill, Radkappen
 function buildTaxi() {
-  const g = new THREE.Group();
-  const paint = M(0xf2c218, { metalness: 0.35, roughness: 0.35, flatShading: true }), dark = M(0x0a0b0c, { roughness: 0.7, flatShading: true });
-  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.1 }), chrome = M(0xc4c8cc, { metalness: 0.9, roughness: 0.22 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0xc0c4c8, { metalness: 0.85, roughness: 0.25 });
-  const checker = (() => { const t = canvasTex(256, 16, (c, W, H) => { for (let i = 0; i < 32; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? "#f4f4f0" : "#111"; c.fillRect(i * 8, j * 8, 8, 8); } }); t.repeat.set(1, 1); return M(0xffffff, { map: t, roughness: 0.5 }); })();
+  const paint = M(0xf2c218, { metalness: 0.35, roughness: 0.32 }), dark = M(0x0a0b0c, { roughness: 0.7 });
+  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), chrome = M(0xc4c8cc, { metalness: 0.9, roughness: 0.22 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0xc0c4c8, { metalness: 0.85, roughness: 0.25 });
+  const amber = M(0xffa020, { emissive: 0x6a3a00 });
+  const checker = (() => { const t = canvasTex(512, 16, (c, W, H) => { for (let i = 0; i < 64; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? "#f4f4f0" : "#111"; c.fillRect(i * 8, j * 8, 8, 8); } }); t.repeat.set(1, 1); return M(0xffffff, { map: t, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }); })();
   const text = (str, col) => { const t = canvasTex(512, 96, (c, W, H) => { c.clearRect(0, 0, W, H); c.textAlign = "center"; c.textBaseline = "middle"; let p = 76; c.font = "bold " + p + "px Arial, sans-serif"; while (c.measureText(str).width > W - 30) { p -= 2; c.font = "bold " + p + "px Arial, sans-serif"; } c.fillStyle = col; c.fillText(str, W / 2, H / 2 + 3); });
-    t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.45 }); };
-  prismIn(g, [[2.5, 0.32], [2.55, 0.62], [2.35, 0.8], [1.0, 0.86], [-1.75, 0.9], [-2.35, 0.88], [-2.5, 0.62], [-2.4, 0.32]], 1.82, paint);   // Karosserie mit Stufenheck
-  prismIn(g, [[1.0, 0.86], [0.4, 1.34], [-0.95, 1.37], [-1.65, 0.9]], 1.62, glass);                                       // Kabine (Glas)
-  boxIn(g, -0.79, 0.79, 1.34, 1.39, -0.35, 0.95, paint);                                                                 // Dach gelb
+    t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.45, polygonOffset: true, polygonOffsetFactor: -2 }); };
+  const T = { ...SEDAN, wf: [1.5, -1.5], fF: 2.55, roof: [[1.05, 0.95], [0.75, 1.12], [0.45, 1.3], [0.25, 1.36], [0, 1.38], [-0.9, 1.38], [-1.12, 1.34], [-1.4, 1.15], [-1.65, 0.99]], fr: -1.65, rs: -1.1, win: [[1.0, -0.31], [-0.4, -1.32]],
+    hw: [[2.55, 0.68], [2.5, 0.82], [2.42, 0.89], [2.2, 0.91], [0, 0.915], [-2.25, 0.91], [-2.42, 0.87], [-2.5, 0.76]], yT: [[2.55, 0.72], [2.5, 0.8], [2.38, 0.86], [2.0, 0.89], [1.1, 0.93], [0, 0.96], [-1.6, 0.97], [-2.3, 0.97], [-2.44, 0.93], [-2.5, 0.85]],
+    yb: [[2.55, 0.42], [2.48, 0.31], [2.32, 0.25], [-2.3, 0.25], [-2.45, 0.31], [-2.5, 0.42]] };
+  const k = sedanKit(T, paint, glass, dark), g = k.g, cab = text("GOTHAM CAB", "#111");
   for (const sd of [-1, 1]) {
-    const band = meshIn(g, new THREE.PlaneGeometry(4.6, 0.09), checker, sd * 0.912, 0.64, 0); band.rotation.y = sd * Math.PI / 2;   // Schachbrettband
-    const t = meshIn(g, new THREE.PlaneGeometry(1.7, 0.32), text("GOTHAM CAB", "#111"), sd * 0.913, 0.45, 0.15); t.rotation.y = sd * Math.PI / 2;   // Schriftzug Tuer
-    sideBox(g, sd * 0.81, sd * 0.82, 0.92, 1.3, -0.25, 0.95, dark); sideBox(g, sd * 0.81, sd * 0.82, 0.92, 1.33, 0.25, 0.32, dark);   // Tuerholme
-    sideBox(g, sd * 0.91, sd * 0.92, 0.36, 0.9, 0.3, 0.32, dark); sideBox(g, sd * 0.91, sd * 0.92, 0.36, 0.9, -0.95, -0.93, dark);   // Tuerfugen
-    sideBox(g, sd * 0.91, sd * 0.94, 0.78, 0.8, -0.2, 0.05, chrome); sideBox(g, sd * 0.91, sd * 0.94, 0.78, 0.8, 0.6, 0.85, chrome);   // Tuergriffe
-    boxIn(g, sd * 0.62 - 0.16, sd * 0.62 + 0.16, 0.6, 0.74, -2.56, -2.52, mat.glow);                                    // Scheinwerfer
-    boxIn(g, sd * 0.3 - 0.1, sd * 0.3 + 0.1, 0.62, 0.72, -2.56, -2.53, mat.glow);                                       // Zusatzscheinwerfer
-    boxIn(g, sd * 0.66 - 0.16, sd * 0.66 + 0.16, 0.62, 0.8, 2.47, 2.51, mat.glowRed);                                   // Rueckleuchten
-    sideBox(g, sd * 0.88, sd * 1.0, 1.02, 1.12, -0.95, -0.8, paint);                                                     // Spiegel
+    k.skin(sd, -2.36, 2.4, 0.79, 0.87, k.bodyX, checker, 0.006, 70, 1);                                                  // Schachbrettband ueber den Radlaeufen
+    k.skin(sd, -0.95, 0.75, 0.42, 0.72, k.bodyX, cab, 0.006, 20, 4);                                                     // GOTHAM CAB auf den Tueren
+    for (const f of [1.02, -0.36]) k.skin(sd, f, f - 0.012, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, dark, 0.009, 1, 6);   // Tuerfugen
+    k.skin(sd, -1.13, -1.142, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, dark, 0.009, 1, 6);
+    for (const f of [-0.12, -0.98]) k.skin(sd, f, f - 0.16, 0.74, 0.77, k.bodyX, chrome, 0.014, 2, 1);                   // Tuergriffe (Chrom)
+    k.skin(sd, -2.2, 2.3, 0.33, 0.36, k.bodyX, chrome, 0.008, 50, 1);                                                    // Zierleiste unten
+    sideBox(g, sd * (k.hw(0.85) - 0.06), sd * (k.hw(0.85) + 0.1), 0.95, 0.98, -0.88, -0.8, chrome); sideBox(g, sd * (k.hw(0.85) + 0.06), sd * (k.hw(0.85) + 0.2), 0.94, 1.08, -0.92, -0.78, paint);   // Spiegel
+    k.face(1, sd * 0.48, sd * 0.78, 0.6, 0.74, 0.012, mat.glow); k.face(1, sd * 0.24, sd * 0.4, 0.62, 0.72, 0.012, mat.glow); k.face(1, sd * 0.78, sd * 0.86, 0.6, 0.68, 0.012, amber);   // Scheinwerfer, Zusatz, Blinker
+    k.face(-1, sd * 0.5, sd * 0.84, 0.62, 0.8, 0.012, mat.glowRed);                                                       // Rueckleuchten
   }
-  boxIn(g, -0.92, 0.92, 0.3, 0.42, -2.62, -2.5, chrome); boxIn(g, -0.92, 0.92, 0.3, 0.42, 2.48, 2.6, chrome);            // Stossstangen (Chrom)
-  boxIn(g, -0.4, 0.4, 0.46, 0.6, -2.57, -2.52, dark); for (let x = -0.35; x <= 0.36; x += 0.07) boxIn(g, x - 0.01, x + 0.01, 0.47, 0.59, -2.58, -2.57, chrome);   // Grill
-  { const t = meshIn(g, new THREE.PlaneGeometry(1.0, 0.18), text("GOTHAM CAB", "#111"), 0, 0.72, 2.512); }               // Schriftzug hinten
+  k.face(1, -0.42, 0.42, 0.46, 0.6, 0.008, dark); for (let x = -0.38; x <= 0.39; x += 0.06) k.face(1, x - 0.01, x + 0.01, 0.47, 0.59, 0.016, chrome);   // Grill
+  k.face(1, -0.92, 0.92, 0.28, 0.42, 0.08, chrome); k.face(-1, -0.92, 0.92, 0.28, 0.42, 0.08, chrome);                      // Stossstangen (Chrom)
+  k.face(-1, -0.22, 0.22, 0.45, 0.57, 0.008, M(0xe6e8ea, { roughness: 0.5 }));                                               // Kennzeichenfeld
+  { const t = meshIn(g, new THREE.PlaneGeometry(1.0, 0.18), text("GOTHAM CAB", "#111"), 0, 0.72, -k.endF(0, 0.72, -1) + 0.012); }   // Schriftzug hinten
   mergeStatic(g);
-  // TAXI-Schild auf dem Dach (nicht zusammengefasst: eigene Materialien je Seite), leuchtet
+  // TAXI-Schild auf dem Dach (nicht zusammengefasst: eigene Materialien je Seite), leuchtet; Fuss in Wagenfarbe
   const lit = (() => { const t = canvasTex(256, 80, (c, W, H) => { c.fillStyle = "#fff6c8"; c.fillRect(0, 0, W, H); c.fillStyle = "#111"; c.font = "bold 62px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("TAXI", W / 2, H / 2 + 3); }); t.repeat.set(1, 1); return new THREE.MeshBasicMaterial({ map: t }); })();
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.24, 0.26), [dark, dark, M(0xf4e6a0, { emissive: 0x6a5a20 }), dark, lit, lit]); sign.position.set(0, 1.51, 0.3); g.add(sign);
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.22, 0.24), [dark, dark, M(0xf4e6a0, { emissive: 0x6a5a20 }), dark, lit, lit]); sign.position.set(0, 1.52, 0.3); g.add(sign);
+  const foot = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.2), dark); foot.position.set(0, 1.4, 0.3); g.add(foot);
   const wheels = [[-0.82, -1.5, true], [0.82, -1.5, true], [-0.82, 1.5, false], [0.82, 1.5, false]].map(([x, z, f]) => addWheel(g, x, z, 0.34, 0.24, f, tireM, rimM, 0, 24));
+  for (const w of wheels) sedanCap(w, 0.24, 0xc4c8cc, 0xe4e7ea, 8);                                                       // Chrom-Radkappen
   return { g, wheels };
 }
 const SPEC_TAXI = { name: "Gotham Taxi", wheels: [[-0.82, -1.5], [0.82, -1.5], [-0.82, 1.5], [0.82, 1.5]], wb: 3.0, track: 1.64, pts: [-1.7, 0, 1.7], R: 1.0, circR: 0.95, enter: 3.8,
   maxN: 30, maxF: 36.1, acc: 11, steer: 0.68, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.65, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gotham Taxi: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
-// ---- Panzer (Nicolas 2026-11-10, eigener Entwurf): Wanne mit schraegem Bug, Ketten mit je 6 Laufrollen und Antriebsrad, Kettenschuerzen,
-// Turm mit langem Rohr (dreht beim Fahren mit der Blickrichtung), Kommandantenluke, Tarnfarbe oliv. Ca. 6,8 x 3,4 x 2,5 m (Rohr ragt 3 m vor)
+// ---- Panzer (Nicolas 2026-11-10, eigener Entwurf; 2026-11-11 realistischer, Grundform und Masse bleiben): Wanne mit schraegem Bug, Ketten aus
+// einzelnen Gliedern (laufen um Treibrad vorne mit Zaehnen und Leitrad hinten, oben auf Stuetzrollen), 6 Laufrollen je Seite mit Naben,
+// Schuerzen in Segmenten mit Schrauben und Gummilappen, Kotfluegel, Staukisten, Fahrerluke mit Winkelspiegeln, Motordeck mit Lamellen,
+// Abgasgitter, Abschlepphaken; Turm facettiert mit Hecküberhang, Staukorb, Kommandantenkuppel mit MG, Zielgeraet, Nebelwerfer, Antennen;
+// Kanone mit Blende, Rauchabsauger, Waermeschutzhuelle, Muendung. Ca. 6,8 x 3,5 x 2,5 m (Rohr ragt ca. 3 m vor)
 function buildTank(col = 0x4d5a36) {
   const g = new THREE.Group();
-  const paint = M(col, { roughness: 0.8, metalness: 0.2, flatShading: true }), dark = M(0x2a2e24, { roughness: 0.85, flatShading: true }), track = M(0x1b1b1b, { roughness: 0.95, flatShading: true });
-  const steel = M(0x5a5f63, { metalness: 0.6, roughness: 0.5, flatShading: true }), tireM = M(0x161616, { roughness: 0.9 }), rimM = M(0x4a5532, { roughness: 0.7, metalness: 0.2 });
+  const paint = M(col, { roughness: 0.8, metalness: 0.2, flatShading: true }), dark = M(0x2a2e24, { roughness: 0.85, flatShading: true }), track = M(0x232323, { roughness: 0.9, metalness: 0.4, flatShading: true });
+  const steel = M(0x5a5f63, { metalness: 0.6, roughness: 0.5, flatShading: true }), rubber = M(0x161616, { roughness: 0.95 }), tireM = M(0x161616, { roughness: 0.9 }), rimM = M(0x4a5532, { roughness: 0.7, metalness: 0.2 });
+  const paint2 = M(new THREE.Color(col).multiplyScalar(0.82).getHex(), { roughness: 0.85, metalness: 0.15, flatShading: true }), canvasM = M(0x5b5a3e, { roughness: 1 }), glassM = M(0x10161c, { metalness: 0.7, roughness: 0.1 });
   prismIn(g, [[3.4, 0.7], [3.0, 1.35], [-2.9, 1.45], [-3.3, 1.2], [-3.3, 0.6], [-2.9, 0.45], [2.9, 0.45]], 2.3, paint);     // Wanne
+  prismIn(g, [[3.38, 0.72], [3.02, 1.3], [2.98, 1.3], [3.34, 0.72]], 2.32, paint2);                                       // Schweissnaht Bugplatte
+  // Kette: Glieder entlang einer Schleife (unten gerade, hinten um das Leitrad, oben gerade auf den Stuetzrollen, vorne um das Treibrad)
+  const loop = []; const arc = (cz, cy, r, a0, a1) => { for (let k = 0; k <= 12; k++) { const a = a0 + (a1 - a0) * k / 12; loop.push([cz + r * Math.cos(a), cy + r * Math.sin(a)]); } };
+  loop.push([-2.25, 0.035], [2.25, 0.035]); arc(2.75, 0.55, 0.39, -2.1, Math.PI / 2); arc(-2.75, 0.55, 0.45, Math.PI / 2, 4.19); loop.push(loop[0]);
+  const LINK = 0.155, links = []; { let carry = 0; for (let i = 0; i < loop.length - 1; i++) { const [z0, y0] = loop[i], [z1, y1] = loop[i + 1], L = Math.hypot(z1 - z0, y1 - y0); let s = carry;
+    for (; s < L; s += LINK) { const u = s / L; links.push([z0 + (z1 - z0) * u, y0 + (y1 - y0) * u, Math.atan2(-(y1 - y0), z1 - z0)]); } carry = s - L; } }
+  const linkG = new THREE.BoxGeometry(0.62, 0.05, LINK - 0.02), cleatG = new THREE.BoxGeometry(0.58, 0.035, 0.035).translate(0, -0.04, 0), hornG = new THREE.BoxGeometry(0.06, 0.07, 0.07).translate(0, 0.055, 0);
   for (const sd of [-1, 1]) {
     const X = sd * 1.4;
-    boxAt(g, 0.62, 0.08, 5.6, track, X, 0.04, 0);                                                                         // Kette unten
-    boxAt(g, 0.62, 0.08, 6.0, track, X, 0.98, 0);                                                                         // Kette oben
-    const f = boxAt(g, 0.62, 0.08, 1.15, track, X, 0.5, -3.05, 0.95); const b = boxAt(g, 0.62, 0.08, 1.1, track, X, 0.52, 3.05, -1.0);   // Kette vorne/hinten schraeg
-    sideBox(g, sd * 1.12, sd * 1.72, 1.02, 1.12, -3.2, 3.2, paint);                                                       // Kettenblech oben
-    sideBox(g, sd * 1.7, sd * 1.75, 0.62, 1.1, -3.1, 3.1, paint);                                                         // Kettenschuerze
-    meshIn(g, new THREE.CylinderGeometry(0.42, 0.42, 0.5, 14).rotateZ(Math.PI / 2), steel, X, 0.55, -2.75);                // Antriebsrad vorne
-    meshIn(g, new THREE.CylinderGeometry(0.36, 0.36, 0.5, 14).rotateZ(Math.PI / 2), steel, X, 0.55, 2.75);                 // Leitrad hinten
-    boxAt(g, 0.5, 0.3, 0.2, dark, sd * 0.85, 1.4, -2.95);                                                                  // Scheinwerferkasten
-    boxAt(g, 0.3, 0.12, 0.04, mat.glow, sd * 0.85, 1.42, -3.06);
+    for (const [z, y, a] of links) { meshIn(g, linkG, track, X, y, z, a); meshIn(g, cleatG, track, X, y, z, a); meshIn(g, hornG, steel, X, y, z, a); }   // Glied, Greifsteg aussen, Fuehrungszahn innen
+    // Treibrad vorne: zwei Zahnkraenze, Nabe; Leitrad hinten; Stuetzrollen oben
+    for (const dx of [-0.18, 0.18]) { meshIn(g, new THREE.CylinderGeometry(0.4, 0.4, 0.1, 18).rotateZ(Math.PI / 2), steel, X + dx, 0.55, -2.75);
+      for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; meshIn(g, new THREE.BoxGeometry(0.1, 0.08, 0.09), steel, X + dx, 0.55 + Math.sin(a) * 0.43, -2.75 + Math.cos(a) * 0.43, -a); } }
+    meshIn(g, new THREE.CylinderGeometry(0.16, 0.2, 0.5, 12).rotateZ(Math.PI / 2), dark, X, 0.55, -2.75);
+    for (const dx of [-0.17, 0.17]) meshIn(g, new THREE.CylinderGeometry(0.36, 0.36, 0.12, 18).rotateZ(Math.PI / 2), steel, X + dx, 0.55, 2.75);
+    meshIn(g, new THREE.CylinderGeometry(0.12, 0.12, 0.52, 10).rotateZ(Math.PI / 2), dark, X, 0.55, 2.75);
+    for (const z of [-1.4, 0, 1.4]) meshIn(g, new THREE.CylinderGeometry(0.09, 0.09, 0.3, 10).rotateZ(Math.PI / 2), steel, X, 0.88, z);
+    // Kotfluegel, Schuerzen in 5 Segmenten (Fugen, Schrauben, Gummilappen unten), Schmutzfaenger vorne
+    sideBox(g, sd * 1.12, sd * 1.78, 1.04, 1.1, -3.25, 3.2, paint);
+    for (let k = 0; k < 5; k++) { const z0 = -3.1 + k * 1.24, z1 = z0 + 1.2; sideBox(g, sd * 1.72, sd * 1.77, 0.6, 1.04, z0, z1, paint); sideBox(g, sd * 1.73, sd * 1.76, 0.44, 0.6, z0, z1, rubber);
+      for (let b = 0; b < 4; b++) meshIn(g, new THREE.CylinderGeometry(0.022, 0.022, 0.02, 6).rotateZ(Math.PI / 2), dark, sd * 1.775, 0.98, z0 + 0.12 + b * 0.32); }
+    boxIn(g, Math.min(sd * 1.12, sd * 1.78), Math.max(sd * 1.12, sd * 1.78), 0.62, 1.06, -3.3, -3.26, rubber);
+    // Staukisten hinten auf dem Kotfluegel, Werkzeug (Spaten, Brechstange) vorne
+    sideBox(g, sd * 1.22, sd * 1.7, 1.1, 1.33, 1.6, 2.9, paint2); sideBox(g, sd * 1.2, sd * 1.72, 1.29, 1.31, 1.58, 2.92, paint);
+    sideBox(g, sd * 1.3, sd * 1.36, 1.1, 1.14, -2.9, -1.6, M(0x6b4a2a, { roughness: 0.9 })); sideBox(g, sd * 1.5, sd * 1.54, 1.1, 1.13, -2.8, -1.2, steel);
+    // Scheinwerfer mit Schutzbuegel, Ruecklicht, Abschlepphaken
+    boxAt(g, 0.36, 0.22, 0.2, dark, sd * 0.85, 1.42, -2.95); boxAt(g, 0.26, 0.12, 0.03, mat.glow, sd * 0.85, 1.43, -3.06);
+    for (const dx of [-0.2, 0.2]) boxAt(g, 0.03, 0.3, 0.03, steel, sd * 0.85 + dx, 1.42, -3.12); boxAt(g, 0.43, 0.03, 0.03, steel, sd * 0.85, 1.56, -3.12);
     boxAt(g, 0.18, 0.12, 0.04, mat.glowRed, sd * 0.9, 1.25, 3.31);
+    for (const z of [-3.42, 3.33]) { boxAt(g, 0.08, 0.2, 0.14, steel, sd * 0.55, 0.78, z); boxAt(g, 0.22, 0.06, 0.14, steel, sd * 0.55, 0.68, z); }
   }
-  boxAt(g, 1.6, 0.25, 0.9, dark, 0, 1.55, 2.4);                                                                           // Motordeck-Gitter
+  // Fahrerluke mit drei Winkelspiegeln; Motordeck mit Lamellen; Abgasgitter und Ersatzglieder am Heck
+  meshIn(g, new THREE.CylinderGeometry(0.3, 0.32, 0.08, 16), paint2, 0, 1.41, -2.35); for (const dx of [-0.22, 0, 0.22]) boxAt(g, 0.14, 0.07, 0.08, glassM, dx, 1.42, -2.68);
+  boxAt(g, 1.6, 0.25, 0.9, dark, 0, 1.55, 2.4); for (let z = 2.0; z <= 2.81; z += 0.09) boxAt(g, 1.5, 0.03, 0.04, steel, 0, 1.685, z);
+  for (const sd of [-1, 1]) { boxIn(g, sd * 0.35, sd * 1.0, 0.85, 1.15, 3.3, 3.34, dark); for (let y = 0.88; y < 1.13; y += 0.05) boxIn(g, Math.min(sd * 0.37, sd * 0.98), Math.max(sd * 0.37, sd * 0.98), y, y + 0.015, 3.34, 3.36, steel); }
+  for (const dx of [-0.16, 0.16]) boxAt(g, 0.62, 0.05, 0.14, track, dx, 0.68, 3.32);
   mergeStatic(g);
-  // Turm (eigene Gruppe, dreht)
+  // Turm (eigene Gruppe, dreht): facettierter Loft (vorne keilfoermig, Hecküberhang), Querschnitt mit schraegen Seiten
   const turret = new THREE.Group(); turret.position.set(0, 1.58, 0.35); g.add(turret);
   const T = new THREE.Group(); turret.add(T);
-  prismIn(T, [[1.25, 0.0], [1.0, 0.58], [-1.15, 0.66], [-1.55, 0.42], [-1.55, 0.0]], 1.8, paint);   // schmaler als die Wanne
-  meshIn(T, new THREE.CylinderGeometry(1.0, 1.05, 0.16, 24), dark, 0, -0.06, 0);                                          // Drehkranz                               // Turmkoerper
-  for (const sd of [-1, 1]) prismIn(T, [[1.25, 0.0], [1.0, 0.56], [0.1, 0.6], [-0.1, 0.0]], 0.2, paint, sd * 0.98);         // Wangen
-  meshIn(T, new THREE.CylinderGeometry(0.42, 0.42, 0.16, 16), dark, -0.45, 0.78, 0.3);                                     // Kommandantenluke
-  meshIn(T, new THREE.CylinderGeometry(0.3, 0.3, 0.12, 12), dark, 0.5, 0.74, 0.5);
+  const tsec = (w, yb, yt) => [[0, yb], [w - 0.14, yb], [w, yb + 0.14], [w - 0.07, yt - 0.07], [w - 0.2, yt], [0, yt]];
+  loftIn(T, [[1.3, tsec(0.48, 0.1, 0.42)], [1.05, tsec(0.84, 0.0, 0.58)], [0.3, tsec(0.96, 0.0, 0.64)], [-0.95, tsec(0.96, 0.0, 0.66)], [-1.2, tsec(0.92, 0.04, 0.66)], [-1.62, tsec(0.86, 0.14, 0.62)], [-1.78, tsec(0.76, 0.18, 0.56)]], paint);
+  meshIn(T, new THREE.CylinderGeometry(1.0, 1.05, 0.16, 24), dark, 0, -0.06, 0);                                          // Drehkranz
+  // Staukorb am Heck: Rahmen aus Stangen, darin Planen und Kisten
+  for (const x of [-0.8, 0.8]) boxIn(T, x - 0.02, x + 0.02, 0.2, 0.55, 1.78, 2.3, steel); boxIn(T, -0.82, 0.82, 0.53, 0.56, 2.27, 2.31, steel); boxIn(T, -0.82, 0.82, 0.2, 0.23, 2.27, 2.31, steel);
+  for (const x of [-0.8, 0.8]) boxIn(T, x - 0.02, x + 0.02, 0.53, 0.56, 1.78, 2.3, steel);
+  meshIn(T, new THREE.CylinderGeometry(0.15, 0.15, 1.2, 10).rotateZ(Math.PI / 2), canvasM, -0.1, 0.38, 2.02); boxIn(T, 0.4, 0.75, 0.22, 0.48, 1.82, 2.22, paint2);
+  // Kommandantenkuppel mit Winkelspiegeln, Lukendeckel und MG; Ladeschuetzenluke; Zielgeraet; Nebelwerfer; Antennen
+  meshIn(T, new THREE.CylinderGeometry(0.38, 0.42, 0.18, 18), paint, -0.45, 0.74, 0.3);
+  for (let k = 0; k < 7; k++) { const a = k / 7 * Math.PI * 2; boxAt(T, 0.1, 0.07, 0.06, glassM, -0.45 + Math.sin(a) * 0.4, 0.75, 0.3 + Math.cos(a) * 0.4).rotation.y = a; }
+  meshIn(T, new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16), paint2, -0.45, 0.86, 0.3);
+  boxAt(T, 0.08, 0.2, 0.08, steel, -0.12, 0.9, 0.1); boxAt(T, 0.12, 0.12, 0.42, dark, -0.12, 1.02, 0.0); meshIn(T, new THREE.CylinderGeometry(0.025, 0.025, 0.8, 8), dark, -0.12, 1.03, -0.55, Math.PI / 2);   // MG
+  meshIn(T, new THREE.CylinderGeometry(0.3, 0.3, 0.06, 14), paint2, 0.5, 0.7, 0.5);                                      // Ladeschuetzenluke
+  boxAt(T, 0.36, 0.28, 0.4, paint, 0.52, 0.8, -0.65); boxAt(T, 0.3, 0.2, 0.02, glassM, 0.52, 0.82, -0.86);                 // Zielgeraet (Richtschuetze)
+  for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) { const tb = meshIn(T, new THREE.CylinderGeometry(0.05, 0.05, 0.28, 8), dark, sd * (0.86 - k * 0.0), 0.36 + k * 0.08, -0.55 - k * 0.05, -0.9); tb.rotation.z = sd * 0.5; }   // Nebelwerfer
+  for (const sd of [-1, 1]) meshIn(T, new THREE.CylinderGeometry(0.008, 0.012, 1.9, 4), dark, sd * 0.7, 1.55, 1.4);   // Antennen hinten
+  mergeStatic(T);
   // Kanone als eigene Gruppe mit Drehpunkt an der Blende (Nicolas 2026-11-11: Rohr in der Hoehe verstellbar, bleibt in Weltlage)
   const gun = new THREE.Group(); gun.position.set(0, 0.32, -1.3); T.add(gun);
-  boxAt(gun, 0.6, 0.42, 0.5, dark, 0, -0.02, -0.1);                                                                       // Blende
-  meshIn(gun, new THREE.CylinderGeometry(0.1, 0.12, 4.2, 12), steel, 0, 0, -2.4, Math.PI / 2);                             // Rohr
-  meshIn(gun, new THREE.CylinderGeometry(0.17, 0.17, 0.5, 12), steel, 0, 0, -1.7, Math.PI / 2);                             // Rauchabsauger
-  meshIn(gun, new THREE.CylinderGeometry(0.14, 0.12, 0.3, 12), dark, 0, 0, -4.6, Math.PI / 2);                              // Muendung
-  for (const o of gun.children) o.castShadow = true;
-  meshIn(T, new THREE.CylinderGeometry(0.01, 0.01, 1.4, 4), dark, 0.8, 1.4, 1.2);                                         // Antenne
+  prismIn(gun, [[0.42, -0.24], [0.42, 0.2], [0.05, 0.28], [-0.25, 0.28], [-0.25, -0.28], [0.05, -0.28]], 0.72, paint);   // Blende (keilfoermig)
+  boxAt(gun, 0.08, 0.08, 0.06, dark, 0.22, 0.05, -0.43);                                                                   // Koaxial-MG
+  meshIn(gun, new THREE.CylinderGeometry(0.115, 0.13, 1.2, 14), steel, 0, 0, -0.95, Math.PI / 2);                            // Rohr hinten
+  meshIn(gun, new THREE.CylinderGeometry(0.18, 0.18, 0.6, 14), paint2, 0, 0, -1.85, Math.PI / 2);                            // Rauchabsauger
+  for (let k = 0; k < 3; k++) meshIn(gun, new THREE.CylinderGeometry(0.125, 0.125, 0.6, 14), paint, 0, 0, -2.5 - k * 0.62, Math.PI / 2);   // Waermeschutzhuelle in Segmenten
+  meshIn(gun, new THREE.CylinderGeometry(0.1, 0.115, 0.6, 14), steel, 0, 0, -4.25, Math.PI / 2);                              // Rohrende
+  meshIn(gun, new THREE.CylinderGeometry(0.14, 0.12, 0.2, 14), dark, 0, 0, -4.65, Math.PI / 2);                              // Muendung
+  mergeStatic(gun); for (const o of gun.children) o.castShadow = true;
   for (const o of [...T.children]) o.castShadow = true;
-  // Laufrollen (6 je Seite, drehen mit), rund ueber addWheel
+  // Laufrollen (6 je Seite, drehen mit), rund ueber addWheel; aussen Nabe mit Schrauben
   const wheels = [];
-  for (const sd of [-1, 1]) for (let k = 0; k < 6; k++) wheels.push(addWheel(g, sd * 1.4, -2.0 + k * 0.8, 0.36, 0.48, false, tireM, rimM, 0, 16));
+  for (const sd of [-1, 1]) for (let k = 0; k < 6; k++) { const w = addWheel(g, sd * 1.4, -2.0 + k * 0.8, 0.36, 0.48, false, tireM, rimM, 0, 16), F = new THREE.Group(); F.position.x = sd * 0.25; w.spin.add(F);
+    F.add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.04, 12).rotateZ(Math.PI / 2), dark));
+    for (let b = 0; b < 6; b++) { const a = b / 6 * Math.PI * 2, bo = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.05, 6).rotateZ(Math.PI / 2), steel); bo.position.set(0, Math.cos(a) * 0.17, Math.sin(a) * 0.17); F.add(bo); }
+    wheels.push(w); }
   // Rohr darf nie in die Wanne (Nicolas 2026-11-11): tiefster Rohrwinkel je Turmdrehung (1-Grad-Schritte), aus der Oberkante der Wanne
   // (Deck, Bug-Schraege, Motordeck, Scheinwerferkaesten, Kettenbleche) und Punkten entlang des Rohrs (Radius 0,15 + 3 cm Luft)
   const top = (x, z) => {                                                  // Oberkante der Wanne an (x, z), lokal, -1 = nichts
@@ -599,7 +710,10 @@ function buildTank(col = 0x4d5a36) {
     if (ax <= 1.15 && z >= -3.4 && z <= 3.3) h = z < -3.0 ? 0.7 + (z + 3.4) / 0.4 * 0.65 : 1.35 + (z + 3.0) / 5.9 * 0.1;
     if (ax > 1.12 && ax <= 1.75 && Math.abs(z) <= 3.2) h = Math.max(h, 1.12);
     if (ax <= 0.8 && z >= 1.95 && z <= 2.85) h = Math.max(h, 1.675);
-    if (ax >= 0.6 && ax <= 1.1 && z >= -3.05 && z <= -2.85) h = Math.max(h, 1.55);
+    if (ax >= 0.6 && ax <= 1.1 && z >= -3.15 && z <= -2.85) h = Math.max(h, 1.58);
+    if (ax <= 0.35 && z >= -2.75 && z <= -2.05) h = Math.max(h, 1.46);                      // Fahrerluke, Winkelspiegel
+    if (ax > 1.2 && ax <= 1.72 && z >= 1.58 && z <= 2.92) h = Math.max(h, 1.33);            // Staukisten
+    if (ax <= 0.8 && z >= 1.95 && z <= 2.85) h = Math.max(h, 1.7);                          // Lamellen Motordeck
     return h;
   };
   const gunMin = new Float32Array(360);

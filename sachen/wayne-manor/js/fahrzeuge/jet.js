@@ -13,21 +13,28 @@ function buildJet() {
   const paint = M(0x8b9198, { metalness: 0.3, roughness: 0.6, flatShading: true }), panel = M(0x767c83, { metalness: 0.3, roughness: 0.65, flatShading: true });
   const black = M(0x08090b, { roughness: 0.8 }), nozM = M(0x3a3c40, { metalness: 0.6, roughness: 0.45, flatShading: true }), glass = M(0x4a3c14, { metalness: 0.85, roughness: 0.06, transparent: true, opacity: 0.72 });
   const tireM = M(0x121212, { roughness: 0.9 }), rimM = M(0xb8bcc2, { metalness: 0.8, roughness: 0.3 }), glowM = M(0x141414, { emissive: 0xff7a20, emissiveIntensity: 0 });
-  const flat = (pts, d, m, y, par = body) => { const sh = new THREE.Shape(); pts.forEach(([x, f], i) => i ? sh.lineTo(x, f) : sh.moveTo(x, f)); return meshIn(par, new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: false }).rotateX(-Math.PI / 2), m, 0, y, 0); };   // Platte in (x, vorne), Dicke nach oben
+  const flat = (pts, d, m, y, par = body) => { const sh = new THREE.Shape(); pts.forEach(([x, f], i) => i ? sh.lineTo(x, f) : sh.moveTo(x, f)); const bv = Math.min(0.05, d * 0.4);   // Fase: Kanten duenn und rund wie ein Profil (2026-11-11)
+    return meshIn(par, new THREE.ExtrudeGeometry(sh, { depth: Math.max(0.01, d - 2 * bv), bevelEnabled: true, bevelThickness: bv, bevelSize: bv * 0.9, bevelSegments: 2 }).rotateX(-Math.PI / 2).translate(0, bv, 0), m, 0, y, 0); };   // Platte in (x, vorne), Dicke nach oben
   // Rumpf als Loft (f = vorne): spitze Nase, Kante (Chine) seitlich, oben schmaler als unten, hinten flach zwischen den Duesen
   const hw = tabF([[9.45, 0.04], [8.6, 0.38], [7.4, 0.62], [6, 0.8], [4.5, 0.9], [2.5, 1.15], [0, 1.6], [-3, 1.75], [-6, 1.6], [-8, 1.4], [-8.7, 1.3]]);
   const yb = tabF([[9.45, 1.98], [8, 1.6], [6.5, 1.38], [4, 1.3], [-6, 1.3], [-8.7, 1.55]]), yt = tabF([[9.45, 2.02], [8, 2.35], [6.5, 2.62], [4, 2.78], [0, 2.75], [-4, 2.65], [-8.7, 2.35]]);
   const st = []; for (let f = 9.45; f > -8.71; f -= 0.3) { const w = hw(f), b = yb(f), t = yt(f); st.push([f, [[0, b], [w * 0.7, b + 0.05], [w, 1.95], [w * 0.55, t - 0.05], [0, t]]]); }
   loftIn(body, st, paint);
   // Glaskanzel (goldgetoent), Sitz darunter
-  meshIn(body, new THREE.SphereGeometry(1, 24, 14).scale(0.58, 0.56, 2.4), glass, 0, 2.7, -5.5); boxIn(body, -0.3, 0.3, 2.4, 3.0, -5.0, -4.2, black);
+  meshIn(body, new THREE.SphereGeometry(1, 28, 16).scale(0.58, 0.56, 2.4), glass, 0, 2.7, -5.5); boxIn(body, -0.3, 0.3, 2.4, 2.75, -5.0, -4.2, black); boxIn(body, -0.2, 0.2, 2.75, 3.1, -4.45, -4.25, black);   // Kanzel, Sitz mit Kopfstuetze
+  boxIn(body, -0.35, 0.35, 2.55, 2.8, -6.6, -6.2, black);                                                                  // Instrumentenhutze
+  { const fr = M(0x2c2f33, { metalness: 0.4, roughness: 0.5 }); meshIn(body, new THREE.TorusGeometry(0.565, 0.03, 6, 24, Math.PI).scale(1.02, 1, 1), fr, 0, 2.7, -5.6); meshIn(body, new THREE.TorusGeometry(0.565, 0.03, 6, 24, Math.PI), fr, 0, 2.7, -3.9).scale.set(0.77, 0.76, 1); }   // Kanzelrahmen (Boegen)
   // Lufteinlaesse seitlich am Cockpit: schraeger Rand (oben weiter vorne), dunkle Oeffnung
   for (const sd of [-1, 1]) { prismIn(body, [[4.6, 2.45], [3.9, 1.3], [-1, 1.3], [-1, 2.45]], 0.85, paint, sd * 1.25); prismIn(body, [[4.58, 2.37], [3.98, 1.38], [3.95, 1.38], [4.55, 2.37]], 0.7, black, sd * 1.25); }
   // Tragflaechen rautenfoermig (Vorderkante stark gepfeilt, Hinterkante leicht nach vorne), dunklere Vorderkante
   for (const sd of [-1, 1]) { flat([[sd * 1.2, 2.6], [sd * 6.78, -2.15], [sd * 6.78, -3.9], [sd * 1.2, -5.6]], 0.16, paint, 1.86); flat([[sd * 1.2, 2.6], [sd * 6.78, -2.15], [sd * 6.6, -2.32], [sd * 1.2, 2.25]], 0.18, panel, 1.855); }
   // Schubduesen eckig (je zwei Platten oben/unten und Seiten), innen Gluehen; Heckplatte dazwischen
-  for (const sd of [-1, 1]) { const x = sd * 0.62; boxIn(body, x - 0.48, x + 0.48, 2.3, 2.42, 8.2, 9.5, nozM); boxIn(body, x - 0.48, x + 0.48, 1.58, 1.7, 8.2, 9.4, nozM); boxIn(body, x - 0.48, x - 0.38, 1.7, 2.3, 8.2, 9.45, nozM); boxIn(body, x + 0.38, x + 0.48, 1.7, 2.3, 8.2, 9.45, nozM); boxIn(body, x - 0.38, x + 0.38, 1.7, 2.3, 8.6, 8.7, glowM); }
+  for (const sd of [-1, 1]) { const x = sd * 0.62; boxIn(body, x - 0.48, x + 0.48, 2.3, 2.42, 8.2, 9.5, nozM); boxIn(body, x - 0.48, x + 0.48, 1.58, 1.7, 8.2, 9.4, nozM); boxIn(body, x - 0.48, x - 0.38, 1.7, 2.3, 8.2, 9.45, nozM); boxIn(body, x + 0.38, x + 0.48, 1.7, 2.3, 8.2, 9.45, nozM); boxIn(body, x - 0.38, x + 0.38, 1.7, 2.3, 8.6, 8.7, glowM); for (let k = 0; k < 5; k++) { boxIn(body, x - 0.46 + k * 0.19, x - 0.3 + k * 0.19, 2.39, 2.43, 9.45, 9.75, nozM); boxIn(body, x - 0.46 + k * 0.19, x - 0.3 + k * 0.19, 1.57, 1.61, 9.4, 9.7, nozM); } }
   boxIn(body, -0.12, 0.12, 1.88, 2.0, 8.4, 9.7, paint);
+  { const navR = new THREE.MeshBasicMaterial({ color: 0xff3030 }), navG = new THREE.MeshBasicMaterial({ color: 0x30ff60 }), form = M(0x9cff9c, { emissive: 0x2a6a2a });
+    boxIn(body, -6.84, -6.74, 1.88, 2.06, 2.2, 2.6, navR); boxIn(body, 6.74, 6.84, 1.88, 2.06, 2.2, 2.6, navG); boxIn(body, -0.06, 0.06, 1.9, 2.0, 9.7, 9.76, mat.glow);
+    for (const sd of [-1, 1]) boxIn(body, sd * 4.2 - 0.3, sd * 4.2 + 0.3, 2.02, 2.04, 1.6, 1.7, form); }   // Positions- und Formationslichter
+  for (const sd of [-1, 1]) for (const [f0, f1] of [[-1.5, 2.5], [3.5, 5.5]]) boxIn(body, sd * 1.2 - 0.01, sd * 1.2 + 0.01, 2.0, 2.02, f0, f1, black);   // Wartungsklappen-Fugen
   // Seitenleitwerke: zwei, schraeg nach aussen gekippt (28 Grad), Vorderkante gepfeilt, Hinterkante nach vorne
   for (const sd of [-1, 1]) { const tg = new THREE.Group(); tg.position.set(sd * 1.25, 2.55, 0); tg.rotation.z = -sd * 0.49; body.add(tg); prismIn(tg, [[-3.4, 0], [-5.35, 2.75], [-6.7, 2.75], [-7.9, 0]], 0.14, paint); prismIn(tg, [[-3.4, 0], [-5.35, 2.75], [-5.5, 2.75], [-3.65, 0]], 0.16, panel); }
   mergeStatic(body);
@@ -36,7 +43,7 @@ function buildJet() {
   // Fahrwerk: Bugrad und zwei Hauptraeder (addWheel, rund), Federbeine, Klappen; faehrt in den Rumpf ein (Gruppe gear)
   const gear = new THREE.Group(); body.add(gear);
   const wheels = [addWheel(gear, 0, -6.4, 0.33, 0.22, true, tireM, rimM), addWheel(gear, -1.65, 1.0, 0.42, 0.3, false, tireM, rimM), addWheel(gear, 1.65, 1.0, 0.42, 0.3, false, tireM, rimM)];
-  boxIn(gear, -0.05, 0.05, 0.33, 1.4, -6.45, -6.35, rimM); for (const sd of [-1, 1]) { boxIn(gear, sd * 1.65 - 0.06, sd * 1.65 + 0.06, 0.42, 1.35, 0.95, 1.05, rimM); boxIn(gear, sd * 2.0 - 0.03, sd * 2.0 + 0.03, 0.75, 1.32, 0.2, 1.8, panel); }
+  boxIn(gear, -0.05, 0.05, 0.33, 1.4, -6.45, -6.35, rimM); for (const sd of [-1, 1]) boxIn(gear, sd * 0.3 - 0.02, sd * 0.3 + 0.02, 0.85, 1.4, -7.0, -6.0, panel);   // Bugrad-Klappen for (const sd of [-1, 1]) { boxIn(gear, sd * 1.65 - 0.06, sd * 1.65 + 0.06, 0.42, 1.35, 0.95, 1.05, rimM); boxIn(gear, sd * 2.0 - 0.03, sd * 2.0 + 0.03, 0.75, 1.32, 0.2, 1.8, panel); }
   // Nachbrenner-Flammen (ab viel Schub)
   const flameM = new THREE.MeshBasicMaterial({ color: 0xff9a40, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
   const flames = [-1, 1].map(sd => { const f = new THREE.Mesh(new THREE.ConeGeometry(0.34, 3, 14, 1, true).rotateX(-Math.PI / 2).translate(0, 0, 1.5), flameM); f.position.set(sd * 0.62, 2.0, 9.45); f.visible = false; body.add(f); return f; });
