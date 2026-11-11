@@ -34,7 +34,15 @@ const MAIN_J = (() => { let b = null, bq = 1e9; for (const smp of MAIN.samples) 
 const ZUF = makeRoad([[121, 1.5], [131.5, 2.6], [GATE_C[0] - 6 * GATE_U[0], GATE_C[1] - 6 * GATE_U[1]], GATE_C, [GATE_C[0] + 6 * GATE_U[0], GATE_C[1] + 6 * GATE_U[1]], [MAIN_J[0], MAIN_J[1]]], 7.5,
   (R, s) => lerp(SERP_FOOT, MAIN.y(MAIN_J[2]), sst(0, R.len, s)));
 const ROADS2 = [MAIN, ZUF];
+// Flugzeug-Silo (Nicolas 2026-11-11: Betonwand stand an der Ostseite fast 4 m frei, Loch mit Himmel an der Ecke): Erdwall rund um das Silo,
+// oben auf der hoechsten Randhoehe (wie vorher die Klappen), Boeschung ca. 17 Grad, hoechstens 14 m breit
 function genH(x, z) {
+  const h = genHb(x, z), dx = Math.max(0, Math.abs(x - SILO.x) - SILO.h), dz = Math.max(0, Math.abs(z - SILO.z) - SILO.h), d = Math.hypot(dx, dz);
+  if (d > 14) return h;
+  if (SILO.top === undefined) { let m = -1e9; const R = SILO.h; for (let k = 0; k <= 8; k++) { const q = -R + k * R / 4; for (const [px, pz] of [[SILO.x - R, SILO.z + q], [SILO.x + R, SILO.z + q], [SILO.x + q, SILO.z - R], [SILO.x + q, SILO.z + R]]) m = Math.max(m, genHb(px, pz)); } SILO.top = m; }
+  return Math.max(h, SILO.top - d * 0.3);
+}
+function genHb(x, z) {
   let h = genH0(x, z) + serpRug(x, z);
   const r = serpBlend(x, z); if (r) h = lerp(h, r.y, r.w);
   const q = wfBlend(x, z); if (q) h = lerp(h, q.y, q.w);

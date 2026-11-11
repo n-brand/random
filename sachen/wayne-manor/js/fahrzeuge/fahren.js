@@ -36,11 +36,21 @@ function carPush(p, feet, R) {
 }
 const carSlopeG = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : (y < HILL - 0.2 && GRAMP.inP(x, z)) || (y < HILL - 3 && (inRect(HF_TUN, x, z) || inRect(CSH_OUT, x, z))) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
 // Bodenhoehe unter dem Fahrzeug: Mitte oder Mittel der Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
+const hullE = new THREE.Euler(), hullV = new THREE.Vector3();
+// Mit der tatsaechlichen (weich nachgefuehrten) Neigung nochmals pruefen, dass kein Punkt unter der Wanne im Boden steckt
+function hullLift(C) { const sp = C.spec; if (!sp.hull) return; hullE.set(C.pitch, C.h, C.roll, "YXZ"); for (const [lx, ly, lz] of sp.hull) { const o = hullV.set(lx, ly, lz).applyEuler(hullE); C.y = Math.max(C.y, carSupport(C.x + o.x, C.z + o.z, C.y + o.y) - o.y); } }
 function carGround(feet) {
   const sp = CAR.spec, hs = sp.wheels.map(([lx, lz]) => { const [x, z] = carW(lx, lz); return carSupport(x, z, feet); });
   const mean = f => { let t = 0, n = 0; hs.forEach((h, i) => { if (f(sp.wheels[i])) { t += h; n++; } }); return n ? t / n : 0; };
   const hc = carSupport(CAR.x, CAR.z, feet), avg = mean(() => true);
-  return { y: Math.max(hc, avg), pitch: Math.atan2(mean(([, lz]) => lz < 0) - mean(([, lz]) => lz > 0), sp.wb), roll: sp.track > 0 ? Math.atan2(mean(([lx]) => lx > 0) - mean(([lx]) => lx < 0), sp.track) : 0 };
+  const r = { y: Math.max(hc, avg), pitch: Math.atan2(mean(([, lz]) => lz < 0) - mean(([, lz]) => lz > 0), sp.wb), roll: sp.track > 0 ? Math.atan2(mean(([lx]) => lx > 0) - mean(([lx]) => lx < 0), sp.track) : 0 };
+  // spec.hull (Panzer, Nicolas 2026-11-11): Punkte unter der Wanne; liegt dort das Gelaende hoeher als die Ebene durch die Raeder (Kuppe, Kante,
+  // Tunnelmund), wird das Fahrzeug so weit angehoben, dass nichts im Boden steckt
+  if (sp.hull) {
+    hullE.set(r.pitch, CAR.h, r.roll, "YXZ");
+    for (const [lx, ly, lz] of sp.hull) { const o = hullV.set(lx, ly, lz).applyEuler(hullE); r.y = Math.max(r.y, carSupport(CAR.x + o.x, CAR.z + o.z, feet + o.y) - o.y); }
+  }
+  return r;
 }
 const tankDir = new THREE.Vector3(), tankQ = new THREE.Quaternion();
 function carPose(dt) {
@@ -220,12 +230,12 @@ function carStep(dt) {
   // Hoehe: am Boden haften, ueber Kanten abheben, im Flug Schwerkraft
   const gr = carGround(C.y);
   if (!C.air) {
-    if (gr.y >= C.y - 0.5) { C.y = gr.y; C.vy = 0; C.pitch += (gr.pitch - C.pitch) * Math.min(1, dt * 10); C.roll += (gr.roll - C.roll) * Math.min(1, dt * 10); }
+    if (gr.y >= C.y - 0.5) { C.y = gr.y; C.vy = 0; C.pitch += (gr.pitch - C.pitch) * Math.min(1, dt * 10); C.roll += (gr.roll - C.roll) * Math.min(1, dt * 10); hullLift(C); }
     else { C.air = true; C.vy = 0; }
   } else {
     C.vy -= CAR_G * dt; C.y += C.vy * dt;
     const g2 = carGround(C.y);
-    if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; C.pitch = g2.pitch; C.roll = g2.roll; }
+    if (C.y <= g2.y) { C.y = g2.y; C.air = false; C.vy = 0; C.pitch = g2.pitch; C.roll = g2.roll; hullLift(C); }
     else { const tp = Math.max(-0.12, Math.min(0.2, Math.atan2(C.vy, Math.max(8, Math.abs(C.v))) * 0.4));   // im Flug nur leicht neigen (Nicolas: nach tiefen Spruengen kippte die Nase stark nach vorne)
       C.pitch += (tp - C.pitch) * Math.min(1, dt * 2); C.roll *= 0.95; }
   }

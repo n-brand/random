@@ -620,7 +620,7 @@ function buildTank(col = 0x4d5a36) {
   return { g, wheels, turret, gun, gunMin };
 }
 const SPEC_TANK = { name: "Panzer", wheels: [[-1.4, -2.4], [1.4, -2.4], [-1.4, 2.4], [1.4, 2.4]], wb: 4.8, track: 2.8, pts: [-2.3, 0, 2.3], R: 1.7, circR: 1.7, enter: 4.5,
-  maxN: 14, maxF: 18, revMax: 18, acc: 6, steer: 0.95, jump: false, grade: 75, tracks: true, camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
+  maxN: 14, maxF: 18, revMax: 18, acc: 6, steer: 0.95, jump: false, grade: 75, tracks: true, hull: [-1.6, 0, 1.6].flatMap(x => [-3.3, -1.6, 0, 1.6, 3.3].map(z => [x, 0.05, z])), camD: 11, camH: 2.0, seat: [0, 2.6, 0.3], bodyH: 2.5, bike: false,
   exits: [[-2.6, 0], [2.6, 0], [-2.6, 1.5], [2.6, 1.5], [0, -4.5], [0, 4.5]],
   msg: "Panzer: W/S Gas/Bremse, A/D lenken, Maus dreht den Turm, V Kamera, R zurücksetzen, Shift aussteigen" };
 // Glatter Koerper aus Querschnitten (wie beim Aventador): Stationen [f, Halbschnitt von unten-Mitte ueber die Seite bis oben-Mitte], gespiegelt, Enden zu

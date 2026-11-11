@@ -171,7 +171,8 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
     const gc = new THREE.Color(0x5b8c3c).lerp(new THREE.Color(0x739c47), vnoise(cx / 40, cz / 40)).lerp(new THREE.Color(0x3b6430), forestD(cx, cz) * 0.8), grassM = M(gc.getHex(), { map: grassTex, roughness: 1 }), hatch = new THREE.Group(); hatch.userData.dynamic = true; world.add(hatch); const halves = [];
     for (const sd of [-1, 1]) { const h = new THREE.Group(), p = new THREE.Mesh(new THREE.BoxGeometry(R, 0.35, 2 * R), [concrete, concrete, grassM, concrete, concrete, concrete]); p.position.set(sd * R / 2, -0.175, 0); p.castShadow = p.receiveShadow = true; h.add(p); h.position.set(cx, rim, cz); hatch.add(h); halves.push({ h, sd }); }
     const hs = S(cx - R, cx + R, rim - 0.35, rim, cz - R, cz + R);
-    gates.push({ name: "Rasenklappe (Silo)", g: hatch, open: 0, target: 0, dur: 6, solid: hs, a: [cx - R, cz], b: [cx + R, cz],
+    gates.push({ name: "Rasenklappe (Silo)", g: hatch, open: 0, target: 0, dur: 6,
+      solid: hs, a: [cx - R, cz], b: [cx + R, cz],
       anim: f => { const sink = Math.min(1, f / 0.15) * 0.6, slide = Math.max(0, (f - 0.15) / 0.85) * (R + 0.3); for (const { h, sd } of halves) h.position.set(cx + sd * slide, rim - sink, cz); } });
     // Rasenkragen um den Schacht (der Gelaendeausschnitt ist etwas groesser als der Schacht): feines Netz wie das Gelaende, am Rand auf Randhoehe
     { const E = R + 3.6, st = 0.5, n = Math.round(2 * E / st), pos = [], col = [], uv = [], idx = [], c = new THREE.Color(), cA = new THREE.Color(0x5b8c3c), cB = new THREE.Color(0x739c47), cL = new THREE.Color(0x6aa84a), cF = new THREE.Color(0x3b6430);
