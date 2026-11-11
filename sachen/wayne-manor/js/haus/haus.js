@@ -337,7 +337,21 @@ const GHOLE = [GSTAIR.x0, -40.2, GSTAIR.z0, GSTAIR.z1];                  // Deck
     cyl(0.3, 0.4, 1.2, mat.dark, ox, TF2 + 0.6, oz); circles.push([ox, oz, 0.5, TF2 + 1.2]);
     cyl(6.2, 6.2, 1.0, stoneLight, ox, top2 + 0.8, oz, world, 32);
     { const dome = new THREE.Mesh(new THREE.SphereGeometry(6, 32, 14, 0, Math.PI * 2, 0, Math.PI / 2), M(0xd8dde2, { metalness: 0.5, roughness: 0.35 })); dome.position.set(ox, top2 + 1.3, oz); dome.castShadow = true; world.add(dome); }
-    B(ox - 0.7, ox + 0.7, top2 + 1.3, top2 + 7.2, oz + 5.1, oz + 5.4, mat.dark, false);
+    // Spaltschieber (Nicolas 2026-11-11, statt schwarzem Block): geschlossene Klappe wie bei echten Sternwarten, ein gleich breites Band von der
+    // Kuppelbasis (Sueden, +z) ueber den Scheitel bis etwas dahinter, seitliche Laufschienen, Fuge zur unteren Klappe, Lippe unten. Nur Optik.
+    { const R = 6, cy = top2 + 1.3, band = (r, s0, s1, t0, t1, m, nt = 28) => {   // Band auf der Kugel: s quer (x), t = Winkel vom Horizont Sued ueber den Scheitel
+        const p = [], idx = [];
+        for (let i = 0; i <= nt; i++) { const t = t0 + (t1 - t0) * i / nt; for (const sx of [s0, s1]) { const q = Math.sqrt(r * r - sx * sx); p.push(ox + sx, cy + q * Math.sin(t), oz + q * Math.cos(t)); } }
+        for (let i = 0; i < nt; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(p, 3)); g.setIndex(idx); g.computeVertexNormals();
+        const mm = new THREE.Mesh(g, m); mm.castShadow = true; world.add(mm); return mm; };
+      const cover = M(0xc6ccd2, { metalness: 0.45, roughness: 0.4, side: THREE.DoubleSide }), rail = M(0x8e959c, { metalness: 0.5, roughness: 0.45, side: THREE.DoubleSide }), seam = M(0x2a2d31, { roughness: 0.8, side: THREE.DoubleSide });
+      band(R + 0.07, -1.05, 1.05, 0.02, Math.PI / 2 + 0.38, cover);                                     // Klappe (zu)
+      for (const sd of [-1, 1]) { band(R + 0.14, sd * 1.05, sd * 1.25, 0.0, Math.PI / 2 + 0.42, rail);   // Laufschienen, etwas hoeher
+        band(R + 0.075, sd * 1.0, sd * 1.05, 0.02, Math.PI / 2 + 0.38, seam); }                         // Fugen an den Raendern
+      band(R + 0.08, -1.0, 1.0, 0.62, 0.64, seam);                                                      // Fuge zwischen unterer und oberer Klappe
+      band(R + 0.08, -1.0, 1.0, Math.PI / 2 + 0.36, Math.PI / 2 + 0.38, seam);                          // Ende hinter dem Scheitel
+      { const lip = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 0.35), rail); lip.position.set(ox, cy + 0.05, oz + R + 0.12); lip.castShadow = true; world.add(lip); } }                              // Lippe unten
     // Gang zum Parlor
     wall("z", T.z1, PA.z0, C.x0 + 0.25, TF, TF + FLOOR_H, [], mat.facade, 0.5); wall("z", T.z1, PA.z0, C.x1 - 0.25, TF, TF + FLOOR_H, [], mat.facade, 0.5);
     B(C.x0 - 0.2, C.x1 + 0.2, TF + FLOOR_H, HP, T.z1, PA.z0, mat.slate);
