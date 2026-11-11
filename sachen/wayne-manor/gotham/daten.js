@@ -308,7 +308,7 @@ const GOTHAM = {
       { typ: "gebaeude", name: "Wayne Tower (320 m, oben abgeschnitten)", x0: 990, x1: 1150, y0: 0, y1: 75, farbe: "#e8c547" },
       { typ: "raum", name: "Tiefgarage 1", x0: 990, x1: 1150, y0: -4, y1: 0, farbe: "#9aa4b2" },
       { typ: "raum", name: "Tiefgarage 2", x0: 990, x1: 1150, y0: -7.5, y1: -4, farbe: "#9aa4b2" },
-      { typ: "raum", name: "Geheimer Wayne-Stock (Tumbler, Prototypen)", x0: 990, x1: 1150, y0: -16, y1: -8, farbe: "#ff4fd8" },
+      { typ: "raum", name: "Geheimer Wayne-Stock\n(Tumbler, Prototypen)", x0: 990, x1: 1150, y0: -16, y1: -8, farbe: "#ff4fd8" },
       { typ: "raum", name: "Kanal-Hub / Schurkenbasis", x0: 950, x1: 1210, y0: -30, y1: -21, farbe: "#7bd88f" },
       // Midtown und Uferstrasse Ost
       { typ: "strasse", name: "Strasse", x0: 1150, x1: 1260, y0: -0.6, y1: 0 },

@@ -49,11 +49,13 @@
     const FARBE = { grund: "#3b3226", luft: "#1a2638", wasser: "#1d3b55", mauer: "#6b6f75", deck: "#b9bfc7", strasse: "#8a8f96", turm: "#5e6670", gebaeude: "#7f7b74" };
     const tip = document.getElementById("tip");
     const info = (n, t) => { n.addEventListener("mousemove", ev => { tip.innerHTML = t; tip.style.display = "block"; tip.style.left = Math.min(ev.clientX + 14, innerWidth - 310) + "px"; tip.style.top = ev.clientY + 14 + "px"; }); n.addEventListener("mouseleave", () => tip.style.display = "none"); };
-    const label = (t, x, y, w, col) => { if (!t) return; const fs = Math.max(9, Math.min(15, w / t.length * 1.9));
-      el("text", { x, y, "font-size": fs, fill: col || "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", "pointer-events": "none" }).textContent = t; };
+    // Beschriftung; "\n" im Namen = Zeilenumbruch (Schrift richtet sich nach der laengsten Zeile)
+    const label = (t, x, y, w, col) => { if (!t) return; const L = t.split("\n"), fs = Math.max(9, Math.min(15, w / Math.max(...L.map(s => s.length)) * 1.9));
+      const n = el("text", { x, y: y - (L.length - 1) * fs * .6, "font-size": fs, fill: col || "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", "pointer-events": "none" });
+      L.forEach((s, i) => { const sp = el("tspan", { x, dy: i ? fs * 1.2 : 0 }, n); sp.textContent = s; }); };
 
     for (const t of S.teile) {
-      const x = t.x0, w = t.x1 - t.x0, y = Y(t.y1), h = (t.y1 - t.y0) * K, txt = `<b>${t.name || t.typ}</b><br>${fm(t.y0)} bis ${fm(t.y1)} (${welt(t.y0)} bis ${String(t.y1 + H.strasse).replace(".", ",")})<br>Höhe ${String(Math.round((t.y1 - t.y0) * 10) / 10).replace(".", ",")} m`;
+      const x = t.x0, w = t.x1 - t.x0, y = Y(t.y1), h = (t.y1 - t.y0) * K, txt = `<b>${(t.name || t.typ).replace(/\n/g, " ")}</b><br>${fm(t.y0)} bis ${fm(t.y1)} (${welt(t.y0)} bis ${String(t.y1 + H.strasse).replace(".", ",")})<br>Höhe ${String(Math.round((t.y1 - t.y0) * 10) / 10).replace(".", ",")} m`;
       let n;
       if (t.typ === "kabel") {   // Tragseil: vom Turm (Seite der Kaimauer) zur Flussmitte hinunter
         const tw = t.x1 < 900 ? t.x1 : t.x0, far = t.x1 < 900 ? t.x0 : t.x1;
