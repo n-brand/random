@@ -48,7 +48,7 @@ function carPose(dt) {
   C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ");
   for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r; if (w.front) w.piv.rotation.y = C.steer; }
   // Panzerturm (Nicolas 2026-11-11): zielt in Weltrichtung (Blickrichtung), Lenken dreht nur die Wanne darunter; geparkt dreht er langsam nach vorne
-  if (C.turret) { if (C.tw === undefined) C.tw = C.h + C.turret.rotation.y; const want = C.on ? player.yaw : C.h; C.tw += Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(want - C.tw))); C.turret.rotation.y = wrapA(C.tw - C.h); }   // Panzerturm folgt der Blickrichtung (langsam)
+  if (C.turret) { if (C.tw === undefined) C.tw = C.h + C.turret.rotation.y; if (C.on) C.tw = player.yaw; else C.tw += Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(C.h - C.tw))); C.turret.rotation.y = wrapA(C.tw - C.h); }   // Turm folgt der Maus ohne Verzoegerung (Nicolas 2026-11-11)   // Panzerturm folgt der Blickrichtung (langsam)
   if (C.beacon) { const t = clock.elapsedTime * 6, k = C.on ? 1 : 0; C.beacon[0].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 1 : 0); C.beacon[1].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 0 : 1); }   // Blaulicht
   if (C.jetM) { C.jet = Math.max(0, C.jet - dt); C.jetM.emissiveIntensity = Math.min(2.5, C.jet * 4); }
   if (C.flame) { const k = C.boostOn ? 0.85 + 0.3 * Math.random() : Math.min(1, C.jet * 2); C.flame.visible = k > 0.02; C.flame.scale.set(0.8 + 0.3 * k, 0.8 + 0.3 * k, k); }
