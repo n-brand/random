@@ -158,7 +158,9 @@ const grassTex = canvasTex(256, 256, (g, w, h) => {
     if (dl < 1.15) c.lerp(cSand, sst(1.15, 1.0, dl));
     { const sdd = seaD(x, z), nn = vnoise(x / 9 + 3, z / 9 + 1); c.lerp(cRock, sst(-10 - 16 * nn, -2 - 4 * nn, sdd) * (0.55 + 0.45 * vnoise(x / 3, z / 3))); }   // Fels zur Kante hin, unregelmaessig
     if (h < WATER_Y) c.lerp(cBed, sst(WATER_Y, WATER_Y - 1, h));
-    c.lerp(cRock, Math.max(sst(0.86, 0.7, nrm[k * 3 + 1]), sst(90, 160, h)));
+    // Fels an steilen Stellen; nicht an der Westweg-Kiesstrasse (Nicolas 2026-11-11: graue Flecken in der Wiese am Eingang; die Boeschungen dort
+    // sind nur Raster-Artefakte, darueber liegt Wiese)
+    c.lerp(cRock, Math.max(roadNear(HFR, x, z, HFR.w / 2 + 11) ? 0 : sst(0.86, 0.7, nrm[k * 3 + 1]), sst(90, 160, h)));
     c.lerp(cSnow, sst(190, 240, h));
     const zn = serpZone(x, z) * sst(HILL - 0.4, HILL - 2.5, h);      // Plateau-Oberseite bleibt Rasen
     if (zn > 0) {
