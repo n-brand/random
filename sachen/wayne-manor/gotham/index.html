@@ -285,7 +285,7 @@
       const p = el("path", { d, fill: "none", stroke: "#b9bfc7", "stroke-width": b.w }, L.strassen);
       let i0 = -1, i1 = -1; b.pts.forEach((q, i) => { if (inWater(q[0], q[1])) { if (i0 < 0) i0 = i; i1 = i; } });
       const span = i0 >= 0 ? lineLen(b.pts.slice(i0, i1 + 1)) : 0;
-      p.dataset.info = `<b>${b.name}</b><br>Hängebrücke (Vorbild Williamsburg/Manhattan Bridge), Fahrbahn ${b.w} m auf Strassenhöhe<br>über Wasser ca. ${Math.round(span)} m, Türme an den Ufern, Durchfahrt ca. 40 m über dem Wasser`;
+      p.dataset.info = `<b>${b.name}</b><br>Hängebrücke (Vorbild Williamsburg/Manhattan Bridge), Fahrbahn ${b.w} m auf Strassenhöhe<br>über Wasser ca. ${Math.round(span)} m, Türme an den Ufern, Durchfahrt ca. ${G.hoehen.strasse - G.hoehen.wasser} m über dem Wasser`;
       if (i0 < 0) continue;
       const tw = [b.pts[Math.max(0, i0 - 1)], b.pts[Math.min(b.pts.length - 1, i1 + 1)]];
       for (const sd of [-1, 1]) { const off = q => { const k = b.pts.indexOf(q), a = b.pts[Math.max(0, k - 1)], c = b.pts[Math.min(b.pts.length - 1, k + 1)], ux = c[0] - a[0], uz = c[1] - a[1], l = Math.hypot(ux, uz) || 1; return [q[0] - uz / l * sd * (b.w / 2 + 1), q[1] + ux / l * sd * (b.w / 2 + 1)]; };

@@ -49,8 +49,9 @@ const GOTHAM = {
   // Sichtbereich beim Oeffnen der Karte
   ansicht: { x0: -3900, z0: -2600, x1: 400, z1: 2200 },
 
-  // Hoehen in Welt-y: Strassenebene der Stadt = Fahrbahn der Bruecken (Nicolas 2026-11-11), Wasser = Meer/Hoehle (SEA_Y)
-  hoehen: { strasse: 6, wasser: -34 },
+  // Hoehen in Welt-y: Strassenebene der Stadt = Fahrbahn der Bruecken (Nicolas 2026-11-11), Wasser = Meer/Hoehle (SEA_Y).
+  // Strasse 31 m ueber dem Wasser (vorher 40; Nicolas: die 9 m zwischen Kanal-Hub und Wasser waren verschwendet)
+  hoehen: { strasse: -3, wasser: -34 },
 
   // Wasser: Fluesse geschwungen (Nicolas: nicht gerade), Breite wie im Verhaeltnis zu Williamsburg/Manhattan Bridge (East River ca. 450-500 m)
   wasser: {
@@ -156,7 +157,7 @@ const GOTHAM = {
   orte: [
     // --- Wahrzeichen ---
     { id: "wayne-tower", typ: "wahrzeichen", name: "Wayne Tower", x: -2050, z: -100, w: 70, d: 70, h: 320,
-      notiz: "Zentrum, im Wayne Circle. Befahrbare Tiefgarage (2 Ebenen). Darunter geheimer Stock: Tumbler, Prototypen, Gadgets. Darunter Kanal-Hub mit Schurkenbasis." },
+      notiz: "Zentrum, im Wayne Circle. Befahrbare Tiefgarage (2 Ebenen). Direkt darunter geheimer Stock: Tumbler, Prototypen, Gadgets. Darunter Kanal-Hub mit Schurkenbasis." },
     { id: "gcpd", typ: "oeffentlich", name: "Polizeipräsidium (Batsignal auf dem Dach)", x: -2200, z: 330, w: 80, d: 60, h: 45 },
     { id: "arkham", typ: "wahrzeichen", name: "Arkham Asylum", x: -3340, z: 1800, w: 220, d: 160, h: 30, aussen: true, notiz: "Eigene Insel vor der Küste, nur über die Arkham-Brücke." },
     { id: "hafen", typ: "industrie", name: "Hafen / Containerterminal", x: -2600, z: 1440, w: 560, d: 90, ufer: true, notiz: "Kräne, Container, Lagerhallen." },
@@ -243,9 +244,9 @@ const GOTHAM = {
   schnitt: {
     ebenen: [   // Masskette rechts (Boden bzw. Oberkante der Ebene)
       { y: 62, name: "Brückentürme (Spitze)" },
-      { y: 29, name: "Wayne Manor: Dach (Welt 35)" },
-      { y: 19, name: "Wayne Manor: Plateau / Erdgeschoss (Welt 25)" },
-      { y: 9, name: "Klippenkante bei der Manor, höchste Stelle (Welt 15)" },
+      { y: 38, name: "Wayne Manor: Dach (Welt 35)" },
+      { y: 28, name: "Wayne Manor: Plateau / Erdgeschoss (Welt 25)" },
+      { y: 18, name: "Klippenkante bei der Manor, höchste Stelle (Welt 15)" },
       { y: 0, name: "Strasse = Brückenfahrbahn" },
       { y: -4, name: "Tiefgarage 1" },
       { y: -6.5, name: "Untere Strasse (Lower Level)" },
@@ -254,34 +255,34 @@ const GOTHAM = {
       { y: -14, name: "U-Bahn-Bahnsteig / Batman-Basis (Halle)" },
       { y: -14.5, name: "Club: Tanzfläche" },
       { y: -18.5, name: "Club: Keller / VIP" },
-      { y: -20, name: "Geheimer Wayne-Stock" },
+      { y: -16, name: "Geheimer Wayne-Stock (direkt unter Tiefgarage 2)" },
       { y: -27, name: "Kanal-Sohle (Hauptsammler)" },
-      { y: -31, name: "Kanal-Hub / Schurkenbasis" },
-      { y: -32, name: "Kanal-Auslass (Rohr oben)" },
-      { y: -5, name: "Klippenkante bei der Manor, tiefste Stelle (Welt 1)" },
-      { y: -22, name: "Batcave oben (Welt −16)" },
-      { y: -34, name: "Batcave unten (Welt −28)" },
-      { y: -40, name: "Wasserspiegel (Fluss, Meer) / Auslass-Sohle" },
-      { y: -52, name: "Flussgrund" },
+      { y: -30, name: "Kanal-Hub / Schurkenbasis" },
+      { y: -23, name: "Kanal-Auslass (Rohr oben)" },
+      { y: 4, name: "Klippenkante bei der Manor, tiefste Stelle (Welt 1)" },
+      { y: -13, name: "Batcave oben (Welt −16)" },
+      { y: -25, name: "Batcave unten (Welt −28)" },
+      { y: -31, name: "Wasserspiegel (Fluss, Meer) / Auslass-Sohle" },
+      { y: -43, name: "Flussgrund" },
     ],
     teile: [
       // typ: wasser, grund, mauer, deck, strasse, raum, gebaeude, turm, rohr, text; x0/x1 waagrecht, y0/y1 senkrecht (m)
       { typ: "grund", x0: 0, x1: 1800, y0: -60, y1: 0 },
-      { typ: "wasser", name: "Westfluss", x0: 0, x1: 250, y0: -52, y1: -40 },
-      { typ: "wasser", name: "Ostfluss", x0: 1550, x1: 1800, y0: -52, y1: -40 },
-      { typ: "luft", x0: 0, x1: 250, y0: -40, y1: 0 }, { typ: "luft", x0: 1550, x1: 1800, y0: -40, y1: 0 },
-      { typ: "mauer", name: "Kaimauer", x0: 250, x1: 266, y0: -52, y1: 0 },
-      { typ: "mauer", name: "Kaimauer", x0: 1534, x1: 1550, y0: -52, y1: 0 },
+      { typ: "wasser", name: "Westfluss", x0: 0, x1: 250, y0: -43, y1: -31 },
+      { typ: "wasser", name: "Ostfluss", x0: 1550, x1: 1800, y0: -43, y1: -31 },
+      { typ: "luft", x0: 0, x1: 250, y0: -31, y1: 0 }, { typ: "luft", x0: 1550, x1: 1800, y0: -31, y1: 0 },
+      { typ: "mauer", name: "Kaimauer", x0: 250, x1: 266, y0: -43, y1: 0 },
+      { typ: "mauer", name: "Kaimauer", x0: 1534, x1: 1550, y0: -43, y1: 0 },
       { typ: "deck", name: "Westbrücke (Fahrbahn)", x0: 0, x1: 330, y0: -1.5, y1: 0 },
-      { typ: "turm", name: "Brückenturm", x0: 232, x1: 248, y0: -40, y1: 62 },
+      { typ: "turm", name: "Brückenturm", x0: 232, x1: 248, y0: -31, y1: 62 },
       { typ: "deck", name: "Highway-Brücke (Fahrbahn)", x0: 1470, x1: 1800, y0: -1.5, y1: 0 },
-      { typ: "turm", name: "Brückenturm", x0: 1552, x1: 1568, y0: -40, y1: 62 },
+      { typ: "turm", name: "Brückenturm", x0: 1552, x1: 1568, y0: -31, y1: 62 },
       { typ: "kabel", x0: 0, x1: 240, y0: 2, y1: 62 }, { typ: "kabel", x0: 1560, x1: 1800, y0: 2, y1: 62 },
       // Kanal: Hauptsammler quer durch, an beiden Ufern Absturzschacht und Auslass auf Wasserhoehe
       { typ: "rohr", name: "Hauptsammler (begehbar, 6 m)", x0: 250, x1: 1550, y0: -27, y1: -21 },
-      { typ: "schacht", name: "Absturzschacht", x0: 266, x1: 280, y0: -40, y1: -21, farbe: "#7bd88f" }, { typ: "schacht", name: "Absturzschacht", x0: 1520, x1: 1534, y0: -40, y1: -21, farbe: "#7bd88f" },
-      { typ: "auslass", name: "Kanal-Auslass (Rohr 6 m, Gitter, Pflaster, Treppe)", x0: 200, x1: 280, y0: -40, y1: -32, seite: "west" },
-      { typ: "auslass", name: "Kanal-Auslass (Rohr 6 m, Gitter, Pflaster, Treppe)", x0: 1520, x1: 1600, y0: -40, y1: -32, seite: "ost" },
+      { typ: "schacht", name: "Absturzschacht", x0: 266, x1: 280, y0: -31, y1: -21, farbe: "#7bd88f" }, { typ: "schacht", name: "Absturzschacht", x0: 1520, x1: 1534, y0: -31, y1: -21, farbe: "#7bd88f" },
+      { typ: "auslass", name: "Kanal-Auslass (Rohr 6 m, Gitter, Pflaster, Treppe)", x0: 200, x1: 280, y0: -31, y1: -23, seite: "west" },
+      { typ: "auslass", name: "Kanal-Auslass (Rohr 6 m, Gitter, Pflaster, Treppe)", x0: 1520, x1: 1600, y0: -31, y1: -23, seite: "ost" },
       { typ: "schacht", name: "Gullideckel + Leiter", x0: 345, x1: 353, y0: -21, y1: 0 }, { typ: "schacht", name: "Gullideckel + Leiter", x0: 1180, x1: 1188, y0: -21, y1: 0 },
       // Narrows
       { typ: "strasse", name: "Uferstrasse West", x0: 266, x1: 360, y0: -0.6, y1: 0 },
@@ -305,8 +306,8 @@ const GOTHAM = {
       { typ: "gebaeude", name: "Wayne Tower (320 m, oben abgeschnitten)", x0: 990, x1: 1150, y0: 0, y1: 75, farbe: "#e8c547" },
       { typ: "raum", name: "Tiefgarage 1", x0: 990, x1: 1150, y0: -4, y1: 0, farbe: "#9aa4b2" },
       { typ: "raum", name: "Tiefgarage 2", x0: 990, x1: 1150, y0: -7.5, y1: -4, farbe: "#9aa4b2" },
-      { typ: "raum", name: "Geheimer Wayne-Stock (Tumbler, Prototypen)", x0: 980, x1: 1170, y0: -20, y1: -12, farbe: "#ff4fd8" },
-      { typ: "raum", name: "Kanal-Hub / Schurkenbasis", x0: 950, x1: 1210, y0: -31, y1: -21, farbe: "#7bd88f" },
+      { typ: "raum", name: "Geheimer Wayne-Stock (Tumbler, Prototypen)", x0: 990, x1: 1150, y0: -16, y1: -8, farbe: "#ff4fd8" },
+      { typ: "raum", name: "Kanal-Hub / Schurkenbasis", x0: 950, x1: 1210, y0: -30, y1: -21, farbe: "#7bd88f" },
       // Midtown und Uferstrasse Ost
       { typ: "strasse", name: "Strasse", x0: 1150, x1: 1260, y0: -0.6, y1: 0 },
       { typ: "gebaeude", name: "Bank (Midtown)", x0: 1270, x1: 1380, y0: 0, y1: 60 },
@@ -316,16 +317,16 @@ const GOTHAM = {
       // Zum Vergleich: Wayne Manor an der Steilkueste (anderer Ort, gleiche Hoehen). Werte aus dem Spiel: Plateau HILL 25, Klippe Welt 1-15,
       // Meer SEA_Y -34, Batcave unten LY -28 (10 m hoch), oben UY -16 (8,5 m), Tiefgarage GY -5,5 unter dem Plateau
       { typ: "titel", name: "Zum Vergleich: Wayne Manor an der Steilküste", x0: 1860, x1: 2240, y0: 60, y1: 60 },
-      { typ: "luft", x0: 1860, x1: 1950, y0: -40, y1: 0 },
-      { typ: "wasser", name: "Meer", x0: 1860, x1: 1950, y0: -52, y1: -40 },
+      { typ: "luft", x0: 1860, x1: 1950, y0: -31, y1: 0 },
+      { typ: "wasser", name: "Meer", x0: 1860, x1: 1950, y0: -43, y1: -31 },
       { typ: "profil", name: "Steilküste (Fels, 35-49 m über dem Meer)", farbe: "#5b5246",
-        punkte: [[1950, -60], [1950, -40], [1944, -31], [1952, -20], [1946, -9], [1953, 2], [1949, 9], [1985, 11], [2010, 19], [2240, 19], [2240, -60], [1860, -60], [1860, -52], [1950, -52]] },
-      { typ: "raum", name: "Tiefgarage Manor", x0: 2060, x1: 2190, y0: 13.5, y1: 18.6, farbe: "#9aa4b2" },
-      { typ: "gebaeude", name: "Wayne Manor", x0: 2050, x1: 2200, y0: 19, y1: 29, farbe: "#d8d2c4" },
-      { typ: "schacht", name: "Aufzug", x0: 2150, x1: 2160, y0: -34, y1: 19, farbe: "#e8c547" },
-      { typ: "raum", name: "Batcave oben", x0: 2030, x1: 2230, y0: -22, y1: -13.5, farbe: "#c58cff" },
-      { typ: "raum", name: "Batcave unten", x0: 2000, x1: 2230, y0: -34, y1: -24, farbe: "#c58cff" },
-      { typ: "wasser", name: "Höhlensee", x0: 1965, x1: 2060, y0: -40, y1: -40 },
+        punkte: [[1950, -60], [1950, -31], [1944, -22], [1952, -11], [1946, 0], [1953, 11], [1949, 18], [1985, 20], [2010, 28], [2240, 28], [2240, -60], [1860, -60], [1860, -43], [1950, -43]] },
+      { typ: "raum", name: "Tiefgarage Manor", x0: 2060, x1: 2190, y0: 22.5, y1: 27.6, farbe: "#9aa4b2" },
+      { typ: "gebaeude", name: "Wayne Manor", x0: 2050, x1: 2200, y0: 28, y1: 38, farbe: "#d8d2c4" },
+      { typ: "schacht", name: "Aufzug", x0: 2150, x1: 2160, y0: -25, y1: 28, farbe: "#e8c547" },
+      { typ: "raum", name: "Batcave oben", x0: 2030, x1: 2230, y0: -13, y1: -4.5, farbe: "#c58cff" },
+      { typ: "raum", name: "Batcave unten", x0: 2000, x1: 2230, y0: -25, y1: -15, farbe: "#c58cff" },
+      { typ: "wasser", name: "Höhlensee", x0: 1965, x1: 2060, y0: -31, y1: -31 },
       { typ: "strasse", name: "Uferstrasse Ost (unten)", x0: 1390, x1: 1534, y0: -7, y1: -6.5 },
     ],
   },

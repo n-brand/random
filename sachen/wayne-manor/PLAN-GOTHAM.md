@@ -26,7 +26,7 @@ Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst 
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
-| G1 | Gelände und Wasser | Hauptinsel zwischen **Westfluss** und **Ostfluss** (geschwungen, ca. 400-460 m breit wie der East River bei der Williamsburg Bridge), im Norden der **Nordkanal**, Meer im Süden mit Buchten (schliesst an die bestehende Küste im Südosten an), Arkham-Insel vor der Küste. Insel mit gerundeten Ecken. **Strassenebene der Stadt = Fahrbahn der Brücken**, ca. 40 m über dem Wasser (Welt-y +6, Wasser -34): hohe Kaimauern rundum. Braucht Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht |
+| G1 | Gelände und Wasser | Hauptinsel zwischen **Westfluss** und **Ostfluss** (geschwungen, ca. 400-460 m breit wie der East River bei der Williamsburg Bridge), im Norden der **Nordkanal**, Meer im Süden mit Buchten (schliesst an die bestehende Küste im Südosten an), Arkham-Insel vor der Küste. Insel mit gerundeten Ecken. **Strassenebene der Stadt = Fahrbahn der Brücken**, 31 m über dem Wasser (Welt-y -3, Wasser -34; Nicolas: die früheren 9 m zwischen Kanal-Hub und Wasser waren verschwendet): hohe Kaimauern rundum. Braucht Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht |
 | G2 | **Strassennetz** | Kein starres Gitter (Nicolas 2026-11-11): frei gezogene, geschwungene Hauptstrassen (Ring um den Wayne Tower, Diagonale „Old Broadway“, Crosstown Expressway, Uferstrassen …) und je Bezirk ein eigenes, gedrehtes und verzogenes Nebenstrassennetz mit Lücken (Narrows: enge Gassen). **Zweistöckige Strassen in der Stadt** (Park Row, Uferstrasse Ost): oben normaler Verkehr, 6,5 m darunter die untere Strasse (Lower Level) mit Obdachlosen und dem Eingang zum Club des Pinguins. **Hängebrücken** im Stil Williamsburg/Manhattan Bridge (Türme an den Ufern, ca. 62 m über der Fahrbahn, Tragseile), Fahrbahn auf Strassenhöhe: 3 über den Ostfluss (Highway, Nord, Süd), 2 über den Westfluss, Nordkanal-Brücke zum Militär, Arkham-Brücke. Füllbauten stehen automatisch an den Strassen und in den Blöcken (nie auf einer Strasse) |
 | G3 | **Gebäude-Vorlagen** | Wenige Vorlagen, mehrfach eingesetzt: Wolkenkratzer (Glas/Stein, Höhe nach Wohlstand), Bürohaus, Mehrfamilienhaus (Ziegel, Feuertreppen), Laden mit Wohnung darüber, Fabrikhalle, Lagerhalle. Innen leer |
 | G4 | **Wohlstand reich → arm** | Jede Fläche bekommt einen Wohlstand 0..1 (Bezirke in der Karte, weich überblendet): Uptown/Zentrum hohe Türme, Westseite/Südstadt gemischt, Fabrikviertel, **The Narrows am Hafen** arm (kleine Häuser, Fabriken). Sinnvoll so: Armenviertel am Hafen ist typisch (Industrie, Lärm, billiger Boden) |
@@ -46,7 +46,7 @@ Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst 
 
 Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume nur wo genannt.
 
-- **Wayne Tower** im Zentrum (ca. 320 m). Befahrbare Tiefgarage (-1); **darunter ein geheimer Stock (-2)** mit dem Tumbler, weiteren Prototypen und Gadgets; darunter der Kanal-Hub (-3, siehe Phase 4).
+- **Wayne Tower** im Zentrum (ca. 320 m). Befahrbare Tiefgarage (2 Ebenen); **direkt darunter ein geheimer Stock** mit dem Tumbler, weiteren Prototypen und Gadgets; darunter der Kanal-Hub (-3, siehe Phase 4).
 - **Polizeipräsidium** mit Batsignal auf dem Dach (leuchtet nachts, schaltbar).
 - **Arkham Asylum** auf der Arkham-Insel.
 - **Hafen** mit Containerterminal, Kränen, Lagerhallen.

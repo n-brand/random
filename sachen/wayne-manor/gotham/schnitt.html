@@ -91,7 +91,7 @@
     }
     el("line", { x1: 1830, y1: Y(TOP), x2: 1830, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
     // Wasserlinie
-    el("line", { x1: 0, y1: Y(-40), x2: XMAX, y2: Y(-40), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
+    const WY = H.wasser - H.strasse; el("line", { x1: 0, y1: Y(WY), x2: XMAX, y2: Y(WY), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
 
     // Massstab links: alle 5 m, beschriftet alle 10 m (relativ und Welt-y)
     for (let v = BOT; v <= TOP; v += 5) {
