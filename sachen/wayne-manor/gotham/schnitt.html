@@ -76,7 +76,7 @@
       const x = t.x0, w = t.x1 - t.x0, y = Y(t.y1), h = (t.y1 - t.y0) * K, txt = `<b>${(t.name || t.typ).replace(/\n/g, " ")}</b><br>${fm(t.y0)} bis ${fm(t.y1)} (${welt(t.y0)} bis ${String(t.y1 + H.strasse).replace(".", ",")})<br>Höhe ${String(Math.round((t.y1 - t.y0) * 10) / 10).replace(".", ",")} m`;
       let n;
       if (t.typ === "kabel") {   // Tragseil: vom Turm (Seite der Kaimauer) zur Flussmitte hinunter
-        const tw = t.x1 < 1440 ? t.x1 : t.x0, far = t.x1 < 1440 ? t.x0 : t.x1;
+        const tw = t.x1 < 1590 ? t.x1 : t.x0, far = t.x1 < 1590 ? t.x0 : t.x1;
         el("path", { d: `M${tw} ${Y(t.y1)}Q${(tw + far) / 2} ${Y(t.y0 - 6)} ${far} ${Y(t.y0 + 12)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2 });
         for (let s = 1; s < 8; s++) { const u = s / 8, xx = tw + (far - tw) * u, yy = (1 - u) * (1 - u) * Y(t.y1) + 2 * u * (1 - u) * Y(t.y0 - 6) + u * u * Y(t.y0 + 12); el("line", { x1: xx, y1: yy, x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }); }
         continue;
@@ -136,7 +136,7 @@
       else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");
       else if ((t.typ === "schacht" || t.typ === "gitter") && h > 90) label(t.name, x + w / 2 + 34, y + h / 2, 160, "#d8dce0");
     }
-    el("line", { x1: 2910, y1: Y(TOP), x2: 2910, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
+    el("line", { x1: 3210, y1: Y(TOP), x2: 3210, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
     // Wasserlinie
     const WY = H.wasser - H.strasse; el("line", { x1: 0, y1: Y(WY), x2: XMAX, y2: Y(WY), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
 
@@ -162,7 +162,7 @@
     });
     el("text", { x: XC - 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Abstände zwischen den Ebenen";
     el("text", { x: 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Westen";
-    el("text", { x: 2870, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
+    el("text", { x: 3170, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
   </script>
 </body>
 </html>
