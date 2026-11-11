@@ -88,6 +88,7 @@ Batmobil in der Mitte, **Anzug fährt aus dem Boden**, **Motorrad und Batpod fah
 
 - Batcave: weitere geheime Dinge (Vorschläge zur Auswahl vor dem Bau), **Hangar-Fläche vergrössern**.
 - **U-Boot** in der Cave, **Meer tiefer** machen (damit U-Boot und grössere Boote passen; betrifft Höhlenwasser, Wassertunnel, Küste – Rückfrage), **Schnellboot**.
+  - Stand 2026-11-11 (Nicolas: Meeresgrund bei Wayne Manor wird für U-Boote später ohnehin tiefer): Meer und Höhlenwasser Welt -34, Meeresgrund am Fuss der Manor-Klippe Welt -38 (nur ca. 4 m Wasser), weiter draussen ca. -47; Gotham-Flussgrund 12 m unter dem Wasser (Welt -46, im Schnitt -43 m unter der Strasse). Beim Vertiefen Meer, Bucht, Wassertunnel, Höhlensee und Gotham-Flüsse zusammen planen (U-Boot soll von der Batcave bis in die Flüsse kommen); Zieltiefe noch offen.
 - **Inneneinrichtung der Mansion** (Raum für Raum).
 - **Klavier mit Geheimcode**: richtige Tonfolge spielen → geheimer Aufzug öffnet sich.
 
