@@ -160,7 +160,8 @@ mat.sea = new THREE.MeshPhysicalMaterial({ color: 0x1d5f80, roughness: 0.3, meta
   rockM.computeBoundingSphere();
   scene.add(rockM);
 }
-// Wald: Nadel- und Laubbaeume als InstancedMesh, in 400-m-Felder geteilt (Sichtpruefung je Feld, auch fuer Schatten)
+// Wald: Nadel- und Laubbaeume als InstancedMesh. Standorte wie bisher beim Start (gleicher Zufall, gleiche Baeume, Stamm-Kreise fuer die Kollision);
+// die Netze baut seit K3 (2026-11-11) die Kachel-Verwaltung je 256-m-Feld erst, wenn das Feld in der Ladeweite liegt (kern/kacheln.js)
 {
   function treeGeo(parts) {
     return mergeGeometries(parts.map(([geo, hex]) => {
@@ -184,27 +185,32 @@ mat.sea = new THREE.MeshPhysicalMaterial({ color: 0x1d5f80, roughness: 0.3, meta
     const y = terrainH(x, z);
     if (y > 150 || y < 0) continue;
     const con = kind < (z < -150 ? 0.75 : x < -235 ? 0.5 : 0.3), s = 0.75 + sc * 0.6;
-    const key = Math.floor(x / 400) + "," + Math.floor(z / 400);
+    const key = Math.floor(x / 256) + "," + Math.floor(z / 256);
     if (!cells.has(key)) cells.set(key, { con: [], dec: [] });
     cells.get(key)[con ? "con" : "dec"].push([x, y - 0.2, z, s, rot * Math.PI * 2, tint]);
     if (Math.hypot(x, z) < LIMIT_WORLD + 10) circles.push([x, z, (con ? 0.32 : 0.4) * s]);
   }
   const o = new THREE.Object3D(), tc = new THREE.Color();
   let count = 0;
-  for (const cell of cells.values()) for (const [type, geo] of [["con", conGeo], ["dec", decGeo]]) {
-    const list = cell[type];
-    if (!list.length) continue;
-    const im = new THREE.InstancedMesh(geo, treeMat, list.length);
-    list.forEach(([x, y, z, s, r, t], i) => {
-      o.position.set(x, y, z); o.rotation.set(0, r, 0); o.scale.set(s, s * (0.9 + t * 0.25), s); o.updateMatrix();
-      im.setMatrixAt(i, o.matrix);
-      im.setColorAt(i, tc.setRGB(0.8 + 0.35 * t, 0.86 + 0.24 * t, 0.78 + 0.3 * (1 - t)));
-    });
-    im.castShadow = im.receiveShadow = true;
-    im.computeBoundingSphere();
-    scene.add(im);
-    count += list.length;
-  }
+  for (const cell of cells.values()) count += cell.con.length + cell.dec.length;
+  tileLayer("Wald", 256, (i, k) => {
+    const cell = cells.get(i + "," + k); if (!cell) return null;
+    const g = new THREE.Group(); g.name = "Wald " + i + "," + k;
+    for (const [type, geo] of [["con", conGeo], ["dec", decGeo]]) {
+      const list = cell[type];
+      if (!list.length) continue;
+      const im = new THREE.InstancedMesh(geo, treeMat, list.length);
+      list.forEach(([x, y, z, s, r, t], n) => {
+        o.position.set(x, y, z); o.rotation.set(0, r, 0); o.scale.set(s, s * (0.9 + t * 0.25), s); o.updateMatrix();
+        im.setMatrixAt(n, o.matrix);
+        im.setColorAt(n, tc.setRGB(0.8 + 0.35 * t, 0.86 + 0.24 * t, 0.78 + 0.3 * (1 - t)));
+      });
+      im.castShadow = im.receiveShadow = true;
+      im.computeBoundingSphere();
+      g.add(im);
+    }
+    return g;
+  }, [-960, 960, -960, 960]);
   world.userData.trees = count;
 }
 

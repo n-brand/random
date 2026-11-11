@@ -16,7 +16,8 @@ function perfFrame(ms) {
   const r = renderer.info, mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) + " MB" : "-";
   PERF.el.textContent = (PERF.n * 1000 / span).toFixed(0) + " FPS   " + (PERF.sum / PERF.n).toFixed(1) + " ms (max " + PERF.max.toFixed(1) + ")\n" +
     r.render.calls + " Aufrufe   " + (r.render.triangles / 1e6).toFixed(2) + " Mio. Dreiecke\n" + r.memory.geometries + " Geom.   " + r.memory.textures + " Tex.   " + mem + "\n" +
-    "Kollision " + (solids.length + circles.length) + " / " + COLL.cells.size + " Zellen";
+    "Kollision " + (solids.length + circles.length) + " / " + COLL.cells.size + " Zellen\n" +
+    "Kacheln " + tilesLoaded() + " geladen, " + TILES.queue.length + " warten, Ladeweite " + TILES.range + " (" + TILES.range * TILE + " m)";
   PERF.n = 0; PERF.sum = 0; PERF.max = 0; PERF.t0 = now;
 }
 addEventListener("keydown", e => { if (e.code === "F3") { e.preventDefault(); perfToggle(); } });
@@ -68,6 +69,7 @@ function frame() {
   sun.position.copy(focus).addScaledVector(SUN_DIR, 90);
   sun.target.position.copy(focus);
   sun.target.updateMatrixWorld();
+  tilesUpdate();                                                             // K3: Kacheln in der Ladeweite nachladen (Zeitbudget)
   renderer.render(scene, camera);
   perfFrame(performance.now() - tF);
   requestAnimationFrame(frame);
