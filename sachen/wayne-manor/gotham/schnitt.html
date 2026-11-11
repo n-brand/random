@@ -118,13 +118,15 @@
         info(g, `<b>${t.name}</b><br>Ränge bis ${t.hoehe} m, oben offen (kein Dach), Spielfeld ${String(-t.feld).replace(".", ",")} m abgesenkt<br>Tribüne logisch ca. ${steps} Stockwerke (je ${t.geschoss} m); waagrecht nicht massstäblich`);
         label(t.name, (t.x0 + t.x1) / 2, Y(t.hoehe) - 10, W, "#5fd3e6", 24); label(`oben offen · Ränge bis ${t.hoehe} m\n≈ ${steps} Stockwerke Tribüne`, (t.x0 + t.x1) / 2, Y(14), W * 0.75, "#e6e9ee", 20); continue; }
       if (t.typ === "neben") {   // schraeges Rohr mit Gefaelle (ya/yb = Sohle am Anfang/Ende), Pfeile in Fliessrichtung
-        const P = [[t.x0, t.ya + t.h], [t.x1, t.yb + t.h], [t.x1, t.yb], [t.x0, t.ya]];
+        const so = u => t.ya + (t.yb - t.ya) * (t.kurve ? u * u * (3 - 2 * u) : u), U = [...Array(41).keys()].map(i => i / 40), X = u => t.x0 + (t.x1 - t.x0) * u;   // Sohle; Kurve: oben und unten flach
+        const P = [...U.map(u => [X(u), so(u) + t.h]), ...U.slice().reverse().map(u => [X(u), so(u)])];
         n = el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 3 });
-        el("line", { x1: t.x0, y1: Y(t.ya) - 5, x2: t.x1, y2: Y(t.yb) - 5, stroke: "#4f8fd0", "stroke-width": 5, "pointer-events": "none" });
-        for (let u = 0.15; u < 0.95; u += 0.2) { const x = t.x0 + (t.x1 - t.x0) * u, y = Y(t.ya + (t.yb - t.ya) * u) - 12, a = Math.atan2(Y(t.yb) - Y(t.ya), t.x1 - t.x0) * 180 / Math.PI;
+        el("path", { d: "M" + U.map(u => X(u) + " " + (Y(so(u)) - 5)).join("L"), fill: "none", stroke: "#4f8fd0", "stroke-width": 5, "pointer-events": "none" });
+        for (let u = 0.1; u < 0.95; u += 0.1) { const x = X(u), y = Y(so(u)) - 12, a = Math.atan2(Y(so(u + 0.01)) - Y(so(u)), X(u + 0.01) - X(u)) * 180 / Math.PI;
           el("path", { d: "M-9 -5L3 0L-9 5", fill: "none", stroke: "#9fd0ff", "stroke-width": 2.5, transform: `translate(${x} ${y}) rotate(${a})`, "pointer-events": "none" }); }
-        info(n, `<b>${t.name}</b><br>Sohle ${fm(t.ya)} beim ersten Gullideckel bis ${fm(t.yb)} am Hauptsammler, ${String(t.h).replace(".", ",")} m hoch<br>Wasser fliesst bergab in den Hauptsammler, man kommt als Person durch`);
-        label("Nebensammler (Wasser fliesst →)", (t.x0 + t.x1) / 2, Y((t.ya + t.yb) / 2 + t.h) - 8, 300, "#bff0c8"); continue; }
+        const len = (t.x1 - t.x0) / K, maxG = Math.abs(t.yb - t.ya) / len * (t.kurve ? 1.5 : 1);
+        info(n, `<b>${t.name}</b><br>Sohle ${fm(t.ya)} am ersten Gullideckel bis ${fm(t.yb)} am Hauptsammler (auf dessen Boden), ${String(t.h).replace(".", ",")} m hoch, ${Math.round(len)} m lang<br>Gefälle höchstens ca. ${Math.round(maxG * 100)} %, Wasser fliesst in den Hauptsammler; zu Fuss und mit dem Batpod befahrbar`);
+        label(`Nebensammler ${String(t.h).replace(".", ",")} m hoch · max. ca. ${Math.round(maxG * 100)} % Gefälle · Wasser fliesst →`, X(0.5), Y(so(0.5) + t.h) - 10, 900, "#bff0c8", 22); continue; }
       if (t.typ === "person") {   // Strichfigur in echter Groesse
         const H = t.hoehe * K, x = t.x0, yb = Y(t.y0), g = el("g", { stroke: "#ffd36b", "stroke-width": 2.2, fill: "none" });
         el("circle", { cx: x, cy: yb - H * 0.9, r: H * 0.09 }, g); el("path", { d: `M${x} ${yb - H * 0.8}V${yb - H * 0.42}M${x} ${yb - H * 0.42}L${x - H * 0.13} ${yb}M${x} ${yb - H * 0.42}L${x + H * 0.13} ${yb}M${x - H * 0.17} ${yb - H * 0.62}L${x + H * 0.17} ${yb - H * 0.62}` }, g);
