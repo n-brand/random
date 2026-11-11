@@ -57,7 +57,7 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 - **Hotels:** 2 Luxushotels, 3 Billighotels.
 - **Läden:** 3 Juweliere, 2 Massschneider (teuer), 2 normale und 3 billige Kleiderläden, 2 Waffenläden.
 - **Essen:** 6 Bars/Restaurants, 4 Billig-Fast-Food im armen Viertel.
-- **Club des Pinguins**: Eingang an der unteren Strasse (-4 m) (Lower Level) der zweistöckigen Uferstrasse Ost, geht über mehrere Ebenen nach unten (Bar, Tanzfläche, Keller/VIP; siehe Seitenansicht `gotham/schnitt.html`).
+- **Club des Pinguins**: Eingang an der unteren Strasse (-4 m) (Lower Level) der zweistöckigen Uferstrasse Ost, geht über mehrere Ebenen nach unten (Bar auf Höhe der Tiefgarage 1 direkt am Eingang, darunter Tanzfläche (-10 m) und Keller/VIP (-14 m); siehe Seitenansicht `gotham/schnitt.html`).
 - 4 **geheime Drogenverstecke** im armen Viertel.
 - **Autohäuser** (echte Filialen der Fahrzeug-Kette aus dem Computer-Shop, Phase 7): billig (Fabrikviertel), teuer (Uptown), Militär (am Stützpunkt).
 
