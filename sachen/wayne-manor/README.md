@@ -55,3 +55,8 @@ Esc beendet Begehen, Geist und Fahren. Taste T oder die Auswahl "Teleport (Test)
 ---
 
 Erstellt von [Nicolas Brand](https://n-brand.github.io/portfolio/)
+
+## Planung Gotham
+
+- Plan 2 (Gotham City und Ausbau): `PLAN-GOTHAM.md`
+- 2D-Karte von Gotham: `gotham/` (Daten zum Anpassen in `gotham/daten.js`)

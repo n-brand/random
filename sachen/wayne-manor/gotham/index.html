@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gotham-Karte (Planung) – random</title>
+  <style>
+    :root { --bg: #0f1216; --panel: #181c22; --line: #2a3039; --text: #e6e9ee; --muted: #9aa4b2; --acc: #e8c547; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+    header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+    header a { color: var(--muted); text-decoration: none; }
+    header h1 { font-size: 16px; margin: 0; }
+    header .hint { color: var(--muted); font-size: 12px; }
+    main { position: relative; display: grid; grid-template-columns: 1fr 280px; min-height: 0; }
+    #wrap { position: relative; overflow: hidden; touch-action: none; cursor: grab; background: #263022; }
+    #wrap.drag { cursor: grabbing; }
+    svg { width: 100%; height: 100%; display: block; }
+    aside { overflow: auto; padding: 12px 14px; border-left: 1px solid var(--line); background: var(--panel); }
+    aside h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
+    aside label { display: flex; align-items: center; gap: 8px; padding: 2px 0; cursor: pointer; }
+    .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; border: 1px solid #0006; }
+    #info { min-height: 3em; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #11151a; }
+    #info b { color: var(--acc); }
+    #tip { position: absolute; pointer-events: none; background: #000d; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 280px; display: none; z-index: 2; }
+    .zoom { position: absolute; right: 10px; top: 10px; display: grid; gap: 4px; z-index: 2; }
+    .zoom button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 18px; cursor: pointer; }
+    footer { padding: 6px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); background: var(--panel); }
+    footer a { color: var(--muted); }
+    @media (max-width: 760px) { main { grid-template-columns: 1fr; grid-template-rows: 1fr 40%; } aside { border-left: 0; border-top: 1px solid var(--line); } }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="../">← Wayne Manor</a>
+    <h1>Gotham-Karte (Planung)</h1>
+    <span class="hint">Ziehen = verschieben, Mausrad/Knöpfe = zoomen, Klick = Koordinate. Daten in <code>gotham/daten.js</code>.</span>
+  </header>
+  <main>
+    <div id="wrap">
+      <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="zoom"><button id="zin" title="Hineinzoomen">+</button><button id="zout" title="Herauszoomen">−</button><button id="zfit" title="Alles zeigen">⤢</button></div>
+      <div id="tip"></div>
+    </div>
+    <aside>
+      <div id="info">Auf einen Ort zeigen oder klicken.</div>
+      <h2>Ebenen</h2>
+      <div id="layers"></div>
+      <h2>Orte</h2>
+      <div id="legend"></div>
+    </aside>
+  </main>
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · Norden oben (−z), Osten rechts (+x), 1 Einheit = 1 m wie im Spiel</footer>
+
+  <script src="daten.js"></script>
+  <script>
+    "use strict";
+    const G = GOTHAM, svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
+    const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
+    const pts = a => a.map(p => p[0] + "," + p[1]).join(" ");
+    const path = a => "M" + a.map(p => p[0] + " " + p[1]).join("L");
+    const wealthCol = w => `hsl(${20 + w * 190}, ${30 + w * 25}%, ${22 + w * 16}%)`;   // arm = braun/rot, reich = blau
+
+    // Ebenen (Gruppen), jede mit Schalter
+    const LAYERS = [["bezirke", "Bezirke (Wohlstand)", true], ["strassen", "Strassen und Brücken", true], ["gassen", "Seitengassen", true], ["ubahn", "U-Bahn-Ring", true],
+      ["bus", "Bus", false], ["kanal", "Abwasserkanäle (unterirdisch)", false], ["orte", "Orte", true], ["namen", "Namen", true]];
+    const L = {}; const base = el("g", {});
+    for (const [k, name, on] of LAYERS) {
+      L[k] = el("g", { "data-layer": k }); if (!on) L[k].style.display = "none";
+      const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" ${on ? "checked" : ""}> ${name}`;
+      lab.querySelector("input").onchange = e => { L[k].style.display = e.target.checked ? "" : "none"; };
+      document.getElementById("layers").appendChild(lab);
+    }
+    svg.insertBefore(base, svg.firstChild);
+
+    // Grund: Festland, Meer, Fluesse, Inseln
+    el("rect", { x: -20000, y: -20000, width: 40000, height: 40000, fill: "#2f3d28" }, base);
+    el("polygon", { points: pts(G.meer), fill: "#1d3b55" }, base);
+    for (const f of G.fluesse) el("path", { d: path(f.linie), fill: "none", stroke: "#1d3b55", "stroke-width": f.w, "stroke-linejoin": "round", "stroke-linecap": "round" }, base);
+    el("polygon", { points: pts(G.insel), fill: "#3a3f45", stroke: "#4c535c", "stroke-width": 6 }, base);
+    for (const i of G.inseln) el("polygon", { points: pts(i.poly), fill: "#3a3f45", stroke: "#4c535c", "stroke-width": 6 }, base);
+    const defs = el("defs", {}); const cp = el("clipPath", { id: "clipInsel" }, defs); el("polygon", { points: pts(G.insel) }, cp);
+
+    // Bezirke
+    for (const b of G.bezirke) {
+      const p = el("polygon", { points: pts(b.poly), fill: wealthCol(b.wohlstand), "fill-opacity": .55, stroke: "#0008", "stroke-width": 4, "clip-path": "url(#clipInsel)" }, L.bezirke);
+      p.dataset.info = `<b>${b.name}</b><br>Wohlstand ${Math.round(b.wohlstand * 100)} %`;
+      const cx = b.poly.reduce((s, q) => s + q[0], 0) / b.poly.length, cz = b.poly.reduce((s, q) => s + q[1], 0) / b.poly.length;
+      el("text", { x: cx, y: cz, "font-size": 46, fill: "#fff9", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, L.namen).textContent = b.name;
+    }
+
+    // Strassenraster (nur auf der Insel), Hauptachsen breiter
+    const R = G.raster, gr = el("g", { "clip-path": "url(#clipInsel)" }, L.strassen);
+    for (const x of [...R.avenues, ...R.breit.avenues]) el("line", { x1: x, y1: -1600, x2: x, y2: 1500, stroke: "#8a8f96", "stroke-width": R.breit.avenues.includes(x) ? R.wBreit : R.w }, gr);
+    for (const z of [...R.strassen, ...R.breit.strassen]) el("line", { x1: -3100, y1: z, x2: -1000, y2: z, stroke: "#8a8f96", "stroke-width": R.breit.strassen.includes(z) ? R.wBreit : R.w }, gr);
+    for (const g of G.gassen) { const gg = el("g", { "clip-path": "url(#clipInsel)" }, L.gassen);
+      for (let x = g.x0; x <= g.x1; x += g.schritt) el("line", { x1: x, y1: g.z0, x2: x, y2: g.z1, stroke: "#6b625a", "stroke-width": 4 }, gg);
+      for (let z = g.z0; z <= g.z1; z += g.schritt) el("line", { x1: g.x0, y1: z, x2: g.x1, y2: z, stroke: "#6b625a", "stroke-width": 4 }, gg); }
+    for (const s of G.strassen) { const p = el("path", { d: path(s.linie), fill: "none", stroke: s.besteht ? "#d9d9d9" : "#a7adb5", "stroke-width": s.w, "stroke-linejoin": "round", "stroke-dasharray": s.besteht ? "" : "" }, L.strassen); p.dataset.info = `<b>${s.name}</b><br>Breite ${s.w} m`; }
+    for (const b of G.bruecken) { const p = el("path", { d: path(b.linie), fill: "none", stroke: "#e8c547", "stroke-width": b.w + 8, "stroke-linecap": "butt" }, L.strassen); p.dataset.info = `<b>${b.name}</b>`; }
+
+    // U-Bahn-Ring
+    const U = G.ubahn, ring = [];
+    for (let a = 0; a <= 360; a += 4) ring.push([U.cx + Math.cos(a * Math.PI / 180) * U.rx, U.cz + Math.sin(a * Math.PI / 180) * U.rz]);
+    el("path", { d: path(ring), fill: "none", stroke: "#ff5a5a", "stroke-width": 14, "stroke-dasharray": "40 18" }, L.ubahn);
+    el("path", { d: path(U.depot.gleis), fill: "none", stroke: "#ff5a5a", "stroke-width": 10 }, L.ubahn);
+    { const d = U.depot, r = el("rect", { x: d.x - d.w / 2, y: d.z - d.d / 2, width: d.w, height: d.d, fill: "#7a2b2b", stroke: "#ff5a5a", "stroke-width": 4 }, L.ubahn); r.dataset.info = `<b>${d.name}</b>`; }
+    for (const s of U.stationen) {
+      const x = U.cx + Math.cos(s.a * Math.PI / 180) * U.rx, z = U.cz + Math.sin(s.a * Math.PI / 180) * U.rz;
+      const c = el("circle", { cx: x, cy: z, r: s.haupt ? 34 : 22, fill: "#fff", stroke: "#ff5a5a", "stroke-width": 8 }, L.ubahn);
+      c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)}${s.notiz ? "<br>" + s.notiz : ""}`;
+      el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: "#ffb3b3", "pointer-events": "none" }, L.namen).textContent = "U " + s.name;
+    }
+    for (const g of U.graffiti) { const t = el("text", { x: g.x, y: g.z, "font-size": 34, fill: "#ff4fd8", "font-weight": 800 }, L.ubahn); t.textContent = "✎ " + g.text; t.dataset.info = `<b>Graffiti „${g.text}“</b> im U-Bahn-Tunnel`; }
+
+    // Bus
+    for (const b of G.bus.linien) { const p = el("path", { d: path(b.linie), fill: "none", stroke: "#3ec7ff", "stroke-width": 8, "stroke-dasharray": "14 10" }, L.bus); p.dataset.info = `<b>Bus ${b.name}</b>`; }
+    for (const h of G.bus.halte) { const c = el("rect", { x: h[0] - 12, y: h[1] - 12, width: 24, height: 24, fill: "#3ec7ff", stroke: "#000", "stroke-width": 3 }, L.bus); c.dataset.info = `<b>Bushaltestelle</b><br>x ${h[0]} / z ${h[1]}`; }
+
+    // Kanalnetz
+    const K = G.kanal;
+    for (const l of K.linien) el("path", { d: path(l), fill: "none", stroke: "#7bd88f", "stroke-width": 10, opacity: .8 }, L.kanal);
+    { const h = el("circle", { cx: K.hub.x, cy: K.hub.z, r: K.hub.r, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); h.dataset.info = `<b>${K.hub.name}</b>`; }
+    for (const g of K.gitter) { const c = el("rect", { x: g[0] - 16, y: g[1] - 16, width: 32, height: 32, fill: "#222", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Abflussgitter</b> (Auslass ins Wasser)`; }
+    for (const g of K.zugang) { const c = el("circle", { cx: g[0], cy: g[1], r: 18, fill: "#ff5a5a", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Übergang U-Bahn ↔ Kanal</b>`; }
+
+    // Orte
+    const counts = {};
+    for (const o of G.orte) {
+      const T = TYPEN[o.typ] || { farbe: "#fff" }; counts[o.typ] = (counts[o.typ] || 0) + 1;
+      const big = o.w >= 40 || o.typ === "wahrzeichen";
+      const r = T.punkt ? el("circle", { cx: o.x, cy: o.z, r: 9, fill: T.farbe, stroke: "#000", "stroke-width": 3 }, L.orte)
+        : el("rect", { x: o.x - Math.max(o.w, 18) / 2, y: o.z - Math.max(o.d, 18) / 2, width: Math.max(o.w, 18), height: Math.max(o.d, 18), fill: T.farbe, "fill-opacity": o.ebene < 0 ? .35 : .9, stroke: "#000", "stroke-width": 3, "stroke-dasharray": o.ebene < 0 ? "8 5" : "" }, L.orte);
+      r.dataset.typ = o.typ;
+      r.dataset.info = `<b>${o.name}</b><br>${T.gruppe || o.typ}<br>x ${o.x} / z ${o.z} · ${o.w} × ${o.d} m${o.h ? " · " + o.h + " m hoch" : ""}${o.ebene ? " · Ebene " + o.ebene : ""}<br>Status: ${o.status || "geplant"}${o.notiz ? "<br>" + o.notiz : ""}<br><small>id: ${o.id}</small>`;
+      if (big) el("text", { x: o.x, y: o.z - Math.max(o.d, 18) / 2 - 10, "font-size": o.typ === "wahrzeichen" || o.w > 150 ? 40 : 26, fill: "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "");
+    }
+    // Legende mit Filter je Typ
+    for (const [k, T] of Object.entries(TYPEN)) {
+      if (!counts[k]) continue;
+      const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" checked><span class="sw" style="background:${T.farbe}"></span>${T.gruppe} <span style="color:var(--muted)">(${counts[k]})</span>`;
+      lab.querySelector("input").onchange = e => L.orte.querySelectorAll(`[data-typ="${k}"]`).forEach(n => n.style.display = e.target.checked ? "" : "none");
+      document.getElementById("legend").appendChild(lab);
+    }
+    // Nordpfeil und Massstab (in Weltmetern, wandern nicht mit: im Anzeigebereich neu gesetzt)
+    const ui = el("g", { "pointer-events": "none" });
+
+    // Ansicht: viewBox verschieben/zoomen
+    const wrap = document.getElementById("wrap"), tip = document.getElementById("tip"), info = document.getElementById("info");
+    let vb = { x: G.ansicht.x0, y: G.ansicht.z0, w: G.ansicht.x1 - G.ansicht.x0, h: G.ansicht.z1 - G.ansicht.z0 };
+    const fit = () => { const r = wrap.getBoundingClientRect(), a = G.ansicht, W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
+      vb = { w: r.width * k, h: r.height * k }; vb.x = (a.x0 + a.x1) / 2 - vb.w / 2; vb.y = (a.z0 + a.z1) / 2 - vb.h / 2; apply(); };
+    function apply() {
+      svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+      const r = wrap.getBoundingClientRect(), k = vb.w / r.width; ui.innerHTML = "";
+      const step = [50, 100, 250, 500, 1000, 2000].find(s => s / k > 90) || 2000, x0 = vb.x + 16 * k, y0 = vb.y + vb.h - 18 * k;
+      el("rect", { x: x0 - 6 * k, y: y0 - 22 * k, width: step + 12 * k, height: 30 * k, fill: "#000a", rx: 4 * k }, ui);
+      el("line", { x1: x0, y1: y0, x2: x0 + step, y2: y0, stroke: "#fff", "stroke-width": 3 * k }, ui);
+      el("text", { x: x0, y: y0 - 7 * k, "font-size": 12 * k, fill: "#fff" }, ui).textContent = step + " m";
+      const nx = vb.x + vb.w - 70 * k, ny = vb.y + 70 * k;
+      el("path", { d: `M${nx} ${ny - 26 * k}L${nx + 10 * k} ${ny}L${nx} ${ny - 6 * k}L${nx - 10 * k} ${ny}Z`, fill: "#fff" }, ui);
+      el("text", { x: nx, y: ny + 16 * k, "font-size": 13 * k, fill: "#fff", "text-anchor": "middle" }, ui).textContent = "N";
+    }
+    const toWorld = (cx, cy) => { const r = wrap.getBoundingClientRect(); return [vb.x + (cx - r.left) / r.width * vb.w, vb.y + (cy - r.top) / r.height * vb.h]; };
+    const zoom = (f, cx, cy) => { const [wx, wy] = toWorld(cx, cy); vb.x = wx - (wx - vb.x) * f; vb.y = wy - (wy - vb.y) * f; vb.w *= f; vb.h *= f; apply(); };
+    wrap.addEventListener("wheel", e => { e.preventDefault(); zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18, e.clientX, e.clientY); }, { passive: false });
+    const mid = () => { const r = wrap.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+    document.getElementById("zin").onclick = () => zoom(1 / 1.4, ...mid());
+    document.getElementById("zout").onclick = () => zoom(1.4, ...mid());
+    document.getElementById("zfit").onclick = fit;
+    // Ziehen (Maus und Finger), Kneifen zum Zoomen
+    const ptr = new Map(); let moved = 0, pinch = 0;
+    wrap.addEventListener("pointerdown", e => { if (e.target.closest(".zoom")) return; wrap.setPointerCapture(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; wrap.classList.add("drag"); });
+    wrap.addEventListener("pointermove", e => {
+      if (!ptr.has(e.pointerId)) { hover(e); return; }
+      const p = ptr.get(e.pointerId), r = wrap.getBoundingClientRect();
+      if (ptr.size === 2) { const [a, b] = [...ptr.values()], d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); ptr.set(e.pointerId, [e.clientX, e.clientY]);
+        const [c, d] = [...ptr.values()], d1 = Math.hypot(c[0] - d[0], c[1] - d[1]); if (d0 > 0) zoom(d0 / d1, (c[0] + d[0]) / 2, (c[1] + d[1]) / 2); pinch = 1; moved = 99; return; }
+      const dx = e.clientX - p[0], dy = e.clientY - p[1]; moved += Math.abs(dx) + Math.abs(dy);
+      vb.x -= dx / r.width * vb.w; vb.y -= dy / r.height * vb.h; ptr.set(e.pointerId, [e.clientX, e.clientY]); apply();
+    });
+    const up = e => { if (!ptr.has(e.pointerId)) return; ptr.delete(e.pointerId); if (!ptr.size) wrap.classList.remove("drag");
+      if (moved < 6 && !pinch) click(e); if (!ptr.size) pinch = 0; };
+    wrap.addEventListener("pointerup", up); wrap.addEventListener("pointercancel", up);
+    wrap.addEventListener("pointerleave", () => { tip.style.display = "none"; });
+    function hover(e) {
+      const t = e.target.dataset && e.target.dataset.info, r = wrap.getBoundingClientRect();
+      if (!t) { tip.style.display = "none"; return; }
+      tip.innerHTML = t; tip.style.display = "block";
+      tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 290) + "px"; tip.style.top = (e.clientY - r.top + 14) + "px";
+    }
+    function click(e) {
+      const [x, z] = toWorld(e.clientX, e.clientY), t = document.elementFromPoint(e.clientX, e.clientY), d = t && t.dataset && t.dataset.info;
+      const k = `[${Math.round(x)}, ${Math.round(z)}]`;
+      info.innerHTML = (d ? d + "<hr style='border-color:#2a3039'>" : "") + `Punkt: <code>${k}</code> <small>(kopiert)</small>`;
+      navigator.clipboard && navigator.clipboard.writeText(k).catch(() => {});
+    }
+    addEventListener("resize", fit); fit();
+  </script>
+</body>
+</html>
