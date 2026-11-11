@@ -130,9 +130,13 @@
           for (let f = t.geschoss; f < t.hoehe - 0.1; f += t.geschoss) { const xi = xo + dir * (n - f / rise) * dp; el("line", { x1: xo, y1: Y(f), x2: xi, y2: Y(f), stroke: "#1b1d20", "stroke-width": 1.5, "stroke-dasharray": "6 4" }, g); }   // Stockwerke unter den Raengen
           for (let k = 1; k <= n; k++) { const xa = xo + dir * (n - k) * dp, sx = xa + dir * dp * 0.25, sw = dp * 0.55, y = Y(k * rise);   // Sitz: Schale mit Lehne
             el("path", { d: `M${Math.min(sx, sx + dir * sw)} ${y}h${sw}v${-0.18 * K}h${-sw * 0.75}v${-0.3 * K}h${-sw * 0.25}Z`, fill: blau[k % 3], transform: sd ? `translate(${2 * (sx + dir * sw / 2)} 0) scale(-1 1)` : "" }, g); } }
-        el("rect", { x: t.x0 + rw, y: Y(0), width: W - 2 * rw, height: -t.feld * K, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, g);   // Spielfeld abgesenkt (verkuerzt)
+        const fx0 = t.x0 + rw, fx1 = t.x1 - rw, ez = (t.endzone || 9.1) * K, rd = (t.rand || 6) * K;   // Spielfeld in voller Laenge (Nicolas: nicht verkuerzen)
+        el("rect", { x: fx0, y: Y(0), width: fx1 - fx0, height: -t.feld * K, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, g);
+        for (const [xa, col] of [[fx0 + rd, "#2b55b8"], [fx1 - rd - ez, "#1f6b45"]]) el("rect", { x: xa, y: Y(0), width: ez, height: -t.feld * K * 0.5, fill: col }, g);   // Endzonen
+        for (let yd = 10; yd < 100; yd += 10) { const xx = fx0 + rd + ez + yd / 100 * (fx1 - fx0 - 2 * rd - 2 * ez); el("line", { x1: xx, y1: Y(0), x2: xx, y2: Y(0) + 6, stroke: "#fff", "stroke-width": 1.5 }, g); }   // Yardlinien
+        for (const xx of [fx0 + rd, fx1 - rd]) el("path", { d: `M${xx} ${Y(0)}v${-9 * K}M${xx - 0.6 * K} ${Y(3)}h${1.2 * K}`, fill: "none", stroke: "#ffd60a", "stroke-width": 3 }, g);   // Torstangen (gelb, von der Seite: Pfosten 3 m, Querlatte, Stangen bis 9 m)
         const fm1 = v => String(v).replace(".", ","), floors = Math.round(t.hoehe / t.geschoss);
-        info(g, `<b>${t.name}</b><br>Tribünen ${floors} Stockwerke (je ${fm1(t.geschoss)} m) = ${fm1(t.hoehe)} m, oben offen<br>${n} Sitzreihen je Seite: ${fm1(Math.round(rise * 100) / 100)} m hoch, ${fm1(t.tiefe)} m tief (Tribüne ca. ${Math.round(n * t.tiefe)} m tief, echte Masse)<br>Spielfeld ${fm1(-t.feld)} m abgesenkt, im Bild verkürzt`);
+        info(g, `<b>${t.name}</b><br>Tribünen ${floors} Stockwerke (je ${fm1(t.geschoss)} m) = ${fm1(t.hoehe)} m, oben offen<br>${n} Sitzreihen je Seite: ${fm1(Math.round(rise * 100) / 100)} m hoch, ${fm1(t.tiefe)} m tief (Tribüne ca. ${Math.round(n * t.tiefe)} m tief, echte Masse)<br>Spielfeld ${t.spielfeld || 110} m mit Endzonen (${fm1(t.endzone || 9.1)} m) und ${t.rand || 6} m Rand, ${fm1(-t.feld)} m abgesenkt – alles in echter Länge`);
         // Draufsicht klein darueber: Oval (Ort w x d), Spielfeld 110 x 49 m, rote Linie = Schnittrichtung West -> Ost (Nicolas: aus welcher Sicht?)
         { const cx = (t.x0 + t.x1) / 2, cy = Y(t.hoehe + 26), m = 1.6, ow = (t.oben || [220, 160])[0], od = (t.oben || [220, 160])[1], v = el("g", {});
           el("ellipse", { cx, cy, rx: ow / 2 * m, ry: od / 2 * m, fill: "#9aa1a8", stroke: "#1b1d20", "stroke-width": 2 }, v);
@@ -140,9 +144,9 @@
           el("line", { x1: cx - ow / 2 * m - 30, y1: cy, x2: cx + ow / 2 * m + 30, y2: cy, stroke: "#ff3b3b", "stroke-width": 3, "stroke-dasharray": "10 6" }, v);
           el("path", { d: `M${cx + ow / 2 * m + 30} ${cy}l-14 -8v16Z`, fill: "#ff3b3b" }, v);
           label(`Draufsicht ${ow} × ${od} m · rote Linie = dieser Schnitt (West → Ost)`, cx, cy - od / 2 * m - 10, ow * m * 1.3, "#ffb3b3", 18);
-          info(v, `<b>Draufsicht Stadion</b><br>${ow} × ${od} m, oval; Spielfeld 110 × 49 m (mit Endzonen)<br>Der Schnitt läuft längs von West nach Ost durch die Mitte: man sieht die Tribünen hinter den Endzonen, das Spielfeld ist verkürzt`); }
+          info(v, `<b>Draufsicht Stadion</b><br>${ow} × ${od} m, oval; Spielfeld 110 × 49 m (mit Endzonen)<br>Der Schnitt läuft längs von West nach Ost durch die Mitte: man sieht die Tribünen hinter den Endzonen und das Spielfeld in voller Länge`); }
         label(t.name + " · Längsschnitt (West → Ost): Tribünen hinter den Endzonen", (t.x0 + t.x1) / 2, Y(t.hoehe) - 30, W, "#5fd3e6", 22);
-        label(`Tribünen ${floors} Stockwerke (${fm1(t.hoehe)} m) · ${n} Reihen à ${fm1(Math.round(rise * 100) / 100)} m · Spielfeld verkürzt`, (t.x0 + t.x1) / 2, Y(t.hoehe) - 8, W, "#e6e9ee", 18); continue; }
+        label(`Tribünen ${floors} Stockwerke (${fm1(t.hoehe)} m) · ${n} Reihen à ${fm1(Math.round(rise * 100) / 100)} m · Spielfeld ${t.spielfeld || 110} m (echte Länge)`, (t.x0 + t.x1) / 2, Y(t.hoehe) - 8, W, "#e6e9ee", 18); continue; }
       if (t.typ === "neben") {   // schraeges Rohr mit Gefaelle (ya/yb = Sohle am Anfang/Ende), Pfeile in Fliessrichtung
         const so = u => t.ya + (t.yb - t.ya) * (t.kurve ? u * u * (3 - 2 * u) : u), U = [...Array(41).keys()].map(i => i / 40), X = u => t.x0 + (t.x1 - t.x0) * u;   // Sohle; Kurve: oben und unten flach
         const P = [...U.map(u => [X(u), so(u) + t.h]), ...U.slice().reverse().map(u => [X(u), so(u)])];
