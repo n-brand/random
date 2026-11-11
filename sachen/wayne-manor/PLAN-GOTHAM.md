@@ -26,8 +26,8 @@ Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst 
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
-| G1 | Gelände und Wasser | Hauptinsel zwischen **Westfluss** und **Ostfluss**, Meer im Süden (schliesst an die bestehende Küste im Südosten an), Arkham-Insel vor der Küste. Ufermauern an den Flüssen. Braucht Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht |
-| G2 | **Strassennetz** | Durchgehendes Raster über die ganze Insel (Avenues Nord-Süd, Strassen Ost-West, zwei breite Hauptachsen), Kreuzungen, Gehsteige, Ampeln (Deko). Highway von der Manor über eine **zweistöckige Brücke** (oben Highway, unten Strasse, darunter Obdachlosenlager und der Club des Pinguins). Weitere Brücken: 2 über den Ostfluss, 2 über den Westfluss, Arkham-Brücke |
+| G1 | Gelände und Wasser | Hauptinsel zwischen **Westfluss** und **Ostfluss** (geschwungen, ca. 400-460 m breit wie der East River bei der Williamsburg Bridge), im Norden der **Nordkanal**, Meer im Süden mit Buchten (schliesst an die bestehende Küste im Südosten an), Arkham-Insel vor der Küste. Insel mit gerundeten Ecken. **Strassenebene der Stadt = Fahrbahn der Brücken**, ca. 40 m über dem Wasser (Welt-y +6, Wasser -34): hohe Kaimauern rundum. Braucht Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht |
+| G2 | **Strassennetz** | Kein starres Gitter (Nicolas 2026-11-11): frei gezogene, geschwungene Hauptstrassen (Ring um den Wayne Tower, Diagonale „Old Broadway“, Crosstown Expressway, Uferstrassen …) und je Bezirk ein eigenes, gedrehtes und verzogenes Nebenstrassennetz mit Lücken (Narrows: enge Gassen). **Zweistöckige Strassen in der Stadt** (Park Row, Uferstrasse Ost): oben normaler Verkehr, 6,5 m darunter die untere Strasse (Lower Level) mit Obdachlosen und dem Eingang zum Club des Pinguins. **Hängebrücken** im Stil Williamsburg/Manhattan Bridge (Türme an den Ufern, ca. 62 m über der Fahrbahn, Tragseile), Fahrbahn auf Strassenhöhe: 3 über den Ostfluss (Highway, Nord, Süd), 2 über den Westfluss, Nordkanal-Brücke zum Militär, Arkham-Brücke. Füllbauten stehen automatisch an den Strassen und in den Blöcken (nie auf einer Strasse) |
 | G3 | **Gebäude-Vorlagen** | Wenige Vorlagen, mehrfach eingesetzt: Wolkenkratzer (Glas/Stein, Höhe nach Wohlstand), Bürohaus, Mehrfamilienhaus (Ziegel, Feuertreppen), Laden mit Wohnung darüber, Fabrikhalle, Lagerhalle. Innen leer |
 | G4 | **Wohlstand reich → arm** | Jede Fläche bekommt einen Wohlstand 0..1 (Bezirke in der Karte, weich überblendet): Uptown/Zentrum hohe Türme, Westseite/Südstadt gemischt, Fabrikviertel, **The Narrows am Hafen** arm (kleine Häuser, Fabriken). Sinnvoll so: Armenviertel am Hafen ist typisch (Industrie, Lärm, billiger Boden) |
 | G5 | **Seitengassen** | Im armen Viertel dichtes Gassennetz: Müllcontainer, Säcke, Wäscheleinen, Feuertreppen, Pfützen, Dampf aus Gullys |
@@ -52,12 +52,12 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 - **Hafen** mit Containerterminal, Kränen, Lagerhallen.
 - Gericht, Kathedrale/Kirche, **Eventgebäude** (Spendengala, Hochzeit), 2 Museen.
 - 3 Krankenhäuser, 2 Kinderheime, 3 Kinderkrippen.
-- **American-Football-Stadion**.
+- **American-Football-Stadion**, oben offen (kein Dach).
 - **Banken:** 3 Grossbanken mit Tresorkellern (voller Tresore), 4 kleine Banken mit nur 3 Automaten, 12 Bankautomaten in der Stadt.
 - **Hotels:** 2 Luxushotels, 3 Billighotels.
 - **Läden:** 3 Juweliere, 2 Massschneider (teuer), 2 normale und 3 billige Kleiderläden, 2 Waffenläden.
 - **Essen:** 6 Bars/Restaurants, 4 Billig-Fast-Food im armen Viertel.
-- **Club des Pinguins** unter der Highway-Brücke.
+- **Club des Pinguins**: Eingang an der unteren Strasse (Lower Level) der zweistöckigen Uferstrasse Ost, geht über mehrere Ebenen nach unten (Bar, Tanzfläche, Keller/VIP; siehe Seitenansicht `gotham/schnitt.html`).
 - 4 **geheime Drogenverstecke** im armen Viertel.
 - **Autohäuser** (echte Filialen der Fahrzeug-Kette aus dem Computer-Shop, Phase 7): billig (Fabrikviertel), teuer (Uptown), Militär (am Stützpunkt).
 
@@ -65,20 +65,24 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
-| U1 | **Abwasserkanäle** | Ein zusammenhängendes Netz unter den Hauptstrassen (begehbar, Rinne mit fliessendem Wasser, Stege). An den Flüssen/Meer vereinzelt **Abflussgitter** (6 Stück), aus denen Wasser kommt |
+| U1 | **Abwasserkanäle** | Ein zusammenhängendes Netz nur unter ausgewählten Hauptstrassen (nicht unter jeder Strasse; Liste `kanal.hauptsammler` in der Karte), begehbar, ca. 6 m hoch, Sohle 27 m unter der Strasse, Rinne mit fliessendem Wasser, Stege. Wo ein Sammler die Insel verlässt: **Auslass mit Gitter** in der Kaimauer, ca. 13 m über dem Wasser. **Gitter-Stil** (Foto von Nicolas): rostiger Stahlrahmen, feines quadratisches Drahtgitter, Ketten |
+| U1b | **Gullideckel** | Auf allen Strassen mit Kanal darunter (alle ca. 70 m). Öffnen nur mit einem **Spezialwerkzeug (Gullihaken)** aus dem Inventar (S1), darunter Leiter in den Kanal |
 | U2 | Übergänge | Von den U-Bahn-Tunneln kommt man an 4 Stellen in die Kanäle |
 | U3 | **Kanal-Hub unter dem Wayne Tower** | Grösster Teil des Netzes; dort die **Basis der Bösen**: Waffen unter Planen, herumliegende Waffen, Tisch mit Computer, Boxsack, Gitterboden, teils mit fliessendem Abwasser darunter |
 
 ## Phase 5 – Geheimbasis im Container
 
-Ein unscheinbarer Container am Westfluss beim Hafen, innen viel grösser (führt in einen Raum unter dem Kai):
+Ein unscheinbarer Container am Westfluss beim Hafen ist ein **Aufzug** (fährt samt Auto hinunter). Unten eine flache, weite **Halle** (ca. 6,5 m hoch, Boden 14 m unter der Strasse), Vorbild Foto von Nicolas: Sichtbetonwände, **die ganze Decke ein Raster aus Lichtpaneelen**, glatter Betonboden, hinten Reifenstapel und Werkbank.
 Batmobil in der Mitte, **Anzug fährt aus dem Boden**, **Motorrad und Batpod fahren aus der Wand**, Decke aus Lampen, Computer, **aufklappbare Wand** mit Waffen und Gadgets, **Geheimwand mit Tresor** (Goldbarren, Bargeld). Alle Mechanismen als Tore nach der Regel „Tore anzielen“.
 
 ## Phase 6 – Militär
 
 - **Militärstützpunkt ausserhalb der Stadt** (nördlich, über eine Zufahrt erreichbar): Kaserne, Hangars, Fahrzeughalle, Militär-Autohaus.
-- **Militärinsel im Südosten** (zusätzlich, im Meer, per Boot/Flug): Landebahn, Hangars, Hafen.
-- Der Kampfjet bekommt dort einen richtigen Platz (statt Hauptstrasse, Rückfrage).
+- Zufahrt über die Nordkanal-Brücke (Verlängerung der Uptown Avenue).
+
+## Später (vorgemerkt, noch nicht in der Karte)
+
+- **Militärinsel im Südosten** (Nicolas 2026-11-11: erst später, vorerst weglassen): im Meer, per Boot/Flug, Landebahn, Hangars, Hafen. Der Kampfjet könnte dort einen richtigen Platz bekommen (statt Hauptstrasse, Rückfrage).
 
 ## Phase 7 – Wayne Manor und Batcave
 
@@ -121,4 +125,4 @@ Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, be
 1. Lage und Grösse von Gotham so wie in der Karte? (ca. 1,9 x 3 km, ca. 1 km westlich der Manor)
 2. Darf die Küste nach Westen verlängert werden und der Wald zwischen Manor und Gotham dafür weichen (Highway, Flüsse)?
 3. „Chevrollette co“ und „Kameras“ – was genau?
-4. Kampfjet später auf die Militärinsel stellen? (Die Anflugschneise im Wald ist seit 2026-11-11 wieder zu, Bäume stehen wie vorher.)
+4. Kampfjet später auf die Militärinsel stellen (Insel kommt erst später)? (Die Anflugschneise im Wald ist seit 2026-11-11 wieder zu, Bäume stehen wie vorher.)

@@ -10,9 +10,10 @@
     body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
     header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
     header a { color: var(--muted); text-decoration: none; }
+    header a.tab { color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }
     header h1 { font-size: 16px; margin: 0; }
     header .hint { color: var(--muted); font-size: 12px; }
-    main { position: relative; display: grid; grid-template-columns: 1fr 280px; min-height: 0; }
+    main { position: relative; display: grid; grid-template-columns: 1fr 290px; min-height: 0; }
     #wrap { position: relative; overflow: hidden; touch-action: none; cursor: grab; background: #263022; }
     #wrap.drag { cursor: grabbing; }
     svg { width: 100%; height: 100%; display: block; }
@@ -22,6 +23,8 @@
     .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; border: 1px solid #0006; }
     #info { min-height: 3em; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #11151a; }
     #info b { color: var(--acc); }
+    #konflikte { font-size: 12px; color: #ff9b9b; }
+    #konflikte.ok { color: #7bd88f; }
     #tip { position: absolute; pointer-events: none; background: #000d; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 280px; display: none; z-index: 2; }
     .zoom { position: absolute; right: 10px; top: 10px; display: grid; gap: 4px; z-index: 2; }
     .zoom button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 18px; cursor: pointer; }
@@ -34,6 +37,7 @@
   <header>
     <a href="../">← Wayne Manor</a>
     <h1>Gotham-Karte (Planung)</h1>
+    <a class="tab" href="schnitt.html">Seitenansicht (Ebenen) →</a>
     <span class="hint">Ziehen = verschieben, Mausrad/Knöpfe = zoomen, Klick = Koordinate. Daten in <code>gotham/daten.js</code>.</span>
   </header>
   <main>
@@ -44,6 +48,8 @@
     </div>
     <aside>
       <div id="info">Auf einen Ort zeigen oder klicken.</div>
+      <h2>Prüfung</h2>
+      <div id="konflikte"></div>
       <h2>Ebenen</h2>
       <div id="layers"></div>
       <h2>Orte</h2>
@@ -57,95 +63,316 @@
     "use strict";
     const G = GOTHAM, svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
     const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
-    const pts = a => a.map(p => p[0] + "," + p[1]).join(" ");
-    const path = a => "M" + a.map(p => p[0] + " " + p[1]).join("L");
+    const f1 = v => Math.round(v * 10) / 10;
+    const pts = a => a.map(p => f1(p[0]) + "," + f1(p[1])).join(" ");
+    const path = (a, close) => "M" + a.map(p => f1(p[0]) + " " + f1(p[1])).join("L") + (close ? "Z" : "");
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
     const wealthCol = w => `hsl(${20 + w * 190}, ${30 + w * 25}%, ${22 + w * 16}%)`;   // arm = braun/rot, reich = blau
+    // fester Zufall (gleiche Karte bei jedem Laden)
+    let seed = 20261111; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const rr = (a, b) => a + rnd() * (b - a);
 
-    // Ebenen (Gruppen), jede mit Schalter
-    const LAYERS = [["bezirke", "Bezirke (Wohlstand)", true], ["strassen", "Strassen und Brücken", true], ["gassen", "Seitengassen", true], ["ubahn", "U-Bahn-Ring", true],
-      ["bus", "Bus", false], ["kanal", "Abwasserkanäle (unterirdisch)", false], ["orte", "Orte", true], ["namen", "Namen", true]];
+    // ---------- Geometrie ----------
+    // Kurve durch [[t, v1, v2 ...]] (t aufsteigend), liefert [v1, v2 ...] (kubisch, Catmull-Rom-Tangenten)
+    function spline1(P) {
+      return t => { const n = P.length; let i = 0; while (i < n - 2 && t > P[i + 1][0]) i++;
+        const Q = k => P[clamp(k, 0, n - 1)], p0 = Q(i - 1), p1 = Q(i), p2 = Q(i + 1), p3 = Q(i + 2), h = p2[0] - p1[0];
+        const u = clamp((t - p1[0]) / h, 0, 1), u2 = u * u, u3 = u2 * u, out = [];
+        for (let c = 1; c < p1.length; c++) { const m1 = (p2[c] - p0[c]) / ((p2[0] - p0[0]) || 1) * h, m2 = (p3[c] - p1[c]) / ((p3[0] - p1[0]) || 1) * h;
+          out.push((2 * u3 - 3 * u2 + 1) * p1[c] + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * p2[c] + (u3 - u2) * m2); }
+        return out; };
+    }
+    // weiche Linie durch Punkte (Catmull-Rom), Abtastung ca. alle step m
+    function smooth(P, step = 8, closed = false) {
+      if (closed) P = [...P, P[0]];
+      if (P.length < 3 && !closed) { const out = []; for (let i = 0; i < P.length - 1; i++) { const a = P[i], b = P[i + 1], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step)); for (let s = 0; s < n; s++) out.push([a[0] + (b[0] - a[0]) * s / n, a[1] + (b[1] - a[1]) * s / n]); } out.push(P[P.length - 1]); return out; }
+      const n = P.length, Q = k => closed ? P[((k % (n - 1)) + (n - 1)) % (n - 1)] : P[clamp(k, 0, n - 1)], out = [];
+      for (let i = 0; i < n - 1; i++) {
+        const p0 = Q(i - 1), p1 = P[i], p2 = P[i + 1], p3 = Q(i + 2), m = Math.max(1, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+        for (let s = 0; s < m; s++) { const u = s / m, u2 = u * u, u3 = u2 * u;
+          out.push([0, 1].map(c => 0.5 * (2 * p1[c] + (-p0[c] + p2[c]) * u + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * u2 + (-p0[c] + 3 * p1[c] - 3 * p2[c] + p3[c]) * u3))); }
+      }
+      out.push(P[n - 1]); return out;
+    }
+    const inPoly = (x, z, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > z) !== (b[1] > z) && x < (b[0] - a[0]) * (z - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+    const segDist = (x, z, a, b) => { const dx = b[0] - a[0], dz = b[1] - a[1], L = dx * dx + dz * dz, t = L ? clamp(((x - a[0]) * dx + (z - a[1]) * dz) / L, 0, 1) : 0; return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t); };
+    const lineLen = L => { let s = 0; for (let i = 1; i < L.length; i++) s += Math.hypot(L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]); return s; };
+
+    // ---------- Wasser und Insel ----------
+    const WA = G.wasser, RW = spline1(WA.west.punkte), RE = spline1(WA.ost.punkte), RN = spline1(WA.nord.punkte), CS = spline1(WA.kueste);
+    const meer = [];
+    for (let x = -4200; x <= -1000; x += 10) meer.push([x, CS(x)[0]]);
+    meer.push(...WA.kuesteAlt, [1700, 2600], [-4200, 2600]);
+    const inSea = (x, z) => inPoly(x, z, meer);
+    const bankW = z => { const [c, w] = RW(z); return c + w / 2; }, bankE = z => { const [c, w] = RE(z); return c - w / 2; }, bankN = x => { const [c, w] = RN(x); return c + w / 2; };
+    const inIslandRaw = (x, z) => x > bankW(z) && x < bankE(z) && z > bankN(x) && !inSea(x, z);
+    const inWater = (x, z) => { const [cw, ww] = RW(z), [ce, we] = RE(z), [cn, wn] = RN(x);
+      return (z > -2900 && Math.abs(x - cw) < ww / 2) || (z > -2900 && Math.abs(x - ce) < we / 2) || (x > -3800 && x < -500 && Math.abs(z - cn) < wn / 2 && x > cw - ww / 2 && x < ce + we / 2) || inSea(x, z); };
+    // Inselumriss: Westufer (N->S), Kueste (W->O), Ostufer (S->N), Kanalufer (O->W), jeweils nur gueltige Punkte
+    const roh = [], e = 0.5;
+    for (let z = -2200; z <= 1900; z += 8) { const x = bankW(z) + e; if (inIslandRaw(x, z)) roh.push([x, z]); }
+    for (let x = -3600; x <= -500; x += 8) { let z = CS(x)[0] - e; if (inIslandRaw(x, z)) roh.push([x, z]); }
+    for (let z = 1900; z >= -2200; z -= 8) { const x = bankE(z) - e; if (inIslandRaw(x, z)) roh.push([x, z]); }
+    for (let x = -500; x >= -3600; x -= 8) { const z = bankN(x) + e; if (inIslandRaw(x, z)) roh.push([x, z]); }
+    // Ecken abrunden: ausduennen, dann Chaikin
+    let insel = roh.filter((_, i) => i % 6 === 0);
+    for (let it = 0; it < (WA.rundung || 0); it++) insel = insel.flatMap((p, i) => { const q = insel[(i + 1) % insel.length]; return [[p[0] * .75 + q[0] * .25, p[1] * .75 + q[1] * .25], [p[0] * .25 + q[0] * .75, p[1] * .25 + q[1] * .75]]; });
+    // Inselmaske (3-m-Raster, Zeilen-Fuellung) fuer schnelle Abfragen
+    const MC = 3, MX = -3600, MZ = -2000, MNX = Math.ceil(3200 / MC), MNZ = Math.ceil(4000 / MC), mask = new Uint8Array(MNX * MNZ);
+    for (let k = 0; k < MNZ; k++) { const z = MZ + (k + .5) * MC, xs = [];
+      for (let i = 0, j = insel.length - 1; i < insel.length; j = i++) { const a = insel[i], b = insel[j]; if ((a[1] > z) !== (b[1] > z)) xs.push(a[0] + (z - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
+      xs.sort((a, b) => a - b); for (let n = 0; n + 1 < xs.length; n += 2) for (let i = Math.max(0, Math.ceil((xs[n] - MX) / MC - .5)); i < Math.min(MNX, (xs[n + 1] - MX) / MC - .5); i++) mask[k * MNX + i] = 1; }
+    const inIsland = (x, z) => { const i = Math.floor((x - MX) / MC), k = Math.floor((z - MZ) / MC); return i >= 0 && k >= 0 && i < MNX && k < MNZ && mask[k * MNX + i] === 1; };
+    // Uferpunkte in Linien aufloesen
+    const BX = { W: bankW, O: bankE, Wa: z => RW(z)[0] - RW(z)[1] / 2, Oa: z => RE(z)[0] + RE(z)[1] / 2 }, BZ = { N: bankN, Na: x => RN(x)[0] - RN(x)[1] / 2 };
+    const resolve = L => L.map(p => [typeof p[0] === "string" ? BX[p[0]](p[1]) : p[0], typeof p[1] === "string" ? BZ[p[1]](p[0]) : p[1]]);
+    // Flussflaechen als Vielecke
+    const riverPoly = (S, a, b, horiz) => { const L = [], R = []; for (let t = a; t <= b; t += 10) { const [c, w] = S(t); if (horiz) { L.push([t, c - w / 2]); R.push([t, c + w / 2]); } else { L.push([c - w / 2, t]); R.push([c + w / 2, t]); } } return [...L, ...R.reverse()]; };
+
+    // ---------- Ebenen ----------
+    const LAYERS = [["bezirke", "Bezirke (Wohlstand)", true], ["gebaeude", "Gebäude (automatisch gefüllt)", true], ["neben", "Nebenstrassen und Gassen", true],
+      ["strassen", "Hauptstrassen und Brücken", true], ["kanal", "Kanalisation (unter Hauptstrassen)", true], ["gulli", "Gullideckel (Spezialwerkzeug)", true],
+      ["ubahn", "U-Bahn-Ring", true], ["bus", "Bus", false], ["orte", "Orte", true], ["namen", "Namen", true], ["konflikt", "Konflikte (rot)", true]];
     const L = {}; const base = el("g", {});
     for (const [k, name, on] of LAYERS) {
       L[k] = el("g", { "data-layer": k }); if (!on) L[k].style.display = "none";
       const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" ${on ? "checked" : ""}> ${name}`;
-      lab.querySelector("input").onchange = e => { L[k].style.display = e.target.checked ? "" : "none"; };
+      lab.querySelector("input").onchange = ev => { L[k].style.display = ev.target.checked ? "" : "none"; };
       document.getElementById("layers").appendChild(lab);
     }
     svg.insertBefore(base, svg.firstChild);
+    // Gitter-Symbol (Stil: rostiger Rahmen, feines Drahtgitter)
+    const defs = el("defs", {});
+    { const p = el("pattern", { id: "draht", width: 6, height: 6, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 6, height: 6, fill: "#2a2418" }, p); el("path", { d: "M0 0H6M0 0V6", stroke: "#c9a85a", "stroke-width": 0.9 }, p); }
+    const cp = el("clipPath", { id: "clipInsel" }, defs); el("polygon", { points: pts(insel) }, cp);
 
-    // Grund: Festland, Meer, Fluesse, Inseln
+    // Grund: Festland, Wasser, Insel
     el("rect", { x: -20000, y: -20000, width: 40000, height: 40000, fill: "#2f3d28" }, base);
-    el("polygon", { points: pts(G.meer), fill: "#1d3b55" }, base);
-    for (const f of G.fluesse) el("path", { d: path(f.linie), fill: "none", stroke: "#1d3b55", "stroke-width": f.w, "stroke-linejoin": "round", "stroke-linecap": "round" }, base);
-    el("polygon", { points: pts(G.insel), fill: "#3a3f45", stroke: "#4c535c", "stroke-width": 6 }, base);
-    for (const i of G.inseln) el("polygon", { points: pts(i.poly), fill: "#3a3f45", stroke: "#4c535c", "stroke-width": 6 }, base);
-    const defs = el("defs", {}); const cp = el("clipPath", { id: "clipInsel" }, defs); el("polygon", { points: pts(G.insel) }, cp);
+    const WATER = "#1d3b55";
+    el("polygon", { points: pts(meer), fill: WATER }, base);
+    for (const [S, a, b, h, n] of [[RW, -2800, 2100, false, WA.west.name], [RE, -2800, 1700, false, WA.ost.name], [RN, -3700, -600, true, WA.nord.name]]) {
+      const p = el("polygon", { points: pts(riverPoly(S, a, b, h)), fill: WATER }, base); p.dataset.info = `<b>${n}</b><br>Breite ${Math.round(S(h ? -2000 : 0)[1])} m (variiert)`; }
+    el("polygon", { points: pts(roh), fill: WATER }, base);
+    el("polygon", { points: pts(insel), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 5 }, base);
+    for (const i of G.inseln) el("path", { d: path(smooth(i.poly, 10, true), true), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 5 }, base);
 
     // Bezirke
     for (const b of G.bezirke) {
-      const p = el("polygon", { points: pts(b.poly), fill: wealthCol(b.wohlstand), "fill-opacity": .55, stroke: "#0008", "stroke-width": 4, "clip-path": "url(#clipInsel)" }, L.bezirke);
+      const p = el("polygon", { points: pts(b.poly), fill: wealthCol(b.wohlstand), "fill-opacity": .45, stroke: "#0008", "stroke-width": 4, "clip-path": "url(#clipInsel)" }, L.bezirke);
       p.dataset.info = `<b>${b.name}</b><br>Wohlstand ${Math.round(b.wohlstand * 100)} %`;
-      const cx = b.poly.reduce((s, q) => s + q[0], 0) / b.poly.length, cz = b.poly.reduce((s, q) => s + q[1], 0) / b.poly.length;
-      el("text", { x: cx, y: cz, "font-size": 46, fill: "#fff9", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, L.namen).textContent = b.name;
+      let cx = 0, cz = 0, n = 0; for (const q of b.poly) if (inIsland(clamp(q[0], -2950, -1150), clamp(q[1], -1500, 1350))) { cx += clamp(q[0], -2950, -1150); cz += clamp(q[1], -1500, 1350); n++; }
+      if (n) el("text", { x: cx / n, y: cz / n, "font-size": 46, fill: "#fff8", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, L.namen).textContent = b.name;
+    }
+    const districtAt = (x, z) => G.bezirke.find(b => inPoly(x, z, b.poly));
+
+    // ---------- Belegungsraster (3 m): Strassen, Orte, Gebaeude ----------
+    const C = 3, OX = -3600, OZ = -2000, NX = Math.ceil(3200 / C), NZ = Math.ceil(4000 / C), occ = new Uint8Array(NX * NZ);
+    const cell = (x, z) => { const i = Math.floor((x - OX) / C), k = Math.floor((z - OZ) / C); return i < 0 || k < 0 || i >= NX || k >= NZ ? -1 : k * NX + i; };
+    function markDisk(x, z, r, v = 1) { const i0 = Math.floor((x - r - OX) / C), i1 = Math.floor((x + r - OX) / C), k0 = Math.floor((z - r - OZ) / C), k1 = Math.floor((z + r - OZ) / C);
+      for (let k = Math.max(0, k0); k <= Math.min(NZ - 1, k1); k++) for (let i = Math.max(0, i0); i <= Math.min(NX - 1, i1); i++) { const cx = OX + (i + .5) * C, cz = OZ + (k + .5) * C; if ((cx - x) ** 2 + (cz - z) ** 2 <= r * r) occ[k * NX + i] = Math.max(occ[k * NX + i], v); } }
+    function markLine(Lp, r, v) { for (let j = 1; j < Lp.length; j++) { const a = Lp[j - 1], b = Lp[j], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 1.5)); for (let s = 0; s <= n; s++) markDisk(a[0] + (b[0] - a[0]) * s / n, a[1] + (b[1] - a[1]) * s / n, r, v); } }
+    const rectCorners = (cx, cz, w, d, ux, uz) => { const vx = -uz, vz = ux; return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => [cx + ux * w / 2 * a + vx * d / 2 * b, cz + uz * w / 2 * a + vz * d / 2 * b]); };
+    function rectFree(cx, cz, w, d, ux, uz) {
+      const vx = -uz, vz = ux;
+      for (let a = -w / 2; a <= w / 2 + .01; a += Math.min(3, w / 2)) for (let b = -d / 2; b <= d / 2 + .01; b += Math.min(3, d / 2)) {
+        const x = cx + ux * a + vx * b, z = cz + uz * a + vz * b, c = cell(x, z); if (c < 0 || occ[c]) return false; }
+      for (const [x, z] of rectCorners(cx, cz, w, d, ux, uz)) if (!inIsland(x, z)) return false;
+      return inIsland(cx, cz);
+    }
+    function markRect(cx, cz, w, d, ux, uz, pad, v = 2) { const vx = -uz, vz = ux; for (let a = -w / 2 - pad; a <= w / 2 + pad; a += 1.5) for (let b = -d / 2 - pad; b <= d / 2 + pad; b += 1.5) { const c = cell(cx + ux * a + vx * b, cz + uz * a + vz * b); if (c >= 0) occ[c] = Math.max(occ[c], v); } }
+
+    // ---------- Hauptstrassen ----------
+    const uferLinie = u => { const L = []; for (let z = u.von; z <= u.bis; z += 50) { const x = u.seite === "ost" ? bankE(z) - u.abstand : bankW(z) + u.abstand; if (inIsland(x, z)) L.push([x, z]); } return L; };
+    const MAIN = G.hauptstrassen.map(s => ({ ...s, pts: smooth(s.ufer ? uferLinie(s.ufer) : resolve(s.linie), 6, s.geschlossen) }));
+    const bridgeLine = b => { if (b.linie) return resolve(b.linie);
+      if (b.seite === "nord") return [[b.x, bankN(b.x) + 25], [b.x, BZ.Na(b.x) - 25]];
+      const a = b.seite === "ost" ? [bankE(b.z) - 25, b.z] : [bankW(b.z) + 25, b.z], c = b.seite === "ost" ? [BX.Oa(b.z) + 25, b.z] : [BX.Wa(b.z) - 25, b.z]; return [a, c]; };
+    const BR = G.bruecken.map(b => ({ ...b, pts: smooth(bridgeLine(b), 4) }));
+    const roadById = Object.fromEntries(MAIN.map(s => [s.id, s]));
+    const mainNear = (x, z, pad) => MAIN.find(s => { for (let j = 1; j < s.pts.length; j++) if (segDist(x, z, s.pts[j - 1], s.pts[j]) < s.w / 2 + pad) return true; return false; });
+
+    // Orte: Grundflaeche belegen (Nebenstrassen weichen ihnen aus)
+    const placed = G.orte.filter(o => !TYPEN[o.typ]?.punkt && !(o.ebene < 0) && !o.aussen);
+    for (const o of placed) markRect(o.x, o.z, o.w, o.d, 1, 0, 6, 3);
+    const blockedByOrt = (x, z) => { const c = cell(x, z); return c >= 0 && occ[c] === 3; };
+
+    // ---------- Nebenstrassen je Bezirk (verzogenes, gedrehtes Raster mit Luecken) ----------
+    const NEBEN = [];
+    for (const b of G.bezirke) {
+      const N = b.netz; if (!N) continue;
+      const xs = b.poly.map(p => p[0]), zs = b.poly.map(p => p[1]), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+      const R = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) / 2 + 50, an = N.winkel * Math.PI / 180;
+      const ph = [rr(0, 6.3), rr(0, 6.3), rr(0, 6.3), rr(0, 6.3)], k1 = rr(1 / 420, 1 / 300), k2 = rr(1 / 260, 1 / 180);
+      const warp = (u, v) => [u + N.krumm * (Math.sin(v * k1 + ph[0]) + .5 * Math.sin(u * k2 + ph[1])), v + N.krumm * (Math.sin(u * k1 + ph[2]) + .5 * Math.sin(v * k2 + ph[3]))];
+      const toW = (u, v) => [cx + u * Math.cos(an) - v * Math.sin(an), cz + u * Math.sin(an) + v * Math.cos(an)];
+      for (const dir of [0, 1]) {
+        const sp = N.abstand[dir], cross = N.abstand[1 - dir], off = rr(0, sp);
+        for (let q = -R + off; q < R; q += sp * rr(0.85, 1.15)) {
+          let run = [], blockStart = -R, keep = rnd() > N.luecken;
+          for (let s = -R; s <= R; s += 6) {
+            if (s - blockStart > cross) { blockStart = s; keep = rnd() > N.luecken; }
+            const [u, v] = dir ? warp(s, q) : warp(q, s), [x, z] = toW(u, v);
+            const ok = keep && inPoly(x, z, b.poly) && inIsland(x, z) && !blockedByOrt(x, z) && !mainNear(x, z, 0);
+            if (ok) run.push([x, z]); else { if (run.length > 3) NEBEN.push({ b, pts: run, w: N.breite }); run = []; }
+          }
+          if (run.length > 3) NEBEN.push({ b, pts: run, w: N.breite });
+        }
+      }
+    }
+    // Nebenstrassen, die eng parallel zu einer Hauptstrasse laufen, entfernen (Anteil der Punkte zu nah)
+    for (let i = NEBEN.length - 1; i >= 0; i--) { const s = NEBEN[i]; let near = 0; for (const p of s.pts) if (mainNear(p[0], p[1], 22)) near++; if (near > s.pts.length * 0.5) NEBEN.splice(i, 1); }
+    // Belegung: Strassen (Fahrbahn + Gehsteig)
+    for (const s of MAIN) markLine(s.pts, s.w / 2 + 4, 1);
+    for (const s of BR) markLine(s.pts, s.w / 2 + 4, 1);
+    for (const s of NEBEN) markLine(s.pts, s.w / 2 + 3, 1);
+
+    // ---------- Fuellbauten entlang aller Strassen, dann in die Blockinnenraeume ----------
+    const BUILD = [];
+    const sizeFor = (b, x, z) => { const w = b ? b.wohlstand : .5, fab = b && /Fabrik/.test(b.name);
+      if (fab) return [rr(40, 90), rr(30, 60), rr(9, 18)];
+      if (w > .8) return [rr(28, 55), rr(26, 48), 30 + Math.pow(rnd(), 1.6) * 220];
+      if (w > .5) return [rr(18, 38), rr(18, 34), 12 + rnd() * 45];
+      if (w > .3) return [rr(14, 30), rr(14, 28), 8 + rnd() * 24];
+      return [rr(9, 20), rr(10, 22), 6 + rnd() * 12]; };
+    function alongStreet(Lp, w, bz) {
+      const cum = [0]; for (let i = 1; i < Lp.length; i++) cum.push(cum[i - 1] + Math.hypot(Lp[i][0] - Lp[i - 1][0], Lp[i][1] - Lp[i - 1][1]));
+      const at = s => { let i = 1; while (i < Lp.length - 1 && cum[i] < s) i++; const a = Lp[i - 1], b = Lp[i], t = (s - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1), ux = (b[0] - a[0]) / ((cum[i] - cum[i - 1]) || 1), uz = (b[1] - a[1]) / ((cum[i] - cum[i - 1]) || 1); return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, ux, uz]; };
+      for (const side of [1, -1]) for (let s = 0; s < cum[cum.length - 1] - 8;) {
+        const [x, z, ux, uz] = at(s), b = bz || districtAt(x, z), [bw, bd, h] = sizeFor(b, x, z), [x2, z2, vx2, vz2] = at(Math.min(s + bw / 2, cum[cum.length - 1]));
+        const nx = -vz2 * side, nz = vx2 * side, off = w / 2 + 4.5 + bd / 2, cx = x2 + nx * off, cz = z2 + nz * off;
+        if (rectFree(cx, cz, bw, bd, vx2, vz2)) { BUILD.push({ c: rectCorners(cx, cz, bw, bd, vx2, vz2), h }); markRect(cx, cz, bw, bd, vx2, vz2, 0.8); s += bw + rr(1, 3); }
+        else s += 5;
+      }
+    }
+    for (const s of MAIN) alongStreet(s.pts, s.w);
+    for (const s of NEBEN) alongStreet(s.pts, s.w, s.b);
+    // Blockinnenraeume: kleinere Hinterhaeuser im Bezirksraster
+    for (const b of G.bezirke) {
+      const an = (b.netz?.winkel || 0) * Math.PI / 180, ux = Math.cos(an), uz = Math.sin(an), st = b.wohlstand < .3 ? 14 : 20;
+      const xs = b.poly.map(p => p[0]), zs = b.poly.map(p => p[1]);
+      for (let x = Math.min(...xs); x < Math.max(...xs); x += st) for (let z = Math.min(...zs); z < Math.max(...zs); z += st) {
+        if (!inPoly(x, z, b.poly) || rnd() < .25) continue;
+        const [bw, bd, h] = sizeFor(b, x, z), w2 = bw * .7, d2 = bd * .7;
+        if (rectFree(x, z, w2, d2, ux, uz)) { BUILD.push({ c: rectCorners(x, z, w2, d2, ux, uz), h: h * .7 }); markRect(x, z, w2, d2, ux, uz, 0.8); }
+      }
+    }
+    // Zeichnen: je Hoehenklasse ein Pfad
+    const HB = [[0, 12, "#5b5650"], [12, 25, "#6c6760"], [25, 50, "#7f7b74"], [50, 100, "#95938e"], [100, 180, "#acadab"], [180, 999, "#c9ccd0"]];
+    for (const [a, b, col] of HB) {
+      const d = BUILD.filter(q => q.h >= a && q.h < b).map(q => path(q.c, true)).join("");
+      if (d) { const p = el("path", { d, fill: col, stroke: "#1b1d20", "stroke-width": 1.2 }, L.gebaeude); p.dataset.info = `<b>Füllbauten ${a}–${b < 999 ? b : "320"} m hoch</b><br>automatisch nach Wohlstand des Bezirks (Vorlagen aus G3)`; }
     }
 
-    // Strassenraster (nur auf der Insel), Hauptachsen breiter
-    const R = G.raster, gr = el("g", { "clip-path": "url(#clipInsel)" }, L.strassen);
-    for (const x of [...R.avenues, ...R.breit.avenues]) el("line", { x1: x, y1: -1600, x2: x, y2: 1500, stroke: "#8a8f96", "stroke-width": R.breit.avenues.includes(x) ? R.wBreit : R.w }, gr);
-    for (const z of [...R.strassen, ...R.breit.strassen]) el("line", { x1: -3100, y1: z, x2: -1000, y2: z, stroke: "#8a8f96", "stroke-width": R.breit.strassen.includes(z) ? R.wBreit : R.w }, gr);
-    for (const g of G.gassen) { const gg = el("g", { "clip-path": "url(#clipInsel)" }, L.gassen);
-      for (let x = g.x0; x <= g.x1; x += g.schritt) el("line", { x1: x, y1: g.z0, x2: x, y2: g.z1, stroke: "#6b625a", "stroke-width": 4 }, gg);
-      for (let z = g.z0; z <= g.z1; z += g.schritt) el("line", { x1: g.x0, y1: z, x2: g.x1, y2: z, stroke: "#6b625a", "stroke-width": 4 }, gg); }
-    for (const s of G.strassen) { const p = el("path", { d: path(s.linie), fill: "none", stroke: s.besteht ? "#d9d9d9" : "#a7adb5", "stroke-width": s.w, "stroke-linejoin": "round", "stroke-dasharray": s.besteht ? "" : "" }, L.strassen); p.dataset.info = `<b>${s.name}</b><br>Breite ${s.w} m`; }
-    for (const b of G.bruecken) { const p = el("path", { d: path(b.linie), fill: "none", stroke: "#e8c547", "stroke-width": b.w + 8, "stroke-linecap": "butt" }, L.strassen); p.dataset.info = `<b>${b.name}</b>`; }
+    // ---------- Strassen zeichnen ----------
+    for (const b of G.bezirke) { const d = NEBEN.filter(s => s.b === b).map(s => path(s.pts)).join(""); if (!d) continue;
+      el("path", { d, fill: "none", stroke: "#1b1d20", "stroke-width": b.netz.breite + 3, "stroke-linejoin": "round" }, L.neben);
+      const p = el("path", { d, fill: "none", stroke: b.netz.breite < 9 ? "#6f6a62" : "#7d838b", "stroke-width": b.netz.breite, "stroke-linejoin": "round" }, L.neben);
+      p.dataset.info = `<b>Nebenstrassen ${b.name}</b><br>${b.netz.breite} m breit, automatisch (netz in daten.js)`; }
+    for (const s of MAIN) {
+      const d = path(s.pts, s.geschlossen);
+      el("path", { d, fill: "none", stroke: "#15171a", "stroke-width": s.w + 5, "stroke-linejoin": "round" }, L.strassen);
+      const p = el("path", { d, fill: "none", stroke: s.besteht ? "#d9d9d9" : "#a7adb5", "stroke-width": s.w, "stroke-linejoin": "round" }, L.strassen);
+      p.dataset.info = `<b>${s.name}</b><br>Breite ${s.w} m · ${Math.round(lineLen(s.pts))} m lang${s.zweistock ? "<br>Zweistöckig: oben normaler Verkehr, 6,5 m darunter die untere Strasse (Obdachlose, Club-Eingang)" : ""}`;
+      if (s.zweistock) { el("path", { d, fill: "none", stroke: "#e8c547", "stroke-width": 3, "stroke-dasharray": "14 10", "pointer-events": "none" }, L.strassen);
+        const n = Math.floor(s.pts.length / 5); for (let i = 0; i < s.pts.length; i += 5) for (const sd of [-1, 1]) { const a = s.pts[Math.max(0, i - 1)], b = s.pts[Math.min(s.pts.length - 1, i + 1)], ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1;
+          el("circle", { cx: s.pts[i][0] - uz / l * sd * (s.w / 2 - 3), cy: s.pts[i][1] + ux / l * sd * (s.w / 2 - 3), r: 1.6, fill: "#111", "pointer-events": "none" }, L.strassen); } }
+    }
+    // Haengebruecken: Fahrbahn, Tuerme an den Ufern, Tragseile bis zu den Ankern
+    for (const b of BR) {
+      const d = path(b.pts);
+      el("path", { d, fill: "none", stroke: "#15171a", "stroke-width": b.w + 6 }, L.strassen);
+      const p = el("path", { d, fill: "none", stroke: "#b9bfc7", "stroke-width": b.w }, L.strassen);
+      let i0 = -1, i1 = -1; b.pts.forEach((q, i) => { if (inWater(q[0], q[1])) { if (i0 < 0) i0 = i; i1 = i; } });
+      const span = i0 >= 0 ? lineLen(b.pts.slice(i0, i1 + 1)) : 0;
+      p.dataset.info = `<b>${b.name}</b><br>Hängebrücke (Vorbild Williamsburg/Manhattan Bridge), Fahrbahn ${b.w} m auf Strassenhöhe<br>über Wasser ca. ${Math.round(span)} m, Türme an den Ufern, Durchfahrt ca. 40 m über dem Wasser`;
+      if (i0 < 0) continue;
+      const tw = [b.pts[Math.max(0, i0 - 1)], b.pts[Math.min(b.pts.length - 1, i1 + 1)]];
+      for (const sd of [-1, 1]) { const off = q => { const k = b.pts.indexOf(q), a = b.pts[Math.max(0, k - 1)], c = b.pts[Math.min(b.pts.length - 1, k + 1)], ux = c[0] - a[0], uz = c[1] - a[1], l = Math.hypot(ux, uz) || 1; return [q[0] - uz / l * sd * (b.w / 2 + 1), q[1] + ux / l * sd * (b.w / 2 + 1)]; };
+        el("path", { d: path([off(b.pts[0]), off(tw[0]), off(tw[1]), off(b.pts[b.pts.length - 1])]), fill: "none", stroke: "#d9dde3", "stroke-width": 1.6, "pointer-events": "none" }, L.strassen); }
+      for (const q of tw) { const k = b.pts.indexOf(q), a = b.pts[Math.max(0, k - 1)], c = b.pts[Math.min(b.pts.length - 1, k + 1)], ux = c[0] - a[0], uz = c[1] - a[1], l = Math.hypot(ux, uz) || 1;
+        const t = el("polygon", { points: pts(rectCorners(q[0], q[1], 10, b.w + 12, ux / l, uz / l)), fill: "#5e6670", stroke: "#111", "stroke-width": 2 }, L.strassen); t.dataset.info = `<b>Brückenturm</b> (${b.name})<br>ca. 62 m über der Fahrbahn`; }
+    }
 
-    // U-Bahn-Ring
-    const U = G.ubahn, ring = [];
-    for (let a = 0; a <= 360; a += 4) ring.push([U.cx + Math.cos(a * Math.PI / 180) * U.rx, U.cz + Math.sin(a * Math.PI / 180) * U.rz]);
-    el("path", { d: path(ring), fill: "none", stroke: "#ff5a5a", "stroke-width": 14, "stroke-dasharray": "40 18" }, L.ubahn);
+    // ---------- Kanalisation und Gullideckel ----------
+    const K = G.kanal, KS = K.hauptsammler.map(id => roadById[id]).filter(Boolean);
+    for (const s of KS) { const p = el("path", { d: path(s.pts, s.geschlossen), fill: "none", stroke: "#7bd88f", "stroke-width": 9 }, L.kanal); p.dataset.info = `<b>Hauptsammler unter ${s.name}</b><br>begehbar, ca. 6 m hoch, Sohle 27 m unter der Strasse`; }
+    { const h = el("circle", { cx: K.hub.x, cy: K.hub.z, r: K.hub.r, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); h.dataset.info = `<b>${K.hub.name}</b>`; }
+    // Auslaesse mit Gitter: wo ein Hauptsammler die Insel verlaesst
+    const gitter = [];
+    for (const s of KS) { if (s.geschlossen) continue; const P = s.pts; for (const [a, b] of [[P[0], P[1]], [P[P.length - 1], P[P.length - 2]]]) if (!inIsland(a[0], a[1]) || Math.min(Math.abs(a[0] - bankW(a[1])), Math.abs(a[0] - bankE(a[1])), Math.abs(a[1] - bankN(a[0])), Math.abs(a[1] - CS(a[0])[0])) < 140) gitter.push([a, b]); }
+    for (const [a, b] of gitter) { const ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1;
+      const g = el("polygon", { points: pts(rectCorners(a[0], a[1], 22, 30, ux / l, uz / l)), fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 4 }, L.kanal);
+      g.dataset.info = "<b>Kanal-Auslass mit Gitter</b><br>in der Kaimauer, 13 m über dem Wasser<br>Stil: rostiger Stahlrahmen, feines quadratisches Drahtgitter, Kette"; }
+    // Uebergaenge U-Bahn <-> Kanal: wo ein Hauptsammler den Ring kreuzt
+    const U = G.ubahn, ringF = (x, z) => ((x - U.cx) / U.rx) ** 2 + ((z - U.cz) / U.rz) ** 2 - 1;
+    for (const s of KS) for (let i = 1; i < s.pts.length; i++) { const a = s.pts[i - 1], b = s.pts[i]; if (ringF(a[0], a[1]) * ringF(b[0], b[1]) < 0) {
+      const c = el("circle", { cx: b[0], cy: b[1], r: 16, fill: "#ff5a5a", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Übergang U-Bahn ↔ Kanal</b><br>unter ${s.name}`; } }
+    // Gullideckel auf den Strassen mit Kanal darunter
+    let gn = 0; const gd = [];
+    for (const s of KS) { let acc = rr(0, K.gulliAbstand); for (let i = 1; i < s.pts.length; i++) { acc += Math.hypot(s.pts[i][0] - s.pts[i - 1][0], s.pts[i][1] - s.pts[i - 1][1]); if (acc >= K.gulliAbstand && inIsland(s.pts[i][0], s.pts[i][1])) { acc = 0; gn++; gd.push(`M${f1(s.pts[i][0] - 2.5)} ${f1(s.pts[i][1])}a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0`); } } }
+    el("path", { d: gd.join(""), fill: "#c0c4c8", stroke: "#000", "stroke-width": 1 }, L.gulli).dataset.info = `<b>Gullideckel</b> (${gn} Stück, alle ${K.gulliAbstand} m auf den Strassen mit Kanal)<br>nur mit Spezialwerkzeug (Gullihaken) zu öffnen, darunter Leiter in den Kanal`;
+
+    // ---------- U-Bahn-Ring ----------
+    const ring = []; for (let a = 0; a <= 360; a += 4) ring.push([U.cx + Math.cos(a * Math.PI / 180) * U.rx, U.cz + Math.sin(a * Math.PI / 180) * U.rz]);
+    el("path", { d: path(ring), fill: "none", stroke: "#ff5a5a", "stroke-width": 14, "stroke-dasharray": "40 18", opacity: .85 }, L.ubahn);
     el("path", { d: path(U.depot.gleis), fill: "none", stroke: "#ff5a5a", "stroke-width": 10 }, L.ubahn);
     { const d = U.depot, r = el("rect", { x: d.x - d.w / 2, y: d.z - d.d / 2, width: d.w, height: d.d, fill: "#7a2b2b", stroke: "#ff5a5a", "stroke-width": 4 }, L.ubahn); r.dataset.info = `<b>${d.name}</b>`; }
     for (const s of U.stationen) {
       const x = U.cx + Math.cos(s.a * Math.PI / 180) * U.rx, z = U.cz + Math.sin(s.a * Math.PI / 180) * U.rz;
       const c = el("circle", { cx: x, cy: z, r: s.haupt ? 34 : 22, fill: "#fff", stroke: "#ff5a5a", "stroke-width": 8 }, L.ubahn);
-      c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)}${s.notiz ? "<br>" + s.notiz : ""}`;
-      el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: "#ffb3b3", "pointer-events": "none" }, L.namen).textContent = "U " + s.name;
+      c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 14 m unter der Strasse${s.notiz ? "<br>" + s.notiz : ""}`;
+      el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: "#ffb3b3", stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = "U " + s.name;
     }
     for (const g of U.graffiti) { const t = el("text", { x: g.x, y: g.z, "font-size": 34, fill: "#ff4fd8", "font-weight": 800 }, L.ubahn); t.textContent = "✎ " + g.text; t.dataset.info = `<b>Graffiti „${g.text}“</b> im U-Bahn-Tunnel`; }
 
-    // Bus
-    for (const b of G.bus.linien) { const p = el("path", { d: path(b.linie), fill: "none", stroke: "#3ec7ff", "stroke-width": 8, "stroke-dasharray": "14 10" }, L.bus); p.dataset.info = `<b>Bus ${b.name}</b>`; }
-    for (const h of G.bus.halte) { const c = el("rect", { x: h[0] - 12, y: h[1] - 12, width: 24, height: 24, fill: "#3ec7ff", stroke: "#000", "stroke-width": 3 }, L.bus); c.dataset.info = `<b>Bushaltestelle</b><br>x ${h[0]} / z ${h[1]}`; }
+    // ---------- Bus ----------
+    for (const b of G.bus.linien) {
+      for (const id of b.strassen) { const s = roadById[id]; if (!s) continue;
+        const p = el("path", { d: path(s.pts, s.geschlossen), fill: "none", stroke: b.farbe, "stroke-width": 6, "stroke-dasharray": "14 10" }, L.bus); p.dataset.info = `<b>Bus ${b.name}</b><br>auf ${s.name}`;
+        let acc = G.bus.abstand / 2; for (let i = 1; i < s.pts.length; i++) { acc += Math.hypot(s.pts[i][0] - s.pts[i - 1][0], s.pts[i][1] - s.pts[i - 1][1]); if (acc >= G.bus.abstand) { acc = 0;
+          const h = el("rect", { x: s.pts[i][0] - 11, y: s.pts[i][1] - 11, width: 22, height: 22, fill: b.farbe, stroke: "#000", "stroke-width": 3 }, L.bus); h.dataset.info = `<b>Bushaltestelle</b> (${b.name})<br>x ${Math.round(s.pts[i][0])} / z ${Math.round(s.pts[i][1])}`; } } }
+    }
 
-    // Kanalnetz
-    const K = G.kanal;
-    for (const l of K.linien) el("path", { d: path(l), fill: "none", stroke: "#7bd88f", "stroke-width": 10, opacity: .8 }, L.kanal);
-    { const h = el("circle", { cx: K.hub.x, cy: K.hub.z, r: K.hub.r, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); h.dataset.info = `<b>${K.hub.name}</b>`; }
-    for (const g of K.gitter) { const c = el("rect", { x: g[0] - 16, y: g[1] - 16, width: 32, height: 32, fill: "#222", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Abflussgitter</b> (Auslass ins Wasser)`; }
-    for (const g of K.zugang) { const c = el("circle", { cx: g[0], cy: g[1], r: 18, fill: "#ff5a5a", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Übergang U-Bahn ↔ Kanal</b>`; }
-
-    // Orte
+    // ---------- Orte ----------
     const counts = {};
     for (const o of G.orte) {
       const T = TYPEN[o.typ] || { farbe: "#fff" }; counts[o.typ] = (counts[o.typ] || 0) + 1;
-      const big = o.w >= 40 || o.typ === "wahrzeichen";
-      const r = T.punkt ? el("circle", { cx: o.x, cy: o.z, r: 9, fill: T.farbe, stroke: "#000", "stroke-width": 3 }, L.orte)
-        : el("rect", { x: o.x - Math.max(o.w, 18) / 2, y: o.z - Math.max(o.d, 18) / 2, width: Math.max(o.w, 18), height: Math.max(o.d, 18), fill: T.farbe, "fill-opacity": o.ebene < 0 ? .35 : .9, stroke: "#000", "stroke-width": 3, "stroke-dasharray": o.ebene < 0 ? "8 5" : "" }, L.orte);
+      const big = o.w >= 40 || o.typ === "wahrzeichen", W = Math.max(o.w, 18), D = Math.max(o.d, 18), unter = o.ebene < 0;
+      let r;
+      if (T.punkt) r = el("circle", { cx: o.x, cy: o.z, r: 9, fill: T.farbe, stroke: "#000", "stroke-width": 3 }, L.orte);
+      else if (o.form === "stadion") { r = el("rect", { x: o.x - W / 2, y: o.z - D / 2, width: W, height: D, rx: D / 2.2, fill: T.farbe, stroke: "#000", "stroke-width": 3 }, L.orte);
+        el("rect", { x: o.x - W * .32, y: o.z - D * .25, width: W * .64, height: D * .5, rx: D * .12, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 2, "pointer-events": "none" }, L.orte); }
+      else r = el("rect", { x: o.x - W / 2, y: o.z - D / 2, width: W, height: D, fill: T.farbe, "fill-opacity": unter ? .35 : .9, stroke: "#000", "stroke-width": 3, "stroke-dasharray": unter ? "8 5" : "" }, L.orte);
       r.dataset.typ = o.typ;
-      r.dataset.info = `<b>${o.name}</b><br>${T.gruppe || o.typ}<br>x ${o.x} / z ${o.z} · ${o.w} × ${o.d} m${o.h ? " · " + o.h + " m hoch" : ""}${o.ebene ? " · Ebene " + o.ebene : ""}<br>Status: ${o.status || "geplant"}${o.notiz ? "<br>" + o.notiz : ""}<br><small>id: ${o.id}</small>`;
-      if (big) el("text", { x: o.x, y: o.z - Math.max(o.d, 18) / 2 - 10, "font-size": o.typ === "wahrzeichen" || o.w > 150 ? 40 : 26, fill: "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "");
+      r.dataset.info = `<b>${o.name}</b><br>${T.gruppe || o.typ}<br>x ${o.x} / z ${o.z} · ${o.w} × ${o.d} m${o.h ? " · " + o.h + " m hoch" : ""}${o.ebene ? " · " + o.ebene + " m (unter der Strasse)" : ""}<br>Status: ${o.status || "geplant"}${o.notiz ? "<br>" + o.notiz : ""}<br><small>id: ${o.id}</small>`;
+      if (big) el("text", { x: o.x, y: o.z - D / 2 - 10, "font-size": o.typ === "wahrzeichen" || o.w > 150 ? 40 : 26, fill: "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "");
     }
-    // Legende mit Filter je Typ
     for (const [k, T] of Object.entries(TYPEN)) {
       if (!counts[k]) continue;
       const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" checked><span class="sw" style="background:${T.farbe}"></span>${T.gruppe} <span style="color:var(--muted)">(${counts[k]})</span>`;
-      lab.querySelector("input").onchange = e => L.orte.querySelectorAll(`[data-typ="${k}"]`).forEach(n => n.style.display = e.target.checked ? "" : "none");
+      lab.querySelector("input").onchange = ev => L.orte.querySelectorAll(`[data-typ="${k}"]`).forEach(n => n.style.display = ev.target.checked ? "" : "none");
       document.getElementById("legend").appendChild(lab);
     }
-    // Nordpfeil und Massstab (in Weltmetern, wandern nicht mit: im Anzeigebereich neu gesetzt)
-    const ui = el("g", { "pointer-events": "none" });
 
-    // Ansicht: viewBox verschieben/zoomen
+    // ---------- Pruefung: Orte auf Hauptstrassen/Bruecken, ausserhalb der Insel, uebereinander ----------
+    const issues = [];
+    const rectHitsRoad = (o, s) => { const W = Math.max(o.w, 4) / 2 + s.w / 2, D = Math.max(o.d, 4) / 2 + s.w / 2; return s.pts.some(p => Math.abs(p[0] - o.x) < W && Math.abs(p[1] - o.z) < D); };
+    for (const o of G.orte) {
+      if (o.aussen || o.ebene < 0) continue;
+      const hit = [...MAIN, ...BR].find(s => rectHitsRoad(o, s)); if (hit) issues.push([o, "liegt auf " + hit.name]);
+      if (!o.ufer) { const c = [[o.x, o.z], ...rectCorners(o.x, o.z, o.w, o.d, 1, 0)]; if (c.some(q => !inIsland(q[0], q[1]))) issues.push([o, "ragt aus der Insel / ins Wasser"]); }
+    }
+    const solid = G.orte.filter(o => !o.aussen && !(o.ebene < 0) && !TYPEN[o.typ]?.punkt);
+    for (let i = 0; i < solid.length; i++) for (let j = i + 1; j < solid.length; j++) { const a = solid[i], b = solid[j];
+      if (Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.z - b.z) < (a.d + b.d) / 2) issues.push([a, "überlappt " + b.name + " (" + b.id + ")"]); }
+    for (const [o] of issues) el("rect", { x: o.x - Math.max(o.w, 18) / 2 - 8, y: o.z - Math.max(o.d, 18) / 2 - 8, width: Math.max(o.w, 18) + 16, height: Math.max(o.d, 18) + 16, fill: "none", stroke: "#ff3b3b", "stroke-width": 6, "pointer-events": "none" }, L.konflikt);
+    const kf = document.getElementById("konflikte");
+    if (!issues.length) { kf.className = "ok"; kf.textContent = `Keine Konflikte. ${BUILD.length} Füllbauten, ${NEBEN.length} Nebenstrassen, ${gn} Gullideckel.`; }
+    else kf.innerHTML = issues.map(([o, t]) => `• <b>${o.id}</b>: ${t}`).join("<br>");
+    window.GOTHAM_PRUEFUNG = { issues: issues.map(([o, t]) => o.id + ": " + t), gebaeude: BUILD.length, neben: NEBEN.length, gulli: gn };
+
+    // ---------- Ansicht: viewBox verschieben/zoomen ----------
+    const ui = el("g", { "pointer-events": "none" });
     const wrap = document.getElementById("wrap"), tip = document.getElementById("tip"), info = document.getElementById("info");
     let vb = { x: G.ansicht.x0, y: G.ansicht.z0, w: G.ansicht.x1 - G.ansicht.x0, h: G.ansicht.z1 - G.ansicht.z0 };
     const fit = () => { const r = wrap.getBoundingClientRect(), a = G.ansicht, W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
@@ -163,34 +390,33 @@
     }
     const toWorld = (cx, cy) => { const r = wrap.getBoundingClientRect(); return [vb.x + (cx - r.left) / r.width * vb.w, vb.y + (cy - r.top) / r.height * vb.h]; };
     const zoom = (f, cx, cy) => { const [wx, wy] = toWorld(cx, cy); vb.x = wx - (wx - vb.x) * f; vb.y = wy - (wy - vb.y) * f; vb.w *= f; vb.h *= f; apply(); };
-    wrap.addEventListener("wheel", e => { e.preventDefault(); zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18, e.clientX, e.clientY); }, { passive: false });
+    wrap.addEventListener("wheel", ev => { ev.preventDefault(); zoom(ev.deltaY > 0 ? 1.18 : 1 / 1.18, ev.clientX, ev.clientY); }, { passive: false });
     const mid = () => { const r = wrap.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
     document.getElementById("zin").onclick = () => zoom(1 / 1.4, ...mid());
     document.getElementById("zout").onclick = () => zoom(1.4, ...mid());
     document.getElementById("zfit").onclick = fit;
-    // Ziehen (Maus und Finger), Kneifen zum Zoomen
     const ptr = new Map(); let moved = 0, pinch = 0;
-    wrap.addEventListener("pointerdown", e => { if (e.target.closest(".zoom")) return; wrap.setPointerCapture(e.pointerId); ptr.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; wrap.classList.add("drag"); });
-    wrap.addEventListener("pointermove", e => {
-      if (!ptr.has(e.pointerId)) { hover(e); return; }
-      const p = ptr.get(e.pointerId), r = wrap.getBoundingClientRect();
-      if (ptr.size === 2) { const [a, b] = [...ptr.values()], d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); ptr.set(e.pointerId, [e.clientX, e.clientY]);
+    wrap.addEventListener("pointerdown", ev => { if (ev.target.closest(".zoom")) return; wrap.setPointerCapture(ev.pointerId); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); moved = 0; wrap.classList.add("drag"); });
+    wrap.addEventListener("pointermove", ev => {
+      if (!ptr.has(ev.pointerId)) { hover(ev); return; }
+      const p = ptr.get(ev.pointerId), r = wrap.getBoundingClientRect();
+      if (ptr.size === 2) { const [a, b] = [...ptr.values()], d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]);
         const [c, d] = [...ptr.values()], d1 = Math.hypot(c[0] - d[0], c[1] - d[1]); if (d0 > 0) zoom(d0 / d1, (c[0] + d[0]) / 2, (c[1] + d[1]) / 2); pinch = 1; moved = 99; return; }
-      const dx = e.clientX - p[0], dy = e.clientY - p[1]; moved += Math.abs(dx) + Math.abs(dy);
-      vb.x -= dx / r.width * vb.w; vb.y -= dy / r.height * vb.h; ptr.set(e.pointerId, [e.clientX, e.clientY]); apply();
+      const dx = ev.clientX - p[0], dy = ev.clientY - p[1]; moved += Math.abs(dx) + Math.abs(dy);
+      vb.x -= dx / r.width * vb.w; vb.y -= dy / r.height * vb.h; ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); apply();
     });
-    const up = e => { if (!ptr.has(e.pointerId)) return; ptr.delete(e.pointerId); if (!ptr.size) wrap.classList.remove("drag");
-      if (moved < 6 && !pinch) click(e); if (!ptr.size) pinch = 0; };
+    const up = ev => { if (!ptr.has(ev.pointerId)) return; ptr.delete(ev.pointerId); if (!ptr.size) wrap.classList.remove("drag");
+      if (moved < 6 && !pinch) click(ev); if (!ptr.size) pinch = 0; };
     wrap.addEventListener("pointerup", up); wrap.addEventListener("pointercancel", up);
     wrap.addEventListener("pointerleave", () => { tip.style.display = "none"; });
-    function hover(e) {
-      const t = e.target.dataset && e.target.dataset.info, r = wrap.getBoundingClientRect();
+    function hover(ev) {
+      const t = ev.target.dataset && ev.target.dataset.info, r = wrap.getBoundingClientRect();
       if (!t) { tip.style.display = "none"; return; }
       tip.innerHTML = t; tip.style.display = "block";
-      tip.style.left = Math.min(e.clientX - r.left + 14, r.width - 290) + "px"; tip.style.top = (e.clientY - r.top + 14) + "px";
+      tip.style.left = Math.min(ev.clientX - r.left + 14, r.width - 290) + "px"; tip.style.top = (ev.clientY - r.top + 14) + "px";
     }
-    function click(e) {
-      const [x, z] = toWorld(e.clientX, e.clientY), t = document.elementFromPoint(e.clientX, e.clientY), d = t && t.dataset && t.dataset.info;
+    function click(ev) {
+      const [x, z] = toWorld(ev.clientX, ev.clientY), t = document.elementFromPoint(ev.clientX, ev.clientY), d = t && t.dataset && t.dataset.info;
       const k = `[${Math.round(x)}, ${Math.round(z)}]`;
       info.innerHTML = (d ? d + "<hr style='border-color:#2a3039'>" : "") + `Punkt: <code>${k}</code> <small>(kopiert)</small>`;
       navigator.clipboard && navigator.clipboard.writeText(k).catch(() => {});

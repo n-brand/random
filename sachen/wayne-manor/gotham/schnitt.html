@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gotham-Seitenansicht (Ebenen) – random</title>
+  <style>
+    :root { --bg: #0f1216; --panel: #181c22; --line: #2a3039; --text: #e6e9ee; --muted: #9aa4b2; --acc: #e8c547; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+    header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+    header a { color: var(--muted); text-decoration: none; }
+    header a.tab { color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }
+    header h1 { font-size: 16px; margin: 0; }
+    header .hint { color: var(--muted); font-size: 12px; }
+    main { position: relative; overflow: auto; padding: 8px 16px; }
+    svg { width: 100%; min-width: 900px; height: auto; display: block; }
+    #tip { position: fixed; pointer-events: none; background: #000d; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 300px; display: none; z-index: 2; }
+    footer { padding: 6px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); background: var(--panel); }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="../">← Wayne Manor</a>
+    <a class="tab" href="./">← Karte</a>
+    <h1>Gotham-Seitenansicht (Ebenen)</h1>
+    <span class="hint">Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht nur schematisch. Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
+  </header>
+  <main><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · 0 m = Strassenebene = Fahrbahn der Brücken</footer>
+
+  <script src="daten.js"></script>
+  <script>
+    "use strict";
+    const S = GOTHAM.schnitt, H = GOTHAM.hoehen, svg = document.getElementById("cut"), NS = "http://www.w3.org/2000/svg";
+    const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
+    const K = 14, Y = y => -y * K, TOP = 80, BOT = -60, XL = -170, XR = 2260;   // 14 Bildpunkte je Meter senkrecht
+    const fm = v => (v > 0 ? "+" : v < 0 ? "−" : "") + String(Math.abs(Math.round(v * 10) / 10)).replace(".", ",") + " m";
+    const welt = v => "Welt-y " + String(Math.round((v + H.strasse) * 10) / 10).replace(".", ",");
+    svg.setAttribute("viewBox", `${XL} ${Y(TOP)} ${XR - XL} ${(TOP - BOT) * K}`);
+    const defs = el("defs", {});
+    { const p = el("pattern", { id: "draht", width: 5, height: 5, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 5, height: 5, fill: "#2a2418" }, p); el("path", { d: "M0 0H5M0 0V5", stroke: "#c9a85a", "stroke-width": .8 }, p); }
+    { const p = el("pattern", { id: "leiter", width: 8, height: 10, patternUnits: "userSpaceOnUse" }, defs); el("path", { d: "M1 0V10M7 0V10M1 5H7", stroke: "#d8dce0", "stroke-width": 1.2 }, p); }
+    { const g = el("linearGradient", { id: "himmel", x1: 0, y1: 0, x2: 0, y2: 1 }, defs); el("stop", { offset: 0, "stop-color": "#0b1424" }, g); el("stop", { offset: 1, "stop-color": "#1e2c44" }, g); }
+    el("rect", { x: 0, y: Y(TOP), width: 1800, height: TOP * K, fill: "url(#himmel)" });
+
+    const FARBE = { grund: "#3b3226", luft: "#1a2638", wasser: "#1d3b55", mauer: "#6b6f75", deck: "#b9bfc7", strasse: "#8a8f96", turm: "#5e6670", gebaeude: "#7f7b74" };
+    const tip = document.getElementById("tip");
+    const info = (n, t) => { n.addEventListener("mousemove", ev => { tip.innerHTML = t; tip.style.display = "block"; tip.style.left = Math.min(ev.clientX + 14, innerWidth - 310) + "px"; tip.style.top = ev.clientY + 14 + "px"; }); n.addEventListener("mouseleave", () => tip.style.display = "none"); };
+    const label = (t, x, y, w, col) => { if (!t) return; const fs = Math.max(9, Math.min(15, w / t.length * 1.9));
+      el("text", { x, y, "font-size": fs, fill: col || "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", "pointer-events": "none" }).textContent = t; };
+
+    for (const t of S.teile) {
+      const x = t.x0, w = t.x1 - t.x0, y = Y(t.y1), h = (t.y1 - t.y0) * K, txt = `<b>${t.name || t.typ}</b><br>${fm(t.y0)} bis ${fm(t.y1)} (${welt(t.y0)} bis ${String(t.y1 + H.strasse).replace(".", ",")})<br>Höhe ${String(Math.round((t.y1 - t.y0) * 10) / 10).replace(".", ",")} m`;
+      let n;
+      if (t.typ === "kabel") {   // Tragseil: vom Turm (Seite der Kaimauer) zur Flussmitte hinunter
+        const tw = t.x1 < 900 ? t.x1 : t.x0, far = t.x1 < 900 ? t.x0 : t.x1;
+        el("path", { d: `M${tw} ${Y(t.y1)}Q${(tw + far) / 2} ${Y(t.y0 - 6)} ${far} ${Y(t.y0 + 12)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2 });
+        for (let s = 1; s < 8; s++) { const u = s / 8, xx = tw + (far - tw) * u, yy = (1 - u) * (1 - u) * Y(t.y1) + 2 * u * (1 - u) * Y(t.y0 - 6) + u * u * Y(t.y0 + 12); el("line", { x1: xx, y1: yy, x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }); }
+        continue;
+      }
+      if (t.typ === "rohr") { n = el("rect", { x, y, width: w, height: h, rx: h / 2, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 3 }); el("line", { x1: x, y1: Y(t.y0) - 6, x2: x + w, y2: Y(t.y0) - 6, stroke: "#5a7a3a", "stroke-width": 5 }); }
+      else if (t.typ === "gitter") n = el("rect", { x, y, width: w, height: h, fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 3 });
+      else if (t.typ === "schacht") n = el("rect", { x, y, width: w, height: h, fill: t.farbe ? t.farbe + "44" : "url(#leiter)", stroke: t.farbe || "#d8dce0", "stroke-width": 1.5 });
+      else if (t.typ === "raum") { n = el("rect", { x, y, width: w, height: h, fill: (t.farbe || "#9aa4b2") + "55", stroke: t.farbe || "#9aa4b2", "stroke-width": 2 });
+        if (t.licht) for (let xx = x + 6; xx < x + w; xx += 12) el("rect", { x: xx, y: y + 1, width: 10, height: 4, fill: "#f4f7fb", "pointer-events": "none" }); }
+      else if (t.typ === "gebaeude") { n = el("rect", { x, y, width: w, height: h, fill: t.farbe || FARBE.gebaeude, stroke: "#1b1d20", "stroke-width": 2 });
+        for (let yy = y + 10; yy < y + h - 6; yy += 16) for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy, width: 7, height: 8, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" });
+        if (t.y1 >= 70) el("path", { d: `M${x - 6} ${y + 10}l${w / 4 + 6} -8l${w / 4} 8l${w / 4} -8l${w / 4 + 6} 8`, fill: "none", stroke: "#0b1424", "stroke-width": 6 }); }
+      else n = el("rect", { x, y, width: w, height: Math.max(h, 2), fill: FARBE[t.typ] || "#888", stroke: t.typ === "grund" || t.typ === "luft" ? "none" : "#111", "stroke-width": 1.5 });
+      if (t.name) info(n, txt);
+      if (t.typ === "wasser") label(t.name, x + w / 2, Y(t.y1) + 30, w, "#9fd0ff");
+      else if (t.typ === "turm") label("Turm", x + w / 2, Y(t.y1) - 8, 60, "#d9dde3");
+      else if (t.typ === "gebaeude") label(t.name, x + w / 2, y - 6, w * 1.4);
+      else if (t.typ === "raum" || t.typ === "rohr") label(t.name, x + w / 2, y + h / 2 + 5, w, "#fff");
+      else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");
+      else if (t.typ === "schacht" || t.typ === "gitter") label(t.name, x + w / 2 + 34, y + h / 2, 160, "#d8dce0");
+    }
+    // Wasserlinie
+    el("line", { x1: 0, y1: Y(-40), x2: 1800, y2: Y(-40), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
+
+    // Massstab links: alle 5 m, beschriftet alle 10 m (relativ und Welt-y)
+    for (let v = BOT; v <= TOP; v += 5) {
+      el("line", { x1: -14, y1: Y(v), x2: 0, y2: Y(v), stroke: "#9aa4b2", "stroke-width": v % 10 ? 1 : 2 });
+      if (v % 10 === 0) { el("text", { x: -18, y: Y(v) + 4, "font-size": 12, fill: "#c7ccd6", "text-anchor": "end" }).textContent = fm(v);
+        el("text", { x: -18, y: Y(v) + 17, "font-size": 9, fill: "#7c8593", "text-anchor": "end" }).textContent = "(" + welt(v) + ")"; }
+    }
+    el("line", { x1: 0, y1: Y(TOP), x2: 0, y2: Y(BOT), stroke: "#9aa4b2", "stroke-width": 2 });
+
+    // Masskette rechts: Ebenen mit Abstaenden
+    const E = [...S.ebenen].sort((a, b) => b.y - a.y), XC = 1830; let lastY = -1e9;
+    E.forEach((e, i) => {
+      el("line", { x1: 0, y1: Y(e.y), x2: XC, y2: Y(e.y), stroke: "#ffffff22", "stroke-width": 1, "stroke-dasharray": "4 6" });
+      el("line", { x1: XC - 8, y1: Y(e.y), x2: XC + 8, y2: Y(e.y), stroke: "#e8c547", "stroke-width": 2 });
+      const ly = Math.max(Y(e.y) + 5, lastY + 17); lastY = ly;
+      if (ly - Y(e.y) > 6) el("line", { x1: XC + 8, y1: Y(e.y), x2: XC + 92, y2: ly - 4, stroke: "#e8c54788", "stroke-width": 1 });
+      el("text", { x: XC + 96, y: ly, "font-size": 14, fill: "#e6e9ee" }).textContent = `${fm(e.y)}  ${e.name}`;
+      if (i) { const a = Y(E[i - 1].y), b = Y(e.y), d = Math.round((E[i - 1].y - e.y) * 10) / 10;
+        el("line", { x1: XC, y1: a, x2: XC, y2: b, stroke: "#e8c547", "stroke-width": 1.5 });
+        el("text", { x: XC + 14, y: (a + b) / 2 + 4, "font-size": 11, fill: "#e8c547" }).textContent = String(d).replace(".", ",") + " m"; }
+    });
+    el("text", { x: XC - 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Abstände zwischen den Ebenen";
+    el("text", { x: 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Westen";
+    el("text", { x: 1790, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
+  </script>
+</body>
+</html>
