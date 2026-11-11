@@ -108,15 +108,20 @@
         el("line", { x1: x0 + L + 6, y1: yb, x2: x0 + L + 6, y2: yb - Hh, stroke: "#ffd36b", "stroke-width": 1.2 }, g);
         el("text", { x: x0 + L + 10, y: yb - Hh / 2 + 4, "font-size": 10, fill: "#ffd36b", stroke: "#000", "stroke-width": 2.5, "paint-order": "stroke" }, g).textContent = String(t.hoehe).replace(".", ",") + " m";
         info(g, `<b>${t.name}</b><br>${String(t.hoehe).replace(".", ",")} m hoch, ${String(t.laenge).replace(".", ",")} m lang (hier in echten Proportionen)`); continue; }
-      if (t.typ === "stadion") {   // Querschnitt: Raenge in Stufen nach aussen steigend, oben offen, Spielfeld in der Mitte
-        const W = t.x1 - t.x0, rw = W * t.rang, steps = Math.round(t.hoehe / t.geschoss), g = el("g", {});
-        for (const sd of [0, 1]) { const P = []; const xo = sd ? t.x1 : t.x0, dir = sd ? -1 : 1;   // xo = Aussenwand
-          P.push([xo, 0], [xo, t.hoehe]); for (let k = steps; k >= 0; k--) { const xx = xo + dir * rw * (1 - k / steps) , yy = t.hoehe * k / steps; P.push([xx, yy]); if (k) P.push([xo + dir * rw * (1 - (k - 1) / steps), yy]); } P.push([xo + dir * rw, 0]);
-          el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: "#8f969e", stroke: "#1b1d20", "stroke-width": 1.5 }, g);
-          for (let k = 1; k < steps; k++) { const xx = xo + dir * rw * (1 - k / steps); el("rect", { x: Math.min(xx, xx + dir * rw / steps) + 1, y: Y(t.hoehe * k / steps) + 1, width: rw / steps - 2, height: 4, fill: "#5fd3e6", opacity: .55 }, g); } }   // Sitzreihen
-        el("rect", { x: t.x0 + rw, y: Y(0), width: W - 2 * rw, height: -t.feld * K, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, g);   // Spielfeld abgesenkt
-        info(g, `<b>${t.name}</b><br>Ränge bis ${t.hoehe} m, oben offen (kein Dach), Spielfeld ${String(-t.feld).replace(".", ",")} m abgesenkt<br>Tribüne logisch ca. ${steps} Stockwerke (je ${t.geschoss} m); waagrecht nicht massstäblich`);
-        label(t.name, (t.x0 + t.x1) / 2, Y(t.hoehe) - 10, W, "#5fd3e6", 24); label(`oben offen · Ränge bis ${t.hoehe} m\n≈ ${steps} Stockwerke Tribüne`, (t.x0 + t.x1) / 2, Y(14), W * 0.75, "#e6e9ee", 20); continue; }
+      if (t.typ === "stadion") {   // Querschnitt: Sitzreihen (reihe hoch, tiefe tief) in echten Masse, nach aussen steigend; darunter Stockwerke; oben offen
+        const W = t.x1 - t.x0, n = Math.round(t.hoehe / t.reihe), rise = t.hoehe / n, dp = t.tiefe * K, rw = n * dp, g = el("g", {});
+        const blau = ["#3aa0ff", "#1f6fd8", "#2a3f9a"];
+        for (const sd of [0, 1]) { const xo = sd ? t.x1 : t.x0, dir = sd ? -1 : 1, P = [[xo, 0], [xo, t.hoehe]];   // xo = Aussenwand
+          for (let k = n; k >= 1; k--) { const xa = xo + dir * (n - k) * dp; P.push([xa, k * rise], [xa + dir * dp, k * rise]); } P.push([xo + dir * rw, 0]);
+          el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: "#9aa1a8", stroke: "#1b1d20", "stroke-width": 1.2 }, g);
+          for (let f = t.geschoss; f < t.hoehe - 0.1; f += t.geschoss) { const xi = xo + dir * (n - f / rise) * dp; el("line", { x1: xo, y1: Y(f), x2: xi, y2: Y(f), stroke: "#1b1d20", "stroke-width": 1.5, "stroke-dasharray": "6 4" }, g); }   // Stockwerke unter den Raengen
+          for (let k = 1; k <= n; k++) { const xa = xo + dir * (n - k) * dp, sx = xa + dir * dp * 0.25, sw = dp * 0.55, y = Y(k * rise);   // Sitz: Schale mit Lehne
+            el("path", { d: `M${Math.min(sx, sx + dir * sw)} ${y}h${sw}v${-0.18 * K}h${-sw * 0.75}v${-0.3 * K}h${-sw * 0.25}Z`, fill: blau[k % 3], transform: sd ? `translate(${2 * (sx + dir * sw / 2)} 0) scale(-1 1)` : "" }, g); } }
+        el("rect", { x: t.x0 + rw, y: Y(0), width: W - 2 * rw, height: -t.feld * K, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, g);   // Spielfeld abgesenkt (verkuerzt)
+        const fm1 = v => String(v).replace(".", ","), floors = Math.round(t.hoehe / t.geschoss);
+        info(g, `<b>${t.name}</b><br>Tribünen ${floors} Stockwerke (je ${fm1(t.geschoss)} m) = ${fm1(t.hoehe)} m, oben offen<br>${n} Sitzreihen je Seite: ${fm1(Math.round(rise * 100) / 100)} m hoch, ${fm1(t.tiefe)} m tief (Tribüne ca. ${Math.round(n * t.tiefe)} m tief, echte Masse)<br>Spielfeld ${fm1(-t.feld)} m abgesenkt, im Bild verkürzt`);
+        label(t.name, (t.x0 + t.x1) / 2, Y(t.hoehe) - 30, W, "#5fd3e6", 24);
+        label(`Tribünen ${floors} Stockwerke (${fm1(t.hoehe)} m) · ${n} Reihen à ${fm1(Math.round(rise * 100) / 100)} m · Spielfeld verkürzt`, (t.x0 + t.x1) / 2, Y(t.hoehe) - 8, W, "#e6e9ee", 18); continue; }
       if (t.typ === "neben") {   // schraeges Rohr mit Gefaelle (ya/yb = Sohle am Anfang/Ende), Pfeile in Fliessrichtung
         const so = u => t.ya + (t.yb - t.ya) * (t.kurve ? u * u * (3 - 2 * u) : u), U = [...Array(41).keys()].map(i => i / 40), X = u => t.x0 + (t.x1 - t.x0) * u;   // Sohle; Kurve: oben und unten flach
         const P = [...U.map(u => [X(u), so(u) + t.h]), ...U.slice().reverse().map(u => [X(u), so(u)])];

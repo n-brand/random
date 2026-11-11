@@ -52,7 +52,7 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 - **Hafen** mit Containerterminal, Kränen, Lagerhallen.
 - Gericht, Kathedrale/Kirche, **Eventgebäude** (Spendengala, Hochzeit), 2 Museen.
 - 3 Krankenhäuser, 2 Kinderheime, 3 Kinderkrippen.
-- **American-Football-Stadion**, oben offen (kein Dach), Ränge bis ca. 40 m (Seitenansicht).
+- **American-Football-Stadion**, oben offen (kein Dach). Tribünen 3 Stockwerke hoch (14,1 m), Sitzreihen wie auf dem Foto von Nicolas: 0,4 m Stufenhöhe, 0,8 m tief, Kunststoff-Sitzschalen in Blautönen (Seitenansicht).
 - **Banken:** 3 Grossbanken mit Tresorkellern (voller Tresore; Tresorkeller auf der Höhe der Tiefgarage 1, direkt daneben), 4 kleine Banken mit nur 3 Automaten, 12 Bankautomaten in der Stadt.
 - **Hotels:** 2 Luxushotels, 3 Billighotels.
 - **Läden:** 3 Juweliere, 2 Massschneider (teuer), 2 normale und 3 billige Kleiderläden, 2 Waffenläden.
