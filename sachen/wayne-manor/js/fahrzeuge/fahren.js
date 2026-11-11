@@ -245,9 +245,10 @@ function carStep(dt) {
   C.x = nx; C.z = nz;
   if (dt > 0) { const along = ((nx - x0) * fx + (nz - z0) * fz) / dt; if (Math.abs(along) < Math.abs(C.v) - 0.5) C.v = C.air ? along * 0.9 : along; }   // an Hindernissen abbremsen
   // Hoehe: am Boden haften, ueber Kanten abheben, im Flug Schwerkraft
-  // Kippschutz (Nicolas 2026-11-11, Panzer stand senkrecht im Silo): liegt der Boden unter der Mitte mehr als 0,6 m unter der Ebene der Raeder und
+  // Kippschutz (Nicolas 2026-11-11, Panzer stand senkrecht im Silo): liegt der Boden unter der Mitte mehr als 35 % des Radstands (mind. 0,6 m) unter der Ebene der Raeder und
   // steht das Fahrzeug schraeg, haengt es ueber einer Kante (kein Hang): dann faellt es (Flug mit begrenzter Neigung) bis die Mitte aufsetzt
-  const overEdge = q => q.hc < q.y - 0.6 && Math.max(Math.abs(q.pitch), Math.abs(q.roll)) > 0.35;
+  const overEdge = q => q.hc < q.y - Math.max(0.6, 0.35 * sp.wb) &&   // Schwelle mit dem Radstand (Nicolas 2026-11-11: am Hangfuss zuckte der Panzer, eine Mulde ist keine Kante)
+    Math.max(Math.abs(q.pitch), Math.abs(q.roll)) > 0.35;
   const gr = carGround(C.y);
   if (!C.air) {
     if (gr.y >= C.y - 0.5 && !overEdge(gr)) { const lim = ((sp.grade || 40) + 10) * Math.PI / 180, cg = v => Math.max(-lim, Math.min(lim, v));   // Neigung hoechstens Steigvermoegen + 10 Grad (Kante statt Hang)

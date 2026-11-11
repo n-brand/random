@@ -75,7 +75,7 @@ renderer.domElement.addEventListener("mousedown", e => {
 // Maus frei ohne eigenes Freigeben: Esc beendet das Begehen. Verliert das Fenster dabei den Fokus (Win+Shift+S Screenshot, Alt+Tab), bleibt man drin (Nicolas 2026-11-10)
 document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement || !dragging) return; stopDrag(); setTimeout(() => { if (!walking) return; if (document.hasFocus()) setWalk(false); else toast("Maus freigegeben (Linksklick übernimmt wieder)"); }, 250); });
 const MOUSE_SENS = 0.0025 * 0.5;                                          // fest 50 % (Wunsch von Nicolas, nicht einstellbar)
-document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS); });
+document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS / zoomK(), e.movementY * MOUSE_SENS / zoomK()); });   // im Panzer-Zoom feiner (schiessen.js)
 // Strg+W schliesst den Tab, das kann eine Webseite nicht verhindern: beim Begehen/Geist/Fahren fragt der Browser wenigstens nach (Nicolas)
 addEventListener("beforeunload", e => { if (walking) { e.preventDefault(); e.returnValue = ""; } });
 // Vollbild mit Tastensperre (Nicolas): im Vollbild bekommt die Seite Strg+W & Co. (Keyboard Lock, Chrome/Edge) und verhindert sie;

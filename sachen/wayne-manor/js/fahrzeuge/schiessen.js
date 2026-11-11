@@ -16,7 +16,7 @@ const bodyHOf = v => v === JET ? 3 : v.spec.bodyH;
 function jetHit(x, y, z) { const J = JET; if (J.on && !J.ground) return false; const dx = x - J.x, dz = z - J.z, dy = y - J.y, c = Math.cos(J.h), s = Math.sin(J.h), lx = dx * c - dz * s, lz = dx * s + dz * c;
   // grosszuegig (Nicolas 2026-11-11: Trefferzone sehr gross): Rumpf bis zum Boden und ueber die Leitwerke, Fluegel dick, ca. 1 m Zugabe rundum
   return (Math.abs(lx) < 2.6 && Math.abs(lz) < 10.5 && dy > -2.2 && dy < 2.6) || (Math.abs(lx) < 7.8 && lz > -3.6 && lz < 6.6 && dy > -1.4 && dy < 1.4) || (Math.abs(lx) < 3.6 && lz > 2 && lz < 9.6 && dy > 0 && dy < 4.3); }
-const SHOT = { cd: 0, RELOAD: 2.2, SPEED: 320, RANGE: 900, MUZZLE: 4.75, shells: [], fx: [], fires: [], aim: null, aimT: 0, recoil: 0 };
+const SHOT = { zoom: 1, zoomT: 1, cd: 0, RELOAD: 2.2, SPEED: 320, RANGE: 900, MUZZLE: 4.75, shells: [], fx: [], fires: [], aim: null, aimT: 0, recoil: 0 };
 const shotV = new THREE.Vector3(), shotA = new THREE.Vector3(), shotB = new THREE.Vector3(), shotRay = new THREE.Raycaster(), shotN = new THREE.Vector2();
 const fxGeo = new THREE.SphereGeometry(1, 14, 10), fxRing = new THREE.RingGeometry(0.8, 1, 40).rotateX(-Math.PI / 2), fxCone = new THREE.ConeGeometry(0.5, 1.6, 8, 1, true).translate(0, 0.8, 0), fxBox = new THREE.BoxGeometry(1, 1, 1);
 const fxAdd = col => new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -92,6 +92,10 @@ function vehRepair(v) {
 { const enter0 = enterVehicle; enterVehicle = v => { if (v && v.dead) return toast(vehName(v) + (v === JET ? " ist zerstört – „Kampfjet (hingehen)“ im Menü (T) repariert ihn" : " ist zerstört – „Fahrzeuge holen“ im Menü (T) repariert es")); return enter0(v); };
   const go0 = goToJet; goToJet = () => { if (JET.dead) { vehRepair(JET); jetReset(JET); toast("Kampfjet repariert"); } else JET.hp = undefined; return go0(); };
   const sum0 = summonVehicle; summonVehicle = v => { if (v && v.dead) { vehRepair(v); toast(vehName(v) + " repariert"); } else if (v) v.hp = undefined; return sum0(v); }; }
+// Zoom beim Zielen (Nicolas 2026-11-11): Mausrad im Panzer, 1x bis 6x (Sichtwinkel 70 / Zoom), Maus dreht dann entsprechend feiner;
+// beim Aussteigen zurueck auf 1x. Anzeige im Visier-Hinweis.
+const zoomK = () => SHOT.zoom;
+addEventListener("wheel", e => { if (!(CAR && CAR.on && CAR.turret)) return; e.preventDefault(); SHOT.zoomT = Math.max(1, Math.min(6, SHOT.zoomT * (e.deltaY < 0 ? 1.25 : 0.8))); if (SHOT.zoomT < 1.05) SHOT.zoomT = 1; }, { passive: false });
 // ---- jedes Bild (nach carFrame) ----
 function shotsStep(dt) {
   const C = CAR && CAR.on && CAR.turret ? CAR : null, now = clock.elapsedTime, label = document.querySelector("#tank-sight span");
@@ -100,7 +104,10 @@ function shotsStep(dt) {
     if ((SHOT.aimT -= dt) <= 0) { SHOT.aimT = 0.1; SHOT.aim = shotAimPoint(C); }                       // Zielpunkt 10-mal pro Sekunde
     C.gun.updateWorldMatrix(true, false); C.gun.getWorldPosition(shotA);
     if (SHOT.aim) { const dx = SHOT.aim.x - shotA.x, dz = SHOT.aim.z - shotA.z; C.elev += (Math.max(-0.4, Math.min(0.55, Math.atan2(SHOT.aim.y - shotA.y, Math.hypot(dx, dz)))) - C.elev) * Math.min(1, dt * 8); }   // Rohr hebt/senkt sich zum Ziel
-    if (label) label.textContent = SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Leertaste: schießen";
+    // gezoomt: Kamera in die Zieloptik oben am Turm (sonst sah man den eigenen Turm gross), Blick in Turmrichtung
+    if (SHOT.zoomT > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9)); camera.position.copy(shotB); camera.rotation.set(player.pitch + 0.12, player.yaw, 0, "YXZ"); }
+    SHOT.zoom += (SHOT.zoomT - SHOT.zoom) * Math.min(1, dt * 10); const fov = 70 / SHOT.zoom; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    if (label) label.textContent = (SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Leertaste: schießen") + (SHOT.zoomT > 1 ? " · " + SHOT.zoomT.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
     if ((keys.has("Space") || jumpHeld) && SHOT.cd === 0 && SHOT.aim) {
       SHOT.cd = SHOT.RELOAD; const mz = C.gun.localToWorld(new THREE.Vector3(0, 0, -SHOT.MUZZLE)), dir = SHOT.aim.clone().sub(mz).normalize();
       const shell = fxAddMesh(fxGeo, fxAdd(0xffe2a0), mz, 0.14); shell.scale.set(0.12, 0.12, 0.5); shell.lookAt(mz.clone().add(dir));
@@ -112,6 +119,7 @@ function shotsStep(dt) {
     if (C.gun.userData.z0 === undefined) C.gun.userData.z0 = C.gun.position.z;
     SHOT.recoil = Math.max(0, SHOT.recoil - dt * 2.5); C.gun.position.z = C.gun.userData.z0 + Math.sin(Math.min(1, SHOT.recoil) * Math.PI / 2) * 0.45;   // Rueckstoss
   }
+  if (!C && SHOT.zoom !== 1) { SHOT.zoom = SHOT.zoomT = 1; if (walking && camera.fov !== 70 && !JET.on && !FLY.on) { camera.fov = 70; camera.updateProjectionMatrix(); } }   // ausgestiegen: Zoom zurueck
   // Granaten fliegen
   for (let i = SHOT.shells.length - 1; i >= 0; i--) { const s = SHOT.shells[i], step = SHOT.SPEED * dt, b = s.p.clone().addScaledVector(s.dir, step), h = shotSeg(s.p, b, s.from);
     s.s += step; s.p.copy(h ? h.p : b); s.o.position.copy(s.p);
