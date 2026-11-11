@@ -92,6 +92,13 @@
         el("line", { x1: x, y1: a, x2: x, y2: b, stroke: "#ffd36b", "stroke-width": 2 });
         for (const yy of [a, b]) el("line", { x1: x - 7, y1: yy, x2: x + 7, y2: yy, stroke: "#ffd36b", "stroke-width": 2 });
         const tx = el("text", { x: x - 6, y: (a + b) / 2, "font-size": 13, fill: "#ffd36b", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", transform: `rotate(-90 ${x - 6} ${(a + b) / 2})` }); tx.textContent = t.name; continue; }
+      if (t.typ === "container") {   // Seecontainer in echten Proportionen: Wellblech, Eckbeschlaege, keine Fenster
+        const L = t.laenge * K, Hh = t.hoehe * K, x0 = t.x0, yb = Y(t.y0), g = el("g", {});
+        el("rect", { x: x0, y: yb - Hh, width: L, height: Hh, fill: t.farbe || "#1f3f8f", stroke: "#0b1530", "stroke-width": 1.5 }, g);
+        for (let xx = x0 + 4; xx < x0 + L - 2; xx += 4) el("line", { x1: xx, y1: yb - Hh + 3, x2: xx, y2: yb - 3, stroke: "#ffffff22", "stroke-width": 1.4 }, g);
+        for (const [cx, cy] of [[x0, yb - Hh], [x0 + L - 4, yb - Hh], [x0, yb - 4], [x0 + L - 4, yb - 4]]) el("rect", { x: cx, y: cy, width: 4, height: 4, fill: "#0b1530" }, g);
+        info(g, `<b>${t.name}</b><br>${String(t.laenge).replace(".", ",")} m lang, ${String(t.hoehe).replace(".", ",")} m hoch (echte Proportionen)`);
+        label(t.name.replace(/ \(.*\)$/, ""), x0 + L / 2, yb - Hh - 6, 120, "#c9d6ff"); continue; }
       if (t.typ === "auto") {   // Groessenvergleich: Fahrzeug in echten Proportionen (waagrecht gleicher Massstab wie senkrecht)
         const L = t.laenge * K, Hh = t.hoehe * K, x0 = t.x0, yb = Y(t.y0), r = 0.36 * K;
         const g = el("g", {});

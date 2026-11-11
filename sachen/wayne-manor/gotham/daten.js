@@ -223,8 +223,8 @@ const GOTHAM = {
     // --- Industrie ---
     ...[[-2830, 230], [-2660, 230], [-2400, 640], [-2880, 600]].map(([x, z], i) => ({ id: "fabrik-" + (i + 1), typ: "industrie", name: "Fabrik", x, z, w: 70, d: 45, h: 15 })),
     // --- Geheim ---
-    { id: "container-base", typ: "geheim", name: "Container (Aufzug zur geheimen Batman-Basis)", x: -3020, z: 1230, w: 14, d: 4, ufer: true,
-      notiz: "Unscheinbarer Container am Westfluss beim Hafen. Er ist ein Aufzug (fährt samt Auto hinunter)." },
+    { id: "container-base", typ: "geheim", name: "Container (Aufzug zur geheimen Batman-Basis)", x: -3020, z: 1230, w: 6.1, d: 2.4, ufer: true,
+      notiz: "Ganz normaler 20-Fuss-Seecontainer am Westfluss beim Hafen (Foto von Nicolas): blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, keine Fenster. 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang. Er ist ein Aufzug (fährt samt Auto hinunter)." },
     { id: "bunker", typ: "geheim", name: "Batman-Basis unter dem Container (Halle mit Lichtdecke)", x: -2930, z: 1200, w: 90, d: 50, ebene: -4,
       notiz: "Flache, weite Halle auf Höhe der Tiefgarage 1 (Boden 4 m unter der Strasse, ca. 3,4 m hoch): Sichtbetonwände, die ganze Decke ein Raster aus Lichtpaneelen (Foto von Nicolas), glatter Betonboden. Batmobil in der Mitte, Anzug fährt aus dem Boden, Motorrad und Batpod fahren aus der Wand, hinten Reifenstapel und Werkbank, Computer, aufklappbare Wand mit Waffen und Gadgets, Geheimwand mit Tresor (Goldbarren, Bargeld)." },
     { id: "schurkenbasis", typ: "geheim", name: "Schurkenbasis im Kanalnetz", x: -2050, z: -60, w: 120, d: 80, ebene: -27,
@@ -288,10 +288,10 @@ const GOTHAM = {
       { typ: "schacht", name: "Gullideckel + Leiter", x0: 723, x1: 736, y0: -21, y1: 0 }, { typ: "schacht", name: "Gullideckel + Leiter", x0: 1888, x1: 1901, y0: -21, y1: 0 },
       // Narrows
       { typ: "strasse", name: "Uferstr. West", x0: 426, x1: 576, y0: -0.6, y1: 0 },
-      { typ: "gebaeude", name: "Container = Aufzug", x0: 540, x1: 590, y0: 0, y1: 2.6, farbe: "#ff4fd8" },
-      { typ: "schacht", name: "Aufzugschacht", x0: 546, x1: 584, y0: -4, y1: 0, farbe: "#ff4fd8" },
+      { typ: "container", name: "Container = Aufzug (20 Fuss, keine Fenster)", x0: 540, y0: 0, laenge: 6.06, hoehe: 2.59, farbe: "#1f3f8f" },
+      { typ: "schacht", name: "Aufzugschacht", x0: 540, x1: 625, y0: -4, y1: 0, farbe: "#ff4fd8" },
       { typ: "raum", name: "Batman-Basis (Lichtdecke)", x0: 432, x1: 704, y0: -4, y1: -0.6, farbe: "#ff4fd8", licht: true },
-      { typ: "gebaeude", name: "Mietshaus (Narrows)", x0: 592, x1: 704, y0: 0, y1: 16 },
+      { typ: "gebaeude", name: "Mietshaus (Narrows)", x0: 640, x1: 740, y0: 0, y1: 16 },
       // zweistoeckige Strasse mit Club
       { typ: "deck", name: "Zweistöckige Strasse: oben normaler Verkehr", x0: 720, x1: 1120, y0: -0.8, y1: 0 },
       { typ: "strasse", name: "Untere Strasse (Lower Level)", x0: 720, x1: 1120, y0: -4.5, y1: -4 },

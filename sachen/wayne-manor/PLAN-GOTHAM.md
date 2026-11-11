@@ -72,7 +72,7 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 
 ## Phase 5 – Geheimbasis im Container
 
-Ein unscheinbarer Container am Westfluss beim Hafen ist ein **Aufzug** (fährt samt Auto hinunter). Unten eine flache, weite **Halle** auf Höhe der Tiefgarage 1 (Boden 4 m unter der Strasse, ca. 3,4 m hoch), Vorbild Foto von Nicolas: Sichtbetonwände, **die ganze Decke ein Raster aus Lichtpaneelen**, glatter Betonboden, hinten Reifenstapel und Werkbank.
+Ein ganz normaler 20-Fuss-Seecontainer am Westfluss beim Hafen (Foto von Nicolas: blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, **keine Fenster**; 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang) ist ein **Aufzug** (fährt samt Auto hinunter). Unten eine flache, weite **Halle** auf Höhe der Tiefgarage 1 (Boden 4 m unter der Strasse, ca. 3,4 m hoch), Vorbild Foto von Nicolas: Sichtbetonwände, **die ganze Decke ein Raster aus Lichtpaneelen**, glatter Betonboden, hinten Reifenstapel und Werkbank.
 Batmobil in der Mitte, **Anzug fährt aus dem Boden**, **Motorrad und Batpod fahren aus der Wand**, Decke aus Lampen, Computer, **aufklappbare Wand** mit Waffen und Gadgets, **Geheimwand mit Tresor** (Goldbarren, Bargeld). Alle Mechanismen als Tore nach der Regel „Tore anzielen“.
 
 ## Phase 6 – Militär
