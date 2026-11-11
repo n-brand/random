@@ -114,7 +114,7 @@ function useCar(want) {
     return true;
   }
   let best = null, bd = 1e9;
-  for (const v of VEH) { const d = Math.hypot(p.x - v.x, p.z - v.z); if ((!want || v === want) && d < v.spec.enter + (want ? 1.5 : 0) && d < bd && Math.abs(p.y - v.y) < 2) { best = v; bd = d; } }   // want: das angezielte Fahrzeug (Rechtsklick)
+  for (const v of VEH) { const d = Math.hypot(p.x - v.x, p.z - v.z); if (!v.dead && (!want || v === want) && d < v.spec.enter + (want ? 1.5 : 0) && d < bd && Math.abs(p.y - v.y) < 2) { best = v; bd = d; } }   // want: das angezielte Fahrzeug (Rechtsklick)
   if (!best) return false;
   CAR = best; const C = best;
   C.on = true; C.v = 0; keys.clear(); player.yaw = C.h; player.pitch = -0.12; carCircles(false);

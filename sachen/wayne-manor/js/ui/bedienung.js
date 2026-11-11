@@ -181,7 +181,7 @@ function syncModeClasses() {
   const tank = m === "car" && !!CAR.turret;                                  // Panzer: Zielvisier (Nicolas 2026-11-11)
   if (m + JET.on + tank === modeNow) return; modeNow = m + JET.on + tank; document.body.classList.toggle("tank", tank);
   for (const k of ["fly", "boat", "car"]) document.body.classList.toggle(k, k === m);
-  document.body.classList.toggle("drive", !!m); document.body.classList.toggle("jet", JET.on); $("btn-jump").textContent = JET.on ? "Schub +" : m === "fly" ? "Hoch" : m === "car" && CAR.spec.boost ? "Nitro" : "Sprung"; $("btn-down").textContent = JET.on ? "Schub −" : "Runter";   // Kampfjet: Knoepfe = Schub
+  document.body.classList.toggle("drive", !!m); document.body.classList.toggle("jet", JET.on); $("btn-jump").textContent = JET.on ? "Schub +" : m === "fly" ? "Hoch" : m === "car" && CAR.spec.boost ? "Nitro" : tank ? "Feuer" : "Sprung"; $("btn-down").textContent = JET.on ? "Schub −" : "Runter";   // Kampfjet: Knoepfe = Schub
 }
 $("btn-down").addEventListener("pointerdown", e => { e.preventDefault(); downHeld = true; });
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down").addEventListener(type, () => { downHeld = false; });

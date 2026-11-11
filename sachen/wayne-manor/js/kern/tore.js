@@ -29,7 +29,7 @@ gates.push({ name: "Aufzug", g: doorG, call: () => useLift(), verbs: ["holen / f
 function findAimedVehicle() {
   if (!walking || ghost || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on) return null;
   gateRay.setFromCamera(gateCenter, camera); gateRay.far = 14;
-  const list = [...VEH.map(v => [v.g, v]), [BOAT.g, BOAT], [FLY.g, FLY], [JET.g, JET]], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
+  const list = [...VEH.filter(v => !v.dead).map(v => [v.g, v]), [BOAT.g, BOAT], [FLY.g, FLY], [JET.g, JET]], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
   if (!hit) return null; const e = list.find(([g]) => { for (let o = hit.object; o; o = o.parent) if (o === g) return true; return false; }); return e ? e[1] : null;
 }
 // Einparken (Nicolas 2026-11-10): im Fahrzeug in der Tiefgarage auf einen freien Stellplatz zielen (Fadenkreuz, bei freier Maus der Zeiger) -> blaues P-Schild
