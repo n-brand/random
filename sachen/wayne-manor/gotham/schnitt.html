@@ -147,17 +147,18 @@
       else if (t.typ === "raum") { n = el("rect", { x, y, width: w, height: h, fill: (t.farbe || "#9aa4b2") + "55", stroke: t.farbe || "#9aa4b2", "stroke-width": 2 });
         if (t.licht) for (let xx = x + 6; xx < x + w; xx += 12) el("rect", { x: xx, y: y + 1, width: 10, height: 4, fill: "#f4f7fb", "pointer-events": "none" }); }
       else if (t.typ === "gebaeude") { n = el("rect", { x, y, width: w, height: h, fill: t.farbe || FARBE.gebaeude, stroke: "#1b1d20", "stroke-width": 2 });
-        if (t.geschoss) { const gh = t.geschoss * K;   // Stockwerke: Linie je Geschoss, Fenster in der Mitte
-          for (let yy = Y(t.y0); yy > y + 2; yy -= gh) { el("line", { x1: x, y1: yy, x2: x + w, y2: yy, stroke: "#1b1d20", "stroke-width": 1, opacity: .7, "pointer-events": "none" });
-            for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy - gh * 0.72, width: 7, height: gh * 0.45, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" }); } }
+        if (t.geschoss) { const gh = t.geschoss * K;   // Stockwerke: Linie je Geschoss, Fenster in der Mitte; eg = hoeheres Erdgeschoss (Empfangshalle)
+          for (let yy = Y(t.y0), k = 0; yy > y + 2; k++) { const fh = k === 0 && t.eg ? t.eg * K : gh; el("line", { x1: x, y1: yy, x2: x + w, y2: yy, stroke: "#1b1d20", "stroke-width": 1, opacity: .7, "pointer-events": "none" });
+            for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy - fh * 0.72, width: 7, height: fh * 0.45, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" }); yy -= fh; } }
         else for (let yy = y + 10; yy < y + h - 6; yy += 16) for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy, width: 7, height: 8, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" });
         if (t.y1 >= 70) el("path", { d: `M${x - 6} ${y + 10}l${w / 4 + 6} -8l${w / 4} 8l${w / 4} -8l${w / 4 + 6} 8`, fill: "none", stroke: "#0b1424", "stroke-width": 6 }); }
       else n = el("rect", { x, y, width: w, height: Math.max(h, 2), fill: FARBE[t.typ] || "#888", stroke: t.typ === "grund" || t.typ === "luft" ? "none" : "#111", "stroke-width": 1.5 });
       if (t.name) info(n, txt);
       if (t.typ === "wasser") label(t.name, x + w / 2, Y(t.y1) + 30, w, "#9fd0ff");
       else if (t.typ === "turm") label("Turm", x + w / 2, Y(t.y1) - 8, 60, "#d9dde3");
-      if (t.typ === "gebaeude" && t.geschoss) { const N = Math.round((t.echt || t.y1 - t.y0) / t.geschoss);   // Anzahl Stockwerke (logisch)
-        label(`≈ ${N} Stockwerke\n(je ${String(t.geschoss).replace(".", ",")} m)`, x + w / 2, Y((t.y0 + Math.min(t.y1, t.y0 + 30)) / 2), w * 1.2, "#ffe9a8", 26); }
+      if (t.typ === "gebaeude" && t.geschoss) { const H = t.echt || t.y1 - t.y0, N = t.eg ? 1 + Math.floor((H - t.eg) / t.geschoss + 0.01) : Math.floor(H / t.geschoss + 0.01);   // Anzahl Stockwerke (logisch)
+        const fm1 = v => String(v).replace(".", ",");
+        label(`≈ ${N} Stockwerke\n(je ${fm1(t.geschoss)} m${t.eg ? ", EG " + fm1(t.eg) + " m" : ""})`, x + w / 2, Y((t.y0 + Math.min(t.y1, t.y0 + 30)) / 2), w * 1.2, "#ffe9a8", 26); }
       if (t.typ === "gebaeude") label(t.name, x + w / 2, y - 6, w * 1.4);
       else if (t.typ === "raum" || t.typ === "rohr") label(t.name, x + w / 2, y + h / 2 + 5, w, "#fff");
       else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");

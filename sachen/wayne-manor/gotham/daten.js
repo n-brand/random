@@ -247,7 +247,8 @@ const GOTHAM = {
   ],
 
   // Seitenansicht (gotham/schnitt.html): senkrechter Schnitt von West nach Ost, waagrecht NICHT massstaeblich, senkrecht in Metern.
-  // y = Meter relativ zur Strassenebene (0 = Welt-y hoehen.strasse = Fahrbahn der Bruecken). x = Position im Bild (Gotham 0..3700, danach Detail Nebensammler und Vergleich mit Wayne Manor). Gebaeude: geschoss = logische Geschosshoehe in m (Stockwerke werden gezeichnet und gezaehlt), echt = wirkliche Hoehe, wenn oben abgeschnitten.
+  // y = Meter relativ zur Strassenebene (0 = Welt-y hoehen.strasse = Fahrbahn der Bruecken). x = Position im Bild (Gotham 0..3700, danach Detail Nebensammler und Vergleich mit Wayne Manor). Gebaeude: geschoss = logische Geschosshoehe in m (Stockwerke werden gezeichnet und gezaehlt), eg = hoeheres Erdgeschoss (z. B. Empfangshalle), echt = wirkliche Hoehe, wenn oben abgeschnitten.
+  // REGEL (Nicolas 2026-11-11): Geschosse in Gotham immer mindestens 4,7 m (wie das Erdgeschoss von Wayne Manor), hoeher nur fuer Hallen wie Empfang.
   schnitt: {
     ebenen: [   // Masskette rechts (Boden bzw. Oberkante der Ebene)
       { y: 62, name: "Brückentürme (Spitze)" },
@@ -299,7 +300,7 @@ const GOTHAM = {
       { typ: "container", name: "Container = Aufzug (20 Fuss, keine Fenster)", x0: 540, y0: 0, laenge: 6.06, hoehe: 2.59, farbe: "#1f3f8f" },
       { typ: "schacht", name: "Aufzugschacht", x0: 540, x1: 625, y0: -5.5, y1: 0, farbe: "#ff4fd8" },
       { typ: "raum", name: "Batman-Basis (Lichtdecke)", x0: 432, x1: 704, y0: -5.5, y1: -0.8, farbe: "#ff4fd8", licht: true },
-      { typ: "gebaeude", name: "Mietshaus (Narrows)", x0: 640, x1: 740, y0: 0, y1: 16, geschoss: 3.2 },
+      { typ: "gebaeude", name: "Mietshaus (Narrows)", x0: 640, x1: 740, y0: 0, y1: 14.1, geschoss: 4.7 },
       // zweistoeckige Strasse mit Club
       { typ: "deck", name: "Zweistöckige Strasse: oben normaler Verkehr", x0: 720, x1: 1120, y0: -1, y1: 0 },
       { typ: "strasse", name: "Untere Strasse (Lower Level)", x0: 720, x1: 1120, y0: -6, y1: -5.5 },
@@ -313,17 +314,17 @@ const GOTHAM = {
       { typ: "raum", name: "Bahnsteig", x0: 1280, x1: 1392, y0: -11.6, y1: -11, farbe: "#ffb3b3" },
       { typ: "strasse", name: "Strasse", x0: 1120, x1: 1568, y0: -0.6, y1: 0 },
       // Wayne Tower
-      { typ: "gebaeude", name: "Wayne Tower (320 m, oben abgeschnitten)", x0: 1584, x1: 1840, y0: 0, y1: 75, farbe: "#e8c547", geschoss: 4, echt: 320 },
+      { typ: "gebaeude", name: "Wayne Tower (320 m, oben abgeschnitten)", x0: 1584, x1: 1840, y0: 0, y1: 75, farbe: "#e8c547", geschoss: 4.7, eg: 9.4, echt: 320 },
       { typ: "raum", name: "Tiefgarage 1", x0: 1860, x1: 2116, y0: -5.5, y1: 0, farbe: "#9aa4b2" },
       { typ: "raum", name: "Tiefgarage 2", x0: 1860, x1: 2116, y0: -11, y1: -5.5, farbe: "#9aa4b2" },
       { typ: "strasse", name: "Strasse", x0: 1840, x1: 2140, y0: -0.6, y1: 0 },
       // Football-Stadion (oben offen, Nicolas 2026-11-11): Raenge steigen nach aussen bis 40 m, Spielfeld leicht abgesenkt; waagrecht schematisch
-      { typ: "stadion", name: "Football-Stadion (oben offen)", x0: 2150, x1: 2650, hoehe: 40, feld: -2, rang: 0.36, geschoss: 4 },
+      { typ: "stadion", name: "Football-Stadion (oben offen)", x0: 2150, x1: 2650, hoehe: 40, feld: -2, rang: 0.36, geschoss: 4.7 },
       { typ: "raum", name: "Geheimer Wayne-Stock\n(Tumbler, Prototypen)", x0: 1584, x1: 1840, y0: -8, y1: 0, farbe: "#ff4fd8" },
       { typ: "raum", name: "Kanal-Hub / Schurkenbasis", x0: 1520, x1: 1850, y0: -17, y1: -8, farbe: "#7bd88f" },
       // Midtown und Uferstrasse Ost
       { typ: "strasse", name: "Strasse", x0: 2660, x1: 2836, y0: -0.6, y1: 0 },
-      { typ: "gebaeude", name: "Bank (Midtown)", x0: 2852, x1: 3028, y0: 0, y1: 60, geschoss: 4 },
+      { typ: "gebaeude", name: "Bank (Midtown)", x0: 2852, x1: 3028, y0: 0, y1: 60, geschoss: 4.7, eg: 7 },
       // Bank: Tresorkeller auf der Hoehe der Tiefgarage 1, direkt daneben (Nicolas 2026-11-11), darunter Tiefgarage 2
       { typ: "raum", name: "Tiefgarage 1", x0: 2852, x1: 2940, y0: -5.5, y1: 0, farbe: "#9aa4b2" },
       { typ: "raum", name: "Tresorkeller", x0: 2940, x1: 3028, y0: -5.5, y1: 0, farbe: "#3ddc97" },
