@@ -118,13 +118,14 @@
     raked("z", Z0 - 0.4, Z1 + 0.4, HT + 0.4, top(Z0 - 0.4), top(Z1 + 0.4), X - 0.8, X + 0.4, stoneM); raked("z", Z0 - 0.4, Z1 + 0.4, [top(Z0 - 0.4), top(Z1 + 0.4)], top(Z0 - 0.4) + 0.18, top(Z1 + 0.4) + 0.18, X - 1.0, X + 0.4, capM, false);
     // Gelaendestueck ueber dem Tunnelmund (Nicolas: gruener Block haesslich): feines Netz wie das Gelaende (gleiche Grastextur und Farben), ueber
     // dem Ausschnitt mind. 0,7 m ueber der Tunneldecke, zu den Raendern weich in den Hang; leicht ueber dem Gelaende, damit nichts durchschaut
-    { const x0 = X + 0.3, x1 = X + 10, z0 = cz - 6.5, z1 = cz + 6.5, st = 0.5, nx = Math.round((x1 - x0) / st), nz = Math.round((z1 - z0) / st), pos = [], col = [], uv = [], idx = [];
+    { const x0 = X - 40, x1 = X + 10, z0 = cz - 10, z1 = cz + 10, st = 0.5, nx = Math.round((x1 - x0) / st), nz = Math.round((z1 - z0) / st), pos = [], col = [], uv = [], idx = [], lift = [];
       const cA = new THREE.Color(0x5b8c3c), cB = new THREE.Color(0x739c47), cL = new THREE.Color(0x6aa84a), cF = new THREE.Color(0x3b6430), c = new THREE.Color();
       for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = x0 + i * st, z = z0 + j * st, dz = Math.abs(z - cz);
-        const h = Math.max(terrainH(x, z), hfCap(x, z) ?? -1e9) + 0.04;   // urspruenglicher Hang, keine Mulde (hfCap in strassen/hauptstrasse.js)
+        const T = terrainH(x, z), cp = hfCap(x, z), h = Math.max(T, cp ?? -1e9) + 0.04;   // urspruenglicher Hang, keine Mulde (hfCap in strassen/hauptstrasse.js)
+        lift.push(cp !== null && (cp - T > 0.02 || (x >= X - 0.6 && x < X + 9.5 && dz < 6)));   // ueber dem Raster, und immer ueber dem Ausschnitt (Tunnelmund, gelaende.js cut), nie in der Einfahrt
         pos.push(x, h, z); uv.push(x / 10, -z / 10);
         c.copy(cA).lerp(cB, vnoise(x / 40, z / 40)).lerp(cL, 0.7 * Math.max(sst(40, 0, siteDist(x, z)), inLawn(x, z) ? 1 : 0)).lerp(cF, forestD(x, z) * 0.8); col.push(c.r, c.g, c.b); }
-      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const a = j * (nx + 1) + i, b = a + 1, d = a + nx + 1, e = d + 1; idx.push(a, d, b, b, d, e); }
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const a = j * (nx + 1) + i, b = a + 1, d = a + nx + 1, e = d + 1; if (lift[a] && lift[b] && lift[d] && lift[e]) idx.push(a, d, b, b, d, e); }   // nur wo alle Ecken ueber dem Raster liegen (sonst gruene Wand im Portalmund)
       const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
       geo.setIndex(idx); geo.computeVertexNormals(); const patch = new THREE.Mesh(geo, M(0xffffff, { map: grassTex, vertexColors: true, roughness: 1 })); patch.receiveShadow = true; world.add(patch); }
     B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z0 - 0.4, Z0, capM, false); B(X - 1.0, X - 0.8, HF_Y, HT + 0.4, Z1, Z1 + 0.4, capM, false); B(X - 1.0, X - 0.8, HT, HT + 0.4, Z0, Z1, capM, false);   // Rahmen

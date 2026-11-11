@@ -108,7 +108,17 @@ const HF_CZ = (HF_TUN.z0 + HF_TUN.z1) / 2;
 const HF_XP = (() => { for (let x = HF_TUN.x0; x > -140; x -= 0.5) if (plateauH(x, HF_CZ) < HF_Y + 6.4) return x; return -100; })();   // (genH0 braucht gelaende.js, ausserhalb des Anwesens ist es hier = Plateauhang)
 // Gelaende ueber dem Tunnelmund (Portalkopf): urspruenglicher Hang (genH0), mind. 0,9 m ueber der Tunneldecke (Nicolas 2026-11-11: vorher flach
 // auf 5,65 m -> Mulde hinter der Portalwand, in die Autos rutschten). Gilt fuer das Gelaendestueck (autoaufzug.js), groundAt und carSlopeG; null = ausserhalb
-const hfCap = (x, z) => x > HF_XP + 0.3 && x < HF_XP + 10 && Math.abs(z - HF_CZ) < 6.5 ? Math.max(genH0(x, z), HF_Y + 5.2 + 0.9) : null;
+// Bereich: ueber dem Tunnelmund (x bis +10, +-10 m; die Portalwand reicht +-8 m) und neben den Stuetzmauern der Einfahrt (x bis -40, ausserhalb
+// +-3,7 m). Das 2-m-Raster zog dort das Gelaende zur Kiesstrasse hinunter (Graben hinter Portalwand und Stuetzmauern); das feine Gelaendestueck
+// (aufzuege/autoaufzug.js) liegt auf dem urspruenglichen Hang und laeuft zu den Raendern weich ins Gelaende aus. null = ausserhalb.
+const hfCap = (x, z) => { const X = HF_XP, dz = Math.abs(z - HF_CZ); if (x < X - 40 || x >= X + 10 || dz >= 10) return null;
+  const T = terrainH(x, z); let want, f;
+  if (x >= X - 0.6) { want = dz < 3.6 ? Math.max(genH0(x, z), HF_Y + 5.2 + 0.9) : genH0(x, z);   // Mindesthoehe nur ueber dem Tunnel
+    f = Math.min(1, (10 - dz) / 1.5, (X + 10 - x) / 1.5, dz > 8 ? (x - X - 0.3) / 1.5 : 1); if (x < X + 6 && dz < 3.4) f = 1; }
+  else { if (dz < 3.4) return null;   // Rand liegt im Mauerkoerper (Stuetzmauer dz 2,85..3,65, Portalwand x -0,8..+0,4)
+    const rn = roadNear(HFR, x, z, 14); if (!rn) return null;   // neben den Stuetzmauern (die stehen, solange der Einschnitt tiefer als 0,4 m ist)
+    want = genH0(x, z); f = Math.max(0, Math.min(1, (10 - dz) / 3, (genH0(x, HF_CZ + Math.sign(z - HF_CZ) * 3.25) - rn.y - 0.4) / 0.6, (x - X + 40) / 3)); }
+  return T + Math.max(0, want - T) * f; };
 HF_TUN.x0 = HF_XP - 1.0;                                                // Tunnel-Rechteck reicht bis vor die Portalwand (dort kein Gelaende)
 const WALL_GATE2_U = (() => {                                            // Westtor: Fahrtrichtung nach aussen (Normale zur Mauer, weg von der Anwesensmitte)
   const L = WALL_LINES[0], a = L[L.length - 4], b = WALL_LINES[1][3]; let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz); dx /= l; dz /= l;
