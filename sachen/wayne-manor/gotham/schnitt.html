@@ -18,8 +18,8 @@
     svg { display: block; max-width: none; }
     /* Knopf Gebaeudetypen: links unten, auffaellig (Nicolas 2026-11-11) */
     #typen { position: fixed; left: 18px; bottom: 44px; z-index: 3; padding: 10px 16px; border: 0; border-radius: 999px; cursor: pointer; font: 700 14px/1.2 system-ui, sans-serif; color: #fff;
-      background: linear-gradient(90deg, #ff4fd8, #ff9f43 35%, #e8c547 55%, #3ddc97 75%, #3aa0ff); box-shadow: 0 4px 16px rgba(0,0,0,.45), 0 0 0 2px rgba(255,255,255,.25) inset; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
-    #typen:hover { filter: brightness(1.12); transform: translateY(-1px); }
+      background: #d32f2f; box-shadow: 0 4px 16px rgba(0,0,0,.45); }
+    #typen:hover { background: #e53935; transform: translateY(-1px); }
     .zoom { position: fixed; right: 18px; bottom: 44px; display: grid; gap: 4px; z-index: 3; }
     .zoom button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 18px; cursor: pointer; }
     #tip { position: fixed; pointer-events: none; background: #000d; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 300px; display: none; z-index: 2; }
@@ -33,7 +33,7 @@
     <a href="../">Wayne Manor</a>
     <a class="tab" href="./">← Karte</a>
     <h1>Gotham-Seitenansicht (Ebenen)</h1>
-    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
+    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Das Stadion ist längs geschnitten (West → Ost, Draufsicht darüber). Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
   </header>
   <main id="main"><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
   <button type="button" id="typen">Gebäudetypen einklappen</button>
@@ -133,7 +133,15 @@
         el("rect", { x: t.x0 + rw, y: Y(0), width: W - 2 * rw, height: -t.feld * K, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, g);   // Spielfeld abgesenkt (verkuerzt)
         const fm1 = v => String(v).replace(".", ","), floors = Math.round(t.hoehe / t.geschoss);
         info(g, `<b>${t.name}</b><br>Tribünen ${floors} Stockwerke (je ${fm1(t.geschoss)} m) = ${fm1(t.hoehe)} m, oben offen<br>${n} Sitzreihen je Seite: ${fm1(Math.round(rise * 100) / 100)} m hoch, ${fm1(t.tiefe)} m tief (Tribüne ca. ${Math.round(n * t.tiefe)} m tief, echte Masse)<br>Spielfeld ${fm1(-t.feld)} m abgesenkt, im Bild verkürzt`);
-        label(t.name, (t.x0 + t.x1) / 2, Y(t.hoehe) - 30, W, "#5fd3e6", 24);
+        // Draufsicht klein darueber: Oval (Ort w x d), Spielfeld 110 x 49 m, rote Linie = Schnittrichtung West -> Ost (Nicolas: aus welcher Sicht?)
+        { const cx = (t.x0 + t.x1) / 2, cy = Y(t.hoehe + 26), m = 1.6, ow = (t.oben || [220, 160])[0], od = (t.oben || [220, 160])[1], v = el("g", {});
+          el("ellipse", { cx, cy, rx: ow / 2 * m, ry: od / 2 * m, fill: "#9aa1a8", stroke: "#1b1d20", "stroke-width": 2 }, v);
+          el("rect", { x: cx - 55 * m, y: cy - 24.5 * m, width: 110 * m, height: 49 * m, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, v);
+          el("line", { x1: cx - ow / 2 * m - 30, y1: cy, x2: cx + ow / 2 * m + 30, y2: cy, stroke: "#ff3b3b", "stroke-width": 3, "stroke-dasharray": "10 6" }, v);
+          el("path", { d: `M${cx + ow / 2 * m + 30} ${cy}l-14 -8v16Z`, fill: "#ff3b3b" }, v);
+          label(`Draufsicht ${ow} × ${od} m · rote Linie = dieser Schnitt (West → Ost)`, cx, cy - od / 2 * m - 10, ow * m * 1.3, "#ffb3b3", 18);
+          info(v, `<b>Draufsicht Stadion</b><br>${ow} × ${od} m, oval; Spielfeld 110 × 49 m (mit Endzonen)<br>Der Schnitt läuft längs von West nach Ost durch die Mitte: man sieht die Tribünen hinter den Endzonen, das Spielfeld ist verkürzt`); }
+        label(t.name + " · Längsschnitt (West → Ost): Tribünen hinter den Endzonen", (t.x0 + t.x1) / 2, Y(t.hoehe) - 30, W, "#5fd3e6", 22);
         label(`Tribünen ${floors} Stockwerke (${fm1(t.hoehe)} m) · ${n} Reihen à ${fm1(Math.round(rise * 100) / 100)} m · Spielfeld verkürzt`, (t.x0 + t.x1) / 2, Y(t.hoehe) - 8, W, "#e6e9ee", 18); continue; }
       if (t.typ === "neben") {   // schraeges Rohr mit Gefaelle (ya/yb = Sohle am Anfang/Ende), Pfeile in Fliessrichtung
         const so = u => t.ya + (t.yb - t.ya) * (t.kurve ? u * u * (3 - 2 * u) : u), U = [...Array(41).keys()].map(i => i / 40), X = u => t.x0 + (t.x1 - t.x0) * u;   // Sohle; Kurve: oben und unten flach

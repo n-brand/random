@@ -321,7 +321,7 @@ const GOTHAM = {
       { typ: "raum", name: "Tiefgarage 2", x0: 2756, x1: 3012, y0: -11, y1: -5.5, farbe: "#9aa4b2" },
       { typ: "strasse", name: "Strasse", x0: 2736, x1: 3036, y0: -0.6, y1: 0 },
       // Football-Stadion (oben offen, Nicolas 2026-11-11): Raenge steigen nach aussen bis 40 m, Spielfeld leicht abgesenkt; waagrecht schematisch
-      { typ: "stadion", name: "Football-Stadion (oben offen)", x0: 3046, x1: 4130, hoehe: 14.1, feld: -2, geschoss: 4.7, reihe: 0.4, tiefe: 0.8 },   // Tribuenen 3 Stockwerke, Sitzreihen wie Foto (0,4 m hoch, 0,8 m tief) in echter Tiefe, Spielfeld verkuerzt
+      { typ: "stadion", name: "Football-Stadion (oben offen)", x0: 3046, x1: 4130, oben: [220, 160], hoehe: 14.1, feld: -2, geschoss: 4.7, reihe: 0.4, tiefe: 0.8 },   // Tribuenen 3 Stockwerke, Sitzreihen wie Foto (0,4 m hoch, 0,8 m tief) in echter Tiefe, Spielfeld verkuerzt
       { typ: "raum", name: "Geheimer Wayne-Stock\n(Tumbler, Prototypen)", x0: 1756, x1: 2736, y0: -8, y1: 0, farbe: "#ff4fd8" },
       { typ: "raum", name: "Kanal-Hub / Schurkenbasis", x0: 1692, x1: 2746, y0: -17, y1: -8, farbe: "#7bd88f" },
       // Midtown und Uferstrasse Ost
