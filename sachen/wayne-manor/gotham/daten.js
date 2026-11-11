@@ -315,8 +315,10 @@ const GOTHAM = {
       // Midtown und Uferstrasse Ost
       { typ: "strasse", name: "Strasse", x0: 1150, x1: 1260, y0: -0.6, y1: 0 },
       { typ: "gebaeude", name: "Bank (Midtown)", x0: 1270, x1: 1380, y0: 0, y1: 60 },
-      { typ: "raum", name: "Tiefgarage", x0: 1270, x1: 1380, y0: -7.5, y1: 0, farbe: "#9aa4b2" },
-      { typ: "raum", name: "Tresorkeller", x0: 1280, x1: 1370, y0: -12, y1: -7.5, farbe: "#3ddc97" },
+      // Bank: Tresorkeller auf der Hoehe der Tiefgarage 1, direkt daneben (Nicolas 2026-11-11), darunter Tiefgarage 2
+      { typ: "raum", name: "Tiefgarage 1", x0: 1270, x1: 1325, y0: -4, y1: 0, farbe: "#9aa4b2" },
+      { typ: "raum", name: "Tresorkeller", x0: 1325, x1: 1380, y0: -4, y1: 0, farbe: "#3ddc97" },
+      { typ: "raum", name: "Tiefgarage 2", x0: 1270, x1: 1380, y0: -7.5, y1: -4, farbe: "#9aa4b2" },
       { typ: "deck", name: "Uferstrasse Ost (oben)", x0: 1390, x1: 1534, y0: -0.8, y1: 0 },
       // Zum Vergleich: Wayne Manor an der Steilkueste (anderer Ort, gleiche Hoehen). Werte aus dem Spiel: Plateau HILL 25, Klippe Welt 1-15,
       // Meer SEA_Y -34, Batcave unten LY -28 (10 m hoch), oben UY -16 (8,5 m), Tiefgarage GY -5,5 unter dem Plateau
