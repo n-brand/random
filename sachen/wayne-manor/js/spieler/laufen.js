@@ -15,7 +15,8 @@ let ghost = false;
 const GHOST = WALK * 20, hintEl = document.getElementById("hint"), HINT_WALK = hintEl.innerHTML;
 const orbitView = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
 function pushOut(p, feet) {
-  for (const s of solids) {
+  const [nS, nC] = collNear(p.x - 2, p.x + 2, p.z - 2, p.z + 2);   // K2: nur Hindernisse in der Naehe (Kreise bis r 1,7)
+  for (const s of nS) {
     if (!s.on || s.y1 <= feet + STEP || s.y0 >= feet + BODY) continue;
     const cx = Math.max(s.x0, Math.min(p.x, s.x1)), cz = Math.max(s.z0, Math.min(p.z, s.z1));
     const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
@@ -26,7 +27,7 @@ function pushOut(p, feet) {
       p.x += out[1] * (out[0] + RADIUS); p.z += out[2] * (out[0] + RADIUS);
     }
   }
-  for (const [cx, cz, r, top] of circles) {
+  for (const [cx, cz, r, top] of nC) {
     if (top !== undefined && (feet >= top || feet < top - 8)) continue;   // Hindernis mit Hoehe gilt nur auf seiner Ebene
     const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }   // D1: Kreise ohne Hoehe (Baumstaemme) nur am Gelaende, nicht in Tunneln darunter
@@ -61,7 +62,7 @@ function groundAt(x, z, feet = 0) {
 }
 function supportAt(p, feet) {
   let top = groundAt(p.x, p.z, feet);
-  for (const s of solids) {
+  for (const s of collNear(p.x - 0.1, p.x + 0.1, p.z - 0.1, p.z + 0.1)[0]) {
     if (!s.on || s.y1 > feet + STEP || s.y1 <= top) continue;
     if (p.x > s.x0 - 0.05 && p.x < s.x1 + 0.05 && p.z > s.z0 - 0.05 && p.z < s.z1 + 0.05) top = s.y1;
   }
@@ -119,7 +120,7 @@ function updatePlayer(dt, moveX, moveZ, run) {
   player.pos.y += player.vy * dt;
   const support = supportAt(player.pos, player.pos.y);
   if (player.pos.y <= support || (wasGround && player.vy <= 0 && player.pos.y - support < 0.35)) { player.pos.y = support; player.vy = 0; player.onGround = true; } else player.onGround = false;
-  for (const s of solids) {
+  for (const s of collNear(player.pos.x - 1, player.pos.x + 1, player.pos.z - 1, player.pos.z + 1)[0]) {
     if (!s.on || s.y0 <= player.pos.y + STEP || s.y0 >= player.pos.y + BODY) continue;
     const cx = Math.max(s.x0, Math.min(player.pos.x, s.x1)), cz = Math.max(s.z0, Math.min(player.pos.z, s.z1));
     if ((player.pos.x - cx) ** 2 + (player.pos.z - cz) ** 2 >= (RADIUS * 0.7) ** 2) continue;

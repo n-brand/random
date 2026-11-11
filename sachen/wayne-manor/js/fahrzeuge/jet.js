@@ -55,12 +55,12 @@ const JET = (() => {
     ground: true, gearT: 0, on: false, view: 0, st: 0, pin: 0, circ: [], safeT: 0, warnT: 0 };
   J.home = { x: J.x, y: J.y, z: J.z, h }; J.safe = { ...J.home };
   b.g.userData.dynamic = true; b.g.userData.noLift = true; scene.add(b.g);
-  for (let k = 0; k < 5; k++) { const c = [0, 0, 0, 0]; circles.push(c); J.circ.push(c); }        // Fussgaenger: Rumpf und Fluegel
+  for (let k = 0; k < 5; k++) { const c = [0, 0, 0, 0]; c.dyn = true; circles.push(c); J.circ.push(c); }        // Fussgaenger: Rumpf und Fluegel
   return J;
 })();
 const jetE = new THREE.Euler(), jetMx = new THREE.Matrix4(), jetV = new THREE.Vector3();
 function jetMat(x, y, z, h, p, r) { jetMx.makeRotationFromEuler(jetE.set(p, h, r, "YXZ")); jetMx.setPosition(x, y, z); return jetMx; }
-function jetNear(J) { const R = 45; nearS = solids.filter(s => s.x1 > J.x - R && s.x0 < J.x + R && s.z1 > J.z - R && s.z0 < J.z + R); nearC = circles.filter(c => !JET.circ.includes(c) && !FLY.circ.includes(c) && Math.abs(c[0] - J.x) < R + c[2] && Math.abs(c[1] - J.z) < R + c[2]); }
+function jetNear(J) { const R = 45; const [a, b] = collNear(J.x - R - 2, J.x + R + 2, J.z - R - 2, J.z + R + 2); nearS = a.filter(s => s.x1 > J.x - R && s.x0 < J.x + R && s.z1 > J.z - R && s.z0 < J.z + R); nearC = b.filter(c => !JET.circ.includes(c) && !FLY.circ.includes(c) && Math.abs(c[0] - J.x) < R + c[2] && Math.abs(c[1] - J.z) < R + c[2]); }
 // Punkt frei? Quader, Kreise (Baumstaemme ohne Hoehe nur bis r * 22 ueber dem Gelaende, etwas unter der Baumspitze (Laubbaum ca. 9,4 s, Nadelbaum 12,6 s hoch)), Gelaende, Wasser
 function jetAir(x, y, z) {
   for (const s of nearS) if (s.on && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && y > s.y0 && y < s.y1) return false;

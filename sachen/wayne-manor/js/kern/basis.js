@@ -108,6 +108,31 @@ const solids = [];
 const circles = [];
 let NOLIFT = false;                                                       // true: Teil wird schon in Endhoehe gebaut (liftPlateau laesst es aus)
 const S = (x0, x1, y0, y1, z0, z1, on = true) => { const s = { x0, x1, y0, y1, z0, z1, on, noLift: NOLIFT }; solids.push(s); return s; };
+// Kollisions-Raster (Plan K2, 2026-11-11): Quader und Kreise in 16-m-Zellen, Abfragen pruefen nur die Zellen im gesuchten Rechteck statt aller.
+// Wird beim ersten Abfragen und immer wenn solids/circles laenger werden neu aufgebaut. Lage (x/z) eines Eintrags darf sich danach nicht aendern,
+// Hoehe (y0/y1, top) und on schon. Bewegte Kreise (Fahrzeuge, c.dyn = true) stehen in einer eigenen Liste und gelten immer. Riesige Quader (> 256 Zellen) ebenso.
+const COLL = { cs: 16, cells: new Map(), bigS: [], dynC: [], nS: -1, nC: -1, q: 0 };
+const collKey = (i, k) => (i + 32768) * 65536 + (k + 32768);
+function collBuild() {
+  const { cs, cells } = COLL; cells.clear(); COLL.bigS = []; COLL.dynC = [];
+  const put = (o, x0, x1, z0, z1, t) => { const i0 = Math.floor(x0 / cs), i1 = Math.floor(x1 / cs), k0 = Math.floor(z0 / cs), k1 = Math.floor(z1 / cs);
+    if ((i1 - i0 + 1) * (k1 - k0 + 1) > 256) return false;
+    for (let i = i0; i <= i1; i++) for (let k = k0; k <= k1; k++) { const key = collKey(i, k); let c = cells.get(key); if (!c) cells.set(key, c = [[], []]); c[t].push(o); } return true; };
+  for (const s of solids) if (!put(s, s.x0, s.x1, s.z0, s.z1, 0)) COLL.bigS.push(s);
+  for (const c of circles) if (c.dyn) COLL.dynC.push(c); else put(c, c[0] - c[2], c[0] + c[2], c[1] - c[2], c[1] + c[2], 1);
+  COLL.nS = solids.length; COLL.nC = circles.length;
+}
+// Alle Quader [0] und Kreise [1], die das Rechteck x0..x1 / z0..z1 beruehren koennten (neue Listen, ohne Doppelte)
+function collNear(x0, x1, z0, z1) {
+  if (COLL.nS !== solids.length || COLL.nC !== circles.length) collBuild();
+  const { cs, cells } = COLL, q = ++COLL.q, S1 = COLL.bigS.slice(), C1 = COLL.dynC.slice();
+  for (let i = Math.floor(x0 / cs), i1 = Math.floor(x1 / cs); i <= i1; i++) for (let k = Math.floor(z0 / cs), k1 = Math.floor(z1 / cs); k <= k1; k++) {
+    const c = cells.get(collKey(i, k)); if (!c) continue;
+    for (const s of c[0]) if (s._q !== q) { s._q = q; S1.push(s); }
+    for (const o of c[1]) if (o._q !== q) { o._q = q; C1.push(o); }
+  }
+  return [S1, C1];
+}
 function boxUV(g, w, h, d) {
   const uv = g.attributes.uv, sc = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
   for (let f = 0; f < 6; f++) for (let i = 0; i < 4; i++) { const k = f * 4 + i; uv.setXY(k, uv.getX(k) * sc[f][0], uv.getY(k) * sc[f][1]); }

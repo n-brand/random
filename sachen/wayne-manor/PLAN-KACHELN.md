@@ -23,8 +23,8 @@ Die Welt wird in **Kacheln zu 128 x 128 m** geteilt; um den Spieler werden nur d
 
 ## Was gekachelt wird und was nicht
 
-- **Gelände:** pro Kachel ein eigenes Netz aus derselben Höhenformel (`genH`), darum passen die Ränder ohne sichtbare Naht. Feinheit nach Abstand (LOD): nahe Kacheln 2 m Raster (wie heute am Anwesen), dann 4, 8, 16 m. Gegen Risse zwischen fein und grob hängt an jedem Kachelrand eine kurze Schürze nach unten. Ausschnitte (Pool, Brunnen, Portale, Silo, Rampe, Meereshöhlen) gelten pro Eckpunkt wie heute.
-- **Höhe für Laufen und Fahren** (`terrainH`) wird immer aus dem feinen 2-m-Raster gerechnet und pro Kachel gemerkt (ca. 17 KB je Kachel), egal wie grob die Kachel gerade angezeigt wird. Darum steht man überall gleich hoch, auch wenn die Ansicht wechselt.
+- **Gelände (entschieden 2026-11-11: Variante A):** pro Kachel ein eigenes Netz. **Im bestehenden Bereich (bis 1500 m) bauen die Kacheln den Boden genau aus den heutigen Punkten nach** (gleiche Form, nichts verschiebt sich, nichts nachzubessern); neues Gelände (Gotham, Weg dorthin) kommt direkt aus der Höhenformel (`genH`) in voller Feinheit. Feinheit nach Abstand (LOD) über die Einstellung **Gelände-Detail**: Niedrig 4 → 8 → 16 → 32 m (Handy), Mittel 2 → 4 → 8 → 16 m (Vorgabe PC), Hoch 1 → 2 → 4 → 8 m (nur die nächsten Kacheln fein; 1 m = ca. 33 000 Dreiecke je Kachel). Gegen Risse zwischen fein und grob hängt an jedem Kachelrand eine kurze Schürze nach unten. Ausschnitte (Pool, Brunnen, Portale, Silo, Rampe, Meereshöhlen) gelten pro Eckpunkt wie heute.
+- **Höhe für Laufen und Fahren** (`terrainH`) hängt nie von der Einstellung ab: im bestehenden Bereich wie heute, im neuen aus dem 2-m-Raster gerechnet und pro Kachel gemerkt (ca. 17 KB je Kachel), egal wie grob die Kachel gerade angezeigt wird. Darum steht man überall gleich hoch, auch wenn die Ansicht wechselt.
 - **Wald und Felsen:** pro Kachel als InstancedMesh, mit festem Zufall je Kachel (nach dem Neuladen stehen die Bäume genau gleich). Weit weg keine einzelnen Bäume mehr, nur dunklere Waldfarbe im Gelände.
 - **Kollision:** ein **Raster aus 16-m-Zellen** für Quader und Kreise. Laufen und Fahren prüfen nur noch die Zellen in der Nähe statt aller 11 000 Hindernisse. Kacheln tragen ihre Hindernisse beim Laden ein und beim Entladen wieder aus. Bringt schon heute etwas.
 - **Gotham-Gebäude** (später): pro Kachel aus `gotham/daten.js` und den Vorlagen erzeugt, je Kachel und Material zusammengefasst. Ganz weit weg nur einfache Quader als Silhouette, damit die Skyline am Horizont steht.
@@ -44,6 +44,7 @@ Die Welt wird in **Kacheln zu 128 x 128 m** geteilt; um den Spieler werden nur d
 Neuer Knopf „Einstellungen“ (Orbit-Leiste und T-Menü):
 
 - **Ladeweite:** 2 bis 8 Kacheln (256 m bis 1 km). Vorgabe PC 5 (640 m), Handy 3 (384 m).
+- **Gelände-Detail:** Niedrig / Mittel / Hoch (Punktabstand siehe oben).
 - **Grafik:** Schatten an/aus, Auflösung (Pixel-Verhältnis).
 - **Lautstärke:** der bestehende Regler zieht hierher um.
 - **FPS-Anzeige** an/aus.
@@ -58,10 +59,10 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 
 | Nr | Schritt | Prüfen |
 |----|---------|--------|
-| K1 | **FPS-/Messanzeige** (Bildrate, Bildzeit, Zeichenaufrufe, Dreiecke, geladene Kacheln), ein- und ausblendbar | Werte vor dem Umbau festhalten, PC und Handy-Emulation |
-| K2 | **Kollisions-Raster** (16-m-Zellen) für Quader und Kreise | Verhalten unverändert: alle Teleport-Ziele, Garage, Höhlen, Mauer, Fahrzeuge; Zeit pro Schritt kleiner |
+| K1 ✅ | **FPS-/Messanzeige** (Bildrate, Bildzeit, Zeichenaufrufe, Dreiecke, geladene Kacheln), ein- und ausblendbar | Werte vor dem Umbau festhalten, PC und Handy-Emulation |
+| K2 ✅ | **Kollisions-Raster** (16-m-Zellen) für Quader und Kreise | Verhalten unverändert: alle Teleport-Ziele, Garage, Höhlen, Mauer, Fahrzeuge; Zeit pro Schritt kleiner |
 | K3 | **Kachel-Verwaltung** (Ring, Warteschlange, Zeitbudget, Cache) und **Wald pro Kachel** | Bäume erscheinen und verschwinden um den Spieler, kein Ruckeln, Bäume nach Neuladen gleich |
-| K4 | **Gelände in Kacheln mit LOD** (ersetzt das 640er-Netz), Höhen-Merker, Ausschnitte, Grenze 700 m fällt | Keine Risse, Wege, Rampe, Portale, Küste, Silo; alles Platzierte steht auf dem Boden (Höhe ändert sich ausserhalb des Anwesens leicht, weil das Raster dort feiner wird) |
+| K4 | **Gelände in Kacheln mit LOD** (ersetzt das 640er-Netz; bestehender Bereich aus den heutigen Punkten, Variante A), Höhen-Merker, Ausschnitte, Grenze 700 m fällt, Stufen Gelände-Detail | Keine Risse; Bild im bestehenden Bereich unverändert; Wege, Rampe, Portale, Küste, Silo |
 | K5 | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
 | K6 | **Einstellungen** (Ladeweite, Grafik, Lautstärke, FPS) | Wert bleibt nach Neuladen, Wirkung sofort |
 | K7 | **Ladescreen PC/Handy** mit echtem Fortschritt, Start nur mit nahen Kacheln | unter 3 s bis spielbar |
@@ -69,11 +70,12 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 
 ## Risiken
 
-- K4 ändert das Gelände ausserhalb des Anwesens leicht (feineres Raster). Dinge, die beim Start auf das Gelände gesetzt werden (Küstenfelsen, Steilküsten-Haut, Strassen), müssen nachgeprüft werden. Darum K4 als eigener Schritt mit vielen Prüfstellen.
+- Mit Variante A ändert K4 die bestehende Geländeform nicht. Risiko bleibt bei den Kachelrändern (Risse) und den Ausschnitten; darum K4 als eigener Schritt mit vielen Prüfstellen.
 - Web Worker (Rechnen im Hintergrund-Thread) bringt hier vorerst wenig, weil die Höhenformel an vielen gemeinsamen Funktionen hängt. Erst nötig, wenn das Zeitbudget nicht reicht.
 
 ## Fragen an Nicolas
 
 1. Vorgaben Ladeweite PC 5 Kacheln (640 m) und Handy 3 (384 m) so recht?
 2. Statt Weltrand ein grober Horizont bis ca. 3 km, einverstanden?
-3. Mit K1 und K2 anfangen? Beide ändern nichts Sichtbares (ausser der Anzeige) und machen das Spiel sofort etwas schneller.
+
+Entschieden 2026-11-11: Variante A, einstellbares Gelände-Detail, Start mit K1 und K2.

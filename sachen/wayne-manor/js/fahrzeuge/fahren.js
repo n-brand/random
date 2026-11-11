@@ -9,8 +9,7 @@ const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
 let nearS = solids, nearC = circles;
 function carNear() {
   const x = CAR.x, z = CAR.z, R = 14;
-  nearS = solids.filter(s => s.x1 > x - R && s.x0 < x + R && s.z1 > z - R && s.z0 < z + R);
-  nearC = circles.filter(c => Math.abs(c[0] - x) < R + c[2] && Math.abs(c[1] - z) < R + c[2]);
+  [nearS, nearC] = collNear(x - R, x + R, z - R, z + R);                    // K2: Kollisions-Raster statt alle durchsehen
 }
 function carSupport(x, z, feet) {
   let top = groundAt(x, z, feet);
@@ -55,7 +54,7 @@ function carPose(dt) {
 }
 function carCircles(on) {
   const sp = CAR.spec;
-  if (!CAR.circ) CAR.circ = sp.pts.map(() => { const c = [0, 0, 0, 0]; circles.push(c); return c; });
+  if (!CAR.circ) CAR.circ = sp.pts.map(() => { const c = [0, 0, 0, 0]; c.dyn = true; circles.push(c); return c; });
   sp.pts.forEach((lz, i) => { const [x, z] = carW(0, lz), c = CAR.circ[i]; c[0] = x; c[1] = z; c[2] = on ? sp.circR : 0; c[3] = CAR.y + sp.bodyH - 0.1; });
 }
 function carMsg(t) { if (clock.elapsedTime - CAR.msgT > 2.5) { CAR.msgT = clock.elapsedTime; toast(t); } }

@@ -114,12 +114,12 @@ const FLY = (() => {
   const F = { g: b.g, rotors: b.rotors, fans: b.fans, legs: b.legs, gear: b.gear, gearT: 0, thrustM: b.thrustM, st: 0, x: -47 - BAT_ZC * BAT_KZ, y: LY, z: -3, h: -Math.PI / 2, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [] };
   F.home = { x: F.x, y: F.y, z: F.z, h: F.h };
   b.g.userData.dynamic = true; b.g.userData.noLift = true; scene.add(b.g);
-  for (let k = 0; k < 4; k++) { const c = [0, 0, 2.2, 0]; circles.push(c); F.circ.push(c); }                             // Kollision fuer Fussgaenger entlang des Rumpfs
+  for (let k = 0; k < 4; k++) { const c = [0, 0, 2.2, 0]; c.dyn = true; circles.push(c); F.circ.push(c); }                             // Kollision fuer Fussgaenger entlang des Rumpfs
   return F;
 })();
 // Welt-Punkt aus lokalem Punkt (vorne = -z)
 function batW(B, lx, lz, x = B.x, z = B.z, h = B.h) { const s = Math.sin(h), c = Math.cos(h); return [x + lx * c + lz * s, z - lx * s + lz * c]; }
-function batNear(B) { const R = 18; nearS = solids.filter(s => s.x1 > B.x - R && s.x0 < B.x + R && s.z1 > B.z - R && s.z0 < B.z + R); nearC = circles.filter(c => !FLY.circ.includes(c) && Math.abs(c[0] - B.x) < R + c[2] && Math.abs(c[1] - B.z) < R + c[2]); }
+function batNear(B) { const R = 18; const [a, b] = collNear(B.x - R - 2, B.x + R + 2, B.z - R - 2, B.z + R + 2); nearS = a.filter(s => s.x1 > B.x - R && s.x0 < B.x + R && s.z1 > B.z - R && s.z0 < B.z + R); nearC = b.filter(c => !FLY.circ.includes(c) && Math.abs(c[0] - B.x) < R + c[2] && Math.abs(c[1] - B.z) < R + c[2]); }
 // Punkt im freien Luftraum? Wie die Fahrzeugkamera (camBlocked), in der unteren Hoehle aber mit den echten Deckenhoehen:
 // Halle ab LY+LH-3,8, Seegewoelbe ab SEA_Y+11,2 (jeweils mit Rand nach innen, Nicolas: Barrieren lieber weiter innen), auch ueber dem Wasser
 function batAir(x, y, z) {

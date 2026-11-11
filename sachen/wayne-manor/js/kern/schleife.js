@@ -4,8 +4,24 @@
 
 // ===================== Schleife =====================
 const clock = new THREE.Clock();
+// Messanzeige (Plan K1, 2026-11-11): Taste F3 oder ?perf, gemerkt in localStorage wm-perf. Bilder/s, Rechenzeit pro Bild (JS + Abschicken an die Grafik),
+// laengstes Bild der letzten halben Sekunde, Zeichenaufrufe, Dreiecke, Geometrien/Texturen, Kollision (Eintraege gesamt / Zellen), JS-Speicher (nur Chrome)
+const PERF = { on: (() => { try { return /[?&]perf/.test(location.search) || localStorage.getItem("wm-perf") === "1"; } catch (e) { return false; } })(), el: null, n: 0, sum: 0, max: 0, t0: performance.now() };
+function perfToggle(on = !PERF.on) { PERF.on = on; try { localStorage.setItem("wm-perf", on ? "1" : "0"); } catch (e) {} if (PERF.el) PERF.el.hidden = !on; }
+function perfFrame(ms) {
+  if (!PERF.on) return;
+  if (!PERF.el) { PERF.el = document.createElement("pre"); PERF.el.id = "perf"; document.body.appendChild(PERF.el); }
+  PERF.n++; PERF.sum += ms; PERF.max = Math.max(PERF.max, ms);
+  const now = performance.now(), span = now - PERF.t0; if (span < 500) return;
+  const r = renderer.info, mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) + " MB" : "-";
+  PERF.el.textContent = (PERF.n * 1000 / span).toFixed(0) + " FPS   " + (PERF.sum / PERF.n).toFixed(1) + " ms (max " + PERF.max.toFixed(1) + ")\n" +
+    r.render.calls + " Aufrufe   " + (r.render.triangles / 1e6).toFixed(2) + " Mio. Dreiecke\n" + r.memory.geometries + " Geom.   " + r.memory.textures + " Tex.   " + mem + "\n" +
+    "Kollision " + (solids.length + circles.length) + " / " + COLL.cells.size + " Zellen";
+  PERF.n = 0; PERF.sum = 0; PERF.max = 0; PERF.t0 = now;
+}
+addEventListener("keydown", e => { if (e.code === "F3") { e.preventDefault(); perfToggle(); } });
 function frame() {
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const tF = performance.now(), dt = Math.min(clock.getDelta(), 0.05);
   if (walking) walkStep(dt);
   else { controls.update(); const gy = terrainH(camera.position.x, camera.position.z) + 3; if (!belowView && camera.position.y < gy) camera.position.y = gy; }
   syncModeClasses();                                                         // Handy-Knoepfe je nach Modus (Fahrzeug, Boot, The Bat)
@@ -53,6 +69,7 @@ function frame() {
   sun.target.position.copy(focus);
   sun.target.updateMatrixWorld();
   renderer.render(scene, camera);
+  perfFrame(performance.now() - tF);
   requestAnimationFrame(frame);
 }
 // A2: alles auf dem Plateau (ueber y -6, also nicht die Hoehlen) um die Plateauhoehe an seiner Mitte anheben, samt Kollision.
