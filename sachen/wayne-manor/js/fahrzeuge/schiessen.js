@@ -10,7 +10,12 @@
 // T-Menue repariert sie. Fahrzeuge als Kapsel (Laengsachse, Radius aus R und Hoehe) fuer Treffer.
 const ARMOR = { "Gotham Taxi": 1, "Aventador LP 700-4": 1, "Gemini Concept GT": 1, "ChatGPT GPT-6 Concept GT": 1, "DeepSeek Concept Car": 1, "Motorrad": 1, "Boxer-Streetfighter": 1,
   "Gotham Police": 2, "Rolls-Royce": 2, "Rolls-Royce Spectre": 2, "Nachtfalke": 2, "Batpod": 2, "Mercedes-Benz G-Klasse": 3, "Tumbler": 4, "Panzer": 4 };
-const armorOf = v => ARMOR[v.spec.name] || 2;
+const armorOf = v => v === JET ? 2 : ARMOR[v.spec.name] || 2;   // Kampfjet (Nicolas 2026-11-11: auch zerstoerbar) haelt 2 Treffer
+const bodyHOf = v => v === JET ? 3 : v.spec.bodyH;
+// Kampfjet als Koerper in lokalen Koordinaten (Drehpunkt Rumpfmitte, vorne -z): Rumpf, Tragflaechen, Leitwerke
+function jetHit(x, y, z) { const J = JET; if (J.on && !J.ground) return false; const dx = x - J.x, dz = z - J.z, dy = y - J.y, c = Math.cos(J.h), s = Math.sin(J.h), lx = dx * c - dz * s, lz = dx * s + dz * c;
+  // grosszuegig (Nicolas 2026-11-11: Trefferzone sehr gross): Rumpf bis zum Boden und ueber die Leitwerke, Fluegel dick, ca. 1 m Zugabe rundum
+  return (Math.abs(lx) < 2.6 && Math.abs(lz) < 10.5 && dy > -2.2 && dy < 2.6) || (Math.abs(lx) < 7.8 && lz > -3.6 && lz < 6.6 && dy > -1.4 && dy < 1.4) || (Math.abs(lx) < 3.6 && lz > 2 && lz < 9.6 && dy > 0 && dy < 4.3); }
 const SHOT = { cd: 0, RELOAD: 2.2, SPEED: 320, RANGE: 900, MUZZLE: 4.75, shells: [], fx: [], fires: [], aim: null, aimT: 0, recoil: 0 };
 const shotV = new THREE.Vector3(), shotA = new THREE.Vector3(), shotB = new THREE.Vector3(), shotRay = new THREE.Raycaster(), shotN = new THREE.Vector2();
 const fxGeo = new THREE.SphereGeometry(1, 14, 10), fxRing = new THREE.RingGeometry(0.8, 1, 40).rotateX(-Math.PI / 2), fxCone = new THREE.ConeGeometry(0.5, 1.6, 8, 1, true).translate(0, 0.8, 0), fxBox = new THREE.BoxGeometry(1, 1, 1);
@@ -23,6 +28,7 @@ function vehCapsule(v) { const sp = v.spec, L = Math.max(...sp.pts.map(Math.abs)
 function shotAt(x, y, z, skip) {
   for (const v of VEH) { if (v === skip || !v.g.visible && !v.dead) continue; const c = vehCapsule(v), dx = x - c.x, dz = z - c.z, t = Math.max(-c.L, Math.min(c.L, dx * c.ax + dz * c.az));
     const ex = dx - c.ax * t, ez = dz - c.az * t, ey = (y - c.y) * (c.r / Math.max(0.6, v.spec.bodyH * 0.55)); if (ex * ex + ey * ey + ez * ez < c.r * c.r) return { veh: v }; }
+  if (jetHit(x, y, z)) return { veh: JET };
   if (y < groundAt(x, z, y + 0.4)) return "ground";
   const [S, C] = collNear(x - 0.2, x + 0.2, z - 0.2, z + 0.2);
   for (const s of S) if (s.on && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && y > s.y0 && y < s.y1) return "solid";
@@ -72,7 +78,7 @@ function vehHit(v, p) {
 }
 function vehDestroy(v) {
   v.dead = true; v.boomT = clock.elapsedTime; v.wreckRoll = (Math.random() - 0.5) * 0.25; v.wreckPitch = (Math.random() - 0.5) * 0.12;
-  fxBoom(new THREE.Vector3(v.x, v.y + v.spec.bodyH * 0.6, v.z), true); toast(vehName(v) + " zerstört");
+  fxBoom(new THREE.Vector3(v.x, v.y + (v === JET ? 0 : bodyHOf(v) * 0.6), v.z), true); toast(vehName(v) + " zerstört");
   v.g.traverse(o => { if (!o.isMesh) return; o.userData.mat0 = o.material; const burn = m => { const c = m.clone(); if (c.color) c.color.lerp(new THREE.Color(0x1b1815), 0.86); if (c.emissive) c.emissive.set(0); if (c.map && !c.transparent) c.map = null; return c; };
     o.material = Array.isArray(o.material) ? o.material.map(burn) : burn(o.material); });
   SHOT.fires.push({ v, t0: clock.elapsedTime, cones: [0, 1, 2].map(i => { const c = fxAddMesh(fxCone, fxAdd(i ? 0xff6a10 : 0xffc040), new THREE.Vector3(), 1); return c; }), puff: 0 });
@@ -83,7 +89,8 @@ function vehRepair(v) {
   v.dead = false; v.hp = undefined; const f = SHOT.fires.findIndex(q => q.v === v); if (f >= 0) { for (const c of SHOT.fires[f].cones) scene.remove(c); SHOT.fires.splice(f, 1); }
 }
 // Einsteigen in Wracks sperren, Holen repariert
-{ const enter0 = enterVehicle; enterVehicle = v => { if (v && v.dead) return toast(vehName(v) + " ist zerstört – „Fahrzeuge holen“ im Menü (T) repariert es"); return enter0(v); };
+{ const enter0 = enterVehicle; enterVehicle = v => { if (v && v.dead) return toast(vehName(v) + (v === JET ? " ist zerstört – „Kampfjet (hingehen)“ im Menü (T) repariert ihn" : " ist zerstört – „Fahrzeuge holen“ im Menü (T) repariert es")); return enter0(v); };
+  const go0 = goToJet; goToJet = () => { if (JET.dead) { vehRepair(JET); jetReset(JET); toast("Kampfjet repariert"); } else JET.hp = undefined; return go0(); };
   const sum0 = summonVehicle; summonVehicle = v => { if (v && v.dead) { vehRepair(v); toast(vehName(v) + " repariert"); } else if (v) v.hp = undefined; return sum0(v); }; }
 // ---- jedes Bild (nach carFrame) ----
 function shotsStep(dt) {
@@ -117,7 +124,7 @@ function shotsStep(dt) {
   // Wracks: hochspringen (1,2 s), dann schraeg liegen bleiben; Feuer flackert, Rauch steigt (Feuer 40 s, Rauch danach schwaecher bis 90 s)
   for (const W of SHOT.fires) { const v = W.v, t = now - v.boomT, up = t < 1.2 ? Math.max(0, 7 * t - 0.5 * 14 * t * t) * 0.45 : 0, sp = t < 1.2 ? t / 1.2 : 1;
     v.g.position.set(v.x, v.y + up, v.z); v.g.rotation.set(v.pitch + v.wreckPitch * sp + (t < 1.2 ? Math.sin(t * 9) * 0.08 : 0), v.h, v.roll + v.wreckRoll * sp, "YXZ"); v.g.updateMatrix();
-    const fire = t < 40 ? 1 : 0; W.cones.forEach((c, i) => { c.visible = fire > 0 && v.g.visible; const fl = 0.75 + 0.5 * Math.random(); c.position.set(v.x + (i - 1) * 0.7 * Math.cos(v.h), v.y + v.spec.bodyH * 0.55 + up, v.z - (i - 1) * 0.7 * Math.sin(v.h)); c.scale.set(fl * (i ? 0.9 : 0.6), fl * (i ? 1.1 : 1.6), fl * (i ? 0.9 : 0.6)); c.material.opacity = 0.75; });
-    if (t < 90 && v.g.visible && (W.puff -= dt) <= 0) { W.puff = t < 40 ? 0.18 : 0.6; const q = new THREE.Vector3(v.x + (Math.random() - 0.5) * 1.5, v.y + v.spec.bodyH + up, v.z + (Math.random() - 0.5) * 1.5);
+    const fire = t < 40 ? 1 : 0; W.cones.forEach((c, i) => { c.visible = fire > 0 && v.g.visible; const fl = 0.75 + 0.5 * Math.random(); c.position.set(v.x + (i - 1) * 0.7 * Math.cos(v.h), v.y + (v === JET ? 0.3 : bodyHOf(v) * 0.55) + up, v.z - (i - 1) * 0.7 * Math.sin(v.h)); c.scale.set(fl * (i ? 0.9 : 0.6), fl * (i ? 1.1 : 1.6), fl * (i ? 0.9 : 0.6)); c.material.opacity = 0.75; });
+    if (t < 90 && v.g.visible && (W.puff -= dt) <= 0) { W.puff = t < 40 ? 0.18 : 0.6; const q = new THREE.Vector3(v.x + (Math.random() - 0.5) * 1.5, v.y + (v === JET ? 1.2 : bodyHOf(v)) + up, v.z + (Math.random() - 0.5) * 1.5);
       SHOT.fx.push({ o: fxAddMesh(fxGeo, fxSmoke(t < 40 ? 0x1e1d1b : 0x55524d), q, 0.5), t0: now, life: 3.5, grow: 1.6, fade: true, vy: 2.6 }); } }
 }
