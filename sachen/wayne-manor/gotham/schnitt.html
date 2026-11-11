@@ -29,7 +29,7 @@
     <a href="../">Wayne Manor</a>
     <a class="tab" href="./">← Karte</a>
     <h1>Gotham-Seitenansicht (Ebenen)</h1>
-    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht nur schematisch. Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
+    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
   </header>
   <main id="main"><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
   <div class="zoom"><button id="zin" title="Grösser">+</button><button id="zout" title="Kleiner">−</button></div>
@@ -76,7 +76,7 @@
       const x = t.x0, w = t.x1 - t.x0, y = Y(t.y1), h = (t.y1 - t.y0) * K, txt = `<b>${(t.name || t.typ).replace(/\n/g, " ")}</b><br>${fm(t.y0)} bis ${fm(t.y1)} (${welt(t.y0)} bis ${String(t.y1 + H.strasse).replace(".", ",")})<br>Höhe ${String(Math.round((t.y1 - t.y0) * 10) / 10).replace(".", ",")} m`;
       let n;
       if (t.typ === "kabel") {   // Tragseil: vom Turm (Seite der Kaimauer) zur Flussmitte hinunter
-        const tw = t.x1 < 1850 ? t.x1 : t.x0, far = t.x1 < 1850 ? t.x0 : t.x1;
+        const tw = t.x1 < S.gothamBis / 2 ? t.x1 : t.x0, far = t.x1 < S.gothamBis / 2 ? t.x0 : t.x1;
         el("path", { d: `M${tw} ${Y(t.y1)}Q${(tw + far) / 2} ${Y(t.y0 - 6)} ${far} ${Y(t.y0 + 12)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2 });
         for (let s = 1; s < 8; s++) { const u = s / 8, xx = tw + (far - tw) * u, yy = (1 - u) * (1 - u) * Y(t.y1) + 2 * u * (1 - u) * Y(t.y0 - 6) + u * u * Y(t.y0 + 12); el("line", { x1: xx, y1: yy, x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }); }
         continue;
@@ -86,7 +86,7 @@
         P.push([wall, top]); P.push([wall + dir * t.strand, top - 0.3]);
         for (let s = 0; s <= 1.001; s += 0.05) { const e = 0.5 - 0.5 * Math.cos(Math.PI * s); P.push([wall + dir * (t.strand + s * (L * 0.82 - t.strand)), (top - 0.3) + (t.y0 - top + 0.3) * e]); }
         P.push([wall + dir * L, t.y0], [wall + dir * L, t.y0 - 1], [wall, t.y0 - 1]);
-        n = el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: "#6f6248", stroke: "#3b3226", "stroke-width": 1 });
+        n = el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: FARBE.grund, stroke: "none" });   // Nicolas: Schicht unter dem Kies weg (Boden-Farbe)
         el("path", { d: "M" + P.slice(0, 8).map(p => p[0] + " " + Y(p[1])).join("L"), fill: "none", stroke: "#cdb98a", "stroke-width": 5, "pointer-events": "none" });
         info(n, `<b>${t.name}</b><br>Kies/Sand ca. ${String(t.kies).replace(".", ",")} m über dem Wasser, dann weich tiefer bis zum Grund (${fm(t.y0)})`); continue; }
       if (t.typ === "mass") { const x = t.x0, a = Y(t.y0), b = Y(t.y1);
@@ -164,7 +164,12 @@
       else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");
       else if ((t.typ === "schacht" || t.typ === "gitter") && h > 90) label(t.name, x + w / 2 + 34, y + h / 2, 160, "#d8dce0");
     }
-    el("line", { x1: 3730, y1: Y(TOP), x2: 3730, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
+    el("line", { x1: S.gothamBis + 30, y1: Y(TOP), x2: S.gothamBis + 30, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
+    // Breitenmasse unten (Gebaeude in echter Breite): Hilfslinien von den Kanten, Masslinie mit Wert
+    for (const t of S.teile) if (t.breite) { const yb = Y(BOT + 2.2), x0 = t.x0, x1 = t.x1;
+      for (const x of [x0, x1]) el("line", { x1: x, y1: Y(t.y0), x2: x, y2: yb + 8, stroke: "#ffd36b55", "stroke-width": 1, "stroke-dasharray": "5 5", "pointer-events": "none" });
+      el("line", { x1: x0, y1: yb, x2: x1, y2: yb, stroke: "#ffd36b", "stroke-width": 2 }); for (const x of [x0, x1]) el("line", { x1: x, y1: yb - 7, x2: x, y2: yb + 7, stroke: "#ffd36b", "stroke-width": 2 });
+      label(`${String(t.breite).replace(".", ",")} m breit · ${t.name.replace(/ \(.*\)$/, "")}`, (x0 + x1) / 2, yb - 8, x1 - x0, "#ffd36b", 22); }
     // Wasserlinie
     const WY = H.wasser - H.strasse; el("line", { x1: 0, y1: Y(WY), x2: XMAX, y2: Y(WY), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
 
@@ -190,7 +195,7 @@
     });
     el("text", { x: XC - 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Abstände zwischen den Ebenen";
     el("text", { x: 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Westen";
-    el("text", { x: 3690, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
+    el("text", { x: S.gothamBis - 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
   </script>
 </body>
 </html>
