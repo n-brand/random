@@ -110,7 +110,7 @@ const GOTHAM = {
     { id: "diag-nord", name: "Old Broadway (Nord)", w: 20, linie: [[-1380, -1250], [-1500, -1000], [-1680, -720], [-1820, -300]] },
     { id: "diag-sued", name: "Old Broadway (Süd)", w: 20, linie: [[-2290, 30], [-2470, 400], [-2600, 750], [-2580, 1100]] },
     { id: "crosstown", name: "Crosstown Expressway", w: 24, linie: [["O", -880], [-1300, -860], [-1620, -930], [-2050, -880], [-2450, -800], [-2860, -700], ["W", -730]] },
-    // Harbor Road (Nicolas 2026-11-12: Bruecke neu analysiert): von der Suedbruecke quer durch die Narrows zur Arkham-Bruecke
+    // Harbor Road (Nicolas 2026-11-12: Bruecke neu analysiert): von der Suedbruecke quer durch die Narrows zum Faehranleger (Arkham)
     { id: "sued-road", name: "Harbor Road", w: 18, linie: [["O", 800], [-1950, 860], [-2150, 1000], [-2380, 1090], [-2580, 1100]] },
     { id: "industrial", name: "Industrial Way", w: 18, linie: [[-2470, 400], [-2720, 470], ["W", 520]] },
     { id: "ufer-ost", name: "Uferstrasse Ost (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
@@ -134,7 +134,10 @@ const GOTHAM = {
     { name: "Südbrücke (Harbor)", spanne: 436, w: 22, seite: "ost", z: 800 },
     { name: "Westbrücke Nord", spanne: 364, w: 20, seite: "west", z: -730 },
     { name: "Westbrücke Süd", spanne: 416, w: 20, seite: "west", z: 520 },
-    { name: "Arkham-Brücke", spanne: 781, w: 12, linie: [[-2580, 1100], [-2820, 1350], [-3050, 1550], [-3200, 1660]] },
+  ],
+  // Faehren (Nicolas 2026-11-12: nach Arkham eine Faehre statt einer Bruecke): Route uebers Wasser von Anleger zu Anleger
+  faehren: [
+    { name: "Arkham-Fähre", linie: [[-2640, 1140], [-2850, 1360], [-3040, 1560], [-3185, 1680]], notiz: "Autofähre zwischen dem Anleger in den Narrows und Arkham Asylum, einzige Verbindung zur Arkham-Insel." },
   ],
 
   // U-Bahn: ein grosser Ring (Ellipse), Stationen per Winkel in Grad (0 = Osten, 90 = Sueden), Abstand ca. 450 m
@@ -184,7 +187,9 @@ const GOTHAM = {
     { id: "wayne-tower", typ: "wahrzeichen", name: "Wayne Tower", x: -2050, z: -100, w: 70, d: 70, h: 320,
       notiz: "Zentrum, im Wayne Circle. Befahrbare Tiefgarage (2 Ebenen). Direkt darunter geheimer Stock (Vorbild karten/planung/wayne-geheimstock-vorbild.png: weite niedrige Halle, viele runde Pfeiler, runde Deckenlampen, graue Wände, glänzender Boden): Tumbler, Prototypen, Gadgets. Darunter Kanal-Hub mit Schurkenbasis." },
     { id: "gcpd", typ: "oeffentlich", name: "Polizeipräsidium (Batsignal auf dem Dach)", x: -2200, z: 330, w: 80, d: 60, h: 45 },
-    { id: "arkham", typ: "wahrzeichen", name: "Arkham Asylum", x: -3340, z: 1800, w: 220, d: 160, h: 30, aussen: true, notiz: "Eigene Insel vor der Küste, nur über die Arkham-Brücke." },
+    { id: "arkham", typ: "wahrzeichen", name: "Arkham Asylum", x: -3340, z: 1800, w: 220, d: 160, h: 30, aussen: true, notiz: "Eigene Insel vor der Küste, nur mit der Arkham-Fähre." },
+    { id: "faehre-narrows", typ: "verkehr", name: "Fähranleger Narrows (Arkham-Fähre)", x: -2620, z: 1125, w: 30, d: 20, ufer: true, notiz: "Anleger mit Rampe für Autos und Wartebereich, Ende der Harbor Road." },
+    { id: "faehre-arkham", typ: "verkehr", name: "Fähranleger Arkham", x: -3190, z: 1690, w: 30, d: 20, aussen: true, notiz: "Anleger an der Arkham-Insel, vor dem Tor der Anstalt." },
     { id: "hafen", typ: "industrie", name: "Hafen / Containerterminal", x: -2070, z: 1350, w: 420, d: 90, ufer: true, notiz: "An der Südspitze der Insel, direkt am Meer (Schiffe müssen unter keiner Brücke durch). Kräne, Container, Lagerhallen." },
     // --- Oeffentlich ---
     { id: "gericht", typ: "oeffentlich", name: "Gerichtsgebäude", x: -1880, z: 330, w: 70, d: 50, h: 35 },

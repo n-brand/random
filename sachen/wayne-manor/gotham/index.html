@@ -343,6 +343,15 @@
         const t = el("polygon", { points: pts(rectCorners(q[0], q[1], 10, b.w + 12, ux / l, uz / l)), fill: "#5e6670", stroke: "#111", "stroke-width": 2 }, L.strassen); t.dataset.info = `<b>Brückenturm</b> (${b.name})<br>ca. 62 m über der Fahrbahn`; }
     }
 
+    // Faehren: gestrichelte Route uebers Wasser mit kleinem Schiff in der Mitte
+    for (const f of G.faehren || []) { const P = smooth(f.linie, 10), d = path(P);
+      el("path", { d, fill: "none", stroke: "#0b1a2a", "stroke-width": 16, "stroke-linecap": "round", opacity: .5 }, L.strassen);
+      const p = el("path", { d, fill: "none", stroke: "#f2f2ee", "stroke-width": 6, "stroke-dasharray": "22 16", "stroke-linecap": "round" }, L.strassen);
+      p.dataset.info = `<b>${f.name}</b><br>Fährroute ca. ${Math.round(lineLen(P))} m übers Wasser${f.notiz ? "<br>" + f.notiz : ""}`;
+      const m = P[P.length >> 1], q = P[(P.length >> 1) + 1], an = Math.atan2(q[1] - m[1], q[0] - m[0]) * 180 / Math.PI;
+      el("path", { d: "M-30 -9H20L32 0L20 9H-30Z", fill: "#e8c547", stroke: "#111", "stroke-width": 2, transform: `translate(${f1(m[0])} ${f1(m[1])}) rotate(${f1(an)})`, "pointer-events": "none" }, L.strassen);
+      el("text", { x: m[0] + 30, y: m[1] - 24, "font-size": 30, fill: "#fff", stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = f.name; }
+
     // ---------- Kanalisation und Gullideckel ----------
     const K = G.kanal, KS = K.hauptsammler.map(id => roadById[id]).filter(Boolean);
     for (const s of KS) { const p = el("path", { d: path(s.pts, s.geschlossen), fill: "none", stroke: "#7bd88f", "stroke-width": 9 }, L.kanal); p.dataset.info = `<b>Hauptsammler unter ${s.name}</b><br>begehbar, ca. 6 m hoch, Sohle 17 m unter der Strasse (gleicher Boden wie der Hub)`; }

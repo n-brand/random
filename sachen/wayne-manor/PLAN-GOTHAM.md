@@ -27,7 +27,7 @@ Gotham ist ca. 2,7 x 2,8 km gross, die Welt endet heute bei ca. 700 m. Darum zue
 | Nr | Was | Inhalt |
 |----|-----|--------|
 | G1 | Gelände und Wasser | **Hauptinsel nach der Skizze von Nicolas (2026-11-12):** frei gezeichneter Umriss (`insel.umriss` in `daten.js`), oben breit mit Einbuchtung, Nordosten am höchsten, unten zur Spitze schmaler und mit der Spitze im Meer (Hafen dort). Die Flüsse liegen als Band um die Insel: **Westfluss** 400 m, **Ostfluss** 440 m (wie der East River bei der Williamsburg Bridge), **Nordkanal** 180 m, im Süden offenes Meer (schliesst an die bestehende Küste im Südosten an), Arkham-Insel im Südwesten vor der Küste. **Strassenebene der Stadt = Fahrbahn der Brücken**, 18 m über dem Wasser (Welt-y -16, Wasser -34; Nicolas: Schichten herausgeschnitten, Tiefgaragen-Etagen 5,5 m wie bei Wayne Manor, Tiefgaragen des Wayne Towers neben den Turm, geheimer Wayne-Stock direkt unter den Turm und alles darunter mit hoch): hohe Kaimauern rundum; am Mauerfuss ein Streifen Kies/Sand knapp über dem Wasser, dann wird der Fluss weich tiefer (keine senkrechte Kante unter Wasser). Braucht Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht |
-| G2 | **Strassennetz** | Kein starres Gitter (Nicolas 2026-11-11): frei gezogene, geschwungene Hauptstrassen (Ring um den Wayne Tower, Diagonale „Old Broadway“, Crosstown Expressway, Uferstrassen …) und je Bezirk ein eigenes, gedrehtes und verzogenes Nebenstrassennetz mit Lücken (Narrows: enge Gassen). **Zweistöckige Strassen in der Stadt** (Park Row, Uferstrasse Ost): oben normaler Verkehr, 5,5 m darunter auf Höhe der Tiefgarage 1 (ca. 4,5 m licht) die untere Strasse (Lower Level) mit Obdachlosen und dem Eingang zum Club des Pinguins. **Hängebrücken** im Stil Williamsburg/Manhattan Bridge (Türme an den Ufern, ca. 62 m über der Fahrbahn, Tragseile), Fahrbahn auf Strassenhöhe: 3 über den Ostfluss (Highway, Nord, Süd), 2 über den Westfluss, Arkham-Brücke. Füllbauten stehen automatisch an den Strassen und in den Blöcken (nie auf einer Strasse) |
+| G2 | **Strassennetz** | Kein starres Gitter (Nicolas 2026-11-11): frei gezogene, geschwungene Hauptstrassen (Ring um den Wayne Tower, Diagonale „Old Broadway“, Crosstown Expressway, Uferstrassen …) und je Bezirk ein eigenes, gedrehtes und verzogenes Nebenstrassennetz mit Lücken (Narrows: enge Gassen). **Zweistöckige Strassen in der Stadt** (Park Row, Uferstrasse Ost): oben normaler Verkehr, 5,5 m darunter auf Höhe der Tiefgarage 1 (ca. 4,5 m licht) die untere Strasse (Lower Level) mit Obdachlosen und dem Eingang zum Club des Pinguins. **Hängebrücken** im Stil Williamsburg/Manhattan Bridge (Türme an den Ufern, ca. 62 m über der Fahrbahn, Tragseile), Fahrbahn auf Strassenhöhe: 3 über den Ostfluss (Highway, Nord, Süd), 2 über den Westfluss; nach Arkham keine Brücke, sondern die **Arkham-Fähre** (Nicolas 2026-11-12) vom Fähranleger in den Narrows. Füllbauten stehen automatisch an den Strassen und in den Blöcken (nie auf einer Strasse) |
 | G3 | **Gebäude-Vorlagen** | **Geschosshöhe immer mindestens 4,7 m** (wie das Erdgeschoss von Wayne Manor; Nicolas 2026-11-11), höher nur für Hallen wie Empfang/Lobby (Wayne Tower EG 9,4 m → ca. 67 Stockwerke). Wenige Vorlagen, mehrfach eingesetzt: Wolkenkratzer (Glas/Stein, Höhe nach Wohlstand), Bürohaus, Mehrfamilienhaus (Ziegel, Feuertreppen), Laden mit Wohnung darüber, Fabrikhalle, Lagerhalle. Innen leer |
 | G4 | **Wohlstand reich → arm** | Jede Fläche bekommt einen Wohlstand 0..1 (Bezirke in der Karte, weich überblendet): Uptown/Zentrum hohe Türme, Westseite/Südstadt gemischt, Fabrikviertel, **The Narrows am Hafen** arm (kleine Häuser, Fabriken). Sinnvoll so: Armenviertel am Hafen ist typisch (Industrie, Lärm, billiger Boden) |
 | G5 | **Seitengassen** | Im armen Viertel dichtes Gassennetz: Müllcontainer, Säcke, Wäscheleinen, Feuertreppen, Pfützen, Dampf aus Gullys |
@@ -36,7 +36,7 @@ Gotham ist ca. 2,7 x 2,8 km gross, die Welt endet heute bei ca. 700 m. Darum zue
 ### Brücken-Analyse Südbrücke (Harbor), 2026-11-12
 
 - **Vorher:** bei z 1050 über den Ostfluss. Dort war der Fluss schon Meer, das Ostende lag im offenen Wasser, am Ostufer ging keine Strasse weiter. Auch die Nordbrücke endete am Ostufer ohne Strasse.
-- **Jetzt:** Südbrücke bei z 800, ca. 440 m über dem Ostfluss, landet auf der Festland-Zunge südlich vom Highway. Die neue **East Shore Road** verbindet am Ostufer die Enden von Nord-, Highway- und Südbrücke. Die Harbor Road führt von der Südbrücke quer durch die Narrows bis zur Arkham-Brücke.
+- **Jetzt:** Südbrücke bei z 800, ca. 440 m über dem Ostfluss, landet auf der Festland-Zunge südlich vom Highway. Die neue **East Shore Road** verbindet am Ostufer die Enden von Nord-, Highway- und Südbrücke. Die Harbor Road führt von der Südbrücke quer durch die Narrows bis zum Fähranleger der Arkham-Fähre.
 - Der Hafen liegt an der Inselspitze direkt am Meer, Schiffe müssen unter keiner Brücke durch. Die Durchfahrtshöhe von 18 m bleibt deshalb unkritisch (die echte Williamsburg Bridge hat ca. 41 m).
 - Abstand zur Highway-Brücke ca. 500 m.
 
@@ -55,7 +55,7 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 
 - **Wayne Tower** im Zentrum (ca. 320 m, logisch ca. 80 Stockwerke à 4 m). Befahrbare Tiefgarage (2 Ebenen) **neben dem Turm**; **direkt unter dem Turm ein geheimer Stock** (0 bis -8 m) (Vorbild `karten/planung/wayne-geheimstock-vorbild.png`: weite niedrige Halle, viele runde Pfeiler, runde Deckenlampen) mit dem Tumbler, weiteren Prototypen und Gadgets; darunter der Kanal-Hub (-3, siehe Phase 4).
 - **Polizeipräsidium** mit Batsignal auf dem Dach (leuchtet nachts, schaltbar).
-- **Arkham Asylum** auf der Arkham-Insel.
+- **Arkham Asylum** auf der Arkham-Insel, erreichbar nur mit der **Arkham-Fähre** (Autofähre, Anleger in den Narrows und auf Arkham).
 - **Hafen** mit Containerterminal, Kränen, Lagerhallen.
 - Gericht, Kathedrale/Kirche, **Eventgebäude** (Spendengala, Hochzeit), 2 Museen.
 - 3 Krankenhäuser, 2 Kinderheime, 3 Kinderkrippen.
@@ -106,7 +106,7 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 
 - **Tumbler 2.0** – drei eigene Entwürfe, inspiriert von den Stilrichtungen „Affleck“, „Pattinson“ und „Arkham“ (Muscle-Car-Panzer, Strassen-Muscle-Car, futuristisch) – **keine Film-Nachbauten** (eigene Regel).
 - **„Chevrollette co“** – unklar, bitte genauer (Chevrolet Corvette? Camaro? Oder eine Fahrzeug-Kette mit diesem Namen?).
-- Bus, U-Bahn-Zug, U-Boot, Schnellboot (siehe oben).
+- Bus, U-Bahn-Zug, U-Boot, Schnellboot (siehe oben), **Autofähre** nach Arkham.
 
 ## Phase 9 – Spielsysteme
 
