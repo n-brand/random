@@ -3,6 +3,7 @@
 //   phase   Schluessel aus PHASEN (Farbe und Name)
 //   nr      Kuerzel aus PLAN-GOTHAM.md
 //   status  "offen" | "laeuft" | "fertig" | "spaeter" (spaeter = vorerst weggelassen, steht am Ende)
+//   stand   was schon umgesetzt ist (bei "laeuft"/"fertig")
 //   braucht Kuerzel der Schritte, die vorher fertig sein muessen
 //   warum   warum der Schritt genau hier kommt
 
@@ -20,16 +21,16 @@ const PHASEN = {
 };
 
 const UMSETZUNG = [
-  { phase: "technik", nr: "T1", titel: "Bildrate-Anzeige", status: "offen", braucht: [],
+  { phase: "technik", nr: "T1", titel: "Bildrate-Anzeige", status: "fertig", stand: "K1 erledigt: Messanzeige (F3) mit Bildrate, Bildzeit, Zeichenaufrufen, Dreiecken und geladenen Kacheln.", braucht: [],
     inhalt: "FPS und Zeichenaufrufe einblendbar (?debug und Einstellungen). Messwerte am PC und am Handy vorher und nachher.",
     warum: "Zuerst messen: ohne Zahlen sieht man nicht, ob die Kacheln wirklich schneller sind." },
-  { phase: "technik", nr: "T2", titel: "Kacheln 128 m", status: "offen", braucht: ["T1"],
+  { phase: "technik", nr: "T2", titel: "Kacheln 128 m", status: "laeuft", stand: "K2-K5 erledigt: Kollisions-Raster, Kachel-Verwaltung mit Wald pro Kachel, Gelände in Blöcken mit Detailstufen, Nebel und Sichtweite an der Ladeweite. Offen: Fernring (Horizont bis ca. 3 km) und K8 (am Handy messen).", braucht: ["T1"],
     inhalt: "Welt in 128-m-Kacheln (Gelände, Bäume, Gebäude, Kollision je Kachel). Nur Kacheln in der Nähe werden gebaut, weiter weg vereinfacht, ganz weit weg entladen. Details in PLAN-KACHELN.md (K1-K8).",
     warum: "Gotham ist ca. 2,7 x 2,8 km gross, die Welt endet heute bei ca. 700 m. Ohne Kacheln wird es zu langsam, besonders am Handy." },
-  { phase: "technik", nr: "T3", titel: "Einstellungen", status: "offen", braucht: ["T2"],
+  { phase: "technik", nr: "T3", titel: "Einstellungen", status: "fertig", stand: "K6 erledigt: Ladeweite, Gelände-Detail, Auflösung, Schatten, Lautstärke, Messanzeige; bleibt nach Neuladen.", braucht: ["T2"],
     inhalt: "Menü mit Ladeweite (2-8 Kacheln), Lautstärke und Grafikstufe, im Browser gespeichert.",
     warum: "Die Ladeweite gibt es erst mit den Kacheln." },
-  { phase: "technik", nr: "T4", titel: "Ladescreen", status: "offen", braucht: ["T2"],
+  { phase: "technik", nr: "T4", titel: "Ladescreen", status: "fertig", stand: "K7 erledigt: Ladebildschirm für PC und Handy mit echtem Fortschritt, Start in ca. 3 s.", braucht: ["T2"],
     inhalt: "Eigener Ladebildschirm für PC und Handy mit Fortschritt der echten Ladeschritte und Tipps.",
     warum: "Mit Gotham dauert das erste Laden länger." },
   { phase: "technik", nr: "T5", titel: "Teststrecke für Bauteile", status: "offen", braucht: [],

@@ -39,6 +39,9 @@
     .st.spaeter { color: #9aa4b2; border-style: dashed; }
     .card p { margin: 6px 0 0; }
     .warum { color: var(--muted); font-size: 13px; }
+    .stand { font-size: 13px; color: #bfe8c8; background: #7bd88f14; border-radius: 6px; padding: 4px 8px; }
+    .stand b { color: #7bd88f; }
+    li.done .card { border-left-style: double; }
     .warum b { color: #cdd3dc; font-weight: 600; }
     .dep { margin-top: 6px; font-size: 12px; color: var(--muted); }
     .dep a { color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; margin-right: 4px; }
@@ -76,11 +79,12 @@
     const aktiv = UMSETZUNG.filter(s => s.status !== "spaeter"), spaeter = UMSETZUNG.filter(s => s.status === "spaeter");
     const list = document.getElementById("list");
     const card = (s, n) => { const P = PHASEN[s.phase] || { name: s.phase, farbe: "#888" }, li = document.createElement("li");
-      li.dataset.phase = s.phase; if (s.status === "spaeter") li.className = "later";
-      li.innerHTML = `<div class="num" style="background:${P.farbe}">${n}</div>
+      li.dataset.phase = s.phase; if (s.status === "spaeter") li.className = "later"; if (s.status === "fertig") li.className = "done";
+      li.innerHTML = `<div class="num" style="background:${s.status === "fertig" ? "#7bd88f" : P.farbe}" title="${STATUS[s.status] || ""}">${s.status === "fertig" ? "✓" : n}</div>
         <div class="card" id="${id(s.nr)}" style="--c:${P.farbe}">
           <div class="top"><span class="kz">${esc(s.nr)}</span><h2>${esc(s.titel)}</h2><span class="ph">${esc(P.name)}</span><span class="st ${s.status}">${STATUS[s.status] || esc(s.status)}</span></div>
           <p>${esc(s.inhalt)}</p>
+          ${s.stand ? `<p class="stand"><b>Stand:</b> ${esc(s.stand)}</p>` : ""}
           <p class="warum"><b>Warum hier:</b> ${esc(s.warum)}</p>
           ${s.braucht.length ? `<div class="dep">Braucht vorher: ${s.braucht.map(b => `<a href="#${id(b)}">${esc(b)}</a>`).join("")}</div>` : ""}
         </div>`;
