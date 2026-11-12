@@ -46,6 +46,16 @@ sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -48, right: 48, top: 48, bottom: -48, near: 1, far: 190 });
 sun.shadow.bias = -0.0004;
 scene.add(sun, sun.target);
+// Sonne folgt einem Punkt, aber nur in ganzen Schatten-Texeln (Nicolas 2026-11-12: beim schnellen Fahren zitterte alles; stufenloses Mitwandern
+// verschiebt das Schattenraster jedes Bild ein wenig, die Schattenkanten flimmern). Rasterweite = Schattenausschnitt / Aufloesung.
+const sunSnap = { r: new THREE.Vector3(), u: new THREE.Vector3(), p: new THREE.Vector3() };
+function sunFollow(p, dist = 90) {
+  const S = sunSnap, cam = sun.shadow.camera, tex = (cam.right - cam.left) / sun.shadow.mapSize.x;
+  S.r.set(0, 1, 0).cross(SUN_DIR).normalize(); S.u.copy(SUN_DIR).cross(S.r).normalize();
+  const a = Math.round(p.dot(S.r) / tex) * tex, b = Math.round(p.dot(S.u) / tex) * tex, c = p.dot(SUN_DIR);
+  S.p.copy(S.r).multiplyScalar(a).addScaledVector(S.u, b).addScaledVector(SUN_DIR, c);
+  sun.position.copy(S.p).addScaledVector(SUN_DIR, dist); sun.target.position.copy(S.p); sun.target.updateMatrixWorld();
+}
 const world = new THREE.Group();
 scene.add(world);
 

@@ -28,6 +28,9 @@ const ENG_PROFILES = {
   "Nachtfalke": { idle: 34, max: 140, gears: [0, 10, 20, 32, 46], wave: "sawtooth", sub: 0.5, cut0: 260, cut1: 1500, vol: 0.18, noise: 0.07 },   // tiefer V8
   "Aventador LP 700-4": { idle: 46, max: 310, gears: [0, 13, 26, 40, 56, 74, 94], wave: "sawtooth", sub: 2, cut0: 520, cut1: 4200, vol: 0.14, noise: 0.06 },   // hochdrehender V12
   "Gotham Taxi": { idle: 40, max: 140, gears: [0, 10, 20, 31, 44], wave: "sawtooth", sub: 0.5, cut0: 260, cut1: 1300, vol: 0.14, noise: 0.07 },   // V8, etwas ruhiger
+  "Gotham Fire Engine": { idle: 30, max: 92, gears: [0, 7, 13, 19, 26], wave: "sawtooth", sub: 0.6, cut0: 200, cut1: 900, vol: 0.2, noise: 0.1 },   // grosser Diesel (Nicolas 2026-11-12)
+  "Gotham Fire Ladder": { idle: 28, max: 88, gears: [0, 7, 13, 19, 25], wave: "sawtooth", sub: 0.65, cut0: 190, cut1: 860, vol: 0.2, noise: 0.1 },
+  "Gotham Fire Chief": { idle: 38, max: 150, gears: [0, 10, 21, 33, 47], wave: "sawtooth", sub: 0.5, cut0: 280, cut1: 1500, vol: 0.16, noise: 0.07 },
   "Gotham Police": { idle: 38, max: 150, gears: [0, 10, 21, 33, 47], wave: "sawtooth", sub: 0.5, cut0: 280, cut1: 1500, vol: 0.16, noise: 0.07 },   // V8
   "Panzer": { idle: 26, max: 70, gears: [0, 5, 10, 15], wave: "sawtooth", sub: 0.5, cut0: 180, cut1: 700, vol: 0.2, noise: 0.12 },   // schwerer Diesel, Kettenrasseln
   "Rolls-Royce Spectre": { idle: 100, max: 900, gears: [0, 45], wave: "sine", wave2: "sine", g2: 0.16, sub: 2.67, cut0: 2300, cut1: 6200, vol: 0.045, noise: 0.025, am: 0, soft: true, ev: true },   // elektrisch wie der Batpod (Nicolas 2026-11-11), etwas tiefer, Tonhoehe bis Hoechsttempo

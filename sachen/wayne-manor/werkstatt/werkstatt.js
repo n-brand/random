@@ -13,6 +13,9 @@ const MODELLE = [
   { name: "Mercedes-Benz G-Klasse", spec: SPEC_GCLASS, bau: () => buildGClass(0x141a22) },
   { name: "Gotham Police", spec: SPEC_POLICE, bau: () => buildPolice() },
   { name: "Gotham Taxi", spec: SPEC_TAXI, bau: () => buildTaxi() },
+  { name: "Gotham Fire Engine", spec: SPEC_FIRE_ENGINE, bau: () => buildFireTruck("engine") },
+  { name: "Gotham Fire Ladder", spec: SPEC_FIRE_LADDER, bau: () => buildFireTruck("ladder") },
+  { name: "Gotham Fire Chief", spec: SPEC_FIRE_CHIEF, bau: () => buildFireChief() },
   { name: "Panzer", spec: SPEC_TANK, bau: () => buildTank() },
   { name: "Gemini Concept GT", spec: SPEC_GEMINI, bau: () => buildGemini() },
   { name: "ChatGPT GPT-6 Concept GT", spec: SPEC_CHATGPT, bau: () => buildChatGPT() },
@@ -135,7 +138,7 @@ function laden(i) {
   scene.add(b.g);
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
-  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin };
+  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null };
   if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
   kYaw = START.h; kPitch = -0.12; ZOOM.z = ZOOM.t = 1; if (modus === "drive") { camera.fov = 70; camera.updateProjectionMatrix(); }
   setze(); sicht();
@@ -225,6 +228,7 @@ function fahren(dt) {
   A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;   // vorne = -z im Modell
   const lim = 580; A.x = Math.max(-lim, Math.min(lim, A.x)); A.z = Math.max(-lim, Math.min(lim, A.z));
   A.lean += ((s.track ? 0 : A.steer * Math.min(1, Math.abs(A.v) / 6) * 0.9) - A.lean) * Math.min(1, dt * 5);   // Zweirad legt sich in die Kurve (wie fahren.js)
+  if (A.beacon) { const t = performance.now() / 1000 * 6, on = Math.sin(t) > 0; A.beacon[0].emissiveIntensity = 0.2 + 2.4 * (on ? 1 : 0); A.beacon[1].emissiveIntensity = 0.2 + 2.4 * (on ? 0 : 1); }   // Blinklicht beim Fahren (wie fahren.js)
   for (const w of A.wheels) { w.spin.rotation.x -= A.v * dt / w.r; if (w.front) w.piv.rotation.y = A.steer; }
   setze();
   $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h";
@@ -345,7 +349,7 @@ function loop(t) {
     } else if (modus === "drive") fahren(dt);
     else { if (modus === "spin") { AKT.h += dt * 0.5; setze(); } controls.update(); }
     const px = F ? F.x : AKT.x, pz = F ? F.z : AKT.z, py = F ? Math.max(0, F.y - 10) : 0;
-    sun.position.set(px + SUN_DIR.x * 100, py + SUN_DIR.y * 100, pz + SUN_DIR.z * 100); sun.target.position.set(px, py, pz);
+    sunFollow(new THREE.Vector3(px, py, pz), 100);   // in ganzen Schatten-Texeln (basis.js, gegen Flimmern beim schnellen Fahren)
   }
   schuesseStep(dt); autosStep(dt);
   renderer.render(scene, camera);

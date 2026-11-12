@@ -68,9 +68,7 @@ function frame() {
   const rn = night < nightTarget ? Math.min(nightTarget, night + dt * 0.8) : Math.max(nightTarget, night - dt * 0.8);
   if (rn !== night) { night = rn; applyNight(); }
   const focus = walking ? player.pos : controls.target;
-  sun.position.copy(focus).addScaledVector(SUN_DIR, 90);
-  sun.target.position.copy(focus);
-  sun.target.updateMatrixWorld();
+  sunFollow(focus, 90);                                                      // in ganzen Schatten-Texeln (basis.js, gegen Flimmern)
   tilesUpdate();                                                             // K3: Kacheln in der Ladeweite nachladen (Zeitbudget)
   renderer.render(scene, camera);
   perfFrame(performance.now() - tF);

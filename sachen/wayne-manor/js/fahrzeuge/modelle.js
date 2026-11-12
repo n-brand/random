@@ -618,6 +618,116 @@ const SPEC_TAXI = { name: "Gotham Taxi", wheels: [[-0.82, -1.5], [0.82, -1.5], [
   maxN: 30, maxF: 36.1, acc: 11, steer: 0.68, jump: false, grade: 36, camD: 8.5, camH: 1.2, seat: [-0.4, 1.15, 0.1], bodyH: 1.65, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.8], [0, 3.8]],
   msg: "Gotham Taxi: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
+// ---- Gotham Fire Department (Nicolas 2026-11-12, eigene Entwuerfe, ohne Marken): Loeschfahrzeug "Engine 12", Drehleiter "Ladder 7" (beide Frontlenker-
+// Lkw: Mannschaftskabine, Aufbau mit Rolllaeden, weisses Band, goldene Schrift GOTHAM FIRE DEPT., Lichtbalken rot/weiss, Zwillingsreifen hinten,
+// Radhaeuser geschlossen) und Kommandowagen "Fire Chief" (Limousine wie das Polizeiauto, rot mit weissem Band). Ursprung = Mitte zwischen den Achsen.
+const fireText = (big, small, col = "#f2c84b") => { const t = canvasTex(1024, 200, (c, W, H) => { c.clearRect(0, 0, W, H); c.textAlign = "center"; c.textBaseline = "middle";
+    const fit = (str, px, max) => { let p = px; c.font = "bold " + p + "px Georgia, serif"; while (c.measureText(str).width > max) { p -= 2; c.font = "bold " + p + "px Georgia, serif"; } };
+    fit(big, 110, W - 40); c.lineWidth = 10; c.strokeStyle = "#1a0606"; c.strokeText(big, W / 2, small ? 70 : H / 2); c.fillStyle = col; c.fillText(big, W / 2, small ? 70 : H / 2);
+    if (small) { fit(small, 60, W - 200); c.lineWidth = 7; c.strokeText(small, W / 2, 158); c.fillStyle = "#ffffff"; c.fillText(small, W / 2, 158); } });
+  t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 }); };
+// Schild auf einer Seite (sd -1 links, 1 rechts) oder vorne/hinten (sd 0, fz -1 vorne / 1 hinten)
+const fireSign = (g, m, w, h, x, y, z, sd, fz = 0) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(x, y, z); o.rotation.y = sd ? sd * Math.PI / 2 : fz < 0 ? Math.PI : 0; g.add(o); return o; };
+function buildFireTruck(kind) {
+  const ladder = kind === "ladder", g = new THREE.Group(), L = ladder ? 10.4 : 8.6, zF = -2.4 - 1.5, zR = zF + L, HW = 1.25;
+  const red = M(0xb3121a, { metalness: 0.35, roughness: 0.35 }), white = M(0xf2f2ee, { roughness: 0.45 }), dark = M(0x111214, { roughness: 0.75 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 });
+  const alu = M(0xb8bcc2, { metalness: 0.7, roughness: 0.35 }), glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0xd8dce0, { metalness: 0.85, roughness: 0.25 });
+  const shutter = (() => { const t = canvasTex(64, 256, (c, W, H) => { c.fillStyle = "#c3c7cc"; c.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 8) { c.fillStyle = "#8d9196"; c.fillRect(0, y, W, 2); } }); t.repeat.set(1, 1); return M(0xffffff, { map: t, metalness: 0.6, roughness: 0.35, polygonOffset: true, polygonOffsetFactor: -1 }); })();
+  const bR = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 }), bW = new THREE.MeshStandardMaterial({ color: 0xbfc4cc, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 });
+  const cab0 = zF, cab1 = zF + 2.6, body0 = cab1 + 0.08;
+  boxIn(g, -0.55, 0.55, 0.5, 0.82, zF + 0.4, zR - 0.3, dark);                                                                  // Rahmen
+  // Kabine: Frontlenker mit Mannschaftsraum
+  boxIn(g, -HW, HW, 0.8, 2.95, cab0, cab1, red); boxIn(g, -HW + 0.06, HW - 0.06, 2.95, 3.05, cab0 + 0.15, cab1 - 0.05, red);
+  boxIn(g, -HW + 0.1, HW - 0.1, 1.85, 2.75, cab0 - 0.02, cab0 + 0.02, glass);                                                 // Frontscheibe
+  boxIn(g, -HW + 0.1, HW - 0.1, 0.8, 1.15, cab0 - 0.06, cab0 + 0.02, white);                                                  // weisse Front unten
+  for (let x = -0.8; x <= 0.81; x += 0.1) boxIn(g, x - 0.025, x + 0.025, 1.22, 1.72, cab0 - 0.05, cab0, chrome);              // Kuehlergrill
+  boxIn(g, -HW - 0.05, HW + 0.05, 0.62, 0.86, cab0 - 0.18, cab0 + 0.1, chrome);                                                 // Stossstange
+  for (const sd of [-1, 1]) {
+    boxIn(g, sd * 0.78 - 0.18, sd * 0.78 + 0.18, 0.95, 1.12, cab0 - 0.05, cab0, mat.glow);                                     // Scheinwerfer
+    boxIn(g, sd * (HW - 0.12) - 0.06, sd * (HW - 0.12) + 0.06, 1.85, 2.0, cab0 - 0.05, cab0, sd < 0 ? bR : bW);                // Warnlicht vorne
+    for (const [z0, z1] of [[cab0 + 0.25, cab0 + 1.15], [cab0 + 1.4, cab1 - 0.15]]) sideBox(g, sd * (HW - 0.02), sd * (HW + 0.02), 1.85, 2.7, z0, z1, glass);   // Seitenfenster
+    sideBox(g, sd * (HW - 0.02), sd * (HW + 0.03), 0.85, 1.05, cab0 + 0.4, cab0 + 1.0, alu);                                   // Trittstufe
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.35), 2.2, 2.6, cab0 + 0.1, cab0 + 0.18, dark);                                  // Spiegel
+    sideBox(g, sd * HW, sd * (HW + 0.01), 1.18, 1.42, cab0 + 0.05, zR - 0.05, white);                                         // weisses Band
+    fireSign(g, fireText(ladder ? "LADDER 7" : "ENGINE 12", "GFD"), 1.5, 0.3, sd * (HW + 0.012), 1.55, cab0 + 1.25, sd);       // Tuer
+  }
+  // Lichtbalken auf der Kabine (rot/weiss, blinkt beim Fahren wie das Blaulicht der Polizei)
+  boxIn(g, -1.0, 1.0, 3.05, 3.1, cab0 + 0.35, cab0 + 0.6, dark);
+  for (const sd of [-1, 1]) { const b = meshIn(g, new THREE.CapsuleGeometry(0.09, 0.62, 4, 12).rotateZ(Math.PI / 2), sd < 0 ? bR : bW, sd * 0.5, 3.2, cab0 + 0.48); b.scale.z = 1.2; }
+  fireSign(g, fireText("GOTHAM", ""), 1.6, 0.28, 0, 2.86, cab0 - 0.03, 0, -1);                                                  // vorne ueber der Scheibe
+  // Aufbau mit Rolllaeden
+  const bodyTop = ladder ? 2.55 : 2.95;
+  boxIn(g, -HW, HW, 0.82, bodyTop, body0, zR, red);
+  for (const sd of [-1, 1]) {
+    const n = ladder ? 4 : 3, len = (zR - 0.3 - body0) / n;
+    for (let i = 0; i < n; i++) { const z0 = body0 + 0.15 + i * len, z1 = z0 + len - 0.15; sideBox(g, sd * HW, sd * (HW + 0.015), 1.48, bodyTop - 0.15, z0, z1, shutter); }
+    fireSign(g, fireText("GOTHAM FIRE DEPT.", ladder ? "AERIAL LADDER" : "RESCUE  ·  PUMPER"), Math.min(5.2, zR - body0 - 0.4), 0.95, sd * (HW + 0.02), bodyTop - 0.62, (body0 + zR) / 2, sd);
+    boxIn(g, sd * (HW - 0.12) - 0.06, sd * (HW - 0.12) + 0.06, bodyTop - 0.12, bodyTop + 0.02, zR - 0.1, zR + 0.02, sd < 0 ? bR : bW);   // Warnlicht hinten oben
+    boxIn(g, sd * 0.85 - 0.15, sd * 0.85 + 0.15, 1.0, 1.25, zR, zR + 0.03, mat.glowRed);                                       // Rueckleuchten
+  }
+  boxIn(g, -HW + 0.15, HW - 0.15, 1.45, bodyTop - 0.15, zR, zR + 0.015, shutter);                                               // Rollladen hinten
+  boxIn(g, -HW, HW, 0.62, 0.82, zR - 0.1, zR + 0.15, alu);                                                                     // Heck-Trittbrett
+  fireSign(g, fireText("GFD", ""), 0.9, 0.28, 0, 1.3, zR + 0.03, 0, 1);
+  // Radhaeuser geschlossen (Regel): dunkle Wand je Achse von Radinnenseite zu Radinnenseite, ab Wagenboden
+  const zA = -2.4, zB = ladder ? 3.3 : 2.1; for (const z of [zA, zB]) boxIn(g, -0.98, 0.98, 0.55, 1.15, z - 0.62, z + 0.62, dark);
+  if (ladder) {
+    // Drehkranz, Leiterpark (drei Teile ineinander, Holme und Sprossen), liegt nach vorne ueber der Kabine, Korb vorne
+    meshIn(g, new THREE.CylinderGeometry(0.9, 1.0, 0.35, 24), alu, 0, bodyTop + 0.17, zR - 1.6);
+    boxIn(g, -0.5, 0.5, bodyTop + 0.34, bodyTop + 0.9, zR - 2.2, zR - 1.0, red);
+    const lg = new THREE.Group(); lg.position.set(0, bodyTop + 0.95, zR - 1.6); lg.rotation.x = -0.03; g.add(lg);
+    for (let k = 0; k < 3; k++) { const w = 0.62 - k * 0.1, y = k * 0.14, z0 = -10.6 + k * 0.4, z1 = 0.6 - k * 0.2;
+      for (const sd of [-1, 1]) boxIn(lg, sd * w - 0.04, sd * w + 0.04, y, y + 0.14, z0, z1, k ? alu : white);
+      for (let z = z0 + 0.15; z < z1; z += 0.35) boxIn(lg, -w, w, y + 0.03, y + 0.06, z - 0.02, z + 0.02, alu); }
+    boxIn(lg, -0.55, 0.55, 0.0, 0.5, -11.0, -10.55, alu);
+    for (const sd of [-1, 1]) for (const z of [zA + 1.0, zR - 0.6]) boxIn(g, sd * HW, sd * (HW + 0.25), 0.55, 0.85, z - 0.2, z + 0.2, dark);   // Abstuetzungen eingefahren
+  } else {
+    // Loeschfahrzeug: Dachleiter, Saugschlaeuche, Pumpenstand mit Anschluessen, Wasserwerfer
+    for (const sd of [-1, 1]) boxIn(g, sd * 0.85 - 0.04, sd * 0.85 + 0.04, bodyTop + 0.05, bodyTop + 0.13, body0 + 0.3, zR - 0.3, alu);
+    for (let z = body0 + 0.5; z < zR - 0.4; z += 0.4) boxIn(g, -0.85, 0.85, bodyTop + 0.07, bodyTop + 0.11, z - 0.02, z + 0.02, alu);
+    for (const sd of [-1, 1]) meshIn(g, new THREE.CylinderGeometry(0.11, 0.11, zR - body0 - 1.2, 12).rotateX(Math.PI / 2), dark, sd * 0.45, bodyTop + 0.2, (body0 + zR) / 2);
+    for (const sd of [-1, 1]) { sideBox(g, sd * HW, sd * (HW + 0.03), 0.9, 1.45, body0 + 0.2, body0 + 1.2, alu);
+      for (const z of [body0 + 0.45, body0 + 0.95]) meshIn(g, new THREE.CylinderGeometry(0.07, 0.07, 0.14, 12).rotateZ(Math.PI / 2), chrome, sd * (HW + 0.08), 1.18, z); }
+    meshIn(g, new THREE.CylinderGeometry(0.06, 0.06, 0.6, 10), chrome, 0.6, bodyTop + 0.45, body0 + 0.6); meshIn(g, new THREE.CylinderGeometry(0.035, 0.05, 0.7, 10).rotateX(Math.PI / 2.4), chrome, 0.6, bodyTop + 0.78, body0 + 0.35);
+  }
+  mergeStatic(g);
+  const r = 0.52, tw = 0.34, wheels = [];
+  for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.02, zA, r, tw, true, tireM, rimM, 0, 24));
+  for (const sd of [-1, 1]) for (const x of [0.86, 1.2]) wheels.push(addWheel(g, sd * x, zB, r, tw, false, tireM, rimM, 0, 24));   // Zwillingsreifen
+  for (const w of wheels) sedanCap(w, tw, 0xd8dce0, 0xe8ebee, 8);
+  return { g, wheels, beacon: [bR, bW] };
+}
+const SPEC_FIRE_ENGINE = { name: "Gotham Fire Engine", wheels: [[-1.02, -2.4], [1.02, -2.4], [-1.2, 2.1], [1.2, 2.1]], wb: 4.5, track: 2.1, pts: [-2.8, -0.9, 1.0, 2.9], R: 1.3, circR: 1.25, enter: 5,
+  maxN: 24, maxF: 30.6, acc: 5.5, steer: 0.6, jump: false, grade: 30, camD: 13, camH: 2.4, seat: [-0.6, 2.35, -3.3], bodyH: 3.0, bike: false, brake: 20,
+  exits: [[-2.3, -3.2], [2.3, -3.2], [-2.3, 0.5], [2.3, 0.5], [0, -5.5], [0, 5.5]],
+  msg: "Gotham Fire Engine: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blinklicht beim Fahren)" };
+const SPEC_FIRE_LADDER = { ...SPEC_FIRE_ENGINE, name: "Gotham Fire Ladder", wheels: [[-1.02, -2.4], [1.02, -2.4], [-1.2, 3.3], [1.2, 3.3]], wb: 5.7, pts: [-3.2, -1.1, 1.1, 3.3, 5.0], acc: 4.5, maxF: 27.8, steer: 0.55, camD: 15,
+  exits: [[-2.3, -3.2], [2.3, -3.2], [-2.3, 1.0], [2.3, 1.0], [0, -9.5], [0, 7.2]],
+  msg: "Gotham Fire Ladder: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blinklicht beim Fahren)" };
+// Kommandowagen: Limousine wie das Polizeiauto (sedanKit), rot, weisses Band mit Schrift, Lichtbalken rot/weiss
+function buildFireChief() {
+  const paint = M(0xb3121a, { metalness: 0.4, roughness: 0.32 }), white = M(0xf2f2ee, { roughness: 0.45 }), dark = M(0x0a0b0c, { roughness: 0.7 });
+  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), chrome = M(0xa8adb3, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0x2a2c30, { metalness: 0.6, roughness: 0.4 });
+  const bR = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 }), bW = new THREE.MeshStandardMaterial({ color: 0xbfc4cc, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 });
+  const k = sedanKit(SEDAN, paint, glass, dark), g = k.g, word = fireText("FIRE CHIEF", "GOTHAM FIRE DEPT.");
+  for (const sd of [-1, 1]) {
+    k.skin(sd, -2.32, 2.36, 0.4, 0.55, k.bodyX, white, 0.004, 60, 2);                                                    // weisses Band
+    k.skin(sd, -1.02, 0.88, 0.58, 0.95, k.bodyX, word, 0.008, 30, 8);                                                    // Schriftzug
+    for (const f of [1.0, -0.36]) k.skin(sd, f, f - 0.012, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, dark, 0.009, 1, 6);   // Tuerfugen
+    sideBox(g, sd * (k.hw(0.85) - 0.06), sd * (k.hw(0.85) + 0.1), 0.97, 1.0, -0.88, -0.8, dark); sideBox(g, sd * (k.hw(0.85) + 0.06), sd * (k.hw(0.85) + 0.2), 0.96, 1.1, -0.92, -0.78, paint);   // Spiegel
+    k.face(1, sd * 0.42, sd * 0.78, 0.63, 0.74, 0.012, mat.glow); k.face(-1, sd * 0.5, sd * 0.84, 0.72, 0.86, 0.012, mat.glowRed);
+    boxIn(g, sd * 0.5 - 0.04, sd * 0.5 + 0.04, 1.41, 1.45, -0.38, -0.3, dark);
+    const lens = meshIn(g, new THREE.CapsuleGeometry(0.075, 0.42, 4, 12).rotateZ(Math.PI / 2), sd < 0 ? bR : bW, sd * 0.38, 1.53, -0.39); lens.scale.z = 1.25;
+  }
+  k.face(1, -0.4, 0.4, 0.5, 0.66, 0.008, dark); for (let x = -0.36; x <= 0.37; x += 0.06) k.face(1, x - 0.008, x + 0.008, 0.51, 0.65, 0.016, chrome);   // Grill
+  k.face(1, -0.86, 0.86, 0.27, 0.45, 0.04, dark); k.face(-1, -0.88, 0.88, 0.27, 0.47, 0.04, dark);
+  boxIn(g, -0.75, 0.75, 1.45, 1.49, -0.47, -0.31, dark);
+  meshIn(g, new THREE.PlaneGeometry(0.9, 0.18), fireText("GOTHAM FIRE DEPT.", ""), 0, 0.76, -k.endF(0, 0.76, -1) + 0.012);   // hinten
+  mergeStatic(g);
+  const wheels = [[-0.82, -1.45, true], [0.82, -1.45, true], [-0.82, 1.5, false], [0.82, 1.5, false]].map(([x, z, f]) => addWheel(g, x, z, 0.34, 0.24, f, tireM, rimM, 0, 24));
+  for (const w of wheels) sedanCap(w, 0.24, 0x2a2c30, 0xc8ccd0, 6);
+  return { g, wheels, beacon: [bR, bW] };
+}
+const SPEC_FIRE_CHIEF = { ...SPEC_POLICE, name: "Gotham Fire Chief", msg: "Gotham Fire Chief: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen (Blinklicht beim Fahren)" };
 // ---- Panzer (Nicolas 2026-11-10, eigener Entwurf; 2026-11-11 realistischer, Grundform und Masse bleiben): Wanne mit schraegem Bug, Ketten aus
 // einzelnen Gliedern (laufen um Treibrad vorne mit Zaehnen und Leitrad hinten, oben auf Stuetzrollen), 6 Laufrollen je Seite mit Naben,
 // Schuerzen in Segmenten mit Schrauben und Gummilappen, Kotfluegel, Staukisten, Fahrerluke mit Winkelspiegeln, Motordeck mit Lamellen,
@@ -889,13 +999,13 @@ function kurvenPhysik(sp, v, steer, gas, vmax) {
 }
 // Schutzstufen: Treffer bis kaputt (Nicolas 2026-11-11; genutzt in schiessen.js und in der Werkstatt)
 const ARMOR = { "Gotham Taxi": 1, "Aventador LP 700-4": 1, "Gemini Concept GT": 1, "ChatGPT GPT-6 Concept GT": 1, "DeepSeek Concept Car": 1, "Motorrad": 1, "Boxer-Streetfighter": 1,
-  "Gotham Police": 2, "Rolls-Royce": 2, "Rolls-Royce Spectre": 2, "Nachtfalke": 2, "Batpod": 2, "Mercedes-Benz G-Klasse": 3, "Tumbler": 4, "Panzer": 4 };
+  "Gotham Police": 2, "Gotham Fire Chief": 2, "Gotham Fire Engine": 3, "Gotham Fire Ladder": 3, "Rolls-Royce": 2, "Rolls-Royce Spectre": 2, "Nachtfalke": 2, "Batpod": 2, "Mercedes-Benz G-Klasse": 3, "Tumbler": 4, "Panzer": 4 };
 // ===================== Tempo-Gefuehl (Nicolas 2026-11-12: 150 km/h fuehlten sich wie 80 an; Anzeige und Bewegung stimmen, 42 m/s) =====================
 // Wie in Rennspielen: mit dem Tempo weitet sich das Sichtfeld (70 -> 82 Grad), die Verfolgerkamera rueckt naeher und tiefer an das Fahrzeug
-// (mehr Boden bewegt sich durchs Bild), ab etwa 100 km/h leichtes Vibrieren. Wirkt ab ca. 20 km/h, voll ab ca. 160 km/h.
+// (mehr Boden bewegt sich durchs Bild). Vibrieren wieder aus (sh = 0). Wirkt ab ca. 20 km/h, voll ab ca. 160 km/h.
 // Genutzt in fahren.js (carCamera) und in der Werkstatt; Fahrzeuge mit Turm behalten 70 Grad (Zielen, Zoom).
 function tempoGefuehl(v, t) {
-  const x = Math.min(1, Math.max(0, (Math.abs(v) - 5.5) / 39)), k = x * x * (3 - 2 * x), sh = 0.04 * k * k;
+  const x = Math.min(1, Math.max(0, (Math.abs(v) - 5.5) / 39)), k = x * x * (3 - 2 * x), sh = 0;   // Vibrieren aus (Nicolas 2026-11-12: Batpod-Fahrt zitterte; vorher 0,04 x k²)
   return { k, fov: 70 + 12 * k, dK: 1 - 0.22 * k, hK: -0.45 * k,
     sx: sh * (Math.sin(t * 61) + 0.6 * Math.sin(t * 97)), sy: sh * (Math.sin(t * 73 + 1) + 0.5 * Math.sin(t * 131)) };
 }
