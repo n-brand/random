@@ -118,7 +118,9 @@ const GOTHAM = {
     // ausserhalb der Insel
     { id: "highway", name: "Gotham Highway (Manor - Stadt)", w: 22, linie: [[-61, 200], [-300, 255], [-500, 290], ["Oa", 300]] },
     // Festland Ost: verbindet die Enden von Nord-, Highway- und Suedbruecke (vorher endeten Nord- und Suedbruecke ohne Strasse)
-    { id: "ost-festland", name: "East Shore Road (Festland Ost)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290], [-800, 560], ["Oa", 800]] },
+    { id: "ost-festland", name: "East Shore Road (Festland Ost)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290]] },
+    // Nicolas 2026-11-12: Strasse von der Suedbruecke muendet kurz nach der Bruecke in den Highway (ab dort eine Strasse)
+    { id: "harbor-zubringer", name: "Harbor-Zubringer (Südbrücke - Highway)", w: 18, linie: [["Oa", 800], [-1080, 740], [-830, 507]] },
     { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-61, 200], [0, 168], [48, 138], [78, 108], [100, 78], [128, 55], [172, 36], [210, 0], [232, -60], [244, -130], [256, -217]] },
     { id: "west-nord", name: "Zufahrt Westen (Nord)", w: 16, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
     { id: "west-sued", name: "Zufahrt Westen (Süd)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
