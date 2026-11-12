@@ -57,7 +57,9 @@ function genH0(x, z) {
   const ch = sst(80, 170, Math.abs((z - x) * R2));
   let h = sst(0, 140, siteDist(x, z)) * Math.max(0, fbm(x / 170 + 3, z / 170 + 9) * lerp(16, 24, ch) + ch * 9 * (vnoise(x / 48 + 21, z / 48 + 13) - 0.5))
     * lerp(sst(0, -80, sd), sst(-6, -40, sd), ch);
-  h += 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2)) * sst(-60, -320, sd);   // Berge am Horizont (nicht zum Meer hin)
+  // Berge am Horizont (nicht zum Meer hin); zwischen Manor und Gotham weg (Nicolas 2026-11-12: "entferne die Berge hier", Orbit-Punkt -709/618):
+  // bis 600 m vom Gotham-Wasser keine Berge, bis 900 m weich zurueck. Die normalen Huegel bleiben.
+  h += 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2)) * sst(-60, -320, sd) * sst(600, 900, GOT.dw(x, z));
   // Steilkueste: oben leicht erhoehte Felskante, dann ca. 32 m senkrecht hinab, am Fuss ein flacher Felssockel, weiter draussen tiefer
   // Klippe mindestens so breit wie ca. 1,6 Rasterzellen (draussen ist das Raster grob, sonst springt die Kante zackig von Zelle zu Zelle)
   const cw = Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
