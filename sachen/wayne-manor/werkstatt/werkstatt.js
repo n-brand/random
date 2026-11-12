@@ -114,9 +114,10 @@ function maushinweis() { $("maus").hidden = modus !== "drive" || !!document.poin
 // Wie im Spiel (fahren.js carCamera, bedienung.js): kYaw/kPitch = player.yaw/pitch, Empfindlichkeit fest 50 %, im Panzer-Zoom feiner
 let kYaw = 0, kPitch = -0.12, A_view = 0;   // A_view 1 = Fahrersicht (V)
 const MOUSE_SENS = 0.0025 * 0.5, ZOOM = { z: 1, t: 1, un: 0 };
+const ZOOM_SENS_GLEICH = true;   // TEST wie schiessen.js (Nicolas 2026-11-12): Maus im Zoom gleich schnell; false = durch den Zoom geteilt
 renderer.domElement.addEventListener("mousedown", e => { if (e.button !== 0 || modus !== "drive") return; if (document.pointerLockElement) document.exitPointerLock(); else renderer.domElement.requestPointerLock(); });
 document.addEventListener("pointerlockchange", maushinweis);
-addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return; kYaw -= e.movementX * MOUSE_SENS / ZOOM.z; kPitch = Math.max(-1.5, Math.min(1.5, kPitch - e.movementY * MOUSE_SENS / ZOOM.z)); });
+addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return; const k = ZOOM_SENS_GLEICH ? 1 : ZOOM.z; kYaw -= e.movementX * MOUSE_SENS / k; kPitch = Math.max(-1.5, Math.min(1.5, kPitch - e.movementY * MOUSE_SENS / k)); });
 // Mausrad im Panzer: Zoom 1x bis 6x (wie schiessen.js)
 addEventListener("wheel", e => { if (!(modus === "drive" && AKT && AKT.turret)) return; e.preventDefault(); ZOOM.t = Math.max(1, Math.min(6, ZOOM.t * (e.deltaY < 0 ? 1.25 : 0.8))); if (ZOOM.t < 1.05) ZOOM.t = 1; }, { passive: false });
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");

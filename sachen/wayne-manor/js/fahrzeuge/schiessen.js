@@ -96,7 +96,10 @@ function vehRepair(v) {
   const sum0 = summonVehicle; summonVehicle = v => { if (v && v.dead) { vehRepair(v); toast(vehName(v) + " repariert"); } else if (v) v.hp = undefined; return sum0(v); }; }
 // Zoom beim Zielen (Nicolas 2026-11-11): Mausrad im Panzer, 1x bis 6x (Sichtwinkel 70 / Zoom), Maus dreht dann entsprechend feiner;
 // beim Aussteigen zurueck auf 1x. Anzeige im Visier-Hinweis.
-const zoomK = () => SHOT.zoom;
+// TEST (Nicolas 2026-11-12, "zum Testen"): Maus dreht im Zoom gleich schnell wie ohne (vorher / SHOT.zoom, also bei 6x sechsmal langsamer).
+// Zurueck: ZOOM_SENS_GLEICH = false (Vorschlag dazwischen: / Math.sqrt(SHOT.zoom)). Gleich in werkstatt.js.
+const ZOOM_SENS_GLEICH = true;
+const zoomK = () => ZOOM_SENS_GLEICH ? 1 : SHOT.zoom;
 // TEST (Nicolas 2026-11-11, "nur zum Testen"): nach einem Schuss nach 0,35 s automatisch auf 1x rauszoomen. Gefaellt es nicht: AUTO_UNZOOM = false
 // bzw. die zwei markierten Stellen entfernen (siehe CLAUDE.md).
 const AUTO_UNZOOM = true;
