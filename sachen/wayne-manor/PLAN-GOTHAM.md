@@ -80,7 +80,7 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 
 ## Phase 5 – Geheimbasis im Container
 
-Ein ganz normaler 20-Fuss-Seecontainer am Westfluss beim Hafen (Foto von Nicolas: blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, **keine Fenster**; 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang) ist ein **Aufzug** (fährt samt Auto hinunter). Unten eine flache, weite **Halle** auf Höhe der Tiefgarage 1 (Boden 5,5 m unter der Strasse, ca. 4,7 m hoch), Vorbild Foto von Nicolas: Sichtbetonwände, **die ganze Decke ein Raster aus Lichtpaneelen**, glatter Betonboden, hinten Reifenstapel und Werkbank.
+Ein ganz normaler 20-Fuss-Seecontainer am Ostufer (Nicolas 2026-11-12: x -1470 / z 181) (Foto von Nicolas: blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, **keine Fenster**; 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang) ist ein **Aufzug** (fährt samt Auto hinunter). Unten eine flache, weite **Halle** auf Höhe der Tiefgarage 1 (Boden 5,5 m unter der Strasse, ca. 4,7 m hoch), Vorbild Foto von Nicolas: Sichtbetonwände, **die ganze Decke ein Raster aus Lichtpaneelen**, glatter Betonboden, hinten Reifenstapel und Werkbank.
 Batmobil in der Mitte, **Anzug fährt aus dem Boden**, **Motorrad und Batpod fahren aus der Wand**, Decke aus Lampen, Computer, **aufklappbare Wand** mit Waffen und Gadgets, **Geheimwand mit Tresor** (Goldbarren, Bargeld). Alle Mechanismen als Tore nach der Regel „Tore anzielen“.
 
 ## Phase 6 – Militär (vorerst weggelassen)
@@ -126,6 +126,8 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 ---
 
 ## Empfohlene Reihenfolge
+
+Als Seite mit allen Schritten, Begründung und Abhängigkeiten: **`gotham/umsetzung.html`** (Daten in `gotham/umsetzung.js`).
 
 `T1 → T2 → T3 → T4 → T5 → G1 → G2 → G3/G4 → G5/G6 → V1 → V2 → Phase 3 (Wayne Tower, Polizei, Hafen zuerst) → U1-U3 → Phase 5 → V3/V4 → Phase 6 → S1 → S3 → S4 → S2 → Phase 7 → Phase 8 → S6`
 
