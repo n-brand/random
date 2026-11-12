@@ -49,7 +49,7 @@ const UMSETZUNG = [
     inhalt: "Wenige Vorlagen (Wolkenkratzer, Bürohaus, Mietshaus, Laden mit Wohnung, Fabrik, Lagerhalle), Geschosse mindestens 4,7 m. Wohlstand je Bezirk steuert Höhe und Art der Füllbauten.",
     warum: "Die Stadt füllt sich automatisch entlang der Strassen." },
   { phase: "grund", nr: "G5/G6", titel: "Seitengassen und Baustellen", status: "offen", braucht: ["G3/G4"],
-    inhalt: "Gassen im armen Viertel mit Müll, Wäscheleinen, Feuertreppen, Dampf. Eine Baustellen-Vorlage an 8 Plätzen.",
+    inhalt: "Gassen im armen Viertel mit Müll, Wäscheleinen, Feuertreppen, Dampf. Baustellen als Lückenfüller zwischen den Füllbauten (Erde, Material, Metallstangen, Bauzaun; Vorlage buildBaustelle, Beispiel in der Werkstatt) und an 8 Plätzen.",
     warum: "Details nach den Vorlagen." },
   { phase: "verkehr", nr: "V1", titel: "U-Bahn: 4 Ringlinien", status: "offen", braucht: ["G2"],
     inhalt: "Zentrumsring um den Wayne Tower und drei Ringe in Uptown, Westseite und Süden, je zwei Gleise (beide Richtungen wie die Yamanote-Linie in Tokio), 6 Umsteigestationen mit Weichen (Züge können den Ring wechseln), Hauptbahnhof mit Abstellanlage, fahrende Züge, Graffiti NBR.",

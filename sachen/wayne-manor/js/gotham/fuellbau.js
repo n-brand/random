@@ -77,3 +77,58 @@ function buildFuellbau(o = {}) {
   g.userData = { breite: W, tiefe: D, hoehe: H + 1.6, geschosse: N, facadeM, nacht: k => { facadeM.emissiveIntensity = k * 1.2; glassM.emissiveIntensity = 0.08 + k * 0.9; } };
   return g;
 }
+// Baustelle als Lueckenfueller (Nicolas 2026-11-12: "damit die Luecken fuellen - Erde, darauf Materialien, ein paar Metallstangen, darum herum
+// Gitter-Absperrungen"): kein Rohbau und kein Kran. buildBaustelle(o) -> Gruppe, Ursprung = Mitte am Boden, Einfahrt (Tor) an der Front +z.
+// o: breite, tiefe (m, beliebig, z. B. die Restflaeche zwischen zwei Fuellbauten), seed
+function buildBaustelle(o = {}) {
+  const W = o.breite || 18, D = o.tiefe || 20; let rs = o.seed || 3; const rnd = () => (rs = (rs * 16807) % 2147483647) / 2147483647, rr = (a, b) => a + rnd() * (b - a);
+  const erdeTex = canvasTex(256, 256, (c, w, h) => { c.fillStyle = "#6b5236"; c.fillRect(0, 0, w, h); for (let i = 0; i < 1800; i++) { const k = rnd(); c.fillStyle = k < 0.4 ? "#5a4430" : k < 0.75 ? "#7a6142" : k < 0.9 ? "#8b7a63" : "#4a3828"; c.fillRect(rnd() * w, rnd() * h, 2 + rnd() * 4, 2 + rnd() * 4); }
+    c.strokeStyle = "#4e3b28"; c.lineWidth = 6; for (let k = 0; k < 2; k++) { c.beginPath(); c.moveTo(0, 60 + k * 120 + rnd() * 20); c.bezierCurveTo(w * 0.3, 40 + k * 120, w * 0.7, 90 + k * 120, w, 70 + k * 120); c.stroke(); } }, W / 6, D / 6);   // Reifenspuren
+  const zaunTex = canvasTex(64, 64, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = "#c9ced3"; c.lineWidth = 2; for (let x = 0; x <= w; x += 8) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = 0; y <= h; y += 16) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } });
+  const erdeM = new THREE.MeshStandardMaterial({ map: erdeTex, roughness: 1 }), kiesM = new THREE.MeshStandardMaterial({ color: 0x8e8a82, roughness: 1, flatShading: true }), sandM = new THREE.MeshStandardMaterial({ color: 0xc8b07a, roughness: 1, flatShading: true });
+  const stahlM = new THREE.MeshStandardMaterial({ color: 0x6b3a25, roughness: 0.7, metalness: 0.5 }), rohrM = new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.5, metalness: 0.6 }), holzM = new THREE.MeshStandardMaterial({ color: 0xb08a5a, roughness: 0.9 });
+  const steinM = new THREE.MeshStandardMaterial({ color: 0x9b4a35, roughness: 0.9 }), betonM = new THREE.MeshStandardMaterial({ color: 0xa9a7a1, roughness: 0.9 }), gelbM = new THREE.MeshStandardMaterial({ color: 0xf2c12e, roughness: 0.6 }), rotM = new THREE.MeshStandardMaterial({ color: 0xd8342b, roughness: 0.6 });
+  const zaunM = new THREE.MeshStandardMaterial({ map: zaunTex, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.4 }), planeM = new THREE.MeshStandardMaterial({ color: 0x2f6b46, roughness: 0.9, side: THREE.DoubleSide });
+  const folieM = new THREE.MeshStandardMaterial({ color: 0xdde4ea, transparent: true, opacity: 0.25, roughness: 0.2 }), contM = new THREE.MeshStandardMaterial({ color: 0xd9dcde, roughness: 0.7 }), glasM = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.2 });
+  const wcM = new THREE.MeshStandardMaterial({ color: 0x2f7fc1, roughness: 0.7 }), karreM = new THREE.MeshStandardMaterial({ color: 0xc23b22, roughness: 0.6 }), schwarzM = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+  const bucket = new Map(), add = (geo, m, x = 0, y = 0, z = 0, ry = 0, rx = 0, rz = 0) => { if (rx) geo.rotateX(rx); if (rz) geo.rotateZ(rz); if (ry) geo.rotateY(ry); geo.translate(x, y, z); (bucket.get(m) || bucket.set(m, []).get(m)).push(geo); };
+  const box = (sx, sy, sz, m, x, y, z, ry) => add(new THREE.BoxGeometry(sx, sy, sz), m, x, y, z, ry);
+  // Erde: unebene Flaeche (leichte Buckel), am Rand flach
+  { const g = new THREE.PlaneGeometry(W, D, Math.ceil(W), Math.ceil(D)).rotateX(-Math.PI / 2), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), rand = Math.abs(x) > W / 2 - 0.6 || Math.abs(z) > D / 2 - 0.6; p.setY(i, rand ? 0.05 : 0.08 + Math.max(0, Math.sin(x * 0.7 + z * 0.4) * 0.12) + rnd() * 0.06); }
+    g.computeVertexNormals(); add(g, erdeM); }
+  // Schuettgut: Kies-, Sand- und Erdhaufen (Kegel, verbeult)
+  const haufen = (r, h, m, x, z) => { const g = new THREE.ConeGeometry(r, h, 10, 2); const p = g.attributes.position; for (let i = 0; i < p.count; i++) if (p.getY(i) < h / 2 - 0.01) p.setX(i, p.getX(i) * (0.85 + rnd() * 0.3)); g.computeVertexNormals(); add(g, m, x, h / 2, z); };
+  haufen(2.6, 1.8, kiesM, -W / 2 + 3.5, -D / 2 + 3.5); haufen(2.0, 1.3, sandM, -W / 2 + 7.5, -D / 2 + 2.8); haufen(1.4, 0.9, erdeM, W / 2 - 3, -D / 2 + 6);
+  // Paletten mit Ziegeln (in Folie), Stapel Betonplatten, Holzbohlen
+  for (const [x, z] of [[W / 2 - 3, D / 2 - 5], [W / 2 - 5, D / 2 - 5]]) { box(1.2, 0.15, 1.0, holzM, x, 0.15, z); box(1.1, 0.9, 0.95, steinM, x, 0.68, z); box(1.12, 0.92, 0.97, folieM, x, 0.68, z); }
+  for (let k = 0; k < 5; k++) box(2.4, 0.18, 1.2, betonM, W / 2 - 3.5, 0.2 + k * 0.2, -D / 2 + 10 + rr(-0.05, 0.05));
+  for (let k = 0; k < 6; k++) box(4.2, 0.08, 0.25, holzM, -W / 2 + 4 + rr(-0.1, 0.1), 0.15 + Math.floor(k / 3) * 0.1, D / 2 - 6 + (k % 3) * 0.3, rr(-0.04, 0.04));
+  // Metallstangen: Bewehrungseisen senkrecht aus zwei Fundamentstreifen, ein Buendel liegend auf Kanthoelzern, Geruestrohre an den Zaun gelehnt
+  for (const zf of [-2.5, 2.5]) { box(W - 8, 0.4, 0.8, betonM, 0, 0.25, zf);
+    for (let x = -W / 2 + 5; x <= W / 2 - 5; x += 1.0) for (const dz of [-0.2, 0.2]) { const h = rr(1.8, 3.2); add(new THREE.CylinderGeometry(0.02, 0.02, h, 5), stahlM, x + rr(-0.05, 0.05), 0.45 + h / 2, zf + dz, 0, rr(-0.04, 0.04), rr(-0.04, 0.04)); } }
+  for (const x of [-1.5, 1.5]) box(0.15, 0.15, 1.6, holzM, x, 0.12, D / 2 - 3);
+  for (let k = 0; k < 14; k++) add(new THREE.CylinderGeometry(0.02, 0.02, 6, 5), stahlM, rr(-0.2, 0.2), 0.24 + (k % 3) * 0.05, D / 2 - 3 + rr(-0.5, 0.5), 0, 0, Math.PI / 2);
+  for (let k = 0; k < 5; k++) add(new THREE.CylinderGeometry(0.025, 0.025, 4, 6), rohrM, W / 2 - 1.2 - k * 0.12, 1.95, -D / 2 + 15, 0, 0, 0.32);
+  // Baustellen-Container (Buero) mit Fenster, Toilette, Schubkarre
+  box(6.06, 2.6, 2.44, contM, -W / 2 + 4, 1.4, D / 2 - 2.2); box(1.2, 0.8, 0.05, glasM, -W / 2 + 3, 1.7, D / 2 - 0.97);
+  box(1.1, 2.3, 1.1, wcM, W / 2 - 1.5, 1.15, D / 2 - 9);
+  box(0.6, 0.3, 0.9, karreM, 1.5, 0.55, 5.5, 0.4); add(new THREE.TorusGeometry(0.2, 0.06, 6, 12), schwarzM, 1.5 - 0.28, 0.25, 5.5 + 0.38, 0.4 + Math.PI / 2);
+  // Bauzaun rundum: Gitterfelder ca. 3,5 x 2 m in Betonfuessen, Rueckseite mit gruener Plane, Tor an der Front, Absperrbaken davor
+  const feld = (x0, z0, x1, z1, plane) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / 3.5)), ry = Math.atan2(-(z1 - z0), x1 - x0);
+    for (let k = 0; k < n; k++) { const a = k / n, b = (k + 1) / n, xa = x0 + (x1 - x0) * a, za = z0 + (z1 - z0) * a, xm = x0 + (x1 - x0) * (a + b) / 2, zm = z0 + (z1 - z0) * (a + b) / 2, l = L / n;
+      const pg = new THREE.PlaneGeometry(l - 0.06, 1.9); const uv = pg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * l, uv.getY(i) * 1.9); add(pg, plane ? planeM : zaunM, xm, 1.15, zm, ry);
+      box(l - 0.06, 0.04, 0.04, rohrM, xm, 2.1, zm, ry); box(l - 0.06, 0.04, 0.04, rohrM, xm, 0.2, zm, ry);
+      add(new THREE.CylinderGeometry(0.025, 0.025, 2.0, 6), rohrM, xa, 1.15, za); box(0.6, 0.15, 0.25, betonM, xa, 0.075, za, ry); }
+    add(new THREE.CylinderGeometry(0.025, 0.025, 2.0, 6), rohrM, x1, 1.15, z1); box(0.6, 0.15, 0.25, betonM, x1, 0.075, z1, ry); };
+  const g = 4;   // Torbreite an der Front
+  feld(-W / 2, -D / 2, W / 2, -D / 2, true); feld(W / 2, -D / 2, W / 2, D / 2); feld(-W / 2, D / 2, -W / 2, -D / 2); feld(W / 2, D / 2, g / 2, D / 2); feld(-g / 2, D / 2, -W / 2, D / 2);
+  feld(-g / 2 + 0.05, D / 2 + 0.6, g / 2 - 0.05, D / 2 + 0.6);   // Torfluegel (zu), etwas vor der Flucht
+  for (const x of [-W / 2 - 0.8, W / 2 + 0.8]) for (let k = 0; k < 3; k++) { const z = D / 2 - 2 - k * 1.6; box(0.12, 1.0, 0.25, k % 2 ? rotM : gelbM, x, 0.6, z); box(0.4, 0.1, 0.4, betonM, x, 0.05, z); }
+  const gr = new THREE.Group();
+  for (const [m, list] of bucket) { const mm = new THREE.Mesh(mergeGeometries(list.map(x => x.index ? x.toNonIndexed() : x), false), m); mm.castShadow = m !== zaunM && m !== folieM; mm.receiveShadow = true; gr.add(mm); }
+  const st = canvasTex(256, 128, (c, w, h) => { c.fillStyle = "#f2c12e"; c.fillRect(0, 0, w, h); c.fillStyle = "#111"; c.fillRect(6, 6, w - 12, h - 12); c.fillStyle = "#f2c12e"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "bold 30px Arial, sans-serif"; c.fillText("BAUSTELLE", w / 2, h / 2 - 16); c.font = "bold 20px Arial, sans-serif"; c.fillText("Betreten verboten", w / 2, h / 2 + 22); });
+  const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshStandardMaterial({ map: st, roughness: 0.6 })); sg.position.set(g / 2 + 1.75, 1.4, D / 2 + 0.05); gr.add(sg);   // Schild am Zaun neben dem Tor
+  gr.userData = { breite: W, tiefe: D };
+  return gr;
+}
