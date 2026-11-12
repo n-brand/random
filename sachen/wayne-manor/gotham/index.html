@@ -58,7 +58,7 @@
       <div id="legend"></div>
     </aside>
   </main>
-  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · Norden oben (−z), Osten rechts (+x), 1 Einheit = 1 m wie im Spiel</footer>
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · Himmelsrichtungen: Kompass unten rechts (wie Wayne Manor, um 62 Grad gedreht), Karte x nach rechts, z nach unten, 1 Einheit = 1 m wie im Spiel</footer>
 
   <script src="daten.js"></script>
   <script>
@@ -500,9 +500,17 @@
       el("rect", { x: x0 - 6 * k, y: y0 - 22 * k, width: step + 12 * k, height: 30 * k, fill: "#000a", rx: 4 * k }, ui);
       el("line", { x1: x0, y1: y0, x2: x0 + step, y2: y0, stroke: "#fff", "stroke-width": 3 * k }, ui);
       el("text", { x: x0, y: y0 - 7 * k, "font-size": 12 * k, fill: "#fff" }, ui).textContent = step + " m";
-      const nx = vb.x + vb.w - 70 * k, ny = vb.y + 70 * k;
-      el("path", { d: `M${nx} ${ny - 26 * k}L${nx + 10 * k} ${ny}L${nx} ${ny - 6 * k}L${nx - 10 * k} ${ny}Z`, fill: "#fff" }, ui);
-      el("text", { x: nx, y: ny + 16 * k, "font-size": 13 * k, fill: "#fff", "text-anchor": "middle" }, ui).textContent = "N";
+      // Kompass-Stern unten rechts (Nicolas 2026-11-12): Himmelsrichtungen wie im Spiel = wie bei Wayne Manor. Die Manor liegt in der Karte um
+      // manorLage.dreh Grad im Uhrzeigersinn gedreht, also zeigt Norden (Spiel -z) hier um denselben Winkel gedreht. Buchstaben bleiben aufrecht.
+      { const D = (G.manorLage?.dreh || 0) * Math.PI / 180, cx = vb.x + vb.w - 74 * k, cy = vb.y + vb.h - 78 * k, R = 34 * k, r2 = 11 * k;
+        el("circle", { cx, cy, r: R + 22 * k, fill: "#000a" }, ui);
+        const P = (a, d) => [cx + Math.sin(a + D) * d, cy - Math.cos(a + D) * d];     // a = Richtung im Spiel (0 = Norden), im Uhrzeigersinn
+        for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, long = i % 2 === 0, L = long ? R : R * 0.55, w = long ? r2 : r2 * 0.7, [tx, tz] = P(a, L), [lx, lz] = P(a - Math.PI / 4, w * 0.75), [rx, rz] = P(a + Math.PI / 4, w * 0.75);
+          el("path", { d: `M${cx} ${cy}L${lx} ${lz}L${tx} ${tz}Z`, fill: i === 0 ? "#e04040" : long ? "#f2f2f2" : "#9aa4b2" }, ui);
+          el("path", { d: `M${cx} ${cy}L${rx} ${rz}L${tx} ${tz}Z`, fill: i === 0 ? "#9e2424" : long ? "#b8bec8" : "#6b7480" }, ui); }
+        for (const [a, t] of [[0, "N"], [Math.PI / 2, "O"], [Math.PI, "S"], [Math.PI * 1.5, "W"]]) { const [x, z] = P(a, R + 12 * k);
+          el("text", { x, y: z + 5 * k, "font-size": 14 * k, "font-weight": 800, fill: t === "N" ? "#ff6b6b" : "#fff", "text-anchor": "middle" }, ui).textContent = t; }
+        el("text", { x: cx, y: cy + R + 36 * k, "font-size": 10 * k, fill: "#c7ccd6", "text-anchor": "middle" }, ui).textContent = "wie Wayne Manor"; }
     }
     const toWorld = (cx, cy) => { const r = wrap.getBoundingClientRect(); return [vb.x + (cx - r.left) / r.width * vb.w, vb.y + (cy - r.top) / r.height * vb.h]; };
     // Zoomgrenzen: hoechstens 1,5-mal die Startansicht (ganz Gotham), am naechsten ca. 40 m Bildbreite
