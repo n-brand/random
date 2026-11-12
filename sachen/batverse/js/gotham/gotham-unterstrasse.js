@@ -26,7 +26,7 @@
   const sub = (r, s0, s1) => { const out = [], P = r.pts, at = s => { let j = 1; while (j < P.length - 1 && r.s[j] < s) j++; const a = P[j - 1], b = P[j], l = r.s[j] - r.s[j - 1] || 1, t = Math.max(0, Math.min(1, (s - r.s[j - 1]) / l)), dx = (b[0] - a[0]) / l, dz = (b[1] - a[1]) / l; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, -dz, dx, s]; };
     out.push(at(s0)); for (let i = 0; i < P.length; i++) if (r.s[i] > s0 + 0.2 && r.s[i] < s1 - 0.2) out.push(at(r.s[i])); out.push(at(s1)); return out; };
   // waagrechtes Band zwischen d0 und d1, Hoehe y (Zahl oder Funktion von s); v quer 0..1 (vrep 0) oder in Metern/vrep
-  const flat = (Gm, Q, d0, d1, y, rep, vrep) => { for (let i = 0; i < Q.length; i++) { const [x, z, nx, nz, s] = Q[i], yy = typeof y === "number" ? y : y(s), k = Gm.P.length / 3;
+  const flat = (Gm, Q, D0, D1, y, rep, vrep) => { for (let i = 0; i < Q.length; i++) { const [x, z, nx, nz, s] = Q[i], yy = typeof y === "number" ? y : y(s), k = Gm.P.length / 3, d0 = typeof D0 === "number" ? D0 : D0(s), d1 = typeof D1 === "number" ? D1 : D1(s);
     for (const d of [d0, d1]) { Gm.P.push(x + nx * d, yy, z + nz * d); Gm.U.push(s / rep, vrep ? d / vrep : (d - d0) / (d1 - d0)); } if (i) Gm.I.push(k - 2, k, k - 1, k - 1, k, k + 1); } };
   // senkrechte Wand im Abstand d von y0 bis y1 (Zahlen oder Funktionen von s)
   const wall = (Gm, Q, d, y0, y1) => { let pin = false; for (let i = 0; i < Q.length; i++) { const [x, z, nx, nz, s] = Q[i], a = typeof y0 === "number" ? y0 : y0(s), b = typeof y1 === "number" ? y1 : y1(s), k = Gm.P.length / 3, inn = inOther(x + nx * d, z + nz * d, curR);
@@ -47,12 +47,13 @@
     flat(WK, inner, -IN, IN, LY + 0.15, 2, 2);
     flat(CE, inner, -HW, HW, DY, 3, 3);
     // Deckplatte ueber dem Gelaende-Ausschnitt (aussen, ganze Laenge)
-    for (const sg of [1, -1]) flat(CO, all, sg * HW, sg * (HW + G.COVER), S + 0.035, 2, 2);
+    const dOut = s => gdeckInRamp(r, s) ? gdeckOut(r, s)[1] : HW;              // Aussenkante (im Aufweitungsteil schmaler)
+    for (const sg of [1, -1]) flat(CO, all, s => sg * dOut(s), sg * (HW + G.COVER), S + 0.035, 2, 2);
     // offene Enden: je Seite eine Rampe aussen (Rechtsverkehr: eine hinunter, die Gegenrichtung herauf), eben neben der Strasse beginnend
     for (const end of [0, 1]) { if (end ? r.cb : r.ca) continue; const s0 = end ? r.sB : 0, s1 = end ? r.L : r.sA, Q = sub(r, s0, s1), sw0 = end ? r.sB : G.FL, sw1 = end ? r.L - G.FL : r.sA, QW = sub(r, sw0, sw1);
       for (const sg of [1, -1]) {
-        flat(FL2, Q, sg * IN, sg * HW, s => rampY(s) + 0.03, 12, 0);
-        flat(GORE, Q, sg * w2, sg * IN, S + 0.04, 4, 4);                              // Sperrflaeche zwischen Strasse und Rampe (dort, wo noch keine Wand steht)
+        flat(FL2, Q, s => sg * gdeckOut(r, s)[0], s => sg * gdeckOut(r, s)[1], s => rampY(s) + 0.03, 12, 0);
+        flat(GORE, Q, sg * w2, s => sg * gdeckOut(r, s)[0], S + 0.04, 4, 4);                              // Sperrflaeche zwischen Strasse und Rampe (dort, wo noch keine Wand steht)
         wall(WA, QW, sg * w2, S, S + 1); flat(WA, QW, sg * w2, sg * IN, S + 1, 3, 3); wall(WA, QW, sg * IN, s => rampY(s) - 0.6, S + 1);   // Mittelwand
         wall(WA, QW, sg * HW, s => rampY(s) - 0.6, S + 1); flat(WA, QW, sg * HW, sg * (HW + 0.3), S + 1, 3, 3); wall(WA, QW, sg * (HW + 0.3), S, S + 1);   // Aussenbruestung
         for (let s = sw0; s <= sw1; s += 0.8) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; ring(x + nx * sg * (w2 + 0.3), z + nz * sg * (w2 + 0.3), 0.45, S + 1); ring(x + nx * sg * (HW + 0.15), z + nz * sg * (HW + 0.15), 0.45, S + 1); } }
