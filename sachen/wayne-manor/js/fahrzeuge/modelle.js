@@ -1403,17 +1403,22 @@ function buildDelorean() {
     boxIn(g, 0.48, 0.74, 0.62, 0.74, 1.35, 1.75, green); boxIn(g, -0.74, -0.5, yB(-1.4), yB(-1.4) + 0.08, 1.3, 1.5, M(0xb02020, { roughness: 0.5 })); }   // gruener Kasten (Flanke), rotes Teil
   // Umbau hinten: Lueftungs-Trichter an den Ecken, Reaktor, Duesen unter dem Heck
   for (const sd of [-1, 1]) { const x = sd * 0.6;
-    // Lueftungs-Trichter (Nicolas 2026-11-12, Fotos): schwarzer Kasten, nach hinten offen und leicht nach oben gekippt, vorne zu, innen ein Gitter
-    // aus 2 x 3 tiefen Zellen, die Oeffnung mit breiterem Rand (wirkt ausgestellt); sitzt auf der Heckecke ueber den Rueckleuchten und ragt ueber das Heck
-    { const vg = new THREE.Group(), W = 0.24, H = 0.42, L = 0.5, t = 0.03, ventM = M(0x111214, { roughness: 0.55, metalness: 0.2, flatShading: true }), inM = M(0x050506, { roughness: 0.9 });
-      boxIn(vg, -W, W, 0, H, 0, t, inM);                                                                                   // Rueckwand (innen dunkel)
-      for (const [xa, xb, ya, yb] of [[-W, -W + t, 0, H], [W - t, W, 0, H], [-W, W, 0, t], [-W, W, H - t, H]]) boxIn(vg, xa, xb, ya, yb, 0, L, ventM);   // Waende
-      for (const [xa, xb, ya, yb] of [[-W - 0.04, -W + t, -0.04, H + 0.04], [W - t, W + 0.04, -0.04, H + 0.04], [-W - 0.04, W + 0.04, -0.04, t], [-W - 0.04, W + 0.04, H - t, H + 0.04]]) boxIn(vg, xa, xb, ya, yb, L - 0.05, L, ventM);   // Rand an der Oeffnung
-      boxIn(vg, -0.012, 0.012, 0, H, 0.02, L - 0.01, ventM);                                                               // Gitter: 1 senkrecht
-      for (const y of [H / 3, 2 * H / 3]) boxIn(vg, -W, W, y - 0.012, y + 0.012, 0.02, L - 0.01, ventM);                   //          2 waagrecht
-      boxIn(vg, -W + 0.06, W - 0.06, -0.06, 0, 0.05, 0.3, ventM);                                                          // Fuss
-      vg.position.set(x, 0.86, 1.78); vg.rotation.set(-0.22, 0, 0); vg.updateMatrix();   // Seitenfoto (Nicolas 2026-11-12): kleiner, tiefer, fast waagrecht nach hinten
-      for (const m of [...vg.children]) { m.applyMatrix4(vg.matrix); g.add(m); } }
+    // Lueftungs-Trichter (Nicolas 2026-11-12, Fotos von hinten und der Seite): Keil aus schwarzem Blech, vorne schmal und flach schraeg im Heckdeck versenkt
+    // (z 1.3, y 0.9), nach hinten hoch und offen (Oeffnung ueber dem Heck, unten knapp ueber den Rueckleuchten y 0.74, oben 1.22, oben etwas weiter hinten);
+    // innen 1 senkrechte und 2 waagrechte Trennwaende (2 x 3 Zellen), um die Oeffnung ein Rand
+    { const W = 0.27, Wf = 0.2, zF = 1.3, yF = 0.9, zB = 2.16, zT = 2.24, yb = 0.74, yt = 1.22, pos = [], ventM = M(0x0b0b0c, { roughness: 0.85, metalness: 0.05, flatShading: true, side: THREE.DoubleSide });
+      const P = (dx, y, z) => [x + dx, y, z], quad = (A, B, C, D) => pos.push(...A, ...B, ...C, ...A, ...C, ...D);
+      const lo = u => [yF - 0.03 + (yb - yF + 0.03) * u, zF + (zB - zF) * u], hi = u => [yF + 0.03 + (yt - yF - 0.03) * u, zF + (zT - zF) * u], wd = u => Wf + (W - Wf) * u;
+      const at = (dx, v, u) => { const [y0, z0] = lo(u), [y1, z1] = hi(u); return P(dx * wd(u), y0 + (y1 - y0) * v, z0 + (z1 - z0) * v); };
+      quad(at(-1, 1, 0), at(1, 1, 0), at(1, 1, 1), at(-1, 1, 1)); quad(at(-1, 0, 0), at(1, 0, 0), at(1, 0, 1), at(-1, 0, 1));   // oben, unten
+      for (const sx of [-1, 1]) quad(at(sx, 0, 0), at(sx, 1, 0), at(sx, 1, 1), at(sx, 0, 1));                                   // Seiten
+      quad(at(-1, 0, 0), at(1, 0, 0), at(1, 1, 0), at(-1, 1, 0));                                                                // vorne zu
+      quad(at(0, 0, 0), at(0, 1, 0), at(0, 1, 0.98), at(0, 0, 0.98));                                                            // Trennwand senkrecht
+      for (const v of [1 / 3, 2 / 3]) quad(at(-1, v, 0.1), at(1, v, 0.1), at(1, v, 0.98), at(-1, v, 0.98));                     // Trennwaende waagrecht
+      { const yD = 0.915, zD = 2.115; quad(P(-W, yD, zF + 0.2), P(W, yD, zF + 0.2), P(W, yD, zD), P(-W, yD, zD)); quad(P(-W, yb, zD), P(W, yb, zD), P(W, yD, zD), P(-W, yD, zD)); }   // schwarzer Boden und Wand, wo der Keil ins Heck taucht (sonst Karosserie grau sichtbar)
+      const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); g.add(new THREE.Mesh(geo, ventM));
+      const [yB0, zB0] = lo(1), [yT0, zT0] = hi(1), rim = (y, z, h) => boxIn(g, x - W - 0.03, x + W + 0.03, y - h, y + h, z - 0.03, z + 0.03, ventM);
+      rim(yB0, zB0, 0.025); rim(yT0, zT0, 0.025); for (const sx of [-1, 1]) { meshIn(g, new THREE.BoxGeometry(0.05, Math.hypot(yT0 - yB0, zT0 - zB0) + 0.05, 0.06), ventM, x + sx * (W + 0.005), (yB0 + yT0) / 2, (zB0 + zT0) / 2, Math.atan2(zT0 - zB0, yT0 - yB0)); } }   // Rand
     meshIn(g, new THREE.CylinderGeometry(0.07, 0.09, 0.3, 12).rotateX(Math.PI / 2), black, sd * 0.45, 0.2, 2.18); meshIn(g, new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12).rotateX(Math.PI / 2), amber, sd * 0.45, 0.2, 2.33); }   // Duesen unter dem Heck
   meshIn(g, new THREE.CylinderGeometry(0.16, 0.16, 0.2, 16), black, 0, 1.0, 1.66); meshIn(g, new THREE.CylinderGeometry(0.1, 0.12, 0.3, 16), white, 0, 1.25, 1.66); meshIn(g, new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16), black, 0, 1.42, 1.66);   // Reaktor (weiss)
   boxIn(g, -0.18, 0.18, 1.14, 1.24, 0.55, 0.75, grey); boxIn(g, -0.16, 0.16, 1.24, 1.3, 0.62, 0.7, black);                 // Geraet auf dem Dach hinten
