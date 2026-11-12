@@ -313,7 +313,7 @@ Eintraege:
 
 Offen:
 - Wayne Manor: Panzer-Test "automatisch rauszoomen nach dem Schuss" (`AUTO_UNZOOM`): Nicolas entscheidet, ob es bleibt.
-- Wayne Manor: Plan 2 (`PLAN-GOTHAM.md`): Fragen 2026-11-12 beantwortet (Abschnitt "Entscheidungen"), offen nur noch "Chevrollette co".
+- Wayne Manor: Plan 2 (`PLAN-GOTHAM.md`): alle Fragen 2026-11-12 beantwortet (Abschnitt "Entscheidungen"; "Chevrollette co" = Corvette, irgendwann oder ganz am Ende).
 - Wayne Manor: Radhaus-Regel bei aelteren Fahrzeugen nachruesten (G-Klasse, Aventador, Nachtfalke, Tumbler, Concept Cars); Weltgrenze/Leistung (Grenze 700 m anheben oder Gelaende in Kacheln, vorher Bildrate-Anzeige); Flugzeug-Ausgang Teil 2 (The Bat in den oberen Hangar, Tueren aus dem Cockpit, Start); drehende Tiefgarage ragt in die Kiesstrasse; TEST-Teleport entfernen; Handy-Leistung messen. Win+Shift+S beendet das Begehen nicht mehr (von Nicolas im Browser bestaetigt, 2026-11-10).
 - Halloween-Pack und Cowboyhut im Spiel testen (Sitz auf dem Kopf, Warnung zur Pack-Version).
 - Pack-Viewer-Karte hat noch kein Vorschaubild.

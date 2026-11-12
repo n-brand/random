@@ -106,7 +106,7 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 ## Phase 8 – Fahrzeuge
 
 - **Tumbler 2.0** – drei eigene Entwürfe, inspiriert von den Stilrichtungen „Affleck“, „Pattinson“ und „Arkham“ (Muscle-Car-Panzer, Strassen-Muscle-Car, futuristisch) – **keine Film-Nachbauten** (eigene Regel).
-- **„Chevrollette co“** – unklar, bitte genauer (Chevrolet Corvette? Camaro? Oder eine Fahrzeug-Kette mit diesem Namen?).
+- **Corvette** (Nicolas 2026-11-12: mit „Chevrollette co“ war einfach eine Corvette gemeint; stilisiert, ohne Logos) – nicht dringend, irgendwann oder ganz am Ende.
 - Bus, U-Bahn-Zug, U-Boot, Schnellboot (siehe oben), **Autofähre** nach Arkham.
 
 ## Phase 9 – Spielsysteme
@@ -142,7 +142,8 @@ Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, be
 4. **Kampfjet:** kommt später auf die Militärinsel.
 5. **Tests im Panzer** (automatisch rauszoomen, Turm läuft nach, Zoom-Maus gleich schnell): bleiben vorerst.
 6. **Waffen (S2):** mit Waffe in der Hand öffnet Rechtsklick keine Tore und steigt nicht ein (zum Öffnen im Inventar auf einen leeren Platz wechseln). **Linksklick** soll künftig Aktionen auslösen statt die Maus zu fangen; die Maus wird dann anders gefangen.
+7. **„Chevrollette co“** = eine Corvette; kommt irgendwann oder ganz am Ende (Phase 8).
 
 ## Offene Fragen an Nicolas
 
-1. „Chevrollette co“ – was genau (Corvette, Camaro, Händler)?
+Keine.
