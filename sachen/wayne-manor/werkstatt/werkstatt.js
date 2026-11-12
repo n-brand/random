@@ -49,6 +49,21 @@ const KURS = { L: 220, R: 60, B: 14 };
   // Masslatte 10 m neben dem Start (weiss/rot je 1 m) zum Groessenvergleich
   for (let k = 0; k < 10; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(1, 0.08, 0.3), new THREE.MeshStandardMaterial({ color: k % 2 ? 0xd23a3a : 0xf2f2ee })); b.position.set(-5 + k + 0.5, 0.04, KURS.R + KURS.B / 2 + 4); flaeche.add(b); }
 }
+// Zielscheiben in der Mitte des Rundkurses (Nicolas 2026-11-12): beidseitig bemalt, auf Holzbock; Treffer klappt die Scheibe nach hinten um,
+// nach 5 s steht sie wieder. Schiessen koennen alle Modelle mit Turm und Rohr (Bauplan liefert turret/gun, heute der Panzer).
+const ZIELE = [];
+{ const tex = canvasTex(256, 256, (g, w) => { const R = w / 2; for (let k = 0; k < 6; k++) { g.fillStyle = k === 5 ? "#ffd43b" : k % 2 ? "#d23a3a" : "#f4f1ea"; g.beginPath(); g.arc(R, R, R * (1 - k / 6) - 1, 0, 7); g.fill(); g.strokeStyle = "#1a1a1a"; g.lineWidth = 2; g.stroke(); } });
+  const scheibeM = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8, side: THREE.DoubleSide }), holzM = new THREE.MeshStandardMaterial({ color: 0x7a5534, roughness: 0.9 }), randM = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
+  // [x, z, Radius, Hoehe der Mitte, Blickrichtung]: grosse Scheiben in der Mittelreihe, kleine davor/dahinter (je zur naechsten Geraden)
+  for (const [x, z, r, y, h] of [[-80, 0, 1.6, 2.4, 0], [-40, 0, 1.6, 2.4, Math.PI], [0, 0, 1.6, 2.4, 0], [40, 0, 1.6, 2.4, Math.PI], [80, 0, 1.6, 2.4, 0],
+    [-60, 28, 0.8, 1.4, 0], [-20, 28, 0.8, 1.4, 0], [20, 28, 0.8, 1.4, 0], [60, 28, 0.8, 1.4, 0], [-60, -28, 0.8, 1.4, Math.PI], [-20, -28, 0.8, 1.4, Math.PI], [20, -28, 0.8, 1.4, Math.PI], [60, -28, 0.8, 1.4, Math.PI]]) {
+    const st = new THREE.Group(); st.position.set(x, 0, z); st.rotation.y = h; flaeche.add(st);
+    for (const sx of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.14, y + 0.2, 0.14), holzM); b.position.set(sx * r * 0.7, (y + 0.2) / 2, 0.25); b.castShadow = true; st.add(b); }   // Bock
+    const kl = new THREE.Group(); kl.position.set(0, y - r - 0.05, 0); st.add(kl);   // Klappe: Drehachse unten an der Scheibe
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.08, 40).rotateX(Math.PI / 2), [randM, scheibeM, scheibeM]); s.position.y = r + 0.05; s.castShadow = true; kl.add(s);
+    ZIELE.push({ x, z, y, r, h, kl, fall: 0, t: 0 });
+  }
+}
 
 // ---------- Modell laden ----------
 const START = { x: 0, z: KURS.R, h: -Math.PI / 2 };   // auf der Startlinie, Front nach Osten (+x)
@@ -60,8 +75,10 @@ function laden(i) {
   scene.add(b.g);
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
-  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0 };
-  setze();
+  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin };
+  if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
+  kYaw = START.h; kPitch = 0;
+  setze(); sicht();
   const s = m.spec;
   $info.innerHTML = `<table>
     <tr><td>Länge</td><td>${fmt(size.z)} m</td></tr><tr><td>Breite</td><td>${fmt(size.x)} m</td></tr><tr><td>Höhe</td><td>${fmt(size.y)} m</td></tr>
@@ -81,8 +98,21 @@ pick.onchange = () => laden(+pick.value);
 let modus = "orbit";
 const setModus = m => { modus = m; for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"]]) $(id).setAttribute("aria-pressed", String(m === k));
   document.body.classList.toggle("drive", m === "drive"); controls.enabled = m !== "drive"; $speed.hidden = m !== "drive";
-  if (m !== "drive" && AKT) controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z); };
+  if (m !== "drive" && document.pointerLockElement) document.exitPointerLock();
+  if (m === "drive" && AKT) { kYaw = AKT.h; kPitch = 0; }
+  if (m !== "drive" && AKT) controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z);
+  sicht(); };
+const MODI = ["orbit", "drive", "spin"];
 $("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin");
+// Visier (nur Fahren mit Turm) und Hinweis zur Maus
+function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier").hidden = !z; document.body.classList.toggle("waffe", !!z); maushinweis(); }
+function maushinweis() { $("maus").hidden = modus !== "drive" || !!document.pointerLockElement || document.body.classList.contains("touch"); }
+
+// ---------- Maus einfangen (Fahren): Linksklick faengt die Maus, erneuter Linksklick oder Esc gibt sie frei ----------
+let kYaw = 0, kPitch = 0;   // Blickrichtung der Kamera (Welt, wie A.h) und Hoehe
+renderer.domElement.addEventListener("mousedown", e => { if (e.button !== 0 || modus !== "drive") return; if (document.pointerLockElement) document.exitPointerLock(); else renderer.domElement.requestPointerLock(); });
+document.addEventListener("pointerlockchange", maushinweis);
+addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return; kYaw -= e.movementX * 0.0025; kPitch = Math.max(-0.45, Math.min(1.1, kPitch - e.movementY * 0.0025)); });
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ---------- Tasten ----------
@@ -91,6 +121,7 @@ addEventListener("keydown", e => { if (e.target.tagName === "SELECT") return; ke
   if (e.code === "KeyR" && AKT) { Object.assign(AKT, { x: START.x, z: START.z, h: START.h, v: 0, steer: 0 }); setze(); }
   if (e.code === "KeyV") kamNah = !kamNah;
   if (e.code === "KeyF" || (e.code === "KeyE" && modus !== "drive")) setModus(modus === "drive" ? "orbit" : "drive");
+  const n = /^(Digit|Numpad)([1-3])$/.exec(e.code); if (n) setModus(MODI[+n[2] - 1]);   // 1 Ansehen, 2 Fahren, 3 Drehteller
   if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault(); });
 addEventListener("keyup", e => keys.delete(e.code));
 addEventListener("blur", () => keys.clear());
@@ -105,7 +136,7 @@ function fahren(dt) {
   if (gas) A.v += (A.v < 0 ? s.acc * 2.5 : s.acc) * dt;
   else if (brems) A.v -= (A.v > 0 ? s.acc * 2.5 : s.acc * 0.6) * dt;
   else A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 2.5 * dt);   // ausrollen
-  if (down("Space")) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);
+  if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // mit Turm ist Leertaste = schiessen
   A.v = Math.max(-vmax * 0.3, Math.min(vmax, A.v));
   const ziel = (links ? 1 : 0) - (rechts ? 1 : 0), maxL = (s.steer || 0.6) / (1 + Math.abs(A.v) / 18);   // bei Tempo weniger Lenkeinschlag
   A.steer += (ziel * maxL - A.steer) * Math.min(1, dt * 6);
@@ -116,10 +147,78 @@ function fahren(dt) {
   for (const w of A.wheels) { w.spin.rotation.x -= A.v * dt / w.r; if (w.front) w.piv.rotation.y = A.steer; }
   setze();
   $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h";
-  // Kamera folgt (hinten oder nah)
-  const d = kamNah ? (s.camD || 8) * 0.55 : (s.camD || 8), hgt = (s.camH || 1.2) + (kamNah ? 0.6 : 1.8), cx = A.x + Math.sin(A.h) * d, cz = A.z + Math.cos(A.h) * d;
-  camera.position.lerp(new THREE.Vector3(cx, hgt + A.size.y * 0.5, cz), Math.min(1, dt * 5));
-  camera.lookAt(A.x - Math.sin(A.h) * 3, A.size.y * 0.55, A.z - Math.cos(A.h) * 3);
+  // Kamera: Blickrichtung kYaw (Maus). Ohne Turm gleitet sie beim Fahren hinter das Fahrzeug zurueck, mit Turm bleibt sie (Lenken dreht nur die Wanne).
+  const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
+  if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) { kYaw += Math.atan2(Math.sin(A.h - kYaw), Math.cos(A.h - kYaw)) * Math.min(1, dt * 1.5); kPitch += (0 - kPitch) * Math.min(1, dt * 1.5); } }
+  const d = kamNah ? (s.camD || 8) * 0.55 : (s.camD || 8), el = 0.22 + kPitch, hgt = (s.camH || 1.2) + (kamNah ? 0.6 : 1.2) + A.size.y * 0.5;
+  const fx = -Math.sin(kYaw), fz = -Math.cos(kYaw), kz = new THREE.Vector3(A.x, A.size.y * 0.55 + (kamNah ? 0.4 : 0), A.z);
+  const cam = new THREE.Vector3(kz.x - fx * d * Math.cos(el), Math.max(0.6, hgt - 1.2 + Math.sin(el) * d), kz.z - fz * d * Math.cos(el));
+  camera.position.lerp(cam, Math.min(1, dt * 8));
+  const lp = -0.12 - 0.8 * kPitch;   // Blick leicht nach unten; das Visier (36 % Hoehe) liegt dann etwa waagrecht
+  camera.lookAt(camera.position.x + fx * Math.cos(lp), camera.position.y + Math.sin(lp), camera.position.z + fz * Math.cos(lp));
+  if (A.turret) waffe(dt);
+}
+
+// ---------- Schiessen (Modelle mit Turm): Visier auf 36 % der Bildhoehe wie im Spiel, Granate 320 m/s gerade zum Zielpunkt ----------
+const SCHUSS = { cd: 0, RELOAD: 2.2, V: 320, MUZZLE: 4.75, shells: [], fx: [], treffer: 0, schuesse: 0, rueck: 0 };
+const rc = new THREE.Raycaster(), vA = new THREE.Vector3(), vB = new THREE.Vector3();
+const fxGeo = new THREE.SphereGeometry(1, 12, 8), fxMat = c => new THREE.MeshBasicMaterial({ color: c, transparent: true, depthWrite: false, fog: false });
+function zielpunkt() {   // Strahl durch das Visier: erste Scheibe oder der Boden, sonst 900 m voraus
+  rc.setFromCamera(new THREE.Vector2(0, 0.28), camera);
+  let best = 900; const o = rc.ray.origin, dv = rc.ray.direction;
+  if (dv.y < -1e-4) best = Math.min(best, -o.y / dv.y);
+  for (const Z of ZIELE) { if (Z.fall > 0.05) continue; vA.set(Z.x, Z.y, Z.z); const t = vA.sub(o).dot(dv); if (t > 0 && t < best && o.clone().addScaledVector(dv, t).distanceTo(new THREE.Vector3(Z.x, Z.y, Z.z)) < Z.r) best = t; }
+  return o.clone().addScaledVector(dv, best);
+}
+function waffe(dt) {
+  const A = AKT, aim = zielpunkt();
+  A.g.updateMatrixWorld(true); A.turret.getWorldPosition(vA);
+  A.turret.rotation.y = Math.atan2(-(aim.x - vA.x), -(aim.z - vA.z)) - A.h;   // Turm zeigt zum Zielpunkt
+  A.gun.updateWorldMatrix(true, false); A.gun.getWorldPosition(vB);
+  const ad = (((A.turret.rotation.y * 180 / Math.PI) % 360) + 360) % 360, lo = A.gunMin ? A.gunMin[Math.floor(ad) % 360] : -0.4;
+  A.gun.rotation.x = Math.max(lo, Math.min(0.6, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z))));
+  SCHUSS.cd = Math.max(0, SCHUSS.cd - dt);
+  if (down("Space") && SCHUSS.cd === 0) {
+    SCHUSS.cd = SCHUSS.RELOAD; SCHUSS.schuesse++; SCHUSS.rueck = 1;
+    A.gun.updateWorldMatrix(true, false); const mz = A.gun.localToWorld(new THREE.Vector3(0, 0, -(A.spec.muzzle || SCHUSS.MUZZLE))), dir = aim.clone().sub(mz).normalize();
+    const o = new THREE.Mesh(fxGeo, fxMat(0xffe2a0)); o.scale.set(0.12, 0.12, 0.5); o.position.copy(mz); o.lookAt(mz.clone().add(dir)); scene.add(o);
+    SCHUSS.shells.push({ o, p: mz.clone(), dir, s: 0 });
+    fx(mz, 0xffc070, 0.6, 0.12, 4); knall(0.5);
+  }
+  SCHUSS.rueck = Math.max(0, SCHUSS.rueck - dt * 2.5); A.gun.position.z = A.gun.userData.z0 + Math.sin(Math.min(1, SCHUSS.rueck) * Math.PI / 2) * 0.45;
+  $("visier-t").textContent = (SCHUSS.cd > 0 ? "lädt … " + SCHUSS.cd.toFixed(1).replace(".", ",") + " s" : "Leertaste: schießen") + ` · Treffer ${SCHUSS.treffer} / ${SCHUSS.schuesse}`;
+}
+function fx(p, c, r, life, grow) { const o = new THREE.Mesh(fxGeo, fxMat(c)); o.position.copy(p); o.scale.setScalar(r); scene.add(o); SCHUSS.fx.push({ o, r, life, grow, t: 0 }); }
+function schuesseStep(dt) {
+  for (let i = SCHUSS.shells.length - 1; i >= 0; i--) {
+    const S = SCHUSS.shells[i], weg = SCHUSS.V * dt; let hit = null;
+    for (let s = 0; s < weg && !hit; s += 0.5) {
+      const p = S.p.clone().addScaledVector(S.dir, s);
+      if (p.y <= 0) hit = { p };
+      for (const Z of ZIELE) if (Z.fall < 0.05 && Math.hypot(p.x - Z.x, p.y - Z.y, p.z - Z.z) < Z.r + 0.15) { hit = { p, Z }; break; }
+    }
+    S.p.addScaledVector(S.dir, weg); S.s += weg; S.o.position.copy(S.p);
+    if (hit || S.s > 900) {
+      scene.remove(S.o); S.o.material.dispose(); SCHUSS.shells.splice(i, 1);
+      if (hit) { fx(hit.p, 0xffa040, 0.8, 0.35, 5); fx(hit.p, 0x8a8780, 0.6, 1.4, 3); knall(0.3);
+        if (hit.Z) { hit.Z.fall = 0.06; hit.Z.t = 0; SCHUSS.treffer++; } }
+    }
+  }
+  for (let i = SCHUSS.fx.length - 1; i >= 0; i--) { const F = SCHUSS.fx[i]; F.t += dt; const k = F.t / F.life;
+    if (k >= 1) { scene.remove(F.o); F.o.material.dispose(); SCHUSS.fx.splice(i, 1); continue; }
+    F.o.scale.setScalar(F.r * (1 + F.grow * k)); F.o.material.opacity = 1 - k; }
+  for (const Z of ZIELE) {   // getroffene Scheiben klappen nach hinten um und stehen nach 5 s wieder auf
+    if (Z.fall <= 0) continue; Z.t += dt;
+    Z.fall = Z.t < 5 ? Math.min(1, Z.fall + dt * 3) : Math.max(0, Z.fall - dt * 1.2);
+    Z.kl.rotation.x = -Z.fall * Math.PI / 2 * 0.95;
+  }
+}
+let audio = null;
+function knall(vol) {   // kurzer Knall aus gefiltertem Rauschen (Web Audio, ohne Dateien)
+  try { audio = audio || new AudioContext(); const a = audio, n = a.sampleRate * 0.6, buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+    const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(); s.buffer = buf; f.type = "lowpass"; f.frequency.setValueAtTime(1800, a.currentTime); f.frequency.exponentialRampToValueAtTime(120, a.currentTime + 0.5);
+    g.gain.value = vol * 0.6; s.connect(f).connect(g).connect(a.destination); s.start(); } catch (e) {}
 }
 
 // ---------- Schleife ----------
@@ -133,6 +232,7 @@ function loop(t) {
     else { if (modus === "spin") { AKT.h += dt * 0.5; setze(); } controls.update(); }
     sun.position.set(AKT.x + SUN_DIR.x * 100, SUN_DIR.y * 100, AKT.z + SUN_DIR.z * 100); sun.target.position.set(AKT.x, 0, AKT.z);
   }
+  schuesseStep(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }
