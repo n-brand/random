@@ -382,7 +382,9 @@
     const segX = (a, b, c, d) => { const r = [b[0] - a[0], b[1] - a[1]], q = [d[0] - c[0], d[1] - c[1]], den = r[0] * q[1] - r[1] * q[0]; if (Math.abs(den) < 1e-9) return null;
       const t = ((c[0] - a[0]) * q[1] - (c[1] - a[1]) * q[0]) / den, u = ((c[0] - a[0]) * r[1] - (c[1] - a[1]) * r[0]) / den; return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [a[0] + r[0] * t, a[1] + r[1] * t] : null; };
     const UMSTEIG = []; for (let i = 0; i < RINGE.length; i++) for (let j = i + 1; j < RINGE.length; j++) for (let a = 1; a < RINGE[i].pts.length; a++) for (let b = 1; b < RINGE[j].pts.length; b++) {
-      const q = segX(RINGE[i].pts[a - 1], RINGE[i].pts[a], RINGE[j].pts[b - 1], RINGE[j].pts[b]); if (q) UMSTEIG.push({ p: q, r: [RINGE[i], RINGE[j]] }); }
+      const A0 = RINGE[i].pts[a - 1], A1 = RINGE[i].pts[a], B0 = RINGE[j].pts[b - 1], B1 = RINGE[j].pts[b], q = segX(A0, A1, B0, B1);
+      const dir = (u, v) => { const l = Math.hypot(v[0] - u[0], v[1] - u[1]) || 1; return [(v[0] - u[0]) / l, (v[1] - u[1]) / l]; };
+      if (q) UMSTEIG.push({ p: q, r: [RINGE[i], RINGE[j]], d: [dir(A0, A1), dir(B0, B1)] }); }
     { const h = RINGE[0].stationen.find(s => s.haupt); if (h) U.depot.gleis[0] = stPos(RINGE[0], h.a); }
     for (const s of KS) for (let i = 1; i < s.pts.length; i++) { const a = s.pts[i - 1], b = s.pts[i]; for (const R of RINGE) if (inPoly(a[0], a[1], R.pts) !== inPoly(b[0], b[1], R.pts)) {
       const c = el("circle", { cx: b[0], cy: b[1], r: 16, fill: "#ff5a5a", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Übergang U-Bahn ↔ Kanal</b><br>unter ${s.name}`; } }
@@ -404,7 +406,7 @@
 
     // ---------- U-Bahn: vier Ringlinien ----------
     for (const R of RINGE) { const p = el("path", { d: path(R.pts), fill: "none", stroke: R.farbe, "stroke-width": 14, "stroke-dasharray": "40 18", opacity: .9 }, L.ubahn);
-      p.dataset.info = `<b>U-Bahn ${R.name}</b><br>Ringlinie, ca. ${Math.round(lineLen(R.pts) / 100) / 10} km, ${R.stationen.length} Stationen<br>zwei Gleise: Züge im und gegen den Uhrzeigersinn (wie die Yamanote-Linie in Tokio)`;
+      p.dataset.info = `<b>U-Bahn ${R.name}</b><br>Ringlinie, ca. ${Math.round(lineLen(R.pts) / 100) / 10} km, ${R.stationen.length} Stationen<br>zwei Gleise: Züge im und gegen den Uhrzeigersinn (wie die Yamanote-Linie in Tokio); an den Umsteigestationen Weichen zum Wechsel auf den anderen Ring`;
       for (const s of R.stationen) { const [x, z] = stPos(R, s.a);
         const c = el("circle", { cx: x, cy: z, r: s.haupt ? 34 : 22, fill: "#fff", stroke: R.farbe, "stroke-width": 8 }, L.ubahn);
         c.dataset.info = `<b>U-Bahn: ${s.name}</b> (${R.name})${s.haupt ? " · Hauptbahnhof" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 11 m unter der Strasse (Höhe Tiefgarage 2)${s.notiz ? "<br>" + s.notiz : ""}`;
@@ -413,7 +415,15 @@
       el("circle", { cx: u.p[0], cy: u.p[1], r: 30, fill: "#fff", stroke: "#111", "stroke-width": 6 }, g);
       for (const [k, R] of u.r.entries()) el("circle", { cx: u.p[0], cy: u.p[1], r: 30 - 9 - k * 9, fill: "none", stroke: R.farbe, "stroke-width": 7 }, g);
       g.dataset.info = ""; g.querySelectorAll("circle").forEach(c => c.dataset.info = `<b>Umsteigestation</b><br>${u.r.map(R => R.name).join(" ↔ ")}<br>x ${Math.round(u.p[0])} / z ${Math.round(u.p[1])}`); }
+    // Gleisverbindungen (Nicolas 2026-11-12): an jeder Umsteigestation vier Verbindungskurven mit Weichen, damit Zuege den Ring wechseln koennen
+    // (von jedem Ast des einen Rings auf beide Aeste des anderen). Kurve beginnt/endet U.wechsel m vor/nach der Kreuzung.
+    for (const u of UMSTEIG) { const W = U.wechsel || 140, [da, db] = u.d, P = u.p, cs = [];
+      for (const sa of [-1, 1]) for (const sb of [-1, 1]) { const a0 = [P[0] + da[0] * sa * W, P[1] + da[1] * sa * W], b0 = [P[0] + db[0] * sb * W, P[1] + db[1] * sb * W];
+        cs.push(`M${f1(a0[0])} ${f1(a0[1])}Q${f1(P[0])} ${f1(P[1])} ${f1(b0[0])} ${f1(b0[1])}`); }
+      const k = el("path", { d: cs.join(""), fill: "none", stroke: "#f2f2ee", "stroke-width": 4, "stroke-dasharray": "14 8", opacity: .85 }, L.ubahn);
+      k.dataset.info = `<b>Gleisverbindung mit Weichen</b><br>${u.r[0].name} ↔ ${u.r[1].name}: Züge können hier in beide Richtungen auf den anderen Ring wechseln<br>4 Verbindungskurven, Weichen ca. ${W} m vor der Umsteigestation`; }
     el("path", { d: path(U.depot.gleis), fill: "none", stroke: RINGE[0].farbe, "stroke-width": 10 }, L.ubahn);
+    for (const g of [...L.ubahn.querySelectorAll("g")]) L.ubahn.appendChild(g);   // Umsteigestationen ueber den Verbindungskurven
     { const d = U.depot, r = el("rect", { x: d.x - d.w / 2, y: d.z - d.d / 2, width: d.w, height: d.d, fill: "#7a2b2b", stroke: RINGE[0].farbe, "stroke-width": 4 }, L.ubahn); r.dataset.info = `<b>${d.name}</b>`; }
     for (const g of U.graffiti) { const t = el("text", { x: g.x, y: g.z, "font-size": 34, fill: "#ff4fd8", "font-weight": 800 }, L.ubahn); t.textContent = "✎ " + g.text; t.dataset.info = `<b>Graffiti „${g.text}“</b> im U-Bahn-Tunnel`; }
 
@@ -473,7 +483,7 @@
     const ui = el("g", { "pointer-events": "none" });
     const wrap = document.getElementById("wrap"), tip = document.getElementById("tip"), info = document.getElementById("info");
     let vb = { x: G.ansicht.x0, y: G.ansicht.z0, w: G.ansicht.x1 - G.ansicht.x0, h: G.ansicht.z1 - G.ansicht.z0 };
-    const fit = () => { const r = wrap.getBoundingClientRect(), a = G.ansicht, W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
+    const fit = () => { const r = wrap.getBoundingClientRect(), a = G.ansicht; if (!r.width || !r.height) return; const W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
       vb = { w: r.width * k, h: r.height * k }; vb.x = (a.x0 + a.x1) / 2 - vb.w / 2; vb.y = (a.z0 + a.z1) / 2 - vb.h / 2; apply(); };
     // Karte nicht aus dem Bild schieben: Ausschnitt bleibt im Bereich der Startansicht (plus 25 % Rand); groesser als der Bereich = mittig
     const keepIn = () => { const a = G.ansicht, mx = (a.x1 - a.x0) * .25, mz = (a.z1 - a.z0) * .25, X0 = a.x0 - mx, X1 = a.x1 + mx, Z0 = a.z0 - mz, Z1 = a.z1 + mz;
@@ -526,7 +536,7 @@
       info.innerHTML = (d ? d + "<hr style='border-color:#2a3039'>" : "") + `Punkt: <code>${k}</code> <small>(kopiert)</small>`;
       navigator.clipboard && navigator.clipboard.writeText(k).catch(() => {});
     }
-    addEventListener("resize", fit); fit();
+    new ResizeObserver(fit).observe(wrap); fit();   // auch wenn die Seite erst unsichtbar geladen wurde
   </script>
 </body>
 </html>

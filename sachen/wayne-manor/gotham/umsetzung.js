@@ -51,7 +51,7 @@ const UMSETZUNG = [
     inhalt: "Gassen im armen Viertel mit Müll, Wäscheleinen, Feuertreppen, Dampf. Eine Baustellen-Vorlage an 8 Plätzen.",
     warum: "Details nach den Vorlagen." },
   { phase: "verkehr", nr: "V1", titel: "U-Bahn: 4 Ringlinien", status: "offen", braucht: ["G2"],
-    inhalt: "Zentrumsring um den Wayne Tower und drei Ringe in Uptown, Westseite und Süden, je zwei Gleise (beide Richtungen wie die Yamanote-Linie in Tokio), 6 Umsteigestationen, Hauptbahnhof mit Abstellanlage, fahrende Züge, Graffiti NBR.",
+    inhalt: "Zentrumsring um den Wayne Tower und drei Ringe in Uptown, Westseite und Süden, je zwei Gleise (beide Richtungen wie die Yamanote-Linie in Tokio), 6 Umsteigestationen mit Weichen (Züge können den Ring wechseln), Hauptbahnhof mit Abstellanlage, fahrende Züge, Graffiti NBR.",
     warum: "Liegt unter den Strassen, muss vor den Kanälen geplant sein (Übergänge)." },
   { phase: "verkehr", nr: "V2", titel: "Bus", status: "offen", braucht: ["G2"],
     inhalt: "Haltestellen zwischen den U-Bahn-Stationen, Linien, fahrender Bus, Busbahnhof.",
