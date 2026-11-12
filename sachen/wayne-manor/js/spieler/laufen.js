@@ -37,6 +37,7 @@ function pushOut(p, feet) {
 }
 // Boden ohne Quader: unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
 function groundAt(x, z, feet = 0) {
+  { const g = gothamBridgeAt(x, z, feet); if (g !== null) return g; }      // Gotham-Bruecken (G2c): Fahrbahn fuer wen oben ist
   const sn = serpNear(x, z, SERP_W / 2);
   if (GRAMP.inF(x, z) && feet > GY + HILL - 2) return GRAMP.y(z);          // Garagenrampe: Klappe (Hoehe je nach Stellung), Wendeplatz unter der Decke
   if (feet < HILL - 1 && GRAMP.inP(x, z)) return GY + HILL;
@@ -100,7 +101,8 @@ function updatePlayer(dt, moveX, moveZ, run) {
   // Klippenkante weiter innen (Nicolas): das Gelaende faellt 4-5 m vor der Kuestenlinie ab, davor steht die Felswand; 5 m Abstand, landeinwaerts geht immer
   if (player.pos.y > -3 && !swim && coastEdge(next.x, next.z, player.pos.x, player.pos.z, 5)) { next.x = player.pos.x; next.z = player.pos.z; }
   // Steile Haenge sperren: nur das Gelaende zaehlt (Stufen wie der Brunnenrand regelt supportAt)
-  const slopeG = (x, z) => GRAMP.inF(x, z) ? GRAMP.y(z) : hfCap(x, z) !== null && player.pos.y > (x > HF_XP ? HF_Y + 5.3 : hfCap(x, z) - 2) ? Math.max(terrainH(x, z), hfCap(x, z)) + 0.04 : (player.pos.y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, player.pos.y) || (player.pos.y < HILL - 3 && inRect(CSH_OUT, x, z)) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (player.pos.y < 3 && inRect(WF_PORTAL, x, z)) || (player.pos.y < -20 && waterCaveAt(x, z)) || (player.pos.y < -8 && caveUpAt(x, z)) || inSilo(x, z, 0.5) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
+  const slopeG = (x, z) => gothamBridgeAt(x, z, player.pos.y) ?? slopeG0(x, z);   // Gotham-Bruecken (G2c)
+  const slopeG0 = (x, z) => GRAMP.inF(x, z) ? GRAMP.y(z) : hfCap(x, z) !== null && player.pos.y > (x > HF_XP ? HF_Y + 5.3 : hfCap(x, z) - 2) ? Math.max(terrainH(x, z), hfCap(x, z)) + 0.04 : (player.pos.y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, player.pos.y) || (player.pos.y < HILL - 3 && inRect(CSH_OUT, x, z)) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (player.pos.y < 3 && inRect(WF_PORTAL, x, z)) || (player.pos.y < -20 && waterCaveAt(x, z)) || (player.pos.y < -8 && caveUpAt(x, z)) || inSilo(x, z, 0.5) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
   const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
   if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
   player.pos.x = next.x; player.pos.z = next.z;
