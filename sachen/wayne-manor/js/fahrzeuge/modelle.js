@@ -872,9 +872,11 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
 //   Seitenhaftung; Ketten (spec.tracks): Lenken kostet Antrieb und bremst mit der Drehrate (Ketten rutschen seitlich ueber den Boden).
 // Rueckgabe: k = Kruemmung (1/m, Drehung = v * k), dec = Bremsung (m/s², gegen die Fahrtrichtung), thF = Faktor fuer den Antrieb.
 const KURVE_G = 9.81;
+// AUS (Nicolas 2026-11-12: Fahren wurde dadurch extrem langsamer und weniger spassig). Code bleibt fuer spaeter; true = wieder an.
+const KURVEN_PHYSIK = false;
 function kurvenPhysik(sp, v, steer, gas, vmax) {
   const av = Math.abs(v), kWant = Math.tan(steer) / sp.wb;
-  if (av < 2) return { k: kWant, dec: 0, thF: 1 };                         // langsam: wie bisher (Rangieren, Aufzuege)
+  if (!KURVEN_PHYSIK || av < 2) return { k: kWant, dec: 0, thF: 1 };                         // langsam: wie bisher (Rangieren, Aufzuege)
   const mu = sp.mu || (sp.tracks ? 1.0 : sp.track ? 1.5 : 2.0), muG = mu * KURVE_G;   // Nicolas 2026-11-12: spielerischer (vorher 0,5 / 0,9 / 1,0: bremste zu stark, Batpod zu weite Kurven)
   const aLong = gas > 0 && v > 0 ? sp.acc * Math.max(0, 1 - v / ((vmax || sp.maxF || 30) + 8)) : 0, x = Math.min(0.3, aLong / muG);
   const aMax = muG * Math.sqrt(1 - x * x), aWant = v * v * Math.abs(kWant), aLat = Math.min(aWant, aMax);
