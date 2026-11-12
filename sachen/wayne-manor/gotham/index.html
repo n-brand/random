@@ -117,14 +117,50 @@
     const cuts = (v, c) => { const o = c ? 0 : 1, r = []; for (let i = 0; i < NI; i++) { const a = insel[i], b = insel[(i + 1) % NI]; if ((a[o] > v) !== (b[o] > v)) r.push(a[1 - o] + (v - a[o]) / (b[o] - a[o]) * (b[1 - o] - a[1 - o])); } return r; };
     const bankW = z => Math.min(...cuts(z, false)), bankE = z => Math.max(...cuts(z, false)), bankN = x => Math.min(...cuts(x, true)), bankS = x => Math.max(...cuts(x, true));
     // gegenueberliegendes Ufer: vom Inselufer nach aussen gehen, bis das Wasser endet
-    const across = (x, z, dx, dz) => { let s = 2; while (s < 3000 && (inRiver(x + dx * s, z + dz * s) || inSea(x + dx * s, z + dz * s))) s += 2; return [x + dx * s, z + dz * s]; };
+    // Wasserflaeche weich: Fluesse + Meer + Insel ins Raster zeichnen, weichzeichnen, bei 50 % abschneiden.
+    // So werden alle Ecken und Spitzen des Festlands rund (Radius ca. WA.rundung m, Nicolas 2026-11-12)
+    const WG = 8, WX = -5600, WZ = -3200, WNX = Math.ceil((2000 - WX) / WG), WNZ = Math.ceil((3000 - WZ) / WG), wfeld = new Float32Array(WNX * WNZ);
+    { const cv = document.createElement("canvas"); cv.width = WNX; cv.height = WNZ; const c = cv.getContext("2d");
+      c.setTransform(1 / WG, 0, 0, 1 / WG, -WX / WG, -WZ / WG); c.fillStyle = c.strokeStyle = "#000"; c.lineCap = "round";
+      const poly = P => { c.beginPath(); P.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.fill(); };
+      poly(meer); poly(insel);
+      for (let i = 0; i < NI; i++) { const a = insel[i], b = insel[(i + 1) % NI]; c.lineWidth = 2 * flussW[i].w; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
+      const px = c.getImageData(0, 0, WNX, WNZ).data; for (let k = 0; k < wfeld.length; k++) wfeld[k] = px[k * 4 + 3] / 255;
+      // dreifacher Kastenfilter (fast wie Gauss), getrennt nach x und z
+      const r = Math.max(1, Math.round((WA.rundung || 60) / WG / 1.7)), tmp = new Float32Array(wfeld.length);
+      const box = (src, dst, n, m, sa, sb) => { for (let b = 0; b < m; b++) { let s = 0; const at = a => src[clamp(a, 0, n - 1) * sa + b * sb];
+        for (let a = -r; a <= r; a++) s += at(a); for (let a = 0; a < n; a++) { dst[a * sa + b * sb] = s / (2 * r + 1); s += at(a + r + 1) - at(a - r); } } };
+      for (let it = 0; it < 3; it++) { box(wfeld, tmp, WNX, WNZ, 1, WNX); box(tmp, wfeld, WNZ, WNX, WNX, 1); }
+      for (let i = 0; i < WNX; i++) { wfeld[i] = 0; wfeld[(WNZ - 1) * WNX + i] = 0; } for (let k = 0; k < WNZ; k++) { wfeld[k * WNX] = 0; wfeld[k * WNX + WNX - 1] = 0; } }
+    const waterAt = (x, z) => { const i = Math.round((x - WX) / WG), k = Math.round((z - WZ) / WG); return i >= 0 && k >= 0 && i < WNX && k < WNZ && wfeld[k * WNX + i] >= 0.5; };
+    // Umriss der Wasserflaeche (Marching Squares, Kanten linear interpoliert, zu geschlossenen Linien verbunden)
+    function wasserUmriss() {
+      const V = (i, k) => wfeld[k * WNX + i], P = new Map(), nb = new Map();
+      const pt = (key, x, z) => { if (!P.has(key)) P.set(key, [x, z]); return key; };
+      const eH = (i, k) => { const a = V(i, k), b = V(i + 1, k); return pt("h" + (k * WNX + i), WX + (i + (0.5 - a) / (b - a)) * WG, WZ + k * WG); };
+      const eV = (i, k) => { const a = V(i, k), b = V(i, k + 1); return pt("v" + (k * WNX + i), WX + i * WG, WZ + (k + (0.5 - a) / (b - a)) * WG); };
+      const link = (a, b) => { (nb.get(a) || nb.set(a, []).get(a)).push(b); (nb.get(b) || nb.set(b, []).get(b)).push(a); };
+      for (let k = 0; k < WNZ - 1; k++) for (let i = 0; i < WNX - 1; i++) {
+        const c = (V(i, k) >= .5) | (V(i + 1, k) >= .5) << 1 | (V(i + 1, k + 1) >= .5) << 2 | (V(i, k + 1) >= .5) << 3; if (c === 0 || c === 15) continue;
+        const T = () => eH(i, k), R = () => eV(i + 1, k), B = () => eH(i, k + 1), Lf = () => eV(i, k), mid = (V(i, k) + V(i + 1, k) + V(i + 1, k + 1) + V(i, k + 1)) / 4 >= .5;
+        switch (c) { case 1: case 14: link(Lf(), T()); break; case 2: case 13: link(T(), R()); break; case 3: case 12: link(Lf(), R()); break; case 4: case 11: link(R(), B()); break;
+          case 6: case 9: link(T(), B()); break; case 7: case 8: link(Lf(), B()); break;
+          case 5: if (mid) { link(Lf(), B()); link(T(), R()); } else { link(Lf(), T()); link(R(), B()); } break;
+          case 10: if (mid) { link(Lf(), T()); link(R(), B()); } else { link(Lf(), B()); link(T(), R()); } break; } }
+      const used = new Set(), rings = [];
+      for (const s of nb.keys()) { if (used.has(s)) continue; const ring = []; let cur = s, prev = null;
+        while (cur && !used.has(cur)) { used.add(cur); ring.push(P.get(cur)); const nx = nb.get(cur).find(q => q !== prev && !used.has(q)); prev = cur; cur = nx; }
+        if (ring.length > 2) rings.push(ring); }
+      return rings;
+    }
+    const across = (x, z, dx, dz) => { let s = 2; while (s < 3000 && waterAt(x + dx * s, z + dz * s)) s += 2; return [x + dx * s, z + dz * s]; };
     // Inselmaske (3-m-Raster, Zeilen-Fuellung) fuer schnelle Abfragen
     const MC = 3, MX = Math.floor(Math.min(...IX) / 100) * 100 - 100, MZ = Math.floor(Math.min(...IZ) / 100) * 100 - 100, MNX = Math.ceil((Math.max(...IX) + 100 - MX) / MC), MNZ = Math.ceil((Math.max(...IZ) + 100 - MZ) / MC), mask = new Uint8Array(MNX * MNZ);
     for (let k = 0; k < MNZ; k++) { const z = MZ + (k + .5) * MC, xs = [];
       for (let i = 0, j = insel.length - 1; i < insel.length; j = i++) { const a = insel[i], b = insel[j]; if ((a[1] > z) !== (b[1] > z)) xs.push(a[0] + (z - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
       xs.sort((a, b) => a - b); for (let n = 0; n + 1 < xs.length; n += 2) for (let i = Math.max(0, Math.ceil((xs[n] - MX) / MC - .5)); i < Math.min(MNX, (xs[n + 1] - MX) / MC - .5); i++) mask[k * MNX + i] = 1; }
     const inIsland = (x, z) => { const i = Math.floor((x - MX) / MC), k = Math.floor((z - MZ) / MC); return i >= 0 && k >= 0 && i < MNX && k < MNZ && mask[k * MNX + i] === 1; };
-    const inWater = (x, z) => !inIsland(x, z) && (inRiver(x, z) || inSea(x, z));
+    const inWater = (x, z) => !inIsland(x, z) && waterAt(x, z);
     // Uferpunkte in Linien aufloesen
     const BX = { W: bankW, O: bankE, Wa: z => across(bankW(z), z, -1, 0)[0], Oa: z => across(bankE(z), z, 1, 0)[0] }, BZ = { N: bankN, S: bankS, Na: x => across(x, bankN(x), 0, -1)[1] };
     const resolve = L => L.map(p => [typeof p[0] === "string" ? BX[p[0]](p[1]) : p[0], typeof p[1] === "string" ? BZ[p[1]](p[0]) : p[1]]);
@@ -150,10 +186,10 @@
     // Grund: Festland, Wasser, Insel
     el("rect", { x: -20000, y: -20000, width: 40000, height: 40000, fill: "#2f3d28" }, base);
     const WATER = "#1d3b55";
-    el("polygon", { points: pts(meer), fill: WATER }, base);
-    // Fluesse: je Uferstueck ein Band (runde Enden) in der Flussbreite dieses Stuecks
+    el("path", { d: wasserUmriss().map(r => path(r, true)).join(""), fill: WATER, "fill-rule": "evenodd" }, base).dataset.info = `<b>${WA.sued.name}</b>`;
+    // Fluesse: je Uferstueck ein unsichtbares Band nur fuer den Hinweis beim Zeigen (Name und Breite)
     for (let i = 0; i < NI; i++) { const a = insel[i], b = insel[(i + 1) % NI], f = flussW[i];
-      el("line", { x1: f1(a[0]), y1: f1(a[1]), x2: f1(b[0]), y2: f1(b[1]), stroke: WATER, "stroke-width": f1(2 * f.w), "stroke-linecap": "round" }, base).dataset.info = `<b>${flussName(f)}</b><br>Breite hier ca. ${Math.round(f.w)} m`; }
+      el("line", { x1: f1(a[0]), y1: f1(a[1]), x2: f1(b[0]), y2: f1(b[1]), stroke: WATER, "stroke-opacity": 0, "stroke-width": f1(1.6 * f.w), "stroke-linecap": "round" }, base).dataset.info = `<b>${flussName(f)}</b><br>Breite hier ca. ${Math.round(f.w)} m`; }
     el("polygon", { points: pts(insel), fill: "none", stroke: "#b8a77c", "stroke-width": 14, "stroke-linejoin": "round" }, base).dataset.info = "<b>Kies/Sand am Ufer</b><br>knapp über dem Wasser am Fuss der Kaimauer, dann wird der Fluss weich tiefer";
     el("polygon", { points: pts(insel), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 3 }, base);
     for (const i of G.inseln) el("path", { d: path(smooth(i.poly, 10, true), true), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 5 }, base);

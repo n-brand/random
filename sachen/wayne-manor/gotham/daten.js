@@ -72,6 +72,8 @@ const GOTHAM = {
     ost: { name: "Ostfluss", breite: 440 },
     nord: { name: "Nordkanal", breite: 180 },
     sued: { name: "Hafenbecken (Meer)", breite: 400 },
+    rundung: 140,   // Festland-Ufer abrunden (m): groesser = runder, aber schmale Kanaele werden etwas schmaler
+
     // Kueste von West nach Ost: suedlich davon Meer. Die Inselspitze ragt ins Meer (Hafen), danach geht sie in die bestehende Kueste im Suedosten ueber
     kueste: [[-5200, 600], [-4500, 560], [-4100, 640], [-3700, 700], [-3200, 1000], [-2400, 1550], [-1700, 1250], [-1300, 1100], [-1000, 1000]],
     kuesteAlt: [[-500, 783], [0, 283], [500, -217], [1000, -717], [1700, -1417]],
@@ -104,6 +106,8 @@ const GOTHAM = {
     { id: "militaer", name: "Zufahrt Militärstützpunkt", w: 18, linie: [[-1955, "Na"], [-1965, -1950], [-2000, -2100]] },
     { id: "gotham-blvd", name: "Gotham Boulevard", w: 22, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2120, 1240]] },
     { id: "westside", name: "Westside Drive", w: 18, linie: [[-2340, -100], [-2600, -230], [-2800, -480], [-2860, -700]] },
+    // Nicolas 2026-11-12: direkter Hauptsammler vom Hub (Schurkenbasis) nach Westen bis unter die Uferstrasse West
+    { id: "west-ave", name: "West Avenue", w: 20, linie: [[-2340, -100], [-2800, -125], [-3200, -160], ["W", -170]] },
     { id: "diag-nord", name: "Old Broadway (Nord)", w: 20, linie: [[-1380, -1250], [-1500, -1000], [-1680, -720], [-1820, -300]] },
     { id: "diag-sued", name: "Old Broadway (Süd)", w: 20, linie: [[-2290, 30], [-2470, 400], [-2600, 750], [-2580, 1100]] },
     { id: "crosstown", name: "Crosstown Expressway", w: 24, linie: [["O", -880], [-1300, -860], [-1620, -930], [-2050, -880], [-2450, -800], [-2860, -700], ["W", -730]] },
@@ -163,7 +167,7 @@ const GOTHAM = {
   // Fluegelwaende aus Pflastersteinen, gepflasterte Sohle bis ins Wasser, Betontreppe an einer Fluegelwand. Liegt in einer Nische der Kaimauer.
   // Uebergaenge zur U-Bahn automatisch, wo ein Hauptsammler den U-Bahn-Ring kreuzt.
   kanal: {
-    hauptsammler: ["ring", "uptown-ave", "gotham-blvd", "parkrow", "crosstown", "sued-road", "ufer-ost", "ufer-west"],
+    hauptsammler: ["ring", "uptown-ave", "gotham-blvd", "parkrow", "crosstown", "sued-road", "ufer-ost", "ufer-west", "west-ave"],
     gulliAbstand: 70,
     // Nebensammler (Nicolas 2026-11-11): beginnt direkt unter dem Gullideckel (Scheitel ca. 1,2 m unter der Strasse), 3 m hoch (Batpod mit Fahrer passt), im Bogen mit
     // hoechstens ca. 12 % Gefaelle
@@ -251,7 +255,7 @@ const GOTHAM = {
       notiz: "Runde, hohe Halle im Kanal-Hub direkt unter dem geheimen Wayne-Stock (der Tumbler steht genau darüber), Vorbild karten/planung/schurkenbasis-vorbild-*: Pfeiler rundum, Stahlstege mit Geländern auf mehreren Ebenen, Gitterboden, Abwasser stürzt als Wasserfall in einen gemauerten Kanal. Dazu Waffen unter Planen, herumliegende Waffen, Tisch mit Computer, Boxsack." },
     ...[[-2780, 930], [-2480, 1260], [-2350, 1050], [-2750, 900]].map(([x, z], i) => ({ id: "drogen-" + (i + 1), typ: "geheim", name: "Geheimes Drogenversteck", x, z, w: 10, d: 10 })),
     // --- Baustellen (eine Vorlage, mehrfach eingesetzt) ---
-    ...[[-2030, -1100], [-1300, -620], [-2780, -860], [-1850, 460], [-2580, -830], [-2000, 1270], [-2700, -150], [-2200, 680]]
+    ...[[-2030, -1100], [-1300, -620], [-2780, -860], [-1850, 460], [-2580, -830], [-2000, 1270], [-2700, -230], [-2200, 680]]
       .map(([x, z], i) => ({ id: "baustelle-" + (i + 1), typ: "baustelle", name: "Baustelle (Platzhalter)", x, z, w: 60, d: 50, status: "baustelle" })),
     // --- Militaer (Militaerinsel im Suedosten: spaeter, siehe PLAN-GOTHAM.md) ---
     { id: "militaer-nord", typ: "militaer", name: "Militärstützpunkt (ausserhalb der Stadt)", x: -2000, z: -2320, w: 650, d: 420, aussen: true },
