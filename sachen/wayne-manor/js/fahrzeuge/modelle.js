@@ -1451,7 +1451,7 @@ const SPEC_DELOREAN = { name: "DeLorean (Zeitmaschine)", wheels: [[-0.79, -1.17]
 function buildTerzo() {
   const g = new THREE.Group();
   const paint = M(0x5a5e63, { metalness: 0.45, roughness: 0.5, flatShading: true }), carbon = M(0x1b1d20, { metalness: 0.3, roughness: 0.5, flatShading: true }), copper = M(0xc8642a, { metalness: 0.6, roughness: 0.35 });
-  const glass = M(0x06080b, { metalness: 0.75, roughness: 0.05, flatShading: true }), red = new THREE.MeshBasicMaterial({ color: 0xff2a1a }), redM = M(0xb3121a, { metalness: 0.4, roughness: 0.35, flatShading: true });
+  const glass = M(0x06080b, { metalness: 0.75, roughness: 0.05, flatShading: true }), red = new THREE.MeshBasicMaterial({ color: 0xff2a1a }), white = new THREE.MeshBasicMaterial({ color: 0xf2f6ff }), redM = M(0xb3121a, { metalness: 0.4, roughness: 0.35, flatShading: true });
   const tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x17181b, { metalness: 0.8, roughness: 0.3 });
   const tab = tabF, R = [[1.45, 0.36], [-1.45, 0.38]];
   const arch = f => { let y = 0.13; for (const [c, r] of R) { const RR = r + 0.12, d = Math.abs(f - c); if (d < RR + 0.06) y = Math.max(y, 0.13 + (2 * r + 0.07 - 0.13) * Math.min(1, (RR + 0.06 - d) / 0.2)); } return y; };
@@ -1466,15 +1466,19 @@ function buildTerzo() {
   // Reifen); oben ein Bogen bis 0,88 m, vorne flach auslaufend zur Spitze mit der Y-Leuchte, hinten fliesst sie bei f 0.6 in die Flanke.
   for (const sd of [-1, 1]) { const S = [], RA = 0.36 + 0.08, ZC = 1.45;
     for (let f = 2.36; f > 0.55; f -= 0.04) { const d = Math.abs(f - ZC), u = (2.36 - f) / 1.81;
-      const top = f > ZC ? 0.46 + 0.42 * Math.sin(Math.min(1, (2.36 - f) / (2.36 - ZC)) * Math.PI / 2) : 0.88 - 0.16 * (ZC - f) / (ZC - 0.55);
-      const bot = d < RA ? 0.36 + Math.sqrt(RA * RA - d * d) : f > ZC ? Math.min(0.28 + (f - ZC - RA) * 0.6, top - 0.08) : 0.28, w = 0.17 + 0.08 * Math.sin(Math.min(1, u * 1.4) * Math.PI / 2);
+      const top = f > ZC ? 0.6 + 0.28 * Math.sin(Math.min(1, (2.36 - f) / (2.36 - ZC)) * Math.PI / 2) : 0.88 - 0.16 * (ZC - f) / (ZC - 0.55);   // vorne hoch und stumpf (Frontfoto)
+      const bot = d < RA ? 0.36 + Math.sqrt(RA * RA - d * d) : f > ZC ? Math.min(0.22 + (f - ZC - RA) * 0.15, top - 0.1) : 0.28, w = 0.17 + 0.08 * Math.sin(Math.min(1, u * 1.4) * Math.PI / 2);
       S.push([f, [[0, bot], [w, bot], [w + 0.01, Math.max(bot + 0.02, top - 0.12)], [w * 0.55, top], [0, top - 0.02]]]); }
     const fe = loftIn(new THREE.Group(), S, paint).geometry.translate(sd * 0.86, 0, 0); g.add(new THREE.Mesh(fe, paint));
     // Radlauf innen dunkel (sonst sieht man durch den Ausschnitt in die Schale)
     const arcP = []; for (let k = 0; k <= 16; k++) { const t = Math.PI * k / 16, z = -ZC + Math.cos(t) * RA, y = 0.36 + Math.sin(t) * RA; arcP.push(new THREE.Vector3(sd * 0.86, y, z)); }
     meshIn(g, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arcP), 24, 0.02, 6, false), carbon, 0, 0, 0);                       // Kante am Radlauf
-    // Y-Leuchte vorne auf der Schalenspitze
-    const y1 = boxAt(g, 0.035, 0.03, 0.42, red, sd * 0.86, 0.5, -2.12); y1.rotation.y = sd * 0.35; const y2 = boxAt(g, 0.035, 0.03, 0.3, red, sd * 0.95, 0.5, -2.04); y2.rotation.y = -sd * 0.55;
+    // Lichter vorne (Frontfoto, Nicolas 2026-11-12): weisse Lichtlinien als V auf der stumpfen Front der Schale (unten quer, schraeg nach innen oben),
+    // eine weisse Linie an der Nasenkante, unten aussen ein kleines rotes Licht
+    { const zf = -2.385, c = sd * 0.86; const l1 = boxAt(g, 0.36, 0.025, 0.02, white, c, 0.36, zf); l1.rotation.z = sd * 0.12;
+      const l2 = boxAt(g, 0.3, 0.025, 0.02, white, c - sd * 0.07, 0.47, zf); l2.rotation.z = -sd * 0.75;
+      const l3 = boxAt(g, 0.025, 0.2, 0.02, white, sd * 0.3, 0.3, -2.5); l3.rotation.z = sd * 0.5;                                 // Nasenkante
+      boxAt(g, 0.06, 0.05, 0.02, red, c + sd * 0.08, 0.26, zf); }
     sideBox(g, sd * (hw(0.3) - 0.02), sd * (hw(0.3) + 0.01), 0.22, 0.42, -0.1, 1.2, carbon);                              // langer Seitenkanal
     sideBox(g, sd * (hw(-0.8) - 0.04), sd * (hw(-0.8) + 0.004), 0.24, 0.6, 0.5, 1.02, carbon);                            // tiefer Einlass vor dem Hinterrad
     for (let k = 0; k < 4; k++) meshIn(g, new THREE.BoxGeometry(0.05, 0.03, 0.5), paint, sd * (hw(-0.8) - 0.005), 0.42, 0.6 + k * 0.12, 0.75);   // schraege Lamellen
@@ -1491,7 +1495,7 @@ function buildTerzo() {
   loftIn(g, [[0.6, 1.0], [0.1, 1.07], [-0.4, 1.05], [-1.2, 0.89], [-2.1, 0.87]].map(([f, yt]) => [f, [[0, yt - 0.05], [0.06, yt - 0.05], [0.04, yt], [0, yt + 0.008]]]), carbon);   // Mittelgrat (dezent)
   // Heck: flaches, langes Blatt ueber dem offenen Heck (statt hohem Fluegel), darunter eine rote Leuchtlinie quer
   boxIn(g, -0.92, 0.92, 0.84, 0.875, 1.85, 2.62, paint); boxIn(g, -0.86, 0.86, 0.805, 0.83, 2.57, 2.6, red);
-  boxIn(g, -0.5, 0.5, 0.13, 0.17, -2.55, -2.25, carbon); boxIn(g, -0.28, 0.28, 0.18, 0.3, -2.5, -2.4, carbon);           // Frontsplitter, Lufteinlass
+  boxIn(g, -1.06, 1.06, 0.1, 0.14, -2.62, -2.2, carbon); boxIn(g, -0.28, 0.28, 0.18, 0.3, -2.5, -2.4, carbon);           // breiter Frontsplitter ueber die ganze Breite (Frontfoto), Lufteinlass
   mergeStatic(g);
   const wheels = [[-0.86, -1.45, true, 0.36, 0.3], [0.86, -1.45, true, 0.36, 0.3], [-0.9, 1.45, false, 0.38, 0.36], [0.9, 1.45, false, 0.38, 0.36]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 28));
   // Felgen wie auf den Fotos: leuchtender orange-roter Ring aus vielen radialen Lamellen (Nicolas 2026-11-12: "die Reifen sollen leuchten ... beim Fahren"),
