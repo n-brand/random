@@ -121,6 +121,8 @@ const GOTHAM = {
     { id: "ost-festland", name: "East Shore Road (Festland Ost)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290]] },
     // Nicolas 2026-11-12: Strasse von der Suedbruecke muendet kurz nach der Bruecke in den Highway (ab dort eine Strasse)
     { id: "harbor-zubringer", name: "Harbor-Zubringer (Südbrücke - Highway)", w: 18, linie: [["Oa", 800], [-1080, 740], [-830, 507]] },
+    { id: "nord-zufahrt", name: "Zufahrt Norden (über die Nordkanal-Brücke)", w: 16, linie: [[-2424, "Na"], [-2470, -1450], [-2560, -1800]] },
+    { id: "nord-anschluss", name: "Anschluss Nordkanal-Brücke", w: 16, linie: [[-2424, -870], [-2445, -800]] },
     { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-61, 200], [0, 168], [48, 138], [78, 108], [100, 78], [128, 55], [172, 36], [210, 0], [232, -60], [244, -130], [256, -217]] },
     { id: "west-nord", name: "Zufahrt Westen (Nord)", w: 16, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
     { id: "west-sued", name: "Zufahrt Westen (Süd)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
@@ -132,6 +134,8 @@ const GOTHAM = {
     { name: "Nordbrücke (Crosstown)", spanne: 430, w: 24, seite: "ost", z: -880 },
     // Nicolas 2026-11-12: vorher bei z 1050, dort war der Ostfluss schon Meer - die Bruecke endete im Wasser, ohne Strasse am Ostufer
     { name: "Südbrücke (Harbor)", spanne: 436, w: 22, seite: "ost", z: 800 },
+    // Nicolas 2026-11-12: Bruecke nach Norden ueber den Nordkanal (bei x -2424 / z -946)
+    { name: "Nordkanal-Brücke", spanne: 272, w: 20, seite: "nord", x: -2424 },
     { name: "Westbrücke Nord", spanne: 364, w: 20, seite: "west", z: -730 },
     { name: "Westbrücke Süd", spanne: 416, w: 20, seite: "west", z: 520 },
   ],

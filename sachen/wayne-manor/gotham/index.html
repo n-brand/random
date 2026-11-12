@@ -166,12 +166,15 @@
     // Brueckenquerung (Nicolas 2026-11-12: nicht waagrecht): vom Inselufer senkrecht zum Ufer (Richtung nach aussen, gemittelt) uebers Wasser
     const shoreN = (x, z) => { let k = 0, m = 1e9; insel.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - z); if (d < m) { m = d; k = i; } });
       let nx = 0, nz = 0; for (let j = -6; j <= 6; j++) { const n = flussW[(k + j + NI) % NI].n; nx += n[0]; nz += n[1]; } const l = Math.hypot(nx, nz) || 1; return [nx / l, nz / l]; };
-    const crossing = (seite, z) => { const x = seite === "ost" ? bankE(z) : bankW(z), n = shoreN(x, z); return { bank: [x, z], n, far: across(x, z, n[0], n[1]) }; };
+    // seite "ost"/"west": v = z; seite "nord": v = x (Nordufer)
+    const crossing = (seite, v) => { const [x, z] = seite === "nord" ? [v, bankN(v)] : [seite === "ost" ? bankE(v) : bankW(v), v], n = shoreN(x, z); return { bank: [x, z], n, far: across(x, z, n[0], n[1]) }; };
     const BX = { W: bankW, O: bankE }, BZ = { N: bankN, S: bankS, Na: x => across(x, bankN(x), 0, -1)[1] }, BP = { Oa: z => crossing("ost", z).far, Wa: z => crossing("west", z).far };
     // Strassen, die an einer Bruecke anfangen/enden, laufen zuerst LEAD m gerade in Brueckenrichtung weiter (keine engen Kurven am Brueckenende, Nicolas 2026-11-12)
     const LEAD = 150;
     const resolve = L => L.flatMap((p, i) => {
-      const end = i === 0 || i === L.length - 1, br = BP[p[0]] || (end && (p[0] === "O" || p[0] === "W"));
+      const end = i === 0 || i === L.length - 1;
+      if (p[1] === "Na") { const c = crossing("nord", p[0]), q = c.far, lead = [q[0] + c.n[0] * LEAD, q[1] + c.n[1] * LEAD]; return !end ? [q] : i === 0 ? [q, lead] : [lead, q]; }
+      const br = BP[p[0]] || (end && (p[0] === "O" || p[0] === "W"));
       if (!br) return [[typeof p[0] === "string" ? BX[p[0]](p[1]) : p[0], typeof p[1] === "string" ? BZ[p[1]](p[0]) : p[1]]];
       const c = crossing(p[0][0] === "O" ? "ost" : "west", p[1]), far = p[0].length === 2, q = far ? c.far : c.bank, s = far ? LEAD : -LEAD, lead = [q[0] + c.n[0] * s, q[1] + c.n[1] * s];
       return !end ? [q] : i === 0 ? [q, lead] : [lead, q]; });
@@ -234,8 +237,7 @@
     const uferLinie = u => { const L = []; for (let z = u.von; z <= u.bis; z += 50) { const x = u.seite === "ost" ? bankE(z) - u.abstand : bankW(z) + u.abstand; if (inIsland(x, z)) L.push([x, z]); } return L; };
     const MAIN = G.hauptstrassen.map(s => ({ ...s, pts: smooth(s.ufer ? uferLinie(s.ufer) : resolve(s.linie), 6, s.geschlossen) }));
     const bridgeLine = b => { if (b.linie) return resolve(b.linie);
-      if (b.seite === "nord") return [[b.x, bankN(b.x) + 25], [b.x, BZ.Na(b.x) - 25]];
-      const q = crossing(b.seite, b.z), [nx, nz] = q.n; return [[q.bank[0] - nx * 25, q.bank[1] - nz * 25], [q.far[0] + nx * 25, q.far[1] + nz * 25]]; };
+      const q = crossing(b.seite, b.seite === "nord" ? b.x : b.z), [nx, nz] = q.n; return [[q.bank[0] - nx * 25, q.bank[1] - nz * 25], [q.far[0] + nx * 25, q.far[1] + nz * 25]]; };
     const BR = G.bruecken.map(b => ({ ...b, pts: smooth(bridgeLine(b), 4) }));
     const roadById = Object.fromEntries(MAIN.map(s => [s.id, s]));
     const mainNear = (x, z, pad) => MAIN.find(s => { for (let j = 1; j < s.pts.length; j++) if (segDist(x, z, s.pts[j - 1], s.pts[j]) < s.w / 2 + pad) return true; return false; });

@@ -39,7 +39,7 @@ const UMSETZUNG = [
     inhalt: "Hauptinsel nach der Skizze, Westfluss 400 m, Ostfluss 440 m, Nordkanal 180 m, Meer im Süden, abgerundete Ufer, Kaimauern mit Kiesstreifen, Arkham-Insel. Strasse = Brückenfahrbahn 18 m über dem Wasser.",
     warum: "Alles andere steht auf der Insel. Vorher Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht." },
   { phase: "grund", nr: "G2", titel: "Strassennetz, Brücken, Fähre", status: "offen", braucht: ["G1"],
-    inhalt: "Geschwungene Hauptstrassen, Nebenstrassen je Bezirk, zweistöckige Park Row und Uferstrasse Ost, 5 Hängebrücken senkrecht zum Ufer, East Shore Road, Harbor-Zubringer in den Highway, Arkham-Fähre.",
+    inhalt: "Geschwungene Hauptstrassen, Nebenstrassen je Bezirk, zweistöckige Park Row und Uferstrasse Ost, 6 Hängebrücken senkrecht zum Ufer (inkl. Nordkanal-Brücke nach Norden), East Shore Road, Harbor-Zubringer in den Highway, Arkham-Fähre.",
     warum: "Gebäude, Bus, Kanäle und Orte hängen alle an den Strassen." },
   { phase: "technik", nr: "T6", titel: "Gotham-Karte im Spiel", status: "offen", braucht: ["G2"],
     inhalt: "Die 2D-Karte auch im Spiel als Kartenansicht (Taste) mit eigener Position.",
