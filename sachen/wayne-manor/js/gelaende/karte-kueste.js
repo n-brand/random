@@ -11,7 +11,7 @@ const mp = (px, py) => [(py - OY) * SC, -(px - OX) * SC];                 // Kar
 // Lage aus der kleinen Uebersichtskarte oben links (Massstab dort ca. 2,8-mal kleiner, Rondell bei 222/252):
 // Welt x = (py - 252) * 0,56, z = -(px - 222) * 0,56.
 const SITE = { x0: -100, x1: 60, z0: -90, z1: 120 };                 // Anwesen (Kartenbereich) bleibt flach (y 0)
-const WATER_Y = -0.35, LIMIT_WORLD = 700;                               // WATER_Y = Seen im Inland
+const WATER_Y = -0.35, LIMIT_WORLD = 4300;   // G1c (Nicolas 2026-11-12): bis Gotham (vorher 700; Insel bis 3,9 km, Fernring 4,4 km)                               // WATER_Y = Seen im Inland
 const LY = -28, LH = 10;                                                  // Hoehle unten (Lower Level): Boden und Hoehe
 const SEA_Y = LY - 6;                                                     // B1: Meer = Wasser in der Hoehle bei -34 (6 m unter dem Hallenboden), Steilkueste ca. 38 m
 const hash2 = (i, j) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };

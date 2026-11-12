@@ -42,7 +42,16 @@ function gothamTerrainH(x, z) {
   if (u + v <= 1) return a + (b - a) * u + (c - a) * v;
   const d = grH(i + 1, k + 1); return d + (c - d) * (1 - u) + (b - d) * (1 - v);
 }
-{ const terrainH0 = terrainH; terrainH = (x, z) => inGothamG(x, z) ? gothamTerrainH(x, z) : terrainH0(x, z); }
+// Ausserhalb von Hauptraster (+-1500 m) und Gotham-Raster: Hoehe des Fernrings (gleiche Dreiecke; vor seinem Bau genH0) - G1c, Weltgrenze 4,3 km
+function fernTerrainH(x, z) {
+  if (!FERN.mesh) return genH0(x, z);
+  const fx = (x + FR_R) / FR_S, fz = (z + FR_R) / FR_S, i = Math.max(0, Math.min(FR_N - 2, Math.floor(fx))), k = Math.max(0, Math.min(FR_N - 2, Math.floor(fz))), u = fx - i, v = fz - k;
+  const H = (a, b) => FERN.H[b * FR_N + a], a = H(i, k), b = H(i + 1, k), c = H(i, k + 1);
+  if (u + v <= 1) return a + (b - a) * u + (c - a) * v;
+  const d = H(i + 1, k + 1); return d + (c - d) * (1 - u) + (b - d) * (1 - v);
+}
+{ const terrainH0 = terrainH, E = T_A + T_B;
+  terrainH = (x, z) => inGothamG(x, z) ? gothamTerrainH(x, z) : Math.abs(x) < E && Math.abs(z) < E ? terrainH0(x, z) : fernTerrainH(x, z); }
 
 // Farben: Wiese/Wald, Fels an steilen Stellen und hoch oben, Kies am Ufer, Flussgrund; Insel (Strassenebene) vorerst helle Wiese (Stadt kommt mit G2/G3)
 const GR_COL = (() => { const C = h => new THREE.Color(h);

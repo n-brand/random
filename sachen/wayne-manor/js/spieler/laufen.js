@@ -79,12 +79,13 @@ function waterAt(x, z) {
   const c = caveAt(x, z);
   if (c === 2 || c === 4 || c === 3) return SEA_Y;
   if (waterCaveAt(x, z)) return SEA_Y;                                    // E2: Wasserhoehlen
+  if (inGothamG(x, z)) return GOT.water(x, z) ? SEA_Y : null;             // Gotham (G1c): Fluesse und Hafenbecken, Insel und Ufer trocken
   if (c !== 1 && seaD(x, z) > -0.5) return SEA_Y;
   for (const L of LAKES) if (lakeD(L, x, z) < 1) return WATER_Y;
   return null;
 }
 // Klippenkante: Schritt nach (nx, nz) verboten, wenn er naeher als m Meter an die Kuestenlinie fuehrt und nicht landeinwaerts geht
-const coastEdge = (nx, nz, x0, z0, m) => { const s1 = seaD(nx, nz); return s1 > -m && s1 > seaD(x0, z0) - 0.01; };
+const coastEdge = (nx, nz, x0, z0, m) => { if (inGothamG(nx, nz)) return false; const s1 = seaD(nx, nz); return s1 > -m && s1 > seaD(x0, z0) - 0.01; };   // Gotham hat eigene Ufer (G1c)
 function updatePlayer(dt, moveX, moveZ, run) {
   const len = Math.hypot(moveX, moveZ);
   if (len > 1) { moveX /= len; moveZ /= len; }

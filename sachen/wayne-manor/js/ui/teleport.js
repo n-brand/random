@@ -17,13 +17,15 @@ function teleportToPoint(p) {
   // Nicolas 2026-11-09: nur noch vier Orte, jeder mit Symbol (Bilder erkennt man schneller als Text). [Name, x, y, z, Blick, Symbol]
   const TP = [
     ["Wayne Manor", 18, 0, 0, W, "manor"], ["Batcave", -50, LY, -6, W, "cave"], ["Wald am Wasserfall", -127, 0, -160, N, "fall"],
-    ["Kreuzung", MAIN_J[0] + 6, 0, MAIN_J[1] - 4, Math.atan2(GATE_U[0], GATE_U[1]), "cross"]
+    ["Kreuzung", MAIN_J[0] + 6, 0, MAIN_J[1] - 4, Math.atan2(GATE_U[0], GATE_U[1]), "cross"],
+    (() => { const [x, z] = GOT.toGame(-2050, -330), [ax, az] = GOT.toGame(-2050, -100); return ["Gotham", x, GOT.STR, z, Math.atan2(-(ax - x), -(az - z)), "city"]; })()   // G1c: Inselmitte vor dem Wayne Circle, Blick zum Turm
   ];
   // Symbole (24er-Raster, Linien in currentColor; Fahrzeuge in ihrer Farbe)
   const ICONS = {
     manor: '<path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /><path d="M16 6V3.5h2V8" />',
     cave: '<path d="M12 8.5c1 0 1.7.8 1.8 1.7l2-2.7c1.6 1.4 3.6 2 6.2 1.8-1.7 1.4-2.4 3.2-2.1 5.3-1.4-1.3-3.2-1.6-4.9-.9.1 1.5-.8 2.9-3 4.3-2.2-1.4-3.1-2.8-3-4.3-1.7-.7-3.5-.4-4.9.9.3-2.1-.4-3.9-2.1-5.3 2.6.2 4.6-.4 6.2-1.8l2 2.7c.1-.9.8-1.7 1.8-1.7z" fill="currentColor" stroke="none" /><path d="M11 8.6l-.4-1.6M13 8.6l.4-1.6" />',
     fall: '<path d="M12 2.5c3.5 4.6 6 8 6 11.2a6 6 0 0 1-12 0C6 10.5 8.5 7.1 12 2.5z" /><path d="M9.2 14.2a3 3 0 0 0 2.6 2.8" />',
+    city: '<path d="M3 21V11h4V6h4v15M11 21V3h5v18M16 21v-9h5v9M2 21h20" /><path d="M13 6.5h1M13 10h1M13 13.5h1M5 14h0.5M18 15h1" />',   // Skyline (Gotham)
     cross: '<path d="M7 21L10 3M17 21L14 3" /><path d="M12 4.5v2.5M12 10v3M12 16.5v3.5" />',
     car: '<path d="M3 15v-3l2-4.5h10l3 4.5 3 .8V15z" fill="currentColor" stroke="none" /><circle cx="7" cy="16" r="2.2" /><circle cx="17" cy="16" r="2.2" />',
     bike: '<circle cx="5.5" cy="16" r="3.2" /><circle cx="18.5" cy="16" r="3.2" /><path d="M5.5 16l4-6h5l4 6M9.5 10l3 6M13 7h3l-1.5 3" />',
