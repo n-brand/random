@@ -448,7 +448,9 @@
       el("text", { x: nx, y: ny + 16 * k, "font-size": 13 * k, fill: "#fff", "text-anchor": "middle" }, ui).textContent = "N";
     }
     const toWorld = (cx, cy) => { const r = wrap.getBoundingClientRect(); return [vb.x + (cx - r.left) / r.width * vb.w, vb.y + (cy - r.top) / r.height * vb.h]; };
-    const zoom = (f, cx, cy) => { const [wx, wy] = toWorld(cx, cy); vb.x = wx - (wx - vb.x) * f; vb.y = wy - (wy - vb.y) * f; vb.w *= f; vb.h *= f; apply(); };
+    // Zoomgrenzen: hoechstens 1,5-mal die Startansicht (ganz Gotham), am naechsten ca. 40 m Bildbreite
+    const zoom = (f, cx, cy) => { const r = wrap.getBoundingClientRect(), a = G.ansicht, maxW = 1.5 * r.width * Math.max((a.x1 - a.x0) / r.width, (a.z1 - a.z0) / r.height);
+      f = clamp(f, 40 / vb.w, maxW / vb.w); if (Math.abs(f - 1) < 1e-6) return; const [wx, wy] = toWorld(cx, cy); vb.x = wx - (wx - vb.x) * f; vb.y = wy - (wy - vb.y) * f; vb.w *= f; vb.h *= f; apply(); };
     wrap.addEventListener("wheel", ev => { ev.preventDefault(); zoom(ev.deltaY > 0 ? 1.18 : 1 / 1.18, ev.clientX, ev.clientY); }, { passive: false });
     const mid = () => { const r = wrap.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
     document.getElementById("zin").onclick = () => zoom(1 / 1.4, ...mid());

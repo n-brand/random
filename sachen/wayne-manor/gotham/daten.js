@@ -47,7 +47,7 @@ const ellipse = (cx, cz, rx, rz, n = 16) => Array.from({ length: n }, (_, i) => 
 
 const GOTHAM = {
   // Sichtbereich beim Oeffnen der Karte
-  ansicht: { x0: -4600, z0: -2700, x1: 200, z1: 2100 },
+  ansicht: { x0: -4600, z0: -2100, x1: 200, z1: 2100 },
 
   // Hoehen in Welt-y: Strassenebene der Stadt = Fahrbahn der Bruecken (Nicolas 2026-11-11), Wasser = Meer/Hoehle (SEA_Y).
   // Strasse 31 m ueber dem Wasser (vorher 40; Nicolas: die 9 m zwischen Kanal-Hub und Wasser waren verschwendet)
@@ -103,7 +103,6 @@ const GOTHAM = {
     { id: "ring", name: "Wayne Circle (Ring um den Wayne Tower)", w: 22, geschlossen: true, linie: ellipse(-2050, -100, 290, 245) },
     { id: "parkrow", name: "Park Row (zweistöckig)", w: 24, zweistock: true, linie: [["O", 300], [-1640, 180], [-1770, -10]] },
     { id: "uptown-ave", name: "Uptown Avenue", w: 22, linie: [[-2050, -345], [-2000, -700], [-1980, -1000], [-1955, "N"]] },
-    { id: "militaer", name: "Zufahrt Militärstützpunkt", w: 18, linie: [[-1955, "Na"], [-1965, -1950], [-2000, -2100]] },
     { id: "gotham-blvd", name: "Gotham Boulevard", w: 22, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2120, 1240]] },
     { id: "westside", name: "Westside Drive", w: 18, linie: [[-2340, -100], [-2600, -230], [-2800, -480], [-2860, -700]] },
     // Nicolas 2026-11-12: direkter Hauptsammler vom Hub (Schurkenbasis) nach Westen bis unter die Uferstrasse West
@@ -132,7 +131,6 @@ const GOTHAM = {
     { name: "Südbrücke (Harbor)", w: 22, seite: "ost", z: 800 },
     { name: "Westbrücke Nord", w: 20, seite: "west", z: -730 },
     { name: "Westbrücke Süd", w: 20, seite: "west", z: 520 },
-    { name: "Nordkanal-Brücke (zum Militär)", w: 18, seite: "nord", x: -1955 },
     { name: "Arkham-Brücke", w: 12, linie: [[-2580, 1100], [-2820, 1350], [-3050, 1550], [-3200, 1660]] },
   ],
 
@@ -236,7 +234,6 @@ const GOTHAM = {
     { id: "waffen-2", typ: "laden", name: "Waffenladen", x: -1840, z: 910, w: 20, d: 15, h: 6 },
     { id: "auto-billig", typ: "laden", name: "Autohaus (billig)", x: -2800, z: 660, w: 70, d: 50, h: 8, notiz: "Echte Filiale der Fahrzeug-Kette aus dem Computer-Shop." },
     { id: "auto-teuer", typ: "laden", name: "Autohaus (teuer)", x: -1560, z: -1200, w: 70, d: 50, h: 12 },
-    { id: "auto-militaer", typ: "militaer", name: "Fahrzeughandel Militär", x: -2150, z: -2150, w: 80, d: 60, h: 10, aussen: true, notiz: "Am Militärstützpunkt." },
     // --- Essen ---
     ...[[-1600, -280], [-2150, -520], [-2550, -660], [-1850, 240], [-1520, 240], [-2350, 600]].map(([x, z], i) => ({ id: "bar-" + (i + 1), typ: "essen", name: i % 2 ? "Restaurant" : "Bar", x, z, w: 20, d: 15, h: 8 })),
     ...[[-2570, 1150], [-2450, 960], [-2850, 780], [-2300, 1360]].map(([x, z], i) => ({ id: "fastfood-" + (i + 1), typ: "essen", name: "Billig-Fast-Food", x, z, w: 15, d: 12, h: 5 })),
@@ -257,8 +254,6 @@ const GOTHAM = {
     // --- Baustellen (eine Vorlage, mehrfach eingesetzt) ---
     ...[[-2030, -1100], [-1300, -620], [-2780, -860], [-1850, 460], [-2580, -830], [-2000, 1270], [-2700, -230], [-2200, 680]]
       .map(([x, z], i) => ({ id: "baustelle-" + (i + 1), typ: "baustelle", name: "Baustelle (Platzhalter)", x, z, w: 60, d: 50, status: "baustelle" })),
-    // --- Militaer (Militaerinsel im Suedosten: spaeter, siehe PLAN-GOTHAM.md) ---
-    { id: "militaer-nord", typ: "militaer", name: "Militärstützpunkt (ausserhalb der Stadt)", x: -2000, z: -2320, w: 650, d: 420, aussen: true },
     // --- Bestehend ---
     { id: "manor", typ: "manor", name: "Wayne Manor (besteht)", x: -20, z: 15, w: 70, d: 95, status: "gebaut", aussen: true },
   ],
