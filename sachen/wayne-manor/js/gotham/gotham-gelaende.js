@@ -78,14 +78,34 @@ const GOT = (() => {
       return { x0: Math.min(...xs), x1: Math.max(...xs), z0: Math.min(...zs), z1: Math.max(...zs) }; })(),
   };
 })();
+// G1d: genaue Uferlinie der Insel im Spiel (Punkte alle ca. 20 m, Umlauf wie in der Karte) und Abstand dazu (innen negativ). Das Abstandsfeld DI ist
+// nur auf ca. 6 m genau (8-m-Raster); am Ufer zaehlt diese Linie: dort steht die Kaimauer (gotham/gotham-kai.js).
+{
+  const P = GOT.insel.map(([mx, mz]) => GOT.toGame(mx, mz)), n = P.length;
+  let A = 0; for (let i = 0; i < n; i++) { const [x0, z0] = P[i], [x1, z1] = P[(i + 1) % n]; A += x0 * z1 - x1 * z0; }
+  const sg = A > 0 ? 1 : -1, C = 40, B = new Map(), key = (i, k) => i * 100000 + k;
+  // Normale nach innen je Strecke: (-dz, dx) * sg zeigt bei Umlauf mit A > 0 nach innen
+  const segs = P.map((a, i) => { const b = P[(i + 1) % n], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return { a, b, dx, dz, l, nx: -dz / l * sg, nz: dx / l * sg }; });
+  segs.forEach((g, i) => { const x0 = Math.min(g.a[0], g.b[0]), x1 = Math.max(g.a[0], g.b[0]), z0 = Math.min(g.a[1], g.b[1]), z1 = Math.max(g.a[1], g.b[1]);
+    for (let ci = Math.floor(x0 / C); ci <= Math.floor(x1 / C); ci++) for (let ck = Math.floor(z0 / C); ck <= Math.floor(z1 / C); ck++) { const k = key(ci, ck); if (!B.has(k)) B.set(k, []); B.get(k).push(i); } });
+  GOT.edgePts = P; GOT.edgeIn = P.map((_, i) => { const g0 = segs[(i + n - 1) % n], g1 = segs[i], x = g0.nx + g1.nx, z = g0.nz + g1.nz, l = Math.hypot(x, z) || 1; return [x / l, z / l]; });
+  // Abstand zur Linie, Vorzeichen ueber die Innennormale der naechsten Strecke (an Ecken gemittelt); weiter als ca. 40 m: Abstandsfeld DI
+  GOT.edgeSD = (x, z) => {
+    const ci = Math.floor(x / C), ck = Math.floor(z / C); let best = 1e9, bs = 0;
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const L = B.get(key(ci + a, ck + b)); if (!L) continue;
+      for (const i of L) { const g = segs[i], t = Math.max(0, Math.min(1, ((x - g.a[0]) * g.dx + (z - g.a[1]) * g.dz) / (g.l * g.l))), qx = g.a[0] + g.dx * t, qz = g.a[1] + g.dz * t, d = Math.hypot(x - qx, z - qz);
+        if (d < best - 1e-6) { best = d; let nx = g.nx, nz = g.nz; if (t <= 0 || t >= 1) { const v = GOT.edgeIn[t <= 0 ? i : (i + 1) % n]; nx = v[0]; nz = v[1]; } bs = (x - qx) * nx + (z - qz) * nz > 0 ? -1 : 1; } } }
+    return best < 1e9 ? best * bs : GOT.di(x, z);
+  };
+}
 // Hoehe mit Gotham (h = bisherige Hoehe aus genH0). Insel flach, Fluesse mit Kiesrand und Grund, Festland weich ansteigend bis zu den Bergen.
 function gothamH(x, z, h) {
   const w = GOT.w(x, z); if (w <= 0) return h;
   const [mx, mz] = GOT.toMap(x, z); if (!GOT.inField(mx, mz)) return h;
-  const di = GOT.sdi(mx, mz); let g;
-  if (di < 0) g = GOT.STR;                                                     // Insel: Strassenebene (Kaimauern kommen in G1d)
+  let sd = GOT.sdi(mx, mz), g; if (Math.abs(sd) < 24) sd = GOT.edgeSD(x, z);   // am Ufer genau (G1d)
+  if (sd < -6) g = GOT.STR;                                                    // Insel: Strassenebene; die letzten 6 m vor dem Ufer liegen unter der Kai-Platte (G1d)
   else { const dw = GOT.sdw(mx, mz);
-    if (dw < 0) { const ds = Math.min(di, -dw); g = GOT.WY + 0.4 - (GOT.WY + 0.4 - GOT.BED) * sst(6, 80, ds); }   // Fluss: Kiesstreifen am Ufer, dann bis 12 m tief
+    if (dw < 0 || sd < 0) { const ds = Math.min(Math.max(sd, 0), -dw); g = GOT.WY + 0.4 - (GOT.WY + 0.4 - GOT.BED) * sst(6, 80, ds); }   // Fluss: Kiesstreifen am Mauerfuss, dann bis 12 m tief
     else g = Math.min(h, GOT.WY + 0.6 + dw * 0.32 + 5 * (vnoise(x / 70 + 41, z / 70 + 17) - 0.5) * sst(0, 80, dw)); }   // Festland: natuerlich ansteigend, Berge dahinter bleiben
   return h + (g - h) * w;
 }
