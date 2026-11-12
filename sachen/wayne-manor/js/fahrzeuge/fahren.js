@@ -383,7 +383,7 @@ const camBlocked = (x, y, z) => {
   if (y > SEA_Y + 0.3 && y < SEA_Y + 8.5 && [[0, 0], [0.9, 0], [-0.9, 0], [0, 0.9], [0, -0.9]].every(([a, b]) => { const c = caveAt(x + a, z + b); return c === 2 || c === 4 || c === 3; })) return false;   // ueber dem Hoehlenwasser (Boot-Kamera)
   return true;
 };
-function carCamera() {
+function carCamera(dt = 1 / 60) {
   const C = CAR, sp = C.spec;
   player.pos.set(C.x, C.y + 0.6, C.z);
   // Tempo-Gefuehl (modelle.js): Sichtfeld, Kamera naeher/tiefer, Vibrieren; nicht mit Turm (Zielen/Zoom setzen den Sichtwinkel)
@@ -437,6 +437,6 @@ function carFrame(dt) {
   CAR = active || prev;
   if (active) {
     if (L && L.state === "moving" && CAR_LIFT.inCar({ x: active.x, y: active.y, z: active.z })) { active.y = L.y; active.air = false; active.vy = 0; }
-    if (walking) { carNear(); carPose(0); carCamera(); engineUpdate(active); }
+    if (walking) { carNear(); carPose(0); carCamera(dt); engineUpdate(active); }
   }
 }
