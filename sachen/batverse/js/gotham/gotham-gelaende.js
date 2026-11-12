@@ -199,7 +199,7 @@ function gothamRoadAt(x, z, feet) {
 // als Rampe in der Strassenmitte (RW 7 m, RL 80 m bei ca. 6,9 %, die letzten 12 m flach), die obere Fahrbahn laeuft beidseits daran vorbei; ein Ende
 // an einer Bruecke oder nahe am Kai bleibt zu (Wand 30 m vor dem Ende). Gelaende darunter ausgeschnitten (bis HW + 6, damit das 4-m-Raster nicht
 // in den Raum ragt), obendrauf deckt eine Platte bis HW + 12 den Ausschnitt ab (gotham-unterstrasse.js). Boden: gothamDeckAt (oben wer oben ist).
-const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 12, CL: 30, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12 };
+const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 12, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12 };
 function gdeckBuild() {
   GDECK.building = true; const roads = [];
   const brEnds = GOTHAM_STADT.bruecken.flatMap(b => [b.pts[0], b.pts[b.pts.length - 1]].map(([x, z]) => GOT.toGame(x, z)));
@@ -210,8 +210,14 @@ function gdeckBuild() {
     const push = () => { if (run.length > 2) { const s = [0]; for (let i = 1; i < run.length; i++) s.push(s[i - 1] + Math.hypot(run[i][0] - run[i - 1][0], run[i][1] - run[i - 1][1]));
       const L = s[s.length - 1], closed = e => GOT.edgeSD(e[0], e[1]) > -40 || brEnds.some(b => Math.hypot(b[0] - e[0], b[1] - e[1]) < 60);
       const ca = closed(run[0]), cb = closed(run[run.length - 1]), sA = ca ? GDECK.CL : GDECK.FL + GDECK.RL, sB = L - (cb ? GDECK.CL : GDECK.FL + GDECK.RL);
+      if (h.ring) { roads.push({ id: h.id, w: h.w, HW: h.w / 2 + 4, pts: run, s, L, ca: true, cb: true, sA: 0, sB: L, loop: true }); run = []; return; }   // Ring (Wayne Circle): rundum unten, ohne Enden
       if (sB - sA > 40) roads.push({ id: h.id, w: h.w, HW: h.w / 2 + 4, pts: run, s, L, ca, cb, sA, sB }); } run = []; };
     for (const p of P) { if (GOT.edgeSD(p[0], p[1]) < -1) run.push(p); else push(); } push(); }
+  // Muendung (Nicolas 2026-11-12: Wayne Circle unten, Park Row endet am Ring): liegt ein Ende im Innenraum einer anderen zweistoeckigen Strasse,
+  // geht die untere Strasse dort ohne Rampe und ohne Wand bis ans Ende weiter (die Waende beider Strassen fallen dort weg, gotham-unterstrasse.js)
+  const segD = (p, o) => { let m = 1e9; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / LL)); m = Math.min(m, Math.hypot(p[0] - a[0] - dx * t, p[1] - a[1] - dz * t)); } return m; };
+  for (const r of roads) { if (r.loop) continue; for (const end of [0, 1]) { const e = end ? r.pts[r.pts.length - 1] : r.pts[0];
+    if (roads.some(o => o !== r && segD(e, o) < o.HW)) { if (end) { r.cb = true; r.joinB = true; r.sB = r.L; } else { r.ca = true; r.joinA = true; r.sA = 0; } } } }
   const grid = new Map(), C = GDECK.C;
   roads.forEach((r, ri) => { for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j]; for (const k of new Set([glKey(Math.floor(a[0] / C), Math.floor(a[1] / C)), glKey(Math.floor(b[0] / C), Math.floor(b[1] / C))])) { if (!grid.has(k)) grid.set(k, []); grid.get(k).push([ri, j]); } } });
   GDECK.roads = roads; GDECK.grid = grid; GDECK.building = false;
@@ -227,8 +233,15 @@ function gdeckNear(x, z, reach) {
       best = { r, dd: d, d: out ? Math.abs((x - p[0]) * dz - (z - p[1]) * dx) / l : d, s: r.s[j - 1] + (out ? t0 : t) * l }; } }
   return best;
 }
+// wie gdeckNear, aber nur fuer die Strasse o (Projektion auf ihre Linie)
+function gdeckNearOn(o, x, z) { let best = null; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / LL)), d = Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t);
+  if (!best || d < best.d) best = { d, s: o.s[j - 1] + t * Math.sqrt(LL) }; } return best && best.d < o.HW + 2 ? best : null; }
 // Rampenboden (an offenen Enden), sonst LY bzw. Strassenhoehe
 function gdeckRampY(r, s) { const G = GDECK, u = Math.min(r.ca ? 1e9 : s, r.cb ? 1e9 : r.L - s); return u <= G.FL ? GOT.STR : u >= G.FL + G.RL ? G.LY : GOT.STR + (G.LY - GOT.STR) * (u - G.FL) / G.RL; }
+// Trichter (Nicolas 2026-11-12, Bild: unten muessen die Spuren zur Rampe zusammenlaufen): an offenen Enden wird die untere Strasse auf den letzten
+// TL 50 m vor der Rampe von HW auf RW/2 schmaler (Seitenwaende schraeg, Gehsteige laufen aus); gdeckK = 0 an der Rampe, 1 = volle Breite
+function gdeckK(r, s) { const u = Math.min(r.ca ? 1e9 : s - r.sA, r.cb ? 1e9 : r.sB - s); return sst(0, GDECK.TL, u); }
+const gdeckHW = (r, s) => GDECK.RW / 2 + (r.HW - GDECK.RW / 2) * gdeckK(r, s);
 const gdeckInRamp = (r, s) => (!r.ca && s < r.sA) || (!r.cb && s > r.sB);
 // grob: liegt (x, z) im Gotham-Rechteck (vor gotham-raster.js schon nutzbar)
 function inGothamG0(x, z) { return x > -4240 && x < -400 && z > -1040 && z < 2800; }
@@ -244,10 +257,12 @@ function gothamDeckH(x, z, g) {
 function gothamDeckAt(x, z, feet) {
   if (!GDECK.roads || !inGothamG0(x, z)) return null;
   const n = gdeckNear(x, z, 26); if (!n) return null; const r = n.r, s = n.s, G = GDECK;
+  // unten an Kreuzungen/Muendungen: liegt der Punkt im Innenraum einer anderen Strasse (nicht der naechsten), gilt deren Boden
+  if (feet <= GOT.STR - 2.5 && !(s >= r.sA && s <= r.sB && n.d < gdeckHW(r, s))) for (const o of G.roads) { if (o === r) continue; const m = gdeckNearOn(o, x, z); if (m && m.s >= o.sA && m.s <= o.sB && m.d < gdeckHW(o, m.s)) return G.LY; }
   if (s < 0 || s > r.L || n.d > r.HW + G.COVER) return null;
   if (gdeckInRamp(r, s) && n.d < G.RW / 2) return gdeckRampY(r, s);
   if (feet > GOT.STR - 2.5) return GOT.STR;
-  if (s >= r.sA && s <= r.sB && n.d < r.HW) return G.LY + (n.d > r.HW - 2 ? 0.15 : 0);   // Gehsteige unten 15 cm hoch
+  if (s >= r.sA && s <= r.sB) { const hw = gdeckHW(r, s); if (n.d < hw) return G.LY + (n.d > hw - 2 * gdeckK(r, s) ? 0.15 : 0); }   // Gehsteige unten 15 cm hoch (im Trichter schmaler)
   return null;
 }
 // Kamera: in der Fahrbahnplatte und in den Waenden unten gesperrt (true), sonst undefined (normale Pruefung)
@@ -256,6 +271,6 @@ function gothamDeckCam(x, y, z) {
   const n = gdeckNear(x, z, 26); if (!n) return undefined; const r = n.r, s = n.s, G = GDECK;
   if (s < 0 || s > r.L || n.d > r.HW + G.COVER) return undefined;
   if (gdeckInRamp(r, s) && n.d < G.RW / 2 - 0.5) return y < gdeckRampY(r, s) + 0.3;
-  if (s >= r.sA + 0.6 && s <= r.sB - 0.6 && n.d < r.HW - 0.6) return y > G.DY - 0.3;
+  if (s >= r.sA && s <= r.sB && n.d < gdeckHW(r, s) - 0.6) return y > G.DY - 0.3;
   return y < GOT.STR + 0.2;
 }

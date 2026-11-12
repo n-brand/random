@@ -235,7 +235,11 @@
 
     // ---------- Hauptstrassen ----------
     const uferLinie = u => { const L = []; for (let z = u.von; z <= u.bis; z += 50) { const x = u.seite === "ost" ? bankE(z) - u.abstand : bankW(z) + u.abstand; if (inIsland(x, z)) L.push([x, z]); } return L; };
-    const MAIN = G.hauptstrassen.map(s => ({ ...s, pts: smooth(s.ufer ? uferLinie(s.ufer) : resolve(s.linie), 6, s.geschlossen) }));
+    // Haken entfernen (Nicolas 2026-11-12, Park Row: der 150-m-Hilfspunkt am Brueckenende lag hinter dem naechsten Punkt, die Linie lief hin und zurueck):
+    // ein innerer Punkt, an dem die Linie um mehr als 100 Grad umkehrt, faellt weg (wiederholt, bis keiner mehr da ist)
+    const dehook = (P, deg = 100) => { P = P.slice(); for (let again = true; again && P.length > 2;) { again = false; for (let i = 1; i < P.length - 1; i++) { const a = P[i - 1], b = P[i], c = P[i + 1], ux = b[0] - a[0], uz = b[1] - a[1], vx = c[0] - b[0], vz = c[1] - b[1], l = Math.hypot(ux, uz) * Math.hypot(vx, vz) || 1;
+      if ((ux * vx + uz * vz) / l < Math.cos(deg * Math.PI / 180)) { P.splice(i, 1); again = true; break; } } } return P; };
+    const MAIN = G.hauptstrassen.map(s => ({ ...s, pts: (P => s.geschlossen ? P : dehook(P, 60))(smooth(s.ufer ? uferLinie(s.ufer) : dehook(resolve(s.linie)), 6, s.geschlossen)) }));   // auch nach dem Glaetten (Spline-Schlaufe bei kurzem Abstand; dort alle 6 m, mehr als 60 Grad je Punkt ist ein Haken)
     const bridgeLine = b => { if (b.linie) return resolve(b.linie);
       const q = crossing(b.seite, b.seite === "nord" ? b.x : b.z), [nx, nz] = q.n; return [[q.bank[0] - nx * 25, q.bank[1] - nz * 25], [q.far[0] + nx * 25, q.far[1] + nz * 25]]; };
     const BR = G.bruecken.map(b => ({ ...b, pts: smooth(bridgeLine(b), 4) }));

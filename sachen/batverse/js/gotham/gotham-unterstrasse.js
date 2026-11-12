@@ -27,24 +27,27 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   const sub = (r, s0, s1) => { const out = [], P = r.pts, at = s => { let j = 1; while (j < P.length - 1 && r.s[j] < s) j++; const a = P[j - 1], b = P[j], l = r.s[j] - r.s[j - 1] || 1, t = Math.max(0, Math.min(1, (s - r.s[j - 1]) / l)), dx = (b[0] - a[0]) / l, dz = (b[1] - a[1]) / l; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, -dz, dx, s]; };
     out.push(at(s0)); for (let i = 0; i < P.length; i++) if (r.s[i] > s0 + 0.2 && r.s[i] < s1 - 0.2) out.push(at(r.s[i])); out.push(at(s1)); return out; };
   // waagrechtes Band zwischen d0 und d1, Hoehe y (Zahl oder Funktion von s); v quer 0..1 (vrep 0) oder in Metern/vrep
-  const flat = (Gm, Q, d0, d1, y, rep, vrep) => { for (let i = 0; i < Q.length; i++) { const [x, z, nx, nz, s] = Q[i], yy = typeof y === "number" ? y : y(s), k = Gm.P.length / 3;
+  const fv = (v, s) => typeof v === "number" ? v : v(s);                     // Zahl oder Funktion von s
+  const flat = (Gm, Q, D0, D1, y, rep, vrep) => { for (let i = 0; i < Q.length; i++) { const [x, z, nx, nz, s] = Q[i], yy = fv(y, s), d0 = fv(D0, s), d1 = fv(D1, s), k = Gm.P.length / 3;
     for (const d of [d0, d1]) { Gm.P.push(x + nx * d, yy, z + nz * d); Gm.U.push(s / rep, vrep ? d / vrep : (d - d0) / (d1 - d0)); } if (i) Gm.I.push(k - 2, k, k - 1, k - 1, k, k + 1); } };
   // senkrechte Wand im Abstand d von y0 bis y1 (Zahlen oder Funktionen von s)
-  const wall = (Gm, Q, d, y0, y1) => { let pin = false; for (let i = 0; i < Q.length; i++) { const [x, z, nx, nz, s] = Q[i], a = typeof y0 === "number" ? y0 : y0(s), b = typeof y1 === "number" ? y1 : y1(s), k = Gm.P.length / 3, inn = inOther(x + nx * d, z + nz * d, curR);
+  const wall = (Gm, Q, D, y0, y1) => { let pin = false; for (let i = 0; i < Q.length; i++) { const [x, z, nx, nz, s] = Q[i], d = fv(D, s), a = typeof y0 === "number" ? y0 : y0(s), b = typeof y1 === "number" ? y1 : y1(s), k = Gm.P.length / 3, inn = inOther(x + nx * d, z + nz * d, curR);
     Gm.P.push(x + nx * d, a, z + nz * d, x + nx * d, b, z + nz * d); Gm.U.push(s / 3, a / 3, s / 3, b / 3); if (i && !(inn && pin)) Gm.I.push(k - 2, k, k - 1, k - 1, k, k + 1); pin = inn; } };
   // Wand quer zur Strasse bei s von d0 bis d1
   const cross = (Gm, r, s, d0, d1, y0, y1) => { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0], k = Gm.P.length / 3;
     for (const d of [d0, d1]) for (const y of [y0, y1]) { Gm.P.push(x + nx * d, y, z + nz * d); Gm.U.push(d / 3, y / 3); } Gm.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); };
   // liegt (x, z) im Innenraum einer anderen zweistoeckigen Strasse (Kreuzung unten): dort keine Waende
-  const inOther = (x, z, me) => G.roads.some(o => { if (o === me) return false; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / LL)), s = o.s[j - 1] + t * Math.sqrt(LL);
-    if (Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < o.HW - 0.2 && s > o.sA && s < o.sB) return true; } return false; });
+  const inOther = (x, z, me, pad = -0.2) => G.roads.some(o => { if (o === me) return false; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / LL)), s = o.s[j - 1] + t * Math.sqrt(LL);
+    if (Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < o.HW + pad && s > o.sA && s < o.sB) return true; } return false; });
   let curR = null; const ring = (x, z, r, top) => { if (!inOther(x, z, curR)) circles.push([x, z, r, top]); };
+  // wie sub, aber in den Trichtern alle 1 m
+  const subF = (r, s0, s1) => { const Q = sub(r, s0, s1), out = []; for (let i = 0; i < Q.length; i++) { if (i) { const a = Q[i - 1], b = Q[i], n = gdeckK(r, (a[4] + b[4]) / 2) < 1 ? Math.ceil(b[4] - a[4]) : 1; for (let k = 1; k < n; k++) out.push(sub(r, a[4] + (b[4] - a[4]) * k / n, a[4] + (b[4] - a[4]) * k / n + 0.5)[0]); } out.push(Q[i]); } return out; };
   const posts = []; let nCirc = circles.length;
   for (const r of G.roads) { curR = r;
-    const HW = r.HW, inner = sub(r, r.sA, r.sB), all = sub(r, 0, r.L), rampY = s => gdeckRampY(r, s);
+    const HW = r.HW, inner = subF(r, r.sA, r.sB), hw = s => gdeckHW(r, s), wk = s => 2 * gdeckK(r, s), all = sub(r, 0, r.L), rampY = s => gdeckRampY(r, s);
     // untere Strasse: Fahrbahn (4 Spuren, Mitte = Stuetzenreihe), Gehsteige, Unterseite der Platte, Seitenwaende
-    flat(FL, inner, HW - 2, -(HW - 2), LY + 0.03, 12, 0);
-    for (const sg of [1, -1]) { flat(WK, inner, sg * (HW - 2), sg * HW, LY + 0.15, 2, 2); wall(WA, inner, sg * (HW - 2), LY, LY + 0.15); wall(WA, inner, sg * HW, LY - 0.6, DY); }
+    flat(FL, inner, s => hw(s) - wk(s), s => -(hw(s) - wk(s)), LY + 0.03, 12, 0);
+    for (const sg of [1, -1]) { flat(WK, inner, s => sg * (hw(s) - wk(s)), s => sg * hw(s), LY + 0.15, 2, 2); wall(WA, inner, s => sg * (hw(s) - wk(s)), LY, LY + 0.15); wall(WA, inner, s => sg * hw(s), LY - 0.6, DY); }
     flat(CE, inner, -HW, HW, DY, 3, 3);
     // Deckplatte ueber dem Gelaende-Ausschnitt (aussen neben den Gehsteigen, ganze Laenge)
     for (const sg of [1, -1]) flat(CO, all, sg * HW, sg * (HW + G.COVER), S + 0.035, 2, 2);
@@ -54,15 +57,14 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
       for (const sg of [1, -1]) { wall(WA, QW, sg * RW / 2, s => rampY(s) - 0.6, S + 1); wall(WA, QW, sg * (RW / 2 + 0.3), S, S + 1); flat(WA, QW, sg * RW / 2, sg * (RW / 2 + 0.3), S + 1, 3, 3);
         flat(UP, Q, sg * (RW / 2 + 0.3), sg * r.w / 2, S + 0.05, 12, 4);
         for (let s = sw0; s <= sw1; s += 0.8) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; ring(x + nx * sg * (RW / 2 + 0.15), z + nz * sg * (RW / 2 + 0.15), 0.45, S + 1); } }
-      // Abschlusswand der unteren Strasse neben der Rampe (quer, beidseits der Oeffnung)
-      const sx = end ? r.sB : r.sA; for (const sg of [1, -1]) { cross(WA, r, sx, sg * RW / 2, sg * HW, LY - 0.6, DY);
-        for (let d = RW / 2; d <= HW; d += 0.8) { const [x, z, nx, nz] = sub(r, sx, sx + 0.5)[0]; ring(x + nx * sg * d, z + nz * sg * d, 0.45, DY); } } }
+      // keine Querwand mehr: die Seitenwaende laufen im Trichter schraeg bis an die Rampenwaende
+    }
     // geschlossene Enden: Wand quer ueber die ganze Breite
-    for (const end of [0, 1]) { if (!(end ? r.cb : r.ca)) continue; const sx = end ? r.sB : r.sA; cross(WA, r, sx, -HW, HW, LY - 0.6, DY);
+    for (const end of [0, 1]) { if (!(end ? r.cb : r.ca) || r.loop || (end ? r.joinB : r.joinA)) continue; const sx = end ? r.sB : r.sA; cross(WA, r, sx, -HW, HW, LY - 0.6, DY);
       for (let d = -HW; d <= HW; d += 0.8) { const [x, z, nx, nz] = sub(r, sx, sx + 0.5)[0]; ring(x + nx * d, z + nz * d, 0.45, DY); } }
     // Seitenwaende innen (Kollision), Stuetzen und Deckenleuchten alle 15 m
-    for (let s = r.sA; s <= r.sB; s += 0.8) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; for (const sg of [1, -1]) ring(x + nx * sg * (HW - 0.45), z + nz * sg * (HW - 0.45), 0.45, DY); }
-    for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; posts.push([x, z]); ring(x, z, 0.6, DY);
+    for (let s = r.sA; s <= r.sB; s += 0.8) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; const h = gdeckHW(r, s) - 0.45; for (const sg of [1, -1]) ring(x + nx * sg * h, z + nz * sg * h, 0.45, DY); }
+    for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { if (gdeckK(r, s) < 0.999) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; if (inOther(x, z, r, 15)) continue;   // an Kreuzungen unten 15 m frei zum Abbiegen posts.push([x, z]); ring(x, z, 0.6, DY);   // nicht im Trichter
       for (const sg of [1, -1]) { const lx = x + nx * sg * HW / 2, lz = z + nz * sg * HW / 2, k = LAMP.P.length / 3, tx = -nz, tz = nx;
         for (const [a, b] of [[-1.2, -0.15], [1.2, -0.15], [-1.2, 0.15], [1.2, 0.15]]) { LAMP.P.push(lx + tx * a + nx * b, DY - 0.03, lz + tz * a + nz * b); LAMP.U.push(0, 0); } LAMP.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }
   }

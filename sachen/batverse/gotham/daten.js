@@ -109,7 +109,7 @@ const GOTHAM = {
   // Breiten (Nicolas 2026-11-12: Strassen schmaler, Test im Spiel: Spuren waren 4,5 m): vierspurig 13-16 m (Spuren ca. 3,3-3,5 m), zweispurig 8-10 m,
   // Nebenstrassen 8 m, Gassen 6 m; vorher 16-24 / 10-12 / 7 m
   hauptstrassen: [
-    { id: "ring", name: "Wayne Circle (Ring um den Wayne Tower)", w: 14, geschlossen: true, linie: ellipse(-2050, -100, 290, 245) },
+    { id: "ring", name: "Wayne Circle (Ring um den Wayne Tower, zweistöckig)", w: 14, geschlossen: true, zweistock: true, linie: ellipse(-2050, -100, 290, 245) },
     { id: "parkrow", name: "Park Row (zweistöckig)", w: 16, zweistock: true, linie: [["O", 300], [-1640, 180], [-1770, -10]] },
     { id: "uptown-ave", name: "Uptown Avenue", w: 14, linie: [[-2050, -345], [-2000, -700], [-1980, -1000], [-1955, "N"]] },
     { id: "gotham-blvd", name: "Gotham Boulevard", w: 14, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2120, 1240]] },
