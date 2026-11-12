@@ -55,10 +55,7 @@
     .teile li:nth-child(odd) { background: #ffffff08; }
     .teile .pos { width: 26px; text-align: right; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
     .teile .nm { flex: 1; }
-    .teile button { font: inherit; font-size: 12px; line-height: 1; color: var(--text); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; cursor: pointer; }
-    .teile button:hover { border-color: var(--acc); }
-    .teile button:disabled { opacity: .3; cursor: default; }
-    .teile .bar2 { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+    .teile h4 { margin: 10px 0 2px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
     .sep { margin: 22px 0 10px 58px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
     footer { padding: 6px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); background: var(--panel); }
     footer a { color: var(--muted); }
@@ -98,8 +95,7 @@
           <p>${esc(s.inhalt)}</p>
           ${s.stand ? `<p class="stand"><b>Stand:</b> ${esc(s.stand)}</p>` : ""}
           <p class="warum"><b>Warum hier:</b> ${esc(s.warum)}</p>
-          ${s.teile ? `<details class="teile" data-nr="${esc(s.nr)}"><summary>Gebäude in Bau-Reihenfolge (${s.teile.length}) – ausklappen und mit den Pfeilen umstellen</summary><ol></ol>
-            <div class="bar2"><button data-a="copy">Reihenfolge kopieren</button><button data-a="reset">Zurück zur Vorgabe</button><span class="msg"></span></div></details>` : ""}
+          ${s.teile ? `<details class="teile" data-nr="${esc(s.nr)}"><summary>Gebäude in Bau-Reihenfolge (${s.teile.reduce((t, g) => t + g.gebaeude.length, 0)}) – ausklappen</summary><div class="gr"></div></details>` : ""}
           ${s.braucht.length ? `<div class="dep">Braucht vorher: ${s.braucht.map(b => `<a href="#${id(b)}">${esc(b)}</a>`).join("")}</div>` : ""}
         </div>`;
       return li; };
@@ -120,20 +116,12 @@
       for (const li of list.children) li.hidden = sel !== null && li.dataset.phase !== sel && li.dataset.phase !== "*"; }
     render();
 
-    // Ausklappbare Teil-Listen (z. B. P3b Gebaeude mit Bedeutung): Reihenfolge mit Pfeilen umstellen, im Browser gemerkt (localStorage),
-    // als Text kopierbar. Neue Eintraege aus umsetzung.js erscheinen hinten, entfernte fallen weg.
+    // Ausklappbare Teil-Listen (z. B. P3b Gebaeude mit Bedeutung): feste Reihenfolge in Gruppen, fortlaufend nummeriert (Nicolas 2026-11-12: nicht veraenderbar)
     for (const d of document.querySelectorAll("details.teile")) {
-      const S = UMSETZUNG.find(x => x.nr === d.dataset.nr), key = "gotham-reihe-" + S.nr, ol = d.querySelector("ol"), msg = d.querySelector(".msg");
-      const load = () => { try { const v = JSON.parse(localStorage.getItem(key)); if (Array.isArray(v)) return v.filter(n => S.teile.includes(n)).concat(S.teile.filter(n => !v.includes(n))); } catch (e) {} return [...S.teile]; };
-      let order = load();
-      const save = () => { try { localStorage.setItem(key, JSON.stringify(order)); } catch (e) {} };
-      const draw = () => { ol.innerHTML = order.map((n, i) => `<li><span class="pos">${i + 1}.</span><span class="nm">${esc(n)}</span><button data-m="-1" data-i="${i}" ${i ? "" : "disabled"} title="früher">↑</button><button data-m="1" data-i="${i}" ${i < order.length - 1 ? "" : "disabled"} title="später">↓</button></li>`).join(""); };
-      ol.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const i = +b.dataset.i, j = i + +b.dataset.m; [order[i], order[j]] = [order[j], order[i]]; save(); draw(); });
-      d.querySelector(".bar2").addEventListener("click", async e => { const a = e.target.dataset && e.target.dataset.a; if (!a) return;
-        if (a === "reset") { order = [...S.teile]; try { localStorage.removeItem(key); } catch (er) {} draw(); msg.textContent = "Vorgabe wiederhergestellt"; }
-        if (a === "copy") { const t = S.nr + " Reihenfolge:" + String.fromCharCode(10) + order.map((n, i) => (i + 1) + ". " + n).join(String.fromCharCode(10)); try { await navigator.clipboard.writeText(t); msg.textContent = "Kopiert – einfach im Chat einfügen"; } catch (er) { msg.textContent = "Kopieren ging nicht"; } } });
-      draw();
+      const S = UMSETZUNG.find(x => x.nr === d.dataset.nr); let n = 0;
+      d.querySelector(".gr").innerHTML = S.teile.map(g => `<h4>${esc(g.gruppe)}</h4><ol>${g.gebaeude.map(x => `<li><span class="pos">${++n}.</span><span class="nm">${esc(x)}</span></li>`).join("")}</ol>`).join("");
     }
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith("gotham-reihe-")) localStorage.removeItem(k); } catch (e) {}   // alte, selbst umgestellte Reihenfolgen weg
   </script>
 </body>
 </html>

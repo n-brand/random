@@ -63,9 +63,20 @@ const UMSETZUNG = [
   { phase: "gebaeude", nr: "P3b", titel: "Weitere Gebäude mit Bedeutung", status: "offen", braucht: ["P3a"],
     inhalt: "Arkham Asylum mit Fähranlegern, Gericht, Kathedrale, Eventgebäude, Museen, Krankenhäuser, Heime, Krippen, Stadion, Banken, Hotels, Läden, Restaurants, Club des Pinguins.",
     warum: "Alle als leere Hülle mit Schild, Innenräume nur wo genannt.",
-    // Ausklappbar in umsetzung.html (Nicolas 2026-11-12): Reihenfolge, in der die Gebaeude gebaut werden; mit Pfeilen umstellen, im Browser gemerkt,
-    // "Reihenfolge kopieren" gibt die Liste als Text (zum Uebernehmen hier). Freigegebene neue Gebaeude aus ideen.md sind dabei.
-    teile: ["Arkham Asylum mit Fähranlegern", "Gericht", "Kathedrale", "Friedhof mit Kapelle (Nicolas: unbedingt)", "Rathaus", "Krankenhäuser (3)", "Feuerwehr-Wachen (3)", "Blackgate-Gefängnis", "Stadion", "Banken", "Hotels", "Museen (2)", "Eventgebäude", "Alte Oper / Theater", "Universität (Campus)", "Bibliothek", "Zeitungsredaktion", "Club des Pinguins", "Chemiefabrik", "Brauerei / Stahlwerk", "Lagerhäuser und Kühlhaus", "Müllverbrennung und Schrottplatz", "Wasserturm / Wasserwerk", "Heliport auf Hochhausdach", "Kinderheime und Krippen", "Notunterkunft / Suppenküche", "Tierheim und Tierarzt", "Fitnessstudio / Boxclub", "Skatepark und Basketballplätze", "Botanischer Garten / Gewächshaus", "Zirkus oder Rummelplatz", "Tankstellen mit Shop", "Läden (Juwelier, Schneider, Kleider, Waffen)", "Café und Bäckerei (Laden im EG)", "Waschsalon, Pfandleihe, Tattoo, Barbier", "Restaurants und Bars"] },
+    // Ausklappbar in umsetzung.html (Nicolas 2026-11-12): feste Bau-Reihenfolge in Gruppen, nicht veraenderbar (Nicolas: logisch sortiert).
+    // Zuerst Notfall/Ordnung (Fahrzeuge dafuer gibt es schon), dann Schurken-Orte, Versorgung/Industrie, Geld/Medien, Kirche/Friedhof, Kultur/Bildung,
+    // Soziales, Freizeit, zuletzt die vielen kleinen Laeden und Lokale. Freigegebene neue Gebaeude aus ideen.md sind dabei.
+    teile: [
+      { gruppe: "Notfall und Ordnung (die Fahrzeuge dafür gibt es schon)", gebaeude: ["Feuerwehr-Wachen (3)", "Krankenhäuser (3)", "Rathaus", "Gericht", "Blackgate-Gefängnis", "Arkham Asylum mit Fähranlegern"] },
+      { gruppe: "Schurken-Orte (für die Geschichte)", gebaeude: ["Chemiefabrik", "Club des Pinguins"] },
+      { gruppe: "Versorgung und Industrie", gebaeude: ["Tankstellen mit Shop", "Wasserturm / Wasserwerk", "Lagerhäuser und Kühlhaus", "Brauerei / Stahlwerk", "Müllverbrennung und Schrottplatz", "Heliport auf Hochhausdach"] },
+      { gruppe: "Geld und Medien", gebaeude: ["Banken", "Hotels", "Zeitungsredaktion"] },
+      { gruppe: "Kirche und Friedhof", gebaeude: ["Kathedrale", "Friedhof mit Kapelle (Nicolas: unbedingt)"] },
+      { gruppe: "Kultur und Bildung", gebaeude: ["Stadion", "Museen (2)", "Alte Oper / Theater", "Eventgebäude", "Universität (Campus)", "Bibliothek"] },
+      { gruppe: "Soziales", gebaeude: ["Kinderheime und Krippen", "Notunterkunft / Suppenküche", "Tierheim und Tierarzt"] },
+      { gruppe: "Freizeit", gebaeude: ["Fitnessstudio / Boxclub", "Skatepark und Basketballplätze", "Botanischer Garten / Gewächshaus", "Zirkus oder Rummelplatz"] },
+      { gruppe: "Läden und Lokale (klein, viele, zuletzt)", gebaeude: ["Läden (Juwelier, Schneider, Kleider, Waffen)", "Café und Bäckerei (Laden im EG)", "Waschsalon, Pfandleihe, Tattoo, Barbier", "Restaurants und Bars"] },
+    ] },
   { phase: "untergrund", nr: "U1-U3", titel: "Kanalisation und Kanal-Hub", status: "offen", braucht: ["P3a", "V1"],
     inhalt: "Hauptsammler unter ausgewählten Strassen (inkl. West Avenue zur Uferstrasse West), Nebensammler, Gullideckel, Auslässe, Übergänge zur U-Bahn, Kanal-Hub mit Schurkenbasis unter dem Wayne Tower.",
     warum: "Nach den Gebäuden darüber, weil die Eingänge oben liegen." },
