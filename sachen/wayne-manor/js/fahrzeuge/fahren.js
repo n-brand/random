@@ -93,6 +93,34 @@ function carCircles(on) {
   if (!CAR.circ) CAR.circ = sp.pts.map(() => { const c = [0, 0, 0, 0]; c.dyn = true; circles.push(c); return c; });
   sp.pts.forEach((lz, i) => { const [x, z] = carW(0, lz), c = CAR.circ[i]; c[0] = x; c[1] = z; c[2] = on ? sp.circR : 0; c[3] = CAR.y + sp.bodyH - 0.1; });
 }
+// Schaufel schiebt Fahrzeuge (Nicolas 2026-11-12): Punkte entlang der Schaufelkante (spec.push: z, halbe Breite w), jedes andere Bodenfahrzeug als
+// Kapsel (Laengsachse, circR). Beruehrt die Kante die Kapsel, wird es um die Eindringtiefe weggeschoben, in Richtung der Beruehrnormalen (von jeder
+// Seite); an einem Ende getroffen dreht es sich mit. Steht dahinter eine Wand oder ein anderes Fahrzeug, bleibt es stehen (dann blockiert es wie bisher).
+function vehPushStep(C, nx, nz) {
+  const P = C.spec.push, s = Math.sin(C.h), c = Math.cos(C.h); let pushed = false;
+  for (const v of VEH) {
+    if (v === C || v.on || v.dead || !v.g.visible || Math.abs(v.y - C.y) > 2.5) continue;
+    const L = Math.max(...v.spec.pts.map(Math.abs)), r = v.spec.circR + 0.1, ax = Math.sin(v.h), az = Math.cos(v.h);
+    if (Math.hypot(v.x - nx, v.z - nz) > L + r + Math.abs(P.z) + P.w + 1) continue;
+    let mx = 0, mz = 0, pmax = 0, tq = 0;                                         // alle Beruehrpunkte zusammen (sonst dreht es durch die Reihenfolge)
+    for (let k = -2; k <= 2; k++) {
+      const lx = P.w * k / 2, bx = nx + lx * c + P.z * s, bz = nz - lx * s + P.z * c;
+      const t = Math.max(-L, Math.min(L, (bx - v.x) * ax + (bz - v.z) * az)), qx = v.x + ax * t, qz = v.z + az * t, d = Math.hypot(qx - bx, qz - bz);
+      if (d >= r) continue;
+      const nnx = d > 1e-4 ? (qx - bx) / d : -s, nnz = d > 1e-4 ? (qz - bz) / d : -c, pen = r - d;
+      mx += nnx * pen; mz += nnz * pen; pmax = Math.max(pmax, pen); tq += (nnx * -az + nnz * ax) * pen * t;
+    }
+    if (pmax <= 0) continue;
+    const ml = Math.hypot(mx, mz) || 1, saved = { x: v.x, z: v.z, h: v.h };
+    v.x += mx / ml * pmax; v.z += mz / ml * pmax; v.h = wrapA(v.h + tq / (L * L + 1) * 0.35);
+    const prev = CAR; CAR = v; carNear(); let ok = true;
+    const vs = Math.sin(v.h), vc = Math.cos(v.h);
+    for (const lz of v.spec.pts) { const q = { x: v.x + lz * vs, z: v.z + lz * vc }, qx0 = q.x, qz0 = q.z; carPush(q, v.y, v.spec.R); if (Math.hypot(q.x - qx0, q.z - qz0) > 0.05) { ok = false; break; } }
+    if (ok) { v.settled = false; carCircles(true); carPose(0); pushed = true; } else Object.assign(v, saved);
+    CAR = prev; carNear();
+  }
+  return pushed;
+}
 function carMsg(t) { if (clock.elapsedTime - CAR.msgT > 2.5) { CAR.msgT = clock.elapsedTime; toast(t); } }
 function useCar(want) {
   if (!walking || ghost) return false;
@@ -222,6 +250,7 @@ function carStep(dt) {
   // Bewegen mit Kollision (Kreise entlang der Karosserie)
   const fx = -Math.sin(C.h), fz = -Math.cos(C.h), x0 = C.x, z0 = C.z;
   let nx = C.x + fx * C.v * dt, nz = C.z + fz * C.v * dt;
+  if (sp.push && vehPushStep(C, nx, nz)) C.v *= Math.max(0, 1 - dt * 1.2);                 // Schaufel schiebt Fahrzeuge (etwas Widerstand)
   for (let it = 0; it < 2; it++) {
     let sx = 0, sz = 0;
     for (const lz of sp.pts) {

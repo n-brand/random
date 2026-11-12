@@ -17,6 +17,9 @@ const MODELLE = [
   { name: "Gotham Fire Ladder", spec: SPEC_FIRE_LADDER, bau: () => buildFireTruck("ladder") },
   { name: "Gotham Fire Chief", spec: SPEC_FIRE_CHIEF, bau: () => buildFireChief() },
   { name: "Gotham Fire Crane", spec: SPEC_FIRE_CRANE, bau: () => buildFireCrane() },
+  { name: "Gotham Towing (Abschleppwagen)", spec: SPEC_TOW, bau: () => buildTowTruck() },
+  { name: "Gotham Transit (Bus)", spec: SPEC_BUS, bau: () => buildBus() },
+  { name: "Gotham Construction (Lader)", spec: SPEC_LOADER, bau: () => buildLoader() },
   { name: "Panzer", spec: SPEC_TANK, bau: () => buildTank() },
   { name: "Gemini Concept GT", spec: SPEC_GEMINI, bau: () => buildGemini() },
   { name: "ChatGPT GPT-6 Concept GT", spec: SPEC_CHATGPT, bau: () => buildChatGPT() },
@@ -58,13 +61,13 @@ const KURS = { L: 220, R: 60, B: 14 };
 }
 // Zielscheiben in der Mitte des Rundkurses (Nicolas 2026-11-12): beidseitig bemalt, auf Holzbock; Treffer klappt die Scheibe nach hinten um,
 // nach 5 s steht sie wieder. Schiessen koennen alle Modelle mit Turm und Rohr (Bauplan liefert turret/gun, heute der Panzer).
-const ZIELE = [];
+const ZIELE = [], zielGruppe = new THREE.Group(); flaeche.add(zielGruppe);   // Zielscheiben nur sichtbar, wenn ein Modell mit Turm gewaehlt ist (Nicolas 2026-11-12)
 { const tex = canvasTex(256, 256, (g, w) => { const R = w / 2; for (let k = 0; k < 6; k++) { g.fillStyle = k === 5 ? "#ffd43b" : k % 2 ? "#d23a3a" : "#f4f1ea"; g.beginPath(); g.arc(R, R, R * (1 - k / 6) - 1, 0, 7); g.fill(); g.strokeStyle = "#1a1a1a"; g.lineWidth = 2; g.stroke(); } });
   const scheibeM = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8, side: THREE.DoubleSide }), holzM = new THREE.MeshStandardMaterial({ color: 0x7a5534, roughness: 0.9 }), randM = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
   // [x, z, Radius, Hoehe der Mitte, Blickrichtung]: grosse Scheiben in der Mittelreihe, kleine davor/dahinter (je zur naechsten Geraden)
   for (const [x, z, r, y, h] of [[-80, 0, 1.6, 2.4, 0], [-40, 0, 1.6, 2.4, Math.PI], [0, 0, 1.6, 2.4, 0], [40, 0, 1.6, 2.4, Math.PI], [80, 0, 1.6, 2.4, 0],
     [-60, 28, 0.8, 1.4, 0], [-20, 28, 0.8, 1.4, 0], [20, 28, 0.8, 1.4, 0], [60, 28, 0.8, 1.4, 0], [-60, -28, 0.8, 1.4, Math.PI], [-20, -28, 0.8, 1.4, Math.PI], [20, -28, 0.8, 1.4, Math.PI], [60, -28, 0.8, 1.4, Math.PI]]) {
-    const st = new THREE.Group(); st.position.set(x, 0, z); st.rotation.y = h; flaeche.add(st);
+    const st = new THREE.Group(); st.position.set(x, 0, z); st.rotation.y = h; zielGruppe.add(st);
     for (const sx of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.14, y + 0.2, 0.14), holzM); b.position.set(sx * r * 0.7, (y + 0.2) / 2, 0.25); b.castShadow = true; st.add(b); }   // Bock
     const kl = new THREE.Group(); kl.position.set(0, y - r - 0.05, 0); st.add(kl);   // Klappe: Drehachse unten an der Scheibe
     const s = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.08, 40).rotateX(Math.PI / 2), [randM, scheibeM, scheibeM]); s.position.y = r + 0.05; s.castShadow = true; kl.add(s);
@@ -116,6 +119,34 @@ function autosStep(dt) {
     if (t > 15) { v.g.traverse(o => { if (o.isMesh && o.userData.mat0) { o.material = o.userData.mat0; delete o.userData.mat0; } }); v.dead = false; v.hp = v.max; v.g.position.set(v.x, 0, v.z); v.g.rotation.set(0, v.h, 0); toast(v.name + " ist wieder heil"); } }
 }
 
+// Schaufel schiebt (wie vehPushStep im Spiel): Kante spec.push gegen die Kapseln der Zielfahrzeuge, von jeder Seite, am Ende getroffen drehen sie sich
+function schieben(A) {
+  const P = A.spec.push, s = Math.sin(A.h), c = Math.cos(A.h); let pushed = false;
+  for (const v of ZIELAUTOS) { const L = Math.max(...v.spec.pts.map(Math.abs)), r = v.spec.circR + 0.1, ax = Math.sin(v.h), az = Math.cos(v.h);
+    let mx = 0, mz = 0, pmax = 0, tq = 0;
+    for (let k = -2; k <= 2; k++) { const lx = P.w * k / 2, bx = A.x + lx * c + P.z * s, bz = A.z - lx * s + P.z * c;
+      const t = Math.max(-L, Math.min(L, (bx - v.x) * ax + (bz - v.z) * az)), qx = v.x + ax * t, qz = v.z + az * t, d = Math.hypot(qx - bx, qz - bz);
+      if (d >= r) continue;
+      const nx = d > 1e-4 ? (qx - bx) / d : -s, nz = d > 1e-4 ? (qz - bz) / d : -c, pen = r - d;
+      mx += nx * pen; mz += nz * pen; pmax = Math.max(pmax, pen); tq += (nx * -az + nz * ax) * pen * t; }
+    if (pmax > 0) { const ml = Math.hypot(mx, mz) || 1; v.x += mx / ml * pmax; v.z += mz / ml * pmax; v.h = wrapW(v.h + tq / (L * L + 1) * 0.35); pushed = true; }
+    if (!v.dead) { v.g.position.set(v.x, 0, v.z); v.g.rotation.set(0, v.h, 0); } }
+  return pushed;
+}
+// Feuer zum Loeschen (Nicolas 2026-11-12): nur wenn ein Modell mit Wasserwerfer gewaehlt ist; Flammen und Rauch an fuenf Stellen im Innenfeld,
+// Wasser schwaecht sie (staerke 1 -> 0), geloescht nach ca. 2 s Strahl, nach 30 s brennt es wieder
+const FEUER = [], feuerGruppe = new THREE.Group(); feuerGruppe.visible = false; scene.add(feuerGruppe);
+{ const flM = c => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }), cone = new THREE.ConeGeometry(0.7, 2.2, 10, 1, true).translate(0, 1.1, 0);
+  for (const [x, z] of [[-90, 20], [-30, -20], [10, 25], [55, -15], [95, 10]]) { const f = new THREE.Group(); f.position.set(x, 0, z); feuerGruppe.add(f);
+    meshIn(f, new THREE.CylinderGeometry(1.1, 1.3, 0.25, 12), M(0x1a1714, { roughness: 1 }), 0, 0.12, 0);                           // verkohlter Haufen
+    const cones = [0, 1, 2].map(i => { const o = new THREE.Mesh(cone, flM(i ? 0xff6a10 : 0xffc040)); o.position.set((i - 1) * 0.5, 0.2, (i % 2) * 0.4 - 0.2); f.add(o); return o; });
+    FEUER.push({ x, z, g: f, cones, k: 1, t: 0, puff: 0 }); } }
+function feuerStep(dt) {
+  const an = !!(AKT && AKT.monitor); feuerGruppe.visible = an; if (!an) return;
+  for (const F of FEUER) { if (F.k <= 0) { F.t += dt; if (F.t > 30) { F.k = 1; F.t = 0; } F.cones.forEach(c => c.visible = false); continue; }
+    F.cones.forEach((c, i) => { c.visible = true; const fl = 0.8 + 0.4 * Math.random(); c.scale.set(F.k * fl * (i ? 1 : 0.7), F.k * fl * (1.3 - i * 0.15), F.k * fl * (i ? 1 : 0.7)); });
+    if ((F.puff -= dt) <= 0) { F.puff = 0.2; fx(new THREE.Vector3(F.x + (Math.random() - 0.5), 2.5 * F.k + 0.5, F.z + (Math.random() - 0.5)), 0x2b2a28, 0.5 + F.k * 0.4, 2.5, 1.8); } }
+}
 // ---------- Modell laden ----------
 const START = { x: 0, z: KURS.R, h: -Math.PI / 2 };   // auf der Startlinie, Front nach Osten (+x)
 let AKT = null;   // { m, g, wheels, spec, x, z, h, v, steer, maße }
@@ -232,6 +263,7 @@ function fahren(dt) {
   A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), KP.dec * dt);                                   // Kurvenwiderstand / Radieren
   A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax, A.v));
   A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;   // vorne = -z im Modell
+  if (s.push && schieben(A)) A.v *= Math.max(0, 1 - dt * 1.2);           // Schaufel schiebt Zielfahrzeuge (wie vehPushStep in fahren.js)
   const lim = 580; A.x = Math.max(-lim, Math.min(lim, A.x)); A.z = Math.max(-lim, Math.min(lim, A.z));
   A.lean += ((s.track ? 0 : A.steer * Math.min(1, Math.abs(A.v) / 6) * 0.9) - A.lean) * Math.min(1, dt * 5);   // Zweirad legt sich in die Kurve (wie fahren.js)
   if (A.beacon) { const t = performance.now() / 1000 * 6, on = Math.sin(t) > 0; A.beacon[0].emissiveIntensity = 0.2 + 2.4 * (on ? 1 : 0); A.beacon[1].emissiveIntensity = 0.2 + 2.4 * (on ? 0 : 1); }   // Blinklicht beim Fahren (wie fahren.js)
@@ -360,9 +392,11 @@ function loop(t) {
     const px = F ? F.x : AKT.x, pz = F ? F.z : AKT.z, py = F ? Math.max(0, F.y - 10) : 0;
     sunFollow(new THREE.Vector3(px, py, pz), 100);   // in ganzen Schatten-Texeln (basis.js, gegen Flimmern beim schnellen Fahren)
   }
+  zielGruppe.visible = !!(AKT && AKT.turret); feuerStep(dt);   // Zielscheiben nur im Panzer, Feuer nur mit Loeschfahrzeug
   schuesseStep(dt); autosStep(dt);
   wasserStep(dt, () => 0, p => {   // Wasser: Zielscheiben kippen um, brennende Wracks sind geloescht
-    for (const Z of ZIELE) if (Z.fall < 0.05 && Math.hypot(p.x - Z.x, p.y - Z.y, p.z - Z.z) < Z.r + 0.2) { Z.fall = 0.06; Z.t = 0; return true; }
+    for (const F of FEUER) if (feuerGruppe.visible && F.k > 0 && Math.hypot(p.x - F.x, p.z - F.z) < 2.2 && p.y < 3.5) { F.k = Math.max(0, F.k - 0.004); if (F.k === 0) { F.t = 0; toast("Feuer gelöscht"); } return true; }
+    for (const Z of ZIELE) if (zielGruppe.visible && Z.fall < 0.05 && Math.hypot(p.x - Z.x, p.y - Z.y, p.z - Z.z) < Z.r + 0.2) { Z.fall = 0.06; Z.t = 0; return true; }
     for (const v of ZIELAUTOS) if (v.dead && Math.hypot(p.x - v.x, p.z - v.z) < 3 && p.y < 4) { if (v.t < 14) { v.t = 14; toast(v.name + ": Feuer gelöscht"); } return true; }
     return false; });
   renderer.render(scene, camera);
