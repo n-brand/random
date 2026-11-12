@@ -131,7 +131,7 @@ function useCar(want) {
   if (CAR && CAR.on) {
     // Aussteigen: links (Fahrerseite), sonst rechts, sonst vorne/hinten
     const C = CAR, s = Math.sin(C.h), c = Math.cos(C.h);
-    if (C.flying || (C.hoverWant && C.fold > 0)) { toast("Erst landen (H)"); return true; }   // DeLorean in der Luft
+    if (C.flying) { toast("Erst landen (C unten halten oder H)"); return true; }   // DeLorean in der Luft
     for (const [lx, lz] of C.spec.exits) {
       const q = new THREE.Vector3(C.x + lx * c + lz * s, C.y + 0.4, C.z - lx * s + lz * c), top = supportAt(q, C.y + 0.4);
       if (Math.abs(top - C.y) > 0.6) continue;
@@ -191,34 +191,39 @@ function carReset() {
   Object.assign(CAR, { x: s.x, z: s.z, y: s.y, h: s.h, v: 0, vy: 0, air: false, wet: false }); player.yaw = s.h;
   toast(CAR.spec.name + " zurückgesetzt");
 }
-// DeLorean schwebt (Nicolas 2026-11-12, Foto): H klappt die Raeder flach ein (1,2 s, bremst dabei), dann schwebt er: W/S vor/zurueck (bis 30 m/s), A/D drehen,
-// Leertaste hoch, C runter (6 m/s), sonst haelt er die Hoehe (mind. 0,6 m ueber dem Boden, hoechstens 400 m). Kollision wie beim Fahren (Kreise).
-// H nochmal: sinkt mit 4 m/s, setzt auf, die Raeder klappen wieder aus. Aussteigen erst nach dem Landen.
+// DeLorean schwebt (Nicolas 2026-11-12): Leertaste beim Fahren (oder im Stand) klappt die Raeder in einer fluessigen Animation (1 s) flach ein, ohne
+// zu bremsen; dabei hebt er im gleichen Takt sanft ab (Schwebehoehe 0,6 m waechst mit dem Einklappen). Im Flug: W/S vor/zurueck (bis 30 m/s), A/D drehen,
+// Leertaste halten hoch, C halten runter (6 m/s), sonst haelt er die Hoehe (hoechstens 400 m). Landen: C unten halten (0,4 s am Boden) oder H; beim Sinken
+// klappen die Raeder in den letzten 1,5 m wieder aus, er setzt mit seiner Geschwindigkeit auf und faehrt weiter. Aussteigen erst nach dem Landen.
 function hoverStep(C, dt, th, st) {
   C.fold = C.fold || 0;
-  if (!C.hoverWant && !C.flying) { if (C.fold > 0) C.fold = Math.max(0, C.fold - dt / 1.2); return false; }
-  const sp = C.spec;
-  if (!C.flying) {
-    C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), 10 * dt); C.fold = Math.min(1, C.fold + dt / 1.2);
-    if (C.fold >= 1 && Math.abs(C.v) < 1) { C.flying = true; C.air = true; C.vy = 0; toast("DeLorean schwebt – Leertaste hoch, C runter, H landen"); }
+  if (!C.flying && player.jump && !C.wet) { C.hoverWant = true; C.flying = true; C.air = true; C.vy = Math.max(0, C.vy || 0); C.lowT = 0; player.jump = false; toast("Räder klappen ein – Leertaste hoch, C runter (unten halten = landen)"); }
+  if (!C.flying) { C.hoverWant = false; if (C.fold > 0) C.fold = Math.max(0, C.fold - dt / 1.0); return false; }
+  const sp = C.spec, up = keys.has("Space") || jumpHeld ? 1 : 0, dn = keys.has("KeyC") || downHeld ? 1 : 0;
+  if (C.hoverWant) C.fold = Math.min(1, C.fold + dt / 1.0);
+  const e = C.fold * C.fold * (3 - 2 * C.fold);
+  C.v += (th * 30 - C.v) * Math.min(1, dt * (th ? 0.7 : 0.25)); C.h += st * 1.3 * dt; player.yaw += st * 1.3 * dt;
+  C.vy += ((C.hoverWant ? (C.fold < 1 ? 0 : (up - dn) * 6) : -4) - C.vy) * Math.min(1, dt * 3);
+  let nx = C.x - Math.sin(C.h) * C.v * dt, nz = C.z - Math.cos(C.h) * C.v * dt;
+  for (let it = 0; it < 2; it++) { let sx = 0, sz = 0; for (const lz of sp.pts) { const px = nx + lz * Math.sin(C.h), pz = nz + lz * Math.cos(C.h), q = { x: px, z: pz }; carPush(q, C.y, sp.R); sx += q.x - px; sz += q.z - pz; } nx += sx; nz += sz; }
+  const far = Math.hypot(nx, nz); if (far > LIMIT) { nx *= LIMIT / far; nz *= LIMIT / far; }
+  C.x = nx; C.z = nz;
+  let ny = Math.min(400, C.y + C.vy * dt); const floor = carGround(Math.max(C.y, ny) + 0.3).y;
+  if (floor < terrainH(C.x, C.z) - 2) ny = Math.min(ny, floor + 1.5);   // unter der Erde (Garage, Tunnel, Hoehle): nur knapp ueber dem Boden schweben
+  if (C.hoverWant) {
+    const min = floor + 0.6 * e;                                          // Abheben im Takt der Klapp-Animation
+    if (ny < min) { ny = Math.min(min, Math.max(ny, C.y) + 1.2 * dt + (min - Math.max(ny, C.y)) * Math.min(1, dt * 4)); if (C.vy < 0) C.vy = 0; }
+    C.lowT = dn && ny <= floor + 0.65 ? (C.lowT || 0) + dt : 0;           // C unten halten = landen
+    if (C.lowT > 0.4) { C.hoverWant = false; toast("Landen – Räder klappen aus"); }
   } else {
-    const up = keys.has("Space") || jumpHeld ? 1 : 0, dn = keys.has("KeyC") || downHeld ? 1 : 0;
-    C.v += (th * 30 - C.v) * Math.min(1, dt * (th ? 0.7 : 0.9)); C.h += st * 1.3 * dt; player.yaw += st * 1.3 * dt;
-    C.vy += ((C.hoverWant ? (up - dn) * 6 : -4) - C.vy) * Math.min(1, dt * 3);
-    let nx = C.x - Math.sin(C.h) * C.v * dt, nz = C.z - Math.cos(C.h) * C.v * dt;
-    for (let it = 0; it < 2; it++) { let sx = 0, sz = 0; for (const lz of sp.pts) { const px = nx + lz * Math.sin(C.h), pz = nz + lz * Math.cos(C.h), q = { x: px, z: pz }; carPush(q, C.y, sp.R); sx += q.x - px; sz += q.z - pz; } nx += sx; nz += sz; }
-    const far = Math.hypot(nx, nz); if (far > LIMIT) { nx *= LIMIT / far; nz *= LIMIT / far; }
-    C.x = nx; C.z = nz;
-    let ny = Math.min(400, C.y + C.vy * dt); const floor = carGround(Math.max(C.y, ny) + 0.3).y;
-    if (floor < terrainH(C.x, C.z) - 2) ny = Math.min(ny, floor + 1.5);   // unter der Erde (Garage, Tunnel, Hoehle): nur knapp ueber dem Boden schweben
-    if (C.hoverWant) { if (ny < floor + 0.6) { ny = floor + 0.6; if (C.vy < 0) C.vy = 0; } }
-    else if (ny <= floor + 0.02) { ny = floor; C.flying = false; C.air = false; C.vy = 0; C.hoverWant = false; toast("Gelandet – Räder klappen aus"); }
-    C.y = ny;
-    C.pitch += (-th * 0.08 - C.pitch) * Math.min(1, dt * 2); C.roll += (st * 0.22 * Math.min(1, Math.abs(C.v) / 8) - C.roll) * Math.min(1, dt * 3);
-    if (Math.abs(C.v) > 3) player.yaw += wrapA(C.h + (C.v < 0 ? Math.PI : 0) - player.yaw) * Math.min(1, dt * 1.2);
+    C.fold = Math.min(C.fold, Math.max(0, (ny - floor) / 1.5));          // Raeder klappen beim Sinken wieder aus
+    if (ny <= floor + 0.02) { ny = floor; C.flying = false; C.air = false; C.vy = 0; C.fold = 0; C.lowT = 0; toast("Gelandet"); }
   }
+  C.y = ny;
+  C.pitch += (-th * 0.08 - C.pitch) * Math.min(1, dt * 2); C.roll += (st * 0.22 * Math.min(1, Math.abs(C.v) / 8) - C.roll) * Math.min(1, dt * 3);
+  if (Math.abs(C.v) > 3) player.yaw += wrapA(C.h + (C.v < 0 ? Math.PI : 0) - player.yaw) * Math.min(1, dt * 1.2);
   C.throttle = th > 0.1 ? 1 : 0; player.jump = false;
-  speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h" + (C.flying ? " · schwebt" : " · Räder klappen ein"); nitroEl.hidden = true;
+  speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h" + (C.fold < 1 && C.hoverWant ? " · Räder klappen ein" : C.hoverWant ? " · schwebt" : " · landet"); nitroEl.hidden = true;
   carPose(dt);
   return true;
 }

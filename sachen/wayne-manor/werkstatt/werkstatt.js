@@ -28,7 +28,7 @@ const MODELLE = [
   { name: "Boxer-Streetfighter", spec: SPEC_STREETFIGHTER, bau: () => buildStreetfighter() },
   { name: "Motorrad (rot)", spec: SPEC_BIKE, bau: () => buildBike(0xb0141e) },
   { name: "Lamborghini Terzo Millennio", spec: SPEC_TERZO, bau: () => buildTerzo() },
-  { name: "DeLorean (Zeitmaschine, schwebt mit H)", spec: SPEC_DELOREAN, bau: () => buildDelorean() },
+  { name: "DeLorean (Zeitmaschine, Leertaste: abheben)", spec: SPEC_DELOREAN, bau: () => buildDelorean() },
   // Fluggeraete (Nicolas 2026-11-12): Modell, Flugphysik, Kamera und Ton direkt aus jet.js / the-bat.js des Spiels (flache Welt aus flug-shim.js)
   { name: "Kampfjet", flug: "jet" },
   { name: "The Bat (Batwing)", flug: "bat" },
@@ -269,20 +269,28 @@ function fahren(dt) {
     if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);
     A.wz = { tip: M0.tip, el, ready: M0.ready }; }
   else if (A.dumpG) dumpPose(A.dumpG, A, down("Space"), dt);   // Muldenkipper: Mulde kippen (wie fahren.js carPose)
-  else if (down("Space") && !A.turret && !s.jump && !s.boost) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm = schiessen, mit Sprung/Nitro = springen/Nitro)
-  // DeLorean schwebt wie im Spiel (fahren.js hoverStep): H klappt die Raeder ein, dann Leertaste hoch, C runter, H landen (Boden hier eben, y 0)
-  if (s.hover) { const hk = down("KeyH"); if (hk && !A.hPrev) { A.hoverWant = !A.hoverWant; toast(A.hoverWant ? "Räder klappen ein …" : "Landen …"); } A.hPrev = hk;
-    if (A.hoverWant || A.flying) {
-      if (!A.flying) { A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 10 * dt); A.fold = Math.min(1, A.fold + dt / 1.2); if (A.fold >= 1 && Math.abs(A.v) < 1) { A.flying = true; toast("DeLorean schwebt – Leertaste hoch, C runter, H landen"); } }
-      else { A.v += (th * 30 - A.v) * Math.min(1, dt * (th ? 0.7 : 0.9)); A.h += st * 1.3 * dt; kYaw += st * 1.3 * dt;
-        A.vy += ((A.hoverWant ? ((down("Space") ? 1 : 0) - (down("KeyC") ? 1 : 0)) * 6 : -4) - A.vy) * Math.min(1, dt * 3);
-        A.y = Math.min(400, A.y + A.vy * dt); if (A.hoverWant) { if (A.y < 0.6) { A.y = 0.6; if (A.vy < 0) A.vy = 0; } } else if (A.y <= 0.02) { A.y = 0; A.vy = 0; A.flying = false; A.hoverWant = false; toast("Gelandet – Räder klappen aus"); }
-        A.pitch += (-th * 0.08 - A.pitch) * Math.min(1, dt * 2); A.roll += (st * 0.22 * Math.min(1, Math.abs(A.v) / 8) - A.roll) * Math.min(1, dt * 3);
-        A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt; }
-      A.foldPose(); setze(); $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h" + (A.flying ? " · schwebt" : "");
+  else if (down("Space") && !A.turret && !s.jump && !s.boost && !s.hover) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm = schiessen, mit Sprung/Nitro = springen/Nitro)
+  // DeLorean schwebt wie im Spiel (fahren.js hoverStep): Leertaste klappt die Raeder auch beim Fahren fluessig ein und hebt im gleichen Takt ab,
+  // dann Leertaste hoch, C runter, C unten halten oder H landet (Raeder klappen beim Sinken aus). Boden hier eben (y 0).
+  if (s.hover) { const sp2 = down("Space"), hk = down("KeyH"), tap = (sp2 && !A.hvPrev) || (hk && !A.hPrev); A.hvPrev = sp2; A.hPrev = hk;
+    if (!A.flying && tap) { A.flying = true; A.hoverWant = true; A.vy = 0; A.lowT = 0; toast("Räder klappen ein – Leertaste hoch, C runter (unten halten = landen)"); }
+    else if (A.flying && A.hoverWant && hk && tap) { A.hoverWant = false; toast("Landen – Räder klappen aus"); }
+    if (A.flying) {
+      if (A.hoverWant) A.fold = Math.min(1, A.fold + dt / 1.0); const e = A.fold * A.fold * (3 - 2 * A.fold), dn = down("KeyC");
+      A.v += (th * 30 - A.v) * Math.min(1, dt * (th ? 0.7 : 0.25)); A.h += st * 1.3 * dt; kYaw += st * 1.3 * dt;
+      A.vy += ((A.hoverWant ? (A.fold < 1 ? 0 : ((sp2 ? 1 : 0) - (dn ? 1 : 0)) * 6) : -4) - A.vy) * Math.min(1, dt * 3);
+      let ny = Math.min(400, A.y + A.vy * dt);
+      if (A.hoverWant) { const min = 0.6 * e; if (ny < min) { ny = Math.min(min, Math.max(ny, A.y) + 1.2 * dt + (min - Math.max(ny, A.y)) * Math.min(1, dt * 4)); if (A.vy < 0) A.vy = 0; }
+        A.lowT = dn && ny <= 0.65 ? (A.lowT || 0) + dt : 0; if (A.lowT > 0.4) { A.hoverWant = false; toast("Landen – Räder klappen aus"); } }
+      else { A.fold = Math.min(A.fold, Math.max(0, ny / 1.5)); if (ny <= 0.02) { ny = 0; A.vy = 0; A.fold = 0; A.flying = false; toast("Gelandet"); } }
+      A.y = ny;
+      A.pitch += (-th * 0.08 - A.pitch) * Math.min(1, dt * 2); A.roll += (st * 0.22 * Math.min(1, Math.abs(A.v) / 8) - A.roll) * Math.min(1, dt * 3);
+      A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;
+      for (const w of A.wheels || []) if (w.spin) w.spin.rotation.x -= A.v * dt / w.r * (1 - A.fold);
+      A.foldPose(); setze(); $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h" + (A.hoverWant ? (A.fold < 1 ? " · Räder klappen ein" : " · schwebt") : " · landet");
       const D = (s.camD || 8), H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)); if (Math.abs(A.v) > 3) kYaw += wrapW(A.h - kYaw) * Math.min(1, dt * 1.2);
       camera.position.set(A.x + Math.sin(kYaw) * D, (s.camH || 1.2) + A.y + H - 0.4, A.z + Math.cos(kYaw) * D); camera.lookAt(A.x, (s.camH || 1.2) + A.y + 0.3, A.z); return; }
-    if (A.fold > 0) A.fold = Math.max(0, A.fold - dt / 1.2); A.roll = 0; A.foldPose(); }
+    A.hoverWant = false; if (A.fold > 0) A.fold = Math.max(0, A.fold - dt / 1.0); A.roll = 0; A.foldPose(); }
   // Sprung und Nitro wie im Spiel (fahren.js carStep, Nicolas 2026-11-12: in der Werkstatt konnte man nicht springen): Sprung ab 14 m/s (50 km/h),
   // Steigtempo 7,5 m/s, +6 m/s Schub mit Duese (Tumbler) bzw. +3 ohne (Batpod), Schwerkraft 14; Nitro: Leertaste halten, 80 m/s² bis 40 km/h ueber dem Hoechsttempo, Vorrat 4 s
   const spc = down("Space"), tap = spc && !A.spPrev; A.spPrev = spc;

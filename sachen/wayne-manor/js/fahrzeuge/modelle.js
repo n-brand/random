@@ -483,9 +483,10 @@ const SPEC_AVENTADOR = { name: "Aventador LP 700-4", wheels: [[-0.84, -1.35], [0
 // Scheiben eingesetzt bzw. auf der Flaeche), Teile vorne/hinten folgen der Rundung (face), Aufkleber/Fenster/Fugen liegen auf der Flaeche (skin),
 // Radhaeuser geschlossen (Regel Radhaus). o: f vorne/hinten (fF, fR), Radstellen wf, Radius r, Tabellen hw/yT/yb/roof, Scheibenfuss fw/fr.
 function sedanKit(o, paint, glass, dark) {
-  const g = new THREE.Group(), hw = tabF(o.hw), yT = tabF(o.yT), ybT = tabF(o.yb), roof = tabF(o.roof), R = o.r, ARCH = 2 * R + 0.08;
-  const arch = f => { let y = ybT(f); for (const c of o.wf) { const d = Math.abs(f - c), RR = R + 0.16; if (d < RR) y = Math.max(y, ybT(f) + (ARCH - ybT(f)) * Math.sqrt(1 - (d / RR) ** 2)); } return y; };
-  const sec = f => { const hs = hw(f), yb = arch(f), ye = yT(f), p = [[0, yb], [hs - 0.08, yb], [hs - 0.01, yb + 0.07], [hs, o.ys || 0.6], [hs - 0.03, ye - 0.06], [hs - 0.1, ye], [0, ye + 0.03]];
+  const g = new THREE.Group(), hw = tabF(o.hw), yT = tabF(o.yT), ybT = tabF(o.yb), roof = tabF(o.roof), R = o.r, ARCH = 2 * R + (o.archH ?? 0.08);
+  const arch = f => { let y = ybT(f); for (const c of o.wf) { const d = Math.abs(f - c), RR = R + (o.archL ?? 0.16); if (d < RR) y = Math.max(y, ybT(f) + (ARCH - ybT(f)) * Math.sqrt(1 - (d / RR) ** 2)); } return y; };
+  // flat (DeLorean, Nicolas 2026-11-12): Guertellinie ueber dem Radlauf, damit das Profil dort keine Falte wirft
+  const sec = f => { const hs = hw(f), yb = arch(f), ye = yT(f), ys = o.flat ? Math.min(ye - 0.08, Math.max(o.ys || 0.6, yb + 0.09)) : o.ys || 0.6, p = [[0, yb], [hs - 0.08, yb], [hs - 0.01, yb + 0.07], [hs, ys], [hs - 0.03, ye - 0.06], [hs - 0.1, ye], [0, ye + 0.03]];
     for (let i = 2; i < p.length; i++) p[i][1] = Math.max(p[i][1], p[i - 1][1] + 0.015); return p; };
   const smooth = m => { if (o.flat) return m; const gg = mergeVertices(m.geometry.deleteAttribute("normal")); gg.computeVertexNormals(); m.geometry = gg; return m; };
   const FS = []; for (let f = o.fF; f > o.fR; f -= 0.06) FS.push(f); FS.push(o.fR);
@@ -1360,24 +1361,24 @@ function wasserZoomStep(dt) { WZOOM.z += (WZOOM.t - WZOOM.z) * Math.min(1, dt * 
 // Schriftzug und Kennzeichen-Text): Keilform aus Edelstahl (gebuerstet, kantig, flach schattiert ueber sedanKit flat), schwarzes Band unten, Fluegeltueren
 // (Fugen), Lamellen auf der Heckscheibe, eckige Doppelscheinwerfer, schwarze Lamellen-Rueckleuchten; Umbau: zwei Lamellen-Kaesten hinten, weisser
 // Reaktor auf dem Heckdeck, Stangen und Kaesten auf dem Motordeck, gerippte Leitungen an den Flanken bis zu den Vorderraedern, Duesen unter dem Heck.
-// Raeder sitzen in Klapp-Gruppen (built.folds): H klappt sie flach (Achse senkrecht), unten leuchten sie blau; dann schwebt das Auto (fahren.js hoverStep).
+// Raeder sitzen in Klapp-Gruppen (built.folds): Leertaste klappt sie flach (Achse senkrecht), unten leuchten sie blau; dann schwebt das Auto (fahren.js hoverStep).
 function buildDelorean() {
   const brushed = canvasTex(256, 64, (c, w, h) => { c.fillStyle = "#b9bdc0"; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { const y = Math.random() * h, l = 20 + Math.random() * 80, k = Math.random(); c.fillStyle = k < 0.5 ? "#c9cdd0" : "#a9adb0"; c.fillRect(Math.random() * w, y, l, 1); } });
   const paint = new THREE.MeshStandardMaterial({ map: brushed, color: 0xd0d3d5, metalness: 0.75, roughness: 0.38, flatShading: true });
   const glass = M(0x0f151b, { metalness: 0.6, roughness: 0.08 }), dark = M(0x1a1b1d, { roughness: 0.7 }), black = M(0x0c0c0d, { roughness: 0.6 });
   const chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0xc4c6c8, { metalness: 0.8, roughness: 0.3 });
   const amber = M(0xff9a20, { emissive: 0x6a3600 }), red = M(0x9a1010, { emissive: 0x5a0000 }), white = M(0xf0f0ec, { roughness: 0.5 }), tan = M(0xb8a368, { roughness: 0.6 }), grey = M(0x8a8f94, { metalness: 0.5, roughness: 0.5 });
-  const D = { fF: 2.1, fR: -2.1, r: 0.32, wf: [1.17, -1.24], ys: 0.56, track: 1.6, tw: 0.24, fw: 0.72, fr: -1.62, ws: 0.2, rs: -0.78, flat: true, clip: true,
+  const D = { fF: 2.1, fR: -2.1, r: 0.32, wf: [1.17, -1.24], ys: 0.56, track: 1.6, tw: 0.24, fw: 0.72, fr: -1.62, ws: 0.2, rs: -0.78, flat: true, clip: true, archL: 0.07, archH: 0.035,   // Radlaeufe enger am Reifen (Nicolas 2026-11-12: waren zu gross)
     hw: [[2.1, 0.8], [2.04, 0.88], [1.9, 0.92], [0, 0.93], [-1.9, 0.93], [-2.05, 0.9], [-2.1, 0.84]],
-    yT: [[2.1, 0.58], [2.02, 0.64], [0.72, 0.84], [-1.6, 0.9], [-2.0, 0.9], [-2.1, 0.86]],
+    yT: [[2.1, 0.6], [2.02, 0.68], [1.75, 0.82], [1.17, 0.9], [0.72, 0.9], [-1.6, 0.9], [-2.0, 0.9], [-2.1, 0.86]],   // Haube ueber dem Vorderrad hoeher (Nicolas 2026-11-12: Radlauf woelbte die Front)
     yb: [[2.1, 0.38], [2.0, 0.24], [-2.0, 0.24], [-2.1, 0.36]],
-    roof: [[0.72, 0.84], [0.15, 1.14], [-0.72, 1.14], [-1.62, 0.9]], win: [[0.6, -0.68]] };
+    roof: [[0.72, 0.9], [0.15, 1.14], [-0.72, 1.14], [-1.62, 0.9]], win: [[0.6, -0.68]] };
   const k = sedanKit(D, paint, glass, dark), g = k.g;
   for (const sd of [-1, 1]) {
     k.skin(sd, -2.06, 2.06, 0.26, 0.4, k.bodyX, black, 0.004, 60, 2);                                                   // schwarzes Band unten
     for (const f of [0.62, -0.7]) k.skin(sd, f, f - 0.012, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, black, 0.008, 1, 6);   // Tuerfugen (Fluegeltuer)
     k.skin(sd, -0.45, -0.62, 0.74, 0.77, k.bodyX, black, 0.012, 2, 1);                                                   // Tuergriff
-    sideBox(g, sd * (k.hw(0.55) - 0.05), sd * (k.hw(0.55) + 0.12), 0.86, 0.9, -0.62, -0.52, black); sideBox(g, sd * (k.hw(0.55) + 0.06), sd * (k.hw(0.55) + 0.2), 0.84, 0.98, -0.66, -0.5, black);   // Spiegel
+    sideBox(g, sd * (k.hw(0.55) - 0.05), sd * (k.hw(0.55) + 0.12), 0.92, 0.96, -0.62, -0.52, black); sideBox(g, sd * (k.hw(0.55) + 0.06), sd * (k.hw(0.55) + 0.2), 0.9, 1.04, -0.66, -0.5, black);   // Spiegel
     for (const [xa, xb] of [[0.42, 0.62], [0.64, 0.84]]) k.face(1, sd * xa, sd * xb, 0.47, 0.57, 0.012, mat.glow);    // Doppelscheinwerfer eckig
     k.face(1, sd * 0.5, sd * 0.84, 0.3, 0.36, 0.014, amber);                                                            // Blinker im Stossfaenger
     k.face(-1, sd * 0.2, sd * 0.84, 0.5, 0.72, 0.012, black); for (let y = 0.53; y < 0.71; y += 0.045) k.face(-1, sd * 0.24, sd * 0.8, y, y + 0.02, 0.02, red);   // Lamellen-Rueckleuchten
@@ -1391,9 +1392,17 @@ function buildDelorean() {
   for (let f = -0.82; f > -1.55; f -= 0.1) { const y = k.roof(f) + 0.035, w = k.hw(f) - 0.36; boxIn(g, -w, w, y, y + 0.025, -f - 0.03, -f + 0.03, black); }
   // Umbau hinten: Lamellen-Kaesten an den Ecken, Reaktor, Stangen und Kaesten auf dem Motordeck, Duesen unter dem Heck
   for (const sd of [-1, 1]) { const x = sd * 0.55, z0 = 1.85, z1 = 2.12;
-    boxIn(g, x - 0.3, x + 0.3, 0.86, 1.62, z0, z0 + 0.03, grey);                                                          // Blech
-    for (let y = 0.9; y <= 1.62; y += 0.18) boxIn(g, x - 0.3, x + 0.3, y, y + 0.025, z0, z1, black);                      // waagrechte Lamellen
-    for (const dx of [-0.3, -0.1, 0.1, 0.3]) boxIn(g, x + dx - 0.012, x + dx + 0.012, 0.88, 1.62, z0, z1, black);         // senkrechte Lamellen
+    // Lueftungs-Trichter (Nicolas 2026-11-12, Fotos): schwarzer Kasten, nach hinten offen und schraeg nach oben gekippt, vorne zu, innen ein Gitter
+    // aus 2 x 3 tiefen Zellen, die Oeffnung mit breiterem Rand (wirkt ausgestellt); sitzt auf der Heckecke ueber den Rueckleuchten und ragt ueber das Heck
+    { const vg = new THREE.Group(), W = 0.3, H = 0.6, L = 0.55, t = 0.03, ventM = M(0x111214, { roughness: 0.55, metalness: 0.2, flatShading: true }), inM = M(0x050506, { roughness: 0.9 });
+      boxIn(vg, -W, W, 0, H, 0, t, inM);                                                                                   // Rueckwand (innen dunkel)
+      for (const [xa, xb, ya, yb] of [[-W, -W + t, 0, H], [W - t, W, 0, H], [-W, W, 0, t], [-W, W, H - t, H]]) boxIn(vg, xa, xb, ya, yb, 0, L, ventM);   // Waende
+      for (const [xa, xb, ya, yb] of [[-W - 0.04, -W + t, -0.04, H + 0.04], [W - t, W + 0.04, -0.04, H + 0.04], [-W - 0.04, W + 0.04, -0.04, t], [-W - 0.04, W + 0.04, H - t, H + 0.04]]) boxIn(vg, xa, xb, ya, yb, L - 0.05, L, ventM);   // Rand an der Oeffnung
+      boxIn(vg, -0.012, 0.012, 0, H, 0.02, L - 0.01, ventM);                                                               // Gitter: 1 senkrecht
+      for (const y of [H / 3, 2 * H / 3]) boxIn(vg, -W, W, y - 0.012, y + 0.012, 0.02, L - 0.01, ventM);                   //          2 waagrecht
+      boxIn(vg, -W + 0.06, W - 0.06, -0.12, 0, 0.05, 0.3, ventM);                                                          // Fuss
+      vg.position.set(x, 0.96, 1.62); vg.rotation.set(-0.42, 0, 0); vg.updateMatrix();
+      for (const m of [...vg.children]) { m.applyMatrix4(vg.matrix); g.add(m); } }
     meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.7, 8).rotateZ(Math.PI / 2), tan, sd * 0.45, 0.98, 1.2); meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.7, 8).rotateZ(Math.PI / 2), tan, sd * 0.45, 0.98, 1.32);
     boxIn(g, sd * 0.2 - 0.12, sd * 0.2 + 0.12, 0.92, 1.1, 1.0, 1.25, grey);                                               // Kasten auf dem Deck
     meshIn(g, new THREE.CylinderGeometry(0.07, 0.09, 0.3, 12).rotateX(Math.PI / 2), black, sd * 0.45, 0.2, 2.18); meshIn(g, new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12).rotateX(Math.PI / 2), amber, sd * 0.45, 0.2, 2.33); }   // Duesen unter dem Heck
@@ -1413,7 +1422,7 @@ function buildDelorean() {
 const SPEC_DELOREAN = { name: "DeLorean (Zeitmaschine)", wheels: [[-0.79, -1.17], [0.79, -1.17], [-0.8, 1.24], [0.8, 1.24]], wb: 2.41, track: 1.6, pts: [-1.4, 0, 1.4], R: 0.98, circR: 0.93, enter: 3.6,
   maxN: 30, maxF: 38.9, acc: 9, steer: 0.66, jump: false, hover: true, grade: 35, camD: 8, camH: 1.1, seat: [-0.38, 0.95, 0.1], bodyH: 1.15, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.6], [0, 3.6]],
-  msg: "DeLorean: W/S Gas/Bremse, A/D lenken, H Räder einklappen und schweben (dann Leertaste hoch, C runter, H landen), V Kamera, R zurücksetzen, Shift aussteigen" };
+  msg: "DeLorean: W/S Gas/Bremse, A/D lenken, Leertaste Räder einklappen und abheben (auch beim Fahren; dann Leertaste hoch, C runter, C unten halten landet), V Kamera, R zurücksetzen, Shift aussteigen" };
 // ---- Lamborghini Terzo Millennio (Nicolas 2026-11-12; Konzeptstudie, stilisiert, ohne Logos und Schriftzug): sehr flacher, langer Keil in dunklem Carbon
 // mit roten Akzenten; die Vorderraeder sitzen unter eigenen Kotfluegel-Schalen links und rechts der schmalen Nase (Luecke dazwischen), Glaskanzel weit vorne,
 // breite Hueften, langer Seitenkanal, offene Kanaele und grosser Fluegel am Heck, Y-foermige Leuchten (rot) vorne und hinten, grosser Diffusor.
