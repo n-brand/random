@@ -151,6 +151,25 @@ function glandBuild() {
     let run = [];
     const push = () => { if (run.length > 6) roads.push({ id: h.id, name: h.name, w: h.w, pts: run }); run = []; };
     for (const p of P) { const ok = GOT.edgeSD(p[0], p[1]) > 2 && !GOT.water(p[0], p[1]) && Math.hypot(p[0], p[1]) < LIMIT_WORLD - 60; if (ok) run.push(p); else push(); } push(); }
+  // Enden bis 80 m neben einem Brueckenende an die Bruecke anschliessen (Nicolas 2026-11-12: Nordbruecke endete im Gras, Highway 47 m daneben):
+  // vom Brueckenende 25 m gerade in Brueckenrichtung, dann zum Strassenende
+  for (const r of roads) for (const end of [0, 1]) { const P = r.pts, e = (end ? P[P.length - 1] : P[0]).slice();
+    let best = null; for (const [ex, ez, c] of ends) { const d = Math.hypot(ex - e[0], ez - e[1]); if (d > 3 && d < 80 && (!best || d < best[0])) best = [d, ex, ez, c]; }
+    if (!best) continue; const [, ex, ez, c] = best, add = [];
+    // Punkte hinter oder neben dem Brueckenende (weniger als 45 m in Brueckenrichtung davor) weglassen, sonst entsteht eine Haarnadel
+    const ahead = q => (q[0] - ex) * c.ux + (q[1] - ez) * c.uz; while (P.length > 4 && ahead(end ? P[P.length - 1] : P[0]) < 15) { if (end) P.pop(); else P.shift(); }
+    const e2 = end ? P[P.length - 1] : P[0]; e[0] = e2[0]; e[1] = e2[1];
+    // weiche Kurve (kubisch): beginnt in Brueckenrichtung, endet in Fahrtrichtung der Strasse
+    const f = end ? P[P.length - 2] : P[1], tl = Math.hypot(e[0] - f[0], e[1] - f[1]) || 1, tx = (e[0] - f[0]) / tl, tz = (e[1] - f[1]) / tl, D = Math.min(40, Math.hypot(e[0] - ex, e[1] - ez) * 0.45);   // Kontrollpunkte kuerzer als der Abstand, sonst Schlaufe
+    const B = [[ex, ez], [ex + c.ux * D, ez + c.uz * D], [e[0] + tx * D, e[1] + tz * D], e], len = Math.hypot(e[0] - ex, e[1] - ez) + D, nb = Math.max(4, Math.ceil(len * 1.3 / 4));
+    for (let i = 0; i < nb; i++) { const t = i / nb, m = 1 - t; add.push([0, 1].map(j => m * m * m * B[0][j] + 3 * m * m * t * B[1][j] + 3 * m * t * t * B[2][j] + t * t * t * B[3][j])); }
+    if (end) P.push(...add.reverse()); else P.unshift(...add); }
+  // Enden, die bis 30 m vor einer anderen Festlandstrasse aufhoeren, bis an deren Mitte verlaengern (Nicolas 2026-11-12: Highway-Zubringer endete neben dem Highway)
+  // schraeg nach vorn einfaedeln (Ziel: naechster Punkt der anderen Strasse zu einem Punkt 45 m voraus), nicht rechtwinklig
+  for (const r of roads) for (const end of [0, 1]) { const P = r.pts, e = end ? P[P.length - 1] : P[0], f = end ? P[P.length - 2] : P[1], fl = Math.hypot(e[0] - f[0], e[1] - f[1]) || 1, ahead = [e[0] + (e[0] - f[0]) / fl * 45, e[1] + (e[1] - f[1]) / fl * 45]; let best = null;
+    for (const o of roads) { if (o === r) continue; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((ahead[0] - a[0]) * dx + (ahead[1] - a[1]) * dz) / LL)), q = [a[0] + dx * t, a[1] + dz * t], d = Math.hypot(e[0] - q[0], e[1] - q[1]);
+      if (d > 1 && d < 70 && Math.hypot(ahead[0] - q[0], ahead[1] - q[1]) < 35 && (!best || d < best[0])) best = [d, q]; } }
+    if (best) { const [d, q] = best, nn = Math.ceil(d / 4), add = []; for (let k = 1; k <= nn; k++) add.push([e[0] + (q[0] - e[0]) * k / nn, e[1] + (q[1] - e[1]) * k / nn]); if (end) P.push(...add); else P.unshift(...add.reverse()); } }
   for (const r of roads) { const n = r.pts.length, raw = r.pts.map(([x, z]) => genH0(x, z)), y = new Float32Array(n), pin = new Array(n).fill(null);
     for (let i = 0; i < n; i++) { let s = 0, c = 0; for (let k = Math.max(0, i - 10); k <= Math.min(n - 1, i + 10); k++) { s += raw[k]; c++; } y[i] = Math.max(GOT.WY + 4, s / c); }
     for (let i = 0; i < n; i++) for (const [ex, ez] of ends) if (Math.hypot(r.pts[i][0] - ex, r.pts[i][1] - ez) < 45) pin[i] = GOT.STR;
@@ -182,7 +201,7 @@ function glandNear(x, z, reach) {
 function gothamLandRoadH(x, z, g) {
   if (x > 0 && z < -600) return g;                                       // Festlandstrassen liegen alle westlich/suedlich der Manor
   const n = glandNear(x, z, 60); if (!n) return g;
-  const core = n.r.w / 2 + 2, out = Math.max(0, n.d - core), yy = n.y - 0.1;
+  const core = n.r.w / 2 + 8, out = Math.max(0, n.d - core), yy = n.y - 0.1;   // 8 m eben neben der Fahrbahn (Gelaende-Maschen 3-6 m, sonst Wiesenzacken ueber dem Bankett)
   if (out === 0) return yy;
   return g > yy ? Math.min(g, yy + out) : Math.max(g, yy - out * 0.7);
 }
