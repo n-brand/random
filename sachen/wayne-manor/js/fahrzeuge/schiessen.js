@@ -70,7 +70,7 @@ function wasserFrame(dt) {
     if (on && held && M0.ready) wasserSpritzen(dt, M0.tip, player.yaw, el - 0.32);
     if (on) { const ws = document.getElementById("water-sight"), imp = wasserZiel(M0.tip, player.yaw, el, (x, z, y) => groundAt(x, z, y));
       if (v.view !== 1) monitorCamera(v.monitor, imp, dt);                                             // Kamera oben auf dem Arm (modelle.js)
-      wasserZielZeigen(ws, imp);
+      wasserZielZeigen(ws, imp); if (ws && !M0.ready) ws.hidden = true;                                 // Ring nur bei ausgefahrenem Arm (Nicolas 2026-11-12)
       if (ws) ws.lastChild.textContent = (held ? (M0.ready ? "Wasser" : "Arm fährt aus …") : "Leertaste: Wasser") + (WZOOM.t > 1 ? " · " + WZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom"); } }
   if (!C) { const ws = document.getElementById("water-sight"); if (ws) ws.hidden = true; WZOOM.t = WZOOM.z = 1; }
   wasserStep(dt, (x, z, y) => groundAt(x, z, y), p => { for (const W of SHOT.fires) { const v = W.v; if (Math.hypot(p.x - v.x, p.z - v.z) < 3 && p.y < v.y + 4) { if (now - v.boomT < 40) { v.boomT = now - 40; toast(vehName(v) + ": Feuer gelöscht"); } return true; } } return false; });

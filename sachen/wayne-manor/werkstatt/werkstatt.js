@@ -251,7 +251,7 @@ function fahren(dt) {
     camera.position.set(tx + ex + TG.sx, Math.max(0.3, ty + ey + TG.sy), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
   if (A.turret) waffe(dt);
   if (A.monitor && A.wz) { wasserZoomStep(dt); const ws = $("wsicht");   // Wasserwerfer-Ziel und Zoom wie schiessen.js
-    const imp = wasserZiel(A.wz.tip, kYaw, A.wz.el, () => 0); if (A_view !== 1) monitorCamera(A.monitor, imp, dt); wasserZielZeigen(ws, imp);   // Kamera oben auf dem Arm
+    const imp = wasserZiel(A.wz.tip, kYaw, A.wz.el, () => 0); if (A_view !== 1) monitorCamera(A.monitor, imp, dt); wasserZielZeigen(ws, imp); if (!A.wz.ready) ws.hidden = true;   // Ring nur bei ausgefahrenem Arm   // Kamera oben auf dem Arm
     ws.lastChild.textContent = (down("Space") ? (A.wz.ready ? "Wasser" : "Arm fährt aus …") : "Leertaste: Wasser") + (WZOOM.t > 1 ? " · " + WZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom"); }
 }
 const wrapW = a => Math.atan2(Math.sin(a), Math.cos(a));
