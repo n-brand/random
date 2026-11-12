@@ -55,7 +55,7 @@ Lage siehe Karte. Alle zuerst als leere Hülle (Vorlage + Schild), Innenräume n
 
 - **Wayne Tower** im Zentrum (ca. 320 m, logisch ca. 80 Stockwerke à 4 m). Befahrbare Tiefgarage (2 Ebenen) **neben dem Turm**; **direkt unter dem Turm ein geheimer Stock** (0 bis -8 m) (Vorbild `karten/planung/wayne-geheimstock-vorbild.png`: weite niedrige Halle, viele runde Pfeiler, runde Deckenlampen) mit dem Tumbler, weiteren Prototypen und Gadgets; darunter der Kanal-Hub (-3, siehe Phase 4).
 - **Polizeipräsidium** mit Batsignal auf dem Dach (leuchtet nachts, schaltbar).
-- **Arkham Asylum** auf der Arkham-Insel, erreichbar nur mit der **Arkham-Fähre** (Autofähre, Anleger in den Narrows und auf Arkham).
+- **Arkham Asylum**: nach „Später“ verschoben (Nicolas 2026-11-12).
 - **Hafen** mit Containerterminal, Kränen, Lagerhallen.
 - Gericht, Kathedrale/Kirche, **Eventgebäude** (Spendengala, Hochzeit), 2 Museen.
 - 3 Krankenhäuser, 2 Kinderheime, 3 Kinderkrippen.
@@ -92,7 +92,8 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 
 ## Später (vorgemerkt, noch nicht in der Karte)
 
-- **Militärinsel im Südosten** (Nicolas 2026-11-11: erst später, vorerst weglassen): im Meer, per Boot/Flug, Landebahn, Hangars, Hafen. Der Kampfjet bekommt dort seinen Platz (statt Hauptstrasse; entschieden, Nicolas 2026-11-12).
+- **Arkham-Insel** (Nicolas 2026-11-12: wie die Militärinsel erst später, aus der Karte entfernt): Arkham Asylum auf eigener Insel vor der Küste, nur mit der **Arkham-Fähre** erreichbar (Autofähre, Anleger in den Narrows und auf Arkham; vorher Insel bei ca. -3340 / 1800).
+- **Militärinsel im Osten** (Nicolas 2026-11-11: erst später, vorerst weglassen): im Meer, per Boot/Flug, Landebahn, Hangars, Hafen. Der Kampfjet bekommt dort seinen Platz (statt Hauptstrasse; entschieden, Nicolas 2026-11-12).
 - **Kameras (S5)**: später (Nicolas 2026-11-12).
 
 ## Phase 7 – Wayne Manor und Batcave
@@ -135,6 +136,8 @@ Als Seite mit allen Schritten, Begründung und Abhängigkeiten: **`gotham/umsetz
 Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, besonders am Handy. Strassen vor Gebäuden, weil alles an den Strassen hängt. Untergrund nach den Gebäuden darüber, weil Eingänge oben liegen. Inventar und Geld vor Shop und Waffen.
 
 ## Entscheidungen (Nicolas 2026-11-12)
+
+0. **Himmelsrichtungen wie bei Wayne Manor:** Die Karte ist nicht nach Norden ausgerichtet. Kompass-Stern unten rechts (drehbar wie eine Kurbel, Klick = Norden oben / zurück). Namen angepasst: Westfluss → Südfluss, Ostfluss → Nordfluss, Nordkanal → Westkanal, Westseite → Südseite, Südstadt → Oststadt, Uferstrasse Ost → Nord usw. (ältere Texte in diesem Plan nutzen teils noch die alten Namen).
 
 1. **Lage und Grösse von Gotham:** so wie in der Karte (Inselform nach Skizze, ca. 2,7 x 2,8 km).
 2. **Wayne Manor liegt bei [-323, 1318] der Karte** und ist um **62 Grad nach rechts** (im Uhrzeigersinn) gedreht: zuerst ca. 30 Grad, dann so weit, dass die Manor-Hauptstrasse ohne Knick in den Highway übergeht (Nicolas, Punkt [-505, 1437]). In der Karte umgesetzt (`daten.js`: `manorLage`, Manor-Steilküste `kuesteAlt`, Manor-Hauptstrasse und Highway-Anfang umgerechnet; das östliche Festland reicht jetzt bis zur Manor-Küste). Im Spiel bleibt die Manor bei 0 / 0: Gotham wird beim Bau mit der Umkehrung (62 Grad nach links drehen, dann verschieben) in die Spielwelt gelegt.

@@ -71,9 +71,9 @@ const GOTHAM = {
   // Lage der Spielwelt von Wayne Manor auf der Karte (Nicolas 2026-11-12): Rondell bei x/z, Drehung in Grad im Uhrzeigersinn
   manorLage: { x: -323, z: 1318, dreh: 62 },
   wasser: {
-    west: { name: "Westfluss", breite: 400 },
-    ost: { name: "Ostfluss", breite: 440 },
-    nord: { name: "Nordkanal", breite: 180 },
+    west: { name: "Südfluss", breite: 400 },
+    ost: { name: "Nordfluss", breite: 440 },
+    nord: { name: "Westkanal", breite: 180 },
     sued: { name: "Hafenbecken (Meer)", breite: 400 },
     rundung: 140,   // Festland-Ufer abrunden (m): groesser = runder, aber schmale Kanaele werden etwas schmaler
 
@@ -84,8 +84,8 @@ const GOTHAM = {
     kueste: [[-5200, 600], [-4500, 560], [-4100, 640], [-3700, 700], [-3200, 1000], [-2400, 1550], [-1650, 1420], [-1100, 1620]],
     kuesteAlt: [[-573, 1451], [103, 1658], [780, 1864], [1726, 2154]],
   },
+  // Arkham-Insel mit Faehre und Anlegern (Nicolas 2026-11-12): wie die Militaerinsel erst spaeter, darum hier entfernt (siehe PLAN-GOTHAM.md "Spaeter")
   inseln: [
-    { name: "Arkham-Insel", poly: [[-3560, 1720], [-3420, 1650], [-3240, 1660], [-3120, 1760], [-3160, 1900], [-3330, 1960], [-3510, 1900]] },
   ],
 
   bezirke: [
@@ -94,9 +94,9 @@ const GOTHAM = {
       netz: { winkel: 9, abstand: [150, 70], krumm: 22, luecken: 0.05, breite: 12 } },
     { name: "Midtown / Zentrum", wohlstand: 0.85, poly: [[-2600, -560], [-2100, -560], [-1500, -460], [-800, -480], [-800, 330], [-1500, 380], [-2250, 300], [-2600, 250]],
       netz: { winkel: -5, abstand: [110, 64], krumm: 14, luecken: 0.06, breite: 12 } },
-    { name: "Westseite (Mittelstand)", wohlstand: 0.6, poly: [[-3900, -1100], [-2600, -1100], [-2600, 250], [-3900, 300]],
+    { name: "Südseite (Mittelstand)", wohlstand: 0.6, poly: [[-3900, -1100], [-2600, -1100], [-2600, 250], [-3900, 300]],
       netz: { winkel: 22, abstand: [92, 74], krumm: 34, luecken: 0.1, breite: 11 } },
-    { name: "Südstadt (gemischt)", wohlstand: 0.45, poly: [[-2250, 300], [-1500, 380], [-800, 330], [-800, 950], [-2200, 950], [-2200, 780]],
+    { name: "Oststadt (gemischt)", wohlstand: 0.45, poly: [[-2250, 300], [-1500, 380], [-800, 330], [-800, 950], [-2200, 950], [-2200, 780]],
       netz: { winkel: -16, abstand: [96, 80], krumm: 30, luecken: 0.12, breite: 11 } },
     { name: "Fabrikviertel", wohlstand: 0.25, poly: [[-3900, 300], [-2600, 250], [-2250, 300], [-2200, 780], [-3900, 780]],
       netz: { winkel: 4, abstand: [170, 120], krumm: 14, luecken: 0.25, breite: 12 } },
@@ -110,44 +110,43 @@ const GOTHAM = {
     { id: "parkrow", name: "Park Row (zweistöckig)", w: 24, zweistock: true, linie: [["O", 300], [-1640, 180], [-1770, -10]] },
     { id: "uptown-ave", name: "Uptown Avenue", w: 22, linie: [[-2050, -345], [-2000, -700], [-1980, -1000], [-1955, "N"]] },
     { id: "gotham-blvd", name: "Gotham Boulevard", w: 22, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2120, 1240]] },
-    { id: "westside", name: "Westside Drive", w: 18, linie: [[-2340, -100], [-2600, -230], [-2800, -480], [-2860, -700]] },
+    { id: "westside", name: "Southside Drive", w: 18, linie: [[-2340, -100], [-2600, -230], [-2800, -480], [-2860, -700]] },
     // Nicolas 2026-11-12: direkter Hauptsammler vom Hub (Schurkenbasis) nach Westen bis unter die Uferstrasse West
-    { id: "west-ave", name: "West Avenue", w: 20, linie: [[-2340, -100], [-2800, -125], [-3200, -160], ["W", -170]] },
-    { id: "diag-nord", name: "Old Broadway (Nord)", w: 20, linie: [[-1380, -1250], [-1500, -1000], [-1680, -720], [-1820, -300]] },
-    { id: "diag-sued", name: "Old Broadway (Süd)", w: 20, linie: [[-2290, 30], [-2470, 400], [-2600, 750], [-2580, 1100]] },
+    { id: "west-ave", name: "South Avenue", w: 20, linie: [[-2340, -100], [-2800, -125], [-3200, -160], ["W", -170]] },
+    { id: "diag-nord", name: "Old Broadway (West)", w: 20, linie: [[-1380, -1250], [-1500, -1000], [-1680, -720], [-1820, -300]] },
+    { id: "diag-sued", name: "Old Broadway (Ost)", w: 20, linie: [[-2290, 30], [-2470, 400], [-2600, 750], [-2580, 1100]] },
     { id: "crosstown", name: "Crosstown Expressway", w: 24, linie: [["O", -880], [-1300, -860], [-1620, -930], [-2050, -880], [-2450, -800], [-2860, -700], ["W", -730]] },
     // Harbor Road (Nicolas 2026-11-12: Bruecke neu analysiert): von der Suedbruecke quer durch die Narrows zum Faehranleger (Arkham)
     { id: "sued-road", name: "Harbor Road", w: 18, linie: [["O", 800], [-1950, 860], [-2150, 1000], [-2380, 1090], [-2580, 1100]] },
     { id: "industrial", name: "Industrial Way", w: 18, linie: [[-2470, 400], [-2720, 470], ["W", 520]] },
-    { id: "ufer-ost", name: "Uferstrasse Ost (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
-    { id: "ufer-west", name: "Uferstrasse West", w: 16, ufer: { seite: "west", abstand: 70, von: -850, bis: 700 } },
+    { id: "ufer-ost", name: "Uferstrasse Nord (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
+    { id: "ufer-west", name: "Uferstrasse Süd", w: 16, ufer: { seite: "west", abstand: 70, von: -850, bis: 700 } },
     // ausserhalb der Insel
     { id: "highway", name: "Gotham Highway (Manor - Stadt)", w: 22, linie: [[-528, 1358], [-760, 1200], [-1000, 800], ["Oa", 300]] },   // ab Suedwest-Ende der Manor-Hauptstrasse (Spiel -61 / 200, umgerechnet)
     // Festland Ost: verbindet die Enden von Nord-, Highway- und Suedbruecke (vorher endeten Nord- und Suedbruecke ohne Strasse)
-    { id: "ost-festland", name: "East Shore Road (Festland Ost)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290], [-800, 600], [-1000, 800]] },   // endet am Highway (Manor jetzt im Sueden)
+    { id: "ost-festland", name: "North Shore Road (Festland Nord)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290], [-800, 600], [-1000, 800]] },   // endet am Highway (Manor jetzt im Sueden)
     // Nicolas 2026-11-12: Strasse von der Suedbruecke muendet kurz nach der Bruecke in den Highway (ab dort eine Strasse)
-    { id: "harbor-zubringer", name: "Harbor-Zubringer (Südbrücke - Highway)", w: 18, linie: [["Oa", 800], [-1080, 740], [-830, 507]] },
-    { id: "nord-zufahrt", name: "Zufahrt Norden (über die Nordkanal-Brücke)", w: 16, linie: [[-2424, "Na"], [-2470, -1450], [-2560, -1800]] },
-    { id: "nord-anschluss", name: "Anschluss Nordkanal-Brücke", w: 16, linie: [[-2424, -870], [-2445, -800]] },
+    { id: "harbor-zubringer", name: "Harbor-Zubringer (Ostbrücke - Highway)", w: 18, linie: [["Oa", 800], [-1080, 740], [-830, 507]] },
+    { id: "nord-zufahrt", name: "Zufahrt Westen (über die Westkanal-Brücke)", w: 16, linie: [[-2424, "Na"], [-2470, -1450], [-2560, -1800]] },
+    { id: "nord-anschluss", name: "Anschluss Westkanal-Brücke", w: 16, linie: [[-2424, -870], [-2445, -800]] },
     { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-528, 1358], [-471, 1397], [-422, 1425], [-382, 1438], [-345, 1443], [-311, 1457], [-274, 1487], [-224, 1503], [-161, 1495], [-94, 1472], [-11, 1442]] },   // Spiel-Punkte (-61 / 200 ... 256 / -217) mit manorLage umgerechnet
-    { id: "west-nord", name: "Zufahrt Westen (Nord)", w: 16, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
-    { id: "west-sued", name: "Zufahrt Westen (Süd)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
+    { id: "west-nord", name: "Zufahrt Süden (West)", w: 16, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
+    { id: "west-sued", name: "Zufahrt Süden (Ost)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
   ],
   // Haengebruecken (Fahrbahn auf Strassenhoehe; Tuerme stehen automatisch an den Ufern)
   // spanne = Laenge ueber dem Wasser zwischen den Tuermen (m) fuer die Seitenansicht; die Karte misst nach und meldet, wenn die Zahl nicht mehr stimmt
   bruecken: [
     { name: "Gotham-Highway-Brücke", spanne: 414, w: 26, seite: "ost", z: 300 },
-    { name: "Nordbrücke (Crosstown)", spanne: 430, w: 24, seite: "ost", z: -880 },
+    { name: "Westbrücke (Crosstown)", spanne: 430, w: 24, seite: "ost", z: -880 },
     // Nicolas 2026-11-12: vorher bei z 1050, dort war der Ostfluss schon Meer - die Bruecke endete im Wasser, ohne Strasse am Ostufer
-    { name: "Südbrücke (Harbor)", spanne: 436, w: 22, seite: "ost", z: 800 },
+    { name: "Ostbrücke (Harbor)", spanne: 436, w: 22, seite: "ost", z: 800 },
     // Nicolas 2026-11-12: Bruecke nach Norden ueber den Nordkanal (bei x -2424 / z -946)
-    { name: "Nordkanal-Brücke", spanne: 272, w: 20, seite: "nord", x: -2424 },
-    { name: "Westbrücke Nord", spanne: 364, w: 20, seite: "west", z: -730 },
-    { name: "Westbrücke Süd", spanne: 416, w: 20, seite: "west", z: 520 },
+    { name: "Westkanal-Brücke", spanne: 272, w: 20, seite: "nord", x: -2424 },
+    { name: "Südbrücke West", spanne: 364, w: 20, seite: "west", z: -730 },
+    { name: "Südbrücke Ost", spanne: 416, w: 20, seite: "west", z: 520 },
   ],
   // Faehren (Nicolas 2026-11-12: nach Arkham eine Faehre statt einer Bruecke): Route uebers Wasser von Anleger zu Anleger
   faehren: [
-    { name: "Arkham-Fähre", linie: [[-2640, 1140], [-2850, 1360], [-3040, 1560], [-3185, 1680]], notiz: "Autofähre zwischen dem Anleger in den Narrows und Arkham Asylum, einzige Verbindung zur Arkham-Insel." },
   ],
 
   // U-Bahn (Nicolas 2026-11-12): ein Zentrumsring um den Wayne Tower und drei Ringe in den Lappen der Insel (Uptown, Westseite, Sueden).
@@ -160,11 +159,11 @@ const GOTHAM = {
       { name: "Ring 1 Zentrum", farbe: "#ff5a5a", cx: -2150, cz: -80, rx: 540, rz: 470,
         stationen: [{ name: "Hauptbahnhof", a: 0, haupt: true }, { name: "Gericht", a: 45 }, { name: "Polizeipräsidium", a: 140 }, { name: "Museumsmeile", a: 200 }, { name: "Kathedrale", a: 250 }, { name: "Park Row", a: 300 }] },
       { name: "Ring 2 Uptown", farbe: "#ffd43b", cx: -1720, cz: -790, rx: 400, rz: 430, dreh: -20,
-        stationen: [{ name: "Uptown", a: 250 }, { name: "Kunstmuseum", a: 300 }, { name: "Diamond District", a: 355 }, { name: "Uptown Ost", a: 40 }, { name: "Crosstown", a: 205 }] },
-      { name: "Ring 3 Westseite", farbe: "#74c0fc", cx: -3030, cz: -320, rx: 470, rz: 380,
-        stationen: [{ name: "Westseite", a: 180 }, { name: "Westside Drive", a: 250 }, { name: "Westseite Nord", a: 300 }, { name: "Krankenhaus West", a: 90 }, { name: "Industrial Way", a: 130 }] },
-      { name: "Ring 4 Süd", farbe: "#a9e34b", cx: -2230, cz: 800, rx: 320, rz: 450,
-        stationen: [{ name: "Stadion", a: 330 }, { name: "Südstadt", a: 20 }, { name: "Hafen", a: 90 }, { name: "Narrows", a: 150, notiz: "Graffiti NBR im Tunnel Richtung Fabrikviertel" }, { name: "Fabrikviertel", a: 210 }] },
+        stationen: [{ name: "Uptown", a: 250 }, { name: "Kunstmuseum", a: 300 }, { name: "Diamond District", a: 355 }, { name: "Uptown Nord", a: 40 }, { name: "Crosstown", a: 205 }] },
+      { name: "Ring 3 Südseite", farbe: "#74c0fc", cx: -3030, cz: -320, rx: 470, rz: 380,
+        stationen: [{ name: "Südseite", a: 180 }, { name: "Southside Drive", a: 250 }, { name: "Südseite West", a: 300 }, { name: "Krankenhaus Süd", a: 90 }, { name: "Industrial Way", a: 130 }] },
+      { name: "Ring 4 Ost", farbe: "#a9e34b", cx: -2230, cz: 800, rx: 320, rz: 450,
+        stationen: [{ name: "Stadion", a: 330 }, { name: "Oststadt", a: 20 }, { name: "Hafen", a: 90 }, { name: "Narrows", a: 150, notiz: "Graffiti NBR im Tunnel Richtung Fabrikviertel" }, { name: "Fabrikviertel", a: 210 }] },
     ],
     depot: { name: "Abstellanlage (Züge ausser Betrieb, am Gleisnetz)", x: -1450, z: -330, w: 120, d: 60, gleis: [[-1780, 100], [-1650, -120], [-1500, -300]] },
     graffiti: [{ text: "NBR", x: -2620, z: 600 }],
@@ -175,7 +174,7 @@ const GOTHAM = {
     abstand: 400,
     linien: [
       { name: "Linie 1 Zentrum", farbe: "#3ec7ff", strassen: ["ring", "parkrow", "ufer-ost"] },
-      { name: "Linie 2 Nord-Süd", farbe: "#7de0ff", strassen: ["uptown-ave", "gotham-blvd"] },
+      { name: "Linie 2 West-Ost", farbe: "#7de0ff", strassen: ["uptown-ave", "gotham-blvd"] },
       { name: "Linie 3 Manor-Express", farbe: "#2fa3e0", strassen: ["highway", "parkrow"] },
       { name: "Linie 4 Hafen", farbe: "#58b8ff", strassen: ["sued-road", "diag-sued"] },
     ],
@@ -204,28 +203,25 @@ const GOTHAM = {
     { id: "wayne-tower", typ: "wahrzeichen", name: "Wayne Tower", x: -2050, z: -100, w: 70, d: 70, h: 320,
       notiz: "Zentrum, im Wayne Circle. Befahrbare Tiefgarage (2 Ebenen). Direkt darunter geheimer Stock (Vorbild karten/planung/wayne-geheimstock-vorbild.png: weite niedrige Halle, viele runde Pfeiler, runde Deckenlampen, graue Wände, glänzender Boden): Tumbler, Prototypen, Gadgets. Darunter Kanal-Hub mit Schurkenbasis." },
     { id: "gcpd", typ: "oeffentlich", name: "Polizeipräsidium (Batsignal auf dem Dach)", x: -2200, z: 330, w: 80, d: 60, h: 45 },
-    { id: "arkham", typ: "wahrzeichen", name: "Arkham Asylum", x: -3340, z: 1800, w: 220, d: 160, h: 30, aussen: true, notiz: "Eigene Insel vor der Küste, nur mit der Arkham-Fähre." },
-    { id: "faehre-narrows", typ: "verkehr", name: "Fähranleger Narrows (Arkham-Fähre)", x: -2620, z: 1125, w: 30, d: 20, ufer: true, notiz: "Anleger mit Rampe für Autos und Wartebereich, Ende der Harbor Road." },
-    { id: "faehre-arkham", typ: "verkehr", name: "Fähranleger Arkham", x: -3190, z: 1690, w: 30, d: 20, aussen: true, notiz: "Anleger an der Arkham-Insel, vor dem Tor der Anstalt." },
-    { id: "hafen", typ: "industrie", name: "Hafen / Containerterminal", x: -2070, z: 1350, w: 420, d: 90, ufer: true, notiz: "An der Südspitze der Insel, direkt am Meer (Schiffe müssen unter keiner Brücke durch). Kräne, Container, Lagerhallen." },
+    { id: "hafen", typ: "industrie", name: "Hafen / Containerterminal", x: -2070, z: 1350, w: 420, d: 90, ufer: true, notiz: "An der Ostspitze der Insel, direkt am Meer (Schiffe müssen unter keiner Brücke durch). Kräne, Container, Lagerhallen." },
     // --- Oeffentlich ---
     { id: "gericht", typ: "oeffentlich", name: "Gerichtsgebäude", x: -1880, z: 330, w: 70, d: 50, h: 35 },
     { id: "kirche", typ: "oeffentlich", name: "Kathedrale", x: -2560, z: 40, w: 50, d: 90, h: 60 },
     { id: "kh-1", typ: "gesundheit", name: "Krankenhaus Uptown", x: -1560, z: -1300, w: 90, d: 70, h: 50 },
-    { id: "kh-2", typ: "gesundheit", name: "Krankenhaus Westseite", x: -2680, z: -40, w: 80, d: 60, h: 40 },
-    { id: "kh-3", typ: "gesundheit", name: "Krankenhaus Südstadt", x: -1930, z: 1180, w: 80, d: 60, h: 35 },
-    { id: "heim-1", typ: "gesundheit", name: "Kinderheim West", x: -2750, z: -300, w: 40, d: 30, h: 12 },
+    { id: "kh-2", typ: "gesundheit", name: "Krankenhaus Südseite", x: -2680, z: -40, w: 80, d: 60, h: 40 },
+    { id: "kh-3", typ: "gesundheit", name: "Krankenhaus Oststadt", x: -1930, z: 1180, w: 80, d: 60, h: 35 },
+    { id: "heim-1", typ: "gesundheit", name: "Kinderheim Süd", x: -2750, z: -300, w: 40, d: 30, h: 12 },
     { id: "heim-2", typ: "gesundheit", name: "Kinderheim Narrows", x: -2300, z: 1260, w: 40, d: 30, h: 12 },
     { id: "krippe-1", typ: "gesundheit", name: "Kinderkrippe Uptown", x: -1400, z: -740, w: 25, d: 20, h: 6 },
-    { id: "krippe-2", typ: "gesundheit", name: "Kinderkrippe Westseite", x: -2420, z: -330, w: 25, d: 20, h: 6 },
-    { id: "krippe-3", typ: "gesundheit", name: "Kinderkrippe Südstadt", x: -1960, z: 700, w: 25, d: 20, h: 6 },
+    { id: "krippe-2", typ: "gesundheit", name: "Kinderkrippe Südseite", x: -2420, z: -330, w: 25, d: 20, h: 6 },
+    { id: "krippe-3", typ: "gesundheit", name: "Kinderkrippe Oststadt", x: -1960, z: 700, w: 25, d: 20, h: 6 },
     // --- Freizeit ---
     { id: "stadion", typ: "freizeit", form: "stadion", name: "Football-Stadion (oben offen)", x: -2150, z: 540, w: 220, d: 160, h: 14.1, notiz: "Oben offen, kein Dach. Tribünen 3 Stockwerke (je 4,7 m), Sitzreihen 0,4 m hoch und 0,8 m tief. Ränge rundum, Spielfeld in der Mitte." },
     { id: "museum-1", typ: "freizeit", name: "Kunstmuseum", x: -1700, z: -1160, w: 100, d: 60, h: 25 },
     { id: "museum-2", typ: "freizeit", name: "Naturkundemuseum", x: -2060, z: -1000, w: 90, d: 70, h: 25 },
     { id: "event", typ: "freizeit", name: "Eventgebäude (Spendengala, Hochzeit)", x: -1900, z: -560, w: 90, d: 60, h: 20 },
     { id: "pinguin", typ: "freizeit", name: "Club des Pinguins (Eingang an der unteren Uferstrasse)", x: -1770, z: 470, w: 50, d: 40, h: 12, ebene: -5.5,
-      notiz: "Eingang an der unteren Strasse (Lower Level) unter der Uferstrasse Ost. Geht über mehrere Ebenen nach unten (siehe Seitenansicht)." },
+      notiz: "Eingang an der unteren Strasse (Lower Level) unter der Uferstrasse Nord. Geht über mehrere Ebenen nach unten (siehe Seitenansicht)." },
     { id: "obdachlos", typ: "freizeit", name: "Obdachlosenlager (untere Strasse)", x: -1290, z: -320, w: 30, d: 120, ebene: -5.5,
       notiz: "Unter der zweistöckigen Uferstrasse Ost: oben normaler Verkehr, unten Lager mit Feuertonnen." },
     // --- Banken ---
@@ -270,7 +266,7 @@ const GOTHAM = {
     ...[[-2830, 230], [-2660, 230], [-2400, 640], [-2880, 600]].map(([x, z], i) => ({ id: "fabrik-" + (i + 1), typ: "industrie", name: "Fabrik", x, z, w: 70, d: 45, h: 15 })),
     // --- Geheim ---
     { id: "container-base", typ: "geheim", name: "Container (Aufzug zur geheimen Batman-Basis)", x: -1470, z: 181, markiert: true, w: 6.1, d: 2.4, ufer: true,
-      notiz: "Ganz normaler 20-Fuss-Seecontainer am Ostufer (Nicolas 2026-11-12: bei x -1470 / z 181) (Foto von Nicolas): blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, keine Fenster. 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang. Er ist ein Aufzug (fährt samt Auto hinunter)." },
+      notiz: "Ganz normaler 20-Fuss-Seecontainer am Nordufer (Nicolas 2026-11-12: bei x -1470 / z 181) (Foto von Nicolas): blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, keine Fenster. 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang. Er ist ein Aufzug (fährt samt Auto hinunter)." },
     { id: "bunker", typ: "geheim", name: "Batman-Basis unter dem Container (Halle mit Lichtdecke)", x: -1540, z: 181, w: 90, d: 50, ebene: -5.5,
       notiz: "Flache, weite Halle auf Höhe der Tiefgarage 1 (Boden 5,5 m unter der Strasse, ca. 4,7 m hoch): Sichtbetonwände, die ganze Decke ein Raster aus Lichtpaneelen (Foto von Nicolas), glatter Betonboden. Batmobil in der Mitte, Anzug fährt aus dem Boden, Motorrad und Batpod fahren aus der Wand, hinten Reifenstapel und Werkbank, Computer, aufklappbare Wand mit Waffen und Gadgets, Geheimwand mit Tresor (Goldbarren, Bargeld)." },
     { id: "schurkenbasis", typ: "geheim", name: "Schurkenbasis im Kanalnetz", x: -2050, z: -60, w: 120, d: 80, ebene: -28.5,
@@ -312,15 +308,15 @@ const GOTHAM = {
     teile: [
       // typ: wasser, grund, mauer, deck, strasse, raum, gebaeude, turm, rohr, text; x0/x1 waagrecht, y0/y1 senkrecht (m)
       { typ: "grund", x0: 0, x1: 4750, y0: -60, y1: 0 },
-      { typ: "wasser", name: "Westfluss", x0: 0, x1: 400, y0: -30, y1: -18 },
-      { typ: "wasser", name: "Ostfluss", x0: 4350, x1: 4750, y0: -30, y1: -18 },
+      { typ: "wasser", name: "Südfluss", x0: 0, x1: 400, y0: -30, y1: -18 },
+      { typ: "wasser", name: "Nordfluss", x0: 4350, x1: 4750, y0: -30, y1: -18 },
       { typ: "luft", x0: 0, x1: 400, y0: -18, y1: 0 }, { typ: "luft", x0: 4350, x1: 4750, y0: -18, y1: 0 },
       { typ: "mauer", name: "Kaimauer", x0: 400, x1: 426, y0: -30, y1: 0 },
       { typ: "mauer", name: "Kaimauer", x0: 4324, x1: 4350, y0: -30, y1: 0 },
       // Flussufer (Nicolas 2026-11-11): am Fuss der Kaimauer ein Streifen Kies/Sand knapp ueber dem Wasser, dann weich tiefer bis zum Grund
       { typ: "ufer", name: "Kies/Sand am Ufer, dann tiefer", seite: "west", x0: 0, x1: 400, y0: -30, kies: 0.6, strand: 45 },
       { typ: "ufer", name: "Kies/Sand am Ufer, dann tiefer", seite: "ost", x0: 4350, x1: 4750, y0: -30, kies: 0.6, strand: 45 },
-      { typ: "deck", name: "Westbrücke (Fahrbahn)", x0: 0, x1: 528, y0: -1.5, y1: 0 },
+      { typ: "deck", name: "Südbrücke (Fahrbahn)", x0: 0, x1: 528, y0: -1.5, y1: 0 },
       { typ: "turm", name: "Brückenturm", x0: 371, x1: 397, y0: -18, y1: 62 },
       { typ: "deck", name: "Highway-Brücke (Fahrbahn)", x0: 4222, x1: 4750, y0: -1.5, y1: 0 },
       { typ: "turm", name: "Brückenturm", x0: 4353, x1: 4379, y0: -18, y1: 62 },
@@ -334,7 +330,7 @@ const GOTHAM = {
       { typ: "auslass", name: "Kanal-Auslass (Rohr 6 m, Gitter, Pflaster, Treppe)", x0: 4302, x1: 4430, y0: -18, y1: -10, seite: "ost" },
       { typ: "schacht", name: "Gullideckel + Leiter", x0: 895, x1: 908, y0: -11, y1: 0 }, { typ: "schacht", name: "Gullideckel + Leiter", x0: 3136, x1: 3149, y0: -11, y1: 0 },
       // Narrows
-      { typ: "strasse", name: "Uferstr. West", x0: 426, x1: 576, y0: -0.6, y1: 0 },
+      { typ: "strasse", name: "Uferstr. Süd", x0: 426, x1: 576, y0: -0.6, y1: 0 },
       { typ: "container", name: "Container = Aufzug (20 Fuss, keine Fenster)", x0: 540, y0: 0, laenge: 6.06, hoehe: 2.59, farbe: "#1f3f8f" },
       { typ: "schacht", name: "Aufzugschacht", x0: 540, x1: 625, y0: -5.5, y1: 0, farbe: "#ff4fd8" },
       { typ: "raum", name: "Batman-Basis (Lichtdecke)", x0: 432, x1: 704, y0: -5.5, y1: -0.8, farbe: "#ff4fd8", licht: true },
@@ -365,7 +361,7 @@ const GOTHAM = {
       { typ: "raum", name: "Tiefgarage 1", x0: 3238, x1: 3658, y0: -5.5, y1: 0, farbe: "#9aa4b2" },
       { typ: "raum", name: "Tresorkeller", x0: 3658, x1: 4078, y0: -5.5, y1: 0, farbe: "#3ddc97" },
       { typ: "raum", name: "Tiefgarage 2", x0: 3238, x1: 4078, y0: -11, y1: -5.5, farbe: "#9aa4b2" },
-      { typ: "deck", name: "Uferstrasse Ost (oben)", x0: 4094, x1: 4324, y0: -1, y1: 0 },
+      { typ: "deck", name: "Uferstrasse Nord (oben)", x0: 4094, x1: 4324, y0: -1, y1: 0 },
       // Groessenvergleich: Rolls-Royce Spectre aus dem Spiel (1,6 m hoch, 5,34 m lang), in echten Proportionen
       { typ: "auto", name: "Rolls-Royce Spectre (Strasse)", x0: 1352, y0: 0, laenge: 5.34, hoehe: 1.6 },
       { typ: "auto", name: "Rolls-Royce Spectre (untere Strasse)", x0: 962, y0: -5.5, laenge: 5.34, hoehe: 1.6 },
@@ -420,7 +416,7 @@ const GOTHAM = {
       { typ: "raum", name: "Batcave oben", x0: 20808, x1: 21008, y0: 0, y1: 8.5, farbe: "#c58cff" },
       { typ: "raum", name: "Batcave unten", x0: 20778, x1: 21008, y0: -12, y1: -2, farbe: "#c58cff" },
       { typ: "wasser", name: "Höhlensee", x0: 20743, x1: 20838, y0: -18, y1: -18 },
-      { typ: "strasse", name: "Uferstrasse Ost (unten)", x0: 4094, x1: 4324, y0: -6, y1: -5.5 },
+      { typ: "strasse", name: "Uferstrasse Nord (unten)", x0: 4094, x1: 4324, y0: -6, y1: -5.5 },
     ],
   },
 };

@@ -34,7 +34,7 @@
     <a class="tab" href="./">← Karte</a>
     <a class="tab" href="umsetzung.html">Umsetzungsplan →</a>
     <h1>Gotham-Seitenansicht (Ebenen)</h1>
-    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt West → Ost. Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Das Stadion ist längs geschnitten (West → Ost, Draufsicht darüber). Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
+    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt Süd → Nord (Himmelsrichtungen wie Wayne Manor). Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Das Stadion ist längs geschnitten (West → Ost, Draufsicht darüber). Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
   </header>
   <main id="main"><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
   <button type="button" id="typen">Gebäudetypen + Stadion einklappen</button>
@@ -172,9 +172,9 @@
           el("rect", { x: cx - 55 * m, y: cy - 24.5 * m, width: 110 * m, height: 49 * m, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, v);
           el("line", { x1: cx - ow / 2 * m - 30, y1: cy, x2: cx + ow / 2 * m + 30, y2: cy, stroke: "#ff3b3b", "stroke-width": 3, "stroke-dasharray": "10 6" }, v);
           el("path", { d: `M${cx + ow / 2 * m + 30} ${cy}l-14 -8v16Z`, fill: "#ff3b3b" }, v);
-          label(`Draufsicht ${ow} × ${od} m · rote Linie = dieser Schnitt (West → Ost)`, cx, cy - od / 2 * m - 10, ow * m * 1.3, "#ffb3b3", 18);
-          info(v, `<b>Draufsicht Stadion</b><br>${ow} × ${od} m, oval; Spielfeld 110 × 49 m (mit Endzonen)<br>Der Schnitt läuft längs von West nach Ost durch die Mitte: man sieht die Tribünen hinter den Endzonen und das Spielfeld in voller Länge`); }
-        label(t.name + " · Längsschnitt (West → Ost): Tribünen hinter den Endzonen", (t.x0 + t.x1) / 2, Y(t.hoehe) - 30, W, "#5fd3e6", 22);
+          label(`Draufsicht ${ow} × ${od} m · rote Linie = dieser Schnitt (Süd → Nord)`, cx, cy - od / 2 * m - 10, ow * m * 1.3, "#ffb3b3", 18);
+          info(v, `<b>Draufsicht Stadion</b><br>${ow} × ${od} m, oval; Spielfeld 110 × 49 m (mit Endzonen)<br>Der Schnitt läuft längs von Süden nach Norden durch die Mitte: man sieht die Tribünen hinter den Endzonen und das Spielfeld in voller Länge`); }
+        label(t.name + " · Längsschnitt (Süd → Nord): Tribünen hinter den Endzonen", (t.x0 + t.x1) / 2, Y(t.hoehe) - 30, W, "#5fd3e6", 22);
         label(`Tribünen ${floors} Stockwerke (${fm1(t.hoehe)} m) · ${n} Reihen à ${fm1(Math.round(rise * 100) / 100)} m · Spielfeld ${t.spielfeld || 110} m (echte Länge)`, (t.x0 + t.x1) / 2, Y(t.hoehe) - 8, W, "#e6e9ee", 18); continue; }
       if (t.typ === "neben") {   // schraeges Rohr mit Gefaelle (ya/yb = Sohle am Anfang/Ende), Pfeile in Fliessrichtung
         const so = u => t.ya + (t.yb - t.ya) * (t.kurve ? u * u * (3 - 2 * u) : u), U = [...Array(41).keys()].map(i => i / 40), X = u => t.x0 + (t.x1 - t.x0) * u;   // Sohle; Kurve: oben und unten flach

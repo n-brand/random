@@ -58,7 +58,7 @@
       <div id="legend"></div>
     </aside>
   </main>
-  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · Himmelsrichtungen: Kompass unten rechts (wie Wayne Manor, um 62 Grad gedreht), Karte x nach rechts, z nach unten, 1 Einheit = 1 m wie im Spiel</footer>
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · Himmelsrichtungen: Kompass unten rechts (wie Wayne Manor; ziehen dreht die Karte, Klick = Norden oben / zurück), Karte x nach rechts, z nach unten, 1 Einheit = 1 m wie im Spiel</footer>
 
   <script src="daten.js"></script>
   <script>
@@ -483,7 +483,12 @@
     window.GOTHAM_PRUEFUNG = { issues: issues.map(([o, t]) => o.id + ": " + t), gebaeude: BUILD.length, neben: NEBEN.length, gulli: gn };
 
     // ---------- Ansicht: viewBox verschieben/zoomen ----------
+    // Drehbare Karte (Nicolas 2026-11-12): der ganze Karteninhalt liegt in rotG und dreht sich um die Bildmitte (rotA Grad, im Uhrzeigersinn);
+    // Massstab und Kompass (ui) bleiben am Bildschirm. Schriften drehen gegen, damit sie lesbar bleiben.
+    const rotG = el("g", {}); for (const n of [...svg.children]) if (n !== rotG) rotG.appendChild(n);
+    let rotA = 0, rotTxt = null;
     const ui = el("g", { "pointer-events": "none" });
+    const rot = (x, z, a) => { const c = Math.cos(a * Math.PI / 180), n = Math.sin(a * Math.PI / 180); return [x * c - z * n, x * n + z * c]; };
     const wrap = document.getElementById("wrap"), tip = document.getElementById("tip"), info = document.getElementById("info");
     let vb = { x: G.ansicht.x0, y: G.ansicht.z0, w: G.ansicht.x1 - G.ansicht.x0, h: G.ansicht.z1 - G.ansicht.z0 };
     const fit = () => { const r = wrap.getBoundingClientRect(), a = G.ansicht; if (!r.width || !r.height) return; const W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
@@ -495,6 +500,9 @@
     function apply() {
       keepIn();
       svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+      { const cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2; rotG.setAttribute("transform", rotA ? `rotate(${rotA} ${cx} ${cy})` : "");
+        if (rotTxt !== rotA) { rotTxt = rotA; for (const t of rotG.querySelectorAll("text")) { if (t.dataset.t0 === undefined) t.dataset.t0 = t.getAttribute("transform") || "";
+          const x = +t.getAttribute("x") || 0, y = +t.getAttribute("y") || 0; t.setAttribute("transform", rotA ? `${t.dataset.t0} rotate(${-rotA} ${x} ${y})` : t.dataset.t0); } } }
       const r = wrap.getBoundingClientRect(), k = vb.w / r.width; ui.innerHTML = "";
       const step = [50, 100, 250, 500, 1000, 2000].find(s => s / k > 90) || 2000, x0 = vb.x + 16 * k, y0 = vb.y + vb.h - 18 * k;
       el("rect", { x: x0 - 6 * k, y: y0 - 22 * k, width: step + 12 * k, height: 30 * k, fill: "#000a", rx: 4 * k }, ui);
@@ -502,36 +510,49 @@
       el("text", { x: x0, y: y0 - 7 * k, "font-size": 12 * k, fill: "#fff" }, ui).textContent = step + " m";
       // Kompass-Stern unten rechts (Nicolas 2026-11-12): Himmelsrichtungen wie im Spiel = wie bei Wayne Manor. Die Manor liegt in der Karte um
       // manorLage.dreh Grad im Uhrzeigersinn gedreht, also zeigt Norden (Spiel -z) hier um denselben Winkel gedreht. Buchstaben bleiben aufrecht.
-      { const D = (G.manorLage?.dreh || 0) * Math.PI / 180, cx = vb.x + vb.w - 74 * k, cy = vb.y + vb.h - 78 * k, R = 34 * k, r2 = 11 * k;
-        el("circle", { cx, cy, r: R + 22 * k, fill: "#000a" }, ui);
+      // Wie eine Kurbel (Nicolas 2026-11-12): Stern ziehen dreht die Karte mit; einmal klicken = Norden oben, nochmal = Ausgangslage
+      { const D = ((G.manorLage?.dreh || 0) + rotA) * Math.PI / 180, cx = vb.x + vb.w - 74 * k, cy = vb.y + vb.h - 78 * k, R = 34 * k, r2 = 11 * k;
+        el("circle", { cx, cy, r: R + 22 * k, fill: "#000a", "pointer-events": "all", "data-stern": 1, style: "cursor: grab" }, ui);
         const P = (a, d) => [cx + Math.sin(a + D) * d, cy - Math.cos(a + D) * d];     // a = Richtung im Spiel (0 = Norden), im Uhrzeigersinn
         for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, long = i % 2 === 0, L = long ? R : R * 0.55, w = long ? r2 : r2 * 0.7, [tx, tz] = P(a, L), [lx, lz] = P(a - Math.PI / 4, w * 0.75), [rx, rz] = P(a + Math.PI / 4, w * 0.75);
           el("path", { d: `M${cx} ${cy}L${lx} ${lz}L${tx} ${tz}Z`, fill: i === 0 ? "#e04040" : long ? "#f2f2f2" : "#9aa4b2" }, ui);
           el("path", { d: `M${cx} ${cy}L${rx} ${rz}L${tx} ${tz}Z`, fill: i === 0 ? "#9e2424" : long ? "#b8bec8" : "#6b7480" }, ui); }
         for (const [a, t] of [[0, "N"], [Math.PI / 2, "O"], [Math.PI, "S"], [Math.PI * 1.5, "W"]]) { const [x, z] = P(a, R + 12 * k);
           el("text", { x, y: z + 5 * k, "font-size": 14 * k, "font-weight": 800, fill: t === "N" ? "#ff6b6b" : "#fff", "text-anchor": "middle" }, ui).textContent = t; }
-        el("text", { x: cx, y: cy + R + 36 * k, "font-size": 10 * k, fill: "#c7ccd6", "text-anchor": "middle" }, ui).textContent = "wie Wayne Manor"; }
+        el("text", { x: cx, y: cy + R + 36 * k, "font-size": 10 * k, fill: "#c7ccd6", "text-anchor": "middle" }, ui).textContent = "wie Wayne Manor · drehen/klicken"; }
     }
-    const toWorld = (cx, cy) => { const r = wrap.getBoundingClientRect(); return [vb.x + (cx - r.left) / r.width * vb.w, vb.y + (cy - r.top) / r.height * vb.h]; };
+    const toWorld = (cx, cy) => { const r = wrap.getBoundingClientRect(), ox = ((cx - r.left) / r.width - 0.5) * vb.w, oz = ((cy - r.top) / r.height - 0.5) * vb.h, [a, b] = rot(ox, oz, -rotA);
+      return [vb.x + vb.w / 2 + a, vb.y + vb.h / 2 + b]; };
     // Zoomgrenzen: hoechstens 1,5-mal die Startansicht (ganz Gotham), am naechsten ca. 40 m Bildbreite
     const zoom = (f, cx, cy) => { const r = wrap.getBoundingClientRect(), a = G.ansicht, maxW = 1.5 * r.width * Math.max((a.x1 - a.x0) / r.width, (a.z1 - a.z0) / r.height);
-      f = clamp(f, 40 / vb.w, maxW / vb.w); if (Math.abs(f - 1) < 1e-6) return; const [wx, wy] = toWorld(cx, cy); vb.x = wx - (wx - vb.x) * f; vb.y = wy - (wy - vb.y) * f; vb.w *= f; vb.h *= f; apply(); };
+      f = clamp(f, 40 / vb.w, maxW / vb.w); if (Math.abs(f - 1) < 1e-6) return; const [wx, wy] = toWorld(cx, cy), m = vb.x + vb.w / 2, n = vb.y + vb.h / 2;
+      vb.w *= f; vb.h *= f; vb.x = wx - (wx - m) * f - vb.w / 2; vb.y = wy - (wy - n) * f - vb.h / 2; apply(); };
     wrap.addEventListener("wheel", ev => { ev.preventDefault(); zoom(ev.deltaY > 0 ? 1.18 : 1 / 1.18, ev.clientX, ev.clientY); }, { passive: false });
     const mid = () => { const r = wrap.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
     document.getElementById("zin").onclick = () => zoom(1 / 1.4, ...mid());
     document.getElementById("zout").onclick = () => zoom(1.4, ...mid());
     document.getElementById("zfit").onclick = fit;
     const ptr = new Map(); let moved = 0, pinch = 0;
-    wrap.addEventListener("pointerdown", ev => { if (ev.target.closest(".zoom")) return; wrap.setPointerCapture(ev.pointerId); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); moved = 0; wrap.classList.add("drag"); });
+    let crank = null, rotAnim = 0;
+    const sternMitte = () => { const c = wrap.querySelector("[data-stern]"), b = c.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; };
+    const setRot = (a, anim) => { cancelAnimationFrame(rotAnim); if (!anim) { rotA = a; apply(); return; }
+      const a0 = rotA, d = ((a - a0) % 360 + 540) % 360 - 180, t0 = performance.now(); const st = t => { const u = Math.min(1, (t - t0) / 450), e = u * u * (3 - 2 * u); rotA = a0 + d * e; apply(); if (u < 1) rotAnim = requestAnimationFrame(st); else rotA = a; };
+      rotAnim = requestAnimationFrame(st); };
+    wrap.addEventListener("pointerdown", ev => { if (ev.target.closest(".zoom")) return;
+      if (ev.target.closest("[data-stern]")) { ev.stopPropagation(); wrap.setPointerCapture(ev.pointerId); const [mx, my] = sternMitte(); crank = { id: ev.pointerId, a: Math.atan2(ev.clientY - my, ev.clientX - mx), moved: 0 }; return; } wrap.setPointerCapture(ev.pointerId); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); moved = 0; wrap.classList.add("drag"); });
     wrap.addEventListener("pointermove", ev => {
+      if (crank && crank.id === ev.pointerId) { const [mx, my] = sternMitte(), a = Math.atan2(ev.clientY - my, ev.clientX - mx); let d = a - crank.a; d = Math.atan2(Math.sin(d), Math.cos(d));
+        crank.a = a; crank.moved += Math.abs(d); if (crank.moved > 0.05) setRot(rotA + d * 180 / Math.PI, false); return; }
       if (!ptr.has(ev.pointerId)) { hover(ev); return; }
       const p = ptr.get(ev.pointerId), r = wrap.getBoundingClientRect();
       if (ptr.size === 2) { const [a, b] = [...ptr.values()], d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]);
         const [c, d] = [...ptr.values()], d1 = Math.hypot(c[0] - d[0], c[1] - d[1]); if (d0 > 0 && d1 > 0) zoom(d0 / d1, (c[0] + d[0]) / 2, (c[1] + d[1]) / 2); pinch = 1; moved = 99; return; }
       const dx = ev.clientX - p[0], dy = ev.clientY - p[1]; moved += Math.abs(dx) + Math.abs(dy);
-      vb.x -= dx / r.width * vb.w; vb.y -= dy / r.height * vb.h; ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); apply();
+      { const [a, b] = rot(dx / r.width * vb.w, dy / r.height * vb.h, -rotA); vb.x -= a; vb.y -= b; } ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); apply();
     });
-    const up = ev => { if (!ptr.has(ev.pointerId)) return; ptr.delete(ev.pointerId); if (!ptr.size) wrap.classList.remove("drag");
+    const up = ev => { if (crank && crank.id === ev.pointerId) { const c = crank; crank = null;
+        if (c.moved <= 0.05) { const nu = -(G.manorLage?.dreh || 0), isN = Math.abs(((rotA - nu) % 360 + 540) % 360 - 180) < 1; setRot(isN ? 0 : nu, true); } return; }   // Klick: Norden oben <-> Ausgangslage
+      if (!ptr.has(ev.pointerId)) return; ptr.delete(ev.pointerId); if (!ptr.size) wrap.classList.remove("drag");
       if (moved < 6 && !pinch) click(ev); if (!ptr.size) pinch = 0; };
     wrap.addEventListener("pointerup", up); wrap.addEventListener("pointercancel", up);
     wrap.addEventListener("pointerleave", () => { tip.style.display = "none"; });
