@@ -140,14 +140,20 @@ const GOTHAM = {
     { name: "Arkham-Fähre", linie: [[-2640, 1140], [-2850, 1360], [-3040, 1560], [-3185, 1680]], notiz: "Autofähre zwischen dem Anleger in den Narrows und Arkham Asylum, einzige Verbindung zur Arkham-Insel." },
   ],
 
-  // U-Bahn: ein grosser Ring entlang der Inselform, Stationen per Winkel in Grad vom Zentrum aus (0 = Osten, 90 = Sueden)
+  // U-Bahn (Nicolas 2026-11-12): ein Zentrumsring um den Wayne Tower und drei Ringe in den Lappen der Insel (Uptown, Westseite, Sueden).
+  // Jeder Ring ist eine Ringlinie mit zwei Gleisen (Zuege in beide Richtungen, Vorbild Yamanote-Linie Tokio). Wo sich Ringe kreuzen,
+  // entsteht automatisch eine Umsteigestation. Ring = Ellipse: Mitte cx/cz, Halbachsen rx/rz, dreh = Drehung in Grad.
+  // Stationen per Winkel a in Grad auf der Ellipse (0 = Osten, 90 = Sueden, 180 = Westen, 270 = Norden), nicht naeher als 120 m an einer Umsteigestation.
   ubahn: {
-    abstand: 420, glatt: 15, cx: -2250, cz: 50,   // Ring folgt der Inselform: Ufer auf der Linie zur Mitte um abstand m nach innen, glatt = Glaettung; cx/cz = Mitte fuer die Stationswinkel (Nicolas 2026-11-12)
-    stationen: [
-      { name: "Hauptbahnhof", a: 0, haupt: true },
-      { name: "Stadion", a: 30 }, { name: "Südstadt", a: 60 }, { name: "Hafen", a: 90 }, { name: "Narrows", a: 120, notiz: "Graffiti NBR im Tunnel Richtung Fabrikviertel" },
-      { name: "Fabrikviertel", a: 150 }, { name: "Westseite", a: 180 }, { name: "Kathedrale", a: 210 }, { name: "Museumsmeile", a: 240 },
-      { name: "Uptown", a: 270 }, { name: "Park Row", a: 300 }, { name: "Diamond District", a: 330 },
+    ringe: [
+      { name: "Ring 1 Zentrum", farbe: "#ff5a5a", cx: -2150, cz: -80, rx: 540, rz: 470,
+        stationen: [{ name: "Hauptbahnhof", a: 0, haupt: true }, { name: "Gericht", a: 45 }, { name: "Polizeipräsidium", a: 140 }, { name: "Museumsmeile", a: 200 }, { name: "Kathedrale", a: 250 }, { name: "Park Row", a: 300 }] },
+      { name: "Ring 2 Uptown", farbe: "#ffd43b", cx: -1720, cz: -790, rx: 400, rz: 430, dreh: -20,
+        stationen: [{ name: "Uptown", a: 250 }, { name: "Kunstmuseum", a: 300 }, { name: "Diamond District", a: 355 }, { name: "Uptown Ost", a: 40 }, { name: "Crosstown", a: 205 }] },
+      { name: "Ring 3 Westseite", farbe: "#74c0fc", cx: -3030, cz: -320, rx: 470, rz: 380,
+        stationen: [{ name: "Westseite", a: 180 }, { name: "Westside Drive", a: 250 }, { name: "Westseite Nord", a: 300 }, { name: "Krankenhaus West", a: 90 }, { name: "Industrial Way", a: 130 }] },
+      { name: "Ring 4 Süd", farbe: "#a9e34b", cx: -2230, cz: 800, rx: 320, rz: 450,
+        stationen: [{ name: "Stadion", a: 330 }, { name: "Südstadt", a: 20 }, { name: "Hafen", a: 90 }, { name: "Narrows", a: 150, notiz: "Graffiti NBR im Tunnel Richtung Fabrikviertel" }, { name: "Fabrikviertel", a: 210 }] },
     ],
     depot: { name: "Abstellanlage (Züge ausser Betrieb, am Gleisnetz)", x: -1450, z: -330, w: 120, d: 60, gleis: [[-1780, 100], [-1650, -120], [-1500, -300]] },
     graffiti: [{ text: "NBR", x: -2620, z: 600 }],
