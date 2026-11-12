@@ -4,7 +4,7 @@
 "use strict";
 
 // Hauptstrassen auf der Insel: Linien aus der Karte (Karten-Koordinaten -> Spiel), alle 4 m abgetastet, nur die Stuecke auf der Insel (Festland,
-// Highway und Bruecken folgen in G2c/G2d). Fahrbahn w m breit mit Markierung (ab 18 m vier Spuren: gelbe Doppellinie, gestrichelte Spurlinien,
+// Highway und Bruecken folgen in G2c/G2d). Fahrbahn w m breit mit Markierung (ab 13 m vier Spuren zu ca. 3,3 m (Nicolas 2026-11-12: schmaler): gelbe Doppellinie, gestrichelte Spurlinien,
 // Randlinien; schmaler zwei Spuren), daneben je 4 m Gehsteig (Platten, heller Bordstein), an Kreuzungen schlichte Asphaltflaechen ohne Linien
 // und keine Gehsteige auf der anderen Fahrbahn. Vorerst nur Optik: Boden bleibt die flache Strassenebene (-16), zweistoeckige Strassen kommen in G2e.
 const GSTR = { roads: [], patches: [] };
@@ -63,7 +63,7 @@ const GSTR = { roads: [], patches: [] };
     const o = new THREE.Mesh(g, m); o.name = name; o.receiveShadow = true; o.userData.keep = true; o.userData.noLift = true; scene.add(o); return o; };
   const A4 = geo(), A2 = geo(), W = geo(), K = geo(), X = geo();
   GSTR.roads.forEach((r, ri) => {
-    band(r.w >= 18 ? A4 : A2, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, 0, null);
+    band(r.w >= 12.5 ? A4 : A2, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, 0, null);
     const sk = (x, z) => onOther(x, z, ri, 0.5) || inPatch(x, z);
     for (const sg of [1, -1]) { band(W, r.pts, sg * (r.w / 2 + 0.3), sg * (r.w / 2 + 4), Y + 0.04, 2, 2, sk); band(K, r.pts, sg * r.w / 2, sg * (r.w / 2 + 0.3), Y + 0.045, 2, 1, sk); }   // Gehsteig, Bordstein
   });

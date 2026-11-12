@@ -91,61 +91,63 @@ const GOTHAM = {
   bezirke: [
     // Bezirke an der Inselform (Nicolas 2026-11-12): Uptown im breiten Nordosten, Westseite im Westlappen, Narrows und Hafen an der Suedspitze
     { name: "Uptown (sehr reich)", wohlstand: 0.95, poly: [[-2600, -1700], [-800, -1700], [-800, -480], [-1500, -460], [-2100, -560], [-2600, -560]],
-      netz: { winkel: 9, abstand: [150, 70], krumm: 22, luecken: 0.05, breite: 12 } },
+      netz: { winkel: 9, abstand: [150, 70], krumm: 22, luecken: 0.05, breite: 8 } },
     { name: "Midtown / Zentrum", wohlstand: 0.85, poly: [[-2600, -560], [-2100, -560], [-1500, -460], [-800, -480], [-800, 330], [-1500, 380], [-2250, 300], [-2600, 250]],
-      netz: { winkel: -5, abstand: [110, 64], krumm: 14, luecken: 0.06, breite: 12 } },
+      netz: { winkel: -5, abstand: [110, 64], krumm: 14, luecken: 0.06, breite: 8 } },
     { name: "Südseite (Mittelstand)", wohlstand: 0.6, poly: [[-3900, -1100], [-2600, -1100], [-2600, 250], [-3900, 300]],
-      netz: { winkel: 22, abstand: [92, 74], krumm: 34, luecken: 0.1, breite: 11 } },
+      netz: { winkel: 22, abstand: [92, 74], krumm: 34, luecken: 0.1, breite: 8 } },
     { name: "Oststadt (gemischt)", wohlstand: 0.45, poly: [[-2250, 300], [-1500, 380], [-800, 330], [-800, 950], [-2200, 950], [-2200, 780]],
-      netz: { winkel: -16, abstand: [96, 80], krumm: 30, luecken: 0.12, breite: 11 } },
+      netz: { winkel: -16, abstand: [96, 80], krumm: 30, luecken: 0.12, breite: 8 } },
     { name: "Fabrikviertel", wohlstand: 0.25, poly: [[-3900, 300], [-2600, 250], [-2250, 300], [-2200, 780], [-3900, 780]],
-      netz: { winkel: 4, abstand: [170, 120], krumm: 14, luecken: 0.25, breite: 12 } },
+      netz: { winkel: 4, abstand: [170, 120], krumm: 14, luecken: 0.25, breite: 8 } },
     { name: "The Narrows (arm, Hafen)", wohlstand: 0.1, poly: [[-3900, 780], [-2200, 780], [-2200, 950], [-800, 950], [-800, 1600], [-3900, 1600]],
-      netz: { winkel: 33, abstand: [58, 44], krumm: 16, luecken: 0.16, breite: 7 } },
+      netz: { winkel: 33, abstand: [58, 44], krumm: 16, luecken: 0.16, breite: 6 } },
   ],
 
   // Hauptstrassen (frei gezogen, weiche Kurven). Nebenstrassen kommen automatisch aus den Bezirken (netz).
+  // Breiten (Nicolas 2026-11-12: Strassen schmaler, Test im Spiel: Spuren waren 4,5 m): vierspurig 13-16 m (Spuren ca. 3,3-3,5 m), zweispurig 8-10 m,
+  // Nebenstrassen 8 m, Gassen 6 m; vorher 16-24 / 10-12 / 7 m
   hauptstrassen: [
-    { id: "ring", name: "Wayne Circle (Ring um den Wayne Tower)", w: 22, geschlossen: true, linie: ellipse(-2050, -100, 290, 245) },
-    { id: "parkrow", name: "Park Row (zweistöckig)", w: 24, zweistock: true, linie: [["O", 300], [-1640, 180], [-1770, -10]] },
-    { id: "uptown-ave", name: "Uptown Avenue", w: 22, linie: [[-2050, -345], [-2000, -700], [-1980, -1000], [-1955, "N"]] },
-    { id: "gotham-blvd", name: "Gotham Boulevard", w: 22, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2120, 1240]] },
-    { id: "westside", name: "Southside Drive", w: 18, linie: [[-2340, -100], [-2600, -230], [-2800, -480], [-2860, -700]] },
+    { id: "ring", name: "Wayne Circle (Ring um den Wayne Tower)", w: 14, geschlossen: true, linie: ellipse(-2050, -100, 290, 245) },
+    { id: "parkrow", name: "Park Row (zweistöckig)", w: 16, zweistock: true, linie: [["O", 300], [-1640, 180], [-1770, -10]] },
+    { id: "uptown-ave", name: "Uptown Avenue", w: 14, linie: [[-2050, -345], [-2000, -700], [-1980, -1000], [-1955, "N"]] },
+    { id: "gotham-blvd", name: "Gotham Boulevard", w: 14, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2120, 1240]] },
+    { id: "westside", name: "Southside Drive", w: 13, linie: [[-2340, -100], [-2600, -230], [-2800, -480], [-2860, -700]] },
     // Nicolas 2026-11-12: direkter Hauptsammler vom Hub (Schurkenbasis) nach Westen bis unter die Uferstrasse West
-    { id: "west-ave", name: "South Avenue", w: 20, linie: [[-2340, -100], [-2800, -125], [-3200, -160], ["W", -170]] },
-    { id: "diag-nord", name: "Old Broadway (West)", w: 20, linie: [[-1380, -1250], [-1500, -1000], [-1680, -720], [-1820, -300]] },
-    { id: "diag-sued", name: "Old Broadway (Ost)", w: 20, linie: [[-2290, 30], [-2470, 400], [-2600, 750], [-2580, 1100]] },
-    { id: "crosstown", name: "Crosstown Expressway", w: 24, linie: [["O", -880], [-1300, -860], [-1620, -930], [-2050, -880], [-2450, -800], [-2860, -700], ["W", -730]] },
+    { id: "west-ave", name: "South Avenue", w: 14, linie: [[-2340, -100], [-2800, -125], [-3200, -160], ["W", -170]] },
+    { id: "diag-nord", name: "Old Broadway (West)", w: 14, linie: [[-1380, -1250], [-1500, -1000], [-1680, -720], [-1820, -300]] },
+    { id: "diag-sued", name: "Old Broadway (Ost)", w: 14, linie: [[-2290, 30], [-2470, 400], [-2600, 750], [-2580, 1100]] },
+    { id: "crosstown", name: "Crosstown Expressway", w: 16, linie: [["O", -880], [-1300, -860], [-1620, -930], [-2050, -880], [-2450, -800], [-2860, -700], ["W", -730]] },
     // Harbor Road (Nicolas 2026-11-12: Bruecke neu analysiert): von der Suedbruecke quer durch die Narrows zum Faehranleger (Arkham)
-    { id: "sued-road", name: "Harbor Road", w: 18, linie: [["O", 800], [-1950, 860], [-2150, 1000], [-2380, 1090], [-2580, 1100]] },
-    { id: "industrial", name: "Industrial Way", w: 18, linie: [[-2470, 400], [-2720, 470], ["W", 520]] },
-    { id: "ufer-ost", name: "Uferstrasse Nord (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
-    { id: "ufer-west", name: "Uferstrasse Süd", w: 16, ufer: { seite: "west", abstand: 70, von: -850, bis: 700 } },
+    { id: "sued-road", name: "Harbor Road", w: 13, linie: [["O", 800], [-1950, 860], [-2150, 1000], [-2380, 1090], [-2580, 1100]] },
+    { id: "industrial", name: "Industrial Way", w: 13, linie: [[-2470, 400], [-2720, 470], ["W", 520]] },
+    { id: "ufer-ost", name: "Uferstrasse Nord (zweistöckig)", w: 14, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
+    { id: "ufer-west", name: "Uferstrasse Süd", w: 10, ufer: { seite: "west", abstand: 70, von: -850, bis: 700 } },
     // ausserhalb der Insel
     // Gotham Highway (Nicolas 2026-11-12, Skizze bei [-1032, 709]): laeuft auf dem Festland Nord von der Nordbruecke (Crosstown) im Bogen hinunter zur
     // Ostbruecke (Harbor); die Gotham-Highway-Bruecke muendet im Bogen von unten ein. Zur Manor fuehrt (vorerst) nur eine normale Strasse.
-    { id: "highway", name: "Gotham Highway", w: 22, linie: [["Oa", -880], [-420, -600], [-420, -150], [-520, 300], [-760, 560], [-960, 700], [-1080, 740], ["Oa", 800]] },
+    { id: "highway", name: "Gotham Highway", w: 14, linie: [["Oa", -880], [-420, -600], [-420, -150], [-520, 300], [-760, 560], [-960, 700], [-1080, 740], ["Oa", 800]] },
     // Festland Ost: verbindet die Enden von Nord-, Highway- und Suedbruecke (vorher endeten Nord- und Suedbruecke ohne Strasse)
-    { id: "highway-bruecke", name: "Gotham Highway (Zubringer Highway-Brücke)", w: 22, linie: [["Oa", 300], [-930, 628], [-790, 535], [-640, 430]] },   // muendet im Bogen in den Highway
+    { id: "highway-bruecke", name: "Gotham Highway (Zubringer Highway-Brücke)", w: 14, linie: [["Oa", 300], [-930, 628], [-790, 535], [-640, 430]] },   // muendet im Bogen in den Highway
     // Nicolas 2026-11-12: Strasse von der Suedbruecke muendet kurz nach der Bruecke in den Highway (ab dort eine Strasse)
-    { id: "manor-strasse", name: "Strasse nach Wayne Manor", w: 10, linie: [[-528, 1358], [-760, 1200], [-900, 950], [-960, 700]] },   // ab Suedwest-Ende der Manor-Hauptstrasse (Spiel -61 / 200), ohne Knick; normale Strasse, kein Highway
-    { id: "nord-zufahrt", name: "Zufahrt Westen (über die Westkanal-Brücke)", w: 16, linie: [[-2424, "Na"], [-2470, -1450], [-2560, -1800]] },
-    { id: "nord-anschluss", name: "Anschluss Westkanal-Brücke", w: 16, linie: [[-2424, -870], [-2445, -800]] },
+    { id: "manor-strasse", name: "Strasse nach Wayne Manor", w: 8, linie: [[-528, 1358], [-760, 1200], [-900, 950], [-960, 700]] },   // ab Suedwest-Ende der Manor-Hauptstrasse (Spiel -61 / 200), ohne Knick; normale Strasse, kein Highway
+    { id: "nord-zufahrt", name: "Zufahrt Westen (über die Westkanal-Brücke)", w: 10, linie: [[-2424, "Na"], [-2470, -1450], [-2560, -1800]] },
+    { id: "nord-anschluss", name: "Anschluss Westkanal-Brücke", w: 10, linie: [[-2424, -870], [-2445, -800]] },
     { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-528, 1358], [-471, 1397], [-422, 1425], [-382, 1438], [-345, 1443], [-311, 1457], [-274, 1487], [-224, 1503], [-161, 1495], [-94, 1472], [-11, 1442]] },   // Spiel-Punkte (-61 / 200 ... 256 / -217) mit manorLage umgerechnet
-    { id: "west-nord", name: "Zufahrt Süden (West)", w: 16, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
-    { id: "west-sued", name: "Zufahrt Süden (Ost)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
+    { id: "west-nord", name: "Zufahrt Süden (West)", w: 10, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
+    { id: "west-sued", name: "Zufahrt Süden (Ost)", w: 10, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
   ],
   // Haengebruecken (Fahrbahn auf Strassenhoehe; Tuerme stehen automatisch an den Ufern)
   // spanne = Laenge ueber dem Wasser zwischen den Tuermen (m) fuer die Seitenansicht; die Karte misst nach und meldet, wenn die Zahl nicht mehr stimmt
   bruecken: [
-    { name: "Gotham-Highway-Brücke", spanne: 414, w: 26, seite: "ost", z: 300 },
-    { name: "Nordbrücke (Crosstown)", spanne: 430, w: 24, seite: "ost", z: -880 },
+    { name: "Gotham-Highway-Brücke", spanne: 414, w: 18, seite: "ost", z: 300 },
+    { name: "Nordbrücke (Crosstown)", spanne: 430, w: 16, seite: "ost", z: -880 },
     // Nicolas 2026-11-12: vorher bei z 1050, dort war der Ostfluss schon Meer - die Bruecke endete im Wasser, ohne Strasse am Ostufer
-    { name: "Ostbrücke (Harbor)", spanne: 436, w: 22, seite: "ost", z: 800 },
+    { name: "Ostbrücke (Harbor)", spanne: 436, w: 14, seite: "ost", z: 800 },
     // Nicolas 2026-11-12: Bruecke nach Norden ueber den Nordkanal (bei x -2424 / z -946)
-    { name: "Westkanal-Brücke", spanne: 272, w: 20, seite: "nord", x: -2424 },
-    { name: "Westbrücke", spanne: 364, w: 20, seite: "west", z: -730 },
-    { name: "Südbrücke", spanne: 416, w: 20, seite: "west", z: 520 },
+    { name: "Westkanal-Brücke", spanne: 272, w: 14, seite: "nord", x: -2424 },
+    { name: "Westbrücke", spanne: 364, w: 14, seite: "west", z: -730 },
+    { name: "Südbrücke", spanne: 416, w: 14, seite: "west", z: 520 },
   ],
   // Faehren (Nicolas 2026-11-12: nach Arkham eine Faehre statt einer Bruecke): Route uebers Wasser von Anleger zu Anleger
   faehren: [
