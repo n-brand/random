@@ -89,17 +89,8 @@ function gothamH(x, z, h) {
     else g = Math.min(h, GOT.WY + 0.6 + dw * 0.32 + 5 * (vnoise(x / 70 + 41, z / 70 + 17) - 0.5) * sst(0, 80, dw)); }   // Festland: natuerlich ansteigend, Berge dahinter bleiben
   return h + (g - h) * w;
 }
-// Wasserflaeche der Fluesse (Welt-y SEA_Y, gleiches Material wie das Meer): 32-m-Zellen ueberall, wo eine Ecke Gotham-Wasser ist und nicht schon
-// das Meer der Manor liegt (seaD < 5). Ragt unter das Ufer (dort liegt das Gelaende hoeher und deckt sie zu); 2 cm unter dem Meer, damit es dort,
-// wo sich beide ueberlappen, nicht flimmert.
-{
-  const S = 32, B = GOT.bbox, P = [], U = [], I = [];
-  for (let z = Math.floor(B.z0 / S) * S; z < B.z1; z += S) for (let x = Math.floor(B.x0 / S) * S; x < B.x1; x += S) {
-    const c = [[x, z], [x + S, z], [x, z + S], [x + S, z + S]];
-    if (!c.some(([a, b]) => GOT.w(a, b) > 0 && GOT.water(a, b) && seaD(a, b) < 5)) continue;
-    const k = P.length / 3; for (const [a, b] of c) { P.push(a, 0, b); U.push(a / 10, b / 10); } I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-  }
-  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2)); g.setIndex(I); g.computeVertexNormals();
-  const m = new THREE.Mesh(g, mat.sea); m.position.y = SEA_Y - 0.02; m.name = "Gotham-Wasser"; m.userData.keep = true; m.userData.noLift = true;   // ohne receiveShadow: weit ausserhalb der Schattenkarte wurde es weiss scene.add(m);
-  GOT.waterMesh = m;
-}
+// G1b: Gotham-Bereich fuer das eigene 4-m-Raster (gotham-raster.js). Rechteck mit Kanten auf dem 40-m-Raster des Fernrings und 15 x 256 m gross,
+// deckt Insel, Fluesse und Ufer ab; dazu mehr als GOT_R0 von der Manor (naeher bleibt das Hauptraster).
+const GOT_R = { x0: -4240, x1: -400, z0: -1040, z1: 2800 }, GOT_R0 = 1050;
+const inGothamR = (x, z) => x >= GOT_R.x0 && x <= GOT_R.x1 && z >= GOT_R.z0 && z <= GOT_R.z1;
+const inGothamG = (x, z) => inGothamR(x, z) && x * x + z * z > GOT_R0 * GOT_R0;

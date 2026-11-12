@@ -35,6 +35,7 @@ function fernBuild() {
   const inner = (i, j) => Math.abs(-FR_R + i * FR_S) < FR_IN - FR_S && Math.abs(-FR_R + j * FR_S) < FR_IN - FR_S;   // ganz unter dem Gelaende-Raster
   for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) {
     if (inner(i, j) && inner(i + 1, j) && inner(i, j + 1) && inner(i + 1, j + 1)) continue;
+    { const x = -FR_R + i * FR_S, z = -FR_R + j * FR_S; if (inGothamR(x, z) && inGothamR(x + FR_S, z + FR_S)) continue; }   // Gotham: eigenes Raster (G1b)
     const a = j * n + i, b = a + 1, cc = a + n, d = cc + 1; I.push(a, cc, b, b, cc, d);
   }
   const g = new THREE.BufferGeometry();
