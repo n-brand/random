@@ -33,7 +33,7 @@ const UMSETZUNG = [
   { phase: "technik", nr: "T4", titel: "Ladescreen", status: "fertig", stand: "K7 erledigt: Ladebildschirm für PC und Handy mit echtem Fortschritt, Start in ca. 3 s.", braucht: ["T2"],
     inhalt: "Eigener Ladebildschirm für PC und Handy mit Fortschritt der echten Ladeschritte und Tipps.",
     warum: "Mit Gotham dauert das erste Laden länger." },
-  { phase: "technik", nr: "T5", titel: "Teststrecke für Bauteile", status: "offen", braucht: [],
+  { phase: "technik", nr: "T5", titel: "Teststrecke für Bauteile", status: "fertig", stand: "Werkstatt unter werkstatt/ (2026-11-12): alle 15 Fahrzeugmodelle wählbar, Ansehen, Drehteller, Fahren auf Rundkurs und Slalom, Masse (Länge, Breite, Höhe, Radstand, Spur). Gebäude-Vorlagen kommen mit G3 dazu.", braucht: [],
     inhalt: "Eigene Testseite (werkstatt/): ein einzelnes Modell auf leerer Fläche mit Piste, ohne die Welt zu ändern.",
     warum: "Gebäude-Vorlagen und Fahrzeuge lassen sich dort einzeln bauen und prüfen." },
   { phase: "grund", nr: "G1", titel: "Gelände und Wasser", status: "offen", braucht: ["T2"],

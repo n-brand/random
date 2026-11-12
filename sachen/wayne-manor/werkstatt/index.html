@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Werkstatt – Wayne Manor 3D</title>
+  <style>
+    :root { color-scheme: dark; --text: #ecebe6; --muted: #9b9a94; --accent: #ffd43b; --line: #2a2d35; --panel: rgba(16, 18, 24, .82); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #0b0d12; color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    canvas { display: block; touch-action: none; }
+    #ui { position: fixed; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 12px); width: 300px; max-width: calc(100% - 24px); max-height: calc(100% - 70px); overflow: auto;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; backdrop-filter: blur(8px); z-index: 5; }
+    #ui h1 { font-size: 16px; margin: 0 0 2px; }
+    #ui .nav { display: flex; gap: 12px; font-size: 12px; margin-bottom: 8px; }
+    #ui a { color: var(--muted); text-decoration: none; }
+    #ui a:hover { color: var(--text); }
+    #ui label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    select { width: 100%; font: inherit; color: var(--text); background: #11141a; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+    .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .row button { flex: 1 1 auto; font: inherit; font-weight: 700; font-size: 13px; color: var(--text); background: transparent; border: 2px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+    .row button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #1a1405; }
+    .row button:hover { border-color: var(--accent); }
+    #info { margin-top: 10px; font-size: 13px; }
+    #info table { width: 100%; border-collapse: collapse; }
+    #info td { padding: 2px 0; border-bottom: 1px solid #ffffff10; }
+    #info td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+    #keys { margin-top: 10px; font-size: 12px; color: var(--muted); }
+    #keys b { color: var(--text); }
+    .note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    #speed { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 46px); transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+      padding: 4px 14px; font-weight: 800; font-variant-numeric: tabular-nums; z-index: 5; }
+    #speed[hidden] { display: none; }
+    #touch { position: fixed; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 46px); display: none; grid-template-columns: repeat(3, 56px); gap: 6px; z-index: 5; }
+    body.touch.drive #touch { display: grid; }
+    #touch button { height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: 800 18px system-ui; }
+    #car-speed, #car-nitro { display: none !important; }
+    footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 8px 16px calc(env(safe-area-inset-bottom, 0px) + 8px); font-size: 12px; color: var(--muted); z-index: 4; pointer-events: none; }
+    footer a { color: var(--accent); pointer-events: auto; }
+    @media (max-width: 680px) { #ui { width: auto; right: 12px; max-height: 46%; } }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="nav"><a href="../../../">← Übersicht</a><a href="../">Wayne Manor</a><a href="../gotham/umsetzung.html">Umsetzungsplan</a></div>
+    <h1>Werkstatt (Teststrecke)</h1>
+    <div class="note">Ein Modell allein auf einer leeren Fläche mit Rundkurs und Slalom. Die Spielwelt wird nicht verändert.</div>
+    <label for="pick">Modell</label>
+    <select id="pick"></select>
+    <div class="row" role="group" aria-label="Ansicht">
+      <button id="m-orbit" aria-pressed="true">Ansehen</button>
+      <button id="m-drive" aria-pressed="false">Fahren</button>
+      <button id="m-spin" aria-pressed="false">Drehteller</button>
+    </div>
+    <div id="info"></div>
+    <div id="keys"><b>Fahren:</b> W/S Gas/Bremse, A/D lenken, Leertaste Handbremse, V Kamera, R zurück zum Start. <b>Ansehen:</b> ziehen = drehen, Mausrad = Zoom.</div>
+  </div>
+  <div id="speed" hidden>0 km/h</div>
+  <div id="touch" aria-label="Steuerung"><span></span><button data-k="KeyW">▲</button><span></span><button data-k="KeyA">◀</button><button data-k="KeyS">▼</button><button data-k="KeyD">▶</button></div>
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
+
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { installOrbitPick, PICK_ICONS } from "../../../shared/orbit-pick.js";
+    import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+    // Wie im Spiel: Grundgeruest (kern/basis.js) und Fahrzeugmodelle (fahrzeuge/modelle.js) als klassische Skripte, danach die Werkstatt (werkstatt.js).
+    // ghost / teleportToPoint braucht das Rechtsklick-Menue aus basis.js; hier setzt "Hierhin teleportieren" das Fahrzeug an den Punkt.
+    Object.assign(window, { THREE, OrbitControls, installOrbitPick, PICK_ICONS, mergeGeometries, mergeVertices, ghost: false, teleportToPoint: p => window.werkstattTeleport && window.werkstattTeleport(p) });
+    for (const f of ["../js/kern/basis.js", "../js/fahrzeuge/modelle.js", "werkstatt.js"]) { const s = document.createElement("script"); s.src = f; s.async = false; document.body.appendChild(s); }
+  </script>
+</body>
+</html>
