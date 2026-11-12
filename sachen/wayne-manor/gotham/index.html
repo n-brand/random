@@ -100,35 +100,34 @@
     const lineLen = L => { let s = 0; for (let i = 1; i < L.length; i++) s += Math.hypot(L[i][0] - L[i - 1][0], L[i][1] - L[i - 1][1]); return s; };
 
     // ---------- Wasser und Insel ----------
-    const WA = G.wasser, RW = spline1(WA.west.punkte), RE = spline1(WA.ost.punkte), RN = spline1(WA.nord.punkte), CS = spline1(WA.kueste);
-    const meer = [];
-    for (let x = -4200; x <= -1000; x += 10) meer.push([x, CS(x)[0]]);
-    meer.push(...WA.kuesteAlt, [1700, 2600], [-4200, 2600]);
+    // Insel = frei gezeichneter Umriss (Skizze von Nicolas), Fluesse = Wasserband rundum (Breite je Seite), Meer im Sueden
+    const WA = G.wasser, insel = smooth(G.insel.umriss, 20, true); insel.pop();
+    const meer = [...smooth(WA.kueste, 20), ...WA.kuesteAlt, [1700, 2600], [-5200, 2600]];
     const inSea = (x, z) => inPoly(x, z, meer);
-    const bankW = z => { const [c, w] = RW(z); return c + w / 2; }, bankE = z => { const [c, w] = RE(z); return c - w / 2; }, bankN = x => { const [c, w] = RN(x); return c + w / 2; };
-    const inIslandRaw = (x, z) => x > bankW(z) && x < bankE(z) && z > bankN(x) && !inSea(x, z);
-    const inWater = (x, z) => { const [cw, ww] = RW(z), [ce, we] = RE(z), [cn, wn] = RN(x);
-      return (z > -2900 && Math.abs(x - cw) < ww / 2) || (z > -2900 && Math.abs(x - ce) < we / 2) || (x > -3800 && x < -500 && Math.abs(z - cn) < wn / 2 && x > cw - ww / 2 && x < ce + we / 2) || inSea(x, z); };
-    // Inselumriss: Westufer (N->S), Kueste (W->O), Ostufer (S->N), Kanalufer (O->W), jeweils nur gueltige Punkte
-    const roh = [], e = 0.5;
-    for (let z = -2200; z <= 1900; z += 8) { const x = bankW(z) + e; if (inIslandRaw(x, z)) roh.push([x, z]); }
-    for (let x = -3600; x <= -500; x += 8) { let z = CS(x)[0] - e; if (inIslandRaw(x, z)) roh.push([x, z]); }
-    for (let z = 1900; z >= -2200; z -= 8) { const x = bankE(z) - e; if (inIslandRaw(x, z)) roh.push([x, z]); }
-    for (let x = -500; x >= -3600; x -= 8) { const z = bankN(x) + e; if (inIslandRaw(x, z)) roh.push([x, z]); }
-    // Ecken abrunden: ausduennen, dann Chaikin
-    let insel = roh.filter((_, i) => i % 6 === 0);
-    for (let it = 0; it < (WA.rundung || 0); it++) insel = insel.flatMap((p, i) => { const q = insel[(i + 1) % insel.length]; return [[p[0] * .75 + q[0] * .25, p[1] * .75 + q[1] * .25], [p[0] * .25 + q[0] * .75, p[1] * .25 + q[1] * .75]]; });
+    const IX = insel.map(p => p[0]), IZ = insel.map(p => p[1]), ICX = (Math.min(...IX) + Math.max(...IX)) / 2, ICZ = (Math.min(...IZ) + Math.max(...IZ)) / 2;
+    // Flussbreite je Uferstueck nach der Richtung nach aussen (Osten/Westen/Norden), geglaettet
+    const NI = insel.length, flussW = insel.map((p, i) => { const a = insel[(i + NI - 1) % NI], b = insel[(i + 1) % NI]; let nx = b[1] - a[1], nz = -(b[0] - a[0]); const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+      if (nx * (p[0] - ICX) + nz * (p[1] - ICZ) < 0) { nx = -nx; nz = -nz; }
+      return { n: [nx, nz], w: nx * nx * (nx > 0 ? WA.ost.breite : WA.west.breite) + nz * nz * (nz < 0 ? WA.nord.breite : WA.sued.breite) }; });
+    for (let it = 0; it < 3; it++) { const w = flussW.map(f => f.w); flussW.forEach((f, i) => f.w = (w[(i + NI - 1) % NI] + 2 * w[i] + w[(i + 1) % NI]) / 4); }
+    const flussName = f => Math.abs(f.n[0]) > Math.abs(f.n[1]) ? (f.n[0] > 0 ? WA.ost.name : WA.west.name) : (f.n[1] < 0 ? WA.nord.name : WA.sued.name);
+    const edgeDist = (x, z) => { let m = 1e9; for (let i = 0; i < NI; i++) m = Math.min(m, segDist(x, z, insel[i], insel[(i + 1) % NI])); return m; };
+    const inRiver = (x, z) => { for (let i = 0; i < NI; i++) if (segDist(x, z, insel[i], insel[(i + 1) % NI]) < flussW[i].w) return true; return false; };
+    // Schnittpunkte einer waagrechten/senkrechten Linie mit dem Umriss
+    const cuts = (v, c) => { const o = c ? 0 : 1, r = []; for (let i = 0; i < NI; i++) { const a = insel[i], b = insel[(i + 1) % NI]; if ((a[o] > v) !== (b[o] > v)) r.push(a[1 - o] + (v - a[o]) / (b[o] - a[o]) * (b[1 - o] - a[1 - o])); } return r; };
+    const bankW = z => Math.min(...cuts(z, false)), bankE = z => Math.max(...cuts(z, false)), bankN = x => Math.min(...cuts(x, true)), bankS = x => Math.max(...cuts(x, true));
+    // gegenueberliegendes Ufer: vom Inselufer nach aussen gehen, bis das Wasser endet
+    const across = (x, z, dx, dz) => { let s = 2; while (s < 3000 && (inRiver(x + dx * s, z + dz * s) || inSea(x + dx * s, z + dz * s))) s += 2; return [x + dx * s, z + dz * s]; };
     // Inselmaske (3-m-Raster, Zeilen-Fuellung) fuer schnelle Abfragen
-    const MC = 3, MX = -3600, MZ = -2000, MNX = Math.ceil(3200 / MC), MNZ = Math.ceil(4000 / MC), mask = new Uint8Array(MNX * MNZ);
+    const MC = 3, MX = Math.floor(Math.min(...IX) / 100) * 100 - 100, MZ = Math.floor(Math.min(...IZ) / 100) * 100 - 100, MNX = Math.ceil((Math.max(...IX) + 100 - MX) / MC), MNZ = Math.ceil((Math.max(...IZ) + 100 - MZ) / MC), mask = new Uint8Array(MNX * MNZ);
     for (let k = 0; k < MNZ; k++) { const z = MZ + (k + .5) * MC, xs = [];
       for (let i = 0, j = insel.length - 1; i < insel.length; j = i++) { const a = insel[i], b = insel[j]; if ((a[1] > z) !== (b[1] > z)) xs.push(a[0] + (z - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); }
       xs.sort((a, b) => a - b); for (let n = 0; n + 1 < xs.length; n += 2) for (let i = Math.max(0, Math.ceil((xs[n] - MX) / MC - .5)); i < Math.min(MNX, (xs[n + 1] - MX) / MC - .5); i++) mask[k * MNX + i] = 1; }
     const inIsland = (x, z) => { const i = Math.floor((x - MX) / MC), k = Math.floor((z - MZ) / MC); return i >= 0 && k >= 0 && i < MNX && k < MNZ && mask[k * MNX + i] === 1; };
+    const inWater = (x, z) => !inIsland(x, z) && (inRiver(x, z) || inSea(x, z));
     // Uferpunkte in Linien aufloesen
-    const BX = { W: bankW, O: bankE, Wa: z => RW(z)[0] - RW(z)[1] / 2, Oa: z => RE(z)[0] + RE(z)[1] / 2 }, BZ = { N: bankN, Na: x => RN(x)[0] - RN(x)[1] / 2 };
+    const BX = { W: bankW, O: bankE, Wa: z => across(bankW(z), z, -1, 0)[0], Oa: z => across(bankE(z), z, 1, 0)[0] }, BZ = { N: bankN, S: bankS, Na: x => across(x, bankN(x), 0, -1)[1] };
     const resolve = L => L.map(p => [typeof p[0] === "string" ? BX[p[0]](p[1]) : p[0], typeof p[1] === "string" ? BZ[p[1]](p[0]) : p[1]]);
-    // Flussflaechen als Vielecke
-    const riverPoly = (S, a, b, horiz) => { const L = [], R = []; for (let t = a; t <= b; t += 10) { const [c, w] = S(t); if (horiz) { L.push([t, c - w / 2]); R.push([t, c + w / 2]); } else { L.push([c - w / 2, t]); R.push([c + w / 2, t]); } } return [...L, ...R.reverse()]; };
 
     // ---------- Ebenen ----------
     const LAYERS = [["bezirke", "Bezirke (Wohlstand)", true], ["gebaeude", "Gebäude (automatisch gefüllt)", true], ["neben", "Nebenstrassen und Gassen", true],
@@ -152,9 +151,9 @@
     el("rect", { x: -20000, y: -20000, width: 40000, height: 40000, fill: "#2f3d28" }, base);
     const WATER = "#1d3b55";
     el("polygon", { points: pts(meer), fill: WATER }, base);
-    for (const [S, a, b, h, n] of [[RW, -2800, 2100, false, WA.west.name], [RE, -2800, 1700, false, WA.ost.name], [RN, -3700, -600, true, WA.nord.name]]) {
-      const p = el("polygon", { points: pts(riverPoly(S, a, b, h)), fill: WATER }, base); p.dataset.info = `<b>${n}</b><br>Breite ${Math.round(S(h ? -2000 : 0)[1])} m (variiert)`; }
-    el("polygon", { points: pts(roh), fill: WATER }, base);
+    // Fluesse: je Uferstueck ein Band (runde Enden) in der Flussbreite dieses Stuecks
+    for (let i = 0; i < NI; i++) { const a = insel[i], b = insel[(i + 1) % NI], f = flussW[i];
+      el("line", { x1: f1(a[0]), y1: f1(a[1]), x2: f1(b[0]), y2: f1(b[1]), stroke: WATER, "stroke-width": f1(2 * f.w), "stroke-linecap": "round" }, base).dataset.info = `<b>${flussName(f)}</b><br>Breite hier ca. ${Math.round(f.w)} m`; }
     el("polygon", { points: pts(insel), fill: "none", stroke: "#b8a77c", "stroke-width": 14, "stroke-linejoin": "round" }, base).dataset.info = "<b>Kies/Sand am Ufer</b><br>knapp über dem Wasser am Fuss der Kaimauer, dann wird der Fluss weich tiefer";
     el("polygon", { points: pts(insel), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 3 }, base);
     for (const i of G.inseln) el("path", { d: path(smooth(i.poly, 10, true), true), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 5 }, base);
@@ -163,13 +162,13 @@
     for (const b of G.bezirke) {
       const p = el("polygon", { points: pts(b.poly), fill: wealthCol(b.wohlstand), "fill-opacity": .45, stroke: "#0008", "stroke-width": 4, "clip-path": "url(#clipInsel)" }, L.bezirke);
       p.dataset.info = `<b>${b.name}</b><br>Wohlstand ${Math.round(b.wohlstand * 100)} %`;
-      let cx = 0, cz = 0, n = 0; for (const q of b.poly) if (inIsland(clamp(q[0], -2950, -1150), clamp(q[1], -1500, 1350))) { cx += clamp(q[0], -2950, -1150); cz += clamp(q[1], -1500, 1350); n++; }
+      let cx = 0, cz = 0, n = 0; for (const q of b.poly) if (inIsland(q[0], q[1])) { cx += q[0]; cz += q[1]; n++; }
       if (n) el("text", { x: cx / n, y: cz / n, "font-size": 46, fill: "#fff8", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, L.namen).textContent = b.name;
     }
     const districtAt = (x, z) => G.bezirke.find(b => inPoly(x, z, b.poly));
 
     // ---------- Belegungsraster (3 m): Strassen, Orte, Gebaeude ----------
-    const C = 3, OX = -3600, OZ = -2000, NX = Math.ceil(3200 / C), NZ = Math.ceil(4000 / C), occ = new Uint8Array(NX * NZ);
+    const C = 3, OX = MX, OZ = MZ, NX = MNX, NZ = MNZ, occ = new Uint8Array(NX * NZ);
     const cell = (x, z) => { const i = Math.floor((x - OX) / C), k = Math.floor((z - OZ) / C); return i < 0 || k < 0 || i >= NX || k >= NZ ? -1 : k * NX + i; };
     function markDisk(x, z, r, v = 1) { const i0 = Math.floor((x - r - OX) / C), i1 = Math.floor((x + r - OX) / C), k0 = Math.floor((z - r - OZ) / C), k1 = Math.floor((z + r - OZ) / C);
       for (let k = Math.max(0, k0); k <= Math.min(NZ - 1, k1); k++) for (let i = Math.max(0, i0); i <= Math.min(NX - 1, i1); i++) { const cx = OX + (i + .5) * C, cz = OZ + (k + .5) * C; if ((cx - x) ** 2 + (cz - z) ** 2 <= r * r) occ[k * NX + i] = Math.max(occ[k * NX + i], v); } }
@@ -302,7 +301,7 @@
     { const h = el("circle", { cx: K.hub.x, cy: K.hub.z, r: K.hub.r, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); h.dataset.info = `<b>${K.hub.name}</b>`; }
     // Auslaesse mit Gitter: wo ein Hauptsammler die Insel verlaesst
     const gitter = [];
-    for (const s of KS) { if (s.geschlossen) continue; const P = s.pts; for (const [a, b] of [[P[0], P[1]], [P[P.length - 1], P[P.length - 2]]]) if (!inIsland(a[0], a[1]) || Math.min(Math.abs(a[0] - bankW(a[1])), Math.abs(a[0] - bankE(a[1])), Math.abs(a[1] - bankN(a[0])), Math.abs(a[1] - CS(a[0])[0])) < 140) gitter.push([a, b]); }
+    for (const s of KS) { if (s.geschlossen) continue; const P = s.pts; for (const [a, b] of [[P[0], P[1]], [P[P.length - 1], P[P.length - 2]]]) if (!inIsland(a[0], a[1]) || edgeDist(a[0], a[1]) < 140) gitter.push([a, b]); }
     // Auslass wie im Foto (Stirnwand mit Rohr, Pflaster-Trichter zum Wasser, Treppe), Nische in der Kaimauer am Ufer
     const AU = K.auslass;
     for (const [a, b] of gitter) { const l = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, ox = (a[0] - b[0]) / l, oz = (a[1] - b[1]) / l, vx = -oz, vz = ox;
@@ -381,6 +380,7 @@
     const issues = [];
     const rectHitsRoad = (o, s) => { const W = Math.max(o.w, 4) / 2 + s.w / 2, D = Math.max(o.d, 4) / 2 + s.w / 2; return s.pts.some(p => Math.abs(p[0] - o.x) < W && Math.abs(p[1] - o.z) < D); };
     for (const o of G.orte) {
+      if (!o.aussen && o.ebene < 0 && !inIsland(o.x, o.z)) issues.push([o, "liegt unter der Erde, aber nicht unter der Insel"]);
       if (o.aussen || o.ebene < 0) continue;
       const hit = [...MAIN, ...BR].find(s => rectHitsRoad(o, s)); if (hit) issues.push([o, "liegt auf " + hit.name]);
       if (!o.ufer) { const c = [[o.x, o.z], ...rectCorners(o.x, o.z, o.w, o.d, 1, 0)]; if (c.some(q => !inIsland(q[0], q[1]))) issues.push([o, "ragt aus der Insel / ins Wasser"]); }

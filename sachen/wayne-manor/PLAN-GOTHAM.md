@@ -3,7 +3,7 @@
 Sammelt alle Wünsche von Nicolas vom 2026-11-11. **Karte zum Plan:** `gotham/index.html` (im Browser `sachen/wayne-manor/gotham/`), Daten in `gotham/daten.js`.
 Die Karte ist ein Entwurf: Lage, Grösse und Namen dort ändern (Zahlen in `daten.js`), dann gilt die Karte. Später liest der 3D-Aufbau dieselbe Datei.
 
-Koordinaten wie im Spiel: Meter, Rondell = 0/0, **Norden = -z (oben)**, Osten = +x. Gotham liegt im **Westen** (x ca. -3000..-1100), die bestehende Hauptstrasse wird zum Gotham Highway nach Westen verlängert.
+Koordinaten wie im Spiel: Meter, Rondell = 0/0, **Norden = -z (oben)**, Osten = +x. Gotham liegt im **Westen** (x ca. -3700..-950, z ca. -1450..1390), die bestehende Hauptstrasse wird zum Gotham Highway nach Westen verlängert.
 
 **Regeln für alles hier:** stilisiert, eigene Entwürfe, keine Logos/Marken/Film-Nachbauten. Die bestehende Welt (Wald, Gelände, Strassen) wird **nur nach Rückfrage** verändert. Jeder Schritt wird einzeln gebaut, getestet, committet. Gebäude von Gotham sind **innen leer**, ausser wo hier ausdrücklich ein Innenraum steht.
 
@@ -11,7 +11,7 @@ Koordinaten wie im Spiel: Meter, Rondell = 0/0, **Norden = -z (oben)**, Osten = 
 
 ## Phase 0 – Technik zuerst (ohne die geht Gotham nicht)
 
-Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst (ausführlich in **`PLAN-KACHELN.md`**, Schritte K1-K8):
+Gotham ist ca. 2,7 x 2,8 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst (ausführlich in **`PLAN-KACHELN.md`**, Schritte K1-K8):
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
@@ -26,18 +26,25 @@ Gotham ist ca. 2 x 3 km gross, die Welt endet heute bei ca. 700 m. Darum zuerst 
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
-| G1 | Gelände und Wasser | Hauptinsel zwischen **Westfluss** und **Ostfluss** (geschwungen, ca. 400-460 m breit wie der East River bei der Williamsburg Bridge), im Norden der **Nordkanal**, Meer im Süden mit Buchten (schliesst an die bestehende Küste im Südosten an), Arkham-Insel vor der Küste. Insel mit gerundeten Ecken. **Strassenebene der Stadt = Fahrbahn der Brücken**, 18 m über dem Wasser (Welt-y -16, Wasser -34; Nicolas: Schichten herausgeschnitten, Tiefgaragen-Etagen 5,5 m wie bei Wayne Manor, Tiefgaragen des Wayne Towers neben den Turm, geheimer Wayne-Stock direkt unter den Turm und alles darunter mit hoch): hohe Kaimauern rundum; am Mauerfuss ein Streifen Kies/Sand knapp über dem Wasser, dann wird der Fluss weich tiefer (keine senkrechte Kante unter Wasser). Braucht Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht |
+| G1 | Gelände und Wasser | **Hauptinsel nach der Skizze von Nicolas (2026-11-12):** frei gezeichneter Umriss (`insel.umriss` in `daten.js`), oben breit mit Einbuchtung, Nordosten am höchsten, unten zur Spitze schmaler und mit der Spitze im Meer (Hafen dort). Die Flüsse liegen als Band um die Insel: **Westfluss** 400 m, **Ostfluss** 440 m (wie der East River bei der Williamsburg Bridge), **Nordkanal** 180 m, im Süden offenes Meer (schliesst an die bestehende Küste im Südosten an), Arkham-Insel im Südwesten vor der Küste. **Strassenebene der Stadt = Fahrbahn der Brücken**, 18 m über dem Wasser (Welt-y -16, Wasser -34; Nicolas: Schichten herausgeschnitten, Tiefgaragen-Etagen 5,5 m wie bei Wayne Manor, Tiefgaragen des Wayne Towers neben den Turm, geheimer Wayne-Stock direkt unter den Turm und alles darunter mit hoch): hohe Kaimauern rundum; am Mauerfuss ein Streifen Kies/Sand knapp über dem Wasser, dann wird der Fluss weich tiefer (keine senkrechte Kante unter Wasser). Braucht Rückfrage: Küste wird nach Westen verlängert, Wald dort weicht |
 | G2 | **Strassennetz** | Kein starres Gitter (Nicolas 2026-11-11): frei gezogene, geschwungene Hauptstrassen (Ring um den Wayne Tower, Diagonale „Old Broadway“, Crosstown Expressway, Uferstrassen …) und je Bezirk ein eigenes, gedrehtes und verzogenes Nebenstrassennetz mit Lücken (Narrows: enge Gassen). **Zweistöckige Strassen in der Stadt** (Park Row, Uferstrasse Ost): oben normaler Verkehr, 5,5 m darunter auf Höhe der Tiefgarage 1 (ca. 4,5 m licht) die untere Strasse (Lower Level) mit Obdachlosen und dem Eingang zum Club des Pinguins. **Hängebrücken** im Stil Williamsburg/Manhattan Bridge (Türme an den Ufern, ca. 62 m über der Fahrbahn, Tragseile), Fahrbahn auf Strassenhöhe: 3 über den Ostfluss (Highway, Nord, Süd), 2 über den Westfluss, Nordkanal-Brücke zum Militär, Arkham-Brücke. Füllbauten stehen automatisch an den Strassen und in den Blöcken (nie auf einer Strasse) |
 | G3 | **Gebäude-Vorlagen** | **Geschosshöhe immer mindestens 4,7 m** (wie das Erdgeschoss von Wayne Manor; Nicolas 2026-11-11), höher nur für Hallen wie Empfang/Lobby (Wayne Tower EG 9,4 m → ca. 67 Stockwerke). Wenige Vorlagen, mehrfach eingesetzt: Wolkenkratzer (Glas/Stein, Höhe nach Wohlstand), Bürohaus, Mehrfamilienhaus (Ziegel, Feuertreppen), Laden mit Wohnung darüber, Fabrikhalle, Lagerhalle. Innen leer |
 | G4 | **Wohlstand reich → arm** | Jede Fläche bekommt einen Wohlstand 0..1 (Bezirke in der Karte, weich überblendet): Uptown/Zentrum hohe Türme, Westseite/Südstadt gemischt, Fabrikviertel, **The Narrows am Hafen** arm (kleine Häuser, Fabriken). Sinnvoll so: Armenviertel am Hafen ist typisch (Industrie, Lärm, billiger Boden) |
 | G5 | **Seitengassen** | Im armen Viertel dichtes Gassennetz: Müllcontainer, Säcke, Wäscheleinen, Feuertreppen, Pfützen, Dampf aus Gullys |
 | G6 | **Baustellen-Vorlage** | Eine Vorlage (Bauzaun, Kran, Rohbau-Gerippe, Container, Schutt), mehrfach eingesetzt (8 Plätze in der Karte). Wird später nach und nach durch wichtige Gebäude ersetzt |
 
+### Brücken-Analyse Südbrücke (Harbor), 2026-11-12
+
+- **Vorher:** bei z 1050 über den Ostfluss. Dort war der Fluss schon Meer, das Ostende lag im offenen Wasser, am Ostufer ging keine Strasse weiter. Auch die Nordbrücke endete am Ostufer ohne Strasse.
+- **Jetzt:** Südbrücke bei z 800, ca. 440 m über dem Ostfluss, landet auf der Festland-Zunge südlich vom Highway. Die neue **East Shore Road** verbindet am Ostufer die Enden von Nord-, Highway- und Südbrücke. Die Harbor Road führt von der Südbrücke quer durch die Narrows bis zur Arkham-Brücke.
+- Der Hafen liegt an der Inselspitze direkt am Meer, Schiffe müssen unter keiner Brücke durch. Die Durchfahrtshöhe von 18 m bleibt deshalb unkritisch (die echte Williamsburg Bridge hat ca. 41 m).
+- Abstand zur Highway-Brücke ca. 500 m.
+
 ## Phase 2 – Verkehr
 
 | Nr | Was | Inhalt |
 |----|-----|--------|
-| V1 | **U-Bahn-Ring** | Stationen auf der Höhe der Tiefgarage 2 (Bahnsteig 11 m unter der Strasse, Nicolas 2026-11-11), die Strecken dazwischen dürfen nach Bedarf tiefer liegen oder angepasst werden (z. B. unter Flüssen, Kanälen, Kellern). Ein grosser Ring (ca. 5,4 km) unter der Stadt, 12 Stationen mit grossem Abstand (ca. 450 m), **Hauptbahnhof** (Osten, nahe Busbahnhof), **Abstellanlage** für Züge ausser Betrieb gleich daneben, am Gleisnetz angeschlossen. Fahrender Zug. Graffitis in den Tunneln, eines „NBR“ |
+| V1 | **U-Bahn-Ring** | Stationen auf der Höhe der Tiefgarage 2 (Bahnsteig 11 m unter der Strasse, Nicolas 2026-11-11), die Strecken dazwischen dürfen nach Bedarf tiefer liegen oder angepasst werden (z. B. unter Flüssen, Kanälen, Kellern). Ein grosser Ring (ca. 5 km) unter der Stadt, 12 Stationen mit grossem Abstand (ca. 450 m), **Hauptbahnhof** (Osten, nahe Busbahnhof), **Abstellanlage** für Züge ausser Betrieb gleich daneben, am Gleisnetz angeschlossen. Fahrender Zug. Graffitis in den Tunneln, eines „NBR“ |
 | V2 | **Bus** | Bushaltestellen zwischen den U-Bahn-Stationen, 3 Linien (Ring innen, Nord-Süd, Manor-Express), ein fahrender Bus, **Busbahnhof** |
 | V3 | **Taxi-Depot** | Halle/Hof, in dem die Taxis stehen, die nicht fahren (das bestehende Gotham Taxi als Vorlage) |
 | V4 | Parken | Tiefgaragen-Etagen 5,5 m hoch wie bei Wayne Manor (Nicolas 2026-11-11). Tiefgaragen bei vielen grossen Gebäuden (Einfahrt als Rampe, innen nur bei ausgewählten befahrbar), 5 Parkhäuser |
@@ -124,7 +131,7 @@ Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, be
 
 ## Offene Fragen an Nicolas
 
-1. Lage und Grösse von Gotham so wie in der Karte? (ca. 1,9 x 3 km, ca. 1 km westlich der Manor)
+1. Lage und Grösse von Gotham so wie in der Karte? (Inselform nach Skizze, ca. 2,7 x 2,8 km, Ostfluss endet ca. 500 m westlich der Manor)
 2. Darf die Küste nach Westen verlängert werden und der Wald zwischen Manor und Gotham dafür weichen (Highway, Flüsse)?
 3. „Chevrollette co“ und „Kameras“ – was genau?
 4. Kampfjet später auf die Militärinsel stellen (Insel kommt erst später)? (Die Anflugschneise im Wald ist seit 2026-11-11 wieder zu, Bäume stehen wie vorher.)

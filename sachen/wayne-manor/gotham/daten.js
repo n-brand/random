@@ -47,7 +47,7 @@ const ellipse = (cx, cz, rx, rz, n = 16) => Array.from({ length: n }, (_, i) => 
 
 const GOTHAM = {
   // Sichtbereich beim Oeffnen der Karte
-  ansicht: { x0: -3900, z0: -2600, x1: 400, z1: 2200 },
+  ansicht: { x0: -4600, z0: -2700, x1: 200, z1: 2100 },
 
   // Hoehen in Welt-y: Strassenebene der Stadt = Fahrbahn der Bruecken (Nicolas 2026-11-11), Wasser = Meer/Hoehle (SEA_Y).
   // Strasse 31 m ueber dem Wasser (vorher 40; Nicolas: die 9 m zwischen Kanal-Hub und Wasser waren verschwendet)
@@ -56,17 +56,24 @@ const GOTHAM = {
   // Nicolas 2026-11-11 (4): geheimer Wayne-Stock direkt unter den Wayne Tower, alles darunter (Kanal, Hub, Wasser, Flussgrund) 11,5 m mit hoch
   hoehen: { strasse: -16, wasser: -34 },
 
-  // Wasser: Fluesse geschwungen (Nicolas: nicht gerade), Breite wie im Verhaeltnis zu Williamsburg/Manhattan Bridge (East River ca. 450-500 m)
+  // Hauptinsel (Nicolas 2026-11-12, Skizze): frei gezeichneter Umriss, oben breit mit Einbuchtung, unten spitz ins Meer (Hafen an der Spitze).
+  // Punkte [x, z] im Uhrzeigersinn, werden weich verbunden. Die Fluesse legen sich als Band in ihrer Breite um die Insel.
+  insel: {
+    name: "Gotham (Hauptinsel)",
+    umriss: [[-3480, -900], [-3350, -910], [-3160, -820], [-2980, -820], [-2820, -910], [-2590, -890], [-2380, -890], [-2170, -1010], [-2010, -1240], [-1800, -1330],
+      [-1650, -1450], [-1390, -1430], [-1280, -1350], [-1240, -1240], [-1090, -1100], [-980, -970], [-950, -750], [-1020, -500], [-1250, -260], [-1320, -80],
+      [-1410, 150], [-1530, 310], [-1710, 510], [-1780, 700], [-1810, 970], [-1850, 1200], [-2010, 1350], [-2220, 1390], [-2360, 1380], [-2540, 1250],
+      [-2700, 1020], [-2840, 930], [-2980, 740], [-3090, 560], [-3180, 280], [-3410, 100], [-3620, -150], [-3700, -360], [-3690, -640], [-3620, -770]],
+  },
+
+  // Wasser: Breite der Fluesse je Seite der Insel (East River bei der Williamsburg Bridge ca. 450-500 m), Meer im Sueden
   wasser: {
-    west: { name: "Westfluss", punkte: [[-2800, -3420, 380], [-2200, -3180, 400], [-1700, -3360, 420], [-1200, -3480, 440], [-700, -3260, 400],
-      [-200, -3060, 420], [300, -3220, 440], [800, -3420, 420], [1250, -3180, 400], [1700, -3300, 460], [2100, -3330, 500]] },
-    ost: { name: "Ostfluss", punkte: [[-2800, -700, 400], [-2200, -950, 420], [-1700, -1000, 420], [-1200, -720, 400], [-700, -640, 420],
-      [-200, -900, 440], [300, -820, 420], [800, -600, 400], [1200, -800, 430], [1700, -700, 480]] },
-    nord: { name: "Nordkanal", punkte: [[-3700, -1640, 170], [-3200, -1760, 170], [-2700, -1600, 160], [-2200, -1760, 150], [-1700, -1620, 160],
-      [-1200, -1700, 170], [-600, -1640, 180]] },
-    // Suedkueste vor Gotham von West nach Ost (Bucht beim Hafen), danach geht sie in die bestehende Kueste im Suedosten ueber
-    kueste: [[-4200, 1580], [-3600, 1480], [-3250, 1560], [-2950, 1380], [-2750, 1520], [-2450, 1480], [-2200, 1380], [-1900, 1500], [-1600, 1400], [-1300, 1520], [-1000, 1440]],
-    rundung: 4,   // Ecken der Insel abrunden (Glaettungsschritte)
+    west: { name: "Westfluss", breite: 400 },
+    ost: { name: "Ostfluss", breite: 440 },
+    nord: { name: "Nordkanal", breite: 180 },
+    sued: { name: "Hafenbecken (Meer)", breite: 400 },
+    // Kueste von West nach Ost: suedlich davon Meer. Die Inselspitze ragt ins Meer (Hafen), danach geht sie in die bestehende Kueste im Suedosten ueber
+    kueste: [[-5200, 600], [-4500, 560], [-4100, 640], [-3700, 700], [-3200, 1000], [-2400, 1550], [-1700, 1250], [-1300, 1100], [-1000, 1000]],
     kuesteAlt: [[-500, 783], [0, 283], [500, -217], [1000, -717], [1700, -1417]],
   },
   inseln: [
@@ -74,62 +81,67 @@ const GOTHAM = {
   ],
 
   bezirke: [
-    { name: "Uptown (sehr reich)", wohlstand: 0.95, poly: [[-3500, -1900], [-500, -1900], [-500, -600], [-1500, -520], [-2100, -620], [-2550, -540], [-3500, -580]],
+    // Bezirke an der Inselform (Nicolas 2026-11-12): Uptown im breiten Nordosten, Westseite im Westlappen, Narrows und Hafen an der Suedspitze
+    { name: "Uptown (sehr reich)", wohlstand: 0.95, poly: [[-2600, -1700], [-800, -1700], [-800, -480], [-1500, -460], [-2100, -560], [-2600, -560]],
       netz: { winkel: 9, abstand: [150, 70], krumm: 22, luecken: 0.05, breite: 12 } },
-    { name: "Midtown / Zentrum", wohlstand: 0.85, poly: [[-2550, -540], [-2100, -620], [-1500, -520], [-500, -600], [-500, 330], [-1500, 380], [-2250, 300], [-2560, 250]],
+    { name: "Midtown / Zentrum", wohlstand: 0.85, poly: [[-2600, -560], [-2100, -560], [-1500, -460], [-800, -480], [-800, 330], [-1500, 380], [-2250, 300], [-2600, 250]],
       netz: { winkel: -5, abstand: [110, 64], krumm: 14, luecken: 0.06, breite: 12 } },
-    { name: "Westseite (Mittelstand)", wohlstand: 0.6, poly: [[-3500, -580], [-2550, -540], [-2560, 250], [-3500, 300]],
+    { name: "Westseite (Mittelstand)", wohlstand: 0.6, poly: [[-3900, -1100], [-2600, -1100], [-2600, 250], [-3900, 300]],
       netz: { winkel: 22, abstand: [92, 74], krumm: 34, luecken: 0.1, breite: 11 } },
-    { name: "Südstadt (gemischt)", wohlstand: 0.45, poly: [[-2250, 300], [-1500, 380], [-500, 330], [-500, 1800], [-2250, 1800], [-2200, 900]],
+    { name: "Südstadt (gemischt)", wohlstand: 0.45, poly: [[-2250, 300], [-1500, 380], [-800, 330], [-800, 950], [-2200, 950], [-2200, 780]],
       netz: { winkel: -16, abstand: [96, 80], krumm: 30, luecken: 0.12, breite: 11 } },
-    { name: "Fabrikviertel", wohlstand: 0.25, poly: [[-3500, 300], [-2560, 250], [-2250, 300], [-2200, 900], [-3500, 860]],
+    { name: "Fabrikviertel", wohlstand: 0.25, poly: [[-3900, 300], [-2600, 250], [-2250, 300], [-2200, 780], [-3900, 780]],
       netz: { winkel: 4, abstand: [170, 120], krumm: 14, luecken: 0.25, breite: 12 } },
-    { name: "The Narrows (arm, Hafen)", wohlstand: 0.1, poly: [[-3500, 860], [-2200, 900], [-2250, 1800], [-3500, 1800]],
+    { name: "The Narrows (arm, Hafen)", wohlstand: 0.1, poly: [[-3900, 780], [-2200, 780], [-2200, 950], [-800, 950], [-800, 1600], [-3900, 1600]],
       netz: { winkel: 33, abstand: [58, 44], krumm: 16, luecken: 0.16, breite: 7 } },
   ],
 
   // Hauptstrassen (frei gezogen, weiche Kurven). Nebenstrassen kommen automatisch aus den Bezirken (netz).
   hauptstrassen: [
     { id: "ring", name: "Wayne Circle (Ring um den Wayne Tower)", w: 22, geschlossen: true, linie: ellipse(-2050, -100, 290, 245) },
-    { id: "parkrow", name: "Park Row (zweistöckig)", w: 24, zweistock: true, linie: [["O", 300], [-1300, 250], [-1560, 140], [-1770, -10]] },
-    { id: "uptown-ave", name: "Uptown Avenue", w: 22, linie: [[-2050, -345], [-2000, -700], [-2090, -1100], [-1990, -1450], [-1955, "N"]] },
+    { id: "parkrow", name: "Park Row (zweistöckig)", w: 24, zweistock: true, linie: [["O", 300], [-1640, 180], [-1770, -10]] },
+    { id: "uptown-ave", name: "Uptown Avenue", w: 22, linie: [[-2050, -345], [-2000, -700], [-1980, -1000], [-1955, "N"]] },
     { id: "militaer", name: "Zufahrt Militärstützpunkt", w: 18, linie: [[-1955, "Na"], [-1965, -1950], [-2000, -2100]] },
-    { id: "gotham-blvd", name: "Gotham Boulevard", w: 22, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2030, 1330]] },
+    { id: "gotham-blvd", name: "Gotham Boulevard", w: 22, linie: [[-2050, 145], [-1990, 500], [-2080, 900], [-2120, 1240]] },
     { id: "westside", name: "Westside Drive", w: 18, linie: [[-2340, -100], [-2600, -230], [-2800, -480], [-2860, -700]] },
-    { id: "diag-nord", name: "Old Broadway (Nord)", w: 20, linie: [[-1250, -1420], [-1450, -1080], [-1680, -720], [-1820, -300]] },
-    { id: "diag-sued", name: "Old Broadway (Süd)", w: 20, linie: [[-2290, 30], [-2470, 400], [-2660, 800], [-2880, 1220]] },
+    { id: "diag-nord", name: "Old Broadway (Nord)", w: 20, linie: [[-1380, -1250], [-1500, -1000], [-1680, -720], [-1820, -300]] },
+    { id: "diag-sued", name: "Old Broadway (Süd)", w: 20, linie: [[-2290, 30], [-2470, 400], [-2600, 750], [-2580, 1100]] },
     { id: "crosstown", name: "Crosstown Expressway", w: 24, linie: [["O", -880], [-1300, -860], [-1620, -930], [-2050, -880], [-2450, -800], [-2860, -700], ["W", -730]] },
-    { id: "sued-road", name: "Harbor Road", w: 18, linie: [["O", 1050], [-1250, 1000], [-1650, 1090], [-2060, 1050], [-2420, 1110], [-2720, 1180], [-2930, 1260]] },
+    // Harbor Road (Nicolas 2026-11-12: Bruecke neu analysiert): von der Suedbruecke quer durch die Narrows zur Arkham-Bruecke
+    { id: "sued-road", name: "Harbor Road", w: 18, linie: [["O", 800], [-1950, 860], [-2150, 1000], [-2380, 1090], [-2580, 1100]] },
     { id: "industrial", name: "Industrial Way", w: 18, linie: [[-2470, 400], [-2720, 470], ["W", 520]] },
-    { id: "ufer-ost", name: "Uferstrasse Ost (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1500, bis: 1350 } },
-    { id: "ufer-west", name: "Uferstrasse West", w: 16, ufer: { seite: "west", abstand: 70, von: -1500, bis: 1300 } },
+    { id: "ufer-ost", name: "Uferstrasse Ost (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
+    { id: "ufer-west", name: "Uferstrasse West", w: 16, ufer: { seite: "west", abstand: 70, von: -850, bis: 700 } },
     // ausserhalb der Insel
     { id: "highway", name: "Gotham Highway (Manor - Stadt)", w: 22, linie: [[-61, 200], [-300, 255], [-500, 290], ["Oa", 300]] },
+    // Festland Ost: verbindet die Enden von Nord-, Highway- und Suedbruecke (vorher endeten Nord- und Suedbruecke ohne Strasse)
+    { id: "ost-festland", name: "East Shore Road (Festland Ost)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290], [-800, 560], ["Oa", 800]] },
     { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-61, 200], [0, 168], [48, 138], [78, 108], [100, 78], [128, 55], [172, 36], [210, 0], [232, -60], [244, -130], [256, -217]] },
-    { id: "west-nord", name: "Zufahrt Westen (Nord)", w: 16, linie: [["Wa", -730], [-3850, -760], [-4050, -820]] },
-    { id: "west-sued", name: "Zufahrt Westen (Süd)", w: 16, linie: [["Wa", 520], [-3850, 560], [-4050, 620]] },
+    { id: "west-nord", name: "Zufahrt Westen (Nord)", w: 16, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
+    { id: "west-sued", name: "Zufahrt Westen (Süd)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
   ],
   // Haengebruecken (Fahrbahn auf Strassenhoehe; Tuerme stehen automatisch an den Ufern)
   bruecken: [
     { name: "Gotham-Highway-Brücke", w: 26, seite: "ost", z: 300 },
     { name: "Nordbrücke (Crosstown)", w: 24, seite: "ost", z: -880 },
-    { name: "Südbrücke (Harbor)", w: 22, seite: "ost", z: 1050 },
+    // Nicolas 2026-11-12: vorher bei z 1050, dort war der Ostfluss schon Meer - die Bruecke endete im Wasser, ohne Strasse am Ostufer
+    { name: "Südbrücke (Harbor)", w: 22, seite: "ost", z: 800 },
     { name: "Westbrücke Nord", w: 20, seite: "west", z: -730 },
     { name: "Westbrücke Süd", w: 20, seite: "west", z: 520 },
     { name: "Nordkanal-Brücke (zum Militär)", w: 18, seite: "nord", x: -1955 },
-    { name: "Arkham-Brücke", w: 12, linie: [[-2930, 1260], [-3060, 1450], [-3200, 1640]] },
+    { name: "Arkham-Brücke", w: 12, linie: [[-2580, 1100], [-2820, 1350], [-3050, 1550], [-3200, 1660]] },
   ],
 
   // U-Bahn: ein grosser Ring (Ellipse), Stationen per Winkel in Grad (0 = Osten, 90 = Sueden), Abstand ca. 450 m
   ubahn: {
-    cx: -2050, cz: 0, rx: 650, rz: 1100,
+    cx: -2150, cz: 50, rx: 600, rz: 980,   // an die Inselform angepasst (2026-11-12), ca. 5 km
     stationen: [
       { name: "Hauptbahnhof", a: 0, haupt: true },
       { name: "Stadion", a: 30 }, { name: "Südstadt", a: 60 }, { name: "Hafen", a: 90 }, { name: "Narrows", a: 120, notiz: "Graffiti NBR im Tunnel Richtung Fabrikviertel" },
       { name: "Fabrikviertel", a: 150 }, { name: "Westseite", a: 180 }, { name: "Kathedrale", a: 210 }, { name: "Museumsmeile", a: 240 },
       { name: "Uptown", a: 270 }, { name: "Park Row", a: 300 }, { name: "Diamond District", a: 330 },
     ],
-    depot: { name: "Abstellanlage (Züge ausser Betrieb, am Gleisnetz)", x: -1300, z: -330, w: 120, d: 60, gleis: [[-1400, 0], [-1350, -180], [-1300, -330]] },
+    depot: { name: "Abstellanlage (Züge ausser Betrieb, am Gleisnetz)", x: -1450, z: -330, w: 120, d: 60, gleis: [[-1550, 50], [-1500, -150], [-1450, -330]] },
     graffiti: [{ text: "NBR", x: -2620, z: 600 }],
   },
 
@@ -168,42 +180,42 @@ const GOTHAM = {
       notiz: "Zentrum, im Wayne Circle. Befahrbare Tiefgarage (2 Ebenen). Direkt darunter geheimer Stock (Vorbild karten/planung/wayne-geheimstock-vorbild.png: weite niedrige Halle, viele runde Pfeiler, runde Deckenlampen, graue Wände, glänzender Boden): Tumbler, Prototypen, Gadgets. Darunter Kanal-Hub mit Schurkenbasis." },
     { id: "gcpd", typ: "oeffentlich", name: "Polizeipräsidium (Batsignal auf dem Dach)", x: -2200, z: 330, w: 80, d: 60, h: 45 },
     { id: "arkham", typ: "wahrzeichen", name: "Arkham Asylum", x: -3340, z: 1800, w: 220, d: 160, h: 30, aussen: true, notiz: "Eigene Insel vor der Küste, nur über die Arkham-Brücke." },
-    { id: "hafen", typ: "industrie", name: "Hafen / Containerterminal", x: -2600, z: 1440, w: 560, d: 90, ufer: true, notiz: "Kräne, Container, Lagerhallen." },
+    { id: "hafen", typ: "industrie", name: "Hafen / Containerterminal", x: -2070, z: 1350, w: 420, d: 90, ufer: true, notiz: "An der Südspitze der Insel, direkt am Meer (Schiffe müssen unter keiner Brücke durch). Kräne, Container, Lagerhallen." },
     // --- Oeffentlich ---
     { id: "gericht", typ: "oeffentlich", name: "Gerichtsgebäude", x: -1880, z: 330, w: 70, d: 50, h: 35 },
     { id: "kirche", typ: "oeffentlich", name: "Kathedrale", x: -2560, z: 40, w: 50, d: 90, h: 60 },
     { id: "kh-1", typ: "gesundheit", name: "Krankenhaus Uptown", x: -1560, z: -1300, w: 90, d: 70, h: 50 },
     { id: "kh-2", typ: "gesundheit", name: "Krankenhaus Westseite", x: -2680, z: -40, w: 80, d: 60, h: 40 },
-    { id: "kh-3", typ: "gesundheit", name: "Krankenhaus Südstadt", x: -1850, z: 1230, w: 80, d: 60, h: 35 },
+    { id: "kh-3", typ: "gesundheit", name: "Krankenhaus Südstadt", x: -1930, z: 1180, w: 80, d: 60, h: 35 },
     { id: "heim-1", typ: "gesundheit", name: "Kinderheim West", x: -2750, z: -300, w: 40, d: 30, h: 12 },
     { id: "heim-2", typ: "gesundheit", name: "Kinderheim Narrows", x: -2300, z: 1260, w: 40, d: 30, h: 12 },
     { id: "krippe-1", typ: "gesundheit", name: "Kinderkrippe Uptown", x: -1400, z: -740, w: 25, d: 20, h: 6 },
     { id: "krippe-2", typ: "gesundheit", name: "Kinderkrippe Westseite", x: -2420, z: -330, w: 25, d: 20, h: 6 },
-    { id: "krippe-3", typ: "gesundheit", name: "Kinderkrippe Südstadt", x: -1880, z: 780, w: 25, d: 20, h: 6 },
+    { id: "krippe-3", typ: "gesundheit", name: "Kinderkrippe Südstadt", x: -1850, z: 780, w: 25, d: 20, h: 6 },
     // --- Freizeit ---
-    { id: "stadion", typ: "freizeit", form: "stadion", name: "Football-Stadion (oben offen)", x: -1420, z: 700, w: 220, d: 160, h: 14.1, notiz: "Oben offen, kein Dach. Tribünen 3 Stockwerke (je 4,7 m), Sitzreihen 0,4 m hoch und 0,8 m tief. Ränge rundum, Spielfeld in der Mitte." },
+    { id: "stadion", typ: "freizeit", form: "stadion", name: "Football-Stadion (oben offen)", x: -2150, z: 540, w: 220, d: 160, h: 14.1, notiz: "Oben offen, kein Dach. Tribünen 3 Stockwerke (je 4,7 m), Sitzreihen 0,4 m hoch und 0,8 m tief. Ränge rundum, Spielfeld in der Mitte." },
     { id: "museum-1", typ: "freizeit", name: "Kunstmuseum", x: -1700, z: -1160, w: 100, d: 60, h: 25 },
-    { id: "museum-2", typ: "freizeit", name: "Naturkundemuseum", x: -2350, z: -1150, w: 90, d: 70, h: 25 },
+    { id: "museum-2", typ: "freizeit", name: "Naturkundemuseum", x: -2060, z: -1000, w: 90, d: 70, h: 25 },
     { id: "event", typ: "freizeit", name: "Eventgebäude (Spendengala, Hochzeit)", x: -1900, z: -560, w: 90, d: 60, h: 20 },
-    { id: "pinguin", typ: "freizeit", name: "Club des Pinguins (Eingang an der unteren Uferstrasse)", x: -1090, z: 470, w: 50, d: 40, h: 12, ebene: -5.5,
+    { id: "pinguin", typ: "freizeit", name: "Club des Pinguins (Eingang an der unteren Uferstrasse)", x: -1770, z: 470, w: 50, d: 40, h: 12, ebene: -5.5,
       notiz: "Eingang an der unteren Strasse (Lower Level) unter der Uferstrasse Ost. Geht über mehrere Ebenen nach unten (siehe Seitenansicht)." },
-    { id: "obdachlos", typ: "freizeit", name: "Obdachlosenlager (untere Strasse)", x: -1170, z: -320, w: 30, d: 120, ebene: -5.5,
+    { id: "obdachlos", typ: "freizeit", name: "Obdachlosenlager (untere Strasse)", x: -1290, z: -320, w: 30, d: 120, ebene: -5.5,
       notiz: "Unter der zweistöckigen Uferstrasse Ost: oben normaler Verkehr, unten Lager mit Feuertonnen." },
     // --- Banken ---
     { id: "bank-g1", typ: "bank", name: "Grossbank (Tresorkeller)", x: -1700, z: -380, w: 60, d: 50, h: 120 },
     { id: "bank-g2", typ: "bank", name: "Grossbank (Tresorkeller)", x: -1560, z: -600, w: 60, d: 50, h: 150 },
     { id: "bank-g3", typ: "bank", name: "Grossbank (Tresorkeller)", x: -2250, z: -720, w: 55, d: 45, h: 90 },
     { id: "bank-k1", typ: "bank", name: "Kleine Bank (3 Automaten)", x: -2650, z: 1000, w: 15, d: 12, h: 5 },
-    { id: "bank-k2", typ: "bank", name: "Kleine Bank (3 Automaten)", x: -1700, z: 640, w: 15, d: 12, h: 5 },
-    { id: "bank-k3", typ: "bank", name: "Kleine Bank (3 Automaten)", x: -2560, z: -1000, w: 15, d: 12, h: 5 },
+    { id: "bank-k2", typ: "bank", name: "Kleine Bank (3 Automaten)", x: -1800, z: 630, w: 15, d: 12, h: 5 },
+    { id: "bank-k3", typ: "bank", name: "Kleine Bank (3 Automaten)", x: -2520, z: -850, w: 15, d: 12, h: 5 },
     { id: "bank-k4", typ: "bank", name: "Kleine Bank (3 Automaten)", x: -1350, z: -200, w: 15, d: 12, h: 5 },
-    ...[[-1900, -160], [-1600, 60], [-2350, -350], [-2550, 650], [-2150, 1000], [-1300, 500], [-1800, -1260], [-2850, -820], [-2450, 1300], [-1650, 1300], [-2200, 60], [-1450, -500]]
+    ...[[-1900, -160], [-1600, 60], [-2350, -350], [-2550, 650], [-2140, 1020], [-1580, 320], [-1800, -1260], [-2850, -820], [-2450, 1300], [-1870, 1160], [-2200, 60], [-1450, -500]]
       .map(([x, z], i) => ({ id: "atm-" + (i + 1), typ: "atm", name: "Bankautomat", x, z, w: 4, d: 4 })),
     // --- Hotels ---
     { id: "hotel-l1", typ: "hotel", name: "Luxushotel", x: -1850, z: -1230, w: 60, d: 50, h: 180 },
     { id: "hotel-l2", typ: "hotel", name: "Luxushotel", x: -2400, z: -600, w: 55, d: 45, h: 140 },
-    { id: "hotel-b1", typ: "hotel", name: "Billighotel", x: -2700, z: 1060, w: 30, d: 25, h: 20 },
-    { id: "hotel-b2", typ: "hotel", name: "Billighotel", x: -1550, z: 1180, w: 30, d: 25, h: 18 },
+    { id: "hotel-b1", typ: "hotel", name: "Billighotel", x: -2630, z: 1030, w: 30, d: 25, h: 20 },
+    { id: "hotel-b2", typ: "hotel", name: "Billighotel", x: -1870, z: 1110, w: 30, d: 25, h: 18 },
     { id: "hotel-b3", typ: "hotel", name: "Billighotel", x: -2820, z: 360, w: 30, d: 25, h: 18 },
     // --- Laeden ---
     { id: "juw-1", typ: "laden", name: "Juwelier", x: -1950, z: -480, w: 20, d: 15, h: 8 },
@@ -213,33 +225,33 @@ const GOTHAM = {
     { id: "schneider-2", typ: "laden", name: "Massschneider (teuer)", x: -1500, z: -790, w: 18, d: 14, h: 8 },
     { id: "kleider-n1", typ: "laden", name: "Kleiderladen (normal)", x: -1880, z: 560, w: 30, d: 20, h: 8 },
     { id: "kleider-n2", typ: "laden", name: "Kleiderladen (normal)", x: -2420, z: 150, w: 30, d: 20, h: 8 },
-    { id: "kleider-b1", typ: "laden", name: "Kleider-Billigladen", x: -2560, z: 1080, w: 25, d: 18, h: 6 },
-    { id: "kleider-b2", typ: "laden", name: "Kleider-Billigladen", x: -1800, z: 980, w: 25, d: 18, h: 6 },
+    { id: "kleider-b1", typ: "laden", name: "Kleider-Billigladen", x: -2550, z: 1070, w: 25, d: 18, h: 6 },
+    { id: "kleider-b2", typ: "laden", name: "Kleider-Billigladen", x: -1850, z: 970, w: 25, d: 18, h: 6 },
     { id: "kleider-b3", typ: "laden", name: "Kleider-Billigladen", x: -2380, z: 760, w: 25, d: 18, h: 6 },
     { id: "waffen-1", typ: "laden", name: "Waffenladen", x: -2620, z: 560, w: 20, d: 15, h: 6 },
-    { id: "waffen-2", typ: "laden", name: "Waffenladen", x: -1500, z: 950, w: 20, d: 15, h: 6 },
+    { id: "waffen-2", typ: "laden", name: "Waffenladen", x: -1840, z: 910, w: 20, d: 15, h: 6 },
     { id: "auto-billig", typ: "laden", name: "Autohaus (billig)", x: -2800, z: 660, w: 70, d: 50, h: 8, notiz: "Echte Filiale der Fahrzeug-Kette aus dem Computer-Shop." },
     { id: "auto-teuer", typ: "laden", name: "Autohaus (teuer)", x: -1560, z: -1200, w: 70, d: 50, h: 12 },
     { id: "auto-militaer", typ: "militaer", name: "Fahrzeughandel Militär", x: -2150, z: -2150, w: 80, d: 60, h: 10, aussen: true, notiz: "Am Militärstützpunkt." },
     // --- Essen ---
-    ...[[-1600, -280], [-2150, -520], [-2550, -660], [-1850, 240], [-1450, 450], [-2350, 600]].map(([x, z], i) => ({ id: "bar-" + (i + 1), typ: "essen", name: i % 2 ? "Restaurant" : "Bar", x, z, w: 20, d: 15, h: 8 })),
-    ...[[-2700, 1260], [-2450, 960], [-2850, 780], [-2300, 1360]].map(([x, z], i) => ({ id: "fastfood-" + (i + 1), typ: "essen", name: "Billig-Fast-Food", x, z, w: 15, d: 12, h: 5 })),
+    ...[[-1600, -280], [-2150, -520], [-2550, -660], [-1850, 240], [-1520, 240], [-2350, 600]].map(([x, z], i) => ({ id: "bar-" + (i + 1), typ: "essen", name: i % 2 ? "Restaurant" : "Bar", x, z, w: 20, d: 15, h: 8 })),
+    ...[[-2570, 1150], [-2450, 960], [-2850, 780], [-2300, 1360]].map(([x, z], i) => ({ id: "fastfood-" + (i + 1), typ: "essen", name: "Billig-Fast-Food", x, z, w: 15, d: 12, h: 5 })),
     // --- Verkehr ---
-    { id: "busbahnhof", typ: "verkehr", name: "Busbahnhof", x: -1530, z: 230, w: 90, d: 50, h: 10 },
+    { id: "busbahnhof", typ: "verkehr", name: "Busbahnhof", x: -1580, z: 130, w: 90, d: 50, h: 10 },
     { id: "taxi", typ: "verkehr", name: "Taxi-Depot (Taxis ausser Betrieb)", x: -2660, z: 330, w: 70, d: 45, h: 10 },
-    ...[[-1900, -250], [-1650, 330], [-2350, -900], [-2700, 720], [-1750, 860]].map(([x, z], i) => ({ id: "parkhaus-" + (i + 1), typ: "verkehr", name: "Parkhaus", x, z, w: 40, d: 30, h: 18 })),
+    ...[[-1900, -250], [-1680, 300], [-2270, -880], [-2700, 720], [-1850, 870]].map(([x, z], i) => ({ id: "parkhaus-" + (i + 1), typ: "verkehr", name: "Parkhaus", x, z, w: 40, d: 30, h: 18 })),
     // --- Industrie ---
     ...[[-2830, 230], [-2660, 230], [-2400, 640], [-2880, 600]].map(([x, z], i) => ({ id: "fabrik-" + (i + 1), typ: "industrie", name: "Fabrik", x, z, w: 70, d: 45, h: 15 })),
     // --- Geheim ---
-    { id: "container-base", typ: "geheim", name: "Container (Aufzug zur geheimen Batman-Basis)", x: -3020, z: 1230, w: 6.1, d: 2.4, ufer: true,
-      notiz: "Ganz normaler 20-Fuss-Seecontainer am Westfluss beim Hafen (Foto von Nicolas): blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, keine Fenster. 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang. Er ist ein Aufzug (fährt samt Auto hinunter)." },
-    { id: "bunker", typ: "geheim", name: "Batman-Basis unter dem Container (Halle mit Lichtdecke)", x: -2930, z: 1200, w: 90, d: 50, ebene: -5.5,
+    { id: "container-base", typ: "geheim", name: "Container (Aufzug zur geheimen Batman-Basis)", x: -2660, z: 1110, w: 6.1, d: 2.4, ufer: true,
+      notiz: "Ganz normaler 20-Fuss-Seecontainer am Ufer beim Hafen (Foto von Nicolas): blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, keine Fenster. 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang. Er ist ein Aufzug (fährt samt Auto hinunter)." },
+    { id: "bunker", typ: "geheim", name: "Batman-Basis unter dem Container (Halle mit Lichtdecke)", x: -2580, z: 1060, w: 90, d: 50, ebene: -5.5,
       notiz: "Flache, weite Halle auf Höhe der Tiefgarage 1 (Boden 5,5 m unter der Strasse, ca. 4,7 m hoch): Sichtbetonwände, die ganze Decke ein Raster aus Lichtpaneelen (Foto von Nicolas), glatter Betonboden. Batmobil in der Mitte, Anzug fährt aus dem Boden, Motorrad und Batpod fahren aus der Wand, hinten Reifenstapel und Werkbank, Computer, aufklappbare Wand mit Waffen und Gadgets, Geheimwand mit Tresor (Goldbarren, Bargeld)." },
     { id: "schurkenbasis", typ: "geheim", name: "Schurkenbasis im Kanalnetz", x: -2050, z: -60, w: 120, d: 80, ebene: -28.5,
       notiz: "Runde, hohe Halle im Kanal-Hub direkt unter dem geheimen Wayne-Stock (der Tumbler steht genau darüber), Vorbild karten/planung/schurkenbasis-vorbild-*: Pfeiler rundum, Stahlstege mit Geländern auf mehreren Ebenen, Gitterboden, Abwasser stürzt als Wasserfall in einen gemauerten Kanal. Dazu Waffen unter Planen, herumliegende Waffen, Tisch mit Computer, Boxsack." },
-    ...[[-2850, 1100], [-2550, 1360], [-2350, 1050], [-2750, 900]].map(([x, z], i) => ({ id: "drogen-" + (i + 1), typ: "geheim", name: "Geheimes Drogenversteck", x, z, w: 10, d: 10 })),
+    ...[[-2780, 930], [-2480, 1260], [-2350, 1050], [-2750, 900]].map(([x, z], i) => ({ id: "drogen-" + (i + 1), typ: "geheim", name: "Geheimes Drogenversteck", x, z, w: 10, d: 10 })),
     // --- Baustellen (eine Vorlage, mehrfach eingesetzt) ---
-    ...[[-2260, -1360], [-1300, -620], [-2800, -1200], [-1700, 520], [-2500, -1350], [-1430, 1300], [-2700, -150], [-2200, 680]]
+    ...[[-2030, -1100], [-1300, -620], [-2780, -860], [-1850, 460], [-2580, -830], [-2000, 1270], [-2700, -150], [-2200, 680]]
       .map(([x, z], i) => ({ id: "baustelle-" + (i + 1), typ: "baustelle", name: "Baustelle (Platzhalter)", x, z, w: 60, d: 50, status: "baustelle" })),
     // --- Militaer (Militaerinsel im Suedosten: spaeter, siehe PLAN-GOTHAM.md) ---
     { id: "militaer-nord", typ: "militaer", name: "Militärstützpunkt (ausserhalb der Stadt)", x: -2000, z: -2320, w: 650, d: 420, aussen: true },
