@@ -1,6 +1,6 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v218";
+const CACHE = "random-v219";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 // Google Fonts der Retro-Game-Hub-Praesentationen (CSS und Schriftdateien werden mitgespeichert)
@@ -55,8 +55,10 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const url = event.request.url;
   if (event.request.method !== "GET" || !(new URL(url).origin === location.origin || url.startsWith(THREE) || url === JSZIP || isFont(url))) return;
+  // Eigene Dateien immer beim Server nachfragen (no-cache), sonst liefert der HTTP-Cache des Browsers alte Seiten
+  const same = new URL(url).origin === location.origin;
   event.respondWith(
-    fetch(event.request)
+    (same ? fetch(url, { cache: "no-cache", credentials: "same-origin" }) : fetch(event.request))
       .then(res => {
         // Auch undurchsichtige Antworten (Stylesheet per <link> ohne CORS) speichern, sonst fehlen die Schriften offline
         if (res.ok || res.type === "opaque") {
