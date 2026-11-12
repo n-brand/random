@@ -119,7 +119,8 @@ function gothamH(x, z, h) {
   if (sd < -6) g = GOT.STR;                                                    // Insel: Strassenebene; die letzten 6 m vor dem Ufer liegen unter der Kai-Platte (G1d)
   else { const dw = GOT.sdw(mx, mz);
     if (dw < 0 || sd < 0) { const ds = Math.min(Math.max(sd, 0), -dw); g = GOT.WY + 0.4 - (GOT.WY + 0.4 - GOT.BED) * sst(6, 80, ds); }   // Fluss: Kiesstreifen am Mauerfuss, dann bis 12 m tief
-    else g = Math.min(h, GOT.WY + 0.6 + dw * 0.32 + 5 * (vnoise(x / 70 + 41, z / 70 + 17) - 0.5) * sst(0, 80, dw)); }   // Festland: natuerlich ansteigend, Berge dahinter bleiben
+    // Wo Gotham Land vorsieht, das Gelaende aber Meer der Manor ist (ihre Kuestenlinie gedacht nach Westen verlaengert), flache Ebene knapp ueber dem Wasser
+    else g = Math.min(h < GOT.WY + 1 ? GOT.WY + 3 + Math.min(20, dw * 0.08) : h, GOT.WY + 0.6 + dw * 0.32 + 5 * (vnoise(x / 70 + 41, z / 70 + 17) - 0.5) * sst(0, 80, dw)); }   // Festland: natuerlich ansteigend, Berge dahinter bleiben
   const res = h + (g - h) * w;
   // Brueckenanschluss (G2c) auch im Uebergang zur Manor voll, erst unter 1000 m bleibt alles wie bisher
   const wc = Math.min(1, (Math.hypot(x, z) - 1000) / 60); if (wc <= 0) return res;
@@ -131,3 +132,63 @@ function gothamH(x, z, h) {
 const GOT_R = { x0: -4240, x1: -400, z0: -1040, z1: 2800 }, GOT_R0 = 1050;
 const inGothamR = (x, z) => x >= GOT_R.x0 && x <= GOT_R.x1 && z >= GOT_R.z0 && z <= GOT_R.z1;
 const inGothamG = (x, z) => inGothamR(x, z) && x * x + z * z > GOT_R0 * GOT_R0;
+
+// G2d: Strassen auf dem Festland (Nicolas 2026-11-12 "dann direkt Festland"): Highway, Highway-Zubringer, Strasse zur Manor, Zufahrten Westen/Sueden
+// aus der Karte (GOTHAM_STADT.haupt), nur die Stuecke an Land (nicht auf der Insel, nicht im Wasser, innerhalb der Weltgrenze), alle 4 m.
+// Hoehe: Gelaende ohne Strassen entlang der Linie, +-40 m gemittelt, mindestens 4 m ueber dem Wasser, an Brueckenenden genau die Fahrbahn,
+// hoechstens 7 % Steigung (Durchgaenge vor und zurueck). Das Gelaende folgt (Fahrbahn plus 2 m Bankett eben, dann Einschnitt 1:1 bzw. Damm 1:1,4).
+// Boden auf der Fahrbahn: gothamRoadAt (wie bei den Bruecken). Aufbau beim ersten Aufruf von genH0 (GLAND.building verhindert die Rueckkopplung).
+const GLAND = { roads: null, building: false, grid: null, C: 25, ids: ["highway", "highway-bruecke", "manor-strasse", "nord-zufahrt", "west-nord", "west-sued"] };
+const glKey = (i, k) => i * 100000 + k;
+// Hoehe der Manor-Hauptstrasse an ihrem Suedwest-Ende, gerechnet wie MAIN.ys (zweimal +-35 Proben gemittelt) aus dem Gelaende ohne Festlandstrassen
+function glMainY0() { if (GLAND.mainY0 === undefined) { const raw = MAIN.samples.slice(0, 71).map(([x, z]) => genH0(x, z)), m = a => a.map((_, i) => { let t = 0, c = 0; for (let k = Math.max(0, i - 35); k <= Math.min(a.length - 1, i + 35); k++) { t += a[k]; c++; } return t / c; }); GLAND.mainY0 = m(m(raw))[0]; } return GLAND.mainY0; }
+function glandBuild() {
+  GLAND.building = true; const roads = [];
+  const ends = GOT.cuts.map(c => [c.a[0] + c.ux * (c.s0 + 25), c.a[1] + c.uz * (c.s0 + 25), c]);
+  for (const h of GOTHAM_STADT.haupt) { if (!GLAND.ids.includes(h.id)) continue;
+    const P0 = h.pts.map(([x, z]) => GOT.toGame(x, z)), P = [P0[0]];
+    for (let i = 1; i < P0.length; i++) { const a = P0[i - 1], b = P0[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(l / 4)); for (let k = 1; k <= n; k++) P.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
+    let run = [];
+    const push = () => { if (run.length > 6) roads.push({ id: h.id, name: h.name, w: h.w, pts: run }); run = []; };
+    for (const p of P) { const ok = GOT.edgeSD(p[0], p[1]) > 2 && !GOT.water(p[0], p[1]) && Math.hypot(p[0], p[1]) < LIMIT_WORLD - 60; if (ok) run.push(p); else push(); } push(); }
+  for (const r of roads) { const n = r.pts.length, raw = r.pts.map(([x, z]) => genH0(x, z)), y = new Float32Array(n), pin = new Array(n).fill(null);
+    for (let i = 0; i < n; i++) { let s = 0, c = 0; for (let k = Math.max(0, i - 10); k <= Math.min(n - 1, i + 10); k++) { s += raw[k]; c++; } y[i] = Math.max(GOT.WY + 4, s / c); }
+    for (let i = 0; i < n; i++) for (const [ex, ez] of ends) if (Math.hypot(r.pts[i][0] - ex, r.pts[i][1] - ez) < 45) pin[i] = GOT.STR;
+    // Anschluss an die Hauptstrasse der Manor (ihr Suedwest-Ende -61/200): dort genau deren Hoehe (gleiche Rechnung wie MAIN.ys, ohne Rueckkopplung)
+    for (let i = 0; i < n; i++) if (Math.hypot(r.pts[i][0] - MAIN.samples[0][0], r.pts[i][1] - MAIN.samples[0][1]) < 6) pin[i] = glMainY0() + 0.1;
+    // Enden auf einer schon berechneten Festlandstrasse (Einmuendung): dort deren Hoehe
+    for (const i of [0, n - 1]) { const [px, pz] = r.pts[i]; for (const o of roads) { if (!o.y) continue; for (let j = 1; j < o.pts.length; j++) { const p0 = o.pts[j - 1], q = o.pts[j], dx = q[0] - p0[0], dz = q[1] - p0[1], LL = dx * dx + dz * dz, t = LL ? Math.max(0, Math.min(1, ((px - p0[0]) * dx + (pz - p0[1]) * dz) / LL)) : 0; if (Math.hypot(px - p0[0] - dx * t, pz - p0[1] - dz * t) < o.w / 2 + 3) { pin[i] = o.y[j - 1] + (o.y[j] - o.y[j - 1]) * t; break; } } } }
+    for (let i = 0; i < n; i++) if (pin[i] !== null) y[i] = pin[i];
+    // feste Punkte (Brueckenenden) bleiben, die Steigungsgrenze arbeitet sich von ihnen aus nach vorne und hinten
+    const G = r.pts.map((p, i) => i ? 0.07 * Math.hypot(p[0] - r.pts[i - 1][0], p[1] - r.pts[i - 1][1]) : 0);   // 7 % je echtem Abstand (Proben bis 4 m)
+    for (let it = 0; it < 4; it++) { for (let i = 1; i < n; i++) if (pin[i] === null) y[i] = Math.min(y[i - 1] + G[i], Math.max(y[i - 1] - G[i], y[i])); for (let i = n - 2; i >= 0; i--) if (pin[i] === null) y[i] = Math.min(y[i + 1] + G[i + 1], Math.max(y[i + 1] - G[i + 1], y[i])); }
+    r.y = y; }
+  const grid = new Map(), C = GLAND.C;
+  roads.forEach((r, ri) => { for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j]; for (const k of new Set([glKey(Math.floor(a[0] / C), Math.floor(a[1] / C)), glKey(Math.floor(b[0] / C), Math.floor(b[1] / C))])) { if (!grid.has(k)) grid.set(k, []); grid.get(k).push([ri, j]); } } });
+  // grobe Vorpruefung: 100-m-Zellen, in deren Naehe (+1 Zelle) eine Festlandstrasse liegt
+  const near = new Set(); for (const r of roads) for (const [x, z] of r.pts) { const i = Math.floor(x / 100), k = Math.floor(z / 100); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) near.add(glKey(i + a, k + b)); }
+  GLAND.roads = roads; GLAND.grid = grid; GLAND.near = near; GLAND.building = false;
+}
+// naechste Festlandstrasse: { r, d (seitlicher Abstand), y (Fahrbahnhoehe dort) } innerhalb von reach, sonst null
+function glandNear(x, z, reach) {
+  if (GLAND.building) return null; if (!GLAND.roads) glandBuild();
+  if (!GLAND.near.has(glKey(Math.floor(x / 100), Math.floor(z / 100)))) return null;
+  const C = GLAND.C, ci = Math.floor(x / C), ck = Math.floor(z / C), m = Math.ceil(reach / C); let best = null;
+  for (let a = -m; a <= m; a++) for (let b = -m; b <= m; b++) { const L = GLAND.grid.get(glKey(ci + a, ck + b)); if (!L) continue;
+    for (const [ri, j] of L) { const r = GLAND.roads[ri], p = r.pts[j - 1], q = r.pts[j], dx = q[0] - p[0], dz = q[1] - p[1], LL = dx * dx + dz * dz, t = LL ? Math.max(0, Math.min(1, ((x - p[0]) * dx + (z - p[1]) * dz) / LL)) : 0;
+      const d = Math.hypot(x - p[0] - dx * t, z - p[1] - dz * t); if (d < reach && (!best || d - r.w / 2 < best.d - best.r.w / 2)) best = { r, d, y: r.y[j - 1] + (r.y[j] - r.y[j - 1]) * t }; } }
+  return best;
+}
+function gothamLandRoadH(x, z, g) {
+  if (x > 0 && z < -600) return g;                                       // Festlandstrassen liegen alle westlich/suedlich der Manor
+  const n = glandNear(x, z, 60); if (!n) return g;
+  const core = n.r.w / 2 + 2, out = Math.max(0, n.d - core), yy = n.y - 0.1;
+  if (out === 0) return yy;
+  return g > yy ? Math.min(g, yy + out) : Math.max(g, yy - out * 0.7);
+}
+// Boden auf einer Festlandstrasse (Fahrbahn plus Bankett), nur wer oben ist
+function gothamRoadAt(x, z, feet) {
+  if (!GLAND.roads || (x > 0 && z < -600)) return null;
+  const n = glandNear(x, z, 12); if (!n || n.d > n.r.w / 2 + 1.5 || feet < n.y - 3) return null;
+  return n.y - 0.05;
+}

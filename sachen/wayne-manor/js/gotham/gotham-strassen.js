@@ -61,6 +61,7 @@ function gstrBuild() {
   const plain = canvasTex(128, 128, asph); plain.wrapS = plain.wrapT = THREE.RepeatWrapping;
   const walk = canvasTex(128, 128, (c, w, h) => { c.fillStyle = "#a3a19b"; c.fillRect(0, 0, w, h); c.strokeStyle = "#7f7d78"; c.lineWidth = 2; for (let i = 0; i <= 4; i++) { c.beginPath(); c.moveTo(0, i * 32); c.lineTo(w, i * 32); c.moveTo(i * 32, 0); c.lineTo(i * 32, h); c.stroke(); }
     for (let i = 0; i < 1500; i++) { c.fillStyle = `rgba(0,0,0,${Math.random() * 0.08})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }); walk.wrapS = walk.wrapT = THREE.RepeatWrapping;
+  const gravel = canvasTex(128, 128, (c, w, h) => { c.fillStyle = "#8f8a7e"; c.fillRect(0, 0, w, h); for (let i = 0; i < 4000; i++) { const v = 100 + Math.random() * 70; c.fillStyle = `rgb(${v},${v - 4},${v - 12})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }); gravel.wrapS = gravel.wrapT = THREE.RepeatWrapping;
   const mat = (map, off) => M(0xffffff, { map, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -off, polygonOffsetUnits: -off });
   const geo = () => ({ P: [], U: [], I: [] });
   // Band entlang der Linie zwischen den seitlichen Abstaenden d0 und d1 (links positiv); skip(x, z) laesst Vierecke aus; uv: u laengs/rep, v quer (0..1 oder Meter/vrep)
@@ -69,7 +70,8 @@ function gstrBuild() {
     let s = 0, prev = null;
     for (let i = 0; i < n; i++) { if (i) s += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
       const k = G.P.length / 3, [nx, nz] = N[i], p = P[i];
-      for (const d of [d0, d1]) { G.P.push(p[0] + nx * d, y, p[1] + nz * d); G.U.push(s / rep, vrep ? d / vrep : (d - d0) / (d1 - d0)); }
+      const yy = typeof y === "number" ? y : y[i];   // Festlandstrassen: Hoehe je Punkt
+      for (const d of [d0, d1]) { G.P.push(p[0] + nx * d, yy, p[1] + nz * d); G.U.push(s / rep, vrep ? d / vrep : (d - d0) / (d1 - d0)); }
       const mx = p[0] + nx * (d0 + d1) / 2, mz = p[1] + nz * (d0 + d1) / 2, bad = skip && skip(mx, mz);
       if (prev !== null && !bad && !prev.bad) G.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);
       prev = { k, bad };
@@ -83,11 +85,18 @@ function gstrBuild() {
     const sk = (x, z) => !!onOther(x, z, ri, 0.5) || !!nearPatch(x, z, 1);
     for (const sg of [1, -1]) { band(W, r.pts, sg * (r.w / 2 + 0.3), sg * (r.w / 2 + r.walk), Y + 0.04, 2, 2, sk); band(K, r.pts, sg * r.w / 2, sg * (r.w / 2 + 0.3), Y + 0.045, 2, 1, sk); }   // Gehsteig, Bordstein
   });
+  // G2d: Festlandstrassen (GLAND aus gotham-gelaende.js): Fahrbahn mit Markierung auf dem Hoehenverlauf, 2 m Bankett aus Kies, Kreuzungen zwischen ihnen als Asphaltflaechen auf ihrer Hoehe
+  const Kies = geo(), XL = geo();
+  for (const r of GLAND.roads || []) { const yr = Array.from(r.y, v => v + 0.02), ys = Array.from(r.y, v => v - 0.02);
+    band(r.w >= 12.5 ? A4 : A2, r.pts, r.w / 2, -r.w / 2, yr, 12, 0, null);
+    for (const sg of [1, -1]) { band(Kies, r.pts, sg * r.w / 2, sg * (r.w / 2 + 2), ys, 2, 2, null); }
+  }
+  for (const r of GLAND.roads || []) for (const e of [0, r.pts.length - 1]) { const [x, z] = r.pts[e]; for (const o of GLAND.roads) { if (o === r) continue; let best = 1e9, by = 0; for (let j = 0; j < o.pts.length; j++) { const d = Math.hypot(o.pts[j][0] - x, o.pts[j][1] - z); if (d < best) { best = d; by = o.y[j]; } } if (best < o.w / 2 + 6) { const rr = Math.max(r.w, o.w) / 2 + 3, k = XL.P.length / 3; XL.P.push(x, by + 0.04, z); XL.U.push(x / 8, z / 8); for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2; XL.P.push(x + Math.cos(t) * rr, by + 0.04, z + Math.sin(t) * rr); XL.U.push((x + Math.cos(t) * rr) / 8, (z + Math.sin(t) * rr) / 8); if (a) XL.I.push(k, k + a + 1, k + a); } } } }
   for (const [x, z, rr] of GSTR.patches) { const k = X.P.length / 3; X.P.push(x, Y + 0.06, z); X.U.push(x / 8, z / 8);
     for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2; X.P.push(x + Math.cos(t) * rr, Y + 0.06, z + Math.sin(t) * rr); X.U.push((x + Math.cos(t) * rr) / 8, (z + Math.sin(t) * rr) / 8); if (a) X.I.push(k, k + a + 1, k + a); } }
   const kerb = M(0xc9c6bf, { roughness: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 });
   GSTR.meshes = [make(A4, mat(lineTex(true), 2), "Gotham-Strassen 4 Spuren"), make(A2, mat(lineTex(false), 2), "Gotham-Strassen 2 Spuren"), make(A0, mat(plain, 2), "Gotham-Gassen"),
-    make(W, mat(walk, 1), "Gotham-Gehsteige"), make(K, kerb, "Gotham-Bordsteine"), make(X, mat(plain, 3), "Gotham-Kreuzungen")];
+    make(W, mat(walk, 1), "Gotham-Gehsteige"), make(Kies, mat(gravel, 1), "Gotham-Bankett"), make(XL, mat(plain, 3), "Gotham-Kreuzungen Festland"), make(K, kerb, "Gotham-Bordsteine"), make(X, mat(plain, 3), "Gotham-Kreuzungen")];
   GSTR.onRoad = (x, z, pad = 0) => !!onOther(x, z, -1, pad);                // fuer spaeter (Fuellbauten, Verkehr)
 }
 

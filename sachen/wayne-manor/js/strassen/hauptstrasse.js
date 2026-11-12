@@ -70,7 +70,7 @@ function genH0(x, z) {
   const ph = plateauH(x, z);
   if (ph > 0.01) h = Math.max(h, ph);
   if (ph > HILL - 6) { const sdd = streamDist(x, z); if (sdd < 4) h -= 1.15 * (1 - sst(1.4, 3.6, sdd)); }   // Bachrinne (A7)
-  return gothamH(x, z, h);                                                  // Gotham (G1a): Insel, Fluesse, Ufer (gotham/gotham-gelaende.js)
+  return gothamLandRoadH(x, z, gothamH(x, z, h));                           // Gotham (G1a): Insel, Fluesse, Ufer; G2d: Festlandstrassen (gotham/gotham-gelaende.js)
 }
 // ===================== Grundstuecksmauer: Verlauf (Nicolas 2026-11-09, Skizze) =====================
 // Vom Einfahrtstor (Enden der Tormauern) im Norden um das Anwesen herum, der Wasserfall liegt ausserhalb; Westtor bei WALL_GATE2;

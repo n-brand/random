@@ -37,7 +37,8 @@ function pushOut(p, feet) {
 }
 // Boden ohne Quader: unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
 function groundAt(x, z, feet = 0) {
-  { const g = gothamBridgeAt(x, z, feet); if (g !== null) return g; }      // Gotham-Bruecken (G2c): Fahrbahn fuer wen oben ist
+  { const g = gothamBridgeAt(x, z, feet); if (g !== null) return g; }
+  { const g = gothamRoadAt(x, z, feet); if (g !== null) return g; }      // Gotham-Festlandstrassen (G2d)      // Gotham-Bruecken (G2c): Fahrbahn fuer wen oben ist
   const sn = serpNear(x, z, SERP_W / 2);
   if (GRAMP.inF(x, z) && feet > GY + HILL - 2) return GRAMP.y(z);          // Garagenrampe: Klappe (Hoehe je nach Stellung), Wendeplatz unter der Decke
   if (feet < HILL - 1 && GRAMP.inP(x, z)) return GY + HILL;

@@ -4,6 +4,7 @@
 
 // Walddichte 0..1 (North Forest, West Forest, sonst verstreute Gruppen)
 function forestD(x, z) {
+  { const n = glandNear(x, z, 20); if (n && n.d < n.r.w / 2 + 8) return 0; }   // Festlandstrassen von Gotham (G2d)
   if (siteDist(x, z) < 8 || inLawn(x, z) || seaD(x, z) > -30 || serpNear(x, z, 9) || serpZone(x, z) > 0.4 || ROADS2.some(R => roadNear(R, x, z, R.w / 2 + 6)) || roadNear(HFR, x, z, HFR.w / 2 + 5) || wallNear(x, z, 3) || inSilo(x, z, 7)) return 0;
   for (const L of LAKES) if (lakeD(L, x, z) < 1.25) return 0;
   if (Math.hypot(x - WATERFALL.x, z - WATERFALL.z) < 27 || streamDist(x, z) < 4.5) return 0;
@@ -229,7 +230,8 @@ mat.sea = new THREE.MeshPhysicalMaterial({ color: 0x1d5f80, roughness: 0.3, meta
   for (let t = -1300; t <= 1300; t += 2.6) for (let k = 0; k < 2; k++) {
     const top = k === 0, off = top ? -15 + rr() * 11 : 2 + rr() * 16, size = top ? 0.6 + rr() ** 2 * 1.8 : 1.5 + rr() ** 2 * 5, s = coastS(t) + off * Math.hypot(1, coastSlope(t)), x = (s - t) * R2, z = (s + t) * R2;
     if (rr() < (top ? 0.6 : 0.2) || Math.hypot(x, z) > 1250 || seaTunDist(x, z) < 10 || seaD(x, z) < seaBase(x, z) - 0.5 || waterCaveAt(x, z, 4) || SEA_STACKS.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 3)) continue;
-    list.push([x, terrainH(x, z) - size * 0.35, z, size, rr(), rr(), rr(), rr()]);
+    const q = [x, terrainH(x, z) - size * 0.35, z, size, rr(), rr(), rr(), rr()], gn = glandNear(x, z, 16);   // Zufall immer ziehen: uebrige Brocken bleiben gleich
+    if (!gn || gn.d > gn.r.w / 2 + 4 + size) list.push(q);                    // nicht auf Gothams Festlandstrassen (G2d)
   }
   const rockM = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), M(0xffffff, { map: rockTex, roughness: 1, flatShading: true }), list.length);
   const o = new THREE.Object3D(), cc = new THREE.Color();
