@@ -39,10 +39,12 @@ function shotAt(x, y, z, skip) {
 // Erster Treffer auf der Strecke a -> b (Schritte von hoechstens st m): { p, hit } oder null
 function shotSeg(a, b, skip, st = 0.5) { const len = a.distanceTo(b), n = Math.max(1, Math.ceil(len / st));
   for (let i = 1; i <= n; i++) { shotV.lerpVectors(a, b, i / n); const h = shotAt(shotV.x, shotV.y, shotV.z, skip); if (h) return { p: shotV.clone(), hit: h }; } return null; }
+// Mitte des Visiers auf dem Bildschirm (-1..1)
+function shotSightN() { const el = document.getElementById("tank-sight"), r = el.getBoundingClientRect(), W = renderer.domElement.clientWidth || innerWidth, H = renderer.domElement.clientHeight || innerHeight;
+  return shotN.set((r.left + r.width / 2) / W * 2 - 1, -((r.top + r.height / 2) / H * 2 - 1)); }
 // Zielpunkt: Strahl von der Kamera durch die Mitte des Visiers
 function shotAimPoint(skip) {
-  const el = document.getElementById("tank-sight"), r = el.getBoundingClientRect(), W = renderer.domElement.clientWidth || innerWidth, H = renderer.domElement.clientHeight || innerHeight;
-  shotN.set((r.left + r.width / 2) / W * 2 - 1, -((r.top + r.height / 2) / H * 2 - 1)); shotRay.setFromCamera(shotN, camera);
+  shotRay.setFromCamera(shotSightN(), camera);
   const o = shotRay.ray.origin, d = shotRay.ray.direction; shotA.copy(o).addScaledVector(d, 6);           // ab 6 m vor der Kamera (der eigene Panzer steht davor)
   for (let s = 6; s < SHOT.RANGE; s += 3) { shotB.copy(o).addScaledVector(d, s + 3); const h = shotSeg(shotA, shotB, skip, 1); if (h) return h.p; shotA.copy(shotB); }
   return shotB.clone();
@@ -104,13 +106,20 @@ function shotsStep(dt) {
   const C = CAR && CAR.on && CAR.turret ? CAR : null, now = clock.elapsedTime, label = document.querySelector("#tank-sight span");
   SHOT.cd = Math.max(0, SHOT.cd - dt);
   if (C) {
+    // Zielen immer mit der Verfolgerkamera (carCamera) bei 70 Grad; der Zoom aendert nur das Bild, nicht wohin das Visier zeigt (Nicolas 2026-11-12)
+    if (camera.fov !== 70) { camera.fov = 70; camera.updateProjectionMatrix(); }
+    camera.updateMatrixWorld();
     if ((SHOT.aimT -= dt) <= 0) { SHOT.aimT = 0.1; SHOT.aim = shotAimPoint(C); }                       // Zielpunkt 10-mal pro Sekunde
+    const sn = shotSightN(); shotRay.setFromCamera(sn, camera);                                         // Bezugsstrahl durch das Visier (jedes Bild, fuer die Zieloptik)
+    const refP = shotRay.ray.origin.clone().addScaledVector(shotRay.ray.direction, SHOT.aim ? Math.max(20, SHOT.aim.distanceTo(shotRay.ray.origin)) : 300), sny = sn.y;
     C.gun.updateWorldMatrix(true, false); C.gun.getWorldPosition(shotA);
     if (SHOT.aim) { const dx = SHOT.aim.x - shotA.x, dz = SHOT.aim.z - shotA.z; C.elev += (Math.max(-0.4, Math.min(0.55, Math.atan2(SHOT.aim.y - shotA.y, Math.hypot(dx, dz)))) - C.elev) * Math.min(1, dt * 8); }   // Rohr hebt/senkt sich zum Ziel
-    // gezoomt: Kamera in die Zieloptik oben am Turm (sonst sah man den eigenen Turm gross), Blick in Turmrichtung
-    if (SHOT.zoomT > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9)); camera.position.copy(shotB); camera.rotation.set(player.pitch + 0.12, player.yaw, 0, "YXZ"); }
     if (SHOT.unzoom > 0 && (SHOT.unzoom -= dt) <= 0) SHOT.zoomT = 1;   // TEST Auto-Rauszoomen
     SHOT.zoom += (SHOT.zoomT - SHOT.zoom) * Math.min(1, dt * 10); const fov = 70 / SHOT.zoom; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    // gezoomt: Kamera in die Zieloptik oben am Turm (sonst sah man den eigenen Turm gross). Sie schaut so, dass das Visier genau auf den Punkt
+    // zeigt, auf den es ohne Zoom zeigt (vorher Blick in Turmrichtung + 0,12: das Ziel rutschte beim Zoomen aus dem Visier)
+    if (SHOT.zoom > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9)); camera.position.copy(shotB);
+      camera.up.set(0, 1, 0); camera.lookAt(refP); camera.rotateX(-Math.atan(sny * Math.tan(fov * Math.PI / 360))); }
     if (label) label.textContent = (SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Leertaste: schießen") + (SHOT.zoomT > 1 ? " · " + SHOT.zoomT.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
     if ((keys.has("Space") || jumpHeld) && SHOT.cd === 0 && SHOT.aim) {
       SHOT.cd = SHOT.RELOAD; const mz = C.gun.localToWorld(new THREE.Vector3(0, 0, -SHOT.MUZZLE)), dir = SHOT.aim.clone().sub(mz).normalize();

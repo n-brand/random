@@ -155,14 +155,13 @@ function fahren(dt) {
   // Kamera wie im Spiel (fahren.js): Lenken dreht den Blick mit (ausser Panzer), ab 3 m/s gleitet er hinter das Fahrzeug (rueckwaerts davor)
   const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
   if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) kYaw += wrapW(A.h + (A.v < 0 ? Math.PI : 0) - kYaw) * Math.min(1, dt * 1.2); }
-  if (A.turret) waffe(dt);
-  if (A.turret && ZOOM.z > 1.01) return;   // gezoomt: Kamera sitzt in der Zieloptik (waffe)
+  // erst die normale Kamera (Verfolger oder Fahrersicht), danach zielt die Waffe von dort und setzt gezoomt die Zieloptik
   if (A_view === 1 && s.seat) { const [sx, sy, sz] = s.seat, sn = Math.sin(A.h), c = Math.cos(A.h);
-    camera.position.set(A.x + sx * c + sz * sn, sy, A.z - sx * sn + sz * c); camera.rotation.set(kPitch, kYaw, 0, "YXZ"); return; }
-  const D = s.camD || 8, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = s.camH || 1.2, tz = A.z;
-  const ex = Math.sin(kYaw) * D, ey = H - 1.3 + 0.9, ez = Math.cos(kYaw) * D;
-  camera.position.set(tx + ex, Math.max(0.3, ty + ey), tz + ez);
-  camera.lookAt(tx, ty + 0.3, tz);
+    camera.position.set(A.x + sx * c + sz * sn, sy, A.z - sx * sn + sz * c); camera.rotation.set(kPitch, kYaw, 0, "YXZ"); }
+  else { const D = s.camD || 8, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = s.camH || 1.2, tz = A.z;
+    const ex = Math.sin(kYaw) * D, ey = H - 1.3 + 0.9, ez = Math.cos(kYaw) * D;
+    camera.position.set(tx + ex, Math.max(0.3, ty + ey), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
+  if (A.turret) waffe(dt);
 }
 const wrapW = a => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -178,7 +177,10 @@ function zielpunkt() {   // Strahl durch das Visier: erste Scheibe oder der Bode
   return o.clone().addScaledVector(dv, best);
 }
 function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Rohr hebt/senkt sich zum Zielpunkt im Visier
-  const A = AKT, aim = zielpunkt();
+  // Zielen immer mit der normalen Kamera bei 70 Grad: der Zoom aendert nur das Bild, nicht wohin das Visier zeigt (Nicolas 2026-11-12)
+  if (camera.fov !== 70) { camera.fov = 70; camera.updateProjectionMatrix(); }
+  camera.updateMatrixWorld();
+  const A = AKT, aim = zielpunkt(); A.aim = aim;
   A.g.updateMatrixWorld(true); A.gun.getWorldPosition(vB);
   A.elev = A.elev ?? 0; A.elev += (Math.max(-0.4, Math.min(0.55, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z)))) - A.elev) * Math.min(1, dt * 8);
   A.turret.rotation.y = wrapW(kYaw - A.h);
@@ -187,7 +189,9 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
   // Zoom: ab mehr als 1x sitzt die Kamera in der Zieloptik oben am Turm; nach einem Schuss nach 0,35 s zurueck auf 1x (wie im Spiel, dort TEST)
   if (ZOOM.un > 0 && (ZOOM.un -= dt) <= 0) ZOOM.t = 1;
   ZOOM.z += (ZOOM.t - ZOOM.z) * Math.min(1, dt * 10); const fov = 70 / ZOOM.z; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
-  if (ZOOM.t > 1.01) { A.turret.updateWorldMatrix(true, false); A.turret.localToWorld(vA.set(0.52, 1.25, -0.9)); camera.position.copy(vA); camera.rotation.set(kPitch + 0.12, kYaw, 0, "YXZ"); }
+  // gezoomt: Kamera in der Zieloptik am Turm, so gedreht, dass das Visier (36 % Hoehe) genau auf den Zielpunkt von eben zeigt
+  if (ZOOM.z > 1.01) { A.turret.updateWorldMatrix(true, false); A.turret.localToWorld(vA.set(0.52, 1.25, -0.9)); camera.position.copy(vA);
+    camera.up.set(0, 1, 0); camera.lookAt(aim); camera.rotateX(-Math.atan(0.28 * Math.tan(fov * Math.PI / 360))); }
   SCHUSS.cd = Math.max(0, SCHUSS.cd - dt);
   if (down("Space") && SCHUSS.cd === 0) {
     SCHUSS.cd = SCHUSS.RELOAD; SCHUSS.schuesse++; SCHUSS.rueck = 1;
