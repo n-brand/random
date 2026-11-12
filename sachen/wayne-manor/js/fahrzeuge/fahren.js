@@ -71,6 +71,7 @@ function carPose(dt) {
   C.g.position.set(C.x, C.y, C.z);
   C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ"); C.g.updateMatrix();
   for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r * (1 - (C.fold || 0)); if (w.front) w.piv.rotation.y = C.steer; }
+  if (C.wheelGlow) C.wheelGlow.emissiveIntensity = 0.35 + 1.4 * Math.min(1, Math.abs(C.v) / 20);   // Terzo: Felgen leuchten mit dem Tempo
   if (C.folds) { const f = C.fold || 0, e = f * f * (3 - 2 * f); for (const q of C.folds) q.g.rotation.z = -q.sd * Math.PI / 2 * e;   // DeLorean: Raeder flach geklappt, Aussenseite unten
     if (C.glowM) C.glowM.opacity = e * (0.55 + 0.2 * Math.sin(clock.elapsedTime * 9)); }
   // Panzerturm (Nicolas 2026-11-11): zielt in Weltrichtung (Blickrichtung), Lenken dreht nur die Wanne darunter; geparkt dreht er langsam nach vorne

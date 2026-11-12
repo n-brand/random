@@ -1268,7 +1268,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, folds: built.folds || null, glowM: built.glowM || null, fold: 0, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, wheelGlow: built.wheelGlow || null, folds: built.folds || null, glowM: built.glowM || null, fold: 0, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
@@ -1494,16 +1494,23 @@ function buildTerzo() {
   boxIn(g, -0.5, 0.5, 0.13, 0.17, -2.55, -2.25, carbon); boxIn(g, -0.28, 0.28, 0.18, 0.3, -2.5, -2.4, carbon);           // Frontsplitter, Lufteinlass
   mergeStatic(g);
   const wheels = [[-0.86, -1.45, true, 0.36, 0.3], [0.86, -1.45, true, 0.36, 0.3], [-0.9, 1.45, false, 0.38, 0.36], [0.9, 1.45, false, 0.38, 0.36]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 28));
-  // Felgen wie auf dem Foto: kupfer-oranger Kranz, fuenf schwarze, leicht verdrehte Speichen, schwarze Nabe
+  // Felgen wie auf den Fotos: leuchtender orange-roter Ring aus vielen radialen Lamellen (Nicolas 2026-11-12: "die Reifen sollen leuchten ... beim Fahren"),
+  // darueber fuenf schwarze, leicht verdrehte Speichen und eine schwarze Nabe. Das Leuchten (wheelGlow.emissiveIntensity) folgt dem Tempo: im Stand
+  // schwach glimmend, ab ca. 70 km/h voll (fahren.js carPose bzw. werkstatt.js folgeKamera).
   const spokeM = M(0x101113, { metalness: 0.5, roughness: 0.4 });
+  const ringTex = canvasTex(256, 256, (c, w, h) => { const cx = w / 2, cy = h / 2; c.fillStyle = "#000"; c.fillRect(0, 0, w, h);
+    const gr = c.createRadialGradient(cx, cy, w * 0.18, cx, cy, w * 0.5); gr.addColorStop(0, "#ff2a10"); gr.addColorStop(0.6, "#ff6a1a"); gr.addColorStop(1, "#ffb060"); c.fillStyle = gr;
+    c.beginPath(); c.arc(cx, cy, w * 0.5, 0, Math.PI * 2); c.arc(cx, cy, w * 0.2, 0, Math.PI * 2, true); c.fill();
+    c.strokeStyle = "#1a0600"; c.lineWidth = 2.2; for (let k = 0; k < 72; k++) { const a = k / 72 * Math.PI * 2; c.beginPath(); c.moveTo(cx + Math.cos(a) * w * 0.2, cy + Math.sin(a) * w * 0.2); c.lineTo(cx + Math.cos(a) * w * 0.5, cy + Math.sin(a) * w * 0.5); c.stroke(); } });
+  const wheelGlow = new THREE.MeshStandardMaterial({ map: ringTex, emissiveMap: ringTex, color: 0x3a1206, emissive: 0xffffff, emissiveIntensity: 0.35, roughness: 0.5, metalness: 0.2 });
   for (const w of wheels) { const tw = w.front ? 0.3 : 0.36, sx = Math.sign(w.piv.position.x), r = w.r, F = new THREE.Group(); F.position.x = sx * (tw / 2 + 0.012); w.spin.add(F);
-    F.add(new THREE.Mesh(new THREE.CylinderGeometry(r * 0.74, r * 0.74, 0.012, 28).rotateZ(Math.PI / 2), copper));
+    F.add(new THREE.Mesh(new THREE.CircleGeometry(r * 0.8, 40).rotateY(sx * Math.PI / 2), wheelGlow));                    // leuchtender Lamellen-Ring
     for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2, sp = new THREE.Mesh(new THREE.BoxGeometry(0.02, r * 0.66, r * 0.12), spokeM); sp.position.set(sx * 0.006, Math.cos(a) * r * 0.33, Math.sin(a) * r * 0.33); sp.rotation.x = a + 0.12; F.add(sp); }
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.16, r * 0.16, 0.03, 16).rotateZ(Math.PI / 2), spokeM); hub.position.x = sx * 0.01; F.add(hub); }
   // Radhaeuser (Regel): dunkle Wand hinter jedem Rad
   const wellM = M(0x0c0d0f, { roughness: 0.9 }); boxIn(g, -0.68, 0.68, 0.15, 2 * 0.38 + 0.06, 1.45 - 0.38 - 0.14, 1.45 + 0.38 + 0.14, wellM);
   for (const sd of [-1, 1]) boxIn(g, Math.min(sd * 0.56, sd * 0.68), Math.max(sd * 0.56, sd * 0.68), 0.15, 0.56, -1.45 - 0.5, -1.45 + 0.5, wellM);   // vorne nur schmale Wand innen neben dem Rad (vorher ragte ein Kasten ueber die flache Nase)
-  return { g, wheels };
+  return { g, wheels, wheelGlow };
 }
 const SPEC_TERZO = { name: "Lamborghini Terzo Millennio", wheels: [[-0.86, -1.45], [0.86, -1.45], [-0.9, 1.45], [0.9, 1.45]], wb: 2.9, track: 1.76, pts: [-1.7, 0, 1.7], R: 1.02, circR: 0.97, enter: 3.8,
   maxN: 40, maxF: 66.7, acc: 15, steer: 0.68, jump: false, grade: 35, camD: 8.2, camH: 0.95, seat: [-0.36, 0.8, 0.1], bodyH: 1.06, bike: false,

@@ -178,7 +178,7 @@ function laden(i) {
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
   AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null, monitor: b.monitor || null, dumpG: b.dump || null,
-    y: 0, vy: 0, air: false, pitch: 0, roll: 0, folds: b.folds || null, glowM: b.glowM || null, fold: 0, hoverWant: false, flying: false, hPrev: false, jetM: b.jetM || null, flame: b.flame || null, jet: 0, boostE: 1, boostT: 0, boostOn: false, spPrev: false };   // Sprung/Nitro wie im Spiel
+    y: 0, vy: 0, air: false, pitch: 0, roll: 0, wheelGlow: b.wheelGlow || null, folds: b.folds || null, glowM: b.glowM || null, fold: 0, hoverWant: false, flying: false, hPrev: false, jetM: b.jetM || null, flame: b.flame || null, jet: 0, boostE: 1, boostT: 0, boostOn: false, spPrev: false };   // Sprung/Nitro wie im Spiel
   if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
   AKT.foldPose = () => { const A = AKT; if (!A.folds) return; const f = A.fold, e = f * f * (3 - 2 * f); for (const q of A.folds) q.g.rotation.z = -q.sd * Math.PI / 2 * e; if (A.glowM) A.glowM.opacity = e * (0.55 + 0.2 * Math.sin(performance.now() / 1000 * 9)); };
   kYaw = START.h; kPitch = -0.12; ZOOM.z = ZOOM.t = 1; if (modus === "drive") { camera.fov = 70; camera.updateProjectionMatrix(); }
@@ -259,6 +259,7 @@ const down = (...c) => c.some(k => keys.has(k));
 // ---------- Fahren (Einspurmodell) ----------
 // Verfolger-Kamera und Fahrersicht (aus fahren() herausgezogen, damit der DeLorean beim Schweben dieselbe Kamera nutzt; Nicolas 2026-11-12)
 function folgeKamera(A, s, dt) {
+  if (A.wheelGlow) A.wheelGlow.emissiveIntensity = 0.35 + 1.4 * Math.min(1, Math.abs(A.v) / 20);   // Terzo: Felgen leuchten mit dem Tempo
   engineUpdate({ v: A.v, throttle: down("KeyW", "ArrowUp") ? 1 : 0, air: A.air || A.flying });   // Motorton (Drehzahl, Gaenge, in der Luft hoch)
   // Kamera wie im Spiel (fahren.js): Lenken dreht den Blick mit (ausser Panzer), ab 3 m/s gleitet er hinter das Fahrzeug (rueckwaerts davor)
   const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
