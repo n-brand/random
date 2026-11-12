@@ -137,7 +137,7 @@ Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, be
 ## Entscheidungen (Nicolas 2026-11-12)
 
 1. **Lage und Grösse von Gotham:** so wie in der Karte (Inselform nach Skizze, ca. 2,7 x 2,8 km).
-2. **Wayne Manor liegt bei [-323, 1318] der Karte** und ist um ca. **30 Grad nach rechts** (im Uhrzeigersinn) gedreht, damit ihre Steilküste an die Küste passt. In der Karte umgesetzt (`daten.js`: `manorLage`, Manor-Steilküste `kuesteAlt`, Manor-Hauptstrasse und Highway-Anfang umgerechnet; das östliche Festland reicht jetzt bis zur Manor-Küste). Im Spiel bleibt die Manor bei 0 / 0: Gotham wird beim Bau mit der Umkehrung (30 Grad nach links drehen, dann verschieben) in die Spielwelt gelegt.
+2. **Wayne Manor liegt bei [-323, 1318] der Karte** und ist um **62 Grad nach rechts** (im Uhrzeigersinn) gedreht: zuerst ca. 30 Grad, dann so weit, dass die Manor-Hauptstrasse ohne Knick in den Highway übergeht (Nicolas, Punkt [-505, 1437]). In der Karte umgesetzt (`daten.js`: `manorLage`, Manor-Steilküste `kuesteAlt`, Manor-Hauptstrasse und Highway-Anfang umgerechnet; das östliche Festland reicht jetzt bis zur Manor-Küste). Im Spiel bleibt die Manor bei 0 / 0: Gotham wird beim Bau mit der Umkehrung (62 Grad nach links drehen, dann verschieben) in die Spielwelt gelegt.
 3. **Kameras (S5):** vorerst nach „Später“.
 4. **Kampfjet:** kommt später auf die Militärinsel.
 5. **Tests im Panzer** (automatisch rauszoomen, Turm läuft nach, Zoom-Maus gleich schnell): bleiben vorerst.

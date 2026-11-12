@@ -68,7 +68,7 @@ const GOTHAM = {
 
   // Wasser: Breite der Fluesse je Seite der Insel (East River bei der Williamsburg Bridge ca. 450-500 m), Meer im Sueden
   // Lage der Spielwelt von Wayne Manor auf der Karte (Nicolas 2026-11-12): Rondell bei x/z, Drehung in Grad im Uhrzeigersinn
-  manorLage: { x: -323, z: 1318, dreh: 30 },
+  manorLage: { x: -323, z: 1318, dreh: 62 },
   wasser: {
     west: { name: "Westfluss", breite: 400 },
     ost: { name: "Ostfluss", breite: 440 },
@@ -77,11 +77,11 @@ const GOTHAM = {
     rundung: 140,   // Festland-Ufer abrunden (m): groesser = runder, aber schmale Kanaele werden etwas schmaler
 
     // Kueste von West nach Ost: suedlich davon Meer. Die Inselspitze ragt ins Meer (Hafen), danach geht sie in die bestehende Kueste im Suedosten ueber
-    // Wayne Manor (Nicolas 2026-11-12): liegt bei [-323, 1318] dieser Karte und ist um ca. 30 Grad nach rechts (im Uhrzeigersinn) gedreht, damit ihre
+    // Wayne Manor (Nicolas 2026-11-12): liegt bei [-323, 1318] dieser Karte und ist um 62 Grad nach rechts (im Uhrzeigersinn) gedreht (Nicolas: Hauptstrasse geht ohne Knick in den Highway), damit ihre
     // Steilkueste an die Kueste von Gotham passt (manorLage). kuesteAlt = Steilkueste der Manor (Spiel-Punkte [0, 283], [500, -217], [1000, -717],
     // [1700, -1417]): erst um manorLage.dreh gedreht, dann verschoben.
     kueste: [[-5200, 600], [-4500, 560], [-4100, 640], [-3700, 700], [-3200, 1000], [-2400, 1550], [-1650, 1420], [-1100, 1620]],
-    kuesteAlt: [[-464, 1563], [219, 1380], [902, 1197], [1858, 941]],
+    kuesteAlt: [[-573, 1451], [103, 1658], [780, 1864], [1726, 2154]],
   },
   inseln: [
     { name: "Arkham-Insel", poly: [[-3560, 1720], [-3420, 1650], [-3240, 1660], [-3120, 1760], [-3160, 1900], [-3330, 1960], [-3510, 1900]] },
@@ -121,14 +121,14 @@ const GOTHAM = {
     { id: "ufer-ost", name: "Uferstrasse Ost (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
     { id: "ufer-west", name: "Uferstrasse West", w: 16, ufer: { seite: "west", abstand: 70, von: -850, bis: 700 } },
     // ausserhalb der Insel
-    { id: "highway", name: "Gotham Highway (Manor - Stadt)", w: 22, linie: [[-476, 1461], [-760, 1200], [-1000, 800], ["Oa", 300]] },   // ab Suedwest-Ende der Manor-Hauptstrasse (Spiel -61 / 200, umgerechnet)
+    { id: "highway", name: "Gotham Highway (Manor - Stadt)", w: 22, linie: [[-528, 1358], [-760, 1200], [-1000, 800], ["Oa", 300]] },   // ab Suedwest-Ende der Manor-Hauptstrasse (Spiel -61 / 200, umgerechnet)
     // Festland Ost: verbindet die Enden von Nord-, Highway- und Suedbruecke (vorher endeten Nord- und Suedbruecke ohne Strasse)
     { id: "ost-festland", name: "East Shore Road (Festland Ost)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290], [-800, 600], [-1000, 800]] },   // endet am Highway (Manor jetzt im Sueden)
     // Nicolas 2026-11-12: Strasse von der Suedbruecke muendet kurz nach der Bruecke in den Highway (ab dort eine Strasse)
     { id: "harbor-zubringer", name: "Harbor-Zubringer (Südbrücke - Highway)", w: 18, linie: [["Oa", 800], [-1080, 740], [-830, 507]] },
     { id: "nord-zufahrt", name: "Zufahrt Norden (über die Nordkanal-Brücke)", w: 16, linie: [[-2424, "Na"], [-2470, -1450], [-2560, -1800]] },
     { id: "nord-anschluss", name: "Anschluss Nordkanal-Brücke", w: 16, linie: [[-2424, -870], [-2445, -800]] },
-    { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-476, 1461], [-407, 1463], [-350, 1462], [-309, 1451], [-275, 1436], [-240, 1430], [-192, 1435], [-141, 1423], [-92, 1382], [-47, 1327], [7, 1258]] },   // Spiel-Punkte (-61 / 200 ... 256 / -217) mit manorLage umgerechnet
+    { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-528, 1358], [-471, 1397], [-422, 1425], [-382, 1438], [-345, 1443], [-311, 1457], [-274, 1487], [-224, 1503], [-161, 1495], [-94, 1472], [-11, 1442]] },   // Spiel-Punkte (-61 / 200 ... 256 / -217) mit manorLage umgerechnet
     { id: "west-nord", name: "Zufahrt Westen (Nord)", w: 16, linie: [["Wa", -730], [-4250, -760], [-4450, -820]] },
     { id: "west-sued", name: "Zufahrt Westen (Süd)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
   ],
@@ -279,7 +279,7 @@ const GOTHAM = {
     ...[[-2030, -1100], [-1300, -620], [-2780, -860], [-1850, 460], [-2580, -830], [-2000, 1270], [-2700, -230], [-2200, 680]]
       .map(([x, z], i) => ({ id: "baustelle-" + (i + 1), typ: "baustelle", name: "Baustelle (Platzhalter)", x, z, w: 60, d: 50, status: "baustelle" })),
     // --- Bestehend ---
-    { id: "manor", typ: "manor", name: "Wayne Manor (besteht)", x: -348, z: 1321, dreh: 30, w: 70, d: 95, status: "gebaut", aussen: true },
+    { id: "manor", typ: "manor", name: "Wayne Manor (besteht)", x: -346, z: 1307, dreh: 62, w: 70, d: 95, status: "gebaut", aussen: true },
   ],
 
   // Seitenansicht (gotham/schnitt.html): senkrechter Schnitt von West nach Ost, waagrecht NICHT massstaeblich, senkrecht in Metern.

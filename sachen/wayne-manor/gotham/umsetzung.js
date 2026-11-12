@@ -38,7 +38,7 @@ const UMSETZUNG = [
     warum: "Gebäude-Vorlagen und Fahrzeuge lassen sich dort einzeln bauen und prüfen." },
   { phase: "grund", nr: "G1", titel: "Gelände und Wasser", status: "offen", braucht: ["T2"],
     inhalt: "Hauptinsel nach der Skizze, Westfluss 400 m, Ostfluss 440 m, Nordkanal 180 m, Meer im Süden, abgerundete Ufer, Kaimauern mit Kiesstreifen, Arkham-Insel. Strasse = Brückenfahrbahn 18 m über dem Wasser.",
-    warum: "Alles andere steht auf der Insel. Entschieden (Nicolas 2026-11-12): Lage und Grösse wie in der Karte; Wayne Manor liegt bei [-323, 1318] der Karte, um ca. 30 Grad nach rechts gedreht, ihre Steilküste ist die Südküste des östlichen Festlands (daten.js manorLage). Im Spiel bleibt die Manor bei 0 / 0: Gotham wird beim Bau mit der Umkehrung (30 Grad nach links drehen, verschieben) in die Spielwelt gelegt." },
+    warum: "Alles andere steht auf der Insel. Entschieden (Nicolas 2026-11-12): Lage und Grösse wie in der Karte; Wayne Manor liegt bei [-323, 1318] der Karte, um 62 Grad nach rechts gedreht (Hauptstrasse geht ohne Knick in den Highway), ihre Steilküste ist die Südküste des östlichen Festlands (daten.js manorLage). Im Spiel bleibt die Manor bei 0 / 0: Gotham wird beim Bau mit der Umkehrung (62 Grad nach links drehen, verschieben) in die Spielwelt gelegt." },
   { phase: "grund", nr: "G2", titel: "Strassennetz, Brücken, Fähre", status: "offen", braucht: ["G1"],
     inhalt: "Geschwungene Hauptstrassen, Nebenstrassen je Bezirk, zweistöckige Park Row und Uferstrasse Ost, 6 Hängebrücken senkrecht zum Ufer (inkl. Nordkanal-Brücke nach Norden), East Shore Road, Harbor-Zubringer in den Highway, Arkham-Fähre.",
     warum: "Gebäude, Bus, Kanäle und Orte hängen alle an den Strassen." },
