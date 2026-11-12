@@ -458,7 +458,12 @@
     let vb = { x: G.ansicht.x0, y: G.ansicht.z0, w: G.ansicht.x1 - G.ansicht.x0, h: G.ansicht.z1 - G.ansicht.z0 };
     const fit = () => { const r = wrap.getBoundingClientRect(), a = G.ansicht, W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
       vb = { w: r.width * k, h: r.height * k }; vb.x = (a.x0 + a.x1) / 2 - vb.w / 2; vb.y = (a.z0 + a.z1) / 2 - vb.h / 2; apply(); };
+    // Karte nicht aus dem Bild schieben: Ausschnitt bleibt im Bereich der Startansicht (plus 25 % Rand); groesser als der Bereich = mittig
+    const keepIn = () => { const a = G.ansicht, mx = (a.x1 - a.x0) * .25, mz = (a.z1 - a.z0) * .25, X0 = a.x0 - mx, X1 = a.x1 + mx, Z0 = a.z0 - mz, Z1 = a.z1 + mz;
+      vb.x = vb.w >= X1 - X0 ? (X0 + X1) / 2 - vb.w / 2 : clamp(vb.x, X0, X1 - vb.w);
+      vb.y = vb.h >= Z1 - Z0 ? (Z0 + Z1) / 2 - vb.h / 2 : clamp(vb.y, Z0, Z1 - vb.h); };
     function apply() {
+      keepIn();
       svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
       const r = wrap.getBoundingClientRect(), k = vb.w / r.width; ui.innerHTML = "";
       const step = [50, 100, 250, 500, 1000, 2000].find(s => s / k > 90) || 2000, x0 = vb.x + 16 * k, y0 = vb.y + vb.h - 18 * k;
@@ -484,7 +489,7 @@
       if (!ptr.has(ev.pointerId)) { hover(ev); return; }
       const p = ptr.get(ev.pointerId), r = wrap.getBoundingClientRect();
       if (ptr.size === 2) { const [a, b] = [...ptr.values()], d0 = Math.hypot(a[0] - b[0], a[1] - b[1]); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]);
-        const [c, d] = [...ptr.values()], d1 = Math.hypot(c[0] - d[0], c[1] - d[1]); if (d0 > 0) zoom(d0 / d1, (c[0] + d[0]) / 2, (c[1] + d[1]) / 2); pinch = 1; moved = 99; return; }
+        const [c, d] = [...ptr.values()], d1 = Math.hypot(c[0] - d[0], c[1] - d[1]); if (d0 > 0 && d1 > 0) zoom(d0 / d1, (c[0] + d[0]) / 2, (c[1] + d[1]) / 2); pinch = 1; moved = 99; return; }
       const dx = ev.clientX - p[0], dy = ev.clientY - p[1]; moved += Math.abs(dx) + Math.abs(dy);
       vb.x -= dx / r.width * vb.w; vb.y -= dy / r.height * vb.h; ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); apply();
     });
