@@ -58,6 +58,13 @@ function gunMark(C) {
   const sx = (sn.x + 1) / 2 * W, sy = (1 - sn.y) / 2 * H, off = Math.hypot(x - sx, y - sy);
   el.hidden = p.z > 1 || off < 10; el.style.left = x + "px"; el.style.top = y + "px";
 }
+// ---- Wasserwerfer (Loeschfahrzeug, Nicolas 2026-11-12): Leertaste halten spritzt in Blickrichtung (Bogen), Tropfen in modelle.js (wasserStep);
+// trifft das Wasser ein brennendes Wrack, ist das Feuer aus (raucht noch schwach weiter) ----
+function wasserFrame(dt) {
+  const C = CAR && CAR.on && CAR.spec.water && !CAR.dead ? CAR : null, now = clock.elapsedTime;
+  if (C && (keys.has("Space") || jumpHeld)) wasserSpritzen(dt, wasserDuese(C.x, C.y, C.z, C.h, C.spec.water), player.yaw, player.pitch);
+  wasserStep(dt, (x, z, y) => groundAt(x, z, y), p => { for (const W of SHOT.fires) { const v = W.v; if (Math.hypot(p.x - v.x, p.z - v.z) < 3 && p.y < v.y + 4) { if (now - v.boomT < 40) { v.boomT = now - 40; toast(vehName(v) + ": Feuer gelöscht"); } return true; } } return false; });
+}
 // ---- Effekte ----
 function fxAddMesh(geo, m, p, s) { const o = new THREE.Mesh(geo, m); o.position.copy(p); o.scale.setScalar(s); o.userData.dynamic = true; scene.add(o); return o; }
 function fxBoom(p, big) {            // Explosion: Blitz, Feuerball, Rauch, (gross) Druckwelle und Truemmer

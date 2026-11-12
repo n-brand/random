@@ -222,7 +222,8 @@ function fahren(dt) {
   if (th > 0) A.v += (A.v < -0.2 ? brk : s.acc * (1 - Math.max(0, A.v) / (vmax + 8)) * KP.thF) * dt;
   else if (th < 0) A.v -= (A.v > 0.2 ? brk : s.revMax ? s.acc * (1 - Math.max(0, -A.v) / (s.revMax + 8)) : 6) * dt;
   else A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), (3 + Math.abs(A.v) * 0.06) * dt);
-  if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm ist Leertaste = schiessen)
+  if (s.water && down("Space")) wasserSpritzen(dt, wasserDuese(A.x, 0, A.z, A.h, s.water), kYaw, kPitch);   // Loeschfahrzeug: Wasser (wie schiessen.js wasserFrame)
+  else if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm ist Leertaste = schiessen)
   A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), KP.dec * dt);                                   // Kurvenwiderstand / Radieren
   A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax, A.v));
   A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;   // vorne = -z im Modell
@@ -352,6 +353,10 @@ function loop(t) {
     sunFollow(new THREE.Vector3(px, py, pz), 100);   // in ganzen Schatten-Texeln (basis.js, gegen Flimmern beim schnellen Fahren)
   }
   schuesseStep(dt); autosStep(dt);
+  wasserStep(dt, () => 0, p => {   // Wasser: Zielscheiben kippen um, brennende Wracks sind geloescht
+    for (const Z of ZIELE) if (Z.fall < 0.05 && Math.hypot(p.x - Z.x, p.y - Z.y, p.z - Z.z) < Z.r + 0.2) { Z.fall = 0.06; Z.t = 0; return true; }
+    for (const v of ZIELAUTOS) if (v.dead && Math.hypot(p.x - v.x, p.z - v.z) < 3 && p.y < 4) { if (v.t < 14) { v.t = 14; toast(v.name + ": Feuer gelöscht"); } return true; }
+    return false; });
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }

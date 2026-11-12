@@ -1009,3 +1009,36 @@ function tempoGefuehl(v, t) {
   return { k, fov: 70 + 12 * k, dK: 1 - 0.22 * k, hK: -0.45 * k,
     sx: sh * (Math.sin(t * 61) + 0.6 * Math.sin(t * 97)), sy: sh * (Math.sin(t * 73 + 1) + 0.5 * Math.sin(t * 131)) };
 }
+// ===================== Wasserwerfer (Nicolas 2026-11-12: beim Loeschfahrzeug wie beim Panzer, aber Wasser spritzen) =====================
+// Gemeinsam fuer Spiel (schiessen.js wasserFrame) und Werkstatt: Tropfen als ein InstancedMesh, Wurfparabel (28 m/s, Schwerkraft), am Boden
+// oder an einem Ziel kurzer Spruehnebel. spec.water = Duese [x, y, z] lokal (vorne -z). Gezielt wird mit der Blickrichtung (Bogen etwas nach oben).
+const WASSER = { n: 0, max: 1200, drops: [], mist: [], acc: 0, mesh: null, mistMesh: null, o: new THREE.Object3D(), v: new THREE.Vector3() };
+function wasserInit() {
+  if (WASSER.mesh) return;
+  const m = new THREE.MeshStandardMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.75, roughness: 0.1, metalness: 0.1, depthWrite: false });
+  WASSER.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 6, 4), m, WASSER.max); WASSER.mesh.count = 0; WASSER.mesh.frustumCulled = false; WASSER.mesh.userData.dynamic = true; WASSER.mesh.userData.noLift = true; scene.add(WASSER.mesh);
+  WASSER.mistMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.35, 6, 4), new THREE.MeshBasicMaterial({ color: 0xe8f4ff, transparent: true, opacity: 0.35, depthWrite: false }), 200); WASSER.mistMesh.count = 0; WASSER.mistMesh.frustumCulled = false; WASSER.mistMesh.userData.dynamic = true; WASSER.mistMesh.userData.noLift = true; scene.add(WASSER.mistMesh);
+}
+// Duese in Weltkoordinaten (Fahrzeug x, y, z, h; spec.water), Richtung aus Blick (yaw, pitch)
+function wasserDuese(x, y, z, h, w) { const s = Math.sin(h), c = Math.cos(h); return new THREE.Vector3(x + w[0] * c + w[2] * s, y + w[1], z - w[0] * s + w[2] * c); }
+function wasserSpritzen(dt, from, yaw, pitch) {
+  wasserInit(); WASSER.acc += dt * 220;
+  const el = Math.max(-0.15, Math.min(1.0, pitch + 0.32)), ce = Math.cos(el);
+  while (WASSER.acc >= 1) { WASSER.acc--; if (WASSER.drops.length >= WASSER.max) WASSER.drops.shift();
+    const sp = 28 * (0.95 + Math.random() * 0.1), j = 0.025;
+    const dx = -Math.sin(yaw) * ce + (Math.random() - 0.5) * j, dy = Math.sin(el) + (Math.random() - 0.5) * j, dz = -Math.cos(yaw) * ce + (Math.random() - 0.5) * j;
+    WASSER.drops.push({ p: from.clone().addScaledVector(new THREE.Vector3(dx, dy, dz), Math.random() * 0.4), v: new THREE.Vector3(dx * sp, dy * sp, dz * sp), t: 0 }); }
+}
+// ground(x, z, y) -> Bodenhoehe; hit(p) -> true, wenn ein Tropfen dort etwas trifft (Ziel, Feuer); danach Nebel
+function wasserStep(dt, ground, hit) {
+  if (!WASSER.mesh) return;
+  const W = WASSER, o = W.o;
+  for (let i = W.drops.length - 1; i >= 0; i--) { const d = W.drops[i]; d.v.y -= 9.81 * dt; d.p.addScaledVector(d.v, dt); d.t += dt;
+    const g = ground(d.p.x, d.p.z, d.p.y + 0.5), hHit = hit && hit(d.p);
+    if (d.p.y <= g || hHit || d.t > 6) { if (W.mist.length < 200 && Math.random() < 0.35) W.mist.push({ p: d.p.clone().setY(Math.max(d.p.y, g + 0.1)), t: 0 }); W.drops.splice(i, 1); } }
+  W.mesh.count = W.drops.length; W.drops.forEach((d, i) => { o.position.copy(d.p); o.scale.setScalar(1); o.updateMatrix(); W.mesh.setMatrixAt(i, o.matrix); }); W.mesh.instanceMatrix.needsUpdate = true;
+  for (let i = W.mist.length - 1; i >= 0; i--) { const m = W.mist[i]; m.t += dt; m.p.y += dt * 0.6; if (m.t > 0.9) W.mist.splice(i, 1); }
+  W.mistMesh.count = W.mist.length; W.mist.forEach((m, i) => { o.position.copy(m.p); o.scale.setScalar(0.6 + m.t * 2); o.updateMatrix(); W.mistMesh.setMatrixAt(i, o.matrix); }); W.mistMesh.instanceMatrix.needsUpdate = true;
+}
+SPEC_FIRE_ENGINE.water = [0.6, 3.75, -0.95];
+SPEC_FIRE_ENGINE.msg = "Gotham Fire Engine: W/S Gas/Bremse, A/D lenken, Leertaste halten = Wasser spritzen (Maus zielt), V Kamera, R zurücksetzen, Shift aussteigen";
