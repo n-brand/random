@@ -160,7 +160,7 @@ let AKT = null;   // { m, g, wheels, spec, x, z, h, v, steer, maße }
 const $info = $("info"), $speed = $("speed"), fmt = v => String(Math.round(v * 100) / 100).replace(".", ",");
 function laden(i) {
   world.userData.car.leave();                                             // Jet / The Bat aussteigen (bleiben stehen, wo sie sind)
-  if (AKT && !AKT.flug) { scene.remove(AKT.g); AKT.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  if (AKT && !AKT.flug) { engineStop(true); scene.remove(AKT.g); AKT.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   const m = MODELLE[i];
   if (m.flug) {
     const F = FLUG[m.flug](), r = F.g.rotation.clone(); F.g.rotation.set(0, 0, 0); F.g.updateMatrixWorld(true);
@@ -189,8 +189,12 @@ function laden(i) {
     <tr><td>Radstand</td><td>${fmt(s.wb)} m</td></tr><tr><td>Spur</td><td>${s.track ? fmt(s.track) + " m" : "Zweirad"}</td></tr>
     <tr><td>Höchstgeschw.</td><td>${Math.round((s.maxF || s.maxN) * 3.6)} km/h</td></tr><tr><td>Beschleunigung</td><td>${fmt(s.acc)} m/s²</td></tr></table>`;
   if (modus !== "drive") { controls.target.set(AKT.x, size.y * 0.45, AKT.z); camera.position.set(AKT.x + size.z * 1.1 + 3, size.y + 2.5, AKT.z + size.z * 1.3 + 3); }
+  tonAn();
   try { localStorage.setItem("werkstatt-modell", String(i)); } catch (e) {}
 }
+// Ton wie im Spiel (Nicolas 2026-11-12: in der Werkstatt sollen alle Sounds gehen): Motorton aus motorton.js (Profil nach spec.name), an beim Fahren,
+// aus beim Ansehen/Drehteller und beim Modellwechsel; Jet und The Bat starten ihren Ton selbst (jet.js / the-bat.js). M = Ton an/aus, Lautstaerke wie im Spiel.
+function tonAn() { if (modus === "drive" && AKT && !AKT.flug) engineStart(AKT.spec.name); else if (!(AKT && AKT.flug && modus === "drive")) engineStop(); }
 function flugStart() { const F = AKT.F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }
 function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? (A.roll || 0) : A.lean, "YXZ"); }
 window.werkstattTeleport = p => { if (!AKT || AKT.flug) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
@@ -210,7 +214,7 @@ const setModus = m => { const war = modus; modus = m;
   if (m !== "drive") { ZOOM.z = ZOOM.t = 1; ZOOM.un = 0; }
   camera.fov = m === "drive" ? 70 : 45; camera.updateProjectionMatrix();
   if (m !== "drive" && AKT) { if (AKT.flug) controls.target.set(AKT.F.x, AKT.F.y + 1, AKT.F.z); else controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z); }
-  sicht(); };
+  sicht(); tonAn(); };
 const MODI = ["orbit", "drive", "spin"];
 $("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin");
 // Visier (nur Fahren mit Turm) und Hinweis zur Maus
@@ -242,6 +246,7 @@ addEventListener("keydown", e => { if (e.target.tagName === "SELECT") return; ke
       if (e.code === "ShiftLeft" || e.code === "ShiftRight") { if (F === JET ? useJet() : useFly()) if (!F.on) setModus("orbit"); } }   // Shift aussteigen (nur gelandet, wie im Spiel)
   } else if (e.code === "KeyR" && AKT) { Object.assign(AKT, { x: START.x, z: START.z, h: START.h, v: 0, steer: 0 }); setze(); }
   if (e.code === "KeyV" && !e.repeat && !(AKT && AKT.flug)) A_view = A_view ? 0 : 1;
+  if (e.code === "KeyM" && !e.repeat) { ENGINE.muted = !ENGINE.muted; if (ENGINE.muted) engineStop(true); else tonAn(); toast(ENGINE.muted ? "Ton aus (M)" : "Ton an (M)"); }
   if (e.code === "KeyF" || (e.code === "KeyE" && modus !== "drive")) setModus(modus === "drive" ? "orbit" : "drive");
   const n = /^(Digit|Numpad)([1-3])$/.exec(e.code); if (n) setModus(MODI[+n[2] - 1]);   // 1 Ansehen, 2 Fahren, 3 Drehteller
   if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault(); });
@@ -254,6 +259,7 @@ const down = (...c) => c.some(k => keys.has(k));
 // ---------- Fahren (Einspurmodell) ----------
 // Verfolger-Kamera und Fahrersicht (aus fahren() herausgezogen, damit der DeLorean beim Schweben dieselbe Kamera nutzt; Nicolas 2026-11-12)
 function folgeKamera(A, s, dt) {
+  engineUpdate({ v: A.v, throttle: down("KeyW", "ArrowUp") ? 1 : 0, air: A.air || A.flying });   // Motorton (Drehzahl, Gaenge, in der Luft hoch)
   // Kamera wie im Spiel (fahren.js): Lenken dreht den Blick mit (ausser Panzer), ab 3 m/s gleitet er hinter das Fahrzeug (rueckwaerts davor)
   const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
   if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) kYaw += wrapW(A.h + (A.v < 0 ? Math.PI : 0) - kYaw) * Math.min(1, dt * 1.2); }
@@ -418,12 +424,14 @@ function schuesseStep(dt) {
     Z.kl.rotation.x = -Z.fall * Math.PI / 2 * 0.95;
   }
 }
-let audio = null;
-function knall(vol) {   // kurzer Knall aus gefiltertem Rauschen (Web Audio, ohne Dateien)
-  try { audio = audio || new AudioContext(); const a = audio, n = a.sampleRate * 0.6, buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+function knall(vol) {   // kurzer Knall aus gefiltertem Rauschen (Web Audio, ohne Dateien); ueber ENGINE wie im Spiel: Lautstaerke und M gelten
+  if (ENGINE.muted) return;
+  try { const a = ENGINE.ctx ??= new (window.AudioContext || window.webkitAudioContext)(); if (a.state === "suspended") a.resume(); n = a.sampleRate * 0.6, buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
     const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(); s.buffer = buf; f.type = "lowpass"; f.frequency.setValueAtTime(1800, a.currentTime); f.frequency.exponentialRampToValueAtTime(120, a.currentTime + 0.5);
-    g.gain.value = vol * 0.6; s.connect(f).connect(g).connect(a.destination); s.start(); } catch (e) {}
+    g.gain.value = vol * 0.6; s.connect(f).connect(g).connect(engineOut(a)); s.start();
+    const o = a.createOscillator(), og = a.createGain(), t = a.currentTime; o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.5); og.gain.setValueAtTime(vol * 1.2, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    o.connect(og).connect(engineOut(a)); o.start(t); o.stop(t + 0.6); } catch (e) {}   // tiefer Schlag wie shotSound
 }
 
 // ---------- Schleife ----------
