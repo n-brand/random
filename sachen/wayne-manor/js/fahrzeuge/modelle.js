@@ -886,7 +886,7 @@ function monitorPose(g, mon, yawRel, el, dt, active) {
 // weich zum Auftreffpunkt. Aktiv ab halb aufgerichtetem Arm. Rueckgabe: true, wenn sie die Kamera gesetzt hat.
 function monitorCamera(mon, impact, dt) {
   if (mon.k < 0.6) { mon.camT = null; return false; }
-  camera.position.copy(mon.up.localToWorld(new THREE.Vector3(0.75, 1.3, 0.3)));   // ueber dem Gelenk, leicht seitlich (Arm verdeckt nicht die Mitte)
+  camera.position.copy(mon.up.localToWorld(new THREE.Vector3(2.0, 2.6, 2.4)));   // hoch, hinter und neben dem Gelenk: Blick am Arm vorbei aufs Ziel (Nicolas: Kran verdeckte die Sicht)
   if (!mon.camT) mon.camT = impact.clone(); else mon.camT.lerp(impact, Math.min(1, dt * 6));
   camera.up.set(0, 1, 0); camera.lookAt(mon.camT); return true;
 }
