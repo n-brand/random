@@ -1,11 +1,12 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v282";
+const CACHE = "random-v283";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 // Google Fonts der Retro-Game-Hub-Praesentationen (CSS und Schriftdateien werden mitgespeichert)
 const FONTS_CSS = "https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap";
 const isFont = url => url.startsWith("https://fonts.googleapis.com/") || url.startsWith("https://fonts.gstatic.com/");
+// Batverse (sachen/batverse/): die 3D-Welt selbst ist absichtlich NICHT offline (zu gross, Nicolas 2026-11-12); Werkstatt und Planungsseiten schon
 const ASSETS = [
   "./", "index.html", "manifest.webmanifest", "icon.svg", "shared/orbit-pick.js",
   "sachen/helden/", "sachen/helden/manifest.webmanifest", "sachen/helden/icon.svg", "sachen/helden/vorschau.webp",
@@ -13,10 +14,7 @@ const ASSETS = [
   "sachen/villa/", "sachen/villa/vorschau.webp",
   "sachen/camper/", "sachen/camper/vorschau.webp",
   "sachen/wayne-berg/",
-  "sachen/wayne-manor/", "sachen/wayne-manor/gotham/", "sachen/wayne-manor/gotham/daten.js", "sachen/wayne-manor/gotham/schnitt.html", "sachen/wayne-manor/gotham/umsetzung.html", "sachen/wayne-manor/gotham/umsetzung.js", "sachen/wayne-manor/werkstatt/", "sachen/wayne-manor/werkstatt/werkstatt.js", "sachen/wayne-manor/js/gotham/fuellbau.js", "sachen/wayne-manor/js/gotham/gotham-gelaende.js", "sachen/wayne-manor/js/gotham/gotham-raster.js", "sachen/wayne-manor/js/gotham/gotham-kai.js", "sachen/wayne-manor/gotham/stadt.js", "sachen/wayne-manor/js/gotham/gotham-strassen.js", "sachen/wayne-manor/js/gotham/gotham-bruecken.js",
-  "./sachen/wayne-manor/js/gotham/gotham-unterstrasse.js", "sachen/wayne-manor/werkstatt/flug-shim.js", "sachen/wayne-manor/vorschau.webp", "sachen/wayne-manor/style.css",
-  "sachen/wayne-manor/js/ui/einstellungen.js", "sachen/wayne-manor/js/kern/basis.js", "sachen/wayne-manor/js/kern/kacheln.js", "sachen/wayne-manor/js/gelaende/fernring.js", "sachen/wayne-manor/js/gelaende/karte-kueste.js", "sachen/wayne-manor/js/strassen/serpentine.js", "sachen/wayne-manor/js/strassen/waterfall-exit.js", "sachen/wayne-manor/js/strassen/hauptstrasse.js", "sachen/wayne-manor/js/gelaende/gelaende.js", "sachen/wayne-manor/js/haus/haus.js", "sachen/wayne-manor/js/aufzuege/personenaufzug.js", "sachen/wayne-manor/js/ui/karten-overlay.js", "sachen/wayne-manor/js/aussen/aussenanlage.js", "sachen/wayne-manor/js/hoehle/hoehle-unten.js", "sachen/wayne-manor/js/hoehle/batcave-ausbau.js", "sachen/wayne-manor/js/hoehle/hoehle-oben.js", "sachen/wayne-manor/js/kern/tag-nacht.js", "sachen/wayne-manor/js/spieler/laufen.js", "sachen/wayne-manor/js/ui/teleport.js", "sachen/wayne-manor/js/kern/tore.js", "sachen/wayne-manor/js/fahrzeuge/boot.js", "sachen/wayne-manor/js/fahrzeuge/motorton.js", "sachen/wayne-manor/js/fahrzeuge/modelle.js", "sachen/wayne-manor/js/fahrzeuge/aufstellung.js", "sachen/wayne-manor/js/fahrzeuge/fahren.js", "sachen/wayne-manor/js/fahrzeuge/the-bat.js", "sachen/wayne-manor/js/fahrzeuge/jet.js", "sachen/wayne-manor/js/fahrzeuge/schiessen.js", "sachen/wayne-manor/js/ui/bedienung.js", "sachen/wayne-manor/js/kern/schleife.js", "sachen/wayne-manor/js/gelaende/felsen.js", "sachen/wayne-manor/js/strassen/serpentine-bau.js", "sachen/wayne-manor/js/aussen/einfahrtstor.js", "sachen/wayne-manor/js/aussen/grundmauer.js", "sachen/wayne-manor/js/gelaende/wasserfall.js", "sachen/wayne-manor/js/aufzuege/autoaufzug.js", "sachen/wayne-manor/js/aussen/garagenrampe.js", "sachen/wayne-manor/js/strassen/waterfall-exit-bau.js", "sachen/wayne-manor/js/gelaende/steilkueste.js", "sachen/wayne-manor/js/kern/start.js", "sachen/wayne-manor/karten/aussenanlage.webp", "sachen/wayne-manor/karten/hoehle-oberes-level.webp", "sachen/wayne-manor/karten/hoehle-unteres-level.webp",
-  "blockbench/cowboyhut/", "blockbench/cowboyhut/cowboy_hat.json", "blockbench/cowboyhut/cowboy_hat.png",
+  "sachen/batverse/gotham/", "sachen/batverse/gotham/daten.js", "sachen/batverse/gotham/schnitt.html", "sachen/batverse/gotham/umsetzung.html", "sachen/batverse/gotham/umsetzung.js", "sachen/batverse/werkstatt/", "sachen/batverse/werkstatt/werkstatt.js", "sachen/batverse/js/gotham/fuellbau.js", "sachen/batverse/werkstatt/flug-shim.js", "sachen/batverse/vorschau.webp", "sachen/batverse/js/kern/basis.js", "sachen/batverse/js/fahrzeuge/motorton.js", "sachen/batverse/js/fahrzeuge/modelle.js", "sachen/batverse/js/fahrzeuge/the-bat.js", "sachen/batverse/js/fahrzeuge/jet.js", "blockbench/cowboyhut/", "blockbench/cowboyhut/cowboy_hat.json", "blockbench/cowboyhut/cowboy_hat.png",
   "blockbench/cowboyhut/skin.png", "blockbench/cowboyhut/vorschau.webp",
   "pruefung/ui-design/", "pruefung/ui-design/inhalt.js",
   "blockbench/viewer/", JSZIP,
@@ -53,8 +51,12 @@ self.addEventListener("activate", event => {
 });
 
 // Network first, bei Offline aus dem Cache. Eigene Dateien und die fest versionierte three.js-Bibliothek.
+// Batverse-Welt (alles unter sachen/batverse/ ausser Planung, Werkstatt, deren Skripte und Vorschaubild) nie speichern: nur vom Server
+const BV_KEEP = ["gotham/", "werkstatt/", "vorschau.webp", "js/kern/basis.js", "js/fahrzeuge/modelle.js", "js/fahrzeuge/motorton.js", "js/fahrzeuge/the-bat.js", "js/fahrzeuge/jet.js", "js/gotham/fuellbau.js"];
+const isWorld = url => { const p = new URL(url).pathname, i = p.indexOf("/sachen/batverse/"); if (i < 0) return false; const r = p.slice(i + 17); return !BV_KEEP.some(k => r === k || (k.endsWith("/") && r.startsWith(k))) || r === "gotham/stadt.js"; };
 self.addEventListener("fetch", event => {
   const url = event.request.url;
+  if (isWorld(url)) return;                                                 // Batverse-Welt: Browser holt sie normal, kein Offline-Speicher
   if (event.request.method !== "GET" || !(new URL(url).origin === location.origin || url.startsWith(THREE) || url === JSZIP || isFont(url))) return;
   // Eigene Dateien immer beim Server nachfragen (no-cache), sonst liefert der HTTP-Cache des Browsers alte Seiten
   const same = new URL(url).origin === location.origin;

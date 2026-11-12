@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gotham-Seitenansicht (Ebenen) – random</title>
+  <style>
+    :root { --bg: #0f1216; --panel: #181c22; --line: #2a3039; --text: #e6e9ee; --muted: #9aa4b2; --acc: #e8c547; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+    header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+    header a { color: var(--muted); text-decoration: none; }
+    header a.tab { color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; }
+    header h1 { font-size: 16px; margin: 0; }
+    header .hint { color: var(--muted); font-size: 12px; }
+    main { position: relative; overflow: auto; padding: 8px 16px; min-height: 0; cursor: grab; }
+    main.drag { cursor: grabbing; }
+    svg { display: block; max-width: none; }
+    /* Knopf Gebaeudetypen: links unten, auffaellig (Nicolas 2026-11-11) */
+    #typen { position: fixed; left: 18px; bottom: 44px; z-index: 3; padding: 10px 16px; border: 0; border-radius: 999px; cursor: pointer; font: 700 14px/1.2 system-ui, sans-serif; color: #fff;
+      background: #d32f2f; box-shadow: 0 4px 16px rgba(0,0,0,.45); }
+    #typen:hover { background: #e53935; transform: translateY(-1px); }
+    .zoom { position: fixed; right: 18px; bottom: 44px; display: grid; gap: 4px; z-index: 3; }
+    .zoom button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 18px; cursor: pointer; }
+    #tip { position: fixed; pointer-events: none; background: #000d; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 300px; display: none; z-index: 2; }
+    footer { padding: 6px 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); background: var(--panel); }
+    footer a { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="../../../">← Übersicht</a>
+    <a href="../">Batverse</a>
+    <a class="tab" href="./">← Karte</a>
+    <a class="tab" href="umsetzung.html">Umsetzungsplan →</a>
+    <h1>Gotham-Seitenansicht (Ebenen)</h1>
+    <span class="hint">Ziehen oder Scrollen = verschieben (auch nach rechts), +/− = Grösse. Schnitt Süd → Nord (Himmelsrichtungen wie Wayne Manor). Senkrecht in Metern (massstäblich), waagrecht schematisch, nur Gebäude mit Breitenmass in echter Breite. Das Stadion ist längs geschnitten (West → Ost, Draufsicht darüber). Daten in <code>gotham/daten.js</code> (<code>schnitt</code>).</span>
+  </header>
+  <main id="main"><svg id="cut" xmlns="http://www.w3.org/2000/svg"></svg><div id="tip"></div></main>
+  <button type="button" id="typen">Gebäudetypen + Stadion einklappen</button>
+  <div class="zoom"><button id="zin" title="Grösser">+</button><button id="zout" title="Kleiner">−</button></div>
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · 0 m = Strassenebene = Fahrbahn der Brücken</footer>
+
+  <script src="daten.js"></script>
+  <script>
+    "use strict";
+    const S = GOTHAM.schnitt, H = GOTHAM.hoehen, svg = document.getElementById("cut"), NS = "http://www.w3.org/2000/svg";
+    // Bruecken in echter Laenge (Nicolas 2026-11-12) hinten an die Gebaeudetypen anhaengen; alles danach rueckt nach rechts
+    { const KK = 14, ANF = 25, GAP = 220, BR = (GOTHAM.bruecken || []).filter(b => b.spanne), b1 = Math.max(...S.teile.filter(t => t.gruppe === "typen").map(t => t.x1 || t.x0));
+      let x = b1 + GAP; const neu = [{ gruppe: "typen", typ: "titel", name: "Alle Brücken (echte Länge: Spannweite über dem Wasser wie in der Karte gemessen)", x0: x, x1: x + 1600, y0: 76, y1: 76 }];
+      for (const b of BR) { const x1 = x + (b.spanne + 2 * ANF) * KK; neu.push({ gruppe: "typen", typ: "bruecke", name: b.name, x0: x, x1, y0: -1.5, y1: 0, spanne: b.spanne, anf: ANF, w: b.w }); x = x1 + GAP; }
+      const D = x - b1 - GAP + 40;
+      S.teile = S.teile.map(t => { if (t.gruppe === "typen" || t.x0 === undefined || t.x0 < b1) return t; const u = { ...t, x0: t.x0 + D }; if (u.x1 !== undefined) u.x1 += D; if (u.punkte) u.punkte = u.punkte.map(p => [p[0] + D, p[1]]); return u; });
+      S.teile.push(...neu); }
+    // Block "Alle Gebaeudetypen" (gruppe "typen") ein-/ausklappen (Nicolas 2026-11-11); eingeklappt rueckt alles danach nach links, Zustand im Browser
+    let TYP_AN = true; try { TYP_AN = localStorage.getItem("gotham-schnitt-typen") !== "0"; } catch (e) {}
+    { const btn = document.getElementById("typen"); btn.textContent = TYP_AN ? "Gebäudetypen + Stadion einklappen" : "Gebäudetypen + Stadion ausklappen";
+      btn.onclick = () => { try { localStorage.setItem("gotham-schnitt-typen", TYP_AN ? "0" : "1"); } catch (e) {} location.reload(); }; }
+    if (!TYP_AN) { const B = S.teile.filter(t => t.gruppe === "typen"), b0 = Math.min(...B.map(t => t.x0)), b1 = Math.max(...B.map(t => t.x1 || t.x0)), dx = b1 - b0 + 40;
+      const sh = v => v >= b1 ? v - dx : v;
+      S.teile = S.teile.filter(t => t.gruppe !== "typen").map(t => { const u = { ...t }; if (u.x0 !== undefined) { const moved = u.x0 >= b1; u.x0 = sh(u.x0); if (u.x1 !== undefined && moved) u.x1 -= dx; }
+        if (u.punkte) u.punkte = u.punkte.map(p => [sh(p[0]), p[1]]); return u; }); }
+    const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
+    const XMAX = Math.max(...S.teile.map(t => t.x1 || 0)), K = 14, Y = y => -y * K, TOP = 80, BOT = -36, XL = -170, XR = XMAX + 470;   // 14 Bildpunkte je Meter senkrecht
+    const fm = v => (v > 0 ? "+" : v < 0 ? "−" : "") + String(Math.abs(Math.round(v * 10) / 10)).replace(".", ",") + " m";
+    const welt = v => "Welt-y " + String(Math.round((v + H.strasse) * 10) / 10).replace(".", ",");
+    svg.setAttribute("viewBox", `${XL} ${Y(TOP)} ${XR - XL} ${(TOP - BOT) * K}`);
+    // Anzeige groesser als das Fenster: waagrecht und senkrecht scrollen (Massstab im Browser gemerkt)
+    let SC = 0.9; try { SC = +localStorage.getItem("gotham-schnitt-sc") || 0.9; } catch (e) {}
+    const size = () => { svg.style.width = Math.round((XR - XL) * SC) + "px"; svg.style.height = Math.round((TOP - BOT) * K * SC) + "px"; try { localStorage.setItem("gotham-schnitt-sc", SC); } catch (e) {} };
+    size();
+    const main = document.getElementById("main");
+    const zoomBy = f => { const cx = main.scrollLeft + main.clientWidth / 2, cy = main.scrollTop + main.clientHeight / 2, old = SC; SC = Math.max(0.35, Math.min(2.5, SC * f)); size(); main.scrollLeft = cx * SC / old - main.clientWidth / 2; main.scrollTop = cy * SC / old - main.clientHeight / 2; };
+    document.getElementById("zin").onclick = () => zoomBy(1.25); document.getElementById("zout").onclick = () => zoomBy(0.8);
+    let drag = null;
+    main.addEventListener("pointerdown", e => { if (e.button) return; drag = [e.clientX, e.clientY, main.scrollLeft, main.scrollTop]; main.classList.add("drag"); });
+    addEventListener("pointermove", e => { if (!drag) return; main.scrollLeft = drag[2] - (e.clientX - drag[0]); main.scrollTop = drag[3] - (e.clientY - drag[1]); });
+    addEventListener("pointerup", () => { drag = null; main.classList.remove("drag"); });
+    // Start: Strassenebene ungefaehr in der Fenstermitte
+    requestAnimationFrame(() => { main.scrollTop = (Y(0) - Y(TOP)) * SC - main.clientHeight * 0.45; });
+    const defs = el("defs", {});
+    { const p = el("pattern", { id: "draht", width: 5, height: 5, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 5, height: 5, fill: "#2a2418" }, p); el("path", { d: "M0 0H5M0 0V5", stroke: "#c9a85a", "stroke-width": .8 }, p); }
+    { const p = el("pattern", { id: "pflaster", width: 9, height: 6, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 9, height: 6, fill: "#d4d3cc" }, p); el("path", { d: "M0 0H9M0 3H9M4.5 0V3M0 3V6", stroke: "#8f8d86", "stroke-width": .7 }, p); }
+    { const p = el("pattern", { id: "leiter", width: 8, height: 10, patternUnits: "userSpaceOnUse" }, defs); el("path", { d: "M1 0V10M7 0V10M1 5H7", stroke: "#d8dce0", "stroke-width": 1.2 }, p); }
+    { const g = el("linearGradient", { id: "himmel", x1: 0, y1: 0, x2: 0, y2: 1 }, defs); el("stop", { offset: 0, "stop-color": "#0b1424" }, g); el("stop", { offset: 1, "stop-color": "#1e2c44" }, g); }
+    el("rect", { x: 0, y: Y(TOP), width: XMAX, height: TOP * K, fill: "url(#himmel)" });
+
+    const FARBE = { grund: "#3b3226", luft: "#1a2638", wasser: "#1d3b55", mauer: "#6b6f75", deck: "#b9bfc7", strasse: "#8a8f96", turm: "#5e6670", gebaeude: "#7f7b74" };
+    const tip = document.getElementById("tip");
+    const info = (n, t) => { n.addEventListener("mousemove", ev => { tip.innerHTML = t; tip.style.display = "block"; tip.style.left = Math.min(ev.clientX + 14, innerWidth - 310) + "px"; tip.style.top = ev.clientY + 14 + "px"; }); n.addEventListener("mouseleave", () => tip.style.display = "none"); };
+    // Beschriftung; "\n" im Namen = Zeilenumbruch (Schrift richtet sich nach der laengsten Zeile)
+    const label = (t, x, y, w, col, max = 15) => { if (!t) return; const L = t.split("\n"), fs = Math.max(9, Math.min(max, w / Math.max(...L.map(s => s.length)) * 1.9));
+      const n = el("text", { x, y: y - (L.length - 1) * fs * .6, "font-size": fs, fill: col || "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", "pointer-events": "none" });
+      L.forEach((s, i) => { const sp = el("tspan", { x, dy: i ? fs * 1.2 : 0 }, n); sp.textContent = s; }); };
+
+    for (const t of S.teile) {
+      const x = t.x0, w = t.x1 - t.x0, y = Y(t.y1), h = (t.y1 - t.y0) * K, txt = `<b>${(t.name || t.typ).replace(/\n/g, " ")}</b><br>${fm(t.y0)} bis ${fm(t.y1)} (${welt(t.y0)} bis ${String(t.y1 + H.strasse).replace(".", ",")})<br>Höhe ${String(Math.round((t.y1 - t.y0) * 10) / 10).replace(".", ",")} m`;
+      let n;
+      if (t.typ === "kabel") {   // Tragseil: vom Turm (Seite der Kaimauer) zur Flussmitte hinunter
+        const tw = t.x1 < S.gothamBis / 2 ? t.x1 : t.x0, far = t.x1 < S.gothamBis / 2 ? t.x0 : t.x1;
+        el("path", { d: `M${tw} ${Y(t.y1)}Q${(tw + far) / 2} ${Y(t.y0 - 6)} ${far} ${Y(t.y0 + 12)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2 });
+        for (let s = 1; s < 8; s++) { const u = s / 8, xx = tw + (far - tw) * u, yy = (1 - u) * (1 - u) * Y(t.y1) + 2 * u * (1 - u) * Y(t.y0 - 6) + u * u * Y(t.y0 + 12); el("line", { x1: xx, y1: yy, x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }); }
+        continue;
+      }
+      if (t.typ === "ufer") {   // Kiesstreifen an der Mauer, dann weiche Boeschung bis zum Grund
+        const WYr = H.wasser - H.strasse, top = WYr + t.kies, west = t.seite === "west", wall = west ? t.x1 : t.x0, dir = west ? -1 : 1, L = t.x1 - t.x0, P = [];
+        P.push([wall, top]); P.push([wall + dir * t.strand, top - 0.3]);
+        for (let s = 0; s <= 1.001; s += 0.05) { const e = 0.5 - 0.5 * Math.cos(Math.PI * s); P.push([wall + dir * (t.strand + s * (L * 0.82 - t.strand)), (top - 0.3) + (t.y0 - top + 0.3) * e]); }
+        P.push([wall + dir * L, t.y0], [wall + dir * L, t.y0 - 1], [wall, t.y0 - 1]);
+        n = el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: FARBE.grund, stroke: "none" });   // Nicolas: Schicht unter dem Kies weg (Boden-Farbe)
+        el("path", { d: "M" + P.slice(0, 8).map(p => p[0] + " " + Y(p[1])).join("L"), fill: "none", stroke: "#cdb98a", "stroke-width": 5, "pointer-events": "none" });
+        info(n, `<b>${t.name}</b><br>Kies/Sand ca. ${String(t.kies).replace(".", ",")} m über dem Wasser, dann weich tiefer bis zum Grund (${fm(t.y0)})`); continue; }
+      if (t.typ === "bruecke") {   // Haengebruecke in echter Laenge: Ufer mit Kaimauer, Fluss, Tuerme an den Ufern (62 m), Tragseil, Haenger, Fahrbahn
+        const WYb = H.wasser - H.strasse, grundY = WYb - 12, xa = t.x0 + t.anf * K, xb = t.x1 - t.anf * K, TW = 10 * K, g = el("g", {}), fm1 = v => String(v).replace(".", ",");
+        for (const [a, b] of [[t.x0 - 100, xa], [xb, t.x1 + 100]]) el("rect", { x: a, y: Y(0), width: b - a, height: (0 - BOT) * K, fill: FARBE.grund }, g);   // Ufer bis zur Kaimauer
+        el("rect", { x: xa, y: Y(grundY), width: xb - xa, height: (grundY - BOT) * K, fill: FARBE.grund }, g);   // Flussgrund
+        el("rect", { x: xa, y: Y(0), width: xb - xa, height: -WYb * K, fill: "#1e2c44" }, g);   // Luft zwischen Fahrbahn und Wasser
+        el("rect", { x: xa, y: Y(WYb), width: xb - xa, height: (WYb - grundY) * K, fill: FARBE.wasser }, g);
+        for (const xm of [xa, xb]) el("rect", { x: xm - (xm === xa ? 6 : 0), y: Y(0), width: 6, height: (0 - grundY) * K, fill: FARBE.mauer }, g);   // Kaimauern
+        el("rect", { x: t.x0 - 100, y: Y(0), width: 100 + t.anf * K, height: 0.6 * K, fill: FARBE.strasse }, g); el("rect", { x: xb, y: Y(0), width: t.anf * K + 100, height: 0.6 * K, fill: FARBE.strasse }, g);
+        for (const xm of [xa, xb]) el("rect", { x: xm - TW / 2, y: Y(62), width: TW, height: (62 - WYb) * K, fill: FARBE.turm, stroke: "#111", "stroke-width": 1.5 }, g);   // Tuerme
+        const sag = 4, cab = u => Y(sag + (62 - sag) * (2 * u - 1) ** 2), mid = (xa + xb) / 2;   // Tragseil: Parabel von Turmspitze zu Turmspitze, in der Mitte 4 m ueber der Fahrbahn
+        el("path", { d: "M" + [...Array(41).keys()].map(i => `${xa + (xb - xa) * i / 40} ${cab(i / 40)}`).join("L"), fill: "none", stroke: "#d9dde3", "stroke-width": 2.5 }, g);
+        for (let xx = xa + 20 * K; xx < xb - 10 * K; xx += 20 * K) el("line", { x1: xx, y1: cab((xx - xa) / (xb - xa)), x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }, g);   // Haenger alle 20 m
+        for (const [xt, xe] of [[xa, t.x0], [xb, t.x1]]) el("path", { d: `M${xt} ${Y(62)}Q${(xt + xe) / 2} ${Y(30)} ${xe} ${Y(0.5)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2.5 }, g);   // Rueckhalteseile zu den Ankern
+        el("rect", { x: t.x0, y: Y(0), width: t.x1 - t.x0, height: 1.5 * K, fill: FARBE.deck, stroke: "#111", "stroke-width": 1.5 }, g);   // Fahrbahn
+        // Masse: Spannweite und Durchfahrtshoehe
+        const yb = Y(BOT + 2.2); el("line", { x1: xa, y1: yb, x2: xb, y2: yb, stroke: "#ffd36b", "stroke-width": 2 }, g); for (const xm of [xa, xb]) el("line", { x1: xm, y1: yb - 7, x2: xm, y2: yb + 7, stroke: "#ffd36b", "stroke-width": 2 }, g);
+        label(`${t.spanne} m Spannweite (über dem Wasser) · gesamt ${t.spanne + 2 * t.anf} m · ${t.name}`, mid, yb - 8, xb - xa, "#ffd36b", 22);
+        el("line", { x1: mid, y1: Y(WYb), x2: mid, y2: Y(-1.5), stroke: "#ffd36b", "stroke-width": 2 }, g);
+        label(`Durchfahrt ${fm1(-1.5 - WYb)} m`, mid + 90, (Y(WYb) + Y(-1.5)) / 2, 160, "#ffd36b", 16);
+        label(t.name, mid, Y(62) - 14, xb - xa, "#e6e9ee", 26);
+        info(g, `<b>${t.name}</b><br>Hängebrücke, Fahrbahn ${t.w} m breit auf Strassenhöhe<br>Spannweite ${t.spanne} m zwischen den Türmen (wie in der Karte gemessen), gesamt ${t.spanne + 2 * t.anf} m<br>Türme ${62 - WYb} m hoch (62 m über der Fahrbahn), Durchfahrt ${fm1(-1.5 - WYb)} m über dem Wasser`); continue; }
+      if (t.typ === "mass") { const x = t.x0, a = Y(t.y0), b = Y(t.y1);
+        el("line", { x1: x, y1: a, x2: x, y2: b, stroke: "#ffd36b", "stroke-width": 2 });
+        for (const yy of [a, b]) el("line", { x1: x - 7, y1: yy, x2: x + 7, y2: yy, stroke: "#ffd36b", "stroke-width": 2 });
+        const tx = el("text", { x: x - 6, y: (a + b) / 2, "font-size": 13, fill: "#ffd36b", "text-anchor": "middle", stroke: "#000", "stroke-width": 3, "paint-order": "stroke", transform: `rotate(-90 ${x - 6} ${(a + b) / 2})` }); tx.textContent = t.name; continue; }
+      if (t.typ === "container") {   // Seecontainer in echten Proportionen: Wellblech, Eckbeschlaege, keine Fenster
+        const L = t.laenge * K, Hh = t.hoehe * K, x0 = t.x0, yb = Y(t.y0), g = el("g", {});
+        el("rect", { x: x0, y: yb - Hh, width: L, height: Hh, fill: t.farbe || "#1f3f8f", stroke: "#0b1530", "stroke-width": 1.5 }, g);
+        for (let xx = x0 + 4; xx < x0 + L - 2; xx += 4) el("line", { x1: xx, y1: yb - Hh + 3, x2: xx, y2: yb - 3, stroke: "#ffffff22", "stroke-width": 1.4 }, g);
+        for (const [cx, cy] of [[x0, yb - Hh], [x0 + L - 4, yb - Hh], [x0, yb - 4], [x0 + L - 4, yb - 4]]) el("rect", { x: cx, y: cy, width: 4, height: 4, fill: "#0b1530" }, g);
+        info(g, `<b>${t.name}</b><br>${String(t.laenge).replace(".", ",")} m lang, ${String(t.hoehe).replace(".", ",")} m hoch (echte Proportionen)`);
+        label(t.name.replace(/ \(.*\)$/, ""), x0 + L / 2, yb - Hh - 6, 120, "#c9d6ff"); continue; }
+      if (t.typ === "auto") {   // Groessenvergleich: Fahrzeug in echten Proportionen (waagrecht gleicher Massstab wie senkrecht)
+        const L = t.laenge * K, Hh = t.hoehe * K, x0 = t.x0, yb = Y(t.y0), r = 0.36 * K;
+        const g = el("g", {});
+        el("path", { d: `M${x0} ${yb - r * .9}L${x0} ${yb - Hh * .55}Q${x0 + L * .04} ${yb - Hh * .62} ${x0 + L * .3} ${yb - Hh * .62}L${x0 + L * .42} ${yb - Hh}L${x0 + L * .8} ${yb - Hh * .98}Q${x0 + L * .97} ${yb - Hh * .7} ${x0 + L} ${yb - Hh * .55}L${x0 + L} ${yb - r * .9}Z`, fill: t.farbe || "#d2aa3c", stroke: "#111", "stroke-width": 1.2 }, g);
+        for (const f of [.18, .8]) el("circle", { cx: x0 + L * f, cy: yb - r, r, fill: "#1b1d20", stroke: "#9aa0a8", "stroke-width": 1.2 }, g);
+        el("line", { x1: x0 + L + 6, y1: yb, x2: x0 + L + 6, y2: yb - Hh, stroke: "#ffd36b", "stroke-width": 1.2 }, g);
+        el("text", { x: x0 + L + 10, y: yb - Hh / 2 + 4, "font-size": 10, fill: "#ffd36b", stroke: "#000", "stroke-width": 2.5, "paint-order": "stroke" }, g).textContent = String(t.hoehe).replace(".", ",") + " m";
+        info(g, `<b>${t.name}</b><br>${String(t.hoehe).replace(".", ",")} m hoch, ${String(t.laenge).replace(".", ",")} m lang (hier in echten Proportionen)`); continue; }
+      if (t.typ === "stadion") {   // Querschnitt: Sitzreihen (reihe hoch, tiefe tief) in echten Masse, nach aussen steigend; darunter Stockwerke; oben offen
+        const W = t.x1 - t.x0, n = Math.round(t.hoehe / t.reihe), rise = t.hoehe / n, dp = t.tiefe * K, rw = n * dp, g = el("g", {});
+        const blau = ["#3aa0ff", "#1f6fd8", "#2a3f9a"];
+        for (const sd of [0, 1]) { const xo = sd ? t.x1 : t.x0, dir = sd ? -1 : 1, P = [[xo, 0], [xo, t.hoehe]];   // xo = Aussenwand
+          for (let k = n; k >= 1; k--) { const xa = xo + dir * (n - k) * dp; P.push([xa, k * rise], [xa + dir * dp, k * rise]); } P.push([xo + dir * rw, 0]);
+          el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: "#9aa1a8", stroke: "#1b1d20", "stroke-width": 1.2 }, g);
+          for (let f = t.geschoss; f < t.hoehe - 0.1; f += t.geschoss) { const xi = xo + dir * (n - f / rise) * dp; el("line", { x1: xo, y1: Y(f), x2: xi, y2: Y(f), stroke: "#1b1d20", "stroke-width": 1.5, "stroke-dasharray": "6 4" }, g); }   // Stockwerke unter den Raengen
+          for (let k = 1; k <= n; k++) { const xa = xo + dir * (n - k) * dp, sx = xa + dir * dp * 0.25, sw = dp * 0.55, y = Y(k * rise);   // Sitz: Schale mit Lehne
+            el("path", { d: `M${Math.min(sx, sx + dir * sw)} ${y}h${sw}v${-0.18 * K}h${-sw * 0.75}v${-0.3 * K}h${-sw * 0.25}Z`, fill: blau[k % 3], transform: sd ? `translate(${2 * (sx + dir * sw / 2)} 0) scale(-1 1)` : "" }, g); } }
+        const fx0 = t.x0 + rw, fx1 = t.x1 - rw, ez = (t.endzone || 9.1) * K, rd = (t.rand || 6) * K;   // Spielfeld in voller Laenge (Nicolas: nicht verkuerzen)
+        el("rect", { x: fx0, y: Y(0), width: fx1 - fx0, height: -t.feld * K, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, g);
+        for (const [xa, col] of [[fx0 + rd, "#2b55b8"], [fx1 - rd - ez, "#1f6b45"]]) el("rect", { x: xa, y: Y(0), width: ez, height: -t.feld * K * 0.5, fill: col }, g);   // Endzonen
+        for (let yd = 10; yd < 100; yd += 10) { const xx = fx0 + rd + ez + yd / 100 * (fx1 - fx0 - 2 * rd - 2 * ez); el("line", { x1: xx, y1: Y(0), x2: xx, y2: Y(0) + 6, stroke: "#fff", "stroke-width": 1.5 }, g); }   // Yardlinien
+        for (const xx of [fx0 + rd, fx1 - rd]) el("path", { d: `M${xx} ${Y(0)}v${-9 * K}M${xx - 0.6 * K} ${Y(3)}h${1.2 * K}`, fill: "none", stroke: "#ffd60a", "stroke-width": 3 }, g);   // Torstangen (gelb, von der Seite: Pfosten 3 m, Querlatte, Stangen bis 9 m)
+        const fm1 = v => String(v).replace(".", ","), floors = Math.round(t.hoehe / t.geschoss);
+        info(g, `<b>${t.name}</b><br>Tribünen ${floors} Stockwerke (je ${fm1(t.geschoss)} m) = ${fm1(t.hoehe)} m, oben offen<br>${n} Sitzreihen je Seite: ${fm1(Math.round(rise * 100) / 100)} m hoch, ${fm1(t.tiefe)} m tief (Tribüne ca. ${Math.round(n * t.tiefe)} m tief, echte Masse)<br>Spielfeld ${t.spielfeld || 110} m mit Endzonen (${fm1(t.endzone || 9.1)} m) und ${t.rand || 6} m Rand, ${fm1(-t.feld)} m abgesenkt – alles in echter Länge`);
+        // Draufsicht klein darueber: Oval (Ort w x d), Spielfeld 110 x 49 m, rote Linie = Schnittrichtung West -> Ost (Nicolas: aus welcher Sicht?)
+        { const cx = (t.x0 + t.x1) / 2, cy = Y(t.hoehe + 26), m = 1.6, ow = (t.oben || [220, 160])[0], od = (t.oben || [220, 160])[1], v = el("g", {});
+          el("ellipse", { cx, cy, rx: ow / 2 * m, ry: od / 2 * m, fill: "#9aa1a8", stroke: "#1b1d20", "stroke-width": 2 }, v);
+          el("rect", { x: cx - 55 * m, y: cy - 24.5 * m, width: 110 * m, height: 49 * m, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 1.5 }, v);
+          el("line", { x1: cx - ow / 2 * m - 30, y1: cy, x2: cx + ow / 2 * m + 30, y2: cy, stroke: "#ff3b3b", "stroke-width": 3, "stroke-dasharray": "10 6" }, v);
+          el("path", { d: `M${cx + ow / 2 * m + 30} ${cy}l-14 -8v16Z`, fill: "#ff3b3b" }, v);
+          label(`Draufsicht ${ow} × ${od} m · rote Linie = dieser Schnitt (Süd → Nord)`, cx, cy - od / 2 * m - 10, ow * m * 1.3, "#ffb3b3", 18);
+          info(v, `<b>Draufsicht Stadion</b><br>${ow} × ${od} m, oval; Spielfeld 110 × 49 m (mit Endzonen)<br>Der Schnitt läuft längs von Süden nach Norden durch die Mitte: man sieht die Tribünen hinter den Endzonen und das Spielfeld in voller Länge`); }
+        label(t.name + " · Längsschnitt (Süd → Nord): Tribünen hinter den Endzonen", (t.x0 + t.x1) / 2, Y(t.hoehe) - 30, W, "#5fd3e6", 22);
+        label(`Tribünen ${floors} Stockwerke (${fm1(t.hoehe)} m) · ${n} Reihen à ${fm1(Math.round(rise * 100) / 100)} m · Spielfeld ${t.spielfeld || 110} m (echte Länge)`, (t.x0 + t.x1) / 2, Y(t.hoehe) - 8, W, "#e6e9ee", 18); continue; }
+      if (t.typ === "neben") {   // schraeges Rohr mit Gefaelle (ya/yb = Sohle am Anfang/Ende), Pfeile in Fliessrichtung
+        const so = u => t.ya + (t.yb - t.ya) * (t.kurve ? u * u * (3 - 2 * u) : u), U = [...Array(41).keys()].map(i => i / 40), X = u => t.x0 + (t.x1 - t.x0) * u;   // Sohle; Kurve: oben und unten flach
+        const P = [...U.map(u => [X(u), so(u) + t.h]), ...U.slice().reverse().map(u => [X(u), so(u)])];
+        n = el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 3 });
+        el("path", { d: "M" + U.map(u => X(u) + " " + (Y(so(u)) - 5)).join("L"), fill: "none", stroke: "#4f8fd0", "stroke-width": 5, "pointer-events": "none" });
+        for (let u = 0.1; u < 0.95; u += 0.1) { const x = X(u), y = Y(so(u)) - 12, a = Math.atan2(Y(so(u + 0.01)) - Y(so(u)), X(u + 0.01) - X(u)) * 180 / Math.PI;
+          el("path", { d: "M-9 -5L3 0L-9 5", fill: "none", stroke: "#9fd0ff", "stroke-width": 2.5, transform: `translate(${x} ${y}) rotate(${a})`, "pointer-events": "none" }); }
+        const len = (t.x1 - t.x0) / K, maxG = Math.abs(t.yb - t.ya) / len * (t.kurve ? 1.5 : 1);
+        info(n, `<b>${t.name}</b><br>Sohle ${fm(t.ya)} am ersten Gullideckel bis ${fm(t.yb)} am Hauptsammler (auf dessen Boden), ${String(t.h).replace(".", ",")} m hoch, ${Math.round(len)} m lang<br>Gefälle höchstens ca. ${Math.round(maxG * 100)} %, Wasser fliesst in den Hauptsammler; zu Fuss und mit dem Batpod befahrbar`);
+        label(`Nebensammler ${String(t.h).replace(".", ",")} m hoch · max. ca. ${Math.round(maxG * 100)} % Gefälle · Wasser fliesst →`, X(0.5), Y(so(0.5) + t.h) - 10, 900, "#bff0c8", 22); continue; }
+      if (t.typ === "person") {   // Strichfigur in echter Groesse
+        const H = t.hoehe * K, x = t.x0, yb = Y(t.y0), g = el("g", { stroke: "#ffd36b", "stroke-width": 2.2, fill: "none" });
+        el("circle", { cx: x, cy: yb - H * 0.9, r: H * 0.09 }, g); el("path", { d: `M${x} ${yb - H * 0.8}V${yb - H * 0.42}M${x} ${yb - H * 0.42}L${x - H * 0.13} ${yb}M${x} ${yb - H * 0.42}L${x + H * 0.13} ${yb}M${x - H * 0.17} ${yb - H * 0.62}L${x + H * 0.17} ${yb - H * 0.62}` }, g);
+        info(g, `<b>${t.name}</b><br>zum Grössenvergleich im Nebensammler`); continue; }
+      if (t.typ === "text") { label(t.name, (t.x0 + t.x1) / 2, Y(t.y0) + 4, t.x1 - t.x0, "#9fe0ad"); continue; }   // freier Hinweistext
+      if (t.typ === "titel") { el("text", { x: (t.x0 + t.x1) / 2, y: Y(t.y0), "font-size": 18, fill: "#e8c547", "text-anchor": "middle", "font-weight": 700 }).textContent = t.name; continue; }
+      if (t.typ === "profil") { n = el("polygon", { points: t.punkte.map(p => p[0] + "," + Y(p[1])).join(" "), fill: t.farbe || FARBE.grund, stroke: "#2a2620", "stroke-width": 1.5 });
+        info(n, `<b>${t.name}</b>`); label(t.name, t.punkte[6][0] + 70, Y(0), 170, "#e6e9ee"); continue; }
+      if (t.typ === "auslass") {   // Pflaster-Trichter zum Wasser, Stirnwand mit rundem Rohr und Gitter, Treppe
+        const west = t.seite === "west", wx = west ? t.x1 - 14 : t.x0 + 14, tip = west ? t.x0 : t.x1, r = (t.y1 - t.y0) / 2 * K * .75, cy = (Y(t.y1) + Y(t.y0)) / 2;
+        el("path", { d: `M${wx} ${Y(t.y0)}L${tip} ${Y(t.y0) + 3}L${wx} ${Y(t.y0) - 6}Z`, fill: "url(#pflaster)", stroke: "#8f8d86" });
+        n = el("rect", { x: west ? wx : wx - 14, y: Y(t.y1 + 2), width: 14, height: (t.y1 + 2 - t.y0) * K, fill: "#d9d9d2", stroke: "#8f8d86", "stroke-width": 1.5 });
+        el("circle", { cx: wx + (west ? 7 : -7), cy, r, fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 3, "pointer-events": "none" });
+        for (let s = 0; s < 6; s++) el("rect", { x: west ? wx - 18 - s * 6 : wx + 12 + s * 6, y: Y(t.y0 + 1 + s * 1.2), width: 7, height: 1.2 * K, fill: "#e6e6e0", stroke: "#8f8d86", "stroke-width": .8, "pointer-events": "none" });
+        info(n, txt); label("Auslass", wx + (west ? -30 : 30), Y(t.y1 + 2) - 6, 80, "#d8dce0"); continue;
+      }
+      if (t.typ === "rohr") { n = el("rect", { x, y, width: w, height: h, rx: h / 2, fill: "#7bd88f33", stroke: "#7bd88f", "stroke-width": 3 }); el("line", { x1: x, y1: Y(t.y0) - 6, x2: x + w, y2: Y(t.y0) - 6, stroke: "#5a7a3a", "stroke-width": 5 }); }
+      else if (t.typ === "gitter") n = el("rect", { x, y, width: w, height: h, fill: "url(#draht)", stroke: "#a0522d", "stroke-width": 3 });
+      else if (t.typ === "schacht") n = el("rect", { x, y, width: w, height: h, fill: t.farbe ? t.farbe + "44" : "url(#leiter)", stroke: t.farbe || "#d8dce0", "stroke-width": 1.5 });
+      else if (t.typ === "raum") { n = el("rect", { x, y, width: w, height: h, fill: (t.farbe || "#9aa4b2") + "55", stroke: t.farbe || "#9aa4b2", "stroke-width": 2 });
+        if (t.licht) for (let xx = x + 6; xx < x + w; xx += 12) el("rect", { x: xx, y: y + 1, width: 10, height: 4, fill: "#f4f7fb", "pointer-events": "none" }); }
+      else if (t.typ === "gebaeude") { n = el("rect", { x, y, width: w, height: h, fill: t.farbe || FARBE.gebaeude, stroke: "#1b1d20", "stroke-width": 2 });
+        if (t.geschoss) { const gh = t.geschoss * K;   // Stockwerke: Linie je Geschoss, Fenster in der Mitte; eg = hoeheres Erdgeschoss (Empfangshalle)
+          for (let yy = Y(t.y0), k = 0; yy > y + 2; k++) { const fh = k === 0 && t.eg ? t.eg * K : gh; el("line", { x1: x, y1: yy, x2: x + w, y2: yy, stroke: "#1b1d20", "stroke-width": 1, opacity: .7, "pointer-events": "none" });
+            for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy - fh * 0.72, width: 7, height: fh * 0.45, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" }); yy -= fh; } }
+        else for (let yy = y + 10; yy < y + h - 6; yy += 16) for (let xx = x + 8; xx < x + w - 8; xx += 14) el("rect", { x: xx, y: yy, width: 7, height: 8, fill: "#ffe9a8", opacity: .5, "pointer-events": "none" });
+        if (t.laden) { const fh = (t.eg || t.geschoss) * K, y0 = Y(t.y0);   // Laden im Erdgeschoss: eigene Farbe, Schaufenster, Tuer, Markise; darueber Wohnungen
+          el("rect", { x, y: y0 - fh, width: w, height: fh, fill: t.ladenFarbe || "#d94f2b", stroke: "#1b1d20", "stroke-width": 2, "pointer-events": "none" });
+          el("rect", { x: x + 6, y: y0 - fh * 0.68, width: w * 0.55, height: fh * 0.5, fill: "#ffe2a8", opacity: .85, "pointer-events": "none" });
+          el("rect", { x: x + w - 6 - w * 0.2, y: y0 - fh * 0.7, width: w * 0.2, height: fh * 0.7, fill: "#3a2a1f", "pointer-events": "none" });
+          el("path", { d: `M${x - 4} ${y0 - fh * 0.8}h${w + 8}l-6 10h${-(w - 4)}z`, fill: "#2f8f4a", stroke: "#1b1d20", "pointer-events": "none" });
+          label(t.laden, x + w / 2, y0 - fh * 0.86, w, "#fff", 18);
+          if (t.wohnung) for (let k = 1; t.y0 + (k + 0.5) * t.geschoss <= t.y1 + 0.01; k++) label("Wohnung", x + w / 2, y0 - fh - (k - 0.5) * t.geschoss * K + 5, w, "#3a2a1f", 14); }
+        if (t.y1 >= 70) el("path", { d: `M${x - 6} ${y + 10}l${w / 4 + 6} -8l${w / 4} 8l${w / 4} -8l${w / 4 + 6} 8`, fill: "none", stroke: "#0b1424", "stroke-width": 6 }); }
+      else n = el("rect", { x, y, width: w, height: Math.max(h, 2), fill: FARBE[t.typ] || "#888", stroke: t.typ === "grund" || t.typ === "luft" ? "none" : "#111", "stroke-width": 1.5 });
+      if (t.name) info(n, txt);
+      if (t.typ === "wasser") label(t.name, x + w / 2, Y(t.y1) + 30, w, "#9fd0ff");
+      else if (t.typ === "turm") label("Turm", x + w / 2, Y(t.y1) - 8, 60, "#d9dde3");
+      if (t.typ === "gebaeude" && t.geschoss) { const H = t.echt || t.y1 - t.y0, N = t.eg ? 1 + Math.floor((H - t.eg) / t.geschoss + 0.01) : Math.floor(H / t.geschoss + 0.01);   // Anzahl Stockwerke (logisch)
+        const fm1 = v => String(v).replace(".", ",");
+        label(t.laden ? `${N} Stockwerke\n(1 Laden + ${N - 1} Wohnungen,\nje ${fm1(t.geschoss)} m)` : `≈ ${N} Stockwerke\n(je ${fm1(t.geschoss)} m${t.eg ? ", EG " + fm1(t.eg) + " m" : ""})`, t.laden ? x + w + 84 : x + w / 2, Y((t.y0 + Math.min(t.y1, t.y0 + 30)) / 2), w * 1.2, "#ffe9a8", 26); }
+      if (t.typ === "gebaeude") label(t.name, x + w / 2, y - 6, w * 1.4);
+      else if (t.typ === "raum" || t.typ === "rohr") label(t.name, x + w / 2, y + h / 2 + 5, w, "#fff");
+      else if (t.typ === "deck" || t.typ === "strasse") label(t.name, x + w / 2, y - 5, w, "#e6e9ee");
+      else if ((t.typ === "schacht" || t.typ === "gitter") && h > 90) label(t.name, x + w / 2 + 34, y + h / 2, 160, "#d8dce0");
+    }
+    el("line", { x1: S.gothamBis + 30, y1: Y(TOP), x2: S.gothamBis + 30, y2: Y(BOT), stroke: "#0f1216", "stroke-width": 24 });
+    // Breitenmasse unten (Gebaeude in echter Breite): Hilfslinien von den Kanten, Masslinie mit Wert
+    for (const t of S.teile) if (t.breite) { const yb = Y(BOT + 2.2), x0 = t.x0, x1 = t.x1;
+      for (const x of [x0, x1]) el("line", { x1: x, y1: Y(t.y0), x2: x, y2: yb + 8, stroke: "#ffd36b55", "stroke-width": 1, "stroke-dasharray": "5 5", "pointer-events": "none" });
+      el("line", { x1: x0, y1: yb, x2: x1, y2: yb, stroke: "#ffd36b", "stroke-width": 2 }); for (const x of [x0, x1]) el("line", { x1: x, y1: yb - 7, x2: x, y2: yb + 7, stroke: "#ffd36b", "stroke-width": 2 });
+      label(`${String(t.breite).replace(".", ",")} m breit · ${t.name.replace(/ \(.*\)$/, "")}`, (x0 + x1) / 2, yb - 8, x1 - x0, "#ffd36b", 22); }
+    // Wasserlinie
+    const WY = H.wasser - H.strasse; el("line", { x1: 0, y1: Y(WY), x2: XMAX, y2: Y(WY), stroke: "#6fb3ff", "stroke-width": 1.5, "stroke-dasharray": "6 4" });
+
+    // Massstab links: alle 5 m, beschriftet alle 10 m (relativ und Welt-y)
+    for (let v = BOT; v <= TOP; v += 5) {
+      el("line", { x1: -14, y1: Y(v), x2: 0, y2: Y(v), stroke: "#9aa4b2", "stroke-width": v % 10 ? 1 : 2 });
+      if (v % 10 === 0) { el("text", { x: -18, y: Y(v) + 4, "font-size": 12, fill: "#c7ccd6", "text-anchor": "end" }).textContent = fm(v);
+        el("text", { x: -18, y: Y(v) + 17, "font-size": 9, fill: "#7c8593", "text-anchor": "end" }).textContent = "(" + welt(v) + ")"; }
+    }
+    el("line", { x1: 0, y1: Y(TOP), x2: 0, y2: Y(BOT), stroke: "#9aa4b2", "stroke-width": 2 });
+
+    // Masskette rechts: Ebenen mit Abstaenden
+    const E = [...S.ebenen].sort((a, b) => b.y - a.y), XC = XMAX + 30; let lastY = -1e9;
+    E.forEach((e, i) => {
+      el("line", { x1: 0, y1: Y(e.y), x2: XC, y2: Y(e.y), stroke: "#ffffff1c", "stroke-width": 1, "stroke-dasharray": "4 6" });
+      el("line", { x1: XC - 8, y1: Y(e.y), x2: XC + 8, y2: Y(e.y), stroke: "#e8c547", "stroke-width": 2 });
+      const ly = Math.max(Y(e.y) + 5, lastY + 17); lastY = ly;
+      if (ly - Y(e.y) > 6) el("line", { x1: XC + 8, y1: Y(e.y), x2: XC + 92, y2: ly - 4, stroke: "#e8c54788", "stroke-width": 1 });
+      el("text", { x: XC + 96, y: ly, "font-size": 14, fill: "#e6e9ee" }).textContent = `${fm(e.y)}  ${e.name}`;
+      if (i) { const a = Y(E[i - 1].y), b = Y(e.y), d = Math.round((E[i - 1].y - e.y) * 10) / 10;
+        el("line", { x1: XC, y1: a, x2: XC, y2: b, stroke: "#e8c547", "stroke-width": 1.5 });
+        el("text", { x: XC + 14, y: (a + b) / 2 + 4, "font-size": 11, fill: "#e8c547" }).textContent = String(d).replace(".", ",") + " m"; }
+    });
+    el("text", { x: XC - 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Abstände zwischen den Ebenen";
+    el("text", { x: 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2" }).textContent = "Westen";
+    el("text", { x: S.gothamBis - 10, y: Y(TOP) + 20, "font-size": 13, fill: "#9aa4b2", "text-anchor": "end" }).textContent = "Osten";
+  </script>
+</body>
+</html>

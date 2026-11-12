@@ -189,7 +189,7 @@
     // Hier neue Eintraege ergaenzen (siehe CLAUDE.md).
     // type: "sache" | "test"
     const ENTRIES = [
-      { type: "sache", title: "Wayne Manor 3D", desc: "Wayne Manor nach den Lageplänen auf einem Plateau: Schloss mit Türmen, Rondell, Heckenlabyrinth, Pool und Landeplatz, darunter Tiefgarage und die Batcave auf zwei Ebenen mit Höhlensee, Boot und Wassertunnel zur Steilküste. Begehbar, mit Geistmodus und fahrbarem Tumbler, der über den Wasserfall-Teich springt. Die Karten lassen sich als Overlay einblenden.", href: "sachen/wayne-manor/", img: "sachen/wayne-manor/vorschau.webp", date: "2026-11-05", tags: ["3d", "three.js", "begehbar", "batman"] },
+      { type: "sache", onlineOnly: true, title: "Batverse", desc: "Batverse (früher Wayne Manor 3D): Wayne Manor nach den Lageplänen auf einem Plateau: Schloss mit Türmen, Rondell, Heckenlabyrinth, Pool und Landeplatz, darunter Tiefgarage und die Batcave auf zwei Ebenen mit Höhlensee, Boot und Wassertunnel zur Steilküste. Begehbar, mit Geistmodus und fahrbarem Tumbler, der über den Wasserfall-Teich springt. Die Karten lassen sich als Overlay einblenden.", href: "sachen/batverse/", img: "sachen/batverse/vorschau.webp", date: "2026-11-05", tags: ["3d", "three.js", "begehbar", "batman"] },
       { type: "sache", title: "Wayne-Berg 3D", desc: "Ein Kunst-Berg mit Wayne Manor auf dem Gipfel und der Batcave darunter: Der Eingang liegt hinter einem Wasserfall, im Ostflügel der Villa fährt ein Aufzug 46 Meter tief in die Höhle mit Batmobil, Batwing, Anzug-Vitrinen und Fledermäusen. Komplett begehbar, mit Tag und Nacht samt Bat-Signal.", href: "sachen/wayne-berg/", date: "2026-11-05", tags: ["3d", "three.js", "begehbar", "batman"] },
       { type: "sache", title: "Wohnwagen 3D", desc: "Ein Wohnwagen, der sich auf Knopfdruck zu einer kleinen Villa ausklappt: zwei Zimmer fahren seitlich aus, hinten fällt die Terrasse mit Markise herunter, aufs Dach führt eine Treppe zur Dachterrasse mit Fahne und Schüssel. Komplett begehbar, mit Tag und Nacht.", href: "sachen/camper/", img: "sachen/camper/vorschau.webp", date: "2026-11-05", tags: ["3d", "three.js", "begehbar"] },
       { type: "sache", title: "Retro Game Hub – Präsentation (mit Text)", desc: "Abschlusspräsentation zum Scrum-Experiment: ein Retro-Arcade-Portal mit sieben Spielen. Folien mit Erklärtexten, Retro-Optik, offline lesbar.", href: "sachen/retro-hub/", date: "2026-11-05", tags: ["präsentation", "retro", "scrum"] },
@@ -197,10 +197,10 @@
       { type: "sache", title: "Villa 3D", desc: "Amerikanisches Haus mit zwei Stockwerken, Keller, Garage neben der Kueche und Pool im Garten, rundherum Huegel und viele Pflanzen. Begehbar mit WASD oder Joysticks, im Pool kann man schwimmen.", href: "sachen/villa/", img: "sachen/villa/vorschau.webp", date: "2026-11-04", tags: ["3d", "three.js"] },
       { type: "sache", title: "Haus 3D", desc: "Ein Einfamilienhaus mit Ziegeldach, Kamin und Garten, ganz aus Code gebaut. Drehbar, mit Tag und Nacht - und begehbar: am PC mit WASD, am Handy quer mit zwei Joysticks.", href: "sachen/haus/", img: "sachen/haus/vorschau.webp", date: "2026-11-04", tags: ["3d", "three.js"] },
       { type: "sache", title: "Superhelden 3D", desc: "Iron Man, Spider-Man, Hulk, Batman und Superman als drehbare 3D-Modelle, dazu ein selbst gebauter Iron-Man-Anzug mit Arc-Reaktor und klappbarer Maske.", href: "sachen/helden/", img: "sachen/helden/vorschau.webp", date: "2026-10-23", tags: ["3d", "three.js", "marvel", "dc"] },
-      { type: "test", title: "Gotham-Karte (Planung)", desc: "Entwurf von Gotham City für Wayne Manor 3D: Insel nach Skizze mit Flüssen rundum, Hauptstrassen und automatische Nebenstrassen je Bezirk, Gebäude nach Wohlstand, Hängebrücken, Arkham-Fähre, zweistöckige Strassen, U-Bahn mit vier Ringen, Kanalisation mit Gullideckeln und alle wichtigen Orte. Ziehen, zoomen, Ebenen schalten, Klick kopiert die Koordinate.", href: "sachen/wayne-manor/gotham/", date: "2026-11-11", tags: ["planung", "karte", "batman", "svg"] },
-      { type: "test", title: "Gotham-Seitenansicht (Planung)", desc: "Senkrechter Schnitt durch Gotham mit allen Ebenen und Abständen in Metern: Strasse und Brücken, untere Strasse, Tiefgaragen, Club, U-Bahn, Batman-Basis, geheimer Wayne-Stock, Kanalisation und Wasser, dazu Wayne Manor an der Steilküste und ein Rolls-Royce als Grössenvergleich.", href: "sachen/wayne-manor/gotham/schnitt.html", date: "2026-11-11", tags: ["planung", "schnitt", "batman", "svg"] },
-      { type: "test", title: "Gotham-Umsetzungsplan", desc: "Alle Schritte für Gotham City in der Reihenfolge, in der sie gebaut werden: Technik, Insel, Strassen, Gebäude, U-Bahn, Untergrund, Spielsysteme. Mit Stand, Begründung und Abhängigkeiten, filterbar nach Phase.", href: "sachen/wayne-manor/gotham/umsetzung.html", date: "2026-11-12", tags: ["planung", "batman"] },
-      { type: "test", title: "Werkstatt (Teststrecke)", desc: "Die Fahrzeuge aus Wayne Manor 3D einzeln auf einer leeren Fläche mit Rundkurs und Slalom: ansehen, auf dem Drehteller drehen, fahren und Masse ablesen, ohne die Spielwelt.", href: "sachen/wayne-manor/werkstatt/", date: "2026-11-12", tags: ["3d", "three.js", "batman"] }
+      { type: "test", title: "Gotham-Karte (Planung)", desc: "Entwurf von Gotham City für das Batverse: Insel nach Skizze mit Flüssen rundum, Hauptstrassen und automatische Nebenstrassen je Bezirk, Gebäude nach Wohlstand, Hängebrücken, Arkham-Fähre, zweistöckige Strassen, U-Bahn mit vier Ringen, Kanalisation mit Gullideckeln und alle wichtigen Orte. Ziehen, zoomen, Ebenen schalten, Klick kopiert die Koordinate.", href: "sachen/batverse/gotham/", date: "2026-11-11", tags: ["planung", "karte", "batman", "svg"] },
+      { type: "test", title: "Gotham-Seitenansicht (Planung)", desc: "Senkrechter Schnitt durch Gotham mit allen Ebenen und Abständen in Metern: Strasse und Brücken, untere Strasse, Tiefgaragen, Club, U-Bahn, Batman-Basis, geheimer Wayne-Stock, Kanalisation und Wasser, dazu Wayne Manor an der Steilküste und ein Rolls-Royce als Grössenvergleich.", href: "sachen/batverse/gotham/schnitt.html", date: "2026-11-11", tags: ["planung", "schnitt", "batman", "svg"] },
+      { type: "test", title: "Gotham-Umsetzungsplan", desc: "Alle Schritte für Gotham City in der Reihenfolge, in der sie gebaut werden: Technik, Insel, Strassen, Gebäude, U-Bahn, Untergrund, Spielsysteme. Mit Stand, Begründung und Abhängigkeiten, filterbar nach Phase.", href: "sachen/batverse/gotham/umsetzung.html", date: "2026-11-12", tags: ["planung", "batman"] },
+      { type: "test", title: "Werkstatt (Teststrecke)", desc: "Die Fahrzeuge aus dem Batverse einzeln auf einer leeren Fläche mit Rundkurs und Slalom: ansehen, auf dem Drehteller drehen, fahren und Masse ablesen, ohne die Spielwelt.", href: "sachen/batverse/werkstatt/", date: "2026-11-12", tags: ["3d", "three.js", "batman"] }
     ];
 
     // Eigener Bereich "Pruefungsvorbereitung" unter den Eintraegen
@@ -285,6 +285,7 @@
 
       const items = ENTRIES
         .filter(e => filter === "all" || e.type === filter)
+        .filter(e => !(e.onlineOnly && !navigator.onLine))   // onlineOnly: nicht offline zeigen (Batverse-Welt, zu gross fuer den Offline-Speicher)
         .filter(e => matches(e, q))
         .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
@@ -303,6 +304,7 @@
         render();
       });
     });
+    addEventListener("online", render); addEventListener("offline", render);   // Batverse-Karte ein-/ausblenden
     search.addEventListener("input", render);
     render();
 
