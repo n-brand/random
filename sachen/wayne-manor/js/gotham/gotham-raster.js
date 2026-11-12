@@ -26,13 +26,25 @@
   const m = new THREE.Mesh(g, mat.sea); m.position.y = SEA_Y - 0.02; m.name = "Gotham-Wasser"; m.userData.keep = true; m.userData.noLift = true; m.receiveShadow = true; scene.add(m);
   GOT.waterMesh = m;
 }
+// Rand zum Fernring (Nicolas 2026-11-12, Bild: "gigantischer unschoener Schnitt" an der Nordkante z -1040): der Fernring hat 40-m-Dreiecke aus genH0,
+// das Gotham-Raster 4 m. Bis GR_BLEND m vor jedem Rand, hinter dem der Fernring liegt, geht die Hoehe weich in die Fernring-Flaeche ueber; am Rand gleich.
+const GR_BLEND = 160, GR_FH = new Map();
+function grFern(x, z) {                                                    // Hoehe der Fernring-Dreiecke (wie fernTerrainH, Ecken aus genH0, gemerkt)
+  const fx = (x + FR_R) / FR_S, fz = (z + FR_R) / FR_S, i = Math.floor(fx), k = Math.floor(fz), u = fx - i, v = fz - k;
+  const H = (a, b) => { const key = a * 10000 + b; let h = GR_FH.get(key); if (h === undefined) { h = genH0(-FR_R + a * FR_S, -FR_R + b * FR_S); GR_FH.set(key, h); } return h; };
+  const A = H(i, k), B = H(i + 1, k), C = H(i, k + 1); if (u + v <= 1) return A + (B - A) * u + (C - A) * v;
+  const D = H(i + 1, k + 1); return D + (C - D) * (1 - u) + (B - D) * (1 - v);
+}
+function grEdgeD(x, z) {                                                   // Abstand zum naechsten Rand mit Fernring dahinter (Ostrand nur ausserhalb des Hauptrasters)
+  let e = Math.min(x - GOT_R.x0, z - GOT_R.z0, GOT_R.z1 - z); if (Math.abs(z) >= T_A + T_B) e = Math.min(e, GOT_R.x1 - x); return e;
+}
 const GR_C = 4, GR_B = 64, GR_NB = 15, GR_N1 = GR_B + 1;
 const GR_H = new Map();                                                    // Hoehen je Block (Float32Array, NaN = noch nicht gerechnet)
 function grH(gi, gk) {                                                     // Rasterpunkt (gi, gk) ab GOT_R.x0 / z0
   const bi = Math.min(GR_NB - 1, Math.floor(gi / GR_B)), bk = Math.min(GR_NB - 1, Math.floor(gk / GR_B)), key = bi * 100 + bk;
   let A = GR_H.get(key); if (!A) { A = new Float32Array(GR_N1 * GR_N1).fill(NaN); GR_H.set(key, A); }
   const q = (gk - bk * GR_B) * GR_N1 + (gi - bi * GR_B); let h = A[q];
-  if (h !== h) h = A[q] = genH(GOT_R.x0 + gi * GR_C, GOT_R.z0 + gk * GR_C);
+  if (h !== h) { const x = GOT_R.x0 + gi * GR_C, z = GOT_R.z0 + gk * GR_C; h = genH(x, z); const e = grEdgeD(x, z); if (e < GR_BLEND && !glandNear(x, z, 30)) h = grFern(x, z) + (h - grFern(x, z)) * sst(0, GR_BLEND, e); A[q] = h; }
   return h;
 }
 // Hoehe genau wie das feinste Netz (Dreiecke a c b / b c d)

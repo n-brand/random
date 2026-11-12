@@ -8,9 +8,9 @@
 // Spuren), 4 m Gehsteig. Nebenstrassen (G2b): 8 m mit gelber Doppellinie und 3 m Gehsteig, Gassen der Narrows 6 m ohne Linien mit 2 m Gehsteig;
 // endet eine Nebenstrasse kurz vor einer anderen Fahrbahn (die Karte laesst sie dort aufhoeren), wird sie bis an deren Fahrbahn verlaengert.
 // Kreuzungen (Strecken schneiden sich oder ein Ende liegt auf einer anderen Fahrbahn) sind schlichte Asphaltflaechen ohne Linien; Gehsteige setzen dort
-// und auf anderen Fahrbahnen aus. Vorerst nur Optik: Boden bleibt die flache Strassenebene (-12), zweistoeckige Strassen kommen in G2e.
+// und auf anderen Fahrbahnen aus. Gehsteige liegen 15 cm hoeher (Bordstein, auch begehbar: GSTR.walkAt), sonst Boden = Strassenebene (-12).
 // Aufbau ca. 0,3 s: nicht beim Start, sondern einmal danach im Kachel-Zeitplan (gstrBuild), Gotham ist beim Start ohnehin weit weg.
-const GSTR = { roads: [], patches: [], done: false };
+const GSTR = { roads: [], patches: [], done: false, RAISE: 0.15, walkAt: null };   // RAISE: Gehsteig ueber der Fahrbahn (Bordstein 15 cm)
 function gstrBuild() {
   const S = GOTHAM_STADT, Y = GOT.STR, toG = ([x, z]) => GOT.toGame(x, z);
   const resample = (P, st) => { const out = [P[0]]; for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(l / st));
@@ -31,6 +31,10 @@ function gstrBuild() {
   const onOther = (x, z, self, pad) => { const ci = Math.floor(x / C), ck = Math.floor(z / C);
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const L = grid.get(key(ci + a, ck + b)); if (!L) continue;
       for (const [ri, j] of L) { if (ri === self) continue; const r = GSTR.roads[ri]; if (segD(x, z, r.pts[j - 1], r.pts[j]) < r.w / 2 + pad) return r; } } return null; };
+  // liegt (x, z) auf Fahrbahn oder Gehsteig einer anderen Strasse (bis w/2 + walk + extra)
+  const onOtherW = (x, z, self, extra) => { const ci = Math.floor(x / C), ck = Math.floor(z / C);
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const L = grid.get(key(ci + a, ck + b)); if (!L) continue;
+      for (const [ri, j] of L) { if (ri === self) continue; const r = GSTR.roads[ri]; if (segD(x, z, r.pts[j - 1], r.pts[j]) < r.w / 2 + r.walk + extra) return r; } } return null; };
   build();
   // Nebenstrassen-Enden bis an die naechste Fahrbahn verlaengern (hoechstens 14 m, in Fahrtrichtung)
   for (let ri = nHaupt; ri < GSTR.roads.length; ri++) { const r = GSTR.roads[ri];
@@ -53,6 +57,14 @@ function gstrBuild() {
       for (const [rk, k] of L) { if (rk <= ri) continue; const o = GSTR.roads[rk], q = cross(a, b, o.pts[k - 1], o.pts[k]); if (q) addPatch(q[0], q[1], Math.max(r.w, o.w) / 2 + 2); } }
     for (const e of [r.pts[0], r.pts[r.pts.length - 1]]) { const o = onOther(e[0], e[1], ri, 1); if (o) addPatch(e[0], e[1], Math.max(r.w, o.kind === "haupt" ? r.w : o.w) / 2 + 2); }
   });
+  // Gehsteige und Bordsteine (Nicolas 2026-11-12: Loecher an Kreuzungsecken, Bordstein als Erhoehung): an Kreuzungen und Einmuendungen alle 1 m
+  // statt 4 m abgetastet (sonst enden sie in 4-m-Stufen und lassen Wiesenecken frei)
+  const inPatch = (x, z) => !!nearPatch(x, z, 0);
+  GSTR.roads.forEach((r, ri) => { const F = [r.pts[0]];
+    for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      const fine = [a, b].some(p => nearPatch(p[0], p[1], 10) || onOtherW(p[0], p[1], ri, r.walk + 3)), n = fine ? Math.max(1, Math.ceil(l)) : 1;
+      for (let k = 1; k <= n; k++) F.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
+    r.fine = F; });
   // Texturen: Asphalt (Koernung), Linien quer zur Fahrbahn (v 0..1 = linker bis rechter Rand), 12 m je Wiederholung laengs
   const asph = (c, w, h) => { c.fillStyle = "#3b3d40"; c.fillRect(0, 0, w, h); for (let i = 0; i < 5000; i++) { const v = 45 + Math.random() * 30; c.fillStyle = `rgb(${v},${v + 1},${v + 3})`; c.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5); } };
   const lineTex = vier => { const t = canvasTex(256, 256, (c, w, h) => { asph(c, w, h); const L = (v, col, dash, wd) => { c.fillStyle = col; for (let u = 0; u < w; u += dash ? w / 2 : w) c.fillRect(u, v * h - wd / 2, dash ? w / 4 : w, wd); };
@@ -65,25 +77,47 @@ function gstrBuild() {
   const mat = (map, off) => M(0xffffff, { map, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -off, polygonOffsetUnits: -off });
   const geo = () => ({ P: [], U: [], I: [] });
   // Band entlang der Linie zwischen den seitlichen Abstaenden d0 und d1 (links positiv); skip(x, z) laesst Vierecke aus; uv: u laengs/rep, v quer (0..1 oder Meter/vrep)
-  function band(G, P, d0, d1, y, rep, vrep, skip) {
+  function band(G, P, d0, d1, y, rep, vrep, skip, fix) {
     const n = P.length, N = P.map((p, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [-dz / l, dx / l]; });
     let s = 0, prev = null;
     for (let i = 0; i < n; i++) { if (i) s += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
       const k = G.P.length / 3, [nx, nz] = N[i], p = P[i];
       const yy = typeof y === "number" ? y : y[i];   // Festlandstrassen: Hoehe je Punkt
-      for (const d of [d0, d1]) { G.P.push(p[0] + nx * d, yy, p[1] + nz * d); G.U.push(s / rep, vrep ? d / vrep : (d - d0) / (d1 - d0)); }
+      for (const d of [d0, d1]) { let px = p[0] + nx * d, pz = p[1] + nz * d; if (fix) [px, pz] = fix(px, pz); G.P.push(px, yy, pz); G.U.push(s / rep, vrep ? d / vrep : (d - d0) / (d1 - d0)); }
       const mx = p[0] + nx * (d0 + d1) / 2, mz = p[1] + nz * (d0 + d1) / 2, bad = skip && skip(mx, mz);
-      if (prev !== null && !bad && !prev.bad) G.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);
+      if (prev !== null && (fix ? !(bad && prev.bad) : !bad && !prev.bad)) G.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);   // mit fix: nur ganz innen liegende Vierecke weg
       prev = { k, bad };
     }
   }
+  // senkrechtes Band im Abstand d von y0 bis y1 (Bordsteinkante); skip(x, z) am Band
+  function vband(G, P, d, y0, y1, skip, fix) {
+    const n = P.length, N = P.map((p, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [-dz / l, dx / l]; });
+    let s = 0, prev = null;
+    for (let i = 0; i < n; i++) { if (i) s += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
+      const k = G.P.length / 3, [nx, nz] = N[i]; let x = P[i][0] + nx * d, z = P[i][1] + nz * d; const bad = skip && skip(x, z); if (fix) [x, z] = fix(x, z);
+      G.P.push(x, y0, z, x, y1, z); G.U.push(s / 2, 0, s / 2, 0.1);
+      if (prev !== null && (fix ? !(bad && prev.bad) : !bad && !prev.bad)) G.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);   // mit fix: nur ganz innen liegende Vierecke weg
+      prev = { k, bad }; }
+  }
   const make = (G, m, name) => { if (!G.I.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(G.P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(G.U, 2)); g.setIndex(G.I); g.computeVertexNormals(); g.computeBoundingSphere();
     const o = new THREE.Mesh(g, m); o.name = name; o.receiveShadow = true; o.userData.keep = true; o.userData.noLift = true; scene.add(o); return o; };
-  const A4 = geo(), A2 = geo(), A0 = geo(), W = geo(), K = geo(), X = geo();
+  const A4 = geo(), A2 = geo(), A0 = geo(), W = geo(), K = geo(), X = geo(), KF = geo(), RS = GSTR.RAISE;
+  // Punkt auf einer anderen Fahrbahn (nicht ri) oder Kreuzungsflaeche -> auf deren Rand schieben (ri -1: alle Strassen)
+  const mkFix = ri => (x, z) => { for (let it = 0; it < 3; it++) { let moved = false;
+      const pc = nearPatch(x, z, 0); if (pc) { const dx = x - pc[0], dz = z - pc[1], l = Math.hypot(dx, dz) || 1; x = pc[0] + dx / l * (pc[2] + 0.01); z = pc[1] + dz / l * (pc[2] + 0.01); moved = true; }
+      const ci = Math.floor(x / C), ck = Math.floor(z / C);
+      for (let a = -1; a <= 1 && !moved; a++) for (let b = -1; b <= 1 && !moved; b++) { const L = grid.get(key(ci + a, ck + b)); if (!L) continue;
+        for (const [rk, j] of L) { if (rk === ri) continue; const o = GSTR.roads[rk], A = o.pts[j - 1], B = o.pts[j], dx = B[0] - A[0], dz = B[1] - A[1], LL = dx * dx + dz * dz, t = LL ? Math.max(0, Math.min(1, ((x - A[0]) * dx + (z - A[1]) * dz) / LL)) : 0;
+          const qx = A[0] + dx * t, qz = A[1] + dz * t, d = Math.hypot(x - qx, z - qz); if (d < o.w / 2) { const l = d || 1; x = qx + (x - qx) / l * (o.w / 2 + 0.01); z = qz + (z - qz) / l * (o.w / 2 + 0.01); moved = true; break; } } }
+      if (!moved) break; } return [x, z]; };
   GSTR.roads.forEach((r, ri) => {
-    band(r.w >= 12.5 ? A4 : r.w >= 8 ? A2 : A0, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, r.w < 8 ? 4 : 0, null);
-    const sk = (x, z) => !!onOther(x, z, ri, 0.5) || !!nearPatch(x, z, 1);
-    for (const sg of [1, -1]) { band(W, r.pts, sg * (r.w / 2 + 0.3), sg * (r.w / 2 + r.walk), Y + 0.04, 2, 2, sk); band(K, r.pts, sg * r.w / 2, sg * (r.w / 2 + 0.3), Y + 0.045, 2, 1, sk); }   // Gehsteig, Bordstein
+    band(r.w >= 12.5 ? A4 : r.w >= 8 ? A2 : A0, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, r.w < 8 ? 4 : 0, r.zweistock ? gdeckOpen : null);   // G2e: ueber den Rampen keine Fahrbahn
+    // Gehsteig 15 cm hoch (GSTR.RAISE), Bordstein = Kante plus 0,3 m Deckstein; die Kreuzungsflaeche bekommt einen runden Bordstein
+    // Ecken genau: Punkte, die auf einer anderen Fahrbahn oder Kreuzungsflaeche liegen, werden auf deren Rand geschoben (die Vierecke dort werden
+    // flach), so enden Gehsteig und Bordstein genau an der Kante und die Gehsteige beider Strassen fuellen die Ecke
+    const inO = (x, z) => !!onOther(x, z, ri, 0) || inPatch(x, z);
+    const fix = mkFix(ri);
+    for (const sg of [1, -1]) { band(W, r.fine, sg * (r.w / 2 + 0.3), sg * (r.w / 2 + r.walk), Y + RS, 2, 2, inO, fix); band(K, r.fine, sg * r.w / 2, sg * (r.w / 2 + 0.3), Y + RS + 0.002, 2, 1, inO, fix); vband(KF, r.fine, sg * r.w / 2, Y + 0.04, Y + RS, inO, fix); }
   });
   // G2d: Festlandstrassen (GLAND aus gotham-gelaende.js): Fahrbahn mit Markierung auf dem Hoehenverlauf, 2 m Bankett aus Kies, Kreuzungen zwischen ihnen als Asphaltflaechen auf ihrer Hoehe
   const Kies = geo(), XL = geo();
@@ -94,10 +128,29 @@ function gstrBuild() {
   for (const r of GLAND.roads || []) for (const e of [0, r.pts.length - 1]) { const [x, z] = r.pts[e]; for (const o of GLAND.roads) { if (o === r) continue; let best = 1e9, by = 0; for (let j = 0; j < o.pts.length; j++) { const d = Math.hypot(o.pts[j][0] - x, o.pts[j][1] - z); if (d < best) { best = d; by = o.y[j]; } } if (best < o.w / 2 + 6) { const rr = Math.max(r.w, o.w) / 2 + 3, k = XL.P.length / 3; XL.P.push(x, by + 0.04, z); XL.U.push(x / 8, z / 8); for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2; XL.P.push(x + Math.cos(t) * rr, by + 0.04, z + Math.sin(t) * rr); XL.U.push((x + Math.cos(t) * rr) / 8, (z + Math.sin(t) * rr) / 8); if (a) XL.I.push(k, k + a + 1, k + a); } } } }
   for (const [x, z, rr] of GSTR.patches) { const k = X.P.length / 3; X.P.push(x, Y + 0.06, z); X.U.push(x / 8, z / 8);
     for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2; X.P.push(x + Math.cos(t) * rr, Y + 0.06, z + Math.sin(t) * rr); X.U.push((x + Math.cos(t) * rr) / 8, (z + Math.sin(t) * rr) / 8); if (a) X.I.push(k, k + a + 1, k + a); } }
+  // Rand der Kreuzungsflaechen: Bordstein im Bogen, wo dahinter Gehsteig liegt (nicht ueber Fahrbahnen, nicht in einer anderen Kreuzungsflaeche)
+  const inOtherPatch = (x, z, me) => { const ci = Math.floor(x / PC), ck = Math.floor(z / PC); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const L = pgrid.get(key(ci + a, ck + b)); if (L) for (const p of L) if (p !== me && Math.hypot(p[0] - x, p[1] - z) < p[2]) return true; } return false; };
+  for (const p of GSTR.patches) { const [cx, cz, rr] = p, na = Math.max(12, Math.ceil(Math.PI * 2 * rr / 0.6)); let prev = null;
+    for (let a = 0; a <= na; a++) { const t = a / na * Math.PI * 2, c = Math.cos(t), s = Math.sin(t), x = cx + c * rr, z = cz + s * rr;
+      const ok = !onOther(x, z, -1, 0.3) && !!onOtherW(x, z, -1, 0) && !inOtherPatch(x, z, p);
+      if (ok && prev) { const k = K.P.length / 3; for (const [px, pz, pc, ps] of [prev, [x, z, c, s]]) { K.P.push(px, Y + RS + 0.002, pz, px + pc * 0.3, Y + RS + 0.002, pz + ps * 0.3); K.U.push(0, 0, 0, 1); }
+        K.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+        const q = KF.P.length / 3; for (const [px, pz] of [prev, [x, z]]) { KF.P.push(px, Y + 0.04, pz, px, Y + RS, pz); KF.U.push(0, 0, 0, 0.1); } KF.I.push(q, q + 2, q + 1, q + 1, q + 2, q + 3); }
+      prev = ok ? [x, z, c, s] : null; } }
+  // Ecken der Kreuzungen: Gehsteig-Ring 4,5 m breit um jede Kreuzungsflaeche (auf Fahrbahnen weggelassen bzw. an deren Rand geschoben), fuellt die
+  // Ecken zwischen den Gehsteigen beider Strassen (Nicolas 2026-11-12: Wiesenloecher an den Ecken)
+  { const fixA = mkFix(-1), inR = (x, z) => !!onOther(x, z, -1, 0);
+    for (const p of GSTR.patches) { const [cx, cz, rr] = p, na = Math.max(12, Math.ceil(Math.PI * 2 * (rr + 4.5) / 0.8)); let prev = null;
+      for (let a = 0; a <= na; a++) { const t = a / na * Math.PI * 2, c = Math.cos(t), sn = Math.sin(t), k = W.P.length / 3, bad = inR(cx + c * (rr + 2.2), cz + sn * (rr + 2.2)) || inOtherPatch(cx + c * (rr + 2.2), cz + sn * (rr + 2.2), p);
+        for (const d of [rr + 0.3, rr + 4.5]) { const [x, z] = fixA(cx + c * d, cz + sn * d); W.P.push(x, Y + RS - 0.004, z); W.U.push(x / 2, z / 2); }
+        if (prev && !(bad && prev.bad)) W.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);
+        prev = { k, bad }; } } }
   const kerb = M(0xc9c6bf, { roughness: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 });
   GSTR.meshes = [make(A4, mat(lineTex(true), 2), "Gotham-Strassen 4 Spuren"), make(A2, mat(lineTex(false), 2), "Gotham-Strassen 2 Spuren"), make(A0, mat(plain, 2), "Gotham-Gassen"),
-    make(W, mat(walk, 1), "Gotham-Gehsteige"), make(Kies, mat(gravel, 1), "Gotham-Bankett"), make(XL, mat(plain, 3), "Gotham-Kreuzungen Festland"), make(K, kerb, "Gotham-Bordsteine"), make(X, mat(plain, 3), "Gotham-Kreuzungen")];
+    make(W, mat(walk, 1), "Gotham-Gehsteige"), make(Kies, mat(gravel, 1), "Gotham-Bankett"), make(XL, mat(plain, 3), "Gotham-Kreuzungen Festland"), make(K, kerb, "Gotham-Bordsteine"), make(KF, kerb, "Gotham-Bordsteinkanten"), make(X, mat(plain, 3), "Gotham-Kreuzungen")];
   GSTR.onRoad = (x, z, pad = 0) => !!onOther(x, z, -1, pad);                // fuer spaeter (Fuellbauten, Verkehr)
+  // auf einem Gehsteig (nicht auf einer Fahrbahn oder Kreuzungsflaeche): dort ist der Boden GSTR.RAISE hoeher (groundAt in laufen.js)
+  GSTR.walkAt = (x, z) => !onOther(x, z, -1, 0) && !inPatch(x, z) && !!onOtherW(x, z, -1, 0);
 }
 
 TILES.tasks.push({ plan() {}, step() { if (GSTR.done || TILES.startup || !TILES.frame || TILES.frame < 30) return false; GSTR.done = true; gstrBuild(); return false; } });

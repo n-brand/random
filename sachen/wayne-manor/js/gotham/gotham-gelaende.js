@@ -192,3 +192,70 @@ function gothamRoadAt(x, z, feet) {
   const n = glandNear(x, z, 12); if (!n || n.d > n.r.w / 2 + 1.5 || feet < n.y - 3) return null;
   return n.y - 0.05;
 }
+
+// G2e: zweistoeckige Strassen (Nicolas 2026-11-12 "Ja, G2e"; Plan: Park Row und Uferstrasse Nord, oben normaler Verkehr, 5,5 m darunter die untere
+// Strasse (Lower Level) auf Hoehe der Tiefgarage 1). Gleiche Linien wie gotham-strassen.js (4-m-Proben, nur auf der Insel). Unten: Boden GDECK.LY
+// (-17,5), Fahrbahnplatte 1 m (Unterkante -13, 4,5 m licht), Innenbreite wie oben Fahrbahn plus Gehsteige (HW = w/2 + 4). Einfahrt an jedem Ende
+// als Rampe in der Strassenmitte (RW 7 m, RL 80 m bei ca. 6,9 %, die letzten 12 m flach), die obere Fahrbahn laeuft beidseits daran vorbei; ein Ende
+// an einer Bruecke oder nahe am Kai bleibt zu (Wand 30 m vor dem Ende). Gelaende darunter ausgeschnitten (bis HW + 6, damit das 4-m-Raster nicht
+// in den Raum ragt), obendrauf deckt eine Platte bis HW + 12 den Ausschnitt ab (gotham-unterstrasse.js). Boden: gothamDeckAt (oben wer oben ist).
+const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 12, CL: 30, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12 };
+function gdeckBuild() {
+  GDECK.building = true; const roads = [];
+  const brEnds = GOTHAM_STADT.bruecken.flatMap(b => [b.pts[0], b.pts[b.pts.length - 1]].map(([x, z]) => GOT.toGame(x, z)));
+  for (const h of GOTHAM_STADT.haupt) { if (!h.zweistock) continue;
+    const P0 = h.pts.map(([x, z]) => GOT.toGame(x, z)), P = [P0[0]];
+    for (let i = 1; i < P0.length; i++) { const a = P0[i - 1], b = P0[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(l / 4)); for (let k = 1; k <= n; k++) P.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
+    let run = [];
+    const push = () => { if (run.length > 2) { const s = [0]; for (let i = 1; i < run.length; i++) s.push(s[i - 1] + Math.hypot(run[i][0] - run[i - 1][0], run[i][1] - run[i - 1][1]));
+      const L = s[s.length - 1], closed = e => GOT.edgeSD(e[0], e[1]) > -40 || brEnds.some(b => Math.hypot(b[0] - e[0], b[1] - e[1]) < 60);
+      const ca = closed(run[0]), cb = closed(run[run.length - 1]), sA = ca ? GDECK.CL : GDECK.FL + GDECK.RL, sB = L - (cb ? GDECK.CL : GDECK.FL + GDECK.RL);
+      if (sB - sA > 40) roads.push({ id: h.id, w: h.w, HW: h.w / 2 + 4, pts: run, s, L, ca, cb, sA, sB }); } run = []; };
+    for (const p of P) { if (GOT.edgeSD(p[0], p[1]) < -1) run.push(p); else push(); } push(); }
+  const grid = new Map(), C = GDECK.C;
+  roads.forEach((r, ri) => { for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j]; for (const k of new Set([glKey(Math.floor(a[0] / C), Math.floor(a[1] / C)), glKey(Math.floor(b[0] / C), Math.floor(b[1] / C))])) { if (!grid.has(k)) grid.set(k, []); grid.get(k).push([ri, j]); } } });
+  GDECK.roads = roads; GDECK.grid = grid; GDECK.building = false;
+}
+// naechste zweistoeckige Strasse: { r, d (seitlich, Betrag), s (laengs, vor dem Anfang negativ, hinter dem Ende > L) } innerhalb von reach, sonst null
+function gdeckNear(x, z, reach) {
+  if (GDECK.building) return null; if (!GDECK.roads) gdeckBuild();
+  const C = GDECK.C, ci = Math.floor(x / C), ck = Math.floor(z / C), m = Math.ceil(reach / C); let best = null;
+  for (let a = -m; a <= m; a++) for (let b = -m; b <= m; b++) { const L = GDECK.grid.get(glKey(ci + a, ck + b)); if (!L) continue;
+    for (const [ri, j] of L) { const r = GDECK.roads[ri], p = r.pts[j - 1], q = r.pts[j], dx = q[0] - p[0], dz = q[1] - p[1], LL = dx * dx + dz * dz, l = Math.sqrt(LL) || 1, t0 = LL ? ((x - p[0]) * dx + (z - p[1]) * dz) / LL : 0, t = Math.max(0, Math.min(1, t0));
+      const d = Math.hypot(x - p[0] - dx * t, z - p[1] - dz * t); if (d >= reach || (best && d >= best.dd)) continue;
+      const out = (j === 1 && t0 < 0) || (j === r.pts.length - 1 && t0 > 1);
+      best = { r, dd: d, d: out ? Math.abs((x - p[0]) * dz - (z - p[1]) * dx) / l : d, s: r.s[j - 1] + (out ? t0 : t) * l }; } }
+  return best;
+}
+// Rampenboden (an offenen Enden), sonst LY bzw. Strassenhoehe
+function gdeckRampY(r, s) { const G = GDECK, u = Math.min(r.ca ? 1e9 : s, r.cb ? 1e9 : r.L - s); return u <= G.FL ? GOT.STR : u >= G.FL + G.RL ? G.LY : GOT.STR + (G.LY - GOT.STR) * (u - G.FL) / G.RL; }
+const gdeckInRamp = (r, s) => (!r.ca && s < r.sA) || (!r.cb && s > r.sB);
+// grob: liegt (x, z) im Gotham-Rechteck (vor gotham-raster.js schon nutzbar)
+function inGothamG0(x, z) { return x > -4240 && x < -400 && z > -1040 && z < 2800; }
+// Gelaende: Ausschnitt unter dem unteren Raum und unter den Rampen
+function gothamDeckH(x, z, g) {
+  if (g > GOT.STR + 0.5 || !inGothamG0(x, z)) return g;
+  const n = gdeckNear(x, z, 24); if (!n) return g; const r = n.r, s = n.s;
+  if (s >= r.sA - 6 && s <= r.sB + 6 && n.d < r.HW + 6) return Math.min(g, GDECK.LY - 0.5);
+  if (s >= -2 && s <= r.L + 2 && gdeckInRamp(r, s) && n.d < GDECK.RW / 2 + 6) return Math.min(g, gdeckRampY(r, Math.max(0, Math.min(r.L, s))) - 0.5);
+  return g;
+}
+// Boden: oben die Fahrbahn (wer oben ist), unten der Boden der unteren Strasse, in der Rampe der Rampenboden; sonst null
+function gothamDeckAt(x, z, feet) {
+  if (!GDECK.roads || !inGothamG0(x, z)) return null;
+  const n = gdeckNear(x, z, 26); if (!n) return null; const r = n.r, s = n.s, G = GDECK;
+  if (s < 0 || s > r.L || n.d > r.HW + G.COVER) return null;
+  if (gdeckInRamp(r, s) && n.d < G.RW / 2) return gdeckRampY(r, s);
+  if (feet > GOT.STR - 2.5) return GOT.STR;
+  if (s >= r.sA && s <= r.sB && n.d < r.HW) return G.LY + (n.d > r.HW - 2 ? 0.15 : 0);   // Gehsteige unten 15 cm hoch
+  return null;
+}
+// Kamera: in der Fahrbahnplatte und in den Waenden unten gesperrt (true), sonst undefined (normale Pruefung)
+function gothamDeckCam(x, y, z) {
+  if (!GDECK.roads || y > GOT.STR + 0.3 || y < GDECK.LY - 1 || !inGothamG0(x, z)) return undefined;
+  const n = gdeckNear(x, z, 26); if (!n) return undefined; const r = n.r, s = n.s, G = GDECK;
+  if (s < 0 || s > r.L || n.d > r.HW + G.COVER) return undefined;
+  if (gdeckInRamp(r, s) && n.d < G.RW / 2 - 0.5) return y < gdeckRampY(r, s) + 0.3;
+  if (s >= r.sA + 0.6 && s <= r.sB - 0.6 && n.d < r.HW - 0.6) return y > G.DY - 0.3;
+  return y < GOT.STR + 0.2;
+}
