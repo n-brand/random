@@ -36,7 +36,7 @@ function grFern(x, z) {                                                    // Ho
   const D = H(i + 1, k + 1); return D + (C - D) * (1 - u) + (B - D) * (1 - v);
 }
 function grEdgeD(x, z) {                                                   // Abstand zum naechsten Rand mit Fernring dahinter (Ostrand nur ausserhalb des Hauptrasters)
-  let e = Math.min(x - GOT_R.x0, z - GOT_R.z0, GOT_R.z1 - z); if (Math.abs(z) >= T_A + T_B) e = Math.min(e, GOT_R.x1 - x); return e;
+  const E = T_A + T_B; let e = Math.min(x - GOT_R.x0, GOT_R.z1 - z); if (Math.abs(x) >= E) e = Math.min(e, z - GOT_R.z0); if (Math.abs(z) >= E) e = Math.min(e, GOT_R.x1 - x); return e;   // Nord- und Ostkante grenzen nahe der Manor ans Hauptraster, nicht an den Fernring
 }
 const GR_C = 4, GR_B = 64, GR_NB = 15, GR_N1 = GR_B + 1;
 const GR_H = new Map();                                                    // Hoehen je Block (Float32Array, NaN = noch nicht gerechnet)
@@ -85,7 +85,7 @@ for (let bk = 0; bk < GR_NB; bk++) for (let bi = 0; bi < GR_NB; bi++) {
 }
 function grBuild(b, S) {
   const n = GR_B / S + 1, P = [], N = [], Cc = [], U = [], I = [], c = new THREE.Color(), gi0 = b.bi * GR_B, gk0 = b.bk * GR_B, keep = [];
-  const off = (x, z) => Math.hypot(x, z) < GOT_R0 ? -0.3 : 0;                // Uebergangsstreifen unter dem Hauptraster
+  const off = (x, z) => Math.hypot(x, z) < GOT_R0 || ((z < GOT_R.z0 + 10 || x > GOT_R.x1 - 10) && Math.abs(x) < T_A + T_B && Math.abs(z) < T_A + T_B) ? -0.3 : 0;   // Uebergangsstreifen unter dem Hauptraster (Kreis und gerade Kanten)
   const add = (x, y, z, nx, ny, nz, h) => { P.push(x, y, z); N.push(nx, ny, nz); grColor(x, h, z, ny, c); Cc.push(c.r, c.g, c.b); U.push(x / 10, -z / 10); return P.length / 3 - 1; };
   const idx = new Int32Array(n * n);
   for (let v = 0; v < n; v++) for (let u = 0; u < n; u++) {
