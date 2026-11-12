@@ -114,15 +114,17 @@ function shotsStep(dt) {
     camera.updateMatrixWorld();
     if ((SHOT.aimT -= dt) <= 0) { SHOT.aimT = 0.1; SHOT.aim = shotAimPoint(C); }                       // Zielpunkt 10-mal pro Sekunde
     const sn = shotSightN(); shotRay.setFromCamera(sn, camera);                                         // Bezugsstrahl durch das Visier (jedes Bild, fuer die Zieloptik)
-    const refP = shotRay.ray.origin.clone().addScaledVector(shotRay.ray.direction, SHOT.aim ? Math.max(20, SHOT.aim.distanceTo(shotRay.ray.origin)) : 300), sny = sn.y;
+    const sny = sn.y;
     C.gun.updateWorldMatrix(true, false); C.gun.getWorldPosition(shotA);
     if (SHOT.aim) { const dx = SHOT.aim.x - shotA.x, dz = SHOT.aim.z - shotA.z; C.elev += (Math.max(-0.4, Math.min(0.55, Math.atan2(SHOT.aim.y - shotA.y, Math.hypot(dx, dz)))) - C.elev) * Math.min(1, dt * 8); }   // Rohr hebt/senkt sich zum Ziel
     if (SHOT.unzoom > 0 && (SHOT.unzoom -= dt) <= 0) SHOT.zoomT = 1;   // TEST Auto-Rauszoomen
     SHOT.zoom += (SHOT.zoomT - SHOT.zoom) * Math.min(1, dt * 10); const fov = 70 / SHOT.zoom; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
-    // gezoomt: Kamera in die Zieloptik oben am Turm (sonst sah man den eigenen Turm gross). Sie schaut so, dass das Visier genau auf den Punkt
-    // zeigt, auf den es ohne Zoom zeigt (vorher Blick in Turmrichtung + 0,12: das Ziel rutschte beim Zoomen aus dem Visier)
-    if (SHOT.zoom > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9)); camera.position.copy(shotB);
-      camera.up.set(0, 1, 0); camera.lookAt(refP); camera.rotateX(-Math.atan(sny * Math.tan(fov * Math.PI / 360))); }
+    // gezoomt: Kamera nach vorne auf den Visier-Strahl der normalen Kamera, auf den Punkt neben der Zieloptik am Turm (sonst sah man den eigenen
+    // Turm gross), Blick entlang dieses Strahls, um den Visier-Winkel gesenkt: das Visier zeigt genau dorthin wie ohne Zoom, und die Ansicht ist
+    // unabhaengig davon, wie weit das Ziel weg ist (Nicolas 2026-11-12: auf nahe Ziele lag die Ansicht vorher etwas hoeher, Parallaxe der Optik)
+    if (SHOT.zoom > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9));
+      const o = shotRay.ray.origin, d = shotRay.ray.direction, t = Math.max(0, shotB.sub(o).dot(d)); camera.position.copy(o).addScaledVector(d, t);
+      camera.up.set(0, 1, 0); camera.lookAt(shotB.copy(camera.position).add(d)); camera.rotateX(-Math.atan(sny * Math.tan(fov * Math.PI / 360))); }
     if (label) label.textContent = (SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Leertaste: schießen") + (SHOT.zoomT > 1 ? " · " + SHOT.zoomT.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
     if ((keys.has("Space") || jumpHeld) && SHOT.cd === 0 && SHOT.aim) {
       SHOT.cd = SHOT.RELOAD; const mz = C.gun.localToWorld(new THREE.Vector3(0, 0, -SHOT.MUZZLE)), dir = SHOT.aim.clone().sub(mz).normalize();

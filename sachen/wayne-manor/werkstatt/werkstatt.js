@@ -237,9 +237,11 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
   // Zoom: ab mehr als 1x sitzt die Kamera in der Zieloptik oben am Turm; nach einem Schuss nach 0,35 s zurueck auf 1x (wie im Spiel, dort TEST)
   if (ZOOM.un > 0 && (ZOOM.un -= dt) <= 0) ZOOM.t = 1;
   ZOOM.z += (ZOOM.t - ZOOM.z) * Math.min(1, dt * 10); const fov = 70 / ZOOM.z; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
-  // gezoomt: Kamera in der Zieloptik am Turm, so gedreht, dass das Visier (36 % Hoehe) genau auf den Zielpunkt von eben zeigt
-  if (ZOOM.z > 1.01) { A.turret.updateWorldMatrix(true, false); A.turret.localToWorld(vA.set(0.52, 1.25, -0.9)); camera.position.copy(vA);
-    camera.up.set(0, 1, 0); camera.lookAt(aim); camera.rotateX(-Math.atan(0.28 * Math.tan(fov * Math.PI / 360))); }
+  // gezoomt (wie schiessen.js): Kamera auf dem Visier-Strahl der normalen Kamera neben der Zieloptik am Turm, Blick entlang des Strahls,
+  // um den Visier-Winkel gesenkt: Visier zeigt wie ohne Zoom, Ansicht unabhaengig von der Zielentfernung (keine Parallaxe)
+  if (ZOOM.z > 1.01) { A.turret.updateWorldMatrix(true, false); A.turret.localToWorld(vA.set(0.52, 1.25, -0.9));
+    const o = rc.ray.origin, d = rc.ray.direction, t = Math.max(0, vA.sub(o).dot(d)); camera.position.copy(o).addScaledVector(d, t);
+    camera.up.set(0, 1, 0); camera.lookAt(camera.position.clone().add(d)); camera.rotateX(-Math.atan(0.28 * Math.tan(fov * Math.PI / 360))); }
   SCHUSS.cd = Math.max(0, SCHUSS.cd - dt);
   if (down("Space") && SCHUSS.cd === 0) {
     SCHUSS.cd = SCHUSS.RELOAD; SCHUSS.schuesse++; SCHUSS.rueck = 1;
