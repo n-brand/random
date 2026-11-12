@@ -243,14 +243,15 @@ function carStep(dt) {
   // Nitro (Nachtfalke, Nicolas 2026-11-09: statt Sprung): Leertaste halten = Schub aus der Duese, die Leiste leert sich (ca. 4 s Vorrat);
   // nach dem Loslassen 2 s Pause, dann laedt sie Stueck fuer Stueck nach (alle 0,6 s ein Zehntel)
   if (C.boostE === undefined) { C.boostE = 1; C.boostT = 0; }
-  const boosting = !!sp.boost && (player.jump || jumpHeld) && !C.air && !C.wet && th >= 0 && C.boostE > 0;
+  const boostKey = player.jump || jumpHeld || keys.has("Space");   // Leertaste gedrueckt halten (Nicolas 2026-11-12: vorher nur der Moment des Drueckens)
+  const boosting = !!sp.boost && boostKey && !C.air && !C.wet && th >= 0 && C.boostE > 0;
   if (sp.boost) {
     if (boosting && !C.boostOn) engineJet();
     C.boostOn = boosting;
     if (boosting) { C.boostE = Math.max(0, C.boostE - dt / 4); C.boostT = -2; C.jet = Math.max(C.jet, 0.5); }
     else if (C.boostE < 1) { C.boostT += dt; if (C.boostT >= 0.6) { C.boostT -= 0.6; C.boostE = Math.min(1, Math.floor(C.boostE * 10 + 1e-6) / 10 + 0.1); } }
     C.boostLock = C.boostE <= 0;
-    if (player.jump && C.boostE <= 0) carMsg("Nitro leer – lädt nach");
+    if (boostKey && C.boostE <= 0) carMsg("Nitro leer – lädt nach");
   }
   const max = C.wet ? 0.3 : sp.maxF + (boosting ? 40 / 3.6 : 0);   // Nitro: 40 km/h ueber dem Hoechsttempo ; sonst nur W bis zum Hoechsttempo, im Wasser steckt man fest
   // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
