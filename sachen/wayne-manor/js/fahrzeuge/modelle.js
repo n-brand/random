@@ -1461,12 +1461,20 @@ function buildTerzo() {
   const body = []; for (let f = 2.48; f > -2.43; f -= 0.06) { const ff = Math.max(-2.42, f), yb = ff > 2.3 ? 0.17 : ff < -1 || ff < 0.6 ? arch(ff) : 0.15, hs = hw(ff), yt = yT(ff), ys = Math.max(yb + 0.04, Math.min(yt - 0.12, 0.42));
     body.push([ff, [[0, yb], [hs - 0.08, yb], [hs, ys], [hs - 0.16, yt - 0.03], [0, yt]]]); }
   loftIn(g, body, paint);
-  // Kotfluegel-Schalen ueber den Vorderraedern (eigene Koerper aussen, Luecke zur Nase), rote Kante oben
-  for (const sd of [-1, 1]) { const S = []; for (let f = 2.3; f > 0.55; f -= 0.06) { const u = (2.3 - f) / 1.75, w = 0.15 + 0.08 * Math.sin(u * Math.PI), top = 0.52 + 0.26 * Math.sin(Math.min(1, u * 1.25) * Math.PI * 0.5) - 0.06 * u, bot = Math.max(0.36, arch(f) - 0.02);
-      S.push([f, [[0, bot], [w, bot], [w, top - 0.1], [w * 0.45, top], [0, top - 0.05]]]); }   // Klinge: oben schmal zulaufend
-    const pod = loftIn(new THREE.Group(), S, paint).geometry.translate(sd * 0.86, 0, 0); g.add(new THREE.Mesh(pod, paint));
+  // Vordere Kotfluegel (Nicolas 2026-11-12: "die vorderen Teile bei den Raedern", Foto): je eine Schale um das Vorderrad, eigener Koerper aussen
+  // (offener Kanal zur Nase). Vor und hinter dem Rad reicht sie bis y 0.28 hinunter, ueber dem Rad ist ein Radlauf ausgeschnitten (Bogen 0,08 m ueber dem
+  // Reifen); oben ein Bogen bis 0,88 m, vorne flach auslaufend zur Spitze mit der Y-Leuchte, hinten fliesst sie bei f 0.6 in die Flanke.
+  for (const sd of [-1, 1]) { const S = [], RA = 0.36 + 0.08, ZC = 1.45;
+    for (let f = 2.36; f > 0.55; f -= 0.04) { const d = Math.abs(f - ZC), u = (2.36 - f) / 1.81;
+      const top = f > ZC ? 0.46 + 0.42 * Math.sin(Math.min(1, (2.36 - f) / (2.36 - ZC)) * Math.PI / 2) : 0.88 - 0.16 * (ZC - f) / (ZC - 0.55);
+      const bot = d < RA ? 0.36 + Math.sqrt(RA * RA - d * d) : f > ZC ? Math.min(0.28 + (f - ZC - RA) * 0.6, top - 0.08) : 0.28, w = 0.17 + 0.08 * Math.sin(Math.min(1, u * 1.4) * Math.PI / 2);
+      S.push([f, [[0, bot], [w, bot], [w + 0.01, Math.max(bot + 0.02, top - 0.12)], [w * 0.55, top], [0, top - 0.02]]]); }
+    const fe = loftIn(new THREE.Group(), S, paint).geometry.translate(sd * 0.86, 0, 0); g.add(new THREE.Mesh(fe, paint));
+    // Radlauf innen dunkel (sonst sieht man durch den Ausschnitt in die Schale)
+    const arcP = []; for (let k = 0; k <= 16; k++) { const t = Math.PI * k / 16, z = -ZC + Math.cos(t) * RA, y = 0.36 + Math.sin(t) * RA; arcP.push(new THREE.Vector3(sd * 0.86, y, z)); }
+    meshIn(g, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arcP), 24, 0.02, 6, false), carbon, 0, 0, 0);                       // Kante am Radlauf
     // Y-Leuchte vorne auf der Schalenspitze
-    const y1 = boxAt(g, 0.035, 0.03, 0.42, red, sd * 0.86, 0.6, -2.08); y1.rotation.y = sd * 0.35; const y2 = boxAt(g, 0.035, 0.03, 0.3, red, sd * 0.94, 0.6, -2.0); y2.rotation.y = -sd * 0.55;
+    const y1 = boxAt(g, 0.035, 0.03, 0.42, red, sd * 0.86, 0.5, -2.12); y1.rotation.y = sd * 0.35; const y2 = boxAt(g, 0.035, 0.03, 0.3, red, sd * 0.95, 0.5, -2.04); y2.rotation.y = -sd * 0.55;
     sideBox(g, sd * (hw(0.3) - 0.02), sd * (hw(0.3) + 0.01), 0.22, 0.42, -0.1, 1.2, carbon);                              // langer Seitenkanal
     sideBox(g, sd * (hw(-0.8) - 0.04), sd * (hw(-0.8) + 0.004), 0.24, 0.6, 0.5, 1.02, carbon);                            // tiefer Einlass vor dem Hinterrad
     for (let k = 0; k < 4; k++) meshIn(g, new THREE.BoxGeometry(0.05, 0.03, 0.5), paint, sd * (hw(-0.8) - 0.005), 0.42, 0.6 + k * 0.12, 0.75);   // schraege Lamellen
