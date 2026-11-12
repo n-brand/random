@@ -104,7 +104,8 @@ function updatePlayer(dt, moveX, moveZ, run) {
   const slopeG = (x, z) => gothamBridgeAt(x, z, player.pos.y) ?? slopeG0(x, z);   // Gotham-Bruecken (G2c)
   const slopeG0 = (x, z) => GRAMP.inF(x, z) ? GRAMP.y(z) : hfCap(x, z) !== null && player.pos.y > (x > HF_XP ? HF_Y + 5.3 : hfCap(x, z) - 2) ? Math.max(terrainH(x, z), hfCap(x, z)) + 0.04 : (player.pos.y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, player.pos.y) || (player.pos.y < HILL - 3 && inRect(CSH_OUT, x, z)) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (player.pos.y < 3 && inRect(WF_PORTAL, x, z)) || (player.pos.y < -20 && waterCaveAt(x, z)) || (player.pos.y < -8 && caveUpAt(x, z)) || inSilo(x, z, 0.5) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
   const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
-  if (moved > 1e-6 && g1 - g0 > 1.1 * moved && player.pos.y < g0 + 0.15) { next.x = player.pos.x; next.z = player.pos.z; }
+  // auch im Sprung: liegt der Boden voraus mehr als 1 m ueber den Fuessen, ist es eine Wand (Nicolas 2026-11-12: vom Kies mit Springen auf den Kai)
+  if (moved > 1e-6 && g1 - g0 > 1.1 * moved && (player.pos.y < g0 + 0.15 || g1 > player.pos.y + 1)) { next.x = player.pos.x; next.z = player.pos.z; }
   player.pos.x = next.x; player.pos.z = next.z;
   const wasGround = player.onGround && !swim;
   if (swim) {

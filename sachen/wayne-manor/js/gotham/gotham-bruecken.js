@@ -9,6 +9,9 @@
 // von den Ankerbloecken (70 m hinter den Tuermen) ueber die Turmspitzen, Haenger alle 10 m. Gelaender 1,1 m mit Kollision, Boden ueber
 // gothamBridgeAt (nur wer oben ist, nicht wer darunter schwimmt). Die Kaimauer hat an jeder Bruecke eine Luecke in der Bruestung (gotham-kai.js).
 const GBR = { list: [] };
+// Hohe Hindernisse: Kreise mit Oberkante gelten nur in den 8 m darunter, darum gestapelt alle 6 m (Turmbeine, Pfeiler, Ankerbloecke).
+// Nicolas 2026-11-12: man lief in Turmbeine hinein.
+const tallCircle = (x, z, r, y0, y1) => { for (let t = y0 + 6; t < y1 + 6; t += 6) circles.push([x, z, r, Math.min(t, y1)]); };
 {
   const Y = GOT.STR + 0.07, steel = M(0x5b6670, { metalness: 0.5, roughness: 0.55 }), dark = M(0x3a4148, { metalness: 0.4, roughness: 0.6 }), conc = M(0x8f8b84, { roughness: 0.95 });
   const cableM = M(0x2c3136, { metalness: 0.6, roughness: 0.45 });
@@ -38,7 +41,8 @@ const GBR = { list: [] };
       for (let s = 0.4; s < L; s += 0.8) { const [px, pz] = at(s); circles.push([px + nx * sd * (half - 0.45), pz + nz * sd * (half - 0.45), 0.45, Y + 1.1]); } }
     // Pfeiler unter dem Festlandstueck (alle 30 m, wo Luft unter der Fahrbahn ist)
     const sFar = L - ext - 25;                                                // Lage des anderen Ufers
-    for (let s = sFar + 30; s < L - 8; s += 30) { const [px, pz] = at(s), g = genH(px, pz); if (Y - 3 - g > 1) boxAtW(half * 1.6, Y - 3 - g + 2, 3, conc, px, (Y - 3 + g - 2) / 2, pz, rot); }
+    for (let s = sFar + 30; s < L - 8; s += 30) { const [px, pz] = at(s), g = genH(px, pz); if (Y - 3 - g > 1) boxAtW(half * 1.6, Y - 3 - g + 2, 3, conc, px, (Y - 3 + g - 2) / 2, pz, rot);
+      for (let q = -half * 0.8 + 1.5; q <= half * 0.8 - 1.5 + 0.01; q += 1.4) tallCircle(px + nx * q, pz + nz * q, 1.8, g - 1, Y - 3); }
     // Tuerme an beiden Ufern, Anker 70 m dahinter
     const sT = [25, sFar], H = 62, legX = half + 1.6;
     for (const s of sT) { const [tx, tz] = at(s), base = Math.min(GOT.WY - 1, genH(tx, tz) - 1);
@@ -46,10 +50,11 @@ const GBR = { list: [] };
       for (const hy of [Y - 2.5, Y + 24, Y + 44, Y + H - 1.5]) boxAtW(legX * 2 + 3, hy > Y ? 2.4 : 3, 2.6, steel, tx, hy, tz, rot);               // Querriegel
       for (const [y0, y1] of [[Y + 24, Y + 44], [Y + 44, Y + H - 1.5]]) for (const sg of [-1, 1]) {                                            // Kreuzstreben ueber der Durchfahrt
         const dy = y1 - y0, l = Math.hypot(legX * 2, dy); boxAtW(1, l, 1.2, steel, tx, (y0 + y1) / 2, tz, rot, 0, sg * Math.atan2(legX * 2, dy)); }
-      for (const sd of [-1, 1]) circles.push([tx + nx * sd * legX, tz + nz * sd * legX, 2.1]); }
+      for (const sd of [-1, 1]) tallCircle(tx + nx * sd * legX, tz + nz * sd * legX, 2.5, base, Y + H); }
     // Tragseile (Bogen ueber die Turmspitzen), Ankerbloecke, Haenger
     const sA = [Math.max(0, sT[0] - 70), Math.min(L, sT[1] + 70)];
-    for (const s of sA) { const [px, pz] = at(s); boxAtW(half * 2 + 6, 9, 12, conc, px, Y + 2.5, pz, rot); }
+    for (const s of sA) { const [px, pz] = at(s); boxAtW(half * 2 + 6, 9, 12, conc, px, Y + 2.5, pz, rot);
+      for (let q = -half - 3 + 2; q <= half + 3 - 2 + 0.01; q += 2.5) tallCircle(px + nx * q, pz + nz * q, 6.3, Y - 2, Y + 7); }
     const yC = s => { const top = Y + H + 1, low = Y + 9;
       if (s <= sT[0]) return Y + 6 + (top - Y - 6) * (s - sA[0]) / (sT[0] - sA[0]);
       if (s >= sT[1]) return Y + 6 + (top - Y - 6) * (sA[1] - s) / (sA[1] - sT[1]);

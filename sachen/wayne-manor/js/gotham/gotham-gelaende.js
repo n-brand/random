@@ -98,6 +98,19 @@ const GOT = (() => {
     return best < 1e9 ? best * bs : GOT.di(x, z);
   };
 }
+// G2c (Nicolas 2026-11-12: "im Nordosten gehen die Bruecken in die Berge rein"): hinter dem anderen Ufer je Bruecke ein Anschluss im Festland,
+// 40 m flach auf Fahrbahnhoehe, dann 6 % Steigung (bis 420 m): hoeheres Gelaende wird eingeschnitten (Boeschung 1:1), tieferes Land bis 120 m hinter
+// dem Ufer zu einem Damm aufgeschuettet (Boeschung ca. 1:1,4; nur auf Land, nicht im Wasser). Die Strassen darauf kommen mit G2d.
+GOT.cuts = GOTHAM_STADT.bruecken.map(b => { const P = b.pts.map(([x, z]) => GOT.toGame(x, z)), a = P[0], e = P[P.length - 1], L = Math.hypot(e[0] - a[0], e[1] - a[1]);
+  const ux = (e[0] - a[0]) / L, uz = (e[1] - a[1]) / L; return { a, ux, uz, s0: L - 25, inner: b.w / 2 + 6.5 }; });
+function gothamCut(x, z, g, land) {
+  for (const c of GOT.cuts) { const dx = x - c.a[0], dz = z - c.a[1], s = dx * c.ux + dz * c.uz; if (s < c.s0 - 10 || s > c.s0 + 420) continue;
+    const lat = Math.abs(dz * c.ux - dx * c.uz); if (lat > c.inner + 140) continue;
+    const hc = GOT.STR + Math.max(0, s - c.s0 - 40) * 0.06, out = Math.max(0, lat - c.inner);
+    g = Math.min(g, hc + out);
+    if (land && s > c.s0 - 5 && s < c.s0 + 120) g = Math.max(g, hc - out * 0.7); }
+  return g;
+}
 // Hoehe mit Gotham (h = bisherige Hoehe aus genH0). Insel flach, Fluesse mit Kiesrand und Grund, Festland weich ansteigend bis zu den Bergen.
 function gothamH(x, z, h) {
   const w = GOT.w(x, z); if (w <= 0) return h;
@@ -107,7 +120,11 @@ function gothamH(x, z, h) {
   else { const dw = GOT.sdw(mx, mz);
     if (dw < 0 || sd < 0) { const ds = Math.min(Math.max(sd, 0), -dw); g = GOT.WY + 0.4 - (GOT.WY + 0.4 - GOT.BED) * sst(6, 80, ds); }   // Fluss: Kiesstreifen am Mauerfuss, dann bis 12 m tief
     else g = Math.min(h, GOT.WY + 0.6 + dw * 0.32 + 5 * (vnoise(x / 70 + 41, z / 70 + 17) - 0.5) * sst(0, 80, dw)); }   // Festland: natuerlich ansteigend, Berge dahinter bleiben
-  return h + (g - h) * w;
+  const res = h + (g - h) * w;
+  // Brueckenanschluss (G2c) auch im Uebergang zur Manor voll, erst unter 1000 m bleibt alles wie bisher
+  const wc = Math.min(1, (Math.hypot(x, z) - 1000) / 60); if (wc <= 0) return res;
+  const land = sd >= 0 && GOT.sdw(mx, mz) > 4;
+  return res + (gothamCut(x, z, res, land) - res) * wc;
 }
 // G1b: Gotham-Bereich fuer das eigene 4-m-Raster (gotham-raster.js). Rechteck mit Kanten auf dem 40-m-Raster des Fernrings und 15 x 256 m gross,
 // deckt Insel, Fluesse und Ufer ab; dazu mehr als GOT_R0 von der Manor (naeher bleibt das Hauptraster).

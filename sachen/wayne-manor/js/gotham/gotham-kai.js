@@ -39,6 +39,7 @@ const KAI = { breite: 12, bruestung: 1.1, dicke: 0.5, fuss: GOT.WY - 0.6 };
     for (; acc < l; acc += 0.8) { const t = acc / l, qx = qa[0] + (qb[0] - qa[0]) * t, qz = qa[1] + (qb[1] - qa[1]) * t; if (atBridge(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)) continue; circles.push([a[0] + (b[0] - a[0]) * t + qx * 0.45, a[1] + (b[1] - a[1]) * t + qz * 0.45, 0.45, H]); }
     acc -= l; }
 }
-// Boden am Ufer genau: auf dem Kai (innen) Strassenebene, davor 6 m Kies knapp ueber dem Wasser (das 4-m-Raster haette dort eine Rampe)
+// Boden am Ufer genau: auf dem Kai (innen) Strassenebene, davor 6 m Kies knapp ueber dem Wasser (das 4-m-Raster haette dort eine Rampe).
+// Die ersten 0,6 m vor der Mauer gelten schon als Kai: von unten haelt man Abstand zur Wand (Nicolas 2026-11-12: man lief hinein).
 { const t0 = gothamTerrainH;
-  gothamTerrainH = (x, z) => { if (Math.abs(GOT.di(x, z)) < 24) { const sd = GOT.edgeSD(x, z); if (sd < 0) return GOT.STR; if (sd < 6) return GOT.WY + 0.4; } return t0(x, z); }; }
+  gothamTerrainH = (x, z) => { if (Math.abs(GOT.di(x, z)) < 24) { const sd = GOT.edgeSD(x, z); if (sd < 0.6) return GOT.STR; if (sd < 6) return GOT.WY + 0.4; } return t0(x, z); }; }

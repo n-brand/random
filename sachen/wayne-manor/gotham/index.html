@@ -272,6 +272,29 @@
     }
     // Nebenstrassen, die eng parallel zu einer Hauptstrasse laufen, entfernen (Anteil der Punkte zu nah)
     for (let i = NEBEN.length - 1; i >= 0; i--) { const s = NEBEN[i]; let near = 0; for (const p of s.pts) if (mainNear(p[0], p[1], 22)) near++; if (near > s.pts.length * 0.5) NEBEN.splice(i, 1); }
+    // Verbinden (Nicolas 2026-11-12: "es hat teilweise Strassen die nicht connecten"): jedes Nebenstrassen-Ende ohne Anschluss wird in seiner
+    // Richtung bis 80 m verlaengert, bis es auf eine Strasse trifft (auf der Insel, nicht durch Orte); klappt das nicht, wird die Strasse bis zur
+    // letzten Kreuzung gekuerzt; ohne jeden Anschluss faellt sie weg. Zweimal, weil Wegfallen neue lose Enden machen kann.
+    {
+      const NG = 30, ngrid = new Map(), nk = (x, z) => Math.floor(x / NG) * 100000 + Math.floor(z / NG);
+      const rebuild = () => { ngrid.clear(); NEBEN.forEach((s, i) => { for (let j = 1; j < s.pts.length; j++) { const a = s.pts[j - 1], b = s.pts[j];
+        for (const k of new Set([nk(a[0], a[1]), nk(b[0], b[1])])) { if (!ngrid.has(k)) ngrid.set(k, []); ngrid.get(k).push([i, j]); } } }); };
+      const touches = (x, z, self, pad) => { if (mainNear(x, z, pad)) return true;
+        for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const L = ngrid.get(nk(x + a * NG, z + b * NG)); if (!L) continue;
+          for (const [i, j] of L) { if (i === self || NEBEN[i].dead) continue; const o = NEBEN[i]; if (segDist(x, z, o.pts[j - 1], o.pts[j]) < o.w / 2 + pad) return true; } } return false; };
+      for (let pass = 0; pass < 2; pass++) {
+        rebuild();
+        for (let i = 0; i < NEBEN.length; i++) { const s = NEBEN[i];
+          for (const end of [0, 1]) { const P = s.pts, e = end ? P[P.length - 1] : P[0], q = end ? P[P.length - 2] : P[1];
+            if (touches(e[0], e[1], i, 1)) continue;
+            const dx = e[0] - q[0], dz = e[1] - q[1], l = Math.hypot(dx, dz) || 1, add = [];
+            for (let st = 3; st <= 80; st += 3) { const x = e[0] + dx / l * st, z = e[1] + dz / l * st; if (!inIsland(x, z) || blockedByOrt(x, z)) break; add.push([x, z]); if (touches(x, z, i, 0)) { if (end) P.push(...add); else P.unshift(...add.reverse()); break; } } } }
+        rebuild();
+        const cut = NEBEN.map((s, i) => { const hit = s.pts.map(p => touches(p[0], p[1], i, 1)); return [hit.indexOf(true), hit.lastIndexOf(true)]; });
+        NEBEN.forEach((s, i) => { const [first, last] = cut[i]; if (first < 0 || last - first < 1) s.dead = true; else s.pts = s.pts.slice(first, last + 1); });
+        for (let i = NEBEN.length - 1; i >= 0; i--) if (NEBEN[i].dead) NEBEN.splice(i, 1);
+      }
+    }
     // Belegung: Strassen (Fahrbahn + Gehsteig)
     for (const s of MAIN) markLine(s.pts, s.w / 2 + 4, 1);
     for (const s of BR) markLine(s.pts, s.w / 2 + 4, 1);
