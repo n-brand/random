@@ -97,8 +97,8 @@ function terrainBlocks(pos, nrm, col, cut, colAt, mtl) {
         const x0 = TX[b.i0], x1 = TX[b.i0 + TB], z0 = TX[b.j0], z1 = TX[b.j0 + TB];
         const dx = Math.max(x0 - fx, 0, fx - x1), dz = Math.max(z0 - fz, 0, fz - z1), dy = Math.max(b.y0 - fy, 0, fy - b.y1), d = Math.hypot(dx, dy, dz);
         let S = 1; if (!b.hasCut) while (S < 8 && b.cell * S * 2 <= d * f) S *= 2;
-        b.want = S; b.d = d; if (b.mesh) b.mesh.visible = d < (TILES.fogFar || 1e9) + 50;   // K5: hinter dem Nebel nicht zeichnen
-        if (S !== b.S && (b.mesh || d < (TILES.fogFar || 1e9) + 200)) q.push(b);   // K7: Bloecke hinter dem Nebel erst bauen, wenn man naeher kommt
+        b.want = S; b.d = d; if (b.mesh) b.mesh.visible = d < (TILES.viewFar || 1e9) + 50;   // K5/T2: hinter dem Ferndunst nicht zeichnen
+        if (S !== b.S && (b.mesh || d < (TILES.viewFar || 1e9) + 200)) q.push(b);   // K7: Bloecke hinter dem Dunst erst bauen, wenn man naeher kommt
       }
       q.sort((a, c) => a.d - c.d); TERR.queue = q;
     },
@@ -212,8 +212,8 @@ mat.sea = new THREE.MeshPhysicalMaterial({ color: 0x1d5f80, roughness: 0.3, meta
   // Als Streifen von der Kueste (s = coastS) bis s = 3200 (E3: ein grosses Vieleck mit vielen Punkten wurde nicht mehr ganz trianguliert)
   const P = (s, t) => [(s - t) * R2, -(s + t) * R2];
   const sp = [], si = [], su = [];
-  for (let t = -2600; t <= 2600; t += Math.abs(t) < 1400 ? 4 : 25) {
-    const [ax, az] = P(coastS(t) - 0.5 * Math.hypot(1, coastSlope(t)), t), [bx, bz] = P(3200, t);
+  for (let t = -4600; t <= 4600; t += Math.abs(t) < 1400 ? 4 : 25) {   // T2: bis hinter den Fernring (3,6 km)
+    const [ax, az] = P(coastS(t) - 0.5 * Math.hypot(1, coastSlope(t)), t), [bx, bz] = P(5200, t);
     sp.push(ax, 0, -az, bx, 0, -bz); su.push(ax / 10, -az / 10, bx / 10, -bz / 10);
   }
   for (let k = 0; k < sp.length / 6 - 1; k++) { const a = k * 2; si.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }

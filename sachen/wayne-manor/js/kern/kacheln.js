@@ -13,7 +13,13 @@ const TILES = {
   tasks: [],                                                              // weitere Aufgaben mit plan(fx, fy, fz, dx, dz) und step() -> true, solange es Arbeit gibt (Gelaende K4)
   startup: true,                                                          // erster Durchlauf ohne Zeitbudget (Bild beim Start sofort vollstaendig)
 };
-TILES.budget = TILES.mobile ? 2 : 4;                                       // ms pro Bild fuer den Aufbau
+// Ferndunst (T2 Fernring, 2026-11-12): bis zur Ladegrenze (fogFar) waechst der Nebel wie bisher, aber nur auf FAR_A; dahinter bis FAR_K x fogFar
+// wird er voll. So bleiben Berge, Kueste und Fernring als Dunst sichtbar. Unter Wasser (fogFar < 100) gilt der normale Nebel.
+const FAR_A = 0.6, FAR_K = 3.4;
+THREE.ShaderChunk.fog_fragment = THREE.ShaderChunk.fog_fragment.replace("float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );",
+  `float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
+		if ( fogFar > 100.0 ) fogFactor = ${FAR_A.toFixed(2)} * fogFactor + ${(1 - FAR_A).toFixed(2)} * smoothstep( fogFar, fogFar * ${FAR_K.toFixed(2)}, vFogDepth );`);
+TILES.budget = TILES.mobile ? 2 : 4;                                      // ms pro Bild fuer den Aufbau
 TILES.cacheMax = TILES.mobile ? 16 : 48;                                   // ausgeblendete Zellen im Zwischenspeicher je Ebene
 // Ladeweite in Kacheln (128 m), Vorgabe PC 7 (896 m), Handy 4 (512 m). Seit K5 folgen Nebel und Sichtweite der Ladeweite (tilesView).
 TILES.range = (() => { try { const v = parseInt(localStorage.getItem("wm-range"), 10); if (v >= 2 && v <= 12) return v; } catch (e) {} return TILES.mobile ? 4 : 7; })();
@@ -82,6 +88,7 @@ function tilesView() {
   far = Math.round(far / 25) * 25;
   TILES.fogFar = far; TILES.fogNear = far * 0.3;
   if (scene.fog.far >= 100 && scene.fog.far !== far) { scene.fog.near = TILES.fogNear; scene.fog.far = far; }
-  if (camera.far !== far + 60) { camera.far = far + 60; camera.updateProjectionMatrix(); }
+  TILES.viewFar = far * FAR_K;                                             // Ferndunst ganz dicht (Fernring, Gelaende-Bloecke)
+  if (camera.far !== TILES.viewFar + 60) { camera.far = TILES.viewFar + 60; camera.updateProjectionMatrix(); }
 }
 const tilesLoaded = () => TILES.layers.reduce((n, L) => n + L.cells.size, 0);

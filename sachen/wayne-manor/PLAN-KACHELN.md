@@ -63,7 +63,7 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 | K2 ✅ | **Kollisions-Raster** (16-m-Zellen) für Quader und Kreise | Verhalten unverändert: alle Teleport-Ziele, Garage, Höhlen, Mauer, Fahrzeuge; Zeit pro Schritt kleiner |
 | K3 ✅ | **Kachel-Verwaltung** (Ring, Warteschlange, Zeitbudget, Cache) und **Wald pro Kachel** | Bäume erscheinen und verschwinden um den Spieler, kein Ruckeln, Bäume nach Neuladen gleich |
 | K4 ✅ | **Gelände in Kacheln mit LOD** (ersetzt das 640er-Netz; bestehender Bereich aus den heutigen Punkten, Variante A), Höhen-Merker, Ausschnitte, Grenze 700 m fällt, Stufen Gelände-Detail | Keine Risse; Bild im bestehenden Bereich unverändert; Wege, Rampe, Portale, Küste, Silo |
-| K5 ✅ (ohne Fernring) | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
+| K5 ✅ | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
 | K6 ✅ | **Einstellungen** (Ladeweite, Grafik, Lautstärke, FPS) | Wert bleibt nach Neuladen, Wirkung sofort |
 | K7 ✅ | **Ladescreen PC/Handy** mit echtem Fortschritt, Start nur mit nahen Kacheln | unter 3 s bis spielbar |
 | K8 | **Handy messen** (echtes Gerät von Nicolas) und Vorgaben anpassen | mind. 30 FPS am Handy |
@@ -87,3 +87,5 @@ Nebel und Sichtweite folgen der Ladeweite (Nebel dicht bei Ladeweite + 150 m, Ka
 2. Statt Weltrand ein grober Horizont bis ca. 3 km, einverstanden?
 
 Entschieden 2026-11-11: Variante A, einstellbares Gelände-Detail, Start mit K1 und K2.
+
+**Fernring (2026-11-12):** `js/gelaende/fernring.js`: 40-m-Raster bis ±3,6 km aus `genH0` (Berge, Küste, Meeresgrund), innerhalb ±1500 m 1,5 m unter dem Gelände, gebaut im Kachel-Zeitbudget nach dem Start (ca. 70 ms, 54 Tsd. Dreiecke). Ferndunst (`FAR_A` 0,6, `FAR_K` 3,4 in kern/kacheln.js, ersetzt `fog_fragment`): bis zur Ladegrenze steigt der Nebel nur auf 60 %, dann bis 3,4 x Ladegrenze auf 100 %; Kamera und Gelände-Blöcke zeichnen bis dorthin (`TILES.viewFar`). Unter Wasser normaler Nebel. Meer reicht bis 5,2 km. Ca. 11 Zeichenaufrufe und 0,1 Mio. Dreiecke mehr. Die Laufgrenze 700 m bleibt bis Gotham.
