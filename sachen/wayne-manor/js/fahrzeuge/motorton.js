@@ -111,3 +111,5 @@ function engineMute() {
 document.addEventListener("visibilitychange", () => { const c = ENGINE.ctx; if (c) document.hidden ? c.suspend() : c.resume(); });
 // DeLorean (Nicolas 2026-11-12): ruhiger V6 wie das Taxi
 ENG_PROFILES["DeLorean (Zeitmaschine)"] = ENG_PROFILES["Gotham Taxi"];
+// Terzo Millennio (Nicolas 2026-11-12): elektrisch wie der Spectre
+ENG_PROFILES["Lamborghini Terzo Millennio"] = ENG_PROFILES["Rolls-Royce Spectre"];

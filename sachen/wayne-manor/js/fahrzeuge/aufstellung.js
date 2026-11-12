@@ -8,6 +8,7 @@
   addVehicle(SPEC_GCLASS, buildGClass(0x141a22), bays[2].x, bays[2].z, gy, bays[2].h, "Mercedes-Benz G-Klasse (Garage Platz 2)", 0x141a22);   // Nicolas 2026-11-09, Front zur Fahrgasse (wie der Tumbler)
   addVehicle(SPEC_NACHTFALKE, buildNachtfalke(), bays[5].x, bays[5].z, gy, bays[5].h, "Nachtfalke (Garage Platz 5)", 0x0f1012);   // Nicolas 2026-11-09, Front zur Fahrgasse
   addVehicle(SPEC_AVENTADOR, buildAventador(), bays[8].x, bays[8].z, gy, bays[8].h, "Aventador LP 700-4 (Garage Platz 8)", 0xe07012);
+  addVehicle(SPEC_TERZO, buildTerzo(), bays[6].x, bays[6].z, gy, bays[6].h, "Lamborghini Terzo Millennio (Garage Platz 6)", 0x1f2226);   // Nicolas 2026-11-12
   addVehicle(SPEC_DELOREAN, buildDelorean(), bays[3].x, bays[3].z, gy, bays[3].h, "DeLorean Zeitmaschine (Garage Platz 3)", 0xc4c7c9);   // Nicolas 2026-11-12: klappt die Raeder ein und schwebt (H)   // Nicolas 2026-11-09, Front zur Fahrgasse
   { const S = MAIN.samples, p = S[Math.max(0, MAIN_J[2] | 0) - 40] || S[0], q = S[Math.max(0, (MAIN_J[2] | 0) - 36)] || S[1], h = Math.atan2(-(q[0] - p[0]), -(q[1] - p[1])), ox = Math.cos(h) * 7, oz = -Math.sin(h) * 7;   // Nicolas 2026-11-10: am Strassenrand vor der Kreuzung
     addVehicle(SPEC_POLICE, buildPolice(), p[0] + ox, p[1] + oz, terrainH(p[0] + ox, p[1] + oz), h, "Gotham Police (Hauptstrasse)", 0xeef0f2); }

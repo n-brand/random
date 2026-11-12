@@ -27,6 +27,7 @@ const MODELLE = [
   { name: "Batpod", spec: SPEC_BATPOD, bau: () => buildBatpod() },
   { name: "Boxer-Streetfighter", spec: SPEC_STREETFIGHTER, bau: () => buildStreetfighter() },
   { name: "Motorrad (rot)", spec: SPEC_BIKE, bau: () => buildBike(0xb0141e) },
+  { name: "Lamborghini Terzo Millennio", spec: SPEC_TERZO, bau: () => buildTerzo() },
   { name: "DeLorean (Zeitmaschine, schwebt mit H)", spec: SPEC_DELOREAN, bau: () => buildDelorean() },
   // Fluggeraete (Nicolas 2026-11-12): Modell, Flugphysik, Kamera und Ton direkt aus jet.js / the-bat.js des Spiels (flache Welt aus flug-shim.js)
   { name: "Kampfjet", flug: "jet" },

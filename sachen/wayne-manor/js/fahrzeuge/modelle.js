@@ -1414,3 +1414,51 @@ const SPEC_DELOREAN = { name: "DeLorean (Zeitmaschine)", wheels: [[-0.79, -1.17]
   maxN: 30, maxF: 38.9, acc: 9, steer: 0.66, jump: false, hover: true, grade: 35, camD: 8, camH: 1.1, seat: [-0.38, 0.95, 0.1], bodyH: 1.15, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.6], [0, 3.6]],
   msg: "DeLorean: W/S Gas/Bremse, A/D lenken, H Räder einklappen und schweben (dann Leertaste hoch, C runter, H landen), V Kamera, R zurücksetzen, Shift aussteigen" };
+// ---- Lamborghini Terzo Millennio (Nicolas 2026-11-12; Konzeptstudie, stilisiert, ohne Logos und Schriftzug): sehr flacher, langer Keil in dunklem Carbon
+// mit roten Akzenten; die Vorderraeder sitzen unter eigenen Kotfluegel-Schalen links und rechts der schmalen Nase (Luecke dazwischen), Glaskanzel weit vorne,
+// breite Hueften, langer Seitenkanal, offene Kanaele und grosser Fluegel am Heck, Y-foermige Leuchten (rot) vorne und hinten, grosser Diffusor.
+// Elektrisch (Ton wie der Spectre). Ca. 4,96 x 2,08 x 1,06 m, Radstand 2,9.
+function buildTerzo() {
+  const g = new THREE.Group();
+  const paint = M(0x1f2226, { metalness: 0.55, roughness: 0.32, flatShading: true }), carbon = M(0x0e0f11, { metalness: 0.3, roughness: 0.45, flatShading: true });
+  const glass = M(0x06080b, { metalness: 0.75, roughness: 0.05, flatShading: true }), red = new THREE.MeshBasicMaterial({ color: 0xff2a1a }), redM = M(0xb3121a, { metalness: 0.4, roughness: 0.35, flatShading: true });
+  const tireM = M(0x101010, { roughness: 0.92 }), rimM = M(0x17181b, { metalness: 0.8, roughness: 0.3 });
+  const tab = tabF, R = [[1.45, 0.36], [-1.45, 0.38]];
+  const arch = f => { let y = 0.13; for (const [c, r] of R) { const RR = r + 0.12, d = Math.abs(f - c); if (d < RR + 0.06) y = Math.max(y, 0.13 + (2 * r + 0.07 - 0.13) * Math.min(1, (RR + 0.06 - d) / 0.2)); } return y; };
+  // Rumpf: vorne schmal (Nase zwischen den Radschalen), ab der Kabine voll breit mit Hueften
+  const hw = tab([[2.48, 0.32], [2.2, 0.46], [1.6, 0.52], [1.0, 0.62], [0.6, 0.86], [0.1, 0.94], [-0.8, 1.0], [-1.45, 1.04], [-2.1, 1.0], [-2.42, 0.9]]);
+  const yT = tab([[2.48, 0.32], [2.2, 0.44], [1.4, 0.56], [0.9, 0.66], [0.3, 0.74], [-1.0, 0.8], [-2.0, 0.84], [-2.42, 0.78]]);
+  const body = []; for (let f = 2.48; f > -2.43; f -= 0.06) { const ff = Math.max(-2.42, f), yb = ff > 2.3 ? 0.17 : ff < -1 || ff < 0.6 ? arch(ff) : 0.15, hs = hw(ff), yt = yT(ff), ys = Math.max(yb + 0.04, Math.min(yt - 0.12, 0.42));
+    body.push([ff, [[0, yb], [hs - 0.08, yb], [hs, ys], [hs - 0.16, yt - 0.03], [0, yt]]]); }
+  loftIn(g, body, paint);
+  // Kotfluegel-Schalen ueber den Vorderraedern (eigene Koerper aussen, Luecke zur Nase), rote Kante oben
+  for (const sd of [-1, 1]) { const S = []; for (let f = 2.3; f > 0.55; f -= 0.06) { const u = (2.3 - f) / 1.75, w = 0.2 + 0.1 * Math.sin(u * Math.PI), top = 0.52 + 0.26 * Math.sin(Math.min(1, u * 1.25) * Math.PI * 0.5) - 0.06 * u, bot = Math.max(0.36, arch(f) - 0.02);
+      S.push([f, [[0, bot], [w, bot], [w, top - 0.06], [w - 0.06, top], [0, top]]]); }
+    const pod = loftIn(new THREE.Group(), S, paint).geometry.translate(sd * 0.86, 0, 0); g.add(new THREE.Mesh(pod, paint));
+    boxIn(g, sd * 0.86 - 0.03, sd * 0.86 + 0.03, 0.74, 0.76, -1.9, -0.9, redM);                                          // rote Kante auf der Schale
+    // Y-Leuchte vorne auf der Schalenspitze
+    const y1 = boxAt(g, 0.035, 0.03, 0.42, red, sd * 0.86, 0.6, -2.08); y1.rotation.y = sd * 0.35; const y2 = boxAt(g, 0.035, 0.03, 0.3, red, sd * 0.94, 0.6, -2.0); y2.rotation.y = -sd * 0.55;
+    sideBox(g, sd * (hw(0.3) - 0.02), sd * (hw(0.3) + 0.01), 0.22, 0.42, -0.1, 1.2, carbon);                              // langer Seitenkanal
+    for (let k = 0; k < 5; k++) sideBox(g, sd * (hw(-1.0) - 0.02), sd * (hw(-1.0) + 0.012), 0.3 + k * 0.08, 0.32 + k * 0.08, 0.6, 1.4, carbon);   // Luftschlitze vor dem Hinterrad
+    // Y-Rueckleuchten und offene Kanaele am Heck
+    const r1 = boxAt(g, 0.5, 0.035, 0.03, red, sd * 0.6, 0.66, 2.43); r1.rotation.z = -sd * 0.18; const r2 = boxAt(g, 0.26, 0.035, 0.03, red, sd * 0.86, 0.54, 2.43); r2.rotation.z = sd * 0.9;
+    boxIn(g, Math.min(sd * 0.25, sd * 0.75), Math.max(sd * 0.25, sd * 0.75), 0.36, 0.6, 2.2, 2.44, carbon);               // Kanal (dunkel)
+    for (let k = 0; k < 4; k++) boxAt(g, 0.025, 0.2, 0.5, carbon, sd * (0.18 + k * 0.2), 0.22, 2.2);                      // Diffusor-Rippen
+    sideBox(g, sd * (hw(0.5) - 0.1), sd * (hw(0.5) + 0.05), 0.72, 0.75, -0.56, -0.44, carbon); }                          // Spiegel (Kamera)
+  // Glaskanzel weit vorne, Dach-Grat, Heckfluegel, Frontsplitter
+  const gh = [[1.2, 0.6, 0.5], [0.9, 0.8, 0.62], [0.5, 0.98, 0.66], [0.1, 1.06, 0.64], [-0.35, 1.04, 0.6], [-0.8, 0.94, 0.52], [-1.3, 0.84, 0.4]];
+  loftIn(g, gh.map(([f, yt, hb]) => [f, [[0, 0.62], [hb, 0.62], [hb - 0.24, yt - 0.03], [0, yt]]]), glass);
+  loftIn(g, [[0.6, 1.0], [0.1, 1.075], [-0.4, 1.055], [-1.2, 0.87], [-2.1, 0.86]].map(([f, yt]) => [f, [[0, yt - 0.06], [0.08, yt - 0.06], [0.06, yt], [0, yt + 0.012]]]), redM);   // roter Grat
+  boxIn(g, -0.95, 0.95, 0.9, 0.93, 1.95, 2.35, carbon); for (const sd of [-1, 1]) boxIn(g, sd * 0.95 - 0.03, sd * 0.95 + 0.03, 0.72, 0.93, 1.95, 2.35, carbon);   // Heckfluegel mit Endplatten
+  boxIn(g, -0.5, 0.5, 0.13, 0.17, -2.55, -2.25, carbon); boxIn(g, -0.28, 0.28, 0.18, 0.3, -2.5, -2.4, carbon);           // Frontsplitter, Lufteinlass
+  mergeStatic(g);
+  const wheels = [[-0.86, -1.45, true, 0.36, 0.3], [0.86, -1.45, true, 0.36, 0.3], [-0.9, 1.45, false, 0.38, 0.36], [0.9, 1.45, false, 0.38, 0.36]].map(([x, z, f, r, w]) => addWheel(g, x, z, r, w, f, tireM, rimM, 0, 28));
+  for (const w of wheels) sedanCap(w, w.front ? 0.3 : 0.36, 0x17181b, 0xb3121a, 5);                                      // dunkle Felgen, rote Nabe
+  // Radhaeuser (Regel): dunkle Wand hinter jedem Rad
+  const wellM = M(0x0c0d0f, { roughness: 0.9 }); for (const [z, r] of [[-1.45, 0.36], [1.45, 0.38]]) boxIn(g, -0.68, 0.68, 0.15, 2 * r + 0.06, z - r - 0.14, z + r + 0.14, wellM);
+  return { g, wheels };
+}
+const SPEC_TERZO = { name: "Lamborghini Terzo Millennio", wheels: [[-0.86, -1.45], [0.86, -1.45], [-0.9, 1.45], [0.9, 1.45]], wb: 2.9, track: 1.76, pts: [-1.7, 0, 1.7], R: 1.02, circR: 0.97, enter: 3.8,
+  maxN: 40, maxF: 66.7, acc: 15, steer: 0.68, jump: false, grade: 35, camD: 8.2, camH: 0.95, seat: [-0.36, 0.8, 0.1], bodyH: 1.06, bike: false,
+  exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.9], [0, 3.9]],
+  msg: "Lamborghini Terzo Millennio: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
