@@ -1367,48 +1367,59 @@ function buildDelorean() {
   const paint = new THREE.MeshStandardMaterial({ map: brushed, color: 0xd0d3d5, metalness: 0.75, roughness: 0.38, flatShading: true });
   const glass = M(0x0f151b, { metalness: 0.6, roughness: 0.08 }), dark = M(0x1a1b1d, { roughness: 0.7 }), black = M(0x0c0c0d, { roughness: 0.6 });
   const chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0xc4c6c8, { metalness: 0.8, roughness: 0.3 });
-  const amber = M(0xff9a20, { emissive: 0x6a3600 }), red = M(0x9a1010, { emissive: 0x5a0000 }), white = M(0xf0f0ec, { roughness: 0.5 }), tan = M(0xb8a368, { roughness: 0.6 }), grey = M(0x8a8f94, { metalness: 0.5, roughness: 0.5 });
+  const amber = M(0xff9a20, { emissive: 0x6a3600 }), red = M(0x9a1010, { emissive: 0x5a0000 }), white = M(0xf0f0ec, { roughness: 0.5 }), grey = M(0x8a8f94, { metalness: 0.5, roughness: 0.5 });
   const D = { fF: 2.1, fR: -2.1, r: 0.32, wf: [1.17, -1.24], ys: 0.56, track: 1.6, tw: 0.24, fw: 0.72, fr: -1.62, ws: 0.2, rs: -0.78, flat: true, clip: true, archL: 0.07, archH: 0.035,   // Radlaeufe enger am Reifen (Nicolas 2026-11-12: waren zu gross)
     hw: [[2.1, 0.8], [2.04, 0.88], [1.9, 0.92], [0, 0.93], [-1.9, 0.93], [-2.05, 0.9], [-2.1, 0.84]],
-    yT: [[2.1, 0.6], [2.02, 0.68], [1.75, 0.82], [1.17, 0.9], [0.72, 0.9], [-1.6, 0.9], [-2.0, 0.9], [-2.1, 0.86]],   // Haube ueber dem Vorderrad hoeher (Nicolas 2026-11-12: Radlauf woelbte die Front)
+    yT: [[2.1, 0.58], [2.02, 0.64], [0.72, 0.84], [-1.6, 0.9], [-2.0, 0.9], [-2.1, 0.86]],
     yb: [[2.1, 0.38], [2.0, 0.24], [-2.0, 0.24], [-2.1, 0.36]],
-    roof: [[0.72, 0.9], [0.15, 1.14], [-0.72, 1.14], [-1.62, 0.9]], win: [[0.6, -0.68]] };
+    roof: [[0.72, 0.84], [0.15, 1.14], [-0.72, 1.14], [-1.62, 0.9]], win: [[0.6, -0.68]] };
   const k = sedanKit(D, paint, glass, dark), g = k.g;
   for (const sd of [-1, 1]) {
     k.skin(sd, -2.06, 2.06, 0.26, 0.4, k.bodyX, black, 0.004, 60, 2);                                                   // schwarzes Band unten
     for (const f of [0.62, -0.7]) k.skin(sd, f, f - 0.012, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, black, 0.008, 1, 6);   // Tuerfugen (Fluegeltuer)
     k.skin(sd, -0.45, -0.62, 0.74, 0.77, k.bodyX, black, 0.012, 2, 1);                                                   // Tuergriff
-    sideBox(g, sd * (k.hw(0.55) - 0.05), sd * (k.hw(0.55) + 0.12), 0.92, 0.96, -0.62, -0.52, black); sideBox(g, sd * (k.hw(0.55) + 0.06), sd * (k.hw(0.55) + 0.2), 0.9, 1.04, -0.66, -0.5, black);   // Spiegel
+    sideBox(g, sd * (k.hw(0.55) - 0.05), sd * (k.hw(0.55) + 0.12), 0.86, 0.9, -0.62, -0.52, black); sideBox(g, sd * (k.hw(0.55) + 0.06), sd * (k.hw(0.55) + 0.2), 0.84, 0.98, -0.66, -0.5, black);   // Spiegel
     for (const [xa, xb] of [[0.42, 0.62], [0.64, 0.84]]) k.face(1, sd * xa, sd * xb, 0.47, 0.57, 0.012, mat.glow);    // Doppelscheinwerfer eckig
     k.face(1, sd * 0.5, sd * 0.84, 0.3, 0.36, 0.014, amber);                                                            // Blinker im Stossfaenger
     k.face(-1, sd * 0.2, sd * 0.84, 0.5, 0.72, 0.012, black); for (let y = 0.53; y < 0.71; y += 0.045) k.face(-1, sd * 0.24, sd * 0.8, y, y + 0.02, 0.02, red);   // Lamellen-Rueckleuchten
-    // Leitungen an der Flanke: vom Heck schraeg hinunter, am Schweller entlang bis vor das Vorderrad (geripptes Rohr)
-    const P = [[-1.85, 0.98], [-1.45, 0.74], [-1.05, 0.42], [-0.3, 0.33], [0.55, 0.33], [1.6, 0.42], [1.95, 0.5]].map(([f, y]) => new THREE.Vector3(sd * (k.bodyX(f, Math.max(y, k.arch(f) + 0.02)) + 0.04), y, -f));
+    // Leitung an der Flanke (Seitenfoto, Nicolas 2026-11-12): vom vorderen Stossfaenger ueber den vorderen Radlauf, hinter dem Vorderrad hinunter, am Schweller
+    // entlang und vor dem Hinterrad wieder hinauf zum Motorraum (geripptes Rohr)
+    const P = [[2.02, 0.46], [1.72, 0.66], [1.3, 0.74], [0.85, 0.5], [0.6, 0.3], [-0.6, 0.3], [-0.82, 0.48], [-0.9, 0.72], [-0.98, 0.86]].map(([f, y]) => new THREE.Vector3(sd * (k.bodyX(f, Math.max(y, k.arch(f) + 0.02)) + 0.04), y, -f));
     const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 60, 0.035, 8, false); meshIn(g, tube, grey, 0, 0, 0);
     for (let i = 1; i < 30; i++) { const q = new THREE.CatmullRomCurve3(P).getPointAt(i / 30); meshIn(g, new THREE.SphereGeometry(0.045, 8, 6), grey, q.x, q.y, q.z); }   // Rippen
   }
+  // Grosser Chrombogen (Seitenfoto): vom Motorraum hinter der Tuer waagrecht nach hinten, hinter dem Hinterrad hinunter bis unter das Heck
+  for (const sd of [-1, 1]) { const C = [[-0.95, 0.98, 0.84], [-1.4, 0.98, 0.86], [-1.72, 0.9, 0.88], [-1.85, 0.62, 0.9], [-1.98, 0.36, 0.86], [-2.12, 0.22, 0.78]].map(([f, y, x]) => new THREE.Vector3(sd * x, y, -f));
+    meshIn(g, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(C), 40, 0.05, 10, false), chrome, 0, 0, 0); }
   k.face(1, -0.4, 0.4, 0.42, 0.58, 0.01, black); k.face(1, -0.9, 0.9, 0.24, 0.44, 0.04, dark); k.face(-1, -0.92, 0.92, 0.24, 0.48, 0.05, dark);   // Grill, Stossfaenger
-  // Lamellen auf der Heckscheibe
-  for (let f = -0.82; f > -1.55; f -= 0.1) { const y = k.roof(f) + 0.035, w = k.hw(f) - 0.36; boxIn(g, -w, w, y, y + 0.025, -f - 0.03, -f + 0.03, black); }
-  // Umbau hinten: Lamellen-Kaesten an den Ecken, Reaktor, Stangen und Kaesten auf dem Motordeck, Duesen unter dem Heck
-  for (const sd of [-1, 1]) { const x = sd * 0.55, z0 = 1.85, z1 = 2.12;
-    // Lueftungs-Trichter (Nicolas 2026-11-12, Fotos): schwarzer Kasten, nach hinten offen und schraeg nach oben gekippt, vorne zu, innen ein Gitter
+  // Offener Motorraum statt Heckscheibe (Fotos von oben und von der Seite): schwarzer Boden, gerippter Silberblock, Chromrohre, rote Spulen, gruener Kasten
+  for (let f = -0.82; f > -1.62; f -= 0.08) { const y = k.roof(f) - 0.01, w = k.hw(f) - 0.2; boxIn(g, -w, w, y, y + 0.03, -f - 0.045, -f + 0.045, black); }
+  { const yB = f => k.roof(f) + 0.02, orange = M(0xc8401a, { roughness: 0.5 }), green = M(0x2f8a5a, { roughness: 0.5 }), blue = M(0x2a4fa0, { roughness: 0.5 });
+    boxIn(g, -0.16, 0.16, yB(-1.05), yB(-1.05) + 0.14, 0.9, 1.25, chrome); for (let z = 0.94; z < 1.24; z += 0.05) boxIn(g, -0.165, 0.165, yB(-1.05) + 0.02, yB(-1.05) + 0.12, z, z + 0.012, dark);   // Silberblock, Rippen
+    for (const sd of [-1, 1]) {
+      for (let i = 0; i < 3; i++) meshIn(g, new THREE.CylinderGeometry(0.04, 0.04, 0.12, 10), i % 2 ? blue : orange, sd * (0.3 + i * 0.09), yB(-1.0) + 0.06, 1.0);   // Spulen
+      const T = [[0.22, -0.9, 0.02], [0.4, -1.05, 0.12], [0.55, -1.25, 0.1], [0.42, -1.45, 0.04]].map(([x, f, dy]) => new THREE.Vector3(sd * x, yB(f) + dy, -f));
+      meshIn(g, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(T), 24, 0.03, 8, false), chrome, 0, 0, 0); }                           // Chromrohre
+    boxIn(g, 0.48, 0.74, 0.62, 0.74, 1.35, 1.75, green); boxIn(g, -0.74, -0.5, yB(-1.4), yB(-1.4) + 0.08, 1.3, 1.5, M(0xb02020, { roughness: 0.5 })); }   // gruener Kasten (Flanke), rotes Teil
+  // Umbau hinten: Lueftungs-Trichter an den Ecken, Reaktor, Duesen unter dem Heck
+  for (const sd of [-1, 1]) { const x = sd * 0.6;
+    // Lueftungs-Trichter (Nicolas 2026-11-12, Fotos): schwarzer Kasten, nach hinten offen und leicht nach oben gekippt, vorne zu, innen ein Gitter
     // aus 2 x 3 tiefen Zellen, die Oeffnung mit breiterem Rand (wirkt ausgestellt); sitzt auf der Heckecke ueber den Rueckleuchten und ragt ueber das Heck
-    { const vg = new THREE.Group(), W = 0.3, H = 0.6, L = 0.55, t = 0.03, ventM = M(0x111214, { roughness: 0.55, metalness: 0.2, flatShading: true }), inM = M(0x050506, { roughness: 0.9 });
+    { const vg = new THREE.Group(), W = 0.24, H = 0.42, L = 0.5, t = 0.03, ventM = M(0x111214, { roughness: 0.55, metalness: 0.2, flatShading: true }), inM = M(0x050506, { roughness: 0.9 });
       boxIn(vg, -W, W, 0, H, 0, t, inM);                                                                                   // Rueckwand (innen dunkel)
       for (const [xa, xb, ya, yb] of [[-W, -W + t, 0, H], [W - t, W, 0, H], [-W, W, 0, t], [-W, W, H - t, H]]) boxIn(vg, xa, xb, ya, yb, 0, L, ventM);   // Waende
       for (const [xa, xb, ya, yb] of [[-W - 0.04, -W + t, -0.04, H + 0.04], [W - t, W + 0.04, -0.04, H + 0.04], [-W - 0.04, W + 0.04, -0.04, t], [-W - 0.04, W + 0.04, H - t, H + 0.04]]) boxIn(vg, xa, xb, ya, yb, L - 0.05, L, ventM);   // Rand an der Oeffnung
       boxIn(vg, -0.012, 0.012, 0, H, 0.02, L - 0.01, ventM);                                                               // Gitter: 1 senkrecht
       for (const y of [H / 3, 2 * H / 3]) boxIn(vg, -W, W, y - 0.012, y + 0.012, 0.02, L - 0.01, ventM);                   //          2 waagrecht
-      boxIn(vg, -W + 0.06, W - 0.06, -0.12, 0, 0.05, 0.3, ventM);                                                          // Fuss
-      vg.position.set(x, 0.96, 1.62); vg.rotation.set(-0.42, 0, 0); vg.updateMatrix();
+      boxIn(vg, -W + 0.06, W - 0.06, -0.06, 0, 0.05, 0.3, ventM);                                                          // Fuss
+      vg.position.set(x, 0.86, 1.78); vg.rotation.set(-0.22, 0, 0); vg.updateMatrix();   // Seitenfoto (Nicolas 2026-11-12): kleiner, tiefer, fast waagrecht nach hinten
       for (const m of [...vg.children]) { m.applyMatrix4(vg.matrix); g.add(m); } }
-    meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.7, 8).rotateZ(Math.PI / 2), tan, sd * 0.45, 0.98, 1.2); meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.7, 8).rotateZ(Math.PI / 2), tan, sd * 0.45, 0.98, 1.32);
-    boxIn(g, sd * 0.2 - 0.12, sd * 0.2 + 0.12, 0.92, 1.1, 1.0, 1.25, grey);                                               // Kasten auf dem Deck
     meshIn(g, new THREE.CylinderGeometry(0.07, 0.09, 0.3, 12).rotateX(Math.PI / 2), black, sd * 0.45, 0.2, 2.18); meshIn(g, new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12).rotateX(Math.PI / 2), amber, sd * 0.45, 0.2, 2.33); }   // Duesen unter dem Heck
-  meshIn(g, new THREE.CylinderGeometry(0.12, 0.13, 0.5, 16), white, 0, 1.18, 1.7); meshIn(g, new THREE.CylinderGeometry(0.14, 0.12, 0.12, 16), dark, 0, 0.97, 1.7); meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.04, 16), black, 0, 1.44, 1.7);   // Reaktor (weiss)
+  meshIn(g, new THREE.CylinderGeometry(0.16, 0.16, 0.2, 16), black, 0, 1.0, 1.66); meshIn(g, new THREE.CylinderGeometry(0.1, 0.12, 0.3, 16), white, 0, 1.25, 1.66); meshIn(g, new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16), black, 0, 1.42, 1.66);   // Reaktor (weiss)
   boxIn(g, -0.18, 0.18, 1.14, 1.24, 0.55, 0.75, grey); boxIn(g, -0.16, 0.16, 1.24, 1.3, 0.62, 0.7, black);                 // Geraet auf dem Dach hinten
-  boxIn(g, -0.25, 0.25, 0.4, 0.52, -2.2, -2.12, grey);                                                                    // Kasten vorne am Stossfaenger
+  boxIn(g, -0.25, 0.25, 0.4, 0.52, -2.2, -2.12, grey);
+  { const B = [[-0.9, -1.85], [-0.92, -2.12], [-0.7, -2.24], [0, -2.26], [0.7, -2.24], [0.92, -2.12], [0.9, -1.85]].map(([x, z]) => new THREE.Vector3(x, 0.36, z));
+    meshIn(g, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(B), 40, 0.025, 8, false), chrome, 0, 0, 0); }                 // Rohrbuegel um die Nase                                                                    // Kasten vorne am Stossfaenger
   mergeStatic(g);
   // Raeder in Klapp-Gruppen (Achse waagrecht -> senkrecht), darunter je eine blaue Leuchtscheibe (nur im Flug sichtbar)
   const glowM = new THREE.MeshBasicMaterial({ color: 0x66c8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
