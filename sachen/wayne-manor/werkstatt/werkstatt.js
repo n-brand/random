@@ -16,6 +16,7 @@ const MODELLE = [
   { name: "Gotham Fire Engine", spec: SPEC_FIRE_ENGINE, bau: () => buildFireTruck("engine") },
   { name: "Gotham Fire Ladder", spec: SPEC_FIRE_LADDER, bau: () => buildFireTruck("ladder") },
   { name: "Gotham Fire Chief", spec: SPEC_FIRE_CHIEF, bau: () => buildFireChief() },
+  { name: "Gotham Fire Crane", spec: SPEC_FIRE_CRANE, bau: () => buildFireCrane() },
   { name: "Panzer", spec: SPEC_TANK, bau: () => buildTank() },
   { name: "Gemini Concept GT", spec: SPEC_GEMINI, bau: () => buildGemini() },
   { name: "ChatGPT GPT-6 Concept GT", spec: SPEC_CHATGPT, bau: () => buildChatGPT() },
@@ -138,7 +139,7 @@ function laden(i) {
   scene.add(b.g);
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
-  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null };
+  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null, monitor: b.monitor || null };
   if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
   kYaw = START.h; kPitch = -0.12; ZOOM.z = ZOOM.t = 1; if (modus === "drive") { camera.fov = 70; camera.updateProjectionMatrix(); }
   setze(); sicht();
@@ -173,7 +174,8 @@ const setModus = m => { const war = modus; modus = m;
 const MODI = ["orbit", "drive", "spin"];
 $("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin");
 // Visier (nur Fahren mit Turm) und Hinweis zur Maus
-function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier").hidden = !z; if (!z) $("rohr").hidden = true; document.body.classList.toggle("waffe", !!z); maushinweis(); }
+function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier").hidden = !z; if (!z) $("rohr").hidden = true;
+  if (!(modus === "drive" && AKT && AKT.monitor)) { $("wsicht").hidden = true; WZOOM.t = WZOOM.z = 1; } document.body.classList.toggle("waffe", !!z); maushinweis(); }
 function maushinweis() { $("maus").hidden = modus !== "drive" || !!document.pointerLockElement || document.body.classList.contains("touch"); }
 
 // ---------- Maus einfangen (Fahren): Linksklick faengt die Maus, erneuter Linksklick oder Esc gibt sie frei ----------
@@ -187,7 +189,8 @@ addEventListener("mousemove", e => { if (document.pointerLockElement !== rendere
   if (AKT && AKT.flug) return look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS);   // Fluggeraete: Blick wie im Spiel (player.yaw/pitch)
   const k = ZOOM_SENS_GLEICH ? 1 : ZOOM.z; kYaw -= e.movementX * MOUSE_SENS / k; kPitch = Math.max(-1.5, Math.min(1.5, kPitch - e.movementY * MOUSE_SENS / k)); });
 // Mausrad im Panzer: Zoom 1x bis 6x (wie schiessen.js)
-addEventListener("wheel", e => { if (!(modus === "drive" && AKT && AKT.turret)) return; e.preventDefault(); ZOOM.t = Math.max(1, Math.min(6, ZOOM.t * (e.deltaY < 0 ? 1.25 : 0.8))); if (ZOOM.t < 1.05) ZOOM.t = 1; }, { passive: false });
+addEventListener("wheel", e => { if (modus === "drive" && AKT && AKT.monitor) { e.preventDefault(); WZOOM.t = Math.max(1, Math.min(4, WZOOM.t * (e.deltaY < 0 ? 1.25 : 0.8))); if (WZOOM.t < 1.05) WZOOM.t = 1; return; }   // Wasserwerfer-Zoom
+  if (!(modus === "drive" && AKT && AKT.turret)) return; e.preventDefault(); ZOOM.t = Math.max(1, Math.min(6, ZOOM.t * (e.deltaY < 0 ? 1.25 : 0.8))); if (ZOOM.t < 1.05) ZOOM.t = 1; }, { passive: false });
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ---------- Tasten ----------
@@ -222,7 +225,9 @@ function fahren(dt) {
   if (th > 0) A.v += (A.v < -0.2 ? brk : s.acc * (1 - Math.max(0, A.v) / (vmax + 8)) * KP.thF) * dt;
   else if (th < 0) A.v -= (A.v > 0.2 ? brk : s.revMax ? s.acc * (1 - Math.max(0, -A.v) / (s.revMax + 8)) : 6) * dt;
   else A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), (3 + Math.abs(A.v) * 0.06) * dt);
-  if (s.water && down("Space")) wasserSpritzen(dt, wasserDuese(A.x, 0, A.z, A.h, s.water), kYaw, kPitch);   // Loeschfahrzeug: Wasser (wie schiessen.js wasserFrame)
+  if (A.monitor) { const el = Math.max(-0.35, Math.min(0.9, kPitch + 0.32)), M0 = monitorPose(A.g, A.monitor, wrapW(kYaw - A.h), el, dt, down("Space"));   // Arm-Wasserwerfer (wie schiessen.js wasserFrame)
+    if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);
+    A.wz = { tip: M0.tip, el, ready: M0.ready }; }
   else if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm ist Leertaste = schiessen)
   A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), KP.dec * dt);                                   // Kurvenwiderstand / Radieren
   A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax, A.v));
@@ -245,6 +250,9 @@ function fahren(dt) {
     const ex = Math.sin(kYaw) * D, ey = Math.max(0.5, H - 1.3 + 0.9 + TG.hK), ez = Math.cos(kYaw) * D;
     camera.position.set(tx + ex + TG.sx, Math.max(0.3, ty + ey + TG.sy), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
   if (A.turret) waffe(dt);
+  if (A.monitor && A.wz) { wasserZoomStep(dt); const ws = $("wsicht");   // Wasserwerfer-Ziel und Zoom wie schiessen.js
+    const imp = wasserZiel(A.wz.tip, kYaw, A.wz.el, () => 0); if (A_view !== 1) monitorCamera(A.monitor, imp, dt); wasserZielZeigen(ws, imp);   // Kamera oben auf dem Arm
+    ws.lastChild.textContent = (down("Space") ? (A.wz.ready ? "Wasser" : "Arm fährt aus …") : "Leertaste: Wasser") + (WZOOM.t > 1 ? " · " + WZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom"); }
 }
 const wrapW = a => Math.atan2(Math.sin(a), Math.cos(a));
 

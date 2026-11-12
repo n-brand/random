@@ -41,6 +41,11 @@
     #visier span { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 700; color: #cfffcf; background: #0008; border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
     #rohr { position: fixed; width: 18px; height: 18px; margin: -9px; border: 2px solid #ffb84a; border-radius: 50%; z-index: 4; pointer-events: none; box-shadow: 0 0 3px #000; }
     #visier[hidden], #maus[hidden], #rohr[hidden] { display: none; }
+    /* Wasserwerfer-Ziel wie im Spiel (style.css .wsight) */
+    .wsight { position: fixed; width: 46px; height: 46px; margin: -23px; border: 2px dashed #6fd0ff; border-radius: 50%; z-index: 4; pointer-events: none; box-shadow: 0 0 6px rgba(0, 0, 0, .6), inset 0 0 6px rgba(111, 208, 255, .35); }
+    .wsight i { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -7px 0 0 -5px; background: #6fd0ff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+    .wsight span { position: absolute; left: 54px; top: 12px; white-space: nowrap; padding: 2px 8px; border-radius: 6px; background: rgba(10, 12, 16, .65); color: #dff4ff; font: 600 12px system-ui, sans-serif; }
+    .wsight[hidden] { display: none; }
     #maus { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; font-size: 13px; pointer-events: none; }
     #car-speed, #car-nitro { display: none !important; }
     #toast { position: fixed; left: 50%; top: 52px; transform: translateX(-50%); z-index: 6; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 14px; font-size: 13px; max-width: calc(100% - 32px); text-align: center; pointer-events: none; }
@@ -67,6 +72,7 @@
   </div>
   <div id="speed" hidden>0 km/h</div>
   <div id="rohr" hidden></div>
+  <div id="wsicht" class="wsight" hidden><i></i><span></span></div>
   <div id="maus" hidden>Linksklick: Maus einfangen</div>
   <div id="visier" hidden><svg viewBox="0 0 60 60" width="60" height="60" aria-hidden="true"><circle cx="30" cy="30" r="17" fill="none" stroke="#7CFF7C" stroke-width="2"/><path d="M30 4v14M30 42v14M4 30h14M42 30h14" stroke="#7CFF7C" stroke-width="2"/><circle cx="30" cy="30" r="1.8" fill="#7CFF7C"/></svg><span id="visier-t"></span></div>
   <div id="touch" aria-label="Steuerung"><span></span><button data-k="KeyW">▲</button><button data-k="Space" class="feuer">Feuer</button><button data-k="KeyA">◀</button><button data-k="KeyS">▼</button><button data-k="KeyD">▶</button></div>

@@ -29,6 +29,11 @@ body.walk.looking #cross { display: block; }
 #tank-sight svg { display: block; }
 #gun-mark { position: fixed; width: 18px; height: 18px; margin: -9px; border: 2px solid #ffb84a; border-radius: 50%; z-index: 3; pointer-events: none; box-shadow: 0 0 3px #000; }   /* Rohr-Markierung (schiessen.js gunMark) */
 #gun-mark[hidden] { display: none; }
+/* Wasserwerfer-Ziel (modelle.js wasserZiel): blauer gestrichelter Ring mit Tropfen, sitzt am Auftreffpunkt der Wurfbahn; gleich in der Werkstatt */
+.wsight { position: fixed; width: 46px; height: 46px; margin: -23px; border: 2px dashed #6fd0ff; border-radius: 50%; z-index: 3; pointer-events: none; box-shadow: 0 0 6px rgba(0, 0, 0, .6), inset 0 0 6px rgba(111, 208, 255, .35); }
+.wsight i { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -7px 0 0 -5px; background: #6fd0ff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+.wsight span { position: absolute; left: 54px; top: 12px; white-space: nowrap; padding: 2px 8px; border-radius: 6px; background: rgba(10, 12, 16, .65); color: #dff4ff; font: 600 12px system-ui, sans-serif; }
+.wsight[hidden] { display: none; }
 #tank-sight span { position: absolute; left: 150px; top: 58px; white-space: nowrap; padding: 3px 9px; border-radius: 6px; background: rgba(10, 12, 16, .65); color: #e8ffe2; font: 600 13px/1.4 system-ui, sans-serif; }
 @media (pointer: coarse) { #tank-sight span { display: none; } }
 body.walk.tank #tank-sight { display: block; }

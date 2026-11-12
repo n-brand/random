@@ -629,6 +629,7 @@ const fireText = (big, small, col = "#f2c84b") => { const t = canvasTex(1024, 20
 // Schild auf einer Seite (sd -1 links, 1 rechts) oder vorne/hinten (sd 0, fz -1 vorne / 1 hinten)
 const fireSign = (g, m, w, h, x, y, z, sd, fz = 0) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(x, y, z); o.rotation.y = sd ? sd * Math.PI / 2 : fz < 0 ? Math.PI : 0; g.add(o); return o; };
 function buildFireTruck(kind) {
+  if (kind === "engine") return buildFireEngine();                       // Nicolas 2026-11-12: Loeschfahrzeug neu nach Foto (Flughafen-Loeschfahrzeug)
   const ladder = kind === "ladder", g = new THREE.Group(), L = ladder ? 10.4 : 8.6, zF = -2.4 - 1.5, zR = zF + L, HW = 1.25;
   const red = M(0xb3121a, { metalness: 0.35, roughness: 0.35 }), white = M(0xf2f2ee, { roughness: 0.45 }), dark = M(0x111214, { roughness: 0.75 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 });
   const alu = M(0xb8bcc2, { metalness: 0.7, roughness: 0.35 }), glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0xd8dce0, { metalness: 0.85, roughness: 0.25 });
@@ -696,11 +697,11 @@ function buildFireTruck(kind) {
   for (const w of wheels) sedanCap(w, tw, 0xd8dce0, 0xe8ebee, 8);
   return { g, wheels, beacon: [bR, bW] };
 }
-const SPEC_FIRE_ENGINE = { name: "Gotham Fire Engine", wheels: [[-1.02, -2.4], [1.02, -2.4], [-1.2, 2.1], [1.2, 2.1]], wb: 4.5, track: 2.1, pts: [-2.8, -0.9, 1.0, 2.9], R: 1.3, circR: 1.25, enter: 5,
-  maxN: 24, maxF: 30.6, acc: 5.5, steer: 0.6, jump: false, grade: 30, camD: 13, camH: 2.4, seat: [-0.6, 2.35, -3.3], bodyH: 3.0, bike: false, brake: 20,
-  exits: [[-2.3, -3.2], [2.3, -3.2], [-2.3, 0.5], [2.3, 0.5], [0, -5.5], [0, 5.5]],
+const SPEC_FIRE_ENGINE = { name: "Gotham Fire Engine", wheels: [[-1.22, -3.0], [1.22, -3.0], [-1.22, 2.4], [1.22, 2.4]], wb: 5.4, track: 2.44, pts: [-3.6, -1.6, 0.4, 2.4, 4.1], R: 1.55, circR: 1.5, enter: 5.5,
+  maxN: 24, maxF: 30.6, acc: 5.5, steer: 0.55, jump: false, grade: 32, camD: 16, camH: 2.6, seat: [-0.7, 2.45, -3.9], bodyH: 3.3, bike: false, brake: 20,
+  exits: [[-2.6, -3.6], [2.6, -3.6], [-2.6, 0.5], [2.6, 0.5], [0, -6.5], [0, 6.5]],
   msg: "Gotham Fire Engine: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blinklicht beim Fahren)" };
-const SPEC_FIRE_LADDER = { ...SPEC_FIRE_ENGINE, name: "Gotham Fire Ladder", wheels: [[-1.02, -2.4], [1.02, -2.4], [-1.2, 3.3], [1.2, 3.3]], wb: 5.7, pts: [-3.2, -1.1, 1.1, 3.3, 5.0], acc: 4.5, maxF: 27.8, steer: 0.55, camD: 15,
+const SPEC_FIRE_LADDER = { ...SPEC_FIRE_ENGINE, name: "Gotham Fire Ladder", wheels: [[-1.02, -2.4], [1.02, -2.4], [-1.2, 3.3], [1.2, 3.3]], wb: 5.7, track: 2.1, pts: [-3.2, -1.1, 1.1, 3.3, 5.0], R: 1.3, circR: 1.25, enter: 5, acc: 4.5, maxF: 27.8, steer: 0.55, camD: 15, camH: 2.4, seat: [-0.6, 2.35, -3.3], bodyH: 3.0,
   exits: [[-2.3, -3.2], [2.3, -3.2], [-2.3, 1.0], [2.3, 1.0], [0, -9.5], [0, 7.2]],
   msg: "Gotham Fire Ladder: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blinklicht beim Fahren)" };
 // Kommandowagen: Limousine wie das Polizeiauto (sedanKit), rot, weisses Band mit Schrift, Lichtbalken rot/weiss
@@ -728,6 +729,167 @@ function buildFireChief() {
   return { g, wheels, beacon: [bR, bW] };
 }
 const SPEC_FIRE_CHIEF = { ...SPEC_POLICE, name: "Gotham Fire Chief", msg: "Gotham Fire Chief: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen (Blinklicht beim Fahren)" };
+// Dezente Beschriftung (Nicolas 2026-11-12: "nicht zu werbemaessig"): weisse Schrift ohne Rand, schlicht
+const fireLabel = (str, px = 80) => { const t = canvasTex(1024, 160, (c, W, H) => { c.clearRect(0, 0, W, H); c.textAlign = "left"; c.textBaseline = "middle"; let p = px; c.font = "600 " + p + "px Arial, sans-serif"; while (c.measureText(str).width > W - 20) { p -= 2; c.font = "600 " + p + "px Arial, sans-serif"; } c.fillStyle = "#f4f4f2"; c.fillText(str, 10, H / 2 + 2); });
+  t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }); };
+// Wappen: weisser Schild mit rotem Rand und GFD
+const fireShield = () => { const t = canvasTex(160, 192, (c, W, H) => { c.clearRect(0, 0, W, H); const sh = () => { c.beginPath(); c.moveTo(12, 12); c.lineTo(W - 12, 12); c.lineTo(W - 12, 100); c.quadraticCurveTo(W - 14, 160, W / 2, 182); c.quadraticCurveTo(14, 160, 12, 100); c.closePath(); };
+    sh(); c.fillStyle = "#f4f4f2"; c.fill(); c.lineWidth = 9; c.strokeStyle = "#8f0e14"; c.stroke(); c.fillStyle = "#8f0e14"; c.font = "bold 50px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("GFD", W / 2, 88); });
+  t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }); };
+// ---- Loeschfahrzeug "Engine 12" (Nicolas 2026-11-12, nach Foto eines Flughafen-Loeschfahrzeugs, eigene Form ohne Marken): vorne eine, hinten zwei
+// Achsen mit grossen Einzelreifen, Panorama-Kabine vor der Vorderachse (Scheiben bis weit nach unten, schraege Front), Aufbau rot mit dunklen
+// Geraeteraeumen, Dachreling, dezente Schrift "Gotham Fire Dept." mit Wappen und Nummer; Wasserwerfer auf dem Kabinendach dreht und neigt sich
+// zum Ziel (built.monitor: yaw-Gruppe, pitch-Gruppe, Duesenspitze lokal 0/0/-1,15 in pitch).
+function buildFireEngine() {
+  const g = new THREE.Group(), zF = -4.75, zC = -2.0, zR = 5.0;
+  const red = M(0xd0281f, { metalness: 0.35, roughness: 0.32 }), dark = M(0x3a3e44, { metalness: 0.35, roughness: 0.45 }), black = M(0x0d0e10, { roughness: 0.7 }), alu = M(0xb8bcc2, { metalness: 0.75, roughness: 0.3 });
+  const glass = M(0x1a1f26, { metalness: 0.7, roughness: 0.08 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0x1c1d20, { metalness: 0.5, roughness: 0.45 });
+  const bR = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 }), bW = new THREE.MeshStandardMaterial({ color: 0xbfc4cc, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 });
+  const shutter = (() => { const t = canvasTex(64, 256, (c, W, H) => { c.fillStyle = "#4a4e54"; c.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 8) { c.fillStyle = "#33363b"; c.fillRect(0, y, W, 2); } }); t.repeat.set(1, 1); return M(0xffffff, { map: t, metalness: 0.5, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -1 }); })();
+  // Runder Querschnitt (von unten Mitte ueber die Seite nach oben Mitte): Breite hw, Unterkante yb, Oberkante yt, Radius oben r, unten rb
+  const sec = (hw, yb, yt, r, rb = 0.08) => { const p = [[0, yb], [hw - rb, yb]];
+    for (let k = 1; k <= 3; k++) { const a = -Math.PI / 2 + k / 3 * Math.PI / 2; p.push([hw - rb + rb * Math.cos(a), yb + rb + rb * Math.sin(a)]); }
+    for (let k = 0; k <= 6; k++) { const a = k / 6 * Math.PI / 2; p.push([hw - r + r * Math.cos(a), yt - r + r * Math.sin(a)]); }
+    p.push([0, yt]); return p; };
+  const loftS = (st, m) => { const o = loftIn(g, st.map(([z, h]) => [-z, h]), m); const geo = mergeVertices(o.geometry); geo.computeVertexNormals(); o.geometry = geo; return o; };   // weich schattiert, Stationen in z
+  // Kabine: gewoelbtes dunkles Glas, schraege Nase; darunter rote Front mit Stossfaenger
+  loftS([[zF + 0.05, sec(1.18, 1.35, 1.75, 0.3)], [zF + 0.3, sec(1.38, 1.35, 2.45, 0.42)], [zF + 0.65, sec(1.47, 1.35, 2.95, 0.5)], [zF + 1.1, sec(1.5, 1.35, 3.18, 0.5)], [zC, sec(1.5, 1.35, 3.22, 0.5)]], glass);
+  loftS([[zF - 0.15, sec(1.2, 0.78, 1.4, 0.18)], [zF + 0.15, sec(1.42, 0.75, 1.48, 0.2)], [zF + 0.6, sec(1.5, 0.75, 1.5, 0.2)], [zC, sec(1.5, 0.75, 1.5, 0.2)]], red);
+  // Aufbau: rot, oben runde Kanten, faellt nach hinten ab, hinten abgerundet
+  loftS([[zC + 0.02, sec(1.5, 0.75, 3.3, 0.55)], [zC + 1.0, sec(1.52, 0.75, 3.34, 0.55)], [zR - 1.2, sec(1.52, 0.75, 3.05, 0.55)], [zR - 0.35, sec(1.5, 0.75, 2.98, 0.55)], [zR - 0.05, sec(1.38, 0.82, 2.85, 0.5)], [zR + 0.08, sec(1.15, 0.95, 2.6, 0.4)]], red);
+  for (const sd of [-1, 1]) {
+    // dunkle Rolllaeden unten und Geraeteraum vorne bis oben (wie im Foto), grosse Nummer, dezente Schrift
+    sideBox(g, sd * 1.52, sd * 1.535, 0.9, 2.95, zC + 0.25, zC + 1.75, shutter);
+    sideBox(g, sd * 1.52, sd * 1.535, 0.9, 1.75, zC + 1.95, zR - 1.6, shutter);
+    sideBox(g, sd * 1.52, sd * 1.535, 0.82, 0.9, zC + 0.1, zR - 0.4, dark);                                                 // Schweller
+    fireSign(g, fireLabel("12", 150), 0.9, 0.62, sd * 1.537, 2.25, zC + 1.0, sd);                                             // Nummer auf dem Rollladen
+    fireSign(g, fireLabel("Gotham Fire Dept.", 80), 2.2, 0.34, sd * 1.537, 2.45, zC + 3.4, sd);                               // dezente Schrift
+    fireSign(g, fireShield(), 0.42, 0.5, sd * 1.537, 2.4, zR - 1.0, sd);
+    for (const z of [zC + 0.4, zC + 2.6, zR - 0.8]) sideBox(g, sd * 1.1, sd * 1.25, 3.2, 3.32, z - 0.12, z + 0.12, black);  // Umfeldleuchten oben
+    boxIn(g, sd * 1.3 - 0.04, sd * 1.3 + 0.04, 2.6, 2.75, zC - 0.04, zC + 0.04, mat.glow);
+    // Spiegel an Buegeln vorne
+    boxIn(g, sd * 1.5, sd * 1.5 + sd * 0.45, 2.55, 2.6, zF + 0.55, zF + 0.6, black); boxIn(g, sd * 1.92 - 0.06, sd * 1.92 + 0.06, 2.1, 2.7, zF + 0.5, zF + 0.62, black);
+    boxIn(g, sd * 0.95 - 0.22, sd * 0.95 + 0.22, 0.95, 1.08, zF - 0.17, zF - 0.12, mat.glow);                               // Scheinwerfer
+    boxIn(g, sd * 1.05 - 0.2, sd * 1.05 + 0.2, 1.62, 1.68, zF - 0.02, zF + 0.04, bR);
+    boxIn(g, sd * 1.15 - 0.15, sd * 1.15 + 0.15, 1.05, 1.3, zR + 0.06, zR + 0.09, mat.glowRed);                             // Rueckleuchten
+    sideBox(g, sd * 1.5, sd * 1.56, 0.9, 1.05, zF + 1.0, zF + 1.6, alu);                                                   // Trittstufe
+  }
+  // Frontstossfaenger mit rot-weissen Warnstreifen an den Ecken
+  const chev = (() => { const t = canvasTex(128, 128, (c, W, H) => { c.fillStyle = "#f4f4f2"; c.fillRect(0, 0, W, H); c.fillStyle = "#c8231b"; for (let k = -4; k < 6; k++) { c.beginPath(); c.moveTo(k * 32, H); c.lineTo(k * 32 + 16, H); c.lineTo(k * 32 + 16 + H, 0); c.lineTo(k * 32 + H, 0); c.fill(); } }); t.repeat.set(1, 1); return M(0xffffff, { map: t, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -2 }); })();
+  for (const sd of [-1, 1]) boxIn(g, sd * 1.05 - 0.2, sd * 1.05 + 0.2, 0.8, 0.98, zF - 0.27, zF - 0.24, chev);
+  boxIn(g, -1.1, 1.1, 0.65, 0.8, zF - 0.25, zF + 0.3, black);
+  boxIn(g, -0.8, 0.8, 3.22, 3.28, zF + 1.2, zF + 1.45, black);                                                                  // Lichtbalken
+  for (const sd of [-1, 1]) { const b = meshIn(g, new THREE.CapsuleGeometry(0.06, 0.45, 4, 10).rotateZ(Math.PI / 2), sd < 0 ? bR : bW, sd * 0.45, 3.36, zF + 1.32); b.scale.z = 1.1; }
+  boxIn(g, -1.15, 1.15, 3.3, 3.36, zR - 0.6, zR - 0.4, black); for (const sd of [-1, 1]) boxIn(g, sd * 0.8 - 0.2, sd * 0.8 + 0.2, 3.36, 3.44, zR - 0.56, zR - 0.44, sd < 0 ? bR : bW);
+  // Radhaeuser geschlossen (Regel), drei Achsen, dunkle Kotfluegel-Kanten
+  const axles = [-3.0, 1.6, 3.2];
+  for (const z of axles) boxIn(g, -1.0, 1.0, 0.6, 1.4, z - 0.72, z + 0.72, black);
+  // Wasserwerfer am langen Knickarm (Nicolas 2026-11-12, Fotos): Drehsockel hinter der Kabine, Unterarm 3,2 m, Oberarm mit Teleskop bis vor die
+  // Kabine, Duesenkopf. Eingeklappt liegt er auf dem Dach, der Kopf ueber der Kabinenfront; beim Spritzen richtet er sich auf (monitorPose).
+  const armM = M(0x34383d, { metalness: 0.55, roughness: 0.4 });
+  const mon = new THREE.Group(); mon.position.set(0, 3.32, zC + 0.7); g.add(mon);
+  meshIn(mon, new THREE.CylinderGeometry(0.42, 0.48, 0.2, 20), armM, 0, 0.1, 0);
+  const yaw = new THREE.Group(); yaw.position.y = 0.2; mon.add(yaw);
+  boxIn(yaw, -0.32, 0.32, 0, 0.3, -0.3, 0.3, armM);
+  const low = new THREE.Group(); low.position.y = 0.25; yaw.add(low);
+  for (const sd of [-1, 1]) boxIn(low, sd * 0.13 - 0.07, sd * 0.13 + 0.07, 0, 3.2, -0.12, 0.12, armM);
+  for (let y = 0.4; y < 3.1; y += 0.45) boxIn(low, -0.13, 0.13, y, y + 0.06, -0.05, 0.05, armM);
+  boxIn(low, -0.06, 0.06, 0.5, 2.8, 0.14, 0.24, alu);
+  const up = new THREE.Group(); up.position.set(0, 3.2, -0.32); low.add(up);
+  meshIn(up, new THREE.CylinderGeometry(0.16, 0.16, 0.42, 14).rotateZ(Math.PI / 2), alu, 0, 0, 0);
+  boxIn(up, -0.17, 0.17, -0.15, 0.15, -2.8, 0.25, armM);
+  const tel = new THREE.Group(); tel.position.z = -2.2; up.add(tel); boxIn(tel, -0.12, 0.12, -0.11, 0.11, -2.4, 0, armM);
+  const head = new THREE.Group(); head.position.z = -2.4; tel.add(head);
+  boxIn(head, -0.2, 0.2, -0.25, 0.22, -0.55, 0.05, armM); boxIn(head, -0.205, 0.205, -0.05, 0.18, -0.45, -0.1, chev);
+  meshIn(head, new THREE.CylinderGeometry(0.09, 0.12, 0.5, 14).rotateX(Math.PI / 2), alu, 0, -0.08, -0.8);
+  meshIn(head, new THREE.TorusGeometry(0.1, 0.025, 6, 16), black, 0, -0.08, -1.04);
+  meshIn(head, new THREE.BoxGeometry(0.18, 0.14, 0.2), black, 0.26, 0.05, -0.55);
+  meshIn(head, new THREE.TorusGeometry(0.35, 0.05, 6, 14, Math.PI), black, 0, 0.2, 0.2, Math.PI / 2);                         // Schlauchbogen
+  g.remove(mon); mergeStatic(g); g.add(mon);
+  low.rotation.x = Math.PI / 2; up.rotation.x = -Math.PI / 2;                                                                // eingeklappt (Start)
+  const wheels = [];
+  for (const [i, z] of axles.entries()) for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.22, z, 0.66, 0.55, i === 0, tireM, rimM, 14, 28));   // grosse Gelaendereifen mit Stollen
+  for (const w of wheels) sedanCap(w, 0.55, 0x1c1d20, 0x3a3d42, 8);
+  return { g, wheels, beacon: [bR, bW], monitor: { yaw, low, up, tel, head, tip: new THREE.Vector3(0, -0.08, -1.08), k: 0, idle: 99 } };
+}
+// ---- Ruestwagen mit Kran "Rescue 5" (Nicolas 2026-11-12, nach Foto, eigene Form ohne Marken): Frontkabine, Kran hinter der Kabine (Knickarm, Haken
+// am Seil), Aufbau mit teils offenen Geraeteraeumen (Ausruestung sichtbar), vorne eine, hinten zwei Achsen, dezente Schrift
+function buildFireCrane() {
+  const g = new THREE.Group(), HW = 1.27, zF = -4.75, zC = -2.75, zR = 4.55;
+  const red = M(0xc8231b, { metalness: 0.3, roughness: 0.38 }), dark = M(0x26292d, { metalness: 0.35, roughness: 0.5 }), black = M(0x0d0e10, { roughness: 0.7 }), alu = M(0xb8bcc2, { metalness: 0.75, roughness: 0.3 });
+  const glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0xc8ccd0, { metalness: 0.8, roughness: 0.3 }), white = M(0xf2f2ee, { roughness: 0.45 });
+  const bR = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 }), bW = new THREE.MeshStandardMaterial({ color: 0xbfc4cc, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 });
+  const shutter = (() => { const t = canvasTex(64, 256, (c, W, H) => { c.fillStyle = "#b9bdc2"; c.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 8) { c.fillStyle = "#8a8e93"; c.fillRect(0, y, W, 2); } }); t.repeat.set(1, 1); return M(0xffffff, { map: t, metalness: 0.6, roughness: 0.35, polygonOffset: true, polygonOffsetFactor: -1 }); })();
+  boxIn(g, -0.55, 0.55, 0.55, 0.85, zF + 0.4, zR - 0.3, black);                                                                // Rahmen
+  // Kabine: senkrechte Front, unten weiss, Grill, grosse Frontscheibe
+  boxIn(g, -HW, HW, 1.0, 3.3, zF, zC, red); boxIn(g, -HW + 0.05, HW - 0.05, 3.3, 3.45, zF + 0.15, zC - 0.05, red);
+  boxIn(g, -HW + 0.05, HW - 0.05, 0.75, 1.45, zF - 0.06, zF + 0.4, white);                                                    // weisse Front unten
+  for (let y = 1.55; y < 2.15; y += 0.12) boxIn(g, -0.6, 0.6, y, y + 0.05, zF - 0.03, zF, black);                              // Grill
+  boxIn(g, -HW + 0.1, HW - 0.1, 2.25, 3.1, zF - 0.02, zF + 0.02, glass);
+  boxIn(g, -HW, HW, 0.62, 0.85, zF - 0.15, zF + 0.3, black);
+  for (const sd of [-1, 1]) {
+    boxIn(g, sd * (HW - 0.3) - 0.2, sd * (HW - 0.3) + 0.2, 1.05, 1.2, zF - 0.07, zF - 0.03, mat.glow);
+    sideBox(g, sd * (HW - 0.02), sd * (HW + 0.02), 2.2, 3.05, zF + 0.3, zC - 0.25, glass);                                  // Seitenfenster
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.38), 2.3, 2.85, zF + 0.25, zF + 0.32, black);
+    sideBox(g, sd * HW, sd * (HW + 0.01), 1.7, 1.8, zF + 0.05, zC - 0.05, white);                                           // weisses Band
+    fireSign(g, fireLabel("Gotham Fire Dept."), 1.4, 0.24, sd * (HW + 0.013), 1.55, (zF + zC) / 2, sd);
+  }
+  boxIn(g, -0.8, 0.8, 3.45, 3.52, zF + 0.3, zF + 0.55, black);
+  for (const sd of [-1, 1]) meshIn(g, new THREE.CapsuleGeometry(0.07, 0.42, 4, 10).rotateZ(Math.PI / 2), sd < 0 ? bR : bW, sd * 0.42, 3.6, zF + 0.42);
+  // Kran: Drehsaeule hinter der Kabine, Hauptarm schraeg hoch, Knickarm nach vorne ueber die Kabine, Seil mit Haken
+  const cz = zC + 0.55; boxIn(g, -HW, HW, 0.85, 1.6, zC + 0.05, zC + 1.1, dark); meshIn(g, new THREE.CylinderGeometry(0.42, 0.48, 0.5, 18), dark, 0, 1.85, cz);
+  boxIn(g, -0.3, 0.3, 2.1, 3.9, cz - 0.3, cz + 0.3, red);                                                                       // Saeule
+  const arm = (x0, y0, z0, x1, y1, z1, w, h, m) => { const d = new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0), L = d.length(), o = new THREE.Mesh(new THREE.BoxGeometry(w, h, L), m);
+    o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); o.lookAt(x1, y1, z1); g.add(o); return o; };
+  arm(0, 3.6, cz, 0, 5.7, cz - 0.6, 0.5, 0.42, red);                                                                             // Hauptarm
+  arm(0, 5.75, cz - 0.6, 0, 5.75, zF - 2.4, 0.36, 0.34, dark); arm(0, 5.75, zF - 2.4, 0, 5.75, zF - 3.4, 0.26, 0.24, dark);      // Knickarm, Ausschub
+  meshIn(g, new THREE.CylinderGeometry(0.14, 0.14, 0.56, 14).rotateZ(Math.PI / 2), alu, 0, 5.75, cz - 0.6);                   // Gelenk
+  arm(0, 4.2, cz + 0.05, 0, 5.2, cz - 0.45, 0.16, 0.16, alu);                                                                    // Hydraulikzylinder
+  meshIn(g, new THREE.CylinderGeometry(0.012, 0.012, 2.6, 4), black, 0, 4.4, zF - 3.4);                                         // Seil
+  meshIn(g, new THREE.TorusGeometry(0.12, 0.035, 6, 14, Math.PI * 1.4), alu, 0, 3.0, zF - 3.4);                                 // Haken
+  // Aufbau: Rolllaeden, zwei Raeume offen mit Ausruestung, Stuetzen
+  boxIn(g, -HW, HW, 0.95, 3.15, zC + 1.15, zR, red); boxIn(g, -HW, HW, 3.15, 3.2, zC + 1.15, zR, white);
+  const col = [0xffd43b, 0x2f6fd8, 0xe07012, 0x3aa35a, 0xd23a3a].map(c => M(c, { roughness: 0.6 }));
+  for (const sd of [-1, 1]) {
+    const n = 3, len = (zR - 0.2 - (zC + 1.3)) / n;
+    for (let i = 0; i < n; i++) { const z0 = zC + 1.3 + i * len, z1 = z0 + len - 0.12, open = sd > 0 ? i !== 1 : i === 0;
+      if (open) { sideBox(g, sd * (HW - 0.45), sd * (HW - 0.4), 1.05, 3.0, z0, z1, dark);                                    // offener Raum: Rueckwand, Regale, Geraete
+        for (const y of [1.6, 2.3]) sideBox(g, sd * (HW - 0.45), sd * HW, y, y + 0.04, z0, z1, alu);
+        for (let k = 0; k < 4; k++) sideBox(g, sd * (HW - 0.4), sd * (HW - 0.12), 1.64 + (k % 2) * 0.7, 1.64 + (k % 2) * 0.7 + 0.35 + (k % 3) * 0.1, z0 + 0.1 + k * (len - 0.3) / 4, z0 + 0.1 + k * (len - 0.3) / 4 + 0.22, col[(k + i) % 5]);
+        for (const z of [z0, z1]) sideBox(g, sd * (HW - 0.45), sd * HW, 1.05, 3.0, z - 0.03, z + 0.03, red); }
+      else sideBox(g, sd * HW, sd * (HW + 0.012), 1.05, 3.0, z0, z1, shutter); }
+    sideBox(g, sd * HW, sd * (HW + 0.01), 0.95, 1.05, zC + 1.15, zR, alu);
+    boxIn(g, sd * (HW - 0.35) - 0.18, sd * (HW - 0.35) + 0.18, 1.05, 1.3, zR, zR + 0.02, mat.glowRed);
+    boxIn(g, sd * (HW + 0.05), sd * (HW + 0.3), 0.6, 0.9, zC + 1.2, zC + 1.45, alu);                                         // Abstuetzung
+  }
+  for (const sd of [-1, 1]) fireSign(g, fireLabel("Rescue 5", 90), 0.9, 0.3, sd * (HW + 0.013), 1.3, zC + 1.75, sd);
+  boxIn(g, -HW + 0.2, HW - 0.2, 1.3, 3.0, zR, zR + 0.012, shutter);
+  const axles = [-3.75, 1.75, 3.25]; for (const z of axles) boxIn(g, -0.95, 0.95, 0.55, 1.35, z - 0.66, z + 0.66, black);
+  mergeStatic(g);
+  const wheels = [];
+  for (const [i, z] of axles.entries()) for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.05, z, 0.56, 0.42, i === 0, tireM, rimM, 0, 28));
+  for (const w of wheels) sedanCap(w, 0.42, 0xc8ccd0, 0xe2e5e8, 10);
+  return { g, wheels, beacon: [bR, bW] };
+}
+// Arm-Wasserwerfer bewegen (Spiel und Werkstatt): k 0 = eingeklappt auf dem Dach, 1 = aufgerichtet; active = Leertaste gehalten (klappt nach 4 s
+// ohne Spritzen wieder ein). yawRel = Blickrichtung relativ zum Fahrzeug, el = Neigung der Duese. Rueckgabe: Duesenspitze in Weltkoordinaten
+// und ob er bereit ist (ganz aufgerichtet).
+function monitorPose(g, mon, yawRel, el, dt, active) {
+  mon.idle = active ? 0 : mon.idle + dt;
+  const want = mon.idle < 4 ? 1 : 0; mon.k += Math.max(-dt / 1.8, Math.min(dt / 1.8, want - mon.k));
+  const k = mon.k * mon.k * (3 - 2 * mon.k), lowX = Math.PI / 2 + (0.2 - Math.PI / 2) * k;
+  mon.low.rotation.x = lowX; mon.up.rotation.x = -lowX; mon.tel.position.z = -2.2;   // Teleskop immer ausgefahren (eingeklappt liegt der Kopf ueber der Kabinenfront, Foto)
+  mon.yaw.rotation.y = yawRel * k; mon.up.rotation.x = -lowX + el * 0.8 * k; mon.head.rotation.x = el * 0.2 * k;   // vorderer Armteil neigt sich mit (Nicolas 2026-11-12)
+  g.updateMatrixWorld(true); return { tip: mon.head.localToWorld(mon.tip.clone()), ready: mon.k > 0.97 };
+}
+// Kamera auf dem vorderen Armteil (Nicolas 2026-11-12: beim Spritzen weiter oben, auf dem Arm beim Gelenk, nicht vorne an der Duese); schaut
+// weich zum Auftreffpunkt. Aktiv ab halb aufgerichtetem Arm. Rueckgabe: true, wenn sie die Kamera gesetzt hat.
+function monitorCamera(mon, impact, dt) {
+  if (mon.k < 0.6) { mon.camT = null; return false; }
+  camera.position.copy(mon.up.localToWorld(new THREE.Vector3(0.75, 1.3, 0.3)));   // ueber dem Gelenk, leicht seitlich (Arm verdeckt nicht die Mitte)
+  if (!mon.camT) mon.camT = impact.clone(); else mon.camT.lerp(impact, Math.min(1, dt * 6));
+  camera.up.set(0, 1, 0); camera.lookAt(mon.camT); return true;
+}
 // ---- Panzer (Nicolas 2026-11-10, eigener Entwurf; 2026-11-11 realistischer, Grundform und Masse bleiben): Wanne mit schraegem Bug, Ketten aus
 // einzelnen Gliedern (laufen um Treibrad vorne mit Zaehnen und Leitrad hinten, oben auf Stuetzrollen), 6 Laufrollen je Seite mit Naben,
 // Schuerzen in Segmenten mit Schrauben und Gummilappen, Kotfluegel, Staukisten, Fahrerluke mit Winkelspiegeln, Motordeck mit Lamellen,
@@ -970,7 +1132,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
@@ -999,7 +1161,7 @@ function kurvenPhysik(sp, v, steer, gas, vmax) {
 }
 // Schutzstufen: Treffer bis kaputt (Nicolas 2026-11-11; genutzt in schiessen.js und in der Werkstatt)
 const ARMOR = { "Gotham Taxi": 1, "Aventador LP 700-4": 1, "Gemini Concept GT": 1, "ChatGPT GPT-6 Concept GT": 1, "DeepSeek Concept Car": 1, "Motorrad": 1, "Boxer-Streetfighter": 1,
-  "Gotham Police": 2, "Gotham Fire Chief": 2, "Gotham Fire Engine": 3, "Gotham Fire Ladder": 3, "Rolls-Royce": 2, "Rolls-Royce Spectre": 2, "Nachtfalke": 2, "Batpod": 2, "Mercedes-Benz G-Klasse": 3, "Tumbler": 4, "Panzer": 4 };
+  "Gotham Police": 2, "Gotham Fire Chief": 2, "Gotham Fire Engine": 3, "Gotham Fire Ladder": 3, "Gotham Fire Crane": 3, "Rolls-Royce": 2, "Rolls-Royce Spectre": 2, "Nachtfalke": 2, "Batpod": 2, "Mercedes-Benz G-Klasse": 3, "Tumbler": 4, "Panzer": 4 };
 // ===================== Tempo-Gefuehl (Nicolas 2026-11-12: 150 km/h fuehlten sich wie 80 an; Anzeige und Bewegung stimmen, 42 m/s) =====================
 // Wie in Rennspielen: mit dem Tempo weitet sich das Sichtfeld (70 -> 82 Grad), die Verfolgerkamera rueckt naeher und tiefer an das Fahrzeug
 // (mehr Boden bewegt sich durchs Bild). Vibrieren wieder aus (sh = 0). Wirkt ab ca. 20 km/h, voll ab ca. 160 km/h.
@@ -1040,5 +1202,20 @@ function wasserStep(dt, ground, hit) {
   for (let i = W.mist.length - 1; i >= 0; i--) { const m = W.mist[i]; m.t += dt; m.p.y += dt * 0.6; if (m.t > 0.9) W.mist.splice(i, 1); }
   W.mistMesh.count = W.mist.length; W.mist.forEach((m, i) => { o.position.copy(m.p); o.scale.setScalar(0.6 + m.t * 2); o.updateMatrix(); W.mistMesh.setMatrixAt(i, o.matrix); }); W.mistMesh.instanceMatrix.needsUpdate = true;
 }
-SPEC_FIRE_ENGINE.water = [0.6, 3.75, -0.95];
+SPEC_FIRE_ENGINE.water = true;   // Arm-Wasserwerfer (built.monitor, monitorPose)
+const SPEC_FIRE_CRANE = { ...SPEC_FIRE_ENGINE, name: "Gotham Fire Crane", water: undefined, wheels: [[-1.05, -3.75], [1.05, -3.75], [-1.05, 2.5], [1.05, 2.5]], wb: 6.25, track: 2.1, pts: [-4.0, -2.0, 0, 2.0, 3.8], R: 1.35, circR: 1.3,
+  acc: 5, maxF: 27.8, steer: 0.55, camD: 15, camH: 2.6, seat: [-0.6, 2.6, -4.0], bodyH: 3.4,
+  msg: "Gotham Fire Crane (Rüstwagen mit Kran): W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blinklicht beim Fahren)" };
 SPEC_FIRE_ENGINE.msg = "Gotham Fire Engine: W/S Gas/Bremse, A/D lenken, Leertaste halten = Wasser spritzen (Maus zielt), V Kamera, R zurücksetzen, Shift aussteigen";
+// Wasserwerfer-Ziel (Nicolas 2026-11-12: eigenes Ziel-Ding, anders als beim Panzer, zoombar): Auftreffpunkt der Wurfbahn vorausrechnen
+// (gleiche Werte wie wasserSpritzen: 28 m/s, Schwerkraft), auf den Bildschirm legen; Zoom per Mausrad 1x bis 4x (Sichtwinkel 70 / Zoom).
+const WZOOM = { z: 1, t: 1 };
+function wasserZiel(from, yaw, el, ground) {
+  const ce = Math.cos(el), v = new THREE.Vector3(-Math.sin(yaw) * ce * 28, Math.sin(el) * 28, -Math.cos(yaw) * ce * 28), p = from.clone();
+  for (let t = 0; t < 6; t += 0.03) { v.y -= 9.81 * 0.03; p.addScaledVector(v, 0.03); if (p.y <= ground(p.x, p.z, p.y + 0.5)) return p; }
+  return p;
+}
+// Ring auf den Bildschirm (el = Element mit position fixed), versteckt hinter der Kamera
+function wasserZielZeigen(el, p) { if (!el) return; camera.updateMatrixWorld(); const q = p.clone().project(camera);
+  el.hidden = q.z > 1; el.style.left = (q.x + 1) / 2 * innerWidth + "px"; el.style.top = (1 - q.y) / 2 * innerHeight + "px"; }
+function wasserZoomStep(dt) { WZOOM.z += (WZOOM.t - WZOOM.z) * Math.min(1, dt * 10); if (WZOOM.z > 1.001) { const fov = camera.fov / WZOOM.z; camera.fov = fov; camera.updateProjectionMatrix(); } }
