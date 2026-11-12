@@ -864,4 +864,24 @@ function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
+}// ===================== Kurvenphysik (Nicolas 2026-11-12, alle Bodenfahrzeuge; gilt im Spiel (fahren.js) und in der Werkstatt) =====================
+// 1 Haftgrenze: Querbeschleunigung hoechstens spec.mu x g (Vorgabe Auto 0,9, Motorrad 1,0 = 45 Grad Schraeglage, Panzer 0,5); zu eng gelenkt ->
+//   der Bogen wird weiter (Untersteuern). 2 Kurvenwiderstand: die Seitenkraft der schraeg laufenden Reifen zeigt etwas nach hinten,
+//   Bremsung = Querbeschl. x (Schraeglaufwinkel bis ca. 7 Grad + halber Lenkwinkel); Motorraeder die Haelfte. 3 Radieren: was ueber der
+//   Haftgrenze verlangt wird, bremst zu 35 % mit (hoechstens 0,7 x mu x g). 4 Kammscher Kreis: Antrieb braucht Haftung, mit Gas bleibt weniger
+//   Seitenhaftung; Ketten (spec.tracks): Lenken kostet Antrieb und bremst mit der Drehrate (Ketten rutschen seitlich ueber den Boden).
+// Rueckgabe: k = Kruemmung (1/m, Drehung = v * k), dec = Bremsung (m/s², gegen die Fahrtrichtung), thF = Faktor fuer den Antrieb.
+const KURVE_G = 9.81;
+function kurvenPhysik(sp, v, steer, gas, vmax) {
+  const av = Math.abs(v), kWant = Math.tan(steer) / sp.wb;
+  if (av < 2) return { k: kWant, dec: 0, thF: 1 };                         // langsam: wie bisher (Rangieren, Aufzuege)
+  const mu = sp.mu || (sp.tracks ? 0.5 : sp.track ? 0.9 : 1.0), muG = mu * KURVE_G;
+  const aLong = gas > 0 && v > 0 ? sp.acc * Math.max(0, 1 - v / ((vmax || sp.maxF || 30) + 8)) : 0, x = Math.min(0.6, aLong / muG);
+  const aMax = muG * Math.sqrt(1 - x * x), aWant = v * v * Math.abs(kWant), aLat = Math.min(aWant, aMax);
+  const k = aWant > 1e-6 ? kWant * aLat / aWant : kWant, d = Math.abs(Math.atan(k * sp.wb));
+  let dec = aLat * (0.12 * aLat / aMax + 0.5 * d) * (sp.track ? 1 : 0.5);
+  if (aWant > aMax) dec += Math.min(0.7 * muG, (aWant - aMax) * 0.35);
+  let thF = Math.sqrt(Math.max(0.15, 1 - (aLat / muG) ** 2));               // Kammscher Kreis andersherum: Querhaftung belegt, weniger Antrieb
+  if (sp.tracks) { const w = Math.abs(v * k); dec += 3 * w; thF = 1 - 0.5 * Math.min(1, Math.abs(steer) / (sp.steer || 0.6)); }
+  return { k, dec, thF };
 }

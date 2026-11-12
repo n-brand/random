@@ -187,7 +187,9 @@ function carStep(dt) {
   const steerT = st * stF * sp.steer / (1 + Math.abs(C.v) / 14);   // bei Tempo etwas williger (Serpentine r 11 mit ca. 40 km/h)
   C.steer += (steerT - C.steer) * Math.min(1, dt * 8);
   if (!C.air) {
-    const dh = C.v * Math.tan(C.steer) / sp.wb * dt;
+    const KP = C.wet ? { k: Math.tan(C.steer) / sp.wb, dec: 0, thF: 1 } : kurvenPhysik(sp, C.v, C.steer, th, max);   // Haftgrenze, Kurvenwiderstand (modelle.js)
+    C.aLat = C.v * C.v * Math.abs(KP.k);
+    const dh = C.v * KP.k * dt;
     C.h = wrapA(C.h + dh); if (!C.turret) player.yaw += dh;   // Panzer: Lenken dreht nur die Wanne, Blick und Turm bleiben
     // Hang (Nicolas 2026-11-08): Hangabtrieb statt harter Sperre. Steigung aus dem Gelaende vor/hinter dem Fahrzeug (nur auf freiem
     // Gelaende; Tunnel, Hallen, Hoehle liefern -100 bzw. liegen weit weg). Bergauf bremst die Schwerkraft, bergab wird man schneller;
@@ -201,9 +203,10 @@ function carStep(dt) {
     if (held) C.v = 0; else if (crawl) C.v = Math.min(C.v, Math.max(1.5, max * (1 - slope / maxG))); else C.v -= SLOPE_G * Math.sin(slope) * dt;
     C.slope = slope;
     const brk = (sp.brake || 28) + Math.abs(C.v) * 0.2;                     // Bremse (Nicolas 2026-11-11: Bremsweg zu lang; vorher 16 m/s²): 100 km/h -> ca. 13 m, 200 km/h -> ca. 45 m
-    if (th > 0) C.v += (C.v < -0.2 ? brk : sp.acc * (1 - Math.max(0, C.v) / (max + 8))) * grip * dt;
+    if (th > 0) C.v += (C.v < -0.2 ? brk : sp.acc * (1 - Math.max(0, C.v) / (max + 8)) * KP.thF) * grip * dt;
     else if (th < 0) C.v -= (C.v > 0.2 ? brk : sp.revMax ? sp.acc * (1 - Math.max(0, -C.v) / (sp.revMax + 8)) : 6) * dt;   // spec.revMax: rueckwaerts wie vorwaerts (Panzer, Nicolas 2026-11-11)
     else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (3 + Math.abs(C.v) * 0.06) * dt);   // Ausrollen ohne Gas etwas kuerzer
+    C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), KP.dec * dt);                                      // Kurvenwiderstand / Radieren
     if (boosting && C.v < max) C.v = Math.min(max, C.v + 80 * dt);                                            // Nitro 5-mal so stark (Nicolas 2026-11-09)
     if (C.v > max) C.v = Math.max(max, C.v - (C.slope < -0.05 ? 4 : 14) * dt);   // bergab darf man etwas ueber das Hoechsttempo rollen
     C.v = Math.max(th < 0 ? -(sp.revMax || 8) : -Math.max(16, sp.revMax || 0), C.v);                                     // rueckwaerts den Hang hinunter auch schneller

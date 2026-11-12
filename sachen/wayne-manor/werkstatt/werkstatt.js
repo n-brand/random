@@ -139,17 +139,23 @@ const down = (...c) => c.some(k => keys.has(k));
 // ---------- Fahren (Einspurmodell) ----------
 function fahren(dt) {
   const A = AKT, s = A.spec, vmax = s.maxF || s.maxN || 30, gas = down("KeyW", "ArrowUp"), brems = down("KeyS", "ArrowDown"), links = down("KeyA", "ArrowLeft"), rechts = down("KeyD", "ArrowRight");
-  if (gas) A.v += (A.v < 0 ? s.acc * 2.5 : s.acc) * dt;
-  else if (brems) A.v -= (A.v > 0 ? s.acc * 2.5 : s.acc * 0.6) * dt;
-  else A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 2.5 * dt);   // ausrollen
-  if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // mit Turm ist Leertaste = schiessen
-  A.v = Math.max(-vmax * 0.3, Math.min(vmax, A.v));
-  const ziel = (links ? 1 : 0) - (rechts ? 1 : 0), maxL = (s.steer || 0.6) / (1 + Math.abs(A.v) / 18);   // bei Tempo weniger Lenkeinschlag
-  A.steer += (ziel * maxL - A.steer) * Math.min(1, dt * 6);
-  A.h += A.v / s.wb * Math.tan(A.steer) * dt;
+  // wie im Spiel (fahren.js carStep): Gas/Bremse/Ausrollen, Lenken mit Anlaufzeit, Kurvenphysik (modelle.js); Gelaende ist hier eben
+  const th = gas ? 1 : brems ? -1 : 0, st = (links ? 1 : 0) - (rechts ? 1 : 0);
+  if (st && Math.sign(st) === A.stDir) A.stHold = (A.stHold || 0) + dt; else { A.stHold = 0; A.stDir = Math.sign(st); }
+  const hk = Math.min(1, A.stHold / 0.45), stF = st ? 0.25 + 0.75 * hk * hk * (3 - 2 * hk) : 0;
+  A.steer += (st * stF * s.steer / (1 + Math.abs(A.v) / 14) - A.steer) * Math.min(1, dt * 8);
+  const KP = kurvenPhysik(s, A.v, A.steer, th, vmax); A.aLat = A.v * A.v * Math.abs(KP.k);
+  A.h += A.v * KP.k * dt;
+  const brk = (s.brake || 28) + Math.abs(A.v) * 0.2;
+  if (th > 0) A.v += (A.v < -0.2 ? brk : s.acc * (1 - Math.max(0, A.v) / (vmax + 8)) * KP.thF) * dt;
+  else if (th < 0) A.v -= (A.v > 0.2 ? brk : s.revMax ? s.acc * (1 - Math.max(0, -A.v) / (s.revMax + 8)) : 6) * dt;
+  else A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), (3 + Math.abs(A.v) * 0.06) * dt);
+  if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm ist Leertaste = schiessen)
+  A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), KP.dec * dt);                                   // Kurvenwiderstand / Radieren
+  A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax, A.v));
   A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;   // vorne = -z im Modell
   const lim = 580; A.x = Math.max(-lim, Math.min(lim, A.x)); A.z = Math.max(-lim, Math.min(lim, A.z));
-  A.lean += ((s.track ? 0 : Math.max(-0.6, Math.min(0.6, A.v * A.v / 9.81 * Math.tan(A.steer) / s.wb))) - A.lean) * Math.min(1, dt * 5);   // Zweirad legt sich in die Kurve
+  A.lean += ((s.track ? 0 : A.steer * Math.min(1, Math.abs(A.v) / 6) * 0.9) - A.lean) * Math.min(1, dt * 5);   // Zweirad legt sich in die Kurve (wie fahren.js)
   for (const w of A.wheels) { w.spin.rotation.x -= A.v * dt / w.r; if (w.front) w.piv.rotation.y = A.steer; }
   setze();
   $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h";
