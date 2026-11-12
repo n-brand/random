@@ -961,45 +961,70 @@ const SPEC_BUS = { name: "Gotham Transit", wheels: [[-1.05, -3.6], [1.05, -3.6],
   maxN: 20, maxF: 25, acc: 4, steer: 0.62, jump: false, grade: 28, camD: 17, camH: 2.4, seat: [-0.6, 2.0, -5.3], bodyH: 3.1, bike: false, brake: 18,
   exits: [[2.2, -5.0], [2.2, 0], [-2.2, -5.0], [-2.2, 0], [0, -7.5], [0, 7.5]],
   msg: "Gotham Transit (Bus): W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen" };
-// Baustellen-Lader: Schaufel vorne (an Hubarmen, knapp ueber dem Boden zum Schieben), Fahrerhaus mit Schutzrahmen, offene Mulde hinten voller Steine
-function buildLoader() {
-  const g = new THREE.Group(), HW = 1.3, zF = -3.4, zR = 3.6;
-  const yel = M(0xf2b705, { metalness: 0.25, roughness: 0.45 }), black = M(0x141516, { roughness: 0.7 }), steel = M(0x5a5e64, { metalness: 0.55, roughness: 0.45 }), worn = M(0x7a7266, { metalness: 0.4, roughness: 0.7 });
-  const glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), tireM = M(0x121212, { roughness: 0.95 }), rimM = M(0xf2b705, { metalness: 0.25, roughness: 0.45 });
-  boxIn(g, -0.75, 0.75, 0.7, 1.4, zF + 0.6, zR - 0.2, yel);                                                                    // Rahmen
-  // Fahrerhaus mit Schutzrahmen (vor der Mitte), Motorhaube vorne niedrig
-  boxIn(g, -0.95, 0.95, 1.4, 1.75, -1.6, 0.2, yel); boxIn(g, -0.95, 0.95, 1.75, 3.25, -1.5, 0.1, glass);
-  for (const sx of [-1, 1]) for (const z of [-1.55, 0.15]) boxIn(g, sx * 0.95 - 0.06, sx * 0.95 + 0.06, 1.75, 3.3, z - 0.06, z + 0.06, yel);
-  boxIn(g, -1.05, 1.05, 3.25, 3.38, -1.65, 0.25, yel); const lb = lightBar(g, 3.38, -0.7, 1.2, 0xff9a10, 0xff9a10);
-  boxIn(g, -0.8, 0.8, 1.4, 1.85, zF + 0.5, -1.6, yel);                                                                        // Vorbau
-  // Hubarme und Schaufel (unten, zum Schieben)
-  const arm = (x0, y0, z0, x1, y1, z1, w, h, m) => { const d = new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0), o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d.length()), m); o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); o.lookAt(x1, y1, z1); g.add(o); };
-  for (const sd of [-1, 1]) { arm(sd * 0.85, 1.9, -0.9, sd * 0.85, 0.75, zF - 0.1, 0.2, 0.28, yel); arm(sd * 0.45, 1.6, -1.2, sd * 0.45, 0.9, zF - 0.05, 0.12, 0.12, steel); }
-  boxIn(g, -1.4, 1.4, 0.15, 0.25, zF - 0.85, zF - 0.1, worn);                                                                  // Schaufelboden
-  boxIn(g, -1.4, 1.4, 0.25, 1.25, zF - 0.1, zF + 0.02, worn);                                                                  // Rueckwand
-  for (const sd of [-1, 1]) prismIn(g, [[-zF + 0.1, 0.15], [-zF + 0.85, 0.15], [-zF + 0.1, 1.25]], 0.06, worn, sd * 1.37);      // Seitenwangen
-  boxIn(g, -1.42, 1.42, 0.12, 0.2, zF - 0.95, zF - 0.82, steel); for (let x = -1.2; x <= 1.21; x += 0.3) boxIn(g, x - 0.05, x + 0.05, 0.1, 0.2, zF - 1.05, zF - 0.95, steel);   // Schneide, Zaehne
-  // Offene Mulde hinten mit Steinen
-  boxIn(g, -HW, HW, 1.4, 1.5, 0.4, zR, yel);
-  for (const sd of [-1, 1]) boxIn(g, sd * HW - 0.06, sd * HW + 0.06, 1.5, 2.45, 0.4, zR, yel);
-  boxIn(g, -HW, HW, 1.5, 2.45, 0.4, 0.5, yel); boxIn(g, -HW, HW, 1.5, 2.3, zR - 0.1, zR, yel);
-  { const rr = rng(77), rock = M(0x8a857c, { roughness: 1, flatShading: true }), parts = [];
-    for (let i = 0; i < 46; i++) { const s = 0.22 + rr() * 0.28, geo = new THREE.IcosahedronGeometry(s, 0).toNonIndexed(); geo.scale(1, 0.75, 1); geo.rotateY(rr() * 6); geo.translate((rr() - 0.5) * (HW * 2 - 0.6), 1.6 + rr() * 0.75 + s * 0.5, 0.8 + rr() * (zR - 1.2)); parts.push(geo); }
-    for (const p of parts) { for (const k of Object.keys(p.attributes)) if (!["position", "normal"].includes(k)) p.deleteAttribute(k); }
-    const m = new THREE.Mesh(mergeGeometries(parts, false), rock); g.add(m); }
-  for (const sd of [-1, 1]) { fireSign(g, fireLabel("Gotham Construction", 70), 1.9, 0.26, sd * (HW + 0.07), 2.05, 2.0, sd);
-    boxIn(g, sd * 0.6 - 0.15, sd * 0.6 + 0.15, 1.5, 1.68, zF + 0.47, zF + 0.5, mat.glow); boxIn(g, sd * (HW - 0.25) - 0.12, sd * (HW - 0.25) + 0.12, 1.3, 1.45, zR, zR + 0.02, mat.glowRed); }
-  for (const z of [-1.7, 1.9]) boxIn(g, -0.75, 0.75, 0.75, 1.5, z - 0.75, z + 0.75, black);                                    // Radhaeuser
+// Grossmuldenkipper "Gotham Construction" (Nicolas 2026-11-12: statt des Laders, echte Groesse, eigener Entwurf ohne Marke; Vorbild Bergbau-Muldenkipper
+// der 360-t-Klasse): ca. 14,5 x 9,7 x 7,4 m, Reifen 4 m Durchmesser (hinten Zwillingsreifen), Oberdeck ueber dem riesigen Kuehlergrill mit
+// Fahrerhaus links und schraeger Treppe vorne, Mulde mit Schutzdach ueber dem Fahrerhaus, voller Steine. Leertaste halten kippt die Mulde
+// (built.dump, Drehpunkt hinten); der Stossfaenger schiebt Fahrzeuge (spec.push). Vorne = -z, Ursprung zwischen den Achsen.
+function buildHaulTruck() {
+  const g = new THREE.Group(), zF = -6.9, zR = 8.3;   // Mulde ragt hinten ueber das Tandem (Foto)
+  const yel = M(0xe8a80c, { metalness: 0.25, roughness: 0.5 }), black = M(0x141516, { roughness: 0.75 }), steel = M(0x55595f, { metalness: 0.5, roughness: 0.5 }), dirt = M(0x7d6a52, { roughness: 0.95 });
+  const bodyM = M(0xe8b20e, { metalness: 0.25, roughness: 0.55 }),   // Mulde gelb wie im Foto (Nicolas 2026-11-12)
+    bodyM0 = M(0x8f8a80, { metalness: 0.35, roughness: 0.7 }), glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), tireM = M(0x151515, { roughness: 0.96 }), rimM = M(0xe8a80c, { metalness: 0.3, roughness: 0.5 });
+  const rail = M(0xf2c12e, { roughness: 0.5 });
+  // Rahmen und Achsen
+  boxIn(g, -1.4, 1.4, 1.9, 3.1, zF + 1.0, zR - 1.6, yel);
+  boxIn(g, -3.0, 3.0, 1.7, 2.3, -4.6, -3.6, steel); for (const z of [1.7, 5.4]) boxIn(g, -2.6, 2.6, 1.6, 2.4, z - 0.5, z + 0.5, steel);   // Vorderachse, zwei Hinterachsen (Tandem)
+  // Front: grosser Kuehler mit Gitter, Stossfaenger (schiebt), Oberdeck mit Gelaender, Treppe schraeg ueber die Front
+  boxIn(g, -2.0, 2.0, 1.5, 4.35, zF + 0.6, zF + 2.2, yel);
+  for (let y = 1.9; y < 4.1; y += 0.22) boxIn(g, -1.75, 1.75, y, y + 0.1, zF + 0.55, zF + 0.6, black);                           // Kuehlergrill
+  boxIn(g, -4.6, 4.6, 1.2, 1.8, zF, zF + 0.7, yel);                                                                            // Stossfaenger
+  boxIn(g, -4.85, 4.85, 4.35, 4.55, zF + 0.3, -1.9, yel);                                                                       // Oberdeck
+  for (const sd of [-1, 1]) { boxIn(g, sd * 4.8 - 0.04, sd * 4.8 + 0.04, 4.55, 5.6, zF + 0.3, -1.9, rail); }
+  boxIn(g, -4.85, 4.85, 5.55, 5.62, zF + 0.27, zF + 0.35, rail);                                                                // Gelaender vorne
+  for (let x = -4.8; x <= 4.81; x += 1.2) boxIn(g, x - 0.04, x + 0.04, 4.55, 5.6, zF + 0.27, zF + 0.35, rail);
+  for (let k = 0; k < 11; k++) { const x = 4.4 - k * 0.42, y = 1.2 + k * 0.3; boxIn(g, x - 0.22, x + 0.22, y, y + 0.05, zF - 0.15, zF + 0.45, steel); }   // schraege Treppe vorne
+  boxIn(g, -1.2, 1.2, 4.55, 5.6, -4.2, -2.4, yel);                                                                             // Motorabdeckung auf dem Deck
+  // Fahrerhaus links oben
+  boxIn(g, -4.6, -2.3, 4.55, 7.0, zF + 0.9, -3.0, yel);
+  boxIn(g, -4.5, -2.4, 5.6, 6.8, zF + 0.88, zF + 0.92, glass); for (const x of [-4.62, -2.28]) sideBox(g, x, x + (x < -3 ? -0.02 : 0.02), 5.6, 6.8, zF + 1.1, -3.3, glass);
+  boxIn(g, -4.6, -2.3, 7.0, 7.12, zF + 0.85, -2.95, black);
+  for (const sd of [-1, 1]) { boxIn(g, sd * 3.2 - 0.3, sd * 3.2 + 0.3, 3.7, 4.05, zF - 0.02, zF + 0.02, mat.glow); boxIn(g, sd * 1.4 - 0.3, sd * 1.4 + 0.3, 3.7, 4.05, zF + 0.55, zF + 0.6, mat.glow); }   // Scheinwerfer
+  for (const sd of [-1, 1]) { fireSign(g, fireLabel("Gotham Construction", 70), 3.2, 0.5, sd * 4.87, 4.0, -4.2, sd); }
+  const lb = lightBar(g, 7.12, -4.3, 1.6, 0xff9a10, 0xff9a10);
+  for (const sd of [-1, 1]) boxIn(g, sd * 4.0 - 0.4, sd * 4.0 + 0.4, 2.3, 2.7, zR - 0.3, zR - 0.25, mat.glowRed);              // Rueckleuchten
+  // Radhaeuser (Regel): dunkle Waende hinter den Raedern
+  for (const z of [-4.1, 1.7, 5.4]) for (const sd of [-1, 1]) sideBox(g, sd * 1.5, sd * 1.85, 1.6, 4.3, z - 2.0, z + 2.0, black);
   mergeStatic(g);
+  // Mulde (dreht hinten um den Kipppunkt): Boden steigt nach vorne an, hohe Seitenwaende, Schutzdach ueber Fahrerhaus und Deck
+  const dump = new THREE.Group(); dump.position.set(0, 3.7, zR - 1.4); g.add(dump);
+  const D = (x0, x1, y0, y1, z0, z1, m) => boxIn(dump, x0, x1, y0 - 3.7, y1 - 3.7, z0 - (zR - 1.4), z1 - (zR - 1.4), m);
+  D(-4.0, 4.0, 3.4, 3.7, -2.6, zR - 0.4, bodyM);                                                                               // Boden
+  for (const sd of [-1, 1]) { D(sd * 4.0 - 0.15, sd * 4.0 + 0.15, 3.4, 6.5, -2.6, zR - 0.2, bodyM); D(sd * 4.6 - 0.45, sd * 4.6 + 0.15, 6.2, 6.55, -2.6, zR - 0.2, bodyM);   // Seitenwaende, Oberkante breit
+    for (let z = -1.6; z < zR - 0.6; z += 1.6) D(sd * 4.15, sd * 4.35, 3.6, 6.4, z - 0.1, z + 0.1, steel); }                  // Rippen aussen
+  D(-4.0, 4.0, 3.4, 7.2, -2.8, -2.5, bodyM);                                                                                    // Stirnwand
+  D(-4.8, 4.8, 7.0, 7.3, zF + 0.1, -2.5, bodyM);                                                                                // Schutzdach
+  for (let x = -4.4; x <= 4.41; x += 1.1) D(x - 0.08, x + 0.08, 6.6, 7.0, zF + 0.2, -2.6, steel);                              // Dachtraeger
+  { const rr = rng(97), rock = M(0x8a857c, { roughness: 1, flatShading: true }), parts = [];
+    for (let i = 0; i < 70; i++) { const s = 0.5 + rr() * 0.7, geo = new THREE.IcosahedronGeometry(s, 0).toNonIndexed(); geo.scale(1, 0.75, 1); geo.rotateY(rr() * 6);
+      const z = -2.0 + rr() * (zR - 2.6), hz = 1 - Math.abs(z - (zR - 4.2)) / 6; geo.translate((rr() - 0.5) * 6.6, 3.8 + rr() * (1.6 + 1.6 * hz) + s * 0.4 - 3.7, z - (zR - 1.4)); parts.push(geo); }
+    for (const p of parts) for (const k of Object.keys(p.attributes)) if (!["position", "normal"].includes(k)) p.deleteAttribute(k);
+    dump.add(new THREE.Mesh(mergeGeometries(parts, false), rock)); }
+  dump.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  // Raeder: vorne einzeln, hinten Zwillinge, 4 m Durchmesser
   const wheels = [];
-  for (const [i, z] of [-1.7, 1.9].entries()) for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.12, z, 0.78, 0.62, i === 0, tireM, rimM, 16, 28));
-  return { g, wheels, beacon: lb };
+  // sechs grosse Einzelreifen (Foto): vorne eine Achse, hinten Tandem
+  for (const [i, z] of [-4.1, 1.7, 5.4].entries()) for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 3.3, z, 2.0, 1.4, i === 0, tireM, rimM, 22, 32));
+  for (const w of wheels) sedanCap(w, 1.4, 0xe8a80c, 0x9a7008, 10);
+  return { g, wheels, beacon: lb, dump };
 }
-const SPEC_LOADER = { name: "Gotham Construction", wheels: [[-1.12, -1.7], [1.12, -1.7], [-1.12, 1.9], [1.12, 1.9]], wb: 3.6, track: 2.24, pts: [-2.3, -0.4, 1.5, 3.0], R: 1.3, circR: 1.35, enter: 4.5,
-  maxN: 10, maxF: 11.1, acc: 4, steer: 0.68, jump: false, grade: 38, camD: 12, camH: 2.4, seat: [0, 2.4, -0.7], bodyH: 3.2, bike: false, brake: 16,
-  push: { z: -4.45, w: 1.4 },                                                                                                    // Schaufelkante (lokal) und halbe Breite: schiebt Fahrzeuge
-  exits: [[-2.3, -0.7], [2.3, -0.7], [-2.3, 1.5], [2.3, 1.5], [0, -5.5], [0, 5]],
-  msg: "Gotham Construction (Lader): W/S Gas/Bremse, A/D lenken, mit der Schaufel Fahrzeuge schieben, V Kamera, R zurücksetzen, Shift aussteigen" };
+const SPEC_HAUL = { name: "Gotham Construction", wheels: [[-3.3, -4.1], [3.3, -4.1], [-3.3, 3.55], [3.3, 3.55]], wb: 7.65, track: 6.6, pts: [-3.6, -1.0, 2.0, 4.8], R: 3.4, circR: 3.4, enter: 9,   // vorderer Kreis endet hinter dem Stossfaenger (sonst blockiert er vor dem Schieben)
+  maxN: 15, maxF: 17.8, acc: 2.2, steer: 0.55, jump: false, grade: 25, camD: 28, camH: 5, seat: [-3.45, 6.0, -4.6], bodyH: 7.3, bike: false, brake: 10,
+  push: { z: -7.25, w: 4.4 },                                                                                                      // Stossfaenger (lokal) und halbe Breite: schiebt Fahrzeuge
+  dump: true,
+  exits: [[-6.2, -4.5], [6.2, -4.5], [-6.2, 1.0], [6.2, 1.0], [0, -9.5], [0, 10]],
+  msg: "Gotham Construction (Grossmuldenkipper): W/S Gas/Bremse, A/D lenken, Leertaste halten = Mulde kippen, Stossfaenger schiebt Fahrzeuge, V Kamera, R zurücksetzen, Shift aussteigen" };
+// Mulde kippen (Spiel und Werkstatt): k 0..1 in ca. 5 s, Winkel bis 0,85 rad
+function dumpPose(dump, st, held, dt) { st.k = Math.max(0, Math.min(1, (st.k || 0) + (held ? 1 : -1) * dt / 5)); const k = st.k * st.k * (3 - 2 * st.k); dump.rotation.x = 0.85 * k; }
 // ---- Panzer (Nicolas 2026-11-10, eigener Entwurf; 2026-11-11 realistischer, Grundform und Masse bleiben): Wanne mit schraegem Bug, Ketten aus
 // einzelnen Gliedern (laufen um Treibrad vorne mit Zaehnen und Leitrad hinten, oben auf Stuetzrollen), 6 Laufrollen je Seite mit Naben,
 // Schuerzen in Segmenten mit Schrauben und Gummilappen, Kotfluegel, Staukisten, Fahrerluke mit Winkelspiegeln, Motordeck mit Lamellen,
@@ -1242,7 +1267,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;

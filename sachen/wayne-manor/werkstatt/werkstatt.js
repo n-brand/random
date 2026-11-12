@@ -19,7 +19,7 @@ const MODELLE = [
   { name: "Gotham Fire Crane", spec: SPEC_FIRE_CRANE, bau: () => buildFireCrane() },
   { name: "Gotham Towing (Abschleppwagen)", spec: SPEC_TOW, bau: () => buildTowTruck() },
   { name: "Gotham Transit (Bus)", spec: SPEC_BUS, bau: () => buildBus() },
-  { name: "Gotham Construction (Lader)", spec: SPEC_LOADER, bau: () => buildLoader() },
+  { name: "Gotham Construction (Grossmuldenkipper)", spec: SPEC_HAUL, bau: () => buildHaulTruck() },
   { name: "Panzer", spec: SPEC_TANK, bau: () => buildTank() },
   { name: "Gemini Concept GT", spec: SPEC_GEMINI, bau: () => buildGemini() },
   { name: "ChatGPT GPT-6 Concept GT", spec: SPEC_CHATGPT, bau: () => buildChatGPT() },
@@ -170,7 +170,7 @@ function laden(i) {
   scene.add(b.g);
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
-  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null, monitor: b.monitor || null };
+  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null, monitor: b.monitor || null, dumpG: b.dump || null };
   if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
   kYaw = START.h; kPitch = -0.12; ZOOM.z = ZOOM.t = 1; if (modus === "drive") { camera.fov = 70; camera.updateProjectionMatrix(); }
   setze(); sicht();
@@ -259,6 +259,7 @@ function fahren(dt) {
   if (A.monitor) { const el = Math.max(-0.35, Math.min(0.9, kPitch + 0.32)), M0 = monitorPose(A.g, A.monitor, wrapW(kYaw - A.h), el, dt, down("Space"));   // Arm-Wasserwerfer (wie schiessen.js wasserFrame)
     if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);
     A.wz = { tip: M0.tip, el, ready: M0.ready }; }
+  else if (A.dumpG) dumpPose(A.dumpG, A, down("Space"), dt);   // Muldenkipper: Mulde kippen (wie fahren.js carPose)
   else if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm ist Leertaste = schiessen)
   A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), KP.dec * dt);                                   // Kurvenwiderstand / Radieren
   A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax, A.v));

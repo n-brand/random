@@ -33,7 +33,7 @@ const ENG_PROFILES = {
   "Gotham Fire Crane": { idle: 29, max: 90, gears: [0, 7, 13, 19, 26], wave: "sawtooth", sub: 0.62, cut0: 195, cut1: 880, vol: 0.2, noise: 0.1 },
   "Gotham Towing": { idle: 32, max: 110, gears: [0, 8, 15, 23, 31], wave: "sawtooth", sub: 0.55, cut0: 220, cut1: 1000, vol: 0.18, noise: 0.09 },   // Diesel (Nicolas 2026-11-12)
   "Gotham Transit": { idle: 30, max: 95, gears: [0, 7, 13, 19, 25], wave: "sawtooth", sub: 0.6, cut0: 200, cut1: 880, vol: 0.18, noise: 0.1 },
-  "Gotham Construction": { idle: 26, max: 80, gears: [0, 4, 8, 11], wave: "sawtooth", sub: 0.7, cut0: 170, cut1: 760, vol: 0.22, noise: 0.12 },
+  "Gotham Construction": { idle: 20, max: 62, gears: [0, 4, 8, 12, 16], wave: "sawtooth", sub: 0.8, cut0: 140, cut1: 620, vol: 0.24, noise: 0.13 },   // grosser Diesel des Muldenkippers
   "Gotham Fire Chief": { idle: 38, max: 150, gears: [0, 10, 21, 33, 47], wave: "sawtooth", sub: 0.5, cut0: 280, cut1: 1500, vol: 0.16, noise: 0.07 },
   "Gotham Police": { idle: 38, max: 150, gears: [0, 10, 21, 33, 47], wave: "sawtooth", sub: 0.5, cut0: 280, cut1: 1500, vol: 0.16, noise: 0.07 },   // V8
   "Panzer": { idle: 26, max: 70, gears: [0, 5, 10, 15], wave: "sawtooth", sub: 0.5, cut0: 180, cut1: 700, vol: 0.2, noise: 0.12 },   // schwerer Diesel, Kettenrasseln

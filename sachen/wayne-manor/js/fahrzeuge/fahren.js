@@ -84,6 +84,7 @@ function carPose(dt) {
     if (C.gun) { const ad = ((C.turret.rotation.y * 180 / Math.PI) % 360 + 360) % 360, a0 = Math.floor(ad) % 360, fr = ad - Math.floor(ad), lo = C.gunMin ? C.gunMin[a0] * (1 - fr) + C.gunMin[(a0 + 1) % 360] * fr : -0.45;   // zwischen den Graden weich   // nie in die Wanne: tiefster Winkel je Turmdrehung
       C.gun.rotation.x = Math.max(lo, Math.min(0.6, Math.atan2(d.y, Math.hypot(d.x, d.z)))); }
   }
+  if (C.dumpG) dumpPose(C.dumpG, C, C.on && (keys.has("Space") || jumpHeld), dt);   // Muldenkipper: Leertaste halten kippt die Mulde (modelle.js)
   if (C.beacon) { const t = clock.elapsedTime * 6, k = C.on ? 1 : 0; C.beacon[0].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 1 : 0); C.beacon[1].emissiveIntensity = 0.2 + k * 2.4 * (Math.sin(t) > 0 ? 0 : 1); }   // Blaulicht
   if (C.jetM) { C.jet = Math.max(0, C.jet - dt); C.jetM.emissiveIntensity = Math.min(2.5, C.jet * 4); }
   if (C.flame) { const k = C.boostOn ? 0.85 + 0.3 * Math.random() : Math.min(1, C.jet * 2); C.flame.visible = k > 0.02; C.flame.scale.set(0.8 + 0.3 * k, 0.8 + 0.3 * k, k); }
