@@ -294,8 +294,9 @@ function fahren(dt) {
   // DeLorean schwebt wie im Spiel (fahren.js hoverStep): Leertaste klappt die Raeder auch beim Fahren fluessig ein und hebt im gleichen Takt ab,
   // dann Leertaste hoch, C runter, C unten halten oder H landet (Raeder klappen beim Sinken aus). Boden hier eben (y 0).
   if (s.hover) { const sp2 = down("Space"), hk = down("KeyH"), tap = (sp2 && !A.hvPrev) || (hk && !A.hPrev); A.hvPrev = sp2; A.hPrev = hk;
-    if (!A.flying && tap) { A.flying = true; A.hoverWant = true; A.vy = 0; A.lowT = 0; toast("Räder klappen ein – Leertaste hoch, C runter (unten halten = landen)"); }
+    if (!A.flying && tap) { A.flying = true; A.hoverWant = true; A.vy = 0; A.lowT = 0; toast("Räder klappen ein – Leertaste hoch, C runter, Leertaste doppelt = landen"); }
     else if (A.flying && A.hoverWant && hk && tap) { A.hoverWant = false; toast("Landen – Räder klappen aus"); }
+    else if (A.flying && A.hoverWant && tap) { const now = performance.now() / 1000; if (now - (A.tapT ?? -9) < 0.35) { A.hoverWant = false; A.tapT = -9; toast("Landen – Räder klappen aus"); } else A.tapT = now; }   // Leertaste doppelt tippen = landen
     if (A.flying) {
       if (A.hoverWant) A.fold = Math.min(1, A.fold + dt / 1.0); const e = A.fold * A.fold * (3 - 2 * A.fold), dn = down("KeyC");
       A.v += (th * 30 - A.v) * Math.min(1, dt * (th ? 0.7 : 0.25)); A.h += st * 1.3 * dt;   // Blick dreht folgeKamera mit (dh)

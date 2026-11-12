@@ -193,12 +193,13 @@ function carReset() {
 }
 // DeLorean schwebt (Nicolas 2026-11-12): Leertaste beim Fahren (oder im Stand) klappt die Raeder in einer fluessigen Animation (1 s) flach ein, ohne
 // zu bremsen; dabei hebt er im gleichen Takt sanft ab (Schwebehoehe 0,6 m waechst mit dem Einklappen). Im Flug: W/S vor/zurueck (bis 30 m/s), A/D drehen,
-// Leertaste halten hoch, C halten runter (6 m/s), sonst haelt er die Hoehe (hoechstens 400 m). Landen: C unten halten (0,4 s am Boden) oder H; beim Sinken
+// Leertaste halten hoch, C halten runter (6 m/s), sonst haelt er die Hoehe (hoechstens 400 m). Landen: Leertaste doppelt tippen (innerhalb 0,35 s), C unten halten (0,4 s am Boden) oder H; beim Sinken
 // klappen die Raeder in den letzten 1,5 m wieder aus, er setzt mit seiner Geschwindigkeit auf und faehrt weiter. Aussteigen erst nach dem Landen.
 function hoverStep(C, dt, th, st) {
   C.fold = C.fold || 0;
-  if (!C.flying && player.jump && !C.wet) { C.hoverWant = true; C.flying = true; C.air = true; C.vy = Math.max(0, C.vy || 0); C.lowT = 0; player.jump = false; toast("Räder klappen ein – Leertaste hoch, C runter (unten halten = landen)"); }
+  if (!C.flying && player.jump && !C.wet) { C.hoverWant = true; C.flying = true; C.air = true; C.vy = Math.max(0, C.vy || 0); C.lowT = 0; player.jump = false; toast("Räder klappen ein – Leertaste hoch, C runter, Leertaste doppelt = landen"); }
   if (!C.flying) { C.hoverWant = false; if (C.fold > 0) C.fold = Math.max(0, C.fold - dt / 1.0); return false; }
+  if (C.hoverWant && player.jump) { const now = clock.elapsedTime; if (now - (C.tapT ?? -9) < 0.35) { C.hoverWant = false; C.tapT = -9; toast("Landen – Räder klappen aus"); } else C.tapT = now; player.jump = false; }   // Leertaste doppelt tippen = landen (Nicolas 2026-11-12)
   const sp = C.spec, up = keys.has("Space") || jumpHeld ? 1 : 0, dn = keys.has("KeyC") || downHeld ? 1 : 0;
   if (C.hoverWant) C.fold = Math.min(1, C.fold + dt / 1.0);
   const e = C.fold * C.fold * (3 - 2 * C.fold);

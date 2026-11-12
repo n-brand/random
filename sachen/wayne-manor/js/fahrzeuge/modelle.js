@@ -1438,7 +1438,7 @@ function buildDelorean() {
 const SPEC_DELOREAN = { name: "DeLorean (Zeitmaschine)", wheels: [[-0.79, -1.17], [0.79, -1.17], [-0.8, 1.24], [0.8, 1.24]], wb: 2.41, track: 1.6, pts: [-1.4, 0, 1.4], R: 0.98, circR: 0.93, enter: 3.6,
   maxN: 30, maxF: 38.9, acc: 9, steer: 0.66, jump: false, hover: true, grade: 35, camD: 8, camH: 1.1, seat: [-0.38, 0.95, 0.1], bodyH: 1.15, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.6], [0, 3.6]],
-  msg: "DeLorean: W/S Gas/Bremse, A/D lenken, Leertaste Räder einklappen und abheben (auch beim Fahren; dann Leertaste hoch, C runter, C unten halten landet), V Kamera, R zurücksetzen, Shift aussteigen" };
+  msg: "DeLorean: W/S Gas/Bremse, A/D lenken, Leertaste Räder einklappen und abheben (auch beim Fahren; dann Leertaste hoch, C runter; landen: Leertaste doppelt tippen oder C unten halten), V Kamera, R zurücksetzen, Shift aussteigen" };
 // ---- Lamborghini Terzo Millennio (Nicolas 2026-11-12; Konzeptstudie, stilisiert, ohne Logos und Schriftzug): sehr flacher, langer Keil in dunklem Carbon
 // mit roten Akzenten; die Vorderraeder sitzen unter eigenen Kotfluegel-Schalen links und rechts der schmalen Nase (Luecke dazwischen), Glaskanzel weit vorne,
 // breite Hueften, langer Seitenkanal, offene Kanaele und grosser Fluegel am Heck, Y-foermige Leuchten (rot) vorne und hinten, grosser Diffusor.
