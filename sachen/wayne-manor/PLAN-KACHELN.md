@@ -66,7 +66,7 @@ Beim Start werden nur das Anwesen und die Kacheln um den Startpunkt gebaut, der 
 | K5 ✅ | **Fernring, Nebel und Sichtweite** an der Ladeweite | Keine sichtbare Kante, Horizont mit Bergen und Küste |
 | K6 ✅ | **Einstellungen** (Ladeweite, Grafik, Lautstärke, FPS) | Wert bleibt nach Neuladen, Wirkung sofort |
 | K7 ✅ | **Ladescreen PC/Handy** mit echtem Fortschritt, Start nur mit nahen Kacheln | unter 3 s bis spielbar |
-| K8 | **Handy messen** (echtes Gerät von Nicolas) und Vorgaben anpassen | mind. 30 FPS am Handy |
+| K8 | **Handy messen** (echtes Gerät von Nicolas) und Vorgaben anpassen | mind. 30 FPS am Handy. **Erledigt 2026-11-12:** automatische Anpassung (einstellungen.js `AUTO`): nach dem Laden 5-s-Messungen, unter 28 Bilder/s eine Stufe herunter (Auflösung, Schatten, Gelände-Detail, Ladeweite bis 3), nie hinauf, Schluss nach 3 guten Messungen oder 3 Minuten; Pausen über 250 ms verwerfen die Messung. Abschaltbar in den Einstellungen. |
 
 ## Risiken
 
