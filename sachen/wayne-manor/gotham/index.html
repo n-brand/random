@@ -484,6 +484,21 @@
     if (!issues.length) { kf.className = "ok"; kf.textContent = `Keine Konflikte. ${BUILD.length} Füllbauten, ${NEBEN.length} Nebenstrassen, ${gn} Gullideckel.`; }
     else kf.innerHTML = issues.map(([o, t]) => `• <b>${o.id}</b>: ${t}`).join("<br>");
     window.GOTHAM_PRUEFUNG = { issues: issues.map(([o, t]) => o.id + ": " + t), gebaeude: BUILD.length, neben: NEBEN.length, gulli: gn };
+    // Export fuer das Spiel (G2, Nicolas 2026-11-12): Strassen, Bruecken, Nebenstrassen und Fuellbauten genau wie hier berechnet, Karten-Koordinaten,
+    // Linien vereinfacht (Douglas-Peucker 0,25 m), Zahlen auf 0,1 m. Ergebnis kommt nach gotham/stadt.js (const GOTHAM_STADT = ...). Nach Aenderungen an
+    // Strassen, Bezirken oder Orten in daten.js neu erzeugen: Karte oeffnen, in der Konsole copy(gothamExport()) und in gotham/stadt.js einsetzen.
+    window.gothamExport = () => {
+      const r1 = v => Math.round(v * 10) / 10, dp = (P, tol) => { if (P.length < 3) return P; let m = 0, k = 0; const a = P[0], b = P[P.length - 1], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1;
+        for (let i = 1; i < P.length - 1; i++) { const d = Math.abs((P[i][0] - a[0]) * dz - (P[i][1] - a[1]) * dx) / l; if (d > m) { m = d; k = i; } }
+        return m > tol ? [...dp(P.slice(0, k + 1), tol).slice(0, -1), ...dp(P.slice(k), tol)] : [a, b]; };
+      const L = P => { const h = P.length >> 1, Q = P.length > 4 && Math.hypot(P[0][0] - P[P.length - 1][0], P[0][1] - P[P.length - 1][1]) < 1 ? [...dp(P.slice(0, h + 1), 0.25).slice(0, -1), ...dp(P.slice(h), 0.25)] : dp(P, 0.25); return Q.map(([x, z]) => [r1(x), r1(z)]); };   // Ringe in zwei Haelften (gleicher Anfang und Ende)
+      return "const GOTHAM_STADT = " + JSON.stringify({
+        haupt: MAIN.map(s => ({ id: s.id, name: s.name, w: s.w, zweistock: !!s.zweistock, ring: !!s.geschlossen, pts: L(s.pts) })),
+        bruecken: BR.map(b => ({ id: b.id, name: b.name, w: b.w, seite: b.seite || null, pts: L(b.pts) })),
+        neben: NEBEN.map(s => ({ b: G.bezirke.indexOf(s.b), w: s.w, pts: L(s.pts) })),
+        fuell: BUILD.map(q => ({ id: q.id, h: Math.round(q.h * 10) / 10, c: q.c.map(([x, z]) => [r1(x), r1(z)]) })),
+      }) + ";\n";
+    };
 
     // ---------- Ansicht: viewBox verschieben/zoomen ----------
     // Drehbare Karte (Nicolas 2026-11-12): der ganze Karteninhalt liegt in rotG und dreht sich um die Bildmitte (rotA Grad, im Uhrzeigersinn);
