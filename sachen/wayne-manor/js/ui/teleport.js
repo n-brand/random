@@ -74,7 +74,7 @@ function teleportToPoint(p) {
   sel.addEventListener("pointerdown", fillVehicles); sel.addEventListener("focus", fillVehicles);
   sel.addEventListener("change", () => { const i = sel.value; sel.value = ""; sel.blur(); if (i === "vbat") summonBat(); else if (i === "vjet") goToJet(); else if (i.startsWith("v")) summonVehicle((world.userData.vehicles || [])[+i.slice(1)]); else if (i !== "") teleportTo(+i); });
   // Taste T: Menue auf/zu; Maus wird freigegeben, ohne das Begehen zu beenden
-  function closeTp() { menu.hidden = true; }
+  function closeTp() { menu.hidden = true; if (typeof grabMouse === "function") grabMouse(); }   // Maus wieder fangen
   $("tp-close").addEventListener("click", closeTp);                          // Handy: kein Esc/T
   window.toggleTp = () => {
     if (!menu.hidden) return closeTp();

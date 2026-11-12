@@ -26,7 +26,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | --- | --- | --- |
 | Umschauen (Orbit) | Ziehen, Mausrad | Wischen, zwei Finger |
 | Rechtsklick (Orbit) | Menue an der Maus: Koordinaten kopieren oder hierhin teleportieren | |
-| Begehen | Knopf "Begehen", Linksklick faengt die Maus, WASD, Leertaste springt, Shift rennt | Joysticks, Sprung-Knopf |
+| Begehen | Knopf "Begehen" (Maus wird automatisch gefangen, Esc gibt sie frei, Klick faengt wieder), WASD, Leertaste springt, Shift rennt | Joysticks, Sprung-Knopf |
 | Geist (fliegen) | Knopf "Geist" oder Taste G (G im Geist = hier begehen), WASD waagrecht, Leertaste hoch, C runter, Shift schneller, E/Rechtsklick Tor/Tuer/Hebebuehne | Joysticks, Sprung/Runter |
 | Messanzeige (FPS, Bildzeit, Zeichenaufrufe) | Taste F3 | Seite mit `?perf` öffnen |
 | Einstellungen (Ladeweite, Gelände-Detail, Auflösung, Schatten, Lautstärke, Messanzeige) | Knopf "Einstellungen" oder im Menü (T), Esc schließt | gleiche Knöpfe |

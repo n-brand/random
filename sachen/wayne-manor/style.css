@@ -171,3 +171,8 @@ body.touch #car-nitro { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 
 #settings .set-check { cursor: pointer; }
 #settings .set-reset { width: 100%; margin-top: 4px; }
 #tp-menu .tp-set { width: 100%; margin-bottom: 10px; text-align: center; }
+
+/* Maus frei beim Begehen (Nicolas 2026-11-12, Vorschlag A): Hinweis in der Mitte, Klick faengt die Maus wieder */
+#pause { display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; padding: 14px 22px; border-radius: 12px; background: rgba(10, 12, 16, .78); color: #f4f4f0; font: 600 16px/1.4 system-ui, sans-serif; text-align: center; pointer-events: none; }
+#pause span { display: block; margin-top: 4px; font-weight: 400; font-size: 13px; color: #c7ccd6; }
+body.walk.paused #pause { display: block; }

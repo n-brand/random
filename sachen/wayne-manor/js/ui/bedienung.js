@@ -64,16 +64,21 @@ $("btn-below").addEventListener("click", e => {
   cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
   cv.addEventListener("contextmenu", e => e.preventDefault());
 }
+// Maus automatisch fangen (Nicolas 2026-11-12, Vorschlag A): beim Begehen, im Geist und nach dem Schliessen von T-Menue/Einstellungen wird die Maus
+// gefangen; Linksklick gibt sie nicht mehr frei (bleibt fuer kuenftige Aktionen). Esc gibt sie frei, dann zeigt #pause "Klicken zum Weiterspielen":
+// ein Klick ins Bild faengt sie wieder, Esc nochmal beendet das Begehen. Am Handy (touch) nichts davon.
+let unlockT = 0;
+function grabMouse() {
+  if (!walking || touch || dragging || (window.tpMenuOpen && tpMenuOpen()) || (window.settingsOpen && settingsOpen())) return;
+  dragging = true; document.body.classList.add("looking");
+  const p = renderer.domElement.requestPointerLock?.(); if (p && p.catch) p.catch(() => { dragging = false; document.body.classList.remove("looking"); });
+}
 renderer.domElement.addEventListener("mousedown", e => {
   if (!walking || touch || e.button !== 0) return;
   e.preventDefault();
-  if (dragging) return stopDrag();
-  dragging = true;
-  document.body.classList.add("looking");
-  renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
+  if (!dragging) grabMouse();                                              // gefangen: Linksklick frei fuer Aktionen
 });
-// Maus frei ohne eigenes Freigeben: Esc beendet das Begehen. Verliert das Fenster dabei den Fokus (Win+Shift+S Screenshot, Alt+Tab), bleibt man drin (Nicolas 2026-11-10)
-document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement || !dragging) return; stopDrag(); setTimeout(() => { if (!walking) return; if (document.hasFocus()) setWalk(false); else toast("Maus freigegeben (Linksklick übernimmt wieder)"); }, 250); });
+document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement || !dragging) return; stopDrag(); unlockT = performance.now(); });
 const MOUSE_SENS = 0.0025 * 0.5;                                          // fest 50 % (Wunsch von Nicolas, nicht einstellbar)
 document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS / zoomK(), e.movementY * MOUSE_SENS / zoomK()); });   // im Panzer-Zoom feiner (schiessen.js)
 // Strg+W schliesst den Tab, das kann eine Webseite nicht verhindern: beim Begehen/Geist/Fahren fragt der Browser wenigstens nach (Nicolas)
@@ -96,7 +101,7 @@ addEventListener("keydown", e => {
   if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
   if (e.code === "KeyG" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (ghost) ghostToWalk(); else startGhost(); return; }   // G: Geist an/aus (Nicolas 2026-11-09)
   if (!walking) return;
-  if (e.code === "Escape") return setWalk(false);
+  if (e.code === "Escape") { if (performance.now() - unlockT < 350) return; return setWalk(false); }   // Esc bei gefangener Maus gibt sie nur frei (#pause)
   if (ghost && e.code === "KeyE" && !e.repeat) { const ag = findAimedGate(); if (ag && !ag.call) toggleGate(ag); return; }   // Geist: E schaltet Tore/Tueren/Hebebuehne
   if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
   if (e.code === "KeyE" && !e.repeat) {
@@ -178,6 +183,7 @@ for (const b of document.querySelectorAll("#veh-btns button")) b.addEventListene
 // Modus als Klasse am body (fuer die Handy-Knoepfe): car, boat, fly, drive; Sprung-Knopf heisst beim Fliegen "Hoch"
 let modeNow = "";
 function syncModeClasses() {
+  document.body.classList.toggle("paused", walking && !touch && !dragging && !(window.tpMenuOpen && tpMenuOpen()) && !(window.settingsOpen && settingsOpen()));   // Maus frei: Hinweis zeigen
   const m = !walking ? "" : FLY.on || JET.on ? "fly" : BOAT.on ? "boat" : CAR && CAR.on ? "car" : "";
   const tank = m === "car" && !!CAR.turret;                                  // Panzer: Zielvisier (Nicolas 2026-11-11)
   if (m + JET.on + tank === modeNow) return; modeNow = m + JET.on + tank; document.body.classList.toggle("tank", tank);

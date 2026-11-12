@@ -148,6 +148,7 @@ function startWalk(x = START.x, z = START.z, yaw = START.yaw) {
   player.pos.set(x, terrainH(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
   camera.fov = 70; camera.near = 0.15; camera.updateProjectionMatrix();
   updatePlayer(0.001, 0, 0, false);
+  if (typeof grabMouse === "function") grabMouse();                        // Maus automatisch fangen (Vorschlag A)
 }
 function setWalk(on) {
   if (on) return startWalk();
@@ -180,7 +181,7 @@ function startGhost() {
   if (world.userData.car) world.userData.car.leave();
   walking = true; ghost = true;
   document.body.classList.add("walk", "ghost");
-  hintEl.innerHTML = "Geist &middot; WASD fliegen (waagrecht) &middot; Leertaste hoch &middot; C runter &middot; Shift schneller &middot; G Begehen hier &middot; Linksklick Maus übernehmen &middot; Esc zurück";
+  hintEl.innerHTML = "Geist &middot; WASD fliegen (waagrecht) &middot; Leertaste hoch &middot; C runter &middot; Shift schneller &middot; G Begehen hier &middot; Esc Maus frei &middot; Esc zurück";
   controls.enabled = false;
   player.pos.set(camera.position.x, camera.position.y - EYE, camera.position.z);
   player.yaw = Math.atan2(-dir.x, -dir.z); player.pitch = Math.max(-1.5, Math.min(1.5, Math.asin(Math.max(-1, Math.min(1, dir.y)))));
@@ -189,6 +190,7 @@ function startGhost() {
   camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
   camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
   toast("Geist: durch alles fliegen, G = hier begehen, Esc führt zurück");
+  if (typeof grabMouse === "function") grabMouse();
 }
 // Geist -> Begehen an der aktuellen Stelle (Taste G, Nicolas 2026-11-09): landet auf dem Boden unter der Geist-Position, Blick bleibt
 function ghostToWalk() {

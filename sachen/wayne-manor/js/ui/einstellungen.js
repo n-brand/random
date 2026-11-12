@@ -34,7 +34,7 @@ if (setLoad("wm-res")) applyRes(SET.res);                                  // oh
     SET.shadow = true; applyShadows(true); SET.res = TILES.mobile ? "mittel" : "hoch"; applyRes(SET.res); setEngineVol(0.25); show();
     toast("Einstellungen zurückgesetzt");
   });
-  function closeSettings() { box.hidden = true; }
+  function closeSettings() { box.hidden = true; if (typeof grabMouse === "function") grabMouse(); }
   $("set-close").addEventListener("click", closeSettings);
   window.openSettings = () => {
     if (window.tpMenuOpen && tpMenuOpen()) toggleTp();
