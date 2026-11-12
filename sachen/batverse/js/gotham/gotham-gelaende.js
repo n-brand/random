@@ -197,13 +197,12 @@ function gothamRoadAt(x, z, feet) {
 // Strasse (Lower Level) auf Hoehe der Tiefgarage 1). Gleiche Linien wie gotham-strassen.js (4-m-Proben, nur auf der Insel).
 // Aufbau quer (Nicolas 2026-11-12, Bild einer Stadtautobahn-Verzweigung: "auf einer Strasse, dann Verzweigungen, je Fahrtrichtung nach unten oder oben bleiben"):
 // oben in der Mitte die Strasse mit allen Spuren (w); je Seite Mittelwand MED 0,6 m und eine zweispurige Fahrbahn RWS 7,5 m, die an jedem offenen Ende
-// als Rampe aussen rechts abzweigt (Rechtsverkehr: je Ende eine Seite hinunter, die Gegenrichtung herauf). Die Rampe waechst wie eine Ausfahrt aus der
-// Strasse heraus (Nicolas 2026-11-12, Bild: Spuren fuehrten an der Kreuzung ins Leere): ab dem Strassenende auf TP 35 m von 0 auf volle Breite, eben bis
-// FL 40 m, dann RL 80 m bei ca. 6,9 % hinunter, und unten als 2 Spuren je Richtung geradeaus weiterlaeuft. Unten in der Mitte (unter der oberen Strasse) ein erhoehter Gehweg
+// als Rampe aussen rechts abzweigt (Rechtsverkehr: je Ende eine Seite hinunter, die Gegenrichtung herauf; RL 80 m bei ca. 6,9 %, die letzten FL 12 m
+// eben neben der Strasse) und unten als 2 Spuren je Richtung geradeaus weiterlaeuft. Unten in der Mitte (unter der oberen Strasse) ein erhoehter Gehweg
 // mit Stuetzenreihen. HW = w/2 + MED + RWS (Innenbreite je Seite). Boden unten GDECK.LY (-17,5), Fahrbahnplatte 1 m (Unterkante -13, 4,5 m licht).
 // Ein Ende an einer Bruecke oder naeher als 40 m am Kai bleibt zu (Wand CL 30 m vor dem Ende). Gelaende auf ganzer Breite ausgeschnitten (bis HW + 6,
 // damit das 4-m-Raster nicht in den Raum ragt), die Deckplatte bis HW + 12 deckt den Ausschnitt (gotham-unterstrasse.js). Boden: gothamDeckAt.
-const GDECK = { roads: null, building: false, C: 25, grid: null, MED: 0.6, RWS: 7.5, RL: 80, FL: 40, TP: 35, CL: 30, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12 };
+const GDECK = { roads: null, building: false, C: 25, grid: null, MED: 0.6, RWS: 7.5, RL: 80, FL: 12, CL: 30, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12 };
 function gdeckBuild() {
   GDECK.building = true; const roads = [];
   const brEnds = GOTHAM_STADT.bruecken.flatMap(b => [b.pts[0], b.pts[b.pts.length - 1]].map(([x, z]) => GOT.toGame(x, z)));
@@ -244,8 +243,6 @@ function gdeckNear(x, z, reach) {
 }
 // Rampenboden (an offenen Enden), sonst LY bzw. Strassenhoehe
 function gdeckRampY(r, s) { const G = GDECK, u = Math.min(r.ca ? 1e9 : s, r.cb ? 1e9 : r.L - s); return u <= G.FL ? GOT.STR : u >= G.FL + G.RL ? G.LY : GOT.STR + (G.LY - GOT.STR) * (u - G.FL) / G.RL; }
-// Rampe im Aufweitungsteil: [Innenkante, Aussenkante] der Rampenfahrbahn bei s (am Strassenende beide = Fahrbahnrand)
-function gdeckOut(r, s) { const G = GDECK, u = Math.min(r.ca ? 1e9 : s, r.cb ? 1e9 : r.L - s), k = sst(0, G.TP, u); return [r.w2 + G.MED * k, r.w2 + (G.MED + G.RWS) * k]; }
 const gdeckInRamp = (r, s) => (!r.ca && s < r.sA) || (!r.cb && s > r.sB);
 // grob: liegt (x, z) im Gotham-Rechteck (vor gotham-raster.js schon nutzbar)
 function inGothamG0(x, z) { return x > -4240 && x < -400 && z > -1040 && z < 2800; }
@@ -280,4 +277,4 @@ function gothamDeckCam(x, y, z) {
   return y < GOT.STR + 0.2;
 }
 // ueber einer Rampe oder Mittelwand (dort keine Gehsteige/Bordsteine der oberen Strasse, gotham-strassen.js)
-function gdeckOpen(x, z) { if (!GDECK.roads) return false; const n = gdeckNear(x, z, 30); return !!n && n.s >= -1 && n.s <= n.r.L + 1 && gdeckInRamp(n.r, n.s) && n.d >= n.r.w2 - 0.05 && n.d <= gdeckOut(n.r, n.s)[1] + 0.35; }
+function gdeckOpen(x, z) { if (!GDECK.roads) return false; const n = gdeckNear(x, z, 30); return !!n && n.s >= -1 && n.s <= n.r.L + 1 && gdeckInRamp(n.r, n.s) && n.d >= n.r.w2 - 0.05 && n.d <= n.r.HW + 0.35; }
