@@ -129,10 +129,16 @@ function batAir(x, y, z) {
   if (y > SEA_Y - 0.5 && y < UY - 4 && [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.6]].every(([a, b]) => caveAt(x + a, z + b) !== 0)) return y < (polySD(LAKE_W, x, z) > 6 ? LY + LH - 4.4 : SEA_Y + 10.9);
   return !camBlocked(x, y, z);
 }
-// Lage frei? Koerperpunkte im freien Raum, Kufen ueber Boden und Wasser
+// Lage frei? Koerperpunkte im freien Raum, Kufen ueber Boden und Wasser. Ueber Wasser (Nicolas 2026-11-12: nicht auf dem Wasser landen) bleibt
+// The Bat mindestens BAT_WATER m darueber und gilt dort nicht als gelandet (batOverWater), Aussteigen geht dann nicht.
+const BAT_WATER = 3;
+function batOverWater(B, x, y, z, h) {
+  for (const [lx, lz] of BAT_FEET) { const [px, pz] = batW(B, lx, lz, x, z, h), w = waterAt(px, pz); if (w !== null && supportAt(new THREE.Vector3(px, y + 0.6, pz), y + 0.6) < w + 0.3) return true; }
+  return false;
+}
 function batFree(B, x, y, z, h) {
   for (const [lx, ly, lz] of BAT_PTS) { const [px, pz] = batW(B, lx, lz, x, z, h); if (!batAir(px, y + ly, pz)) return false; }
-  for (const [lx, lz] of BAT_FEET) { const [px, pz] = batW(B, lx, lz, x, z, h), w = waterAt(px, pz); if (y < supportAt(new THREE.Vector3(px, y + 0.6, pz), y + 0.6) - 0.02 || (w !== null && y < w + 0.4)) return false; }
+  for (const [lx, lz] of BAT_FEET) { const [px, pz] = batW(B, lx, lz, x, z, h), w = waterAt(px, pz); if (y < supportAt(new THREE.Vector3(px, y + 0.6, pz), y + 0.6) - 0.02 || (w !== null && y < w + BAT_WATER)) return false; }
   return Math.hypot(x, z) < LIMIT && y < 400;
 }
 function batPose(B, dt) {
@@ -160,6 +166,7 @@ function useFly() {
   const B = FLY, p = player.pos;
   if (B.on) {
     batNear(B);
+    if (batOverWater(B, B.x, B.y, B.z, B.h)) { toast("Über dem Wasser kann The Bat nicht landen – zum Ufer fliegen"); return true; }
     if (batFree(B, B.x, B.y - 0.15, B.z, B.h)) { toast("Zum Aussteigen landen (C sinken)"); return true; }
     for (const [lx, lz] of [[3.4, 0.5], [-3.4, 0.5], [0, 5.2], [3.4, -2.5], [-3.4, -2.5]].map(([x, z]) => [x, z - BAT_ZC * BAT_KZ])) {
       const [x, z] = batW(B, lx, lz), q = new THREE.Vector3(x, B.y + 1.5, z), top = supportAt(q, B.y + 1.5);
@@ -203,7 +210,7 @@ function flyStep(dt) {
     if (batFree(B, B.x, ny, B.z, B.h)) B.y = ny; else B.vy = 0;
   }
   if (!batFree(B, B.x, B.y, B.z, B.h + 1e-9)) B.h -= dh;                                                                  // Drehung gegen eine Wand zuruecknehmen
-  const landed = !batFree(B, B.x, B.y - 0.1, B.z, B.h);
+  const landed = !batFree(B, B.x, B.y - 0.1, B.z, B.h) && !batOverWater(B, B.x, B.y, B.z, B.h);   // ueber Wasser schwebt sie nur
   const agl = B.y - supportAt(new THREE.Vector3(B.x, B.y + 0.6, B.z), B.y + 0.6), gearIn = !landed && agl > 1.5 && !(agl < 3 && (up < 0 || B.vy < -0.5));
   B.gearT = Math.min(1, Math.max(0, B.gearT + (gearIn ? 1 : -1) * dt * 1.3));                                            // Kufen: ab 1,5 m ein, unter 3 m beim Sinken aus
   B.thrust += ((landed && !up && !th ? 0.05 : 0.35 + 0.65 * Math.max(Math.abs(th), Math.max(0, up))) - B.thrust) * Math.min(1, dt * 3);
