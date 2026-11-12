@@ -157,8 +157,9 @@ function feuerStep(dt) {
 // ---------- Modell laden ----------
 const START = { x: 0, z: KURS.R, h: -Math.PI / 2 };   // auf der Startlinie, Front nach Osten (+x)
 let AKT = null;   // { m, g, wheels, spec, x, z, h, v, steer, maße }
-const $info = $("info"), $speed = $("speed"), fmt = v => String(Math.round(v * 100) / 100).replace(".", ",");
+const $info = $("info"), $speed = $("speed"), $nitro = $("nitro"), fmt = v => String(Math.round(v * 100) / 100).replace(".", ",");
 function laden(i) {
+  $nitro.hidden = true;
   world.userData.car.leave();                                             // Jet / The Bat aussteigen (bleiben stehen, wo sie sind)
   if (AKT && !AKT.flug) { engineStop(true); scene.remove(AKT.g); AKT.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   const m = MODELLE[i];
@@ -207,7 +208,7 @@ pick.onchange = () => laden(+pick.value);
 let modus = "orbit";
 const setModus = m => { const war = modus; modus = m;
   if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"]]) $(id).setAttribute("aria-pressed", String(m === k));
-  document.body.classList.toggle("drive", m === "drive"); controls.enabled = m !== "drive"; $speed.hidden = m !== "drive";
+  document.body.classList.toggle("drive", m === "drive"); if (m !== "drive") $nitro.hidden = true; controls.enabled = m !== "drive"; $speed.hidden = m !== "drive";
   if (m !== "drive" && document.pointerLockElement) document.exitPointerLock();
   if (m === "drive" && AKT && !AKT.flug) { kYaw = AKT.h; kPitch = -0.12; A_view = 0; }
   if (m === "drive" && AKT && AKT.flug && war !== "drive") flugStart();
@@ -320,7 +321,9 @@ function fahren(dt) {
   if (s.boost) { if (boosting && !A.boostOn && typeof engineJet === "function") engineJet(); A.boostOn = boosting;
     if (boosting) { A.boostE = Math.max(0, A.boostE - dt / 4); A.boostT = -2; A.jet = Math.max(A.jet, 0.5); }
     else if (A.boostE < 1) { A.boostT += dt; if (A.boostT >= 0.6) { A.boostT -= 0.6; A.boostE = Math.min(1, Math.floor(A.boostE * 10 + 1e-6) / 10 + 0.1); } }
-    if (tap && A.boostE <= 0) toast("Nitro leer – lädt nach"); }
+    if (tap && A.boostE <= 0) toast("Nitro leer – lädt nach");
+    $nitro.lastChild.firstChild.style.width = Math.round(A.boostE * 100) + "%"; $nitro.className = boosting ? "on" : A.boostE <= 0 ? "lock" : A.boostE < 1 ? "load" : ""; }   // Leiste wie im Spiel
+  $nitro.hidden = !s.boost;
   if (boosting && A.v < vmax + 40 / 3.6) A.v = Math.min(vmax + 40 / 3.6, A.v + 80 * dt);
   if (s.jump && tap && !A.air && A.v >= 14) { A.air = true; A.vy = 7.5; A.v += A.jetM ? 6 : 3; A.jet = 0.9; toast("Sprung!"); if (A.jetM && typeof engineJet === "function") engineJet(); }
   if (A.air) { A.vy -= 14 * dt; A.y += A.vy * dt; const tp = Math.max(-0.12, Math.min(0.2, Math.atan2(A.vy, Math.max(8, Math.abs(A.v))) * 0.4)); A.pitch += (tp - A.pitch) * Math.min(1, dt * 2);
