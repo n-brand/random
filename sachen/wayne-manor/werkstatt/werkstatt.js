@@ -77,7 +77,7 @@ function laden(i) {
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
   AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin };
   if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
-  kYaw = START.h; kPitch = 0;
+  kYaw = START.h; kPitch = -0.12; ZOOM.z = ZOOM.t = 1; if (modus === "drive") { camera.fov = 70; camera.updateProjectionMatrix(); }
   setze(); sicht();
   const s = m.spec;
   $info.innerHTML = `<table>
@@ -99,7 +99,9 @@ let modus = "orbit";
 const setModus = m => { modus = m; for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"]]) $(id).setAttribute("aria-pressed", String(m === k));
   document.body.classList.toggle("drive", m === "drive"); controls.enabled = m !== "drive"; $speed.hidden = m !== "drive";
   if (m !== "drive" && document.pointerLockElement) document.exitPointerLock();
-  if (m === "drive" && AKT) { kYaw = AKT.h; kPitch = 0; }
+  if (m === "drive" && AKT) { kYaw = AKT.h; kPitch = -0.12; A_view = 0; }
+  if (m !== "drive") { ZOOM.z = ZOOM.t = 1; ZOOM.un = 0; }
+  camera.fov = m === "drive" ? 70 : 45; camera.updateProjectionMatrix();
   if (m !== "drive" && AKT) controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z);
   sicht(); };
 const MODI = ["orbit", "drive", "spin"];
@@ -109,17 +111,21 @@ function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier")
 function maushinweis() { $("maus").hidden = modus !== "drive" || !!document.pointerLockElement || document.body.classList.contains("touch"); }
 
 // ---------- Maus einfangen (Fahren): Linksklick faengt die Maus, erneuter Linksklick oder Esc gibt sie frei ----------
-let kYaw = 0, kPitch = 0;   // Blickrichtung der Kamera (Welt, wie A.h) und Hoehe
+// Wie im Spiel (fahren.js carCamera, bedienung.js): kYaw/kPitch = player.yaw/pitch, Empfindlichkeit fest 50 %, im Panzer-Zoom feiner
+let kYaw = 0, kPitch = -0.12, A_view = 0;   // A_view 1 = Fahrersicht (V)
+const MOUSE_SENS = 0.0025 * 0.5, ZOOM = { z: 1, t: 1, un: 0 };
 renderer.domElement.addEventListener("mousedown", e => { if (e.button !== 0 || modus !== "drive") return; if (document.pointerLockElement) document.exitPointerLock(); else renderer.domElement.requestPointerLock(); });
 document.addEventListener("pointerlockchange", maushinweis);
-addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return; kYaw -= e.movementX * 0.0025; kPitch = Math.max(-0.45, Math.min(1.1, kPitch - e.movementY * 0.0025)); });
+addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return; kYaw -= e.movementX * MOUSE_SENS / ZOOM.z; kPitch = Math.max(-1.5, Math.min(1.5, kPitch - e.movementY * MOUSE_SENS / ZOOM.z)); });
+// Mausrad im Panzer: Zoom 1x bis 6x (wie schiessen.js)
+addEventListener("wheel", e => { if (!(modus === "drive" && AKT && AKT.turret)) return; e.preventDefault(); ZOOM.t = Math.max(1, Math.min(6, ZOOM.t * (e.deltaY < 0 ? 1.25 : 0.8))); if (ZOOM.t < 1.05) ZOOM.t = 1; }, { passive: false });
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
 
 // ---------- Tasten ----------
 const keys = new Set();
 addEventListener("keydown", e => { if (e.target.tagName === "SELECT") return; keys.add(e.code);
   if (e.code === "KeyR" && AKT) { Object.assign(AKT, { x: START.x, z: START.z, h: START.h, v: 0, steer: 0 }); setze(); }
-  if (e.code === "KeyV") kamNah = !kamNah;
+  if (e.code === "KeyV" && !e.repeat) A_view = A_view ? 0 : 1;
   if (e.code === "KeyF" || (e.code === "KeyE" && modus !== "drive")) setModus(modus === "drive" ? "orbit" : "drive");
   const n = /^(Digit|Numpad)([1-3])$/.exec(e.code); if (n) setModus(MODI[+n[2] - 1]);   // 1 Ansehen, 2 Fahren, 3 Drehteller
   if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault(); });
@@ -128,7 +134,6 @@ addEventListener("blur", () => keys.clear());
 for (const b of document.querySelectorAll("#touch button")) { const k = b.dataset.k;
   b.addEventListener("pointerdown", e => { e.preventDefault(); keys.add(k); }); for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => keys.delete(k)); }
 const down = (...c) => c.some(k => keys.has(k));
-let kamNah = false;
 
 // ---------- Fahren (Einspurmodell) ----------
 function fahren(dt) {
@@ -147,17 +152,19 @@ function fahren(dt) {
   for (const w of A.wheels) { w.spin.rotation.x -= A.v * dt / w.r; if (w.front) w.piv.rotation.y = A.steer; }
   setze();
   $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h";
-  // Kamera: Blickrichtung kYaw (Maus). Ohne Turm gleitet sie beim Fahren hinter das Fahrzeug zurueck, mit Turm bleibt sie (Lenken dreht nur die Wanne).
+  // Kamera wie im Spiel (fahren.js): Lenken dreht den Blick mit (ausser Panzer), ab 3 m/s gleitet er hinter das Fahrzeug (rueckwaerts davor)
   const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
-  if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) { kYaw += Math.atan2(Math.sin(A.h - kYaw), Math.cos(A.h - kYaw)) * Math.min(1, dt * 1.5); kPitch += (0 - kPitch) * Math.min(1, dt * 1.5); } }
-  const d = kamNah ? (s.camD || 8) * 0.55 : (s.camD || 8), el = 0.22 + kPitch, hgt = (s.camH || 1.2) + (kamNah ? 0.6 : 1.2) + A.size.y * 0.5;
-  const fx = -Math.sin(kYaw), fz = -Math.cos(kYaw), kz = new THREE.Vector3(A.x, A.size.y * 0.55 + (kamNah ? 0.4 : 0), A.z);
-  const cam = new THREE.Vector3(kz.x - fx * d * Math.cos(el), Math.max(0.6, hgt - 1.2 + Math.sin(el) * d), kz.z - fz * d * Math.cos(el));
-  camera.position.lerp(cam, Math.min(1, dt * 8));
-  const lp = -0.12 - 0.8 * kPitch;   // Blick leicht nach unten; das Visier (36 % Hoehe) liegt dann etwa waagrecht
-  camera.lookAt(camera.position.x + fx * Math.cos(lp), camera.position.y + Math.sin(lp), camera.position.z + fz * Math.cos(lp));
+  if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) kYaw += wrapW(A.h + (A.v < 0 ? Math.PI : 0) - kYaw) * Math.min(1, dt * 1.2); }
   if (A.turret) waffe(dt);
+  if (A.turret && ZOOM.z > 1.01) return;   // gezoomt: Kamera sitzt in der Zieloptik (waffe)
+  if (A_view === 1 && s.seat) { const [sx, sy, sz] = s.seat, sn = Math.sin(A.h), c = Math.cos(A.h);
+    camera.position.set(A.x + sx * c + sz * sn, sy, A.z - sx * sn + sz * c); camera.rotation.set(kPitch, kYaw, 0, "YXZ"); return; }
+  const D = s.camD || 8, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = s.camH || 1.2, tz = A.z;
+  const ex = Math.sin(kYaw) * D, ey = H - 1.3 + 0.9, ez = Math.cos(kYaw) * D;
+  camera.position.set(tx + ex, Math.max(0.3, ty + ey), tz + ez);
+  camera.lookAt(tx, ty + 0.3, tz);
 }
+const wrapW = a => Math.atan2(Math.sin(a), Math.cos(a));
 
 // ---------- Schiessen (Modelle mit Turm): Visier auf 36 % der Bildhoehe wie im Spiel, Granate 320 m/s gerade zum Zielpunkt ----------
 const SCHUSS = { cd: 0, RELOAD: 2.2, V: 320, MUZZLE: 4.75, shells: [], fx: [], treffer: 0, schuesse: 0, rueck: 0 };
@@ -170,23 +177,27 @@ function zielpunkt() {   // Strahl durch das Visier: erste Scheibe oder der Bode
   for (const Z of ZIELE) { if (Z.fall > 0.05) continue; vA.set(Z.x, Z.y, Z.z); const t = vA.sub(o).dot(dv); if (t > 0 && t < best && o.clone().addScaledVector(dv, t).distanceTo(new THREE.Vector3(Z.x, Z.y, Z.z)) < Z.r) best = t; }
   return o.clone().addScaledVector(dv, best);
 }
-function waffe(dt) {
+function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Rohr hebt/senkt sich zum Zielpunkt im Visier
   const A = AKT, aim = zielpunkt();
-  A.g.updateMatrixWorld(true); A.turret.getWorldPosition(vA);
-  A.turret.rotation.y = Math.atan2(-(aim.x - vA.x), -(aim.z - vA.z)) - A.h;   // Turm zeigt zum Zielpunkt
-  A.gun.updateWorldMatrix(true, false); A.gun.getWorldPosition(vB);
-  const ad = (((A.turret.rotation.y * 180 / Math.PI) % 360) + 360) % 360, lo = A.gunMin ? A.gunMin[Math.floor(ad) % 360] : -0.4;
-  A.gun.rotation.x = Math.max(lo, Math.min(0.6, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z))));
+  A.g.updateMatrixWorld(true); A.gun.getWorldPosition(vB);
+  A.elev = A.elev ?? 0; A.elev += (Math.max(-0.4, Math.min(0.55, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z)))) - A.elev) * Math.min(1, dt * 8);
+  A.turret.rotation.y = wrapW(kYaw - A.h);
+  const ad = (((A.turret.rotation.y * 180 / Math.PI) % 360) + 360) % 360, a0 = Math.floor(ad) % 360, fr = ad - Math.floor(ad), lo = A.gunMin ? A.gunMin[a0] * (1 - fr) + A.gunMin[(a0 + 1) % 360] * fr : -0.45;
+  A.gun.rotation.x = Math.max(lo, Math.min(0.6, A.elev));
+  // Zoom: ab mehr als 1x sitzt die Kamera in der Zieloptik oben am Turm; nach einem Schuss nach 0,35 s zurueck auf 1x (wie im Spiel, dort TEST)
+  if (ZOOM.un > 0 && (ZOOM.un -= dt) <= 0) ZOOM.t = 1;
+  ZOOM.z += (ZOOM.t - ZOOM.z) * Math.min(1, dt * 10); const fov = 70 / ZOOM.z; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
+  if (ZOOM.t > 1.01) { A.turret.updateWorldMatrix(true, false); A.turret.localToWorld(vA.set(0.52, 1.25, -0.9)); camera.position.copy(vA); camera.rotation.set(kPitch + 0.12, kYaw, 0, "YXZ"); }
   SCHUSS.cd = Math.max(0, SCHUSS.cd - dt);
   if (down("Space") && SCHUSS.cd === 0) {
     SCHUSS.cd = SCHUSS.RELOAD; SCHUSS.schuesse++; SCHUSS.rueck = 1;
     A.gun.updateWorldMatrix(true, false); const mz = A.gun.localToWorld(new THREE.Vector3(0, 0, -(A.spec.muzzle || SCHUSS.MUZZLE))), dir = aim.clone().sub(mz).normalize();
     const o = new THREE.Mesh(fxGeo, fxMat(0xffe2a0)); o.scale.set(0.12, 0.12, 0.5); o.position.copy(mz); o.lookAt(mz.clone().add(dir)); scene.add(o);
     SCHUSS.shells.push({ o, p: mz.clone(), dir, s: 0 });
-    fx(mz, 0xffc070, 0.6, 0.12, 4); knall(0.5);
+    fx(mz, 0xffc070, 0.6, 0.12, 4); knall(0.5); if (ZOOM.t > 1) ZOOM.un = 0.35;
   }
   SCHUSS.rueck = Math.max(0, SCHUSS.rueck - dt * 2.5); A.gun.position.z = A.gun.userData.z0 + Math.sin(Math.min(1, SCHUSS.rueck) * Math.PI / 2) * 0.45;
-  $("visier-t").textContent = (SCHUSS.cd > 0 ? "lädt … " + SCHUSS.cd.toFixed(1).replace(".", ",") + " s" : "Leertaste: schießen") + ` · Treffer ${SCHUSS.treffer} / ${SCHUSS.schuesse}`;
+  $("visier-t").textContent = (SCHUSS.cd > 0 ? "lädt … " + SCHUSS.cd.toFixed(1).replace(".", ",") + " s" : "Leertaste: schießen") + ` · Treffer ${SCHUSS.treffer} / ${SCHUSS.schuesse}` + (ZOOM.t > 1 ? " · " + ZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
 }
 function fx(p, c, r, life, grow) { const o = new THREE.Mesh(fxGeo, fxMat(c)); o.position.copy(p); o.scale.setScalar(r); scene.add(o); SCHUSS.fx.push({ o, r, life, grow, t: 0 }); }
 function schuesseStep(dt) {
