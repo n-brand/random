@@ -125,6 +125,7 @@ addEventListener("keydown", e => {
     if (e.repeat) return;
     if (e.code === "KeyV") { CAR.view = 1 - CAR.view; player.pitch = CAR.view ? 0 : -0.12; return toast(CAR.view ? "Fahrersicht" : "Kamera hinter dem Auto"); }
     if (e.code === "KeyR") return carReset();
+    if (e.code === "KeyH" && CAR.spec.hover) { CAR.hoverWant = !CAR.hoverWant; return toast(CAR.hoverWant ? "Räder klappen ein …" : "Landen …"); }   // DeLorean
     if (e.code === "KeyM") return engineMute();
     { const v = VEH.find(c => c.on), p = v ? { x: v.x, y: v.y, z: v.z } : player.pos;   // Garagenrampe (Nicolas 2026-11-10): unten am Tor das Rolltor, sonst die Klappe
       if (e.code === "KeyL" && GRAMP.gate && GRAMP.near(p) && !(CAR_LIFT && CAR_LIFT.near(player.pos))) return toggleGate(p.y < HILL - 2.5 && (inPoly(GARAGE, p.x, p.z) || Math.hypot(p.x - 4.5, p.z - (GRAMP.D0 + GRAMP.D1) / 2) < 9) ? GRAMP.door : GRAMP.gate); }

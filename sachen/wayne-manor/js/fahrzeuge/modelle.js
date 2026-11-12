@@ -487,7 +487,7 @@ function sedanKit(o, paint, glass, dark) {
   const arch = f => { let y = ybT(f); for (const c of o.wf) { const d = Math.abs(f - c), RR = R + 0.16; if (d < RR) y = Math.max(y, ybT(f) + (ARCH - ybT(f)) * Math.sqrt(1 - (d / RR) ** 2)); } return y; };
   const sec = f => { const hs = hw(f), yb = arch(f), ye = yT(f), p = [[0, yb], [hs - 0.08, yb], [hs - 0.01, yb + 0.07], [hs, o.ys || 0.6], [hs - 0.03, ye - 0.06], [hs - 0.1, ye], [0, ye + 0.03]];
     for (let i = 2; i < p.length; i++) p[i][1] = Math.max(p[i][1], p[i - 1][1] + 0.015); return p; };
-  const smooth = m => { const gg = mergeVertices(m.geometry.deleteAttribute("normal")); gg.computeVertexNormals(); m.geometry = gg; return m; };
+  const smooth = m => { if (o.flat) return m; const gg = mergeVertices(m.geometry.deleteAttribute("normal")); gg.computeVertexNormals(); m.geometry = gg; return m; };
   const FS = []; for (let f = o.fF; f > o.fR; f -= 0.06) FS.push(f); FS.push(o.fR);
   smooth(loftIn(g, FS.map(f => [f, sec(f)]), paint));                                                                          // Karosserie
   const bodyX = (f, y) => { const p = sec(f); if (y <= p[1][1]) return y < p[0][1] ? -1 : p[1][0]; for (let i = 1; i < p.length - 1; i++) { const [xa, ya] = p[i], [xb, yb] = p[i + 1]; if (y <= yb) return xa + (xb - xa) * (y - ya) / Math.max(1e-6, yb - ya); } return 0; };
@@ -1267,7 +1267,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, folds: built.folds || null, glowM: built.glowM || null, fold: 0, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
@@ -1356,3 +1356,61 @@ function wasserZiel(from, yaw, el, ground) {
 function wasserZielZeigen(el, p) { if (!el) return; camera.updateMatrixWorld(); const q = p.clone().project(camera);
   el.hidden = q.z > 1; el.style.left = (q.x + 1) / 2 * innerWidth + "px"; el.style.top = (1 - q.y) / 2 * innerHeight + "px"; }
 function wasserZoomStep(dt) { WZOOM.z += (WZOOM.t - WZOOM.z) * Math.min(1, dt * 10); if (WZOOM.z > 1.001) { const fov = camera.fov / WZOOM.z; camera.fov = fov; camera.updateProjectionMatrix(); } }
+// ---- DeLorean als Zeitmaschine, fliegend (Nicolas 2026-11-12, zwei Fotos: von hinten und schwebend mit eingeklappten Raedern; stilisiert, ohne Logos,
+// Schriftzug und Kennzeichen-Text): Keilform aus Edelstahl (gebuerstet, kantig, flach schattiert ueber sedanKit flat), schwarzes Band unten, Fluegeltueren
+// (Fugen), Lamellen auf der Heckscheibe, eckige Doppelscheinwerfer, schwarze Lamellen-Rueckleuchten; Umbau: zwei Lamellen-Kaesten hinten, weisser
+// Reaktor auf dem Heckdeck, Stangen und Kaesten auf dem Motordeck, gerippte Leitungen an den Flanken bis zu den Vorderraedern, Duesen unter dem Heck.
+// Raeder sitzen in Klapp-Gruppen (built.folds): H klappt sie flach (Achse senkrecht), unten leuchten sie blau; dann schwebt das Auto (fahren.js hoverStep).
+function buildDelorean() {
+  const brushed = canvasTex(256, 64, (c, w, h) => { c.fillStyle = "#b9bdc0"; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { const y = Math.random() * h, l = 20 + Math.random() * 80, k = Math.random(); c.fillStyle = k < 0.5 ? "#c9cdd0" : "#a9adb0"; c.fillRect(Math.random() * w, y, l, 1); } });
+  const paint = new THREE.MeshStandardMaterial({ map: brushed, color: 0xd0d3d5, metalness: 0.75, roughness: 0.38, flatShading: true });
+  const glass = M(0x0f151b, { metalness: 0.6, roughness: 0.08 }), dark = M(0x1a1b1d, { roughness: 0.7 }), black = M(0x0c0c0d, { roughness: 0.6 });
+  const chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0xc4c6c8, { metalness: 0.8, roughness: 0.3 });
+  const amber = M(0xff9a20, { emissive: 0x6a3600 }), red = M(0x9a1010, { emissive: 0x5a0000 }), white = M(0xf0f0ec, { roughness: 0.5 }), tan = M(0xb8a368, { roughness: 0.6 }), grey = M(0x8a8f94, { metalness: 0.5, roughness: 0.5 });
+  const D = { fF: 2.1, fR: -2.1, r: 0.32, wf: [1.17, -1.24], ys: 0.56, track: 1.6, tw: 0.24, fw: 0.72, fr: -1.62, ws: 0.2, rs: -0.78, flat: true, clip: true,
+    hw: [[2.1, 0.8], [2.04, 0.88], [1.9, 0.92], [0, 0.93], [-1.9, 0.93], [-2.05, 0.9], [-2.1, 0.84]],
+    yT: [[2.1, 0.58], [2.02, 0.64], [0.72, 0.84], [-1.6, 0.9], [-2.0, 0.9], [-2.1, 0.86]],
+    yb: [[2.1, 0.38], [2.0, 0.24], [-2.0, 0.24], [-2.1, 0.36]],
+    roof: [[0.72, 0.84], [0.15, 1.14], [-0.72, 1.14], [-1.62, 0.9]], win: [[0.6, -0.68]] };
+  const k = sedanKit(D, paint, glass, dark), g = k.g;
+  for (const sd of [-1, 1]) {
+    k.skin(sd, -2.06, 2.06, 0.26, 0.4, k.bodyX, black, 0.004, 60, 2);                                                   // schwarzes Band unten
+    for (const f of [0.62, -0.7]) k.skin(sd, f, f - 0.012, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, black, 0.008, 1, 6);   // Tuerfugen (Fluegeltuer)
+    k.skin(sd, -0.45, -0.62, 0.74, 0.77, k.bodyX, black, 0.012, 2, 1);                                                   // Tuergriff
+    sideBox(g, sd * (k.hw(0.55) - 0.05), sd * (k.hw(0.55) + 0.12), 0.86, 0.9, -0.62, -0.52, black); sideBox(g, sd * (k.hw(0.55) + 0.06), sd * (k.hw(0.55) + 0.2), 0.84, 0.98, -0.66, -0.5, black);   // Spiegel
+    for (const [xa, xb] of [[0.42, 0.62], [0.64, 0.84]]) k.face(1, sd * xa, sd * xb, 0.47, 0.57, 0.012, mat.glow);    // Doppelscheinwerfer eckig
+    k.face(1, sd * 0.5, sd * 0.84, 0.3, 0.36, 0.014, amber);                                                            // Blinker im Stossfaenger
+    k.face(-1, sd * 0.2, sd * 0.84, 0.5, 0.72, 0.012, black); for (let y = 0.53; y < 0.71; y += 0.045) k.face(-1, sd * 0.24, sd * 0.8, y, y + 0.02, 0.02, red);   // Lamellen-Rueckleuchten
+    // Leitungen an der Flanke: vom Heck schraeg hinunter, am Schweller entlang bis vor das Vorderrad (geripptes Rohr)
+    const P = [[-1.85, 0.98], [-1.45, 0.74], [-1.05, 0.42], [-0.3, 0.33], [0.55, 0.33], [1.6, 0.42], [1.95, 0.5]].map(([f, y]) => new THREE.Vector3(sd * (k.bodyX(f, Math.max(y, k.arch(f) + 0.02)) + 0.04), y, -f));
+    const tube = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P), 60, 0.035, 8, false); meshIn(g, tube, grey, 0, 0, 0);
+    for (let i = 1; i < 30; i++) { const q = new THREE.CatmullRomCurve3(P).getPointAt(i / 30); meshIn(g, new THREE.SphereGeometry(0.045, 8, 6), grey, q.x, q.y, q.z); }   // Rippen
+  }
+  k.face(1, -0.4, 0.4, 0.42, 0.58, 0.01, black); k.face(1, -0.9, 0.9, 0.24, 0.44, 0.04, dark); k.face(-1, -0.92, 0.92, 0.24, 0.48, 0.05, dark);   // Grill, Stossfaenger
+  // Lamellen auf der Heckscheibe
+  for (let f = -0.82; f > -1.55; f -= 0.1) { const y = k.roof(f) + 0.035, w = k.hw(f) - 0.36; boxIn(g, -w, w, y, y + 0.025, -f - 0.03, -f + 0.03, black); }
+  // Umbau hinten: Lamellen-Kaesten an den Ecken, Reaktor, Stangen und Kaesten auf dem Motordeck, Duesen unter dem Heck
+  for (const sd of [-1, 1]) { const x = sd * 0.55, z0 = 1.85, z1 = 2.12;
+    boxIn(g, x - 0.3, x + 0.3, 0.86, 1.62, z0, z0 + 0.03, grey);                                                          // Blech
+    for (let y = 0.9; y <= 1.62; y += 0.18) boxIn(g, x - 0.3, x + 0.3, y, y + 0.025, z0, z1, black);                      // waagrechte Lamellen
+    for (const dx of [-0.3, -0.1, 0.1, 0.3]) boxIn(g, x + dx - 0.012, x + dx + 0.012, 0.88, 1.62, z0, z1, black);         // senkrechte Lamellen
+    meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.7, 8).rotateZ(Math.PI / 2), tan, sd * 0.45, 0.98, 1.2); meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.7, 8).rotateZ(Math.PI / 2), tan, sd * 0.45, 0.98, 1.32);
+    boxIn(g, sd * 0.2 - 0.12, sd * 0.2 + 0.12, 0.92, 1.1, 1.0, 1.25, grey);                                               // Kasten auf dem Deck
+    meshIn(g, new THREE.CylinderGeometry(0.07, 0.09, 0.3, 12).rotateX(Math.PI / 2), black, sd * 0.45, 0.2, 2.18); meshIn(g, new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12).rotateX(Math.PI / 2), amber, sd * 0.45, 0.2, 2.33); }   // Duesen unter dem Heck
+  meshIn(g, new THREE.CylinderGeometry(0.12, 0.13, 0.5, 16), white, 0, 1.18, 1.7); meshIn(g, new THREE.CylinderGeometry(0.14, 0.12, 0.12, 16), dark, 0, 0.97, 1.7); meshIn(g, new THREE.CylinderGeometry(0.1, 0.1, 0.04, 16), black, 0, 1.44, 1.7);   // Reaktor (weiss)
+  boxIn(g, -0.18, 0.18, 1.14, 1.24, 0.55, 0.75, grey); boxIn(g, -0.16, 0.16, 1.24, 1.3, 0.62, 0.7, black);                 // Geraet auf dem Dach hinten
+  boxIn(g, -0.25, 0.25, 0.4, 0.52, -2.2, -2.12, grey);                                                                    // Kasten vorne am Stossfaenger
+  mergeStatic(g);
+  // Raeder in Klapp-Gruppen (Achse waagrecht -> senkrecht), darunter je eine blaue Leuchtscheibe (nur im Flug sichtbar)
+  const glowM = new THREE.MeshBasicMaterial({ color: 0x66c8ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const wheels = [], folds = [];
+  for (const [x, z, f, r] of [[-0.79, -1.17, true, 0.31], [0.79, -1.17, true, 0.31], [-0.8, 1.24, false, 0.33], [0.8, 1.24, false, 0.33]]) {
+    const w = addWheel(g, x, z, r, 0.24, f, tireM, rimM, 0, 24), fg = new THREE.Group(); fg.position.copy(w.piv.position); g.add(fg); w.piv.position.set(0, 0, 0); fg.add(w.piv);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(r * 0.92, 24).rotateY(Math.PI / 2), glowM); disc.position.set(Math.sign(x) * 0.15, 0, 0); fg.add(disc);   // Aussenseite: eingeklappt unten
+    sedanCap(w, 0.24, 0xc4c6c8, 0x2a2c30, 10); wheels.push(w); folds.push({ g: fg, sd: Math.sign(x), y0: fg.position.y }); }
+  return { g, wheels, folds, glowM };
+}
+const SPEC_DELOREAN = { name: "DeLorean (Zeitmaschine)", wheels: [[-0.79, -1.17], [0.79, -1.17], [-0.8, 1.24], [0.8, 1.24]], wb: 2.41, track: 1.6, pts: [-1.4, 0, 1.4], R: 0.98, circR: 0.93, enter: 3.6,
+  maxN: 30, maxF: 38.9, acc: 9, steer: 0.66, jump: false, hover: true, grade: 35, camD: 8, camH: 1.1, seat: [-0.38, 0.95, 0.1], bodyH: 1.15, bike: false,
+  exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.6], [0, 3.6]],
+  msg: "DeLorean: W/S Gas/Bremse, A/D lenken, H Räder einklappen und schweben (dann Leertaste hoch, C runter, H landen), V Kamera, R zurücksetzen, Shift aussteigen" };

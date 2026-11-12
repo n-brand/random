@@ -109,3 +109,5 @@ function engineMute() {
   toast(ENGINE.muted ? "Ton aus (M)" : "Ton an (M)");
 }
 document.addEventListener("visibilitychange", () => { const c = ENGINE.ctx; if (c) document.hidden ? c.suspend() : c.resume(); });
+// DeLorean (Nicolas 2026-11-12): ruhiger V6 wie das Taxi
+ENG_PROFILES["DeLorean (Zeitmaschine)"] = ENG_PROFILES["Gotham Taxi"];

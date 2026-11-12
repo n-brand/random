@@ -70,7 +70,9 @@ function carPose(dt) {
   const C = CAR;
   C.g.position.set(C.x, C.y, C.z);
   C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ"); C.g.updateMatrix();
-  for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r; if (w.front) w.piv.rotation.y = C.steer; }
+  for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r * (1 - (C.fold || 0)); if (w.front) w.piv.rotation.y = C.steer; }
+  if (C.folds) { const f = C.fold || 0, e = f * f * (3 - 2 * f); for (const q of C.folds) q.g.rotation.z = -q.sd * Math.PI / 2 * e;   // DeLorean: Raeder flach geklappt, Aussenseite unten
+    if (C.glowM) C.glowM.opacity = e * (0.55 + 0.2 * Math.sin(clock.elapsedTime * 9)); }
   // Panzerturm (Nicolas 2026-11-11): zielt in Weltrichtung (Blickrichtung), Lenken dreht nur die Wanne darunter; geparkt dreht er langsam nach vorne
   if (C.turret) {
     if (C.tw === undefined) C.tw = C.h + C.turret.rotation.y;
@@ -129,6 +131,7 @@ function useCar(want) {
   if (CAR && CAR.on) {
     // Aussteigen: links (Fahrerseite), sonst rechts, sonst vorne/hinten
     const C = CAR, s = Math.sin(C.h), c = Math.cos(C.h);
+    if (C.flying || (C.hoverWant && C.fold > 0)) { toast("Erst landen (H)"); return true; }   // DeLorean in der Luft
     for (const [lx, lz] of C.spec.exits) {
       const q = new THREE.Vector3(C.x + lx * c + lz * s, C.y + 0.4, C.z - lx * s + lz * c), top = supportAt(q, C.y + 0.4);
       if (Math.abs(top - C.y) > 0.6) continue;
@@ -188,6 +191,37 @@ function carReset() {
   Object.assign(CAR, { x: s.x, z: s.z, y: s.y, h: s.h, v: 0, vy: 0, air: false, wet: false }); player.yaw = s.h;
   toast(CAR.spec.name + " zurückgesetzt");
 }
+// DeLorean schwebt (Nicolas 2026-11-12, Foto): H klappt die Raeder flach ein (1,2 s, bremst dabei), dann schwebt er: W/S vor/zurueck (bis 30 m/s), A/D drehen,
+// Leertaste hoch, C runter (6 m/s), sonst haelt er die Hoehe (mind. 0,6 m ueber dem Boden, hoechstens 400 m). Kollision wie beim Fahren (Kreise).
+// H nochmal: sinkt mit 4 m/s, setzt auf, die Raeder klappen wieder aus. Aussteigen erst nach dem Landen.
+function hoverStep(C, dt, th, st) {
+  C.fold = C.fold || 0;
+  if (!C.hoverWant && !C.flying) { if (C.fold > 0) C.fold = Math.max(0, C.fold - dt / 1.2); return false; }
+  const sp = C.spec;
+  if (!C.flying) {
+    C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), 10 * dt); C.fold = Math.min(1, C.fold + dt / 1.2);
+    if (C.fold >= 1 && Math.abs(C.v) < 1) { C.flying = true; C.air = true; C.vy = 0; toast("DeLorean schwebt – Leertaste hoch, C runter, H landen"); }
+  } else {
+    const up = keys.has("Space") || jumpHeld ? 1 : 0, dn = keys.has("KeyC") || downHeld ? 1 : 0;
+    C.v += (th * 30 - C.v) * Math.min(1, dt * (th ? 0.7 : 0.9)); C.h += st * 1.3 * dt; player.yaw += st * 1.3 * dt;
+    C.vy += ((C.hoverWant ? (up - dn) * 6 : -4) - C.vy) * Math.min(1, dt * 3);
+    let nx = C.x - Math.sin(C.h) * C.v * dt, nz = C.z - Math.cos(C.h) * C.v * dt;
+    for (let it = 0; it < 2; it++) { let sx = 0, sz = 0; for (const lz of sp.pts) { const px = nx + lz * Math.sin(C.h), pz = nz + lz * Math.cos(C.h), q = { x: px, z: pz }; carPush(q, C.y, sp.R); sx += q.x - px; sz += q.z - pz; } nx += sx; nz += sz; }
+    const far = Math.hypot(nx, nz); if (far > LIMIT) { nx *= LIMIT / far; nz *= LIMIT / far; }
+    C.x = nx; C.z = nz;
+    let ny = Math.min(400, C.y + C.vy * dt); const floor = carGround(Math.max(C.y, ny) + 0.3).y;
+    if (floor < terrainH(C.x, C.z) - 2) ny = Math.min(ny, floor + 1.5);   // unter der Erde (Garage, Tunnel, Hoehle): nur knapp ueber dem Boden schweben
+    if (C.hoverWant) { if (ny < floor + 0.6) { ny = floor + 0.6; if (C.vy < 0) C.vy = 0; } }
+    else if (ny <= floor + 0.02) { ny = floor; C.flying = false; C.air = false; C.vy = 0; C.hoverWant = false; toast("Gelandet – Räder klappen aus"); }
+    C.y = ny;
+    C.pitch += (-th * 0.08 - C.pitch) * Math.min(1, dt * 2); C.roll += (st * 0.22 * Math.min(1, Math.abs(C.v) / 8) - C.roll) * Math.min(1, dt * 3);
+    if (Math.abs(C.v) > 3) player.yaw += wrapA(C.h + (C.v < 0 ? Math.PI : 0) - player.yaw) * Math.min(1, dt * 1.2);
+  }
+  C.throttle = th > 0.1 ? 1 : 0; player.jump = false;
+  speedEl.textContent = Math.round(Math.abs(C.v) * 3.6) + " km/h" + (C.flying ? " · schwebt" : " · Räder klappen ein"); nitroEl.hidden = true;
+  carPose(dt);
+  return true;
+}
 function carStep(dt) {
   const C = CAR, sp = C.spec; carNear();
   let th = 0, st = 0;
@@ -198,6 +232,7 @@ function carStep(dt) {
   th -= moveStick.y; st -= moveStick.x;
   C.throttle = th > 0.1 ? 1 : 0;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
+  if (sp.hover && hoverStep(C, dt, th, st)) return;                         // DeLorean: einklappen / schweben
   // Nitro (Nachtfalke, Nicolas 2026-11-09: statt Sprung): Leertaste halten = Schub aus der Duese, die Leiste leert sich (ca. 4 s Vorrat);
   // nach dem Loslassen 2 s Pause, dann laedt sie Stueck fuer Stueck nach (alle 0,6 s ein Zehntel)
   if (C.boostE === undefined) { C.boostE = 1; C.boostT = 0; }

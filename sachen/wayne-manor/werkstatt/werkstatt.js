@@ -27,6 +27,7 @@ const MODELLE = [
   { name: "Batpod", spec: SPEC_BATPOD, bau: () => buildBatpod() },
   { name: "Boxer-Streetfighter", spec: SPEC_STREETFIGHTER, bau: () => buildStreetfighter() },
   { name: "Motorrad (rot)", spec: SPEC_BIKE, bau: () => buildBike(0xb0141e) },
+  { name: "DeLorean (Zeitmaschine, schwebt mit H)", spec: SPEC_DELOREAN, bau: () => buildDelorean() },
   // Fluggeraete (Nicolas 2026-11-12): Modell, Flugphysik, Kamera und Ton direkt aus jet.js / the-bat.js des Spiels (flache Welt aus flug-shim.js)
   { name: "Kampfjet", flug: "jet" },
   { name: "The Bat (Batwing)", flug: "bat" },
@@ -176,8 +177,9 @@ function laden(i) {
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
   AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null, monitor: b.monitor || null, dumpG: b.dump || null,
-    y: 0, vy: 0, air: false, pitch: 0, jetM: b.jetM || null, flame: b.flame || null, jet: 0, boostE: 1, boostT: 0, boostOn: false, spPrev: false };   // Sprung/Nitro wie im Spiel
+    y: 0, vy: 0, air: false, pitch: 0, roll: 0, folds: b.folds || null, glowM: b.glowM || null, fold: 0, hoverWant: false, flying: false, hPrev: false, jetM: b.jetM || null, flame: b.flame || null, jet: 0, boostE: 1, boostT: 0, boostOn: false, spPrev: false };   // Sprung/Nitro wie im Spiel
   if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
+  AKT.foldPose = () => { const A = AKT; if (!A.folds) return; const f = A.fold, e = f * f * (3 - 2 * f); for (const q of A.folds) q.g.rotation.z = -q.sd * Math.PI / 2 * e; if (A.glowM) A.glowM.opacity = e * (0.55 + 0.2 * Math.sin(performance.now() / 1000 * 9)); };
   kYaw = START.h; kPitch = -0.12; ZOOM.z = ZOOM.t = 1; if (modus === "drive") { camera.fov = 70; camera.updateProjectionMatrix(); }
   setze(); sicht();
   const s = m.spec;
@@ -189,7 +191,7 @@ function laden(i) {
   try { localStorage.setItem("werkstatt-modell", String(i)); } catch (e) {}
 }
 function flugStart() { const F = AKT.F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }
-function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? 0 : A.lean, "YXZ"); }
+function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? (A.roll || 0) : A.lean, "YXZ"); }
 window.werkstattTeleport = p => { if (!AKT || AKT.flug) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
 
 // ---------- Auswahl und Ansicht ----------
@@ -267,6 +269,19 @@ function fahren(dt) {
     A.wz = { tip: M0.tip, el, ready: M0.ready }; }
   else if (A.dumpG) dumpPose(A.dumpG, A, down("Space"), dt);   // Muldenkipper: Mulde kippen (wie fahren.js carPose)
   else if (down("Space") && !A.turret && !s.jump && !s.boost) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm = schiessen, mit Sprung/Nitro = springen/Nitro)
+  // DeLorean schwebt wie im Spiel (fahren.js hoverStep): H klappt die Raeder ein, dann Leertaste hoch, C runter, H landen (Boden hier eben, y 0)
+  if (s.hover) { const hk = down("KeyH"); if (hk && !A.hPrev) { A.hoverWant = !A.hoverWant; toast(A.hoverWant ? "Räder klappen ein …" : "Landen …"); } A.hPrev = hk;
+    if (A.hoverWant || A.flying) {
+      if (!A.flying) { A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 10 * dt); A.fold = Math.min(1, A.fold + dt / 1.2); if (A.fold >= 1 && Math.abs(A.v) < 1) { A.flying = true; toast("DeLorean schwebt – Leertaste hoch, C runter, H landen"); } }
+      else { A.v += (th * 30 - A.v) * Math.min(1, dt * (th ? 0.7 : 0.9)); A.h += st * 1.3 * dt; kYaw += st * 1.3 * dt;
+        A.vy += ((A.hoverWant ? ((down("Space") ? 1 : 0) - (down("KeyC") ? 1 : 0)) * 6 : -4) - A.vy) * Math.min(1, dt * 3);
+        A.y = Math.min(400, A.y + A.vy * dt); if (A.hoverWant) { if (A.y < 0.6) { A.y = 0.6; if (A.vy < 0) A.vy = 0; } } else if (A.y <= 0.02) { A.y = 0; A.vy = 0; A.flying = false; A.hoverWant = false; toast("Gelandet – Räder klappen aus"); }
+        A.pitch += (-th * 0.08 - A.pitch) * Math.min(1, dt * 2); A.roll += (st * 0.22 * Math.min(1, Math.abs(A.v) / 8) - A.roll) * Math.min(1, dt * 3);
+        A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt; }
+      A.foldPose(); setze(); $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h" + (A.flying ? " · schwebt" : "");
+      const D = (s.camD || 8), H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)); if (Math.abs(A.v) > 3) kYaw += wrapW(A.h - kYaw) * Math.min(1, dt * 1.2);
+      camera.position.set(A.x + Math.sin(kYaw) * D, (s.camH || 1.2) + A.y + H - 0.4, A.z + Math.cos(kYaw) * D); camera.lookAt(A.x, (s.camH || 1.2) + A.y + 0.3, A.z); return; }
+    if (A.fold > 0) A.fold = Math.max(0, A.fold - dt / 1.2); A.roll = 0; A.foldPose(); }
   // Sprung und Nitro wie im Spiel (fahren.js carStep, Nicolas 2026-11-12: in der Werkstatt konnte man nicht springen): Sprung ab 14 m/s (50 km/h),
   // Steigtempo 7,5 m/s, +6 m/s Schub mit Duese (Tumbler) bzw. +3 ohne (Batpod), Schwerkraft 14; Nitro: Leertaste halten, 80 m/s² bis 40 km/h ueber dem Hoechsttempo, Vorrat 4 s
   const spc = down("Space"), tap = spc && !A.spPrev; A.spPrev = spc;
@@ -289,7 +304,7 @@ function fahren(dt) {
   const lim = 580; A.x = Math.max(-lim, Math.min(lim, A.x)); A.z = Math.max(-lim, Math.min(lim, A.z));
   A.lean += ((s.track ? 0 : A.steer * Math.min(1, Math.abs(A.v) / 6) * 0.9) - A.lean) * Math.min(1, dt * 5);   // Zweirad legt sich in die Kurve (wie fahren.js)
   if (A.beacon) { const t = performance.now() / 1000 * 6, on = Math.sin(t) > 0; A.beacon[0].emissiveIntensity = 0.2 + 2.4 * (on ? 1 : 0); A.beacon[1].emissiveIntensity = 0.2 + 2.4 * (on ? 0 : 1); }   // Blinklicht beim Fahren (wie fahren.js)
-  for (const w of A.wheels) { w.spin.rotation.x -= A.v * dt / w.r; if (w.front) w.piv.rotation.y = A.steer; }
+  for (const w of A.wheels) { w.spin.rotation.x -= A.v * dt / w.r * (1 - (A.fold || 0)); if (w.front) w.piv.rotation.y = A.steer; }
   setze();
   $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h";
   // Kamera wie im Spiel (fahren.js): Lenken dreht den Blick mit (ausser Panzer), ab 3 m/s gleitet er hinter das Fahrzeug (rueckwaerts davor)
