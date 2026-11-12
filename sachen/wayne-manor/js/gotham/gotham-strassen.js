@@ -8,7 +8,7 @@
 // Spuren), 4 m Gehsteig. Nebenstrassen (G2b): 8 m mit gelber Doppellinie und 3 m Gehsteig, Gassen der Narrows 6 m ohne Linien mit 2 m Gehsteig;
 // endet eine Nebenstrasse kurz vor einer anderen Fahrbahn (die Karte laesst sie dort aufhoeren), wird sie bis an deren Fahrbahn verlaengert.
 // Kreuzungen (Strecken schneiden sich oder ein Ende liegt auf einer anderen Fahrbahn) sind schlichte Asphaltflaechen ohne Linien; Gehsteige setzen dort
-// und auf anderen Fahrbahnen aus. Vorerst nur Optik: Boden bleibt die flache Strassenebene (-16), zweistoeckige Strassen kommen in G2e.
+// und auf anderen Fahrbahnen aus. Vorerst nur Optik: Boden bleibt die flache Strassenebene (-12), zweistoeckige Strassen kommen in G2e.
 // Aufbau ca. 0,3 s: nicht beim Start, sondern einmal danach im Kachel-Zeitplan (gstrBuild), Gotham ist beim Start ohnehin weit weg.
 const GSTR = { roads: [], patches: [], done: false };
 function gstrBuild() {

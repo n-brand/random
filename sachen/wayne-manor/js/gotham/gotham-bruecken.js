@@ -3,7 +3,7 @@
 // Nach gotham-strassen.js. Daten: GOTHAM_STADT.bruecken (gerade Linien aus der Karte: 25 m in der Insel bis 25 m hinter dem anderen Ufer).
 "use strict";
 
-// Stil Williamsburg/Manhattan Bridge, stilisiert: Fahrbahn auf Strassenebene (-16, 18 m ueber dem Wasser), w m Fahrbahn plus je 2,5 m Gehweg,
+// Stil Williamsburg/Manhattan Bridge, stilisiert: Fahrbahn auf Strassenebene (-12, 22 m ueber dem Wasser; Nicolas 2026-11-12: Insel 4 m angehoben), w m Fahrbahn plus je 2,5 m Gehweg,
 // 3 m dicker Stahlkasten; am Festland weiter auf Pfeilern, bis das Gelaende die Fahrbahn erreicht (G2d baut dort die Strassen an). Je Ufer ein
 // Stahlturm (zwei Beine aussen neben dem Deck, Querriegel und Kreuzstreben ueber der Durchfahrt, 62 m ueber der Fahrbahn), zwei Tragseile im Bogen
 // von den Ankerbloecken (70 m hinter den Tuermen) ueber die Turmspitzen, Haenger alle 10 m. Gelaender 1,1 m mit Kollision, Boden ueber
@@ -53,8 +53,9 @@ const tallCircle = (x, z, r, y0, y1) => { for (let t = y0 + 6; t < y1 + 6; t += 
       for (const sd of [-1, 1]) tallCircle(tx + nx * sd * legX, tz + nz * sd * legX, 2.5, base, Y + H); }
     // Tragseile (Bogen ueber die Turmspitzen), Ankerbloecke, Haenger
     const sA = [Math.max(0, sT[0] - 70), Math.min(L, sT[1] + 70)];
-    for (const s of sA) { const [px, pz] = at(s); boxAtW(half * 2 + 6, 9, 12, conc, px, Y + 2.5, pz, rot);
-      for (let q = -half - 3 + 2; q <= half + 3 - 2 + 0.01; q += 2.5) tallCircle(px + nx * q, pz + nz * q, 6.3, Y - 2, Y + 7); }
+    // Ankerbloecke links und rechts unter den Tragseilen, die Fahrbahn bleibt frei (vorher ein Block quer ueber der Zufahrt)
+    for (const s of sA) { const [px, pz] = at(s);
+      for (const sd of [-1, 1]) { const ax = px + nx * sd * (legX + 2), az = pz + nz * sd * (legX + 2); boxAtW(7, 9, 12, conc, ax, Y + 2.5, az, rot); for (const q of [-3.5, 0, 3.5]) tallCircle(ax + Math.sin(rot) * q, az + Math.cos(rot) * q, 3.9, Y - 2, Y + 7); } }
     const yC = s => { const top = Y + H + 1, low = Y + 9;
       if (s <= sT[0]) return Y + 6 + (top - Y - 6) * (s - sA[0]) / (sT[0] - sA[0]);
       if (s >= sT[1]) return Y + 6 + (top - Y - 6) * (sA[1] - s) / (sA[1] - sT[1]);

@@ -7,7 +7,7 @@
 // je Uferstueck, Meer im Sueden, alles in ein 8-m-Raster gezeichnet und weichgezeichnet (Festland-Ufer rund), Wasser bei 50 %.
 // Daraus zwei Abstandsfelder (Karten-Meter, Chamfer-Abstand): DI = Abstand zum Inselrand (innen negativ), DW = Abstand zum Wasserrand
 // (Wasser samt Insel innen negativ, Festland positiv).
-// Hoehen (Welt-y, daten.js hoehen): Insel flach auf Strassenebene (-16); Wasser bei SEA_Y (-34); Flussgrund am Ufer ein 6 m breiter Kiesstreifen knapp
+// Hoehen (Welt-y, daten.js hoehen): Insel flach auf Strassenebene (-12, Nicolas 2026-11-12: 4 m angehoben, vorher -16); Wasser bei SEA_Y (-34); Flussgrund am Ufer ein 6 m breiter Kiesstreifen knapp
 // ueber dem Wasser, dann weich tiefer bis -46 (12 m Wasser); Festland gegenueber steigt natuerlich an (ca. 18 Grad, etwas uneben) und geht in die
 // bestehenden Berge ueber, die nur dort weichen (Nicolas 2026-11-12: "Nur Gotham-Flaeche", "Natuerlich abfallend").
 // Lage: Karte -> Spiel ueber manorLage (Spiel = Drehung um -dreh von (Karte - Lage)); die Manor bleibt bei 0 / 0. Um die Manor (unter 1000 m) bleibt
