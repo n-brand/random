@@ -5,7 +5,7 @@
 // 40-m-Raster ±FR_R, Hoehen aus genH0 (gleiche Formel wie das Gelaende: Berge, Kueste, Meeresgrund). Innerhalb des Rasters ±1500 m liegt der Ring
 // 1,5 m tiefer unter dem echten Gelaende (kein Flimmern am Uebergang). Gebaut im Kachel-Zeitbudget (eine Reihe je Schritt), nicht beim Start.
 // Sichtbar macht ihn der Ferndunst (FAR_K in kacheln.js): bis zur Ladegrenze wie bisher Nebel, dahinter dichter werdender Dunst bis FAR_K x Ladegrenze.
-const FR_R = 3600, FR_S = 40, FR_N = FR_R * 2 / FR_S + 1, FR_IN = T_A + T_B;
+const FR_R = 4400, FR_S = 40, FR_N = FR_R * 2 / FR_S + 1, FR_IN = T_A + T_B;
 const FERN = { row: 0, H: new Float32Array(FR_N * FR_N), mesh: null, ms: 0 };
 TILES.tasks.push({
   plan() {},
