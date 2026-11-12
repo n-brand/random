@@ -287,7 +287,7 @@ function fahren(dt) {
   if (th > 0) A.v += (A.v < -0.2 ? brk : s.acc * (1 - Math.max(0, A.v) / (vmax + 8)) * KP.thF) * dt;
   else if (th < 0) A.v -= (A.v > 0.2 ? brk : s.revMax ? s.acc * (1 - Math.max(0, -A.v) / (s.revMax + 8)) : 6) * dt;
   else A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), (3 + Math.abs(A.v) * 0.06) * dt);
-  if (A.monitor) { const el = Math.max(-0.35, Math.min(0.9, kPitch + 0.32)), M0 = monitorPose(A.g, A.monitor, wrapW(kYaw - A.h), el, dt, down("Space"));   // Arm-Wasserwerfer (wie schiessen.js wasserFrame)
+  if (A.monitor) { const el = Math.max(-0.9, Math.min(0.9, kPitch + 0.32)), M0 = monitorPose(A.g, A.monitor, wrapW(kYaw - A.h), el, dt, down("Space"));   // Arm-Wasserwerfer (wie schiessen.js wasserFrame)
     if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);
     A.wz = { tip: M0.tip, el, ready: M0.ready }; }
   else if (A.dumpG) dumpPose(A.dumpG, A, down("Space"), dt);   // Muldenkipper: Mulde kippen (wie fahren.js carPose)

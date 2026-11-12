@@ -65,7 +65,7 @@ function wasserFrame(dt) {
   const C = CAR && CAR.on && CAR.monitor && !CAR.dead ? CAR : null, now = clock.elapsedTime, held = keys.has("Space") || jumpHeld;
   if (C) wasserZoomStep(dt);                                                 // Zoom vor dem Ziel-Ring (sonst sitzt er beim Zoomen falsch)
   // Arm-Wasserwerfer: richtet sich beim Spritzen auf, zielt in Blickrichtung; alle anderen klappen ein (Nicolas 2026-11-12, langer Arm nach Foto)
-  for (const v of VEH) if (v.monitor && v.g.visible) { const on = v === C, el = Math.max(-0.35, Math.min(0.9, player.pitch + 0.32));
+  for (const v of VEH) if (v.monitor && v.g.visible) { const on = v === C, el = Math.max(-0.9, Math.min(0.9, player.pitch + 0.32));   // weiter nach unten (Nicolas 2026-11-12: vorher -0.35)
     const M0 = monitorPose(v.g, v.monitor, on ? wrapA(player.yaw - v.h) : 0, on ? el : 0, dt, on && held);
     if (on && held && M0.ready) wasserSpritzen(dt, M0.tip, player.yaw, el - 0.32);
     if (on) { const ws = document.getElementById("water-sight"), imp = wasserZiel(M0.tip, player.yaw, el, (x, z, y) => groundAt(x, z, y));
