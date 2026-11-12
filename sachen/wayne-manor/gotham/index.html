@@ -372,7 +372,19 @@
       for (let t = 0; t <= 1.001; t += 1 / 10) { const q = [s0[0] + (s1[0] - s0[0]) * t, s0[1] + (s1[1] - s0[1]) * t]; el("path", { d: path([q, [q[0] - vx * 2, q[1] - vz * 2]]), stroke: "#f2f2ee", "stroke-width": .9, fill: "none", "pointer-events": "none" }, L.kanal); }
       g.dataset.info = `<b>Kanal-Auslass</b> (Foto von Nicolas, grösser)<br>Betonstirnwand mit Rohr ${AU.rohr} m und Gitter, Pflaster-Trichter ${AU.wand} → ${AU.wasser} m breit, ${AU.tiefe} m tief, Treppe<br>auf Wasserhöhe in einer Nische der Kaimauer (Absturzschacht vom Sammler)`; }
     // Uebergaenge U-Bahn <-> Kanal: wo ein Hauptsammler den Ring kreuzt
-    const U = G.ubahn, ringF = (x, z) => ((x - U.cx) / U.rx) ** 2 + ((z - U.cz) / U.rz) ** 2 - 1;
+    // U-Bahn-Ring folgt der Inselform (Nicolas 2026-11-12): jeder Uferpunkt auf der Linie zur Mitte (cx/cz) um U.abstand m nach innen, dann geglaettet
+    const U = G.ubahn;
+    // je 3 Grad ein Strahl von der Mitte: erstes Ufer minus Abstand, Radien geglaettet (kreuzt sich nie)
+    const rayHit = t => { const dx = Math.cos(t), dz = Math.sin(t); let m = 1e9; for (let i = 0; i < NI; i++) { const a = insel[i], b = insel[(i + 1) % NI], ex = b[0] - a[0], ez = b[1] - a[1], den = dx * ez - dz * ex; if (Math.abs(den) < 1e-9) continue;
+      const u = ((a[0] - U.cx) * ez - (a[1] - U.cz) * ex) / den, v = ((a[0] - U.cx) * dz - (a[1] - U.cz) * dx) / den; if (u > 0 && v >= 0 && v <= 1) m = Math.min(m, u); } return m; };
+    const HIT = [...Array(120).keys()].map(k => rayHit(k * 3 * Math.PI / 180));
+    let RR = HIT.map(h => Math.max(h - U.abstand, 60));
+    for (let it = 0; it < (U.glatt || 6); it++) RR = RR.map((r, k) => Math.min(HIT[k] - 150, (RR[(k + 119) % 120] + 2 * r + RR[(k + 1) % 120]) / 4));   // mind. 150 m vom Ufer
+    const UR = RR.map((r, k) => [U.cx + Math.cos(k * 3 * Math.PI / 180) * r, U.cz + Math.sin(k * 3 * Math.PI / 180) * r]);
+    const ringF = (x, z) => inPoly(x, z, UR) ? -1 : 1;
+    // Station: Punkt auf dem Ring in Richtung a (Grad, 0 = Osten, 90 = Sueden) vom Stadtzentrum aus
+    const stPos = a => { const t = a * Math.PI / 180; let best = UR[0], bd = 9; for (const p of UR) { const d = Math.abs(((Math.atan2(p[1] - U.cz, p[0] - U.cx) - t) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI); if (d < bd) { bd = d; best = p; } } return best; };
+    { const h = U.stationen.find(s => s.haupt); if (h) U.depot.gleis[0] = stPos(h.a); }
     for (const s of KS) for (let i = 1; i < s.pts.length; i++) { const a = s.pts[i - 1], b = s.pts[i]; if (ringF(a[0], a[1]) * ringF(b[0], b[1]) < 0) {
       const c = el("circle", { cx: b[0], cy: b[1], r: 16, fill: "#ff5a5a", stroke: "#7bd88f", "stroke-width": 6 }, L.kanal); c.dataset.info = `<b>Übergang U-Bahn ↔ Kanal</b><br>unter ${s.name}`; } }
     // Nebensammler (Nicolas 2026-11-11): Nebenstrassen, die an einem Hauptsammler enden, die letzten K.neben.laenge m vor der Einmuendung;
@@ -392,12 +404,12 @@
     el("path", { d: gd.join(""), fill: "#c0c4c8", stroke: "#000", "stroke-width": 1 }, L.gulli).dataset.info = `<b>Gullideckel</b> (${gn} Stück, alle ${K.gulliAbstand} m auf den Strassen mit Haupt- oder Nebensammler)<br>nur mit Spezialwerkzeug (Gullihaken) zu öffnen, darunter Leiter in den Nebensammler, von dort weiter bis in den Hauptsammler`;
 
     // ---------- U-Bahn-Ring ----------
-    const ring = []; for (let a = 0; a <= 360; a += 4) ring.push([U.cx + Math.cos(a * Math.PI / 180) * U.rx, U.cz + Math.sin(a * Math.PI / 180) * U.rz]);
+    const ring = [...UR, UR[0]];
     el("path", { d: path(ring), fill: "none", stroke: "#ff5a5a", "stroke-width": 14, "stroke-dasharray": "40 18", opacity: .85 }, L.ubahn);
     el("path", { d: path(U.depot.gleis), fill: "none", stroke: "#ff5a5a", "stroke-width": 10 }, L.ubahn);
     { const d = U.depot, r = el("rect", { x: d.x - d.w / 2, y: d.z - d.d / 2, width: d.w, height: d.d, fill: "#7a2b2b", stroke: "#ff5a5a", "stroke-width": 4 }, L.ubahn); r.dataset.info = `<b>${d.name}</b>`; }
     for (const s of U.stationen) {
-      const x = U.cx + Math.cos(s.a * Math.PI / 180) * U.rx, z = U.cz + Math.sin(s.a * Math.PI / 180) * U.rz;
+      const [x, z] = stPos(s.a);
       const c = el("circle", { cx: x, cy: z, r: s.haupt ? 34 : 22, fill: "#fff", stroke: "#ff5a5a", "stroke-width": 8 }, L.ubahn);
       c.dataset.info = `<b>U-Bahn: ${s.name}</b>${s.haupt ? " (Hauptbahnhof)" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 11 m unter der Strasse (Höhe Tiefgarage 2)${s.notiz ? "<br>" + s.notiz : ""}`;
       el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: "#ffb3b3", stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = "U " + s.name;
@@ -424,6 +436,10 @@
       else r = el("rect", { x: o.x - W / 2, y: o.z - D / 2, width: W, height: D, fill: T.farbe, "fill-opacity": unter ? .35 : .9, stroke: "#000", "stroke-width": 3, "stroke-dasharray": unter ? "8 5" : "" }, L.orte);
       r.dataset.typ = o.typ;
       r.dataset.info = `<b>${o.name}</b><br>${T.gruppe || o.typ}<br>x ${o.x} / z ${o.z} · ${o.w} × ${o.d} m${o.h ? " · " + o.h + " m hoch" : ""}${o.ebene ? " · " + o.ebene + " m (unter der Strasse)" : ""}<br>Status: ${o.status || "geplant"}${o.notiz ? "<br>" + o.notiz : ""}<br><small>id: ${o.id}</small>`;
+      if (o.markiert) {   // kleine, wichtige Orte (z. B. Batman-Container) gut sichtbar: Ring, Linie und Name
+        el("circle", { cx: o.x, cy: o.z, r: 34, fill: "none", stroke: T.farbe, "stroke-width": 6, "stroke-dasharray": "10 6", "pointer-events": "none" }, L.orte);
+        el("path", { d: `M${o.x - 24} ${o.z - 24}L${o.x - 90} ${o.z - 90}`, stroke: T.farbe, "stroke-width": 4, "pointer-events": "none" }, L.orte);
+        el("text", { x: o.x - 96, y: o.z - 98, "font-size": 34, fill: T.farbe, "text-anchor": "end", "font-weight": 800, stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "") + " (Batman)"; }
       if (big) el("text", { x: o.x, y: o.z - D / 2 - 10, "font-size": o.typ === "wahrzeichen" || o.w > 150 ? 40 : 26, fill: "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "");
     }
     for (const [k, T] of Object.entries(TYPEN)) {
@@ -435,7 +451,7 @@
 
     // ---------- Pruefung: Orte auf Hauptstrassen/Bruecken, ausserhalb der Insel, uebereinander ----------
     const issues = [...brIssues];
-    for (const st of U.stationen) { const x = U.cx + Math.cos(st.a * Math.PI / 180) * U.rx, z = U.cz + Math.sin(st.a * Math.PI / 180) * U.rz; if (!inIsland(x, z) || edgeDist(x, z) < 40) issues.push([{ id: "U " + st.name, x: Math.round(x), z: Math.round(z), w: 40, d: 40 }, "U-Bahn-Station liegt nicht sicher unter der Insel (Ufer näher als 40 m)"]); }
+    for (const st of U.stationen) { const [x, z] = stPos(st.a); if (!inIsland(x, z) || edgeDist(x, z) < 40) issues.push([{ id: "U " + st.name, x: Math.round(x), z: Math.round(z), w: 40, d: 40 }, "U-Bahn-Station liegt nicht sicher unter der Insel (Ufer näher als 40 m)"]); }
     const rectHitsRoad = (o, s) => { const W = Math.max(o.w, 4) / 2 + s.w / 2, D = Math.max(o.d, 4) / 2 + s.w / 2; return s.pts.some(p => Math.abs(p[0] - o.x) < W && Math.abs(p[1] - o.z) < D); };
     for (const o of G.orte) {
       if (!o.aussen && o.ebene < 0 && !inIsland(o.x, o.z)) issues.push([o, "liegt unter der Erde, aber nicht unter der Insel"]);

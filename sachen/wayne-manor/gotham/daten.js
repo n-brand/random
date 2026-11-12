@@ -140,9 +140,9 @@ const GOTHAM = {
     { name: "Arkham-Fähre", linie: [[-2640, 1140], [-2850, 1360], [-3040, 1560], [-3185, 1680]], notiz: "Autofähre zwischen dem Anleger in den Narrows und Arkham Asylum, einzige Verbindung zur Arkham-Insel." },
   ],
 
-  // U-Bahn: ein grosser Ring (Ellipse), Stationen per Winkel in Grad (0 = Osten, 90 = Sueden), Abstand ca. 450 m
+  // U-Bahn: ein grosser Ring entlang der Inselform, Stationen per Winkel in Grad vom Zentrum aus (0 = Osten, 90 = Sueden)
   ubahn: {
-    cx: -2230, cz: 100, rx: 450, rz: 960,   // an die Inselform angepasst (2026-11-12), ca. 4,7 km, alle Stationen unter der Insel
+    abstand: 420, glatt: 15, cx: -2250, cz: 50,   // Ring folgt der Inselform: Ufer auf der Linie zur Mitte um abstand m nach innen, glatt = Glaettung; cx/cz = Mitte fuer die Stationswinkel (Nicolas 2026-11-12)
     stationen: [
       { name: "Hauptbahnhof", a: 0, haupt: true },
       { name: "Stadion", a: 30 }, { name: "Südstadt", a: 60 }, { name: "Hafen", a: 90 }, { name: "Narrows", a: 120, notiz: "Graffiti NBR im Tunnel Richtung Fabrikviertel" },
@@ -252,7 +252,7 @@ const GOTHAM = {
     // --- Industrie ---
     ...[[-2830, 230], [-2660, 230], [-2400, 640], [-2880, 600]].map(([x, z], i) => ({ id: "fabrik-" + (i + 1), typ: "industrie", name: "Fabrik", x, z, w: 70, d: 45, h: 15 })),
     // --- Geheim ---
-    { id: "container-base", typ: "geheim", name: "Container (Aufzug zur geheimen Batman-Basis)", x: -2660, z: 1110, w: 6.1, d: 2.4, ufer: true,
+    { id: "container-base", typ: "geheim", name: "Container (Aufzug zur geheimen Batman-Basis)", x: -2660, z: 1110, markiert: true, w: 6.1, d: 2.4, ufer: true,
       notiz: "Ganz normaler 20-Fuss-Seecontainer am Ufer beim Hafen (Foto von Nicolas): blau, Wellblech, zweiflügelige Tür mit Verriegelungsstangen, keine Fenster. 6,06 x 2,44 x 2,59 m, innen ca. 5,9 m lang. Er ist ein Aufzug (fährt samt Auto hinunter)." },
     { id: "bunker", typ: "geheim", name: "Batman-Basis unter dem Container (Halle mit Lichtdecke)", x: -2580, z: 1060, w: 90, d: 50, ebene: -5.5,
       notiz: "Flache, weite Halle auf Höhe der Tiefgarage 1 (Boden 5,5 m unter der Strasse, ca. 4,7 m hoch): Sichtbetonwände, die ganze Decke ein Raster aus Lichtpaneelen (Foto von Nicolas), glatter Betonboden. Batmobil in der Mitte, Anzug fährt aus dem Boden, Motorrad und Batpod fahren aus der Wand, hinten Reifenstapel und Werkbank, Computer, aufklappbare Wand mit Waffen und Gadgets, Geheimwand mit Tresor (Goldbarren, Bargeld)." },
