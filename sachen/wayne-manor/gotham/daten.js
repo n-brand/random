@@ -122,11 +122,13 @@ const GOTHAM = {
     { id: "ufer-ost", name: "Uferstrasse Nord (zweistöckig)", w: 22, zweistock: true, ufer: { seite: "ost", abstand: 95, von: -1300, bis: 1100 } },
     { id: "ufer-west", name: "Uferstrasse Süd", w: 16, ufer: { seite: "west", abstand: 70, von: -850, bis: 700 } },
     // ausserhalb der Insel
-    { id: "highway", name: "Gotham Highway (Manor - Stadt)", w: 22, linie: [[-528, 1358], [-760, 1200], [-1000, 800], ["Oa", 300]] },   // ab Suedwest-Ende der Manor-Hauptstrasse (Spiel -61 / 200, umgerechnet)
+    // Gotham Highway (Nicolas 2026-11-12, Skizze bei [-1032, 709]): laeuft auf dem Festland Nord von der Nordbruecke (Crosstown) im Bogen hinunter zur
+    // Ostbruecke (Harbor); die Gotham-Highway-Bruecke muendet im Bogen von unten ein. Zur Manor fuehrt (vorerst) nur eine normale Strasse.
+    { id: "highway", name: "Gotham Highway", w: 22, linie: [["Oa", -880], [-420, -600], [-420, -150], [-520, 300], [-760, 560], [-960, 700], [-1080, 740], ["Oa", 800]] },
     // Festland Ost: verbindet die Enden von Nord-, Highway- und Suedbruecke (vorher endeten Nord- und Suedbruecke ohne Strasse)
-    { id: "ost-festland", name: "North Shore Road (Festland Nord)", w: 18, linie: [["Oa", -880], [-420, -600], [-420, -150], [-500, 290], [-800, 600], [-1000, 800]] },   // endet am Highway (Manor jetzt im Sueden)
+    { id: "highway-bruecke", name: "Gotham Highway (Zubringer Highway-Brücke)", w: 22, linie: [["Oa", 300], [-930, 628], [-790, 535], [-640, 430]] },   // muendet im Bogen in den Highway
     // Nicolas 2026-11-12: Strasse von der Suedbruecke muendet kurz nach der Bruecke in den Highway (ab dort eine Strasse)
-    { id: "harbor-zubringer", name: "Harbor-Zubringer (Ostbrücke - Highway)", w: 18, linie: [["Oa", 800], [-1080, 740], [-830, 507]] },
+    { id: "manor-strasse", name: "Strasse nach Wayne Manor", w: 10, linie: [[-528, 1358], [-760, 1200], [-900, 950], [-960, 700]] },   // ab Suedwest-Ende der Manor-Hauptstrasse (Spiel -61 / 200), ohne Knick; normale Strasse, kein Highway
     { id: "nord-zufahrt", name: "Zufahrt Westen (über die Westkanal-Brücke)", w: 16, linie: [[-2424, "Na"], [-2470, -1450], [-2560, -1800]] },
     { id: "nord-anschluss", name: "Anschluss Westkanal-Brücke", w: 16, linie: [[-2424, -870], [-2445, -800]] },
     { id: "hauptstrasse", name: "Hauptstrasse (besteht)", w: 8, besteht: true, linie: [[-528, 1358], [-471, 1397], [-422, 1425], [-382, 1438], [-345, 1443], [-311, 1457], [-274, 1487], [-224, 1503], [-161, 1495], [-94, 1472], [-11, 1442]] },   // Spiel-Punkte (-61 / 200 ... 256 / -217) mit manorLage umgerechnet
@@ -175,7 +177,7 @@ const GOTHAM = {
     linien: [
       { name: "Linie 1 Zentrum", farbe: "#3ec7ff", strassen: ["ring", "parkrow", "ufer-ost"] },
       { name: "Linie 2 West-Ost", farbe: "#7de0ff", strassen: ["uptown-ave", "gotham-blvd"] },
-      { name: "Linie 3 Manor-Express", farbe: "#2fa3e0", strassen: ["highway", "parkrow"] },
+      { name: "Linie 3 Manor-Express", farbe: "#2fa3e0", strassen: ["manor-strasse", "highway", "parkrow"] },
       { name: "Linie 4 Hafen", farbe: "#58b8ff", strassen: ["sued-road", "diag-sued"] },
     ],
   },
