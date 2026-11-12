@@ -385,7 +385,10 @@ function carCamera() {
   const C = CAR, sp = C.spec;
   player.pos.set(C.x, C.y + 0.6, C.z);
   // Tempo-Gefuehl (modelle.js): Sichtfeld, Kamera naeher/tiefer, Vibrieren; nicht mit Turm (Zielen/Zoom setzen den Sichtwinkel)
-  const TG = tempoGefuehl(C.air ? 0 : C.v, clock.elapsedTime);
+  // Kamera-Tempo geglaettet (Nicolas 2026-11-12: beim Abheben/Landen des DeLorean sprang die Kamera): Sichtfeld, Abstand und Hoehe gleiten in ca. 0,4 s;
+  // in der Luft zaehlt 0 (Sprung), Schweben zaehlt als Fahrt
+  const camT = C.air && !C.flying ? 0 : Math.abs(C.v); C.camV = C.camV === undefined ? camT : C.camV + (camT - C.camV) * Math.min(1, dt * 2.5);
+  const TG = tempoGefuehl(C.camV, clock.elapsedTime);
   if (!C.turret && Math.abs(camera.fov - TG.fov) > 0.05) { camera.fov = TG.fov; camera.updateProjectionMatrix(); }
   if (C.view === 1) {
     const [sx, sy, sz] = sp.seat, s = Math.sin(C.h), c = Math.cos(C.h);

@@ -252,6 +252,21 @@ for (const b of document.querySelectorAll("#touch button")) { const k = b.datase
 const down = (...c) => c.some(k => keys.has(k));
 
 // ---------- Fahren (Einspurmodell) ----------
+// Verfolger-Kamera und Fahrersicht (aus fahren() herausgezogen, damit der DeLorean beim Schweben dieselbe Kamera nutzt; Nicolas 2026-11-12)
+function folgeKamera(A, s, dt) {
+  // Kamera wie im Spiel (fahren.js): Lenken dreht den Blick mit (ausser Panzer), ab 3 m/s gleitet er hinter das Fahrzeug (rueckwaerts davor)
+  const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
+  if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) kYaw += wrapW(A.h + (A.v < 0 ? Math.PI : 0) - kYaw) * Math.min(1, dt * 1.2); }
+  // erst die normale Kamera (Verfolger oder Fahrersicht), danach zielt die Waffe von dort und setzt gezoomt die Zieloptik
+  const camT = A.air && !A.flying ? 0 : Math.abs(A.v); A.camV = A.camV === undefined ? camT : A.camV + (camT - A.camV) * Math.min(1, dt * 2.5);   // geglaettet wie fahren.js
+  const TG = tempoGefuehl(A.camV, performance.now() / 1000);   // Tempo-Gefuehl wie fahren.js carCamera (modelle.js)
+  if (!A.turret && Math.abs(camera.fov - TG.fov) > 0.05) { camera.fov = TG.fov; camera.updateProjectionMatrix(); }
+  if (A_view === 1 && s.seat) { const [sx, sy, sz] = s.seat, sn = Math.sin(A.h), c = Math.cos(A.h);
+    camera.position.set(A.x + sx * c + sz * sn, sy + (A.y || 0), A.z - sx * sn + sz * c); camera.rotation.set(kPitch + TG.sy * 0.15, kYaw + TG.sx * 0.1, 0, "YXZ"); }
+  else { const D = (s.camD || 8) * TG.dK, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = (s.camH || 1.2) + (A.y || 0), tz = A.z;
+    const ex = Math.sin(kYaw) * D, ey = Math.max(0.5, H - 1.3 + 0.9 + TG.hK), ez = Math.cos(kYaw) * D;
+    camera.position.set(tx + ex + TG.sx, Math.max(0.3, ty + ey + TG.sy), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
+}
 function fahren(dt) {
   const A = AKT, s = A.spec, vmax = s.maxF || s.maxN || 30, gas = down("KeyW", "ArrowUp"), brems = down("KeyS", "ArrowDown"), links = down("KeyA", "ArrowLeft"), rechts = down("KeyD", "ArrowRight");
   // wie im Spiel (fahren.js carStep): Gas/Bremse/Ausrollen, Lenken mit Anlaufzeit, Kurvenphysik (modelle.js); Gelaende ist hier eben
@@ -277,7 +292,7 @@ function fahren(dt) {
     else if (A.flying && A.hoverWant && hk && tap) { A.hoverWant = false; toast("Landen – Räder klappen aus"); }
     if (A.flying) {
       if (A.hoverWant) A.fold = Math.min(1, A.fold + dt / 1.0); const e = A.fold * A.fold * (3 - 2 * A.fold), dn = down("KeyC");
-      A.v += (th * 30 - A.v) * Math.min(1, dt * (th ? 0.7 : 0.25)); A.h += st * 1.3 * dt; kYaw += st * 1.3 * dt;
+      A.v += (th * 30 - A.v) * Math.min(1, dt * (th ? 0.7 : 0.25)); A.h += st * 1.3 * dt;   // Blick dreht folgeKamera mit (dh)
       A.vy += ((A.hoverWant ? (A.fold < 1 ? 0 : ((sp2 ? 1 : 0) - (dn ? 1 : 0)) * 6) : -4) - A.vy) * Math.min(1, dt * 3);
       let ny = Math.min(400, A.y + A.vy * dt);
       if (A.hoverWant) { const min = 0.6 * e; if (ny < min) { ny = Math.min(min, Math.max(ny, A.y) + 1.2 * dt + (min - Math.max(ny, A.y)) * Math.min(1, dt * 4)); if (A.vy < 0) A.vy = 0; }
@@ -288,8 +303,7 @@ function fahren(dt) {
       A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;
       for (const w of A.wheels || []) if (w.spin) w.spin.rotation.x -= A.v * dt / w.r * (1 - A.fold);
       A.foldPose(); setze(); $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h" + (A.hoverWant ? (A.fold < 1 ? " · Räder klappen ein" : " · schwebt") : " · landet");
-      const D = (s.camD || 8), H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)); if (Math.abs(A.v) > 3) kYaw += wrapW(A.h - kYaw) * Math.min(1, dt * 1.2);
-      camera.position.set(A.x + Math.sin(kYaw) * D, (s.camH || 1.2) + A.y + H - 0.4, A.z + Math.cos(kYaw) * D); camera.lookAt(A.x, (s.camH || 1.2) + A.y + 0.3, A.z); return; }
+      folgeKamera(A, s, dt); return; }
     A.hoverWant = false; if (A.fold > 0) A.fold = Math.max(0, A.fold - dt / 1.0); A.roll = 0; A.foldPose(); }
   // Sprung und Nitro wie im Spiel (fahren.js carStep, Nicolas 2026-11-12: in der Werkstatt konnte man nicht springen): Sprung ab 14 m/s (50 km/h),
   // Steigtempo 7,5 m/s, +6 m/s Schub mit Duese (Tumbler) bzw. +3 ohne (Batpod), Schwerkraft 14; Nitro: Leertaste halten, 80 m/s² bis 40 km/h ueber dem Hoechsttempo, Vorrat 4 s
@@ -316,17 +330,7 @@ function fahren(dt) {
   for (const w of A.wheels) { w.spin.rotation.x -= A.v * dt / w.r * (1 - (A.fold || 0)); if (w.front) w.piv.rotation.y = A.steer; }
   setze();
   $speed.textContent = Math.round(Math.abs(A.v) * 3.6) + " km/h";
-  // Kamera wie im Spiel (fahren.js): Lenken dreht den Blick mit (ausser Panzer), ab 3 m/s gleitet er hinter das Fahrzeug (rueckwaerts davor)
-  const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
-  if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) kYaw += wrapW(A.h + (A.v < 0 ? Math.PI : 0) - kYaw) * Math.min(1, dt * 1.2); }
-  // erst die normale Kamera (Verfolger oder Fahrersicht), danach zielt die Waffe von dort und setzt gezoomt die Zieloptik
-  const TG = tempoGefuehl(A.v, performance.now() / 1000);   // Tempo-Gefuehl wie fahren.js carCamera (modelle.js)
-  if (!A.turret && Math.abs(camera.fov - TG.fov) > 0.05) { camera.fov = TG.fov; camera.updateProjectionMatrix(); }
-  if (A_view === 1 && s.seat) { const [sx, sy, sz] = s.seat, sn = Math.sin(A.h), c = Math.cos(A.h);
-    camera.position.set(A.x + sx * c + sz * sn, sy + (A.y || 0), A.z - sx * sn + sz * c); camera.rotation.set(kPitch + TG.sy * 0.15, kYaw + TG.sx * 0.1, 0, "YXZ"); }
-  else { const D = (s.camD || 8) * TG.dK, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = (s.camH || 1.2) + (A.y || 0), tz = A.z;
-    const ex = Math.sin(kYaw) * D, ey = Math.max(0.5, H - 1.3 + 0.9 + TG.hK), ez = Math.cos(kYaw) * D;
-    camera.position.set(tx + ex + TG.sx, Math.max(0.3, ty + ey + TG.sy), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
+  folgeKamera(A, s, dt);
   if (A.turret) waffe(dt);
   if (A.monitor && A.wz) { wasserZoomStep(dt); const ws = $("wsicht");   // Wasserwerfer-Ziel und Zoom wie schiessen.js
     const imp = wasserZiel(A.wz.tip, kYaw, A.wz.el, () => 0); if (A_view !== 1) monitorCamera(A.monitor, imp, dt); wasserZielZeigen(ws, imp); if (!A.wz.ready) ws.hidden = true;   // Ring nur bei ausgefahrenem Arm   // Kamera oben auf dem Arm
