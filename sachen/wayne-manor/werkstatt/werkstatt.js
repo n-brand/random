@@ -75,6 +75,10 @@ const ZIELE = [], zielGruppe = new THREE.Group(); flaeche.add(zielGruppe);   // 
   }
 }
 
+// Fuellbau-Beispiel (Nicolas 2026-11-12: wie stellst du dir die Fuellbauten vor?): Wohn- und Geschaeftshaus der Suedseite (Mittelstand) aus
+// js/gotham/fuellbau.js, oestlich neben dem Rundkurs, Front mit Laeden zur Strecke (Westen), auf einem Gehweg
+const FUELLBAU = (() => { const g = buildFuellbau({ breite: 24, tiefe: 20, geschosse: 7, seed: 11 }); g.position.set(238, 0, -10); g.rotation.y = -Math.PI / 2; scene.add(g);
+  const walk = new THREE.Mesh(new THREE.BoxGeometry(28, 0.15, 32), new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 })); walk.position.set(236, 0.075, -10); walk.receiveShadow = true; scene.add(walk); return g; })();
 // ---------- Fluggeraete ----------
 const FLUG = { jet: () => JET, bat: () => FLY };
 // Startbahn (Kampfjet) und Landeplatz (The Bat) am Nordrand der Flaeche
@@ -170,7 +174,8 @@ function laden(i) {
   scene.add(b.g);
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
-  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null, monitor: b.monitor || null, dumpG: b.dump || null };
+  AKT = { m, g: b.g, wheels: b.wheels || [], spec: m.spec, x: START.x, z: START.z, h: START.h, v: 0, steer: 0, size, lean: 0, turret: b.turret && b.gun ? b.turret : null, gun: b.gun, gunMin: b.gunMin, beacon: b.beacon || null, monitor: b.monitor || null, dumpG: b.dump || null,
+    y: 0, vy: 0, air: false, pitch: 0, jetM: b.jetM || null, flame: b.flame || null, jet: 0, boostE: 1, boostT: 0, boostOn: false, spPrev: false };   // Sprung/Nitro wie im Spiel
   if (AKT.gun) AKT.gun.userData.z0 = AKT.gun.position.z;
   kYaw = START.h; kPitch = -0.12; ZOOM.z = ZOOM.t = 1; if (modus === "drive") { camera.fov = 70; camera.updateProjectionMatrix(); }
   setze(); sicht();
@@ -183,7 +188,7 @@ function laden(i) {
   try { localStorage.setItem("werkstatt-modell", String(i)); } catch (e) {}
 }
 function flugStart() { const F = AKT.F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }
-function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, 0, A.z); A.g.rotation.set(0, A.h, A.spec.track ? 0 : A.lean, "YXZ"); }
+function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? 0 : A.lean, "YXZ"); }
 window.werkstattTeleport = p => { if (!AKT || AKT.flug) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
 
 // ---------- Auswahl und Ansicht ----------
@@ -260,9 +265,24 @@ function fahren(dt) {
     if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);
     A.wz = { tip: M0.tip, el, ready: M0.ready }; }
   else if (A.dumpG) dumpPose(A.dumpG, A, down("Space"), dt);   // Muldenkipper: Mulde kippen (wie fahren.js carPose)
-  else if (down("Space") && !A.turret) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm ist Leertaste = schiessen)
+  else if (down("Space") && !A.turret && !s.jump && !s.boost) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm = schiessen, mit Sprung/Nitro = springen/Nitro)
+  // Sprung und Nitro wie im Spiel (fahren.js carStep, Nicolas 2026-11-12: in der Werkstatt konnte man nicht springen): Sprung ab 14 m/s (50 km/h),
+  // Steigtempo 7,5 m/s, +6 m/s Schub mit Duese (Tumbler) bzw. +3 ohne (Batpod), Schwerkraft 14; Nitro: Leertaste halten, 80 m/s² bis 40 km/h ueber dem Hoechsttempo, Vorrat 4 s
+  const spc = down("Space"), tap = spc && !A.spPrev; A.spPrev = spc;
+  const boosting = !!s.boost && spc && !A.air && th >= 0 && A.boostE > 0;
+  if (s.boost) { if (boosting && !A.boostOn && typeof engineJet === "function") engineJet(); A.boostOn = boosting;
+    if (boosting) { A.boostE = Math.max(0, A.boostE - dt / 4); A.boostT = -2; A.jet = Math.max(A.jet, 0.5); }
+    else if (A.boostE < 1) { A.boostT += dt; if (A.boostT >= 0.6) { A.boostT -= 0.6; A.boostE = Math.min(1, Math.floor(A.boostE * 10 + 1e-6) / 10 + 0.1); } }
+    if (tap && A.boostE <= 0) toast("Nitro leer – lädt nach"); }
+  if (boosting && A.v < vmax + 40 / 3.6) A.v = Math.min(vmax + 40 / 3.6, A.v + 80 * dt);
+  if (s.jump && tap && !A.air && A.v >= 14) { A.air = true; A.vy = 7.5; A.v += A.jetM ? 6 : 3; A.jet = 0.9; toast("Sprung!"); if (A.jetM && typeof engineJet === "function") engineJet(); }
+  if (A.air) { A.vy -= 14 * dt; A.y += A.vy * dt; const tp = Math.max(-0.12, Math.min(0.2, Math.atan2(A.vy, Math.max(8, Math.abs(A.v))) * 0.4)); A.pitch += (tp - A.pitch) * Math.min(1, dt * 2);
+    if (A.y <= 0) { A.y = 0; A.vy = 0; A.air = false; } }
+  else A.pitch += (0 - A.pitch) * Math.min(1, dt * 10);
+  if (A.jetM) { A.jet = Math.max(0, A.jet - dt); A.jetM.emissiveIntensity = Math.min(2.5, A.jet * 4); }
+  if (A.flame) { const k = A.boostOn ? 0.85 + 0.3 * Math.random() : Math.min(1, A.jet * 2); A.flame.visible = k > 0.02; A.flame.scale.set(0.8 + 0.3 * k, 0.8 + 0.3 * k, k); }
   A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), KP.dec * dt);                                   // Kurvenwiderstand / Radieren
-  A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax, A.v));
+  A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax + (boosting ? 40 / 3.6 : 0) + (A.air ? 6 : 0), A.v));
   A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;   // vorne = -z im Modell
   if (s.push && schieben(A)) A.v *= Math.max(0, 1 - dt * 1.2);           // Schaufel schiebt Zielfahrzeuge (wie vehPushStep in fahren.js)
   const lim = 580; A.x = Math.max(-lim, Math.min(lim, A.x)); A.z = Math.max(-lim, Math.min(lim, A.z));
@@ -278,8 +298,8 @@ function fahren(dt) {
   const TG = tempoGefuehl(A.v, performance.now() / 1000);   // Tempo-Gefuehl wie fahren.js carCamera (modelle.js)
   if (!A.turret && Math.abs(camera.fov - TG.fov) > 0.05) { camera.fov = TG.fov; camera.updateProjectionMatrix(); }
   if (A_view === 1 && s.seat) { const [sx, sy, sz] = s.seat, sn = Math.sin(A.h), c = Math.cos(A.h);
-    camera.position.set(A.x + sx * c + sz * sn, sy, A.z - sx * sn + sz * c); camera.rotation.set(kPitch + TG.sy * 0.15, kYaw + TG.sx * 0.1, 0, "YXZ"); }
-  else { const D = (s.camD || 8) * TG.dK, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = s.camH || 1.2, tz = A.z;
+    camera.position.set(A.x + sx * c + sz * sn, sy + (A.y || 0), A.z - sx * sn + sz * c); camera.rotation.set(kPitch + TG.sy * 0.15, kYaw + TG.sx * 0.1, 0, "YXZ"); }
+  else { const D = (s.camD || 8) * TG.dK, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = (s.camH || 1.2) + (A.y || 0), tz = A.z;
     const ex = Math.sin(kYaw) * D, ey = Math.max(0.5, H - 1.3 + 0.9 + TG.hK), ez = Math.cos(kYaw) * D;
     camera.position.set(tx + ex + TG.sx, Math.max(0.3, ty + ey + TG.sy), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
   if (A.turret) waffe(dt);
