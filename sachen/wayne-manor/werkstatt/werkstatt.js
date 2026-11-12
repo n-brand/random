@@ -79,8 +79,8 @@ const ZIELE = [], zielGruppe = new THREE.Group(); flaeche.add(zielGruppe);   // 
 
 // Fuellbau-Beispiel (Nicolas 2026-11-12: wie stellst du dir die Fuellbauten vor?): Wohn- und Geschaeftshaus der Suedseite (Mittelstand) aus
 // js/gotham/fuellbau.js, oestlich neben dem Rundkurs, Front mit Laeden zur Strecke (Westen), auf einem Gehweg
-const FUELLBAU = (() => { const g = buildFuellbau({ breite: 24, tiefe: 20, geschosse: 7, seed: 11 }); g.position.set(238, 0, -10); g.rotation.y = -Math.PI / 2; scene.add(g);
-  const bs = buildBaustelle({ breite: 18, tiefe: 20, seed: 5 }); bs.position.set(238, 0.15, 11.2); bs.rotation.y = -Math.PI / 2; scene.add(bs);   // Baustelle als Lueckenfueller daneben (Nicolas 2026-11-12)
+const FUELLBAU = (() => { const g = buildFuellbau({ breite: 24, tiefe: 20, geschosse: 7, seed: 11, id: "FB-MUSTER" }); g.position.set(238, 0, -10); g.rotation.y = -Math.PI / 2; scene.add(g);
+  const bs = buildBaustelle({ breite: 18, tiefe: 20, seed: 5, id: "BS-MUSTER" }); bs.position.set(238, 0.15, 11.2); bs.rotation.y = -Math.PI / 2; scene.add(bs);   // Baustelle als Lueckenfueller daneben (Nicolas 2026-11-12)
   const walk = new THREE.Mesh(new THREE.BoxGeometry(28, 0.15, 46), new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 })); walk.position.set(236, 0.075, 0); walk.receiveShadow = true; scene.add(walk); return g; })();
 // ---------- Fluggeraete ----------
 const FLUG = { jet: () => JET, bat: () => FLY };

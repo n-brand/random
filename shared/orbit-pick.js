@@ -78,8 +78,12 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
     const hit = ray.intersectObjects(scene.children, true).find(h => !h.object.isSprite && shown(h.object));
     const tgt = controls.target, cam = camera.position, off = cam.clone().sub(tgt), dist = off.length();
     const azimut = (THREE.MathUtils.radToDeg(Math.atan2(off.x, off.z)) + 360) % 360, neigung = THREE.MathUtils.radToDeg(Math.asin(off.y / (dist || 1)));
+    // ID (Nicolas 2026-11-12): Objekte mit userData.id (z. B. Gotham-Fuellbau FB-0123, Baustelle BS-03) geben ihre ID mit; gesucht wird vom
+    // getroffenen Teil nach oben durch die Eltern. Die ID steht in der zweiten Zeile und in der kurzen Meldung.
+    let idO = null; for (let o = hit && hit.object; o; o = o.parent) if (o.userData && o.userData.id) { idO = o; break; }
     const lines = [
       `${title} - ${mode ? mode() : "Orbit-Ansicht"}`,
+      idO ? `ID: ${idO.userData.id}${idO.userData.art ? " (" + idO.userData.art + ")" : ""}` : null,
       hit ? `Punkt: ${vec(hit.point)}` : "Punkt: (nichts getroffen)",
       hit && hit.object.name ? `Objekt: ${hit.object.name}` : null,
       `Kamera: ${vec(cam)}`,

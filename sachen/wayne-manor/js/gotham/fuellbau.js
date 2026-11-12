@@ -2,7 +2,8 @@
 // Klassisches Skript (braucht THREE, canvasTex aus kern/basis.js, mergeGeometries). buildFuellbau(o) -> THREE.Group, Ursprung = Mitte Grundflaeche am Boden,
 // Front (Laeden, Feuertreppe) nach +z. Alles je Material zusammengefasst (wenige Zeichenaufrufe), Fenster als Textur je Fensterachse (3 m),
 // nachts einzelne Fenster hell (emissiveMap). Regel Gotham: jedes Geschoss mind. 4,7 m.
-// o: breite (m, Vielfaches von 3), tiefe, geschosse (inkl. EG), geschoss (4,7), stein (Backsteinfarbe), seed, laeden ([Name, Markisenfarbe] je Laden)
+// o: breite (m, Vielfaches von 3), tiefe, geschosse (inkl. EG), geschoss (4,7), stein (Backsteinfarbe), seed, laeden ([Name, Markisenfarbe] je Laden),
+// id (Nicolas 2026-11-12: jeder Fuellbau/jede Baustelle hat eine klare ID, z. B. FB-0123 / BS-03; landet in userData.id, die Orbit-Ansicht kopiert sie mit)
 "use strict";
 function buildFuellbau(o = {}) {
   const W = o.breite || 24, D = o.tiefe || 20, N = o.geschosse || 7, GH = o.geschoss || 4.7, H = N * GH, BAY = 3, seed = o.seed || 7;
@@ -74,7 +75,8 @@ function buildFuellbau(o = {}) {
   // Ladenschilder (Canvas-Schrift ueber der Markise)
   for (const [name, xm, z] of signs) { const t = canvasTex(256, 48, (c, w, h) => { c.fillStyle = "#15171a"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2e6c8"; c.textAlign = "center"; c.textBaseline = "middle"; let p = 34; c.font = "bold " + p + "px Arial, sans-serif"; while (c.measureText(name).width > w - 16) { p -= 2; c.font = "bold " + p + "px Arial, sans-serif"; } c.fillText(name, w / 2, h / 2 + 2); });
     const s = new THREE.Mesh(new THREE.PlaneGeometry(LW - 0.8, (LW - 0.8) * 48 / 256), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 })); s.position.set(xm, 4.4, z + 0.33); g.add(s); }   // vor dem Ladenkranz
-  g.userData = { breite: W, tiefe: D, hoehe: H + 1.6, geschosse: N, facadeM, nacht: k => { facadeM.emissiveIntensity = k * 1.2; glassM.emissiveIntensity = 0.08 + k * 0.9; } };
+  if (o.id) g.name = "Füllbau " + o.id;
+  g.userData = { id: o.id || null, art: "Füllbau", breite: W, tiefe: D, hoehe: H + 1.6, geschosse: N, facadeM, nacht: k => { facadeM.emissiveIntensity = k * 1.2; glassM.emissiveIntensity = 0.08 + k * 0.9; } };
   return g;
 }
 // Baustelle als Lueckenfueller (Nicolas 2026-11-12: "damit die Luecken fuellen - Erde, darauf Materialien, ein paar Metallstangen, darum herum
@@ -129,6 +131,7 @@ function buildBaustelle(o = {}) {
   for (const [m, list] of bucket) { const mm = new THREE.Mesh(mergeGeometries(list.map(x => x.index ? x.toNonIndexed() : x), false), m); mm.castShadow = m !== zaunM && m !== folieM; mm.receiveShadow = true; gr.add(mm); }
   const st = canvasTex(256, 128, (c, w, h) => { c.fillStyle = "#f2c12e"; c.fillRect(0, 0, w, h); c.fillStyle = "#111"; c.fillRect(6, 6, w - 12, h - 12); c.fillStyle = "#f2c12e"; c.textAlign = "center"; c.textBaseline = "middle"; c.font = "bold 30px Arial, sans-serif"; c.fillText("BAUSTELLE", w / 2, h / 2 - 16); c.font = "bold 20px Arial, sans-serif"; c.fillText("Betreten verboten", w / 2, h / 2 + 22); });
   const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshStandardMaterial({ map: st, roughness: 0.6 })); sg.position.set(g / 2 + 1.75, 1.4, D / 2 + 0.05); gr.add(sg);   // Schild am Zaun neben dem Tor
-  gr.userData = { breite: W, tiefe: D };
+  if (o.id) gr.name = "Baustelle " + o.id;
+  gr.userData = { id: o.id || null, art: "Baustelle", breite: W, tiefe: D };   // id wie beim Fuellbau
   return gr;
 }

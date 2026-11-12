@@ -146,6 +146,7 @@ Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, be
 5. **Tests im Panzer** (automatisch rauszoomen, Turm läuft nach, Zoom-Maus gleich schnell): bleiben vorerst.
 6. **Waffen (S2):** mit Waffe in der Hand öffnet Rechtsklick keine Tore und steigt nicht ein (zum Öffnen im Inventar auf einen leeren Platz wechseln). **Linksklick** soll künftig Aktionen auslösen statt die Maus zu fangen; die Maus wird dann anders gefangen.
 7. **„Chevrollette co“** = eine Corvette; kommt irgendwann oder ganz am Ende (Phase 8).
+8. **Klare ID für jeden Füllbau und jede Baustelle** (Nicolas 2026-11-12): Füllbauten `FB-0001` … (Reihenfolge, in der die Karte sie erzeugt; ändern sich Strassen oder Bezirke, verschieben sich die Nummern, deshalb vor dem Bau in G3/G4 einfrieren), Baustellen `BS-01` … (fest in `daten.js`), Muster in der Werkstatt `FB-MUSTER` / `BS-MUSTER`. Die ID steckt im 3D-Objekt (`userData.id`, `buildFuellbau`/`buildBaustelle` mit `id`): **Rechtsklick in der Orbit-Ansicht kopiert sie mit** (Zeile „ID: …“). Auf der Karte zeigt ein Klick auf einen Füllbau oder eine Baustelle die ID und kopiert sie vor dem Punkt, z. B. `FB-0187 [-2905, 673]`. So kann man in Nachrichten einfach die ID nennen.
 
 ## Offene Fragen an Nicolas
 

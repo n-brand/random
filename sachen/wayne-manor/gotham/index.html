@@ -307,11 +307,14 @@
         if (rectFree(x, z, w2, d2, ux, uz)) { BUILD.push({ c: rectCorners(x, z, w2, d2, ux, uz), h: h * .7 }); markRect(x, z, w2, d2, ux, uz, 0.8); }
       }
     }
+    // Klare ID je Fuellbau (Nicolas 2026-11-12): FB-0001 … in Erzeugungsreihenfolge (fester Zufallsstart, also gleich bei jedem Laden; aendern sich
+    // Strassen oder Bezirke, verschieben sich die Nummern). Klick auf einen Fuellbau zeigt und kopiert die ID mit dem Punkt.
+    BUILD.forEach((q, i) => { q.id = "FB-" + String(i + 1).padStart(4, "0"); });
     // Zeichnen: je Hoehenklasse ein Pfad
     const HB = [[0, 12, "#5b5650"], [12, 25, "#6c6760"], [25, 50, "#7f7b74"], [50, 100, "#95938e"], [100, 180, "#acadab"], [180, 999, "#c9ccd0"]];
     for (const [a, b, col] of HB) {
       const d = BUILD.filter(q => q.h >= a && q.h < b).map(q => path(q.c, true)).join("");
-      if (d) { const p = el("path", { d, fill: col, stroke: "#1b1d20", "stroke-width": 1.2 }, L.gebaeude); p.dataset.info = `<b>Füllbauten ${a}–${b < 999 ? b : "320"} m hoch</b><br>automatisch nach Wohlstand des Bezirks (Vorlagen aus G3)`; }
+      if (d) { const p = el("path", { d, fill: col, stroke: "#1b1d20", "stroke-width": 1.2 }, L.gebaeude); p.dataset.info = `<b>Füllbauten ${a}–${b < 999 ? b : "320"} m hoch</b><br>automatisch nach Wohlstand des Bezirks (Vorlagen aus G3)`; p.dataset.fuell = "1"; }
     }
 
     // ---------- Strassen zeichnen ----------
@@ -448,7 +451,7 @@
         el("rect", { x: o.x - W * .32, y: o.z - D * .25, width: W * .64, height: D * .5, rx: D * .12, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 2, "pointer-events": "none" }, L.orte); }
       else r = el("rect", { x: o.x - W / 2, y: o.z - D / 2, width: W, height: D, fill: T.farbe, "fill-opacity": unter ? .35 : .9, stroke: "#000", "stroke-width": 3, "stroke-dasharray": unter ? "8 5" : "" }, L.orte);
       if (o.dreh) r.setAttribute("transform", `rotate(${o.dreh} ${o.x} ${o.z})`);   // gedreht (Wayne Manor 30 Grad, Nicolas 2026-11-12)
-      r.dataset.typ = o.typ;
+      r.dataset.typ = o.typ; if (o.typ === "baustelle") r.dataset.id = o.id;   // Baustelle: ID beim Klick mitkopieren
       r.dataset.info = `<b>${o.name}</b><br>${T.gruppe || o.typ}<br>x ${o.x} / z ${o.z} · ${o.w} × ${o.d} m${o.h ? " · " + o.h + " m hoch" : ""}${o.ebene ? " · " + o.ebene + " m (unter der Strasse)" : ""}<br>Status: ${o.status || "geplant"}${o.notiz ? "<br>" + o.notiz : ""}<br><small>id: ${o.id}</small>`;
       if (o.markiert) {   // kleine, wichtige Orte (z. B. Batman-Container) gut sichtbar: Ring, Linie und Name
         el("circle", { cx: o.x, cy: o.z, r: 34, fill: "none", stroke: T.farbe, "stroke-width": 6, "stroke-dasharray": "10 6", "pointer-events": "none" }, L.orte);
@@ -564,8 +567,10 @@
     }
     function click(ev) {
       const [x, z] = toWorld(ev.clientX, ev.clientY), t = document.elementFromPoint(ev.clientX, ev.clientY), d = t && t.dataset && t.dataset.info;
-      const k = `[${Math.round(x)}, ${Math.round(z)}]`;
-      info.innerHTML = (d ? d + "<hr style='border-color:#2a3039'>" : "") + `Punkt: <code>${k}</code> <small>(kopiert)</small>`;
+      let id = t && t.dataset && t.dataset.id, extra = "";
+      if (t && t.dataset && t.dataset.fuell) { const q = BUILD.find(q => inPoly(x, z, q.c)); if (q) { id = q.id; extra = `<b>Füllbau ${q.id}</b> · ca. ${Math.round(q.h)} m hoch<hr style='border-color:#2a3039'>`; } }
+      const k = (id ? id + " " : "") + `[${Math.round(x)}, ${Math.round(z)}]`;   // mit ID (Fuellbau / Baustelle)
+      info.innerHTML = extra + (d ? d + "<hr style='border-color:#2a3039'>" : "") + `Punkt: <code>${k}</code> <small>(kopiert)</small>`;
       navigator.clipboard && navigator.clipboard.writeText(k).catch(() => {});
     }
     new ResizeObserver(fit).observe(wrap); fit();   // auch wenn die Seite erst unsichtbar geladen wurde

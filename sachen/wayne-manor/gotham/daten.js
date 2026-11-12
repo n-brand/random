@@ -276,7 +276,8 @@ const GOTHAM = {
     ...[[-2780, 930], [-2480, 1260], [-2350, 1050], [-2750, 900]].map(([x, z], i) => ({ id: "drogen-" + (i + 1), typ: "geheim", name: "Geheimes Drogenversteck", x, z, w: 10, d: 10 })),
     // --- Baustellen (eine Vorlage, mehrfach eingesetzt) ---
     ...[[-2030, -1100], [-1300, -620], [-2780, -860], [-1850, 460], [-2580, -830], [-2000, 1270], [-2700, -230], [-2200, 680]]
-      .map(([x, z], i) => ({ id: "baustelle-" + (i + 1), typ: "baustelle", name: "Baustelle (Platzhalter)", x, z, w: 60, d: 50, status: "baustelle" })),
+      .map(([x, z], i) => ({ id: "BS-" + String(i + 1).padStart(2, "0"), typ: "baustelle", name: "Baustelle BS-" + String(i + 1).padStart(2, "0") + " (Platzhalter)",   // klare ID (Nicolas 2026-11-12)
+        x, z, w: 60, d: 50, status: "baustelle" })),
     // --- Bestehend ---
     { id: "manor", typ: "manor", name: "Wayne Manor (besteht)", x: -346, z: 1307, dreh: 62, w: 70, d: 95, status: "gebaut", aussen: true },
   ],
