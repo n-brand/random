@@ -62,7 +62,7 @@ function gstrBuild() {
   const inPatch = (x, z) => !!nearPatch(x, z, 0);
   GSTR.roads.forEach((r, ri) => { const F = [r.pts[0]];
     for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
-      const fine = r.zweistock || [a, b].some(p => nearPatch(p[0], p[1], 10) || onOtherW(p[0], p[1], ri, r.walk + 3)), n = fine ? Math.max(1, Math.ceil(l)) : 1;
+      const fine = [a, b].some(p => nearPatch(p[0], p[1], 10) || onOtherW(p[0], p[1], ri, r.walk + 3)), n = fine ? Math.max(1, Math.ceil(l)) : 1;
       for (let k = 1; k <= n; k++) F.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
     r.fine = F; });
   // Texturen: Asphalt (Koernung), Linien quer zur Fahrbahn (v 0..1 = linker bis rechter Rand), 12 m je Wiederholung laengs
@@ -111,11 +111,11 @@ function gstrBuild() {
           const qx = A[0] + dx * t, qz = A[1] + dz * t, d = Math.hypot(x - qx, z - qz); if (d < o.w / 2) { const l = d || 1; x = qx + (x - qx) / l * (o.w / 2 + 0.01); z = qz + (z - qz) / l * (o.w / 2 + 0.01); moved = true; break; } } }
       if (!moved) break; } return [x, z]; };
   GSTR.roads.forEach((r, ri) => {
-    band(r.w >= 12.5 ? A4 : r.w >= 8 ? A2 : A0, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, r.w < 8 ? 4 : 0, null);
+    band(r.w >= 12.5 ? A4 : r.w >= 8 ? A2 : A0, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, r.w < 8 ? 4 : 0, r.zweistock ? gdeckOpen : null);   // G2e: ueber den Rampen keine Fahrbahn
     // Gehsteig 15 cm hoch (GSTR.RAISE), Bordstein = Kante plus 0,3 m Deckstein; die Kreuzungsflaeche bekommt einen runden Bordstein
     // Ecken genau: Punkte, die auf einer anderen Fahrbahn oder Kreuzungsflaeche liegen, werden auf deren Rand geschoben (die Vierecke dort werden
     // flach), so enden Gehsteig und Bordstein genau an der Kante und die Gehsteige beider Strassen fuellen die Ecke
-    const inO = (x, z) => !!onOther(x, z, ri, 0) || inPatch(x, z) || (r.zweistock && gdeckOpen(x, z));   // G2e: nicht ueber Rampen/Mittelwand
+    const inO = (x, z) => !!onOther(x, z, ri, 0) || inPatch(x, z);
     const fix = mkFix(ri);
     for (const sg of [1, -1]) { band(W, r.fine, sg * (r.w / 2 + 0.3), sg * (r.w / 2 + r.walk), Y + RS, 2, 2, inO, fix); band(K, r.fine, sg * r.w / 2, sg * (r.w / 2 + 0.3), Y + RS + 0.002, 2, 1, inO, fix); vband(KF, r.fine, sg * r.w / 2, Y + 0.04, Y + RS, inO, fix); }
   });
