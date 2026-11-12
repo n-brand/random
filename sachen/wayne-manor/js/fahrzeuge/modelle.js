@@ -1404,21 +1404,24 @@ function buildDelorean() {
   // Umbau hinten: Lueftungs-Trichter an den Ecken, Reaktor, Duesen unter dem Heck
   for (const sd of [-1, 1]) { const x = sd * 0.6;
     // Lueftungs-Trichter (Nicolas 2026-11-12, Fotos von hinten und der Seite): Keil aus schwarzem Blech, vorne schmal und flach schraeg im Heckdeck versenkt
-    // (z 1.3, y 0.9), nach hinten hoch und offen (Oeffnung ueber dem Heck, unten knapp ueber den Rueckleuchten y 0.74, oben 1.22, oben etwas weiter hinten);
-    // innen 1 senkrechte und 2 waagrechte Trennwaende (2 x 3 Zellen), um die Oeffnung ein Rand
-    { const W = 0.27, Wf = 0.2, zF = 1.3, yF = 0.9, zB = 2.16, zT = 2.24, yb = 0.74, yt = 1.22, pos = [], ventM = M(0x0b0b0c, { roughness: 0.85, metalness: 0.05, flatShading: true, side: THREE.DoubleSide });
+    // (z 1.3, y 0.9), nach hinten hoch und offen. Das hintere Ende ist von der Seite ein Knick wie ">" (Skizze Nicolas): oben weiter vorne (z 2.04),
+    // im unteren Drittel die Spitze ganz hinten (z 2.26), unten wieder etwas vorne (z 2.2); unten knapp ueber den Rueckleuchten (y 0.74), oben 1.22.
+    // Innen 1 senkrechte und 2 waagrechte Trennwaende (2 x 3 Zellen), entlang der Oeffnung ein Rand.
+    { const W = 0.27, Wf = 0.2, zF = 1.3, yF = 0.9, yb = 0.74, yt = 1.22, vm = 0.3, zBot = 2.2, zMid = 2.26, zTop = 2.04, pos = [], ventM = M(0x0b0b0c, { roughness: 0.85, metalness: 0.05, flatShading: true, side: THREE.DoubleSide });
       const P = (dx, y, z) => [x + dx, y, z], quad = (A, B, C, D) => pos.push(...A, ...B, ...C, ...A, ...C, ...D);
-      const lo = u => [yF - 0.03 + (yb - yF + 0.03) * u, zF + (zB - zF) * u], hi = u => [yF + 0.03 + (yt - yF - 0.03) * u, zF + (zT - zF) * u], wd = u => Wf + (W - Wf) * u;
-      const at = (dx, v, u) => { const [y0, z0] = lo(u), [y1, z1] = hi(u); return P(dx * wd(u), y0 + (y1 - y0) * v, z0 + (z1 - z0) * v); };
+      const rear = v => [yb + (yt - yb) * v, v < vm ? zBot + (zMid - zBot) * v / vm : zMid + (zTop - zMid) * (v - vm) / (1 - vm)], front = v => [yF - 0.03 + 0.06 * v, zF], wd = u => Wf + (W - Wf) * u;
+      const at = (dx, v, u) => { const [y0, z0] = front(v), [y1, z1] = rear(v); return P(dx * wd(u), y0 + (y1 - y0) * u, z0 + (z1 - z0) * u); };
       quad(at(-1, 1, 0), at(1, 1, 0), at(1, 1, 1), at(-1, 1, 1)); quad(at(-1, 0, 0), at(1, 0, 0), at(1, 0, 1), at(-1, 0, 1));   // oben, unten
-      for (const sx of [-1, 1]) quad(at(sx, 0, 0), at(sx, 1, 0), at(sx, 1, 1), at(sx, 0, 1));                                   // Seiten
+      for (const [v0, v1] of [[0, vm], [vm, 1]]) { for (const sx of [-1, 1]) quad(at(sx, v0, 0), at(sx, v1, 0), at(sx, v1, 1), at(sx, v0, 1));   // Seiten (zwei Teile wegen des Knicks)
+        quad(at(0, v0, 0), at(0, v1, 0), at(0, v1, 0.98), at(0, v0, 0.98)); }                                                    // Trennwand senkrecht
       quad(at(-1, 0, 0), at(1, 0, 0), at(1, 1, 0), at(-1, 1, 0));                                                                // vorne zu
-      quad(at(0, 0, 0), at(0, 1, 0), at(0, 1, 0.98), at(0, 0, 0.98));                                                            // Trennwand senkrecht
       for (const v of [1 / 3, 2 / 3]) quad(at(-1, v, 0.1), at(1, v, 0.1), at(1, v, 0.98), at(-1, v, 0.98));                     // Trennwaende waagrecht
       { const yD = 0.915, zD = 2.115; quad(P(-W, yD, zF + 0.2), P(W, yD, zF + 0.2), P(W, yD, zD), P(-W, yD, zD)); quad(P(-W, yb, zD), P(W, yb, zD), P(W, yD, zD), P(-W, yD, zD)); }   // schwarzer Boden und Wand, wo der Keil ins Heck taucht (sonst Karosserie grau sichtbar)
       const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); g.add(new THREE.Mesh(geo, ventM));
-      const [yB0, zB0] = lo(1), [yT0, zT0] = hi(1), rim = (y, z, h) => boxIn(g, x - W - 0.03, x + W + 0.03, y - h, y + h, z - 0.03, z + 0.03, ventM);
-      rim(yB0, zB0, 0.025); rim(yT0, zT0, 0.025); for (const sx of [-1, 1]) { meshIn(g, new THREE.BoxGeometry(0.05, Math.hypot(yT0 - yB0, zT0 - zB0) + 0.05, 0.06), ventM, x + sx * (W + 0.005), (yB0 + yT0) / 2, (zB0 + zT0) / 2, Math.atan2(zT0 - zB0, yT0 - yB0)); } }   // Rand
+      // Rand entlang des Knicks: oben und unten quer, an den Seiten je zwei schraege Leisten
+      const rim = (y, z, h) => boxIn(g, x - W - 0.03, x + W + 0.03, y - h, y + h, z - 0.03, z + 0.03, ventM); rim(...rear(0), 0.025); rim(...rear(1), 0.025);
+      for (const [v0, v1] of [[0, vm], [vm, 1]]) { const [ya, za] = rear(v0), [yc, zc] = rear(v1);
+        for (const sx of [-1, 1]) meshIn(g, new THREE.BoxGeometry(0.05, Math.hypot(yc - ya, zc - za) + 0.05, 0.06), ventM, x + sx * (W + 0.005), (ya + yc) / 2, (za + zc) / 2, Math.atan2(zc - za, yc - ya)); } }
     meshIn(g, new THREE.CylinderGeometry(0.07, 0.09, 0.3, 12).rotateX(Math.PI / 2), black, sd * 0.45, 0.2, 2.18); meshIn(g, new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12).rotateX(Math.PI / 2), amber, sd * 0.45, 0.2, 2.33); }   // Duesen unter dem Heck
   meshIn(g, new THREE.CylinderGeometry(0.16, 0.16, 0.2, 16), black, 0, 1.0, 1.66); meshIn(g, new THREE.CylinderGeometry(0.1, 0.12, 0.3, 16), white, 0, 1.25, 1.66); meshIn(g, new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16), black, 0, 1.42, 1.66);   // Reaktor (weiss)
   boxIn(g, -0.18, 0.18, 1.14, 1.24, 0.55, 0.75, grey); boxIn(g, -0.16, 0.16, 1.24, 1.3, 0.62, 0.7, black);                 // Geraet auf dem Dach hinten
