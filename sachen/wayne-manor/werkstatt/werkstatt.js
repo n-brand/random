@@ -20,6 +20,9 @@ const MODELLE = [
   { name: "Batpod", spec: SPEC_BATPOD, bau: () => buildBatpod() },
   { name: "Boxer-Streetfighter", spec: SPEC_STREETFIGHTER, bau: () => buildStreetfighter() },
   { name: "Motorrad (rot)", spec: SPEC_BIKE, bau: () => buildBike(0xb0141e) },
+  // Fluggeraete (Nicolas 2026-11-12): Modell, Flugphysik, Kamera und Ton direkt aus jet.js / the-bat.js des Spiels (flache Welt aus flug-shim.js)
+  { name: "Kampfjet", flug: "jet" },
+  { name: "The Bat (Batwing)", flug: "bat" },
 ];
 
 // ---------- Szene: Licht, Boden, Rundkurs, Slalom ----------
@@ -65,13 +68,42 @@ const ZIELE = [];
   }
 }
 
+// ---------- Fluggeraete ----------
+const FLUG = { jet: () => JET, bat: () => FLY };
+// Startbahn (Kampfjet) und Landeplatz (The Bat) am Nordrand der Flaeche
+const PAD = { x: -100, z: -200 };
+{ const asph = new THREE.MeshStandardMaterial({ color: 0x2c2f33, roughness: 0.9 }), weiss = new THREE.MeshStandardMaterial({ color: 0xeeeeea, roughness: 0.6 });
+  const bahn = new THREE.Mesh(new THREE.PlaneGeometry(RUNWAY.x1 - RUNWAY.x0, RUNWAY.w).rotateX(-Math.PI / 2), asph); bahn.position.set((RUNWAY.x0 + RUNWAY.x1) / 2, 0.02, RUNWAY.z); bahn.receiveShadow = true; flaeche.add(bahn);
+  for (let x = RUNWAY.x0 + 30; x < RUNWAY.x1 - 20; x += 40) { const l = new THREE.Mesh(new THREE.PlaneGeometry(20, 0.9).rotateX(-Math.PI / 2), weiss); l.position.set(x, 0.03, RUNWAY.z); flaeche.add(l); }   // Mittellinie
+  for (const sz of [-1, 1]) { const r = new THREE.Mesh(new THREE.PlaneGeometry(RUNWAY.x1 - RUNWAY.x0, 0.6).rotateX(-Math.PI / 2), weiss); r.position.set((RUNWAY.x0 + RUNWAY.x1) / 2, 0.03, RUNWAY.z + sz * (RUNWAY.w / 2 - 1)); flaeche.add(r); }
+  const pad = new THREE.Mesh(new THREE.CircleGeometry(11, 48).rotateX(-Math.PI / 2), asph); pad.position.set(PAD.x, 0.02, PAD.z); flaeche.add(pad);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(9.6, 10.2, 48).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0xffd43b })); ring.position.set(PAD.x, 0.03, PAD.z); flaeche.add(ring);
+  for (const [w, d, x, z] of [[1, 7, -2.2, 0], [1, 7, 2.2, 0], [3.4, 1, 0, 0]]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), weiss); b.position.set(PAD.x + x, 0.03, PAD.z + z); flaeche.add(b); }   // H
+}
+Object.assign(FLY, { x: PAD.x, y: 0, z: PAD.z, h: -Math.PI / 2 }); FLY.home = { x: FLY.x, y: FLY.y, z: FLY.z, h: FLY.h }; batPose(FLY, 0);
+for (const F of [JET, FLY]) F.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+function flugReset(F) { if (F === JET) return jetReset(); Object.assign(F, { ...F.home, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0, gearT: 0 }); player.yaw = F.h; batPose(F, 0); toast("The Bat zurück auf dem Landeplatz"); }
+
 // ---------- Modell laden ----------
 const START = { x: 0, z: KURS.R, h: -Math.PI / 2 };   // auf der Startlinie, Front nach Osten (+x)
 let AKT = null;   // { m, g, wheels, spec, x, z, h, v, steer, maße }
 const $info = $("info"), $speed = $("speed"), fmt = v => String(Math.round(v * 100) / 100).replace(".", ",");
 function laden(i) {
-  if (AKT) { scene.remove(AKT.g); AKT.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
-  const m = MODELLE[i], b = m.bau(); b.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  world.userData.car.leave();                                             // Jet / The Bat aussteigen (bleiben stehen, wo sie sind)
+  if (AKT && !AKT.flug) { scene.remove(AKT.g); AKT.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  const m = MODELLE[i];
+  if (m.flug) {
+    const F = FLUG[m.flug](), r = F.g.rotation.clone(); F.g.rotation.set(0, 0, 0); F.g.updateMatrixWorld(true);
+    const size = new THREE.Box3().setFromObject(F.g).getSize(new THREE.Vector3()); F.g.rotation.copy(r); F.g.updateMatrixWorld(true);
+    AKT = { m, flug: m.flug, F, g: F.g, size, spec: {} }; sicht();
+    $info.innerHTML = `<table><tr><td>Länge</td><td>${fmt(size.z)} m</td></tr><tr><td>Breite</td><td>${fmt(size.x)} m</td></tr><tr><td>Höhe</td><td>${fmt(size.y)} m</td></tr>
+      ${m.flug === "jet" ? `<tr><td>Abheben ab</td><td>${Math.round(JET_VS * 1.15 * 3.6)} km/h</td></tr><tr><td>Steuerung</td><td>W/S Schub, A/D rollen, Maus Nase</td></tr>` : `<tr><td>Höchstgeschw.</td><td>252 km/h</td></tr><tr><td>Steuerung</td><td>W/S, A/D, Leertaste/C</td></tr>`}</table>
+      <div class="note">Flugphysik, Kamera und Ton wie im Spiel. V Kamera, R zurück ${m.flug === "jet" ? "an den Start der Piste" : "auf den Landeplatz"}.</div>`;
+    if (modus === "drive") flugStart(); else { controls.target.set(F.x, F.y + 1, F.z); camera.position.set(F.x + size.z * 0.9 + 6, F.y + size.y + 6, F.z + size.z * 1.1 + 6); }
+    try { localStorage.setItem("werkstatt-modell", String(i)); } catch (e) {}
+    return;
+  }
+  const b = m.bau(); b.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   scene.add(b.g);
   b.g.rotation.set(0, 0, 0); b.g.position.set(0, 0, 0); b.g.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(b.g), size = box.getSize(new THREE.Vector3());
@@ -87,8 +119,9 @@ function laden(i) {
   if (modus !== "drive") { controls.target.set(AKT.x, size.y * 0.45, AKT.z); camera.position.set(AKT.x + size.z * 1.1 + 3, size.y + 2.5, AKT.z + size.z * 1.3 + 3); }
   try { localStorage.setItem("werkstatt-modell", String(i)); } catch (e) {}
 }
-function setze() { const A = AKT; A.g.position.set(A.x, 0, A.z); A.g.rotation.set(0, A.h, A.spec.track ? 0 : A.lean, "YXZ"); }
-window.werkstattTeleport = p => { if (!AKT) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
+function flugStart() { const F = AKT.F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }
+function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, 0, A.z); A.g.rotation.set(0, A.h, A.spec.track ? 0 : A.lean, "YXZ"); }
+window.werkstattTeleport = p => { if (!AKT || AKT.flug) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
 
 // ---------- Auswahl und Ansicht ----------
 const pick = $("pick");
@@ -96,13 +129,15 @@ MODELLE.forEach((m, i) => { const o = document.createElement("option"); o.value 
 { const og = document.createElement("optgroup"); og.label = "Gebäude-Vorlagen (kommen mit G3)"; const o = document.createElement("option"); o.disabled = true; o.textContent = "noch keine"; og.appendChild(o); pick.appendChild(og); }
 pick.onchange = () => laden(+pick.value);
 let modus = "orbit";
-const setModus = m => { modus = m; for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"]]) $(id).setAttribute("aria-pressed", String(m === k));
+const setModus = m => { const war = modus; modus = m;
+  if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"]]) $(id).setAttribute("aria-pressed", String(m === k));
   document.body.classList.toggle("drive", m === "drive"); controls.enabled = m !== "drive"; $speed.hidden = m !== "drive";
   if (m !== "drive" && document.pointerLockElement) document.exitPointerLock();
-  if (m === "drive" && AKT) { kYaw = AKT.h; kPitch = -0.12; A_view = 0; }
+  if (m === "drive" && AKT && !AKT.flug) { kYaw = AKT.h; kPitch = -0.12; A_view = 0; }
+  if (m === "drive" && AKT && AKT.flug && war !== "drive") flugStart();
   if (m !== "drive") { ZOOM.z = ZOOM.t = 1; ZOOM.un = 0; }
   camera.fov = m === "drive" ? 70 : 45; camera.updateProjectionMatrix();
-  if (m !== "drive" && AKT) controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z);
+  if (m !== "drive" && AKT) { if (AKT.flug) controls.target.set(AKT.F.x, AKT.F.y + 1, AKT.F.z); else controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z); }
   sicht(); };
 const MODI = ["orbit", "drive", "spin"];
 $("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin");
@@ -117,7 +152,9 @@ const MOUSE_SENS = 0.0025 * 0.5, ZOOM = { z: 1, t: 1, un: 0 };
 const ZOOM_SENS_GLEICH = true;   // TEST wie schiessen.js (Nicolas 2026-11-12): Maus im Zoom gleich schnell; false = durch den Zoom geteilt
 renderer.domElement.addEventListener("mousedown", e => { if (e.button !== 0 || modus !== "drive") return; if (document.pointerLockElement) document.exitPointerLock(); else renderer.domElement.requestPointerLock(); });
 document.addEventListener("pointerlockchange", maushinweis);
-addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return; const k = ZOOM_SENS_GLEICH ? 1 : ZOOM.z; kYaw -= e.movementX * MOUSE_SENS / k; kPitch = Math.max(-1.5, Math.min(1.5, kPitch - e.movementY * MOUSE_SENS / k)); });
+addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return;
+  if (AKT && AKT.flug) return look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS);   // Fluggeraete: Blick wie im Spiel (player.yaw/pitch)
+  const k = ZOOM_SENS_GLEICH ? 1 : ZOOM.z; kYaw -= e.movementX * MOUSE_SENS / k; kPitch = Math.max(-1.5, Math.min(1.5, kPitch - e.movementY * MOUSE_SENS / k)); });
 // Mausrad im Panzer: Zoom 1x bis 6x (wie schiessen.js)
 addEventListener("wheel", e => { if (!(modus === "drive" && AKT && AKT.turret)) return; e.preventDefault(); ZOOM.t = Math.max(1, Math.min(6, ZOOM.t * (e.deltaY < 0 ? 1.25 : 0.8))); if (ZOOM.t < 1.05) ZOOM.t = 1; }, { passive: false });
 if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch");
@@ -125,8 +162,12 @@ if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch"
 // ---------- Tasten ----------
 const keys = new Set();
 addEventListener("keydown", e => { if (e.target.tagName === "SELECT") return; keys.add(e.code);
-  if (e.code === "KeyR" && AKT) { Object.assign(AKT, { x: START.x, z: START.z, h: START.h, v: 0, steer: 0 }); setze(); }
-  if (e.code === "KeyV" && !e.repeat) A_view = A_view ? 0 : 1;
+  if (AKT && AKT.flug) { if (modus === "drive" && !e.repeat) { const F = AKT.F;   // Fluggeraete: V Kamera, R zurueck (wie bedienung.js)
+      if (e.code === "KeyV") { F.view = F.view === 1 ? 0 : 1; if (F === JET) player.yaw = F.h; else player.pitch = F.view ? 0 : -0.2; }
+      if (e.code === "KeyR") flugReset(F);
+      if (e.code === "ShiftLeft" || e.code === "ShiftRight") { if (F === JET ? useJet() : useFly()) if (!F.on) setModus("orbit"); } }   // Shift aussteigen (nur gelandet, wie im Spiel)
+  } else if (e.code === "KeyR" && AKT) { Object.assign(AKT, { x: START.x, z: START.z, h: START.h, v: 0, steer: 0 }); setze(); }
+  if (e.code === "KeyV" && !e.repeat && !(AKT && AKT.flug)) A_view = A_view ? 0 : 1;
   if (e.code === "KeyF" || (e.code === "KeyE" && modus !== "drive")) setModus(modus === "drive" ? "orbit" : "drive");
   const n = /^(Digit|Numpad)([1-3])$/.exec(e.code); if (n) setModus(MODI[+n[2] - 1]);   // 1 Ansehen, 2 Fahren, 3 Drehteller
   if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault(); });
@@ -250,9 +291,14 @@ let last = performance.now();
 function loop(t) {
   const dt = Math.min(0.05, (t - last) / 1000); last = t;
   if (AKT) {
-    if (modus === "drive") fahren(dt);
+    const F = AKT.F;
+    if (AKT.flug) {   // Jet / The Bat: Schritt, Kamera und Ton aus dem Spiel; Anzeige aus dessen Tempo-Text
+      if (modus === "drive" && F.on) { if (F === JET) jetStep(dt); else flyStep(dt); $speed.textContent = speedEl.textContent; }
+      else { if (modus === "spin") { F.h += dt * 0.5; if (F === JET) jetPose(F, dt); else batPose(F, dt); } controls.update(); }
+    } else if (modus === "drive") fahren(dt);
     else { if (modus === "spin") { AKT.h += dt * 0.5; setze(); } controls.update(); }
-    sun.position.set(AKT.x + SUN_DIR.x * 100, SUN_DIR.y * 100, AKT.z + SUN_DIR.z * 100); sun.target.position.set(AKT.x, 0, AKT.z);
+    const px = F ? F.x : AKT.x, pz = F ? F.z : AKT.z, py = F ? Math.max(0, F.y - 10) : 0;
+    sun.position.set(px + SUN_DIR.x * 100, py + SUN_DIR.y * 100, pz + SUN_DIR.z * 100); sun.target.position.set(px, py, pz);
   }
   schuesseStep(dt);
   renderer.render(scene, camera);
