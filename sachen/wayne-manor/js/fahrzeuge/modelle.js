@@ -890,3 +890,12 @@ function kurvenPhysik(sp, v, steer, gas, vmax) {
 // Schutzstufen: Treffer bis kaputt (Nicolas 2026-11-11; genutzt in schiessen.js und in der Werkstatt)
 const ARMOR = { "Gotham Taxi": 1, "Aventador LP 700-4": 1, "Gemini Concept GT": 1, "ChatGPT GPT-6 Concept GT": 1, "DeepSeek Concept Car": 1, "Motorrad": 1, "Boxer-Streetfighter": 1,
   "Gotham Police": 2, "Rolls-Royce": 2, "Rolls-Royce Spectre": 2, "Nachtfalke": 2, "Batpod": 2, "Mercedes-Benz G-Klasse": 3, "Tumbler": 4, "Panzer": 4 };
+// ===================== Tempo-Gefuehl (Nicolas 2026-11-12: 150 km/h fuehlten sich wie 80 an; Anzeige und Bewegung stimmen, 42 m/s) =====================
+// Wie in Rennspielen: mit dem Tempo weitet sich das Sichtfeld (70 -> 82 Grad), die Verfolgerkamera rueckt naeher und tiefer an das Fahrzeug
+// (mehr Boden bewegt sich durchs Bild), ab etwa 100 km/h leichtes Vibrieren. Wirkt ab ca. 20 km/h, voll ab ca. 160 km/h.
+// Genutzt in fahren.js (carCamera) und in der Werkstatt; Fahrzeuge mit Turm behalten 70 Grad (Zielen, Zoom).
+function tempoGefuehl(v, t) {
+  const x = Math.min(1, Math.max(0, (Math.abs(v) - 5.5) / 39)), k = x * x * (3 - 2 * x), sh = 0.04 * k * k;
+  return { k, fov: 70 + 12 * k, dK: 1 - 0.22 * k, hK: -0.45 * k,
+    sx: sh * (Math.sin(t * 61) + 0.6 * Math.sin(t * 97)), sy: sh * (Math.sin(t * 73 + 1) + 0.5 * Math.sin(t * 131)) };
+}

@@ -314,17 +314,20 @@ const camBlocked = (x, y, z) => {
 function carCamera() {
   const C = CAR, sp = C.spec;
   player.pos.set(C.x, C.y + 0.6, C.z);
+  // Tempo-Gefuehl (modelle.js): Sichtfeld, Kamera naeher/tiefer, Vibrieren; nicht mit Turm (Zielen/Zoom setzen den Sichtwinkel)
+  const TG = tempoGefuehl(C.air ? 0 : C.v, clock.elapsedTime);
+  if (!C.turret && Math.abs(camera.fov - TG.fov) > 0.05) { camera.fov = TG.fov; camera.updateProjectionMatrix(); }
   if (C.view === 1) {
     const [sx, sy, sz] = sp.seat, s = Math.sin(C.h), c = Math.cos(C.h);
     camera.position.set(C.x + sx * c + sz * s, C.y + sy, C.z - sx * s + sz * c);
-    camera.rotation.set(player.pitch, player.yaw, 0, "YXZ");
+    camera.rotation.set(player.pitch + TG.sy * 0.15, player.yaw + TG.sx * 0.1, 0, "YXZ");
     return;
   }
-  const D = sp.camD, H = Math.max(0.9, Math.min(7, 2.2 - player.pitch * 6)), tx = C.x, ty = C.y + sp.camH, tz = C.z;
-  const dx = Math.sin(player.yaw) * D, dy = H - 1.3 + 0.9, dz = Math.cos(player.yaw) * D;
+  const D = sp.camD * TG.dK, H = Math.max(0.9, Math.min(7, 2.2 - player.pitch * 6)), tx = C.x, ty = C.y + sp.camH, tz = C.z;
+  const dx = Math.sin(player.yaw) * D, dy = Math.max(0.5, H - 1.3 + 0.9 + TG.hK), dz = Math.cos(player.yaw) * D;
   let k = 1;
   for (let t = 0.12; t <= 1.0001; t += 0.06) if (camBlocked(tx + dx * t, ty + dy * t, tz + dz * t)) { k = Math.max(0.12, t - 0.08); break; }
-  camera.position.set(tx + dx * k, ty + dy * k, tz + dz * k);
+  camera.position.set(tx + dx * k + TG.sx, ty + dy * k + TG.sy, tz + dz * k);
   camera.lookAt(tx, ty + 0.3, tz);
 }
 // Jede Bildschleife: Drehscheibe und Autoaufzug mitnehmen, geparkte Fahrzeuge am Boden halten (Hebebuehne), Kreise, Sichtbarkeit, Kamera

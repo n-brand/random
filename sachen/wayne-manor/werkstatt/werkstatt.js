@@ -232,11 +232,13 @@ function fahren(dt) {
   const dh = A.h - (A.dh0 ?? A.h); A.dh0 = A.h;
   if (!A.turret) { kYaw += dh; if (Math.abs(A.v) > 3) kYaw += wrapW(A.h + (A.v < 0 ? Math.PI : 0) - kYaw) * Math.min(1, dt * 1.2); }
   // erst die normale Kamera (Verfolger oder Fahrersicht), danach zielt die Waffe von dort und setzt gezoomt die Zieloptik
+  const TG = tempoGefuehl(A.v, performance.now() / 1000);   // Tempo-Gefuehl wie fahren.js carCamera (modelle.js)
+  if (!A.turret && Math.abs(camera.fov - TG.fov) > 0.05) { camera.fov = TG.fov; camera.updateProjectionMatrix(); }
   if (A_view === 1 && s.seat) { const [sx, sy, sz] = s.seat, sn = Math.sin(A.h), c = Math.cos(A.h);
-    camera.position.set(A.x + sx * c + sz * sn, sy, A.z - sx * sn + sz * c); camera.rotation.set(kPitch, kYaw, 0, "YXZ"); }
-  else { const D = s.camD || 8, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = s.camH || 1.2, tz = A.z;
-    const ex = Math.sin(kYaw) * D, ey = H - 1.3 + 0.9, ez = Math.cos(kYaw) * D;
-    camera.position.set(tx + ex, Math.max(0.3, ty + ey), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
+    camera.position.set(A.x + sx * c + sz * sn, sy, A.z - sx * sn + sz * c); camera.rotation.set(kPitch + TG.sy * 0.15, kYaw + TG.sx * 0.1, 0, "YXZ"); }
+  else { const D = (s.camD || 8) * TG.dK, H = Math.max(0.9, Math.min(7, 2.2 - kPitch * 6)), tx = A.x, ty = s.camH || 1.2, tz = A.z;
+    const ex = Math.sin(kYaw) * D, ey = Math.max(0.5, H - 1.3 + 0.9 + TG.hK), ez = Math.cos(kYaw) * D;
+    camera.position.set(tx + ex + TG.sx, Math.max(0.3, ty + ey + TG.sy), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
   if (A.turret) waffe(dt);
 }
 const wrapW = a => Math.atan2(Math.sin(a), Math.cos(a));
