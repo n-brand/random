@@ -84,6 +84,34 @@ Object.assign(FLY, { x: PAD.x, y: 0, z: PAD.z, h: -Math.PI / 2 }); FLY.home = { 
 for (const F of [JET, FLY]) F.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 function flugReset(F) { if (F === JET) return jetReset(); Object.assign(F, { ...F.home, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0, gearT: 0 }); player.yaw = F.h; batPose(F, 0); toast("The Bat zurück auf dem Landeplatz"); }
 
+// ---------- Zielfahrzeuge (Nicolas 2026-11-12): geparkt suedlich der Startgeraden, Front zur Strecke; Schutzstufen wie im Spiel (ARMOR in
+// modelle.js), Treffer als Kapsel wie vehCapsule in schiessen.js; zerstoert = verkohltes Wrack (springt hoch, raucht), nach 15 s wieder heil ----------
+const ZIELAUTOS = [["Gotham Taxi", -60], ["Gotham Police", -30], ["Rolls-Royce (grau)", 0], ["Mercedes-Benz G-Klasse", 30], ["Tumbler", 60]].map(([n, x]) => {
+  const m = MODELLE.find(q => q.name === n), b = m.bau(), z = 100; b.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  b.g.position.set(x, 0, z); scene.add(b.g); const max = ARMOR[m.spec.name] || 2;
+  return { name: n, spec: m.spec, g: b.g, x, z, h: 0, max, hp: max, dead: false, t: 0, puff: 0 };
+});
+function autoKapsel(v) { const sp = v.spec, L = Math.max(...sp.pts.map(Math.abs)) + sp.R * 0.5, r = Math.max(sp.R * 0.95, sp.bodyH * 0.5); return { y: sp.bodyH * 0.5, ax: Math.sin(v.h), az: Math.cos(v.h), L, r }; }
+function autoAn(x, y, z) {   // Fahrzeug an Punkt? (wie shotAt im Spiel)
+  for (const v of ZIELAUTOS) { const c = autoKapsel(v), dx = x - v.x, dz = z - v.z, t = Math.max(-c.L, Math.min(c.L, dx * c.ax + dz * c.az));
+    const ex = dx - c.ax * t, ez = dz - c.az * t, ey = (y - c.y) * (c.r / Math.max(0.6, v.spec.bodyH * 0.55)); if (ex * ex + ey * ey + ez * ez < c.r * c.r) return v; }
+  return null;
+}
+function autoTreffer(v, p) {
+  if (v.dead) return;
+  v.hp--; if (v.hp > 0) return toast(v.name + " getroffen – hält noch " + v.hp + " von " + v.max);
+  v.dead = true; v.t = 0; v.roll = (Math.random() - 0.5) * 0.25; v.pitch = (Math.random() - 0.5) * 0.12; toast(v.name + " zerstört");
+  fx(p, 0xfff0c0, 1.2, 0.2, 9); for (let i = 0; i < 5; i++) fx(new THREE.Vector3(v.x + (Math.random() - 0.5) * 2.5, 1 + Math.random() * 1.5, v.z + (Math.random() - 0.5) * 2.5), i % 2 ? 0xff7a1a : 0xffb23a, 0.8, 0.8, 4); knall(1);
+  v.g.traverse(o => { if (!o.isMesh) return; o.userData.mat0 = o.material; const burn = m => { const c = m.clone(); if (c.color) c.color.lerp(new THREE.Color(0x1b1815), 0.86); if (c.emissive) c.emissive.set(0); if (c.map && !c.transparent) c.map = null; return c; };
+    o.material = Array.isArray(o.material) ? o.material.map(burn) : burn(o.material); });
+}
+function autosStep(dt) {
+  for (const v of ZIELAUTOS) { if (!v.dead) continue; v.t += dt; const t = v.t, up = t < 1.2 ? Math.max(0, 7 * t - 7 * t * t) * 0.45 : 0, k = Math.min(1, t / 1.2);
+    v.g.position.set(v.x, up, v.z); v.g.rotation.set(v.pitch * k, v.h, v.roll * k, "YXZ");
+    if ((v.puff -= dt) <= 0) { v.puff = 0.25; fx(new THREE.Vector3(v.x + (Math.random() - 0.5) * 1.5, v.spec.bodyH + up, v.z + (Math.random() - 0.5) * 1.5), 0x2b2a28, 0.5, 2.5, 1.6); }
+    if (t > 15) { v.g.traverse(o => { if (o.isMesh && o.userData.mat0) { o.material = o.userData.mat0; delete o.userData.mat0; } }); v.dead = false; v.hp = v.max; v.g.position.set(v.x, 0, v.z); v.g.rotation.set(0, v.h, 0); toast(v.name + " ist wieder heil"); } }
+}
+
 // ---------- Modell laden ----------
 const START = { x: 0, z: KURS.R, h: -Math.PI / 2 };   // auf der Startlinie, Front nach Osten (+x)
 let AKT = null;   // { m, g, wheels, spec, x, z, h, v, steer, maße }
@@ -142,7 +170,7 @@ const setModus = m => { const war = modus; modus = m;
 const MODI = ["orbit", "drive", "spin"];
 $("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin");
 // Visier (nur Fahren mit Turm) und Hinweis zur Maus
-function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier").hidden = !z; document.body.classList.toggle("waffe", !!z); maushinweis(); }
+function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier").hidden = !z; if (!z) $("rohr").hidden = true; document.body.classList.toggle("waffe", !!z); maushinweis(); }
 function maushinweis() { $("maus").hidden = modus !== "drive" || !!document.pointerLockElement || document.body.classList.contains("touch"); }
 
 // ---------- Maus einfangen (Fahren): Linksklick faengt die Maus, erneuter Linksklick oder Esc gibt sie frei ----------
@@ -221,6 +249,7 @@ function zielpunkt() {   // Strahl durch das Visier: erste Scheibe oder der Bode
   rc.setFromCamera(new THREE.Vector2(0, 0.28), camera);
   let best = 900; const o = rc.ray.origin, dv = rc.ray.direction;
   if (dv.y < -1e-4) best = Math.min(best, -o.y / dv.y);
+  for (let t = 6; t < best; t += 1) { const q = o.clone().addScaledVector(dv, t); if (autoAn(q.x, q.y, q.z)) { best = t; break; } }   // Zielfahrzeuge
   for (const Z of ZIELE) { if (Z.fall > 0.05) continue; vA.set(Z.x, Z.y, Z.z); const t = vA.sub(o).dot(dv); if (t > 0 && t < best && o.clone().addScaledVector(dv, t).distanceTo(new THREE.Vector3(Z.x, Z.y, Z.z)) < Z.r) best = t; }
   return o.clone().addScaledVector(dv, best);
 }
@@ -229,9 +258,12 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
   if (camera.fov !== 70) { camera.fov = 70; camera.updateProjectionMatrix(); }
   camera.updateMatrixWorld();
   const A = AKT, aim = zielpunkt(); A.aim = aim;
-  A.g.updateMatrixWorld(true); A.gun.getWorldPosition(vB);
-  A.elev = A.elev ?? 0; A.elev += (Math.max(-0.4, Math.min(0.55, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z)))) - A.elev) * Math.min(1, dt * 8);
-  A.turret.rotation.y = wrapW(kYaw - A.h);
+  // Turm und Rohr laufen dem Visier nach (wie fahren.js/schiessen.js, Variante A zum Testen): Turm spec.turretSpeed, Rohr spec.gunSpeed Grad/s
+  A.g.updateMatrixWorld(true); A.turret.getWorldPosition(vA); A.gun.getWorldPosition(vB);
+  A.tw = A.tw ?? A.h; const tv = (A.spec.turretSpeed || 40) * Math.PI / 180 * dt, gv = (A.spec.gunSpeed || 20) * Math.PI / 180 * dt;
+  A.tw += Math.max(-tv, Math.min(tv, wrapW(Math.atan2(-(aim.x - vA.x), -(aim.z - vA.z)) - A.tw)));
+  A.elev = A.elev ?? 0; A.elev += Math.max(-gv, Math.min(gv, Math.max(-0.4, Math.min(0.55, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z)))) - A.elev));
+  A.turret.rotation.y = wrapW(A.tw - A.h);
   const ad = (((A.turret.rotation.y * 180 / Math.PI) % 360) + 360) % 360, a0 = Math.floor(ad) % 360, fr = ad - Math.floor(ad), lo = A.gunMin ? A.gunMin[a0] * (1 - fr) + A.gunMin[(a0 + 1) % 360] * fr : -0.45;
   A.gun.rotation.x = Math.max(lo, Math.min(0.6, A.elev));
   // Zoom: ab mehr als 1x sitzt die Kamera in der Zieloptik oben am Turm; nach einem Schuss nach 0,35 s zurueck auf 1x (wie im Spiel, dort TEST)
@@ -245,13 +277,22 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
   SCHUSS.cd = Math.max(0, SCHUSS.cd - dt);
   if (down("Space") && SCHUSS.cd === 0) {
     SCHUSS.cd = SCHUSS.RELOAD; SCHUSS.schuesse++; SCHUSS.rueck = 1;
-    A.gun.updateWorldMatrix(true, false); const mz = A.gun.localToWorld(new THREE.Vector3(0, 0, -(A.spec.muzzle || SCHUSS.MUZZLE))), dir = aim.clone().sub(mz).normalize();
+    A.gun.updateWorldMatrix(true, false); A.gun.getWorldPosition(vB); const mz = A.gun.localToWorld(new THREE.Vector3(0, 0, -(A.spec.muzzle || SCHUSS.MUZZLE))), dir = mz.clone().sub(vB).normalize();   // entlang des Rohrs
     const o = new THREE.Mesh(fxGeo, fxMat(0xffe2a0)); o.scale.set(0.12, 0.12, 0.5); o.position.copy(mz); o.lookAt(mz.clone().add(dir)); scene.add(o);
     SCHUSS.shells.push({ o, p: mz.clone(), dir, s: 0 });
     fx(mz, 0xffc070, 0.6, 0.12, 4); knall(0.5); if (ZOOM.t > 1) ZOOM.un = 0.35;
   }
+  rohrMarke(A, aim);
   SCHUSS.rueck = Math.max(0, SCHUSS.rueck - dt * 2.5); A.gun.position.z = A.gun.userData.z0 + Math.sin(Math.min(1, SCHUSS.rueck) * Math.PI / 2) * 0.45;
   $("visier-t").textContent = (SCHUSS.cd > 0 ? "lädt … " + SCHUSS.cd.toFixed(1).replace(".", ",") + " s" : "Leertaste: schießen") + ` · Treffer ${SCHUSS.treffer} / ${SCHUSS.schuesse}` + (ZOOM.t > 1 ? " · " + ZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
+}
+// Rohr-Markierung (wie gunMark in schiessen.js): Punkt entlang des Rohrs in Zielentfernung, sichtbar ab 10 px neben der Visiermitte
+function rohrMarke(A, aim) {
+  const el = $("rohr"); A.gun.updateWorldMatrix(true, false); A.gun.getWorldPosition(vB);
+  const mz = A.gun.localToWorld(new THREE.Vector3(0, 0, -(A.spec.muzzle || SCHUSS.MUZZLE))), dir = mz.clone().sub(vB).normalize(), p = mz.addScaledVector(dir, Math.max(5, aim.distanceTo(mz)));
+  camera.updateMatrixWorld(); p.project(camera);
+  const x = (p.x + 1) / 2 * innerWidth, y = (1 - p.y) / 2 * innerHeight, sy = (1 - 0.28) / 2 * innerHeight;
+  el.hidden = p.z > 1 || Math.hypot(x - innerWidth / 2, y - sy) < 10; el.style.left = x + "px"; el.style.top = y + "px";
 }
 function fx(p, c, r, life, grow) { const o = new THREE.Mesh(fxGeo, fxMat(c)); o.position.copy(p); o.scale.setScalar(r); scene.add(o); SCHUSS.fx.push({ o, r, life, grow, t: 0 }); }
 function schuesseStep(dt) {
@@ -261,12 +302,14 @@ function schuesseStep(dt) {
       const p = S.p.clone().addScaledVector(S.dir, s);
       if (p.y <= 0) hit = { p };
       for (const Z of ZIELE) if (Z.fall < 0.05 && Math.hypot(p.x - Z.x, p.y - Z.y, p.z - Z.z) < Z.r + 0.15) { hit = { p, Z }; break; }
+      if (!hit && S.s + s > 3) { const v = autoAn(p.x, p.y, p.z); if (v) hit = { p, v }; }
     }
     S.p.addScaledVector(S.dir, weg); S.s += weg; S.o.position.copy(S.p);
     if (hit || S.s > 900) {
       scene.remove(S.o); S.o.material.dispose(); SCHUSS.shells.splice(i, 1);
       if (hit) { fx(hit.p, 0xffa040, 0.8, 0.35, 5); fx(hit.p, 0x8a8780, 0.6, 1.4, 3); knall(0.3);
-        if (hit.Z) { hit.Z.fall = 0.06; hit.Z.t = 0; SCHUSS.treffer++; } }
+        if (hit.Z) { hit.Z.fall = 0.06; hit.Z.t = 0; SCHUSS.treffer++; }
+        if (hit.v) { if (!hit.v.dead) SCHUSS.treffer++; autoTreffer(hit.v, hit.p); } }
     }
   }
   for (let i = SCHUSS.fx.length - 1; i >= 0; i--) { const F = SCHUSS.fx[i]; F.t += dt; const k = F.t / F.life;
@@ -302,7 +345,7 @@ function loop(t) {
     const px = F ? F.x : AKT.x, pz = F ? F.z : AKT.z, py = F ? Math.max(0, F.y - 10) : 0;
     sun.position.set(px + SUN_DIR.x * 100, py + SUN_DIR.y * 100, pz + SUN_DIR.z * 100); sun.target.position.set(px, py, pz);
   }
-  schuesseStep(dt);
+  schuesseStep(dt); autosStep(dt);
   renderer.render(scene, camera);
   requestAnimationFrame(loop);
 }

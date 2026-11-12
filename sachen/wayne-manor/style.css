@@ -27,6 +27,8 @@ body.walk.looking #cross { display: block; }
 /* Zielvisier im Panzer (Nicolas 2026-11-11): mittig, etwas ueber der Bildmitte (36 %, ueber dem Turm), daneben Tastenhinweis */
 #tank-sight { display: none; position: fixed; left: 50%; top: 36%; width: 140px; height: 140px; margin: -70px; z-index: 3; pointer-events: none; color: #9dff8a; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .9)); }
 #tank-sight svg { display: block; }
+#gun-mark { position: fixed; width: 18px; height: 18px; margin: -9px; border: 2px solid #ffb84a; border-radius: 50%; z-index: 3; pointer-events: none; box-shadow: 0 0 3px #000; }   /* Rohr-Markierung (schiessen.js gunMark) */
+#gun-mark[hidden] { display: none; }
 #tank-sight span { position: absolute; left: 150px; top: 58px; white-space: nowrap; padding: 3px 9px; border-radius: 6px; background: rgba(10, 12, 16, .65); color: #e8ffe2; font: 600 13px/1.4 system-ui, sans-serif; }
 @media (pointer: coarse) { #tank-sight span { display: none; } }
 body.walk.tank #tank-sight { display: block; }

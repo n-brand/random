@@ -74,7 +74,9 @@ function carPose(dt) {
   // Panzerturm (Nicolas 2026-11-11): zielt in Weltrichtung (Blickrichtung), Lenken dreht nur die Wanne darunter; geparkt dreht er langsam nach vorne
   if (C.turret) {
     if (C.tw === undefined) C.tw = C.h + C.turret.rotation.y;
-    if (C.on) C.tw = player.yaw; else C.tw += Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(C.h - C.tw)));   // Turm folgt der Maus ohne Verzoegerung
+    // Turm dreht hoechstens spec.turretSpeed Grad/s zum Zielpunkt (C.twWant aus schiessen.js; Nicolas 2026-11-12, Variante A zum Testen: Turm laeuft nach)
+    if (C.on) { const tv = (C.spec.turretSpeed || 40) * Math.PI / 180 * dt; C.tw += Math.max(-tv, Math.min(tv, wrapA((C.twWant ?? player.yaw) - C.tw))); }
+    else C.tw += Math.max(-1.2 * dt, Math.min(1.2 * dt, wrapA(C.h - C.tw)));
     // Stabilisiert (Nicolas 2026-11-11): Turm-Richtung und Rohrhoehe gelten in der Welt (C.tw, C.elev), egal wie die Wanne am Hang steht.
     // Gewuenschte Richtung in den Wannen-Rahmen drehen: daraus Turmdrehung (um die Wannen-Hochachse) und Rohrwinkel (-26 bis +34 Grad, damit es auch an steilen Haengen waagrecht bleibt)
     const ce = Math.cos(C.elev), d = tankDir.set(-Math.sin(C.tw) * ce, Math.sin(C.elev), -Math.cos(C.tw) * ce).applyQuaternion(tankQ.copy(C.g.quaternion).invert());
