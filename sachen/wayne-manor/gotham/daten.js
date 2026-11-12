@@ -137,14 +137,14 @@ const GOTHAM = {
 
   // U-Bahn: ein grosser Ring (Ellipse), Stationen per Winkel in Grad (0 = Osten, 90 = Sueden), Abstand ca. 450 m
   ubahn: {
-    cx: -2150, cz: 50, rx: 600, rz: 980,   // an die Inselform angepasst (2026-11-12), ca. 5 km
+    cx: -2230, cz: 100, rx: 450, rz: 960,   // an die Inselform angepasst (2026-11-12), ca. 4,7 km, alle Stationen unter der Insel
     stationen: [
       { name: "Hauptbahnhof", a: 0, haupt: true },
       { name: "Stadion", a: 30 }, { name: "Südstadt", a: 60 }, { name: "Hafen", a: 90 }, { name: "Narrows", a: 120, notiz: "Graffiti NBR im Tunnel Richtung Fabrikviertel" },
       { name: "Fabrikviertel", a: 150 }, { name: "Westseite", a: 180 }, { name: "Kathedrale", a: 210 }, { name: "Museumsmeile", a: 240 },
       { name: "Uptown", a: 270 }, { name: "Park Row", a: 300 }, { name: "Diamond District", a: 330 },
     ],
-    depot: { name: "Abstellanlage (Züge ausser Betrieb, am Gleisnetz)", x: -1450, z: -330, w: 120, d: 60, gleis: [[-1550, 50], [-1500, -150], [-1450, -330]] },
+    depot: { name: "Abstellanlage (Züge ausser Betrieb, am Gleisnetz)", x: -1450, z: -330, w: 120, d: 60, gleis: [[-1780, 100], [-1650, -120], [-1500, -300]] },
     graffiti: [{ text: "NBR", x: -2620, z: 600 }],
   },
 

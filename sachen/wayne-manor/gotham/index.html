@@ -426,6 +426,7 @@
 
     // ---------- Pruefung: Orte auf Hauptstrassen/Bruecken, ausserhalb der Insel, uebereinander ----------
     const issues = [...brIssues];
+    for (const st of U.stationen) { const x = U.cx + Math.cos(st.a * Math.PI / 180) * U.rx, z = U.cz + Math.sin(st.a * Math.PI / 180) * U.rz; if (!inIsland(x, z) || edgeDist(x, z) < 40) issues.push([{ id: "U " + st.name, x: Math.round(x), z: Math.round(z), w: 40, d: 40 }, "U-Bahn-Station liegt nicht sicher unter der Insel (Ufer näher als 40 m)"]); }
     const rectHitsRoad = (o, s) => { const W = Math.max(o.w, 4) / 2 + s.w / 2, D = Math.max(o.d, 4) / 2 + s.w / 2; return s.pts.some(p => Math.abs(p[0] - o.x) < W && Math.abs(p[1] - o.z) < D); };
     for (const o of G.orte) {
       if (!o.aussen && o.ebene < 0 && !inIsland(o.x, o.z)) issues.push([o, "liegt unter der Erde, aber nicht unter der Insel"]);
