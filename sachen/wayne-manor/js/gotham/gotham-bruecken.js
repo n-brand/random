@@ -6,7 +6,7 @@
 // Stil Williamsburg/Manhattan Bridge, stilisiert: Fahrbahn auf Strassenebene (-12, 22 m ueber dem Wasser; Nicolas 2026-11-12: Insel 4 m angehoben), w m Fahrbahn plus je 2,5 m Gehweg,
 // 3 m dicker Stahlkasten; am Festland weiter auf Pfeilern, bis das Gelaende die Fahrbahn erreicht (G2d baut dort die Strassen an). Je Ufer ein
 // Stahlturm (zwei Beine aussen neben dem Deck, Querriegel und Kreuzstreben ueber der Durchfahrt, 62 m ueber der Fahrbahn), zwei Tragseile im Bogen
-// von den Ankerbloecken (70 m hinter den Tuermen) ueber die Turmspitzen, Haenger alle 10 m. Gelaender 1,1 m mit Kollision, Boden ueber
+// von den Seil-Enden (bis 70 m hinter den Tuermen, kleiner Stahlschuh am Deck) ueber die Turmspitzen, Haenger alle 10 m. Gelaender 1,1 m mit Kollision, Boden ueber
 // gothamBridgeAt (nur wer oben ist, nicht wer darunter schwimmt). Die Kaimauer hat an jeder Bruecke eine Luecke in der Bruestung (gotham-kai.js).
 const GBR = { list: [] };
 // Hohe Hindernisse: Kreise mit Oberkante gelten nur in den 8 m darunter, darum gestapelt alle 6 m (Turmbeine, Pfeiler, Ankerbloecke).
@@ -53,12 +53,12 @@ const tallCircle = (x, z, r, y0, y1) => { for (let t = y0 + 6; t < y1 + 6; t += 
       for (const sd of [-1, 1]) tallCircle(tx + nx * sd * legX, tz + nz * sd * legX, 2.5, base, Y + H); }
     // Tragseile (Bogen ueber die Turmspitzen), Ankerbloecke, Haenger
     const sA = [Math.max(0, sT[0] - 70), Math.min(L, sT[1] + 70)];
-    // Ankerbloecke links und rechts unter den Tragseilen, die Fahrbahn bleibt frei (vorher ein Block quer ueber der Zufahrt)
-    for (const s of sA) { const [px, pz] = at(s);
-      for (const sd of [-1, 1]) { const ax = px + nx * sd * (legX + 2), az = pz + nz * sd * (legX + 2); boxAtW(7, 9, 12, conc, ax, Y + 2.5, az, rot); for (const q of [-3.5, 0, 3.5]) tallCircle(ax + Math.sin(rot) * q, az + Math.cos(rot) * q, 3.9, Y - 2, Y + 7); } }
+    // Seil-Enden (Nicolas 2026-11-12: keine Betonkloetze mehr, die standen neben der Fahrbahn): die Tragseile enden an beiden Brueckenenden in einem
+    // kleinen Stahlschuh direkt neben dem Deck (wie bei selbstverankerten Haengebruecken), ohne Kollision
+    for (const s of sA) { const [px, pz] = at(s); for (const sd of [-1, 1]) boxAtW(1.4, 1.6, 3, steel, px + nx * sd * legX, Y + 0.8, pz + nz * sd * legX, rot); }
     const yC = s => { const top = Y + H + 1, low = Y + 9;
-      if (s <= sT[0]) return Y + 6 + (top - Y - 6) * (s - sA[0]) / (sT[0] - sA[0]);
-      if (s >= sT[1]) return Y + 6 + (top - Y - 6) * (sA[1] - s) / (sA[1] - sT[1]);
+      if (s <= sT[0]) return Y + 1.5 + (top - Y - 1.5) * (s - sA[0]) / (sT[0] - sA[0]);
+      if (s >= sT[1]) return Y + 1.5 + (top - Y - 1.5) * (sA[1] - s) / (sA[1] - sT[1]);
       const u = (s - sT[0]) / (sT[1] - sT[0]) * 2 - 1; return low + (top - low) * u * u; };
     const hanger = [];
     for (const sd of [-1, 1]) { const pts = []; for (let s = sA[0]; s <= sA[1] + 0.01; s += 4) { const [px, pz] = at(s); pts.push(new THREE.Vector3(px + nx * sd * legX, yC(s), pz + nz * sd * legX)); }
