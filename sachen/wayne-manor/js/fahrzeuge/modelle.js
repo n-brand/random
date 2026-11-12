@@ -1307,9 +1307,11 @@ function tempoGefuehl(v, t) {
     sx: sh * (Math.sin(t * 61) + 0.6 * Math.sin(t * 97)), sy: sh * (Math.sin(t * 73 + 1) + 0.5 * Math.sin(t * 131)) };
 }
 // ===================== Wasserwerfer (Nicolas 2026-11-12: beim Loeschfahrzeug wie beim Panzer, aber Wasser spritzen) =====================
-// Gemeinsam fuer Spiel (schiessen.js wasserFrame) und Werkstatt: Tropfen als ein InstancedMesh, Wurfparabel (28 m/s, Schwerkraft), am Boden
+// Gemeinsam fuer Spiel (schiessen.js wasserFrame) und Werkstatt: Tropfen als ein InstancedMesh, Wurfbahn mit Luftwiderstand (WASSER.V/K, Schwerkraft), am Boden
 // oder an einem Ziel kurzer Spruehnebel. spec.water = Duese [x, y, z] lokal (vorne -z). Gezielt wird mit der Blickrichtung (Bogen etwas nach oben).
-const WASSER = { n: 0, max: 1200, drops: [], mist: [], acc: 0, mesh: null, mistMesh: null, o: new THREE.Object3D(), v: new THREE.Vector3() };
+// Luftwiderstand (Nicolas 2026-11-12): Duese 46 m/s, Bremsung K x |v| x v; gerechnet aus 7,5 m Duesenhoehe: waagrecht ca. 46 m, 20 Grad ca. 80 m,
+// groesste Weite ca. 88 m bei 36 Grad; der Strahl steigt flach und faellt am Ende steiler (vorher 28 m/s ohne Luftwiderstand, Wurfparabel)
+const WASSER = { V: 46, K: 0.012, n: 0, max: 1200, drops: [], mist: [], acc: 0, mesh: null, mistMesh: null, o: new THREE.Object3D(), v: new THREE.Vector3() };
 function wasserInit() {
   if (WASSER.mesh) return;
   const m = new THREE.MeshStandardMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.75, roughness: 0.1, metalness: 0.1, depthWrite: false });
@@ -1322,7 +1324,7 @@ function wasserSpritzen(dt, from, yaw, pitch) {
   wasserInit(); WASSER.acc += dt * 220;
   const el = Math.max(-0.15, Math.min(1.0, pitch + 0.32)), ce = Math.cos(el);
   while (WASSER.acc >= 1) { WASSER.acc--; if (WASSER.drops.length >= WASSER.max) WASSER.drops.shift();
-    const sp = 28 * (0.95 + Math.random() * 0.1), j = 0.025;
+    const sp = WASSER.V * (0.95 + Math.random() * 0.1), j = 0.025;
     const dx = -Math.sin(yaw) * ce + (Math.random() - 0.5) * j, dy = Math.sin(el) + (Math.random() - 0.5) * j, dz = -Math.cos(yaw) * ce + (Math.random() - 0.5) * j;
     WASSER.drops.push({ p: from.clone().addScaledVector(new THREE.Vector3(dx, dy, dz), Math.random() * 0.4), v: new THREE.Vector3(dx * sp, dy * sp, dz * sp), t: 0 }); }
 }
@@ -1330,7 +1332,7 @@ function wasserSpritzen(dt, from, yaw, pitch) {
 function wasserStep(dt, ground, hit) {
   if (!WASSER.mesh) return;
   const W = WASSER, o = W.o;
-  for (let i = W.drops.length - 1; i >= 0; i--) { const d = W.drops[i]; d.v.y -= 9.81 * dt; d.p.addScaledVector(d.v, dt); d.t += dt;
+  for (let i = W.drops.length - 1; i >= 0; i--) { const d = W.drops[i], sv = d.v.length(); d.v.multiplyScalar(Math.max(0, 1 - W.K * sv * dt)); d.v.y -= 9.81 * dt; d.p.addScaledVector(d.v, dt); d.t += dt;
     const g = ground(d.p.x, d.p.z, d.p.y + 0.5), hHit = hit && hit(d.p);
     if (d.p.y <= g || hHit || d.t > 6) { if (W.mist.length < 200 && Math.random() < 0.35) W.mist.push({ p: d.p.clone().setY(Math.max(d.p.y, g + 0.1)), t: 0 }); W.drops.splice(i, 1); } }
   W.mesh.count = W.drops.length; W.drops.forEach((d, i) => { o.position.copy(d.p); o.scale.setScalar(1); o.updateMatrix(); W.mesh.setMatrixAt(i, o.matrix); }); W.mesh.instanceMatrix.needsUpdate = true;
@@ -1343,11 +1345,11 @@ const SPEC_FIRE_CRANE = { ...SPEC_FIRE_ENGINE, name: "Gotham Fire Crane", water:
   msg: "Gotham Fire Crane (Rüstwagen mit Kran): W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blinklicht beim Fahren)" };
 SPEC_FIRE_ENGINE.msg = "Gotham Fire Engine: W/S Gas/Bremse, A/D lenken, Leertaste halten = Wasser spritzen (Maus zielt), V Kamera, R zurücksetzen, Shift aussteigen";
 // Wasserwerfer-Ziel (Nicolas 2026-11-12: eigenes Ziel-Ding, anders als beim Panzer, zoombar): Auftreffpunkt der Wurfbahn vorausrechnen
-// (gleiche Werte wie wasserSpritzen: 28 m/s, Schwerkraft), auf den Bildschirm legen; Zoom per Mausrad 1x bis 4x (Sichtwinkel 70 / Zoom).
+// (gleiche Werte wie wasserSpritzen: WASSER.V, Luftwiderstand WASSER.K, Schwerkraft), auf den Bildschirm legen; Zoom per Mausrad 1x bis 4x (Sichtwinkel 70 / Zoom).
 const WZOOM = { z: 1, t: 1 };
 function wasserZiel(from, yaw, el, ground) {
-  const ce = Math.cos(el), v = new THREE.Vector3(-Math.sin(yaw) * ce * 28, Math.sin(el) * 28, -Math.cos(yaw) * ce * 28), p = from.clone();
-  for (let t = 0; t < 6; t += 0.03) { v.y -= 9.81 * 0.03; p.addScaledVector(v, 0.03); if (p.y <= ground(p.x, p.z, p.y + 0.5)) return p; }
+  const ce = Math.cos(el), V = WASSER.V, v = new THREE.Vector3(-Math.sin(yaw) * ce * V, Math.sin(el) * V, -Math.cos(yaw) * ce * V), p = from.clone(), h = 0.02;
+  for (let t = 0; t < 6; t += h) { v.multiplyScalar(Math.max(0, 1 - WASSER.K * v.length() * h)); v.y -= 9.81 * h; p.addScaledVector(v, h); if (p.y <= ground(p.x, p.z, p.y + 0.5)) return p; }   // gleiche Rechnung wie wasserStep (mit Luftwiderstand)
   return p;
 }
 // Ring auf den Bildschirm (el = Element mit position fixed), versteckt hinter der Kamera
