@@ -62,7 +62,10 @@ const UMSETZUNG = [
     warum: "Die wichtigsten Wahrzeichen zuerst, sie geben der Stadt Orientierung." },
   { phase: "gebaeude", nr: "P3b", titel: "Weitere Gebäude mit Bedeutung", status: "offen", braucht: ["P3a"],
     inhalt: "Arkham Asylum mit Fähranlegern, Gericht, Kathedrale, Eventgebäude, Museen, Krankenhäuser, Heime, Krippen, Stadion, Banken, Hotels, Läden, Restaurants, Club des Pinguins.",
-    warum: "Alle als leere Hülle mit Schild, Innenräume nur wo genannt." },
+    warum: "Alle als leere Hülle mit Schild, Innenräume nur wo genannt.",
+    // Ausklappbar in umsetzung.html (Nicolas 2026-11-12): Reihenfolge, in der die Gebaeude gebaut werden; mit Pfeilen umstellen, im Browser gemerkt,
+    // "Reihenfolge kopieren" gibt die Liste als Text (zum Uebernehmen hier). Freigegebene neue Gebaeude aus ideen.md sind dabei.
+    teile: ["Arkham Asylum mit Fähranlegern", "Gericht", "Kathedrale", "Friedhof mit Kapelle (Nicolas: unbedingt)", "Rathaus", "Krankenhäuser (3)", "Feuerwehr-Wachen (3)", "Blackgate-Gefängnis", "Stadion", "Banken", "Hotels", "Museen (2)", "Eventgebäude", "Alte Oper / Theater", "Universität (Campus)", "Bibliothek", "Zeitungsredaktion", "Club des Pinguins", "Chemiefabrik", "Brauerei / Stahlwerk", "Lagerhäuser und Kühlhaus", "Müllverbrennung und Schrottplatz", "Wasserturm / Wasserwerk", "Heliport auf Hochhausdach", "Kinderheime und Krippen", "Notunterkunft / Suppenküche", "Tierheim und Tierarzt", "Fitnessstudio / Boxclub", "Skatepark und Basketballplätze", "Botanischer Garten / Gewächshaus", "Zirkus oder Rummelplatz", "Tankstellen mit Shop", "Läden (Juwelier, Schneider, Kleider, Waffen)", "Café und Bäckerei (Laden im EG)", "Waschsalon, Pfandleihe, Tattoo, Barbier", "Restaurants und Bars"] },
   { phase: "untergrund", nr: "U1-U3", titel: "Kanalisation und Kanal-Hub", status: "offen", braucht: ["P3a", "V1"],
     inhalt: "Hauptsammler unter ausgewählten Strassen (inkl. West Avenue zur Uferstrasse West), Nebensammler, Gullideckel, Auslässe, Übergänge zur U-Bahn, Kanal-Hub mit Schurkenbasis unter dem Wayne Tower.",
     warum: "Nach den Gebäuden darüber, weil die Eingänge oben liegen." },
