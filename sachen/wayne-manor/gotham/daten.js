@@ -137,13 +137,13 @@ const GOTHAM = {
   // spanne = Laenge ueber dem Wasser zwischen den Tuermen (m) fuer die Seitenansicht; die Karte misst nach und meldet, wenn die Zahl nicht mehr stimmt
   bruecken: [
     { name: "Gotham-Highway-Brücke", spanne: 414, w: 26, seite: "ost", z: 300 },
-    { name: "Westbrücke (Crosstown)", spanne: 430, w: 24, seite: "ost", z: -880 },
+    { name: "Nordbrücke (Crosstown)", spanne: 430, w: 24, seite: "ost", z: -880 },
     // Nicolas 2026-11-12: vorher bei z 1050, dort war der Ostfluss schon Meer - die Bruecke endete im Wasser, ohne Strasse am Ostufer
     { name: "Ostbrücke (Harbor)", spanne: 436, w: 22, seite: "ost", z: 800 },
     // Nicolas 2026-11-12: Bruecke nach Norden ueber den Nordkanal (bei x -2424 / z -946)
     { name: "Westkanal-Brücke", spanne: 272, w: 20, seite: "nord", x: -2424 },
-    { name: "Südbrücke West", spanne: 364, w: 20, seite: "west", z: -730 },
-    { name: "Südbrücke Ost", spanne: 416, w: 20, seite: "west", z: 520 },
+    { name: "Westbrücke", spanne: 364, w: 20, seite: "west", z: -730 },
+    { name: "Südbrücke", spanne: 416, w: 20, seite: "west", z: 520 },
   ],
   // Faehren (Nicolas 2026-11-12: nach Arkham eine Faehre statt einer Bruecke): Route uebers Wasser von Anleger zu Anleger
   faehren: [
