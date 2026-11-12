@@ -92,7 +92,8 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 
 ## Später (vorgemerkt, noch nicht in der Karte)
 
-- **Militärinsel im Südosten** (Nicolas 2026-11-11: erst später, vorerst weglassen): im Meer, per Boot/Flug, Landebahn, Hangars, Hafen. Der Kampfjet könnte dort einen richtigen Platz bekommen (statt Hauptstrasse, Rückfrage).
+- **Militärinsel im Südosten** (Nicolas 2026-11-11: erst später, vorerst weglassen): im Meer, per Boot/Flug, Landebahn, Hangars, Hafen. Der Kampfjet bekommt dort seinen Platz (statt Hauptstrasse; entschieden, Nicolas 2026-11-12).
+- **Kameras (S5)**: später (Nicolas 2026-11-12).
 
 ## Phase 7 – Wayne Manor und Batcave
 
@@ -113,10 +114,10 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 | Nr | Was | Inhalt |
 |----|-----|--------|
 | S1 | **Inventar mit Hotbar** | Leiste unten (wie Minecraft/Schedule I), Tasten 1-9, Plätze für Gegenstände, Waffen, Kleider, Goldbarren, **Munition** (stapelbar) |
-| S2 | **Zielfunktion bei Waffen** | Rechte Maustaste zielen (Kamera näher, Fadenkreuz), Konflikt mit „Rechtsklick = einsteigen/Tor“ lösen (z. B. zielen nur mit Waffe in der Hand) |
+| S2 | **Zielfunktion bei Waffen** | Rechte Maustaste zielen (Kamera näher, Fadenkreuz). Entschieden: mit Waffe in der Hand öffnet Rechtsklick keine Tore und steigt nicht ein (Slot wechseln). Linksklick wird frei für Aktionen (statt Maus fangen). |
 | S3 | **Kontostand** | Geld als eigener Zustand (lokal gespeichert), Schnittstelle so gebaut, dass er **später mit Supabase** verbunden werden kann (Anmeldung und Datenbank erst dann; Datenschutz/Kosten vorher klären) |
 | S4 | **Computer/Handy-Browser** | Wie das Handy-Internet in GTA V: Bildschirm im Spiel mit Seiten, darunter der **Fahrzeug-Shop** mit drei Händlern (billig, teuer, Militär). Gekauftes Fahrzeug wird geliefert; die Händler gibt es auch als Gebäude in Gotham |
-| S5 | **Kameras** | Unklar – bitte genauer: Überwachungskameras in der Stadt (auf dem Batcomputer ansehen)? Oder Kamera-Ansichten für den Spieler? |
+| S5 | **Kameras** | **Später** (Nicolas 2026-11-12). Noch unklar: Überwachungskameras in der Stadt (auf dem Batcomputer ansehen) oder Kamera-Ansichten für den Spieler. |
 | S6 | **Eigene Figuren** | Später: personalisierbare Spielfigur, Kleider wirklich anziehen (braucht ein Figurenmodell mit Skelett; grosser eigener Schritt) |
 
 ## Nicht Teil von Wayne Manor
@@ -133,9 +134,15 @@ Als Seite mit allen Schritten, Begründung und Abhängigkeiten: **`gotham/umsetz
 
 Begründung: Ohne Kacheln (T2) und Einstellungen (T3) wird Gotham zu langsam, besonders am Handy. Strassen vor Gebäuden, weil alles an den Strassen hängt. Untergrund nach den Gebäuden darüber, weil Eingänge oben liegen. Inventar und Geld vor Shop und Waffen.
 
+## Entscheidungen (Nicolas 2026-11-12)
+
+1. **Lage und Grösse von Gotham:** so wie in der Karte (Inselform nach Skizze, ca. 2,7 x 2,8 km).
+2. **Wayne Manor liegt bei [-323, 1318] der Karte** und ist um ca. **30 Grad nach rechts** (im Uhrzeigersinn) gedreht, damit ihre Steilküste an die Küste passt. In der Karte umgesetzt (`daten.js`: `manorLage`, Manor-Steilküste `kuesteAlt`, Manor-Hauptstrasse und Highway-Anfang umgerechnet; das östliche Festland reicht jetzt bis zur Manor-Küste). Im Spiel bleibt die Manor bei 0 / 0: Gotham wird beim Bau mit der Umkehrung (30 Grad nach links drehen, dann verschieben) in die Spielwelt gelegt.
+3. **Kameras (S5):** vorerst nach „Später“.
+4. **Kampfjet:** kommt später auf die Militärinsel.
+5. **Tests im Panzer** (automatisch rauszoomen, Turm läuft nach, Zoom-Maus gleich schnell): bleiben vorerst.
+6. **Waffen (S2):** mit Waffe in der Hand öffnet Rechtsklick keine Tore und steigt nicht ein (zum Öffnen im Inventar auf einen leeren Platz wechseln). **Linksklick** soll künftig Aktionen auslösen statt die Maus zu fangen; die Maus wird dann anders gefangen.
+
 ## Offene Fragen an Nicolas
 
-1. Lage und Grösse von Gotham so wie in der Karte? (Inselform nach Skizze, ca. 2,7 x 2,8 km, Ostfluss endet ca. 500 m westlich der Manor)
-2. Darf die Küste nach Westen verlängert werden und der Wald zwischen Manor und Gotham dafür weichen (Highway, Flüsse)?
-3. „Chevrollette co“ und „Kameras“ – was genau?
-4. Kampfjet später auf die Militärinsel stellen (Insel kommt erst später)? (Die Anflugschneise im Wald ist seit 2026-11-11 wieder zu, Bäume stehen wie vorher.)
+1. „Chevrollette co“ – was genau (Corvette, Camaro, Händler)?

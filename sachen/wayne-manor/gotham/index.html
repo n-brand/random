@@ -447,6 +447,7 @@
       else if (o.form === "stadion") { r = el("rect", { x: o.x - W / 2, y: o.z - D / 2, width: W, height: D, rx: D / 2.2, fill: T.farbe, stroke: "#000", "stroke-width": 3 }, L.orte);
         el("rect", { x: o.x - W * .32, y: o.z - D * .25, width: W * .64, height: D * .5, rx: D * .12, fill: "#3f8f3a", stroke: "#fff", "stroke-width": 2, "pointer-events": "none" }, L.orte); }
       else r = el("rect", { x: o.x - W / 2, y: o.z - D / 2, width: W, height: D, fill: T.farbe, "fill-opacity": unter ? .35 : .9, stroke: "#000", "stroke-width": 3, "stroke-dasharray": unter ? "8 5" : "" }, L.orte);
+      if (o.dreh) r.setAttribute("transform", `rotate(${o.dreh} ${o.x} ${o.z})`);   // gedreht (Wayne Manor 30 Grad, Nicolas 2026-11-12)
       r.dataset.typ = o.typ;
       r.dataset.info = `<b>${o.name}</b><br>${T.gruppe || o.typ}<br>x ${o.x} / z ${o.z} · ${o.w} × ${o.d} m${o.h ? " · " + o.h + " m hoch" : ""}${o.ebene ? " · " + o.ebene + " m (unter der Strasse)" : ""}<br>Status: ${o.status || "geplant"}${o.notiz ? "<br>" + o.notiz : ""}<br><small>id: ${o.id}</small>`;
       if (o.markiert) {   // kleine, wichtige Orte (z. B. Batman-Container) gut sichtbar: Ring, Linie und Name
