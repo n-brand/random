@@ -44,6 +44,13 @@
   <script>
     "use strict";
     const S = GOTHAM.schnitt, H = GOTHAM.hoehen, svg = document.getElementById("cut"), NS = "http://www.w3.org/2000/svg";
+    // Bruecken in echter Laenge (Nicolas 2026-11-12) hinten an die Gebaeudetypen anhaengen; alles danach rueckt nach rechts
+    { const KK = 14, ANF = 25, GAP = 220, BR = (GOTHAM.bruecken || []).filter(b => b.spanne), b1 = Math.max(...S.teile.filter(t => t.gruppe === "typen").map(t => t.x1 || t.x0));
+      let x = b1 + GAP; const neu = [{ gruppe: "typen", typ: "titel", name: "Alle Brücken (echte Länge: Spannweite über dem Wasser wie in der Karte gemessen)", x0: x, x1: x + 1600, y0: 76, y1: 76 }];
+      for (const b of BR) { const x1 = x + (b.spanne + 2 * ANF) * KK; neu.push({ gruppe: "typen", typ: "bruecke", name: b.name, x0: x, x1, y0: -1.5, y1: 0, spanne: b.spanne, anf: ANF, w: b.w }); x = x1 + GAP; }
+      const D = x - b1 - GAP + 40;
+      S.teile = S.teile.map(t => { if (t.gruppe === "typen" || t.x0 === undefined || t.x0 < b1) return t; const u = { ...t, x0: t.x0 + D }; if (u.x1 !== undefined) u.x1 += D; if (u.punkte) u.punkte = u.punkte.map(p => [p[0] + D, p[1]]); return u; });
+      S.teile.push(...neu); }
     // Block "Alle Gebaeudetypen" (gruppe "typen") ein-/ausklappen (Nicolas 2026-11-11); eingeklappt rueckt alles danach nach links, Zustand im Browser
     let TYP_AN = true; try { TYP_AN = localStorage.getItem("gotham-schnitt-typen") !== "0"; } catch (e) {}
     { const btn = document.getElementById("typen"); btn.textContent = TYP_AN ? "Gebäudetypen + Stadion einklappen" : "Gebäudetypen + Stadion ausklappen";
@@ -102,6 +109,27 @@
         n = el("polygon", { points: P.map(p => p[0] + "," + Y(p[1])).join(" "), fill: FARBE.grund, stroke: "none" });   // Nicolas: Schicht unter dem Kies weg (Boden-Farbe)
         el("path", { d: "M" + P.slice(0, 8).map(p => p[0] + " " + Y(p[1])).join("L"), fill: "none", stroke: "#cdb98a", "stroke-width": 5, "pointer-events": "none" });
         info(n, `<b>${t.name}</b><br>Kies/Sand ca. ${String(t.kies).replace(".", ",")} m über dem Wasser, dann weich tiefer bis zum Grund (${fm(t.y0)})`); continue; }
+      if (t.typ === "bruecke") {   // Haengebruecke in echter Laenge: Ufer mit Kaimauer, Fluss, Tuerme an den Ufern (62 m), Tragseil, Haenger, Fahrbahn
+        const WYb = H.wasser - H.strasse, grundY = WYb - 12, xa = t.x0 + t.anf * K, xb = t.x1 - t.anf * K, TW = 10 * K, g = el("g", {}), fm1 = v => String(v).replace(".", ",");
+        for (const [a, b] of [[t.x0 - 100, xa], [xb, t.x1 + 100]]) el("rect", { x: a, y: Y(0), width: b - a, height: (0 - BOT) * K, fill: FARBE.grund }, g);   // Ufer bis zur Kaimauer
+        el("rect", { x: xa, y: Y(grundY), width: xb - xa, height: (grundY - BOT) * K, fill: FARBE.grund }, g);   // Flussgrund
+        el("rect", { x: xa, y: Y(0), width: xb - xa, height: -WYb * K, fill: "#1e2c44" }, g);   // Luft zwischen Fahrbahn und Wasser
+        el("rect", { x: xa, y: Y(WYb), width: xb - xa, height: (WYb - grundY) * K, fill: FARBE.wasser }, g);
+        for (const xm of [xa, xb]) el("rect", { x: xm - (xm === xa ? 6 : 0), y: Y(0), width: 6, height: (0 - grundY) * K, fill: FARBE.mauer }, g);   // Kaimauern
+        el("rect", { x: t.x0 - 100, y: Y(0), width: 100 + t.anf * K, height: 0.6 * K, fill: FARBE.strasse }, g); el("rect", { x: xb, y: Y(0), width: t.anf * K + 100, height: 0.6 * K, fill: FARBE.strasse }, g);
+        for (const xm of [xa, xb]) el("rect", { x: xm - TW / 2, y: Y(62), width: TW, height: (62 - WYb) * K, fill: FARBE.turm, stroke: "#111", "stroke-width": 1.5 }, g);   // Tuerme
+        const sag = 4, cab = u => Y(sag + (62 - sag) * (2 * u - 1) ** 2), mid = (xa + xb) / 2;   // Tragseil: Parabel von Turmspitze zu Turmspitze, in der Mitte 4 m ueber der Fahrbahn
+        el("path", { d: "M" + [...Array(41).keys()].map(i => `${xa + (xb - xa) * i / 40} ${cab(i / 40)}`).join("L"), fill: "none", stroke: "#d9dde3", "stroke-width": 2.5 }, g);
+        for (let xx = xa + 20 * K; xx < xb - 10 * K; xx += 20 * K) el("line", { x1: xx, y1: cab((xx - xa) / (xb - xa)), x2: xx, y2: Y(0), stroke: "#9aa0a8", "stroke-width": 1 }, g);   // Haenger alle 20 m
+        for (const [xt, xe] of [[xa, t.x0], [xb, t.x1]]) el("path", { d: `M${xt} ${Y(62)}Q${(xt + xe) / 2} ${Y(30)} ${xe} ${Y(0.5)}`, fill: "none", stroke: "#d9dde3", "stroke-width": 2.5 }, g);   // Rueckhalteseile zu den Ankern
+        el("rect", { x: t.x0, y: Y(0), width: t.x1 - t.x0, height: 1.5 * K, fill: FARBE.deck, stroke: "#111", "stroke-width": 1.5 }, g);   // Fahrbahn
+        // Masse: Spannweite und Durchfahrtshoehe
+        const yb = Y(BOT + 2.2); el("line", { x1: xa, y1: yb, x2: xb, y2: yb, stroke: "#ffd36b", "stroke-width": 2 }, g); for (const xm of [xa, xb]) el("line", { x1: xm, y1: yb - 7, x2: xm, y2: yb + 7, stroke: "#ffd36b", "stroke-width": 2 }, g);
+        label(`${t.spanne} m Spannweite (über dem Wasser) · gesamt ${t.spanne + 2 * t.anf} m · ${t.name}`, mid, yb - 8, xb - xa, "#ffd36b", 22);
+        el("line", { x1: mid, y1: Y(WYb), x2: mid, y2: Y(-1.5), stroke: "#ffd36b", "stroke-width": 2 }, g);
+        label(`Durchfahrt ${fm1(-1.5 - WYb)} m`, mid + 90, (Y(WYb) + Y(-1.5)) / 2, 160, "#ffd36b", 16);
+        label(t.name, mid, Y(62) - 14, xb - xa, "#e6e9ee", 26);
+        info(g, `<b>${t.name}</b><br>Hängebrücke, Fahrbahn ${t.w} m breit auf Strassenhöhe<br>Spannweite ${t.spanne} m zwischen den Türmen (wie in der Karte gemessen), gesamt ${t.spanne + 2 * t.anf} m<br>Türme ${62 - WYb} m hoch (62 m über der Fahrbahn), Durchfahrt ${fm1(-1.5 - WYb)} m über dem Wasser`); continue; }
       if (t.typ === "mass") { const x = t.x0, a = Y(t.y0), b = Y(t.y1);
         el("line", { x1: x, y1: a, x2: x, y2: b, stroke: "#ffd36b", "stroke-width": 2 });
         for (const yy of [a, b]) el("line", { x1: x - 7, y1: yy, x2: x + 7, y2: yy, stroke: "#ffd36b", "stroke-width": 2 });

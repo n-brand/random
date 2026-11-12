@@ -167,7 +167,13 @@
       let nx = 0, nz = 0; for (let j = -6; j <= 6; j++) { const n = flussW[(k + j + NI) % NI].n; nx += n[0]; nz += n[1]; } const l = Math.hypot(nx, nz) || 1; return [nx / l, nz / l]; };
     const crossing = (seite, z) => { const x = seite === "ost" ? bankE(z) : bankW(z), n = shoreN(x, z); return { bank: [x, z], n, far: across(x, z, n[0], n[1]) }; };
     const BX = { W: bankW, O: bankE }, BZ = { N: bankN, S: bankS, Na: x => across(x, bankN(x), 0, -1)[1] }, BP = { Oa: z => crossing("ost", z).far, Wa: z => crossing("west", z).far };
-    const resolve = L => L.map(p => BP[p[0]] ? BP[p[0]](p[1]) : [typeof p[0] === "string" ? BX[p[0]](p[1]) : p[0], typeof p[1] === "string" ? BZ[p[1]](p[0]) : p[1]]);
+    // Strassen, die an einer Bruecke anfangen/enden, laufen zuerst LEAD m gerade in Brueckenrichtung weiter (keine engen Kurven am Brueckenende, Nicolas 2026-11-12)
+    const LEAD = 150;
+    const resolve = L => L.flatMap((p, i) => {
+      const end = i === 0 || i === L.length - 1, br = BP[p[0]] || (end && (p[0] === "O" || p[0] === "W"));
+      if (!br) return [[typeof p[0] === "string" ? BX[p[0]](p[1]) : p[0], typeof p[1] === "string" ? BZ[p[1]](p[0]) : p[1]]];
+      const c = crossing(p[0][0] === "O" ? "ost" : "west", p[1]), far = p[0].length === 2, q = far ? c.far : c.bank, s = far ? LEAD : -LEAD, lead = [q[0] + c.n[0] * s, q[1] + c.n[1] * s];
+      return !end ? [q] : i === 0 ? [q, lead] : [lead, q]; });
 
     // ---------- Ebenen ----------
     const LAYERS = [["bezirke", "Bezirke (Wohlstand)", true], ["gebaeude", "Gebäude (automatisch gefüllt)", true], ["neben", "Nebenstrassen und Gassen", true],
@@ -320,12 +326,14 @@
           el("circle", { cx: s.pts[i][0] - uz / l * sd * (s.w / 2 - 3), cy: s.pts[i][1] + ux / l * sd * (s.w / 2 - 3), r: 1.6, fill: "#111", "pointer-events": "none" }, L.strassen); } }
     }
     // Haengebruecken: Fahrbahn, Tuerme an den Ufern, Tragseile bis zu den Ankern
+    const brIssues = [];
     for (const b of BR) {
       const d = path(b.pts);
       el("path", { d, fill: "none", stroke: "#15171a", "stroke-width": b.w + 6 }, L.strassen);
       const p = el("path", { d, fill: "none", stroke: "#b9bfc7", "stroke-width": b.w }, L.strassen);
       let i0 = -1, i1 = -1; b.pts.forEach((q, i) => { if (inWater(q[0], q[1])) { if (i0 < 0) i0 = i; i1 = i; } });
       const span = i0 >= 0 ? lineLen(b.pts.slice(i0, i1 + 1)) : 0;
+      if (b.spanne && Math.abs(b.spanne - span) > 8) { const m = b.pts[b.pts.length >> 1]; brIssues.push([{ id: b.name, x: Math.round(m[0]), z: Math.round(m[1]), w: 40, d: 40 }, `Spannweite in daten.js ${b.spanne} m, laut Karte ${Math.round(span)} m (für die Seitenansicht nachtragen)`]); }
       p.dataset.info = `<b>${b.name}</b><br>Hängebrücke (Vorbild Williamsburg/Manhattan Bridge), Fahrbahn ${b.w} m auf Strassenhöhe<br>über Wasser ca. ${Math.round(span)} m, Türme an den Ufern, Durchfahrt ca. ${G.hoehen.strasse - G.hoehen.wasser} m über dem Wasser`;
       if (i0 < 0) continue;
       const tw = [b.pts[Math.max(0, i0 - 1)], b.pts[Math.min(b.pts.length - 1, i1 + 1)]];
@@ -417,7 +425,7 @@
     }
 
     // ---------- Pruefung: Orte auf Hauptstrassen/Bruecken, ausserhalb der Insel, uebereinander ----------
-    const issues = [];
+    const issues = [...brIssues];
     const rectHitsRoad = (o, s) => { const W = Math.max(o.w, 4) / 2 + s.w / 2, D = Math.max(o.d, 4) / 2 + s.w / 2; return s.pts.some(p => Math.abs(p[0] - o.x) < W && Math.abs(p[1] - o.z) < D); };
     for (const o of G.orte) {
       if (!o.aussen && o.ebene < 0 && !inIsland(o.x, o.z)) issues.push([o, "liegt unter der Erde, aber nicht unter der Insel"]);

@@ -124,14 +124,15 @@ const GOTHAM = {
     { id: "west-sued", name: "Zufahrt Westen (Süd)", w: 16, linie: [["Wa", 520], [-3700, 480], [-4100, 520]] },
   ],
   // Haengebruecken (Fahrbahn auf Strassenhoehe; Tuerme stehen automatisch an den Ufern)
+  // spanne = Laenge ueber dem Wasser zwischen den Tuermen (m) fuer die Seitenansicht; die Karte misst nach und meldet, wenn die Zahl nicht mehr stimmt
   bruecken: [
-    { name: "Gotham-Highway-Brücke", w: 26, seite: "ost", z: 300 },
-    { name: "Nordbrücke (Crosstown)", w: 24, seite: "ost", z: -880 },
+    { name: "Gotham-Highway-Brücke", spanne: 414, w: 26, seite: "ost", z: 300 },
+    { name: "Nordbrücke (Crosstown)", spanne: 430, w: 24, seite: "ost", z: -880 },
     // Nicolas 2026-11-12: vorher bei z 1050, dort war der Ostfluss schon Meer - die Bruecke endete im Wasser, ohne Strasse am Ostufer
-    { name: "Südbrücke (Harbor)", w: 22, seite: "ost", z: 800 },
-    { name: "Westbrücke Nord", w: 20, seite: "west", z: -730 },
-    { name: "Westbrücke Süd", w: 20, seite: "west", z: 520 },
-    { name: "Arkham-Brücke", w: 12, linie: [[-2580, 1100], [-2820, 1350], [-3050, 1550], [-3200, 1660]] },
+    { name: "Südbrücke (Harbor)", spanne: 436, w: 22, seite: "ost", z: 800 },
+    { name: "Westbrücke Nord", spanne: 364, w: 20, seite: "west", z: -730 },
+    { name: "Westbrücke Süd", spanne: 416, w: 20, seite: "west", z: 520 },
+    { name: "Arkham-Brücke", spanne: 781, w: 12, linie: [[-2580, 1100], [-2820, 1350], [-3050, 1550], [-3200, 1660]] },
   ],
 
   // U-Bahn: ein grosser Ring (Ellipse), Stationen per Winkel in Grad (0 = Osten, 90 = Sueden), Abstand ca. 450 m
@@ -193,7 +194,7 @@ const GOTHAM = {
     { id: "heim-2", typ: "gesundheit", name: "Kinderheim Narrows", x: -2300, z: 1260, w: 40, d: 30, h: 12 },
     { id: "krippe-1", typ: "gesundheit", name: "Kinderkrippe Uptown", x: -1400, z: -740, w: 25, d: 20, h: 6 },
     { id: "krippe-2", typ: "gesundheit", name: "Kinderkrippe Westseite", x: -2420, z: -330, w: 25, d: 20, h: 6 },
-    { id: "krippe-3", typ: "gesundheit", name: "Kinderkrippe Südstadt", x: -1850, z: 780, w: 25, d: 20, h: 6 },
+    { id: "krippe-3", typ: "gesundheit", name: "Kinderkrippe Südstadt", x: -1960, z: 700, w: 25, d: 20, h: 6 },
     // --- Freizeit ---
     { id: "stadion", typ: "freizeit", form: "stadion", name: "Football-Stadion (oben offen)", x: -2150, z: 540, w: 220, d: 160, h: 14.1, notiz: "Oben offen, kein Dach. Tribünen 3 Stockwerke (je 4,7 m), Sitzreihen 0,4 m hoch und 0,8 m tief. Ränge rundum, Spielfeld in der Mitte." },
     { id: "museum-1", typ: "freizeit", name: "Kunstmuseum", x: -1700, z: -1160, w: 100, d: 60, h: 25 },
