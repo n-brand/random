@@ -1293,12 +1293,23 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   maxN: 34, maxF: 41.7, acc: 15, steer: 0.55, jump: true, grade: 45, camD: 6.5, camH: 1.0, seat: [0, 1.25, 0.15], bodyH: 1.4, bike: true,
   exits: [[-1.1, 0], [1.1, 0], [-1.2, 0.8], [1.2, 0.8], [0, -2.5], [0, 2.5]],
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
+// built darf auch eine Funktion sein (Leistung 2026-11-13): dann steht zuerst nur eine leere Gruppe in der Welt, das Modell wird erst gebaut, wenn die
+// Kamera nahe kommt oder man es braucht (vehReal; Aufgabe in aufstellung.js, ein Fahrzeug je Bild)
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
+  const lazy = typeof built === "function" ? built : null; if (lazy) built = { g: new THREE.Group(), wheels: [] };
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
   const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, towed: null, towBy: null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, wheelGlow: built.wheelGlow || null, folds: built.folds || null, glowM: built.glowM || null, fold: 0, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
-  VEH.push(C); return C;
+  C.lazy = lazy; VEH.push(C); return C;
+}
+// Modell eines spaet gebauten Fahrzeugs jetzt bauen und die leere Gruppe ersetzen (Lage, Drehung, Sichtbarkeit bleiben)
+function vehReal(C) {
+  if (!C || !C.lazy) return C; const b = C.lazy(); C.lazy = null;
+  b.g.userData.dynamic = true; b.g.userData.noLift = true; b.g.position.copy(C.g.position); b.g.quaternion.copy(C.g.quaternion); b.g.visible = C.g.visible;
+  scene.remove(C.g); scene.add(b.g); C.g = b.g; C.wheels = b.wheels;
+  for (const [k, f] of [["jetM", "jetM"], ["flame", "flame"], ["beacon", "beacon"], ["monitor", "monitor"], ["dumpG", "dump"], ["turret", "turret"], ["gun", "gun"], ["gunMin", "gunMin"], ["wheelGlow", "wheelGlow"], ["folds", "folds"], ["glowM", "glowM"]]) C[k] = b[f] || null;
+  return C;
 }// ===================== Kurvenphysik (Nicolas 2026-11-12, alle Bodenfahrzeuge; gilt im Spiel (fahren.js) und in der Werkstatt) =====================
 // 1 Haftgrenze: Querbeschleunigung hoechstens spec.mu x g (Vorgabe Auto 1,5, Zweirad 2,0, Panzer 1,0; spielerisch, echte Werte waeren 0,9 / 1,0 / 0,5); zu eng gelenkt ->
 //   der Bogen wird weiter (Untersteuern). 2 Kurvenwiderstand: die Seitenkraft der schraeg laufenden Reifen zeigt etwas nach hinten,

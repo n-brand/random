@@ -56,7 +56,7 @@ function parkInBay(b) {
   player.yaw = C.h; player.pitch = -0.12; carPose(0); baySign.visible = false; aimedBay = null;
   toast("Eingeparkt auf Platz " + b.n);
 }
-function enterVehicle(v) { const ok = v === BOAT ? useBoat() : v === FLY ? useFly() : v === JET ? useJet() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
+function enterVehicle(v) { if (v && v.lazy) vehReal(v); const ok = v === BOAT ? useBoat() : v === FLY ? useFly() : v === JET ? useJet() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
 const vehName = v => v === BOAT ? "Boot" : v === FLY ? "The Bat" : v === JET ? "Kampfjet" : v.label.replace(/ \(.*\)$/, "");
 let aimedVeh = null;
 function toggleGate(t) {

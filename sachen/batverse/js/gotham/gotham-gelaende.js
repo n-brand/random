@@ -224,7 +224,7 @@ function gothamRoadAt(x, z, feet) {
 // wird nur gezeichnet, wenn sie im Blickfeld liegt (eigene Huelle) und naeher als die Sichtweite plus 200 m ist (gHideStep, jedes Bild aus start.js);
 // vorher war je Netz die ganze Insel ein Stueck und wurde immer ganz gezeichnet. free: Punktdaten nach dem Hochladen auf die Grafikkarte freigeben
 // (spart JS-Speicher; die Teile sind dann nicht mehr per Rechtsklick anwaehlbar, der Strahl trifft das Gelaende/die Fahrbahn darunter).
-const GCELL = 768, GHIDE = [];
+const GCELL = 768, GHIDE = [];   // 384 m getestet (2026-11-13): 5-9 % weniger Dreiecke, aber bis 37 Aufrufe mehr; bei G3 neu pruefen
 function freeAfterUpload() { this.array = null; }
 function gsplit(g, m, name, opt = {}) {
   const grp = new THREE.Group(); grp.name = name; grp.userData.keep = true; grp.userData.noLift = true;

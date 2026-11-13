@@ -148,6 +148,7 @@ function towStep(C, dt) {
 }
 function carMsg(t) { if (clock.elapsedTime - CAR.msgT > 2.5) { CAR.msgT = clock.elapsedTime; toast(t); } }
 function useCar(want) {
+  if (want && want.lazy) vehReal(want);
   if (!walking || ghost) return false;
   const p = player.pos;
   if (CAR && CAR.on) {
@@ -182,6 +183,7 @@ function useCar(want) {
 }
 // Fahrzeug zum Spieler holen (Teleport-Menue): vor den Spieler in Blickrichtung auf freien Boden (sonst seitlich/weiter weg)
 function summonVehicle(v) {
+  if (v && v.lazy) vehReal(v);
   if (!v) return false;
   if (!walking || ghost) { toast("Zuerst „Begehen“ starten, dann das Fahrzeug holen"); return false; }
   if (CAR && CAR.on) { if (CAR === v) return toast(v.label + ": du sitzt schon drin"), false; useCar(); if (CAR.on) return false; }
