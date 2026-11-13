@@ -273,18 +273,13 @@ function carStep(dt) {
   if (sp.boost) {
     if (boosting && !C.boostOn) engineJet();
     C.boostOn = boosting;
-    if (boosting) { C.boostE = Math.max(0, C.boostE - dt / 4); C.boostT = -2; C.jet = Math.max(C.jet, 0.5); }
-    else if (C.boostE < 1) { C.boostT += dt; if (C.boostT >= 0.6) { C.boostT -= 0.6; C.boostE = Math.min(1, Math.floor(C.boostE * 10 + 1e-6) / 10 + 0.1); } }
-    C.boostLock = C.boostE <= 0;
+    nitroStep(C, boosting, dt);   // Vorrat leeren / nachladen (modelle.js)
     if (boostKey && C.boostE <= 0) carMsg("Nitro leer – lädt nach");
   }
   const max = C.wet ? 0.3 : sp.maxF * (C.towed ? TOW.slow : 1) + (boosting ? 40 / 3.6 : 0);   // mit Auto am Haken langsamer   // Nitro: 40 km/h ueber dem Hoechsttempo ; sonst nur W bis zum Hoechsttempo, im Wasser steckt man fest
   // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
   // Anlaufzeit (Nicolas 2026-11-11): kurz A/D tippen lenkt nur leicht, erst gehalten voller Einschlag (25 % -> 100 % in 0,45 s, weich)
-  if (st && Math.sign(st) === C.stDir) C.stHold = (C.stHold || 0) + dt; else { C.stHold = 0; C.stDir = Math.sign(st); }
-  const hk = Math.min(1, C.stHold / 0.45), stF = st ? 0.25 + 0.75 * hk * hk * (3 - 2 * hk) : 0;
-  const steerT = st * stF * sp.steer / (1 + Math.abs(C.v) / 14);   // bei Tempo etwas williger (Serpentine r 11 mit ca. 40 km/h)
-  C.steer += (steerT - C.steer) * Math.min(1, dt * 8);
+  lenkStep(C, sp, st, dt);   // Anlaufzeit und Einschlag (modelle.js, gleich wie Werkstatt)
   if (!C.air) {
     const KP = C.wet ? { k: Math.tan(C.steer) / sp.wb, dec: 0, thF: 1 } : kurvenPhysik(sp, C.v, C.steer, th, max);   // Haftgrenze, Kurvenwiderstand (modelle.js)
     C.aLat = C.v * C.v * Math.abs(KP.k);
@@ -301,11 +296,7 @@ function carStep(dt) {
     const crawl = sp.tracks && th > 0 && slope > 0.05;                        // Ketten (Panzer, Nicolas 2026-11-11): mit Gas kein Zurueckrollen, steil nur im Kriechtempo
     if (held) C.v = 0; else if (crawl) C.v = Math.min(C.v, Math.max(1.5, max * (1 - slope / maxG))); else C.v -= SLOPE_G * Math.sin(slope) * dt;
     C.slope = slope;
-    const brk = (sp.brake || 28) + Math.abs(C.v) * 0.2;                     // Bremse (Nicolas 2026-11-11: Bremsweg zu lang; vorher 16 m/s²): 100 km/h -> ca. 13 m, 200 km/h -> ca. 45 m
-    if (th > 0) C.v += (C.v < -0.2 ? brk : sp.acc * (1 - Math.max(0, C.v) / (max + 8)) * KP.thF) * grip * dt;
-    else if (th < 0) C.v -= (C.v > 0.2 ? brk : sp.revMax ? sp.acc * (1 - Math.max(0, -C.v) / (sp.revMax + 8)) : 6) * dt;   // spec.revMax: rueckwaerts wie vorwaerts (Panzer, Nicolas 2026-11-11)
-    else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (3 + Math.abs(C.v) * 0.06) * dt);   // Ausrollen ohne Gas etwas kuerzer
-    C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), KP.dec * dt);                                      // Kurvenwiderstand / Radieren
+    antriebStep(C, sp, th, max, KP, grip, dt);   // Gas, Bremse, Ausrollen, Kurvenwiderstand (modelle.js, gleich wie Werkstatt)
     if (boosting && C.v < max) C.v = Math.min(max, C.v + 80 * dt);                                            // Nitro 5-mal so stark (Nicolas 2026-11-09)
     if (C.v > max) C.v = Math.max(max, C.v - (C.slope < -0.05 ? 4 : 14) * dt);   // bergab darf man etwas ueber das Hoechsttempo rollen
     C.v = Math.max(th < 0 ? -(sp.revMax || 8) : -Math.max(16, sp.revMax || 0), C.v);                                     // rueckwaerts den Hang hinunter auch schneller

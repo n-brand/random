@@ -1320,6 +1320,29 @@ function vehReal(C) {
 const KURVE_G = 9.81;
 // AUS (Nicolas 2026-11-12: Fahren wurde dadurch extrem langsamer und weniger spassig). Code bleibt fuer spaeter; true = wieder an.
 const KURVEN_PHYSIK = false;
+// Gemeinsame Fahrbausteine (Leistung/Pflege 2026-11-13): Spiel (fahren.js carStep) und Werkstatt (werkstatt.js fahren) rufen dieselben Funktionen auf,
+// vorher stand der Code doppelt da. Die Welt (Hang, Kollision, Wasser) bleibt in fahren.js, die Werkstatt hat ebenen Boden.
+// Lenken mit Anlaufzeit (Nicolas 2026-11-11): kurz tippen lenkt nur leicht, erst gehalten voller Einschlag (25 % -> 100 % in 0,45 s, weich); bei Tempo weniger Einschlag
+function lenkStep(C, sp, st, dt) {
+  if (st && Math.sign(st) === C.stDir) C.stHold = (C.stHold || 0) + dt; else { C.stHold = 0; C.stDir = Math.sign(st); }
+  const hk = Math.min(1, C.stHold / 0.45), stF = st ? 0.25 + 0.75 * hk * hk * (3 - 2 * hk) : 0;
+  C.steer += (st * stF * sp.steer / (1 + Math.abs(C.v) / 14) - C.steer) * Math.min(1, dt * 8);
+}
+// Gas, Bremse (100 km/h -> ca. 13 m), rueckwaerts (spec.revMax wie vorwaerts), Ausrollen, dann Kurvenwiderstand KP.dec; grip < 1 = Raeder drehen am Hang durch
+function antriebStep(C, sp, th, max, KP, grip, dt) {
+  const brk = (sp.brake || 28) + Math.abs(C.v) * 0.2;
+  if (th > 0) C.v += (C.v < -0.2 ? brk : sp.acc * (1 - Math.max(0, C.v) / (max + 8)) * KP.thF) * grip * dt;
+  else if (th < 0) C.v -= (C.v > 0.2 ? brk : sp.revMax ? sp.acc * (1 - Math.max(0, -C.v) / (sp.revMax + 8)) : 6) * dt;
+  else C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), (3 + Math.abs(C.v) * 0.06) * dt);
+  C.v -= Math.sign(C.v) * Math.min(Math.abs(C.v), KP.dec * dt);
+}
+// Nitro-Vorrat (Nicolas 2026-11-09): beim Schub ca. 4 s Vorrat, nach dem Loslassen 2 s Pause, dann alle 0,6 s ein Zehntel nachladen
+function nitroStep(C, boosting, dt) {
+  if (C.boostE === undefined) { C.boostE = 1; C.boostT = 0; }
+  if (boosting) { C.boostE = Math.max(0, C.boostE - dt / 4); C.boostT = -2; C.jet = Math.max(C.jet || 0, 0.5); }
+  else if (C.boostE < 1) { C.boostT += dt; if (C.boostT >= 0.6) { C.boostT -= 0.6; C.boostE = Math.min(1, Math.floor(C.boostE * 10 + 1e-6) / 10 + 0.1); } }
+  C.boostLock = C.boostE <= 0;
+}
 function kurvenPhysik(sp, v, steer, gas, vmax) {
   const av = Math.abs(v), kWant = Math.tan(steer) / sp.wb;
   if (!KURVEN_PHYSIK || av < 2) return { k: kWant, dec: 0, thF: 1 };                         // langsam: wie bisher (Rangieren, Aufzuege)

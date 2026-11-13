@@ -291,15 +291,10 @@ function fahren(dt) {
   const A = AKT, s = A.spec, vmax = (s.maxF || s.maxN || 30) * (A.towed ? TOW.slow : 1), gas = down("KeyW", "ArrowUp"), brems = down("KeyS", "ArrowDown"), links = down("KeyA", "ArrowLeft"), rechts = down("KeyD", "ArrowRight");
   // wie im Spiel (fahren.js carStep): Gas/Bremse/Ausrollen, Lenken mit Anlaufzeit, Kurvenphysik (modelle.js); Gelaende ist hier eben
   const th = gas ? 1 : brems ? -1 : 0, st = (links ? 1 : 0) - (rechts ? 1 : 0);
-  if (st && Math.sign(st) === A.stDir) A.stHold = (A.stHold || 0) + dt; else { A.stHold = 0; A.stDir = Math.sign(st); }
-  const hk = Math.min(1, A.stHold / 0.45), stF = st ? 0.25 + 0.75 * hk * hk * (3 - 2 * hk) : 0;
-  A.steer += (st * stF * s.steer / (1 + Math.abs(A.v) / 14) - A.steer) * Math.min(1, dt * 8);
+  lenkStep(A, s, st, dt);   // gemeinsam mit fahren.js (modelle.js)
   const KP = kurvenPhysik(s, A.v, A.steer, th, vmax); A.aLat = A.v * A.v * Math.abs(KP.k);
   A.h += A.v * KP.k * dt;
-  const brk = (s.brake || 28) + Math.abs(A.v) * 0.2;
-  if (th > 0) A.v += (A.v < -0.2 ? brk : s.acc * (1 - Math.max(0, A.v) / (vmax + 8)) * KP.thF) * dt;
-  else if (th < 0) A.v -= (A.v > 0.2 ? brk : s.revMax ? s.acc * (1 - Math.max(0, -A.v) / (s.revMax + 8)) : 6) * dt;
-  else A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), (3 + Math.abs(A.v) * 0.06) * dt);
+  antriebStep(A, s, th, vmax, KP, 1, dt);   // Gas, Bremse, Ausrollen, Kurvenwiderstand: gemeinsam mit fahren.js (modelle.js)
   if (A.monitor) { const el = Math.max(-0.9, Math.min(0.9, kPitch + 0.32)), M0 = monitorPose(A.g, A.monitor, wrapW(kYaw - A.h), el, dt, down("Space"));   // Arm-Wasserwerfer (wie schiessen.js wasserFrame)
     if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);
     A.wz = { tip: M0.tip, el, ready: M0.ready }; }
@@ -331,8 +326,7 @@ function fahren(dt) {
   const spc = down("Space"), tap = spc && !A.spPrev; A.spPrev = spc;
   const boosting = !!s.boost && spc && !A.air && th >= 0 && A.boostE > 0;
   if (s.boost) { if (boosting && !A.boostOn && typeof engineJet === "function") engineJet(); A.boostOn = boosting;
-    if (boosting) { A.boostE = Math.max(0, A.boostE - dt / 4); A.boostT = -2; A.jet = Math.max(A.jet, 0.5); }
-    else if (A.boostE < 1) { A.boostT += dt; if (A.boostT >= 0.6) { A.boostT -= 0.6; A.boostE = Math.min(1, Math.floor(A.boostE * 10 + 1e-6) / 10 + 0.1); } }
+    nitroStep(A, boosting, dt);   // gemeinsam mit fahren.js (modelle.js)
     if (tap && A.boostE <= 0) toast("Nitro leer – lädt nach");
     $nitro.lastChild.firstChild.style.width = Math.round(A.boostE * 100) + "%"; $nitro.className = boosting ? "on" : A.boostE <= 0 ? "lock" : A.boostE < 1 ? "load" : ""; }   // Leiste wie im Spiel
   $nitro.hidden = !s.boost;
@@ -343,7 +337,6 @@ function fahren(dt) {
   else A.pitch += (0 - A.pitch) * Math.min(1, dt * 10);
   if (A.jetM) { A.jet = Math.max(0, A.jet - dt); A.jetM.emissiveIntensity = Math.min(2.5, A.jet * 4); }
   if (A.flame) { const k = A.boostOn ? 0.85 + 0.3 * Math.random() : Math.min(1, A.jet * 2); A.flame.visible = k > 0.02; A.flame.scale.set(0.8 + 0.3 * k, 0.8 + 0.3 * k, k); }
-  A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), KP.dec * dt);                                   // Kurvenwiderstand / Radieren
   A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax + (boosting ? 40 / 3.6 : 0) + (A.air ? 6 : 0), A.v));
   A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;   // vorne = -z im Modell
   if (s.push && schieben(A)) A.v *= Math.max(0, 1 - dt * 1.2);           // Schaufel schiebt Zielfahrzeuge (wie vehPushStep in fahren.js)
