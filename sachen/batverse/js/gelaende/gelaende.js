@@ -26,8 +26,10 @@ function unwarp(x) {
 }
 function gridStep(v) { const u = unwarp(v); return (T_A + 3 * T_B * u * u) * 2 / T_N; }   // Rasterweite an der Stelle v (m)
 const TX = Float32Array.from({ length: TN1 }, (_, i) => warp(i / (T_N / 2) - 1));
-const TH = new Float32Array(TN1 * TN1);
-for (let j = 0; j < TN1; j++) for (let i = 0; i < TN1; i++) TH[j * TN1 + i] = genH(TX[i], TX[j]);
+// Hoehen: aus dem Zwischenspeicher (index.html, TH_CACHE, gleiche Pruefsumme der Dateien bis hier) oder rechnen und danach speichern (ca. 0,8 s)
+const TH = window.TH_CACHE && window.TH_CACHE.length === TN1 * TN1 ? window.TH_CACHE : new Float32Array(TN1 * TN1);
+if (TH !== window.TH_CACHE) { for (let j = 0; j < TN1; j++) for (let i = 0; i < TN1; i++) TH[j * TN1 + i] = genH(TX[i], TX[j]);
+  if (window.TH_DB && window.TH_HASH) setTimeout(() => { try { TH_DB.transaction("cache", "readwrite").objectStore("cache").put({ hash: TH_HASH, th: TH }, "TH"); } catch (e) {} }, 3000); }
 // Hoehe genau wie das Netz (gleiche Dreiecke), damit man weder schwebt noch einsinkt
 function terrainH(x, z) {
   const cell = v => { const i = Math.max(0, Math.min(T_N - 1, Math.floor((unwarp(v) + 1) * T_N / 2))); return [i, clamp01((v - TX[i]) / (TX[i + 1] - TX[i]))]; };

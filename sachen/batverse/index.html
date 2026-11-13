@@ -165,6 +165,16 @@
     const LD = window.LOADT = { t0: performance.now(), times: [] }, bar = document.querySelector("#loading .ld-bar i"), step = document.querySelector("#loading .ld-step");
     const label = f => (f === "kern/start.js" ? "Welt zusammensetzen" : NAMES[f.split("/")[0]] || "Lade") + " …";
     let prev = performance.now(); step.textContent = label(FILES[0]);
+    // Gelaende-Zwischenspeicher (Leistung 2026-11-13): Pruefsumme ueber die Texte aller Dateien bis gelaende.js (nur die bestimmen die Hoehen TH);
+    // passt sie zum gespeicherten Eintrag in IndexedDB (batverse/cache, Schluessel "TH"), uebernimmt gelaende.js die Hoehen statt sie zu rechnen
+    try {
+      const upto = FILES.slice(0, FILES.indexOf("gelaende/gelaende.js") + 1), texts = await Promise.all(upto.map(f => fetch("js/" + f).then(r => r.text())));
+      let h1 = 2166136261, h2 = 5381; for (const t of texts) for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619); h2 = (Math.imul(h2, 33) + c) | 0; }
+      window.TH_HASH = (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36);
+      window.TH_DB = await new Promise((ok, no) => { const rq = indexedDB.open("batverse", 1); rq.onupgradeneeded = () => rq.result.createObjectStore("cache"); rq.onsuccess = () => ok(rq.result); rq.onerror = () => no(rq.error); });
+      const rec = await new Promise(ok => { const rq = TH_DB.transaction("cache").objectStore("cache").get("TH"); rq.onsuccess = () => ok(rq.result); rq.onerror = () => ok(null); });
+      if (rec && rec.hash === TH_HASH && rec.th instanceof Float32Array) window.TH_CACHE = rec.th;
+    } catch (e) { console.warn("Gelaende-Zwischenspeicher nicht verfuegbar", e); }
     FILES.forEach((f, n) => {
       const el = document.createElement("script"); el.src = "js/" + f; el.async = false;
       el.onload = () => { const now = performance.now(); LD.times.push([f, Math.round(now - prev)]); prev = now; bar.style.width = Math.round(4 + (n + 1) / FILES.length * 92) + "%"; if (FILES[n + 1]) step.textContent = label(FILES[n + 1]); else LD.total = Math.round(now - LD.t0); };
