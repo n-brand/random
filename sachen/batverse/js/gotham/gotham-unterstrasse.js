@@ -22,7 +22,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   walkT.wrapS = walkT.wrapT = THREE.RepeatWrapping;
   const mat = (map, off, col = 0xffffff, ex = {}) => M(col, Object.assign({ map, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -off, polygonOffsetUnits: -off }, ex));
   const geo = () => ({ P: [], U: [], I: [] });
-  const MK = geo(), FL = geo(), FLX = geo(), FLT = geo(), LG = geo(), LW = geo(), FL2 = geo(), WK = geo(), CE = geo(), WA = geo(), CO = geo(), UP = geo(), LAMP = geo();
+  const MK = geo(), FLB = geo(), FL = geo(), FLX = geo(), FLT = geo(), LG = geo(), LW = geo(), FL2 = geo(), WK = geo(), CE = geo(), WA = geo(), CO = geo(), UP = geo(), LAMP = geo();
   // Fahrbahn-Markierung oben an den Rampen (Variante B, Nicolas 2026-11-13): Atlas 4 Kacheln (0 geradeaus, 1 LOWER mit Pfeil links hinunter, 2 Einfaedeln
   // nach rechts, 3 nur rechts), Spitze oben in der Kachel = in Fahrtrichtung; decal legt ein Rechteck w (quer) x l (laengs) mit Spitze in Richtung (fx, fz)
   const mkTex = canvasTex(512, 128, c => { c.clearRect(0, 0, 512, 128); c.fillStyle = "#e6e6df"; c.strokeStyle = "#e6e6df"; c.lineCap = "butt"; c.lineJoin = "miter";
@@ -39,7 +39,12 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   const lineW = (pts, w, y) => { for (let i = 1; i < pts.length; i++) { const [ax, az] = pts[i - 1], [bx, bz] = pts[i], l = Math.hypot(bx - ax, bz - az) || 1, nx = -(bz - az) / l * w / 2, nz = (bx - ax) / l * w / 2, k = LW.P.length / 3;
     LW.P.push(ax + nx, y, az + nz, ax - nx, y, az - nz, bx + nx, y, bz + nz, bx - nx, y, bz - nz); LW.U.push(0, 0, 0, 0, 0, 0, 0, 0); LW.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } };
   // Proben eines Stuecks s0..s1 (mit genauen Enden): [x, z, nx, nz, s]
-  const sub = (r, s0, s1) => { const out = [], P = r.pts, at = s => { let j = 1; while (j < P.length - 1 && r.s[j] < s) j++; const a = P[j - 1], b = P[j], l = r.s[j] - r.s[j - 1] || 1, t = Math.max(0, Math.min(1, (s - r.s[j - 1]) / l)), dx = (b[0] - a[0]) / l, dz = (b[1] - a[1]) / l; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, -dz, dx, s]; };
+  const sub = (r, s0, s1) => { const out = [], P = r.pts, at = s => { let j = 1; while (j < P.length - 1 && r.s[j] < s) j++; const a = P[j - 1], b = P[j], l = r.s[j] - r.s[j - 1] || 1, t = Math.max(0, Math.min(1, (s - r.s[j - 1]) / l));
+    let dx = (b[0] - a[0]) / l, dz = (b[1] - a[1]) / l;
+    // an Eckpunkten Querrichtung gemittelt (Nicolas 2026-11-13, Park Row -1598/634: am Knick klaffte aussen ein Keil, innen ueberlappte alles)
+    const sideAvg = (k, m) => { if (k < 1 || k > P.length - 2) return; const c2 = P[k + 1], a2 = P[k - 1], l1 = Math.hypot(P[k][0] - a2[0], P[k][1] - a2[1]) || 1, l2 = Math.hypot(c2[0] - P[k][0], c2[1] - P[k][1]) || 1; const ex = (P[k][0] - a2[0]) / l1 + (c2[0] - P[k][0]) / l2, ez = (P[k][1] - a2[1]) / l1 + (c2[1] - P[k][1]) / l2, el = Math.hypot(ex, ez) || 1; dx = ex / el; dz = ez / el; };
+    if (t > 0.999) sideAvg(j); else if (t < 0.001) sideAvg(j - 1);
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, -dz, dx, s]; };
     out.push(at(s0)); for (let i = 0; i < P.length; i++) if (r.s[i] > s0 + 0.2 && r.s[i] < s1 - 0.2) out.push(at(r.s[i])); out.push(at(s1)); return out; };
   // waagrechtes Band zwischen d0 und d1, Hoehe y (Zahl oder Funktion von s); v quer 0..1 (vrep 0) oder in Metern/vrep
   const fv = (v, s) => typeof v === "number" ? v : v(s);                     // Zahl oder Funktion von s
@@ -72,6 +77,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
     if (f1 > f0) flat(FL, subF(r, f0, f1), s => half(s), s => -half(s), LY + 0.03, 12, 0, "aus");
     // Kreuzungen unten (Nicolas 2026-11-12, Bild: Gehsteige und Linien liefen quer durch): dort schlichter Asphalt ueber die ganze Breite, ohne Linien
     flat(FLX, inner, s => hw(s), s => -hw(s), LY + 0.034, 4, 4, "nur");
+    flat(FLB, inner, s => hw(s) + 0.3, s => -hw(s) - 0.3, LY + 0.004 + 0.002 * G.roads.indexOf(r), 4, 4);   // Bodenplatte darunter (Nicolas 2026-11-13, -1855/645: an der Muendung sah man durch Spalten zwischen den Bodennetzen auf das Gelaende)
     for (const [a, b] of [[r.sA, f0], [f1, r.sB]]) { if (b - a < 0.5) continue; const Q = subF(r, a, b);
       flat(FLT, Q, s => half(s), s => -half(s), LY + 0.03, 4, 4, "aus");
       const yel = s => 2 * half(s) * (0.015 + 0.015 * gdeckK(r, s)), edge = s => half(s) * 0.93;   // wie Textur: gelb 0,47/0,53 (4 Spuren) bzw. 0,485/0,515 (Rampe), Rand 0,035
@@ -80,6 +86,11 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
     flat(CE, inner, -HW, HW, DY, 3, 3);
     // Deckplatte ueber dem Gelaende-Ausschnitt (aussen neben den Gehsteigen, ganze Laenge)
     for (const sg of [1, -1]) flat(CO, all, sg * HW, sg * (HW + G.COVER), S + 0.035, 2, 2);
+    // Deckplatte auch unter der ganzen Breite (Nicolas 2026-11-13, -2063/1128: oben neben einer Kreuzungsflaeche sah man durch eine Luecke auf die untere
+    // Strasse, weil das Gelaende ueber dem unteren Raum ausgeschnitten ist): 4 cm unter der Fahrbahn, ueber den Rampenoeffnungen frei; je Strasse etwas
+    // andere Hoehe, damit sich zwei Platten an Kreuzungen nicht flimmernd ueberlagern
+    { const yI = S - 0.002 - 0.003 * G.roads.indexOf(r), dO = RW / 2 + 0.3; flat(CO, subF(r, r.sA, r.sB), -HW, HW, yI, 2, 2);
+      for (const [a, b] of [[0, r.sA], [r.sB, r.L]]) if (b - a > 0.5) for (const sg of [1, -1]) flat(CO, subF(r, a, b), sg * dO, sg * HW, yI, 2, 2); }
     // Rampen an offenen Enden: Boden, Waende mit Bruestung (1 m ueber der Strasse), obere Spuren daneben
     for (const end of [0, 1]) { if (end ? r.cb : r.ca) continue; const s0 = end ? r.sB : 0, s1 = end ? r.L : r.sA, Q = sub(r, s0, s1), sw0 = end ? r.sB : G.FL, sw1 = end ? r.L - G.FL : r.sA, QW = sub(r, sw0, sw1);
       // andere Strassen (Kartendaten, Spielkoordinaten) bei diesem Ende: an Einmuendungen keine Striche, Pfeile, Gehsteige neben der oberen Spur
@@ -140,7 +151,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   const make = (Gm, m, name) => { if (!Gm.I.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(Gm.P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(Gm.U, 2)); g.setIndex(Gm.I); g.computeVertexNormals(); g.computeBoundingSphere();
     return gsplit(g, m, name, { cast: name !== "Gotham-Untere Strasse Leuchten", free: /Waende|Decke|Deckplatten|Gehsteige|Leuchten|Sperr|Trichter|Mittellinie|Randlinien/.test(name) }); };
   const postG = posts.map(([x, z]) => new THREE.CylinderGeometry(0.45, 0.5, DY - LY, 12).translate(x, (LY + DY) / 2, z));
-  GDECK.meshes = [make(MK, mat(mkTex, 3.5, 0xffffff, { alphaTest: 0.5 }), "Gotham-Rampen Markierung"), make(FL, mat(lines(true), 2), "Gotham-Untere Strasse"), make(FLT, mat(plainT, 2), "Gotham-Untere Strasse Trichter"), make(FLX, mat(plainT, 2.5), "Gotham-Untere Kreuzungen"), make(LG, M(0xd9b23c, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Mittellinie"), make(LW, M(0xd8d8d2, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Randlinien"), make(FL2, mat(lines(false), 2), "Gotham-Untere Strasse Rampen"), make(WK, mat(walkT, 1), "Gotham-Untere Strasse Gehsteige"),
+  GDECK.meshes = [make(MK, mat(mkTex, 3.5, 0xffffff, { alphaTest: 0.5 }), "Gotham-Rampen Markierung"), make(FL, mat(lines(true), 2), "Gotham-Untere Strasse"), make(FLT, mat(plainT, 2), "Gotham-Untere Strasse Trichter"), make(FLX, mat(plainT, 2.5), "Gotham-Untere Kreuzungen"), make(FLB, mat(plainT, 1), "Gotham-Untere Bodenplatte"), make(LG, M(0xd9b23c, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Mittellinie"), make(LW, M(0xd8d8d2, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Randlinien"), make(FL2, mat(lines(false), 2), "Gotham-Untere Strasse Rampen"), make(WK, mat(walkT, 1), "Gotham-Untere Strasse Gehsteige"),
     make(CE, mat(conc, 0, 0x6e6c68), "Gotham-Untere Strasse Decke"), make(WA, mat(conc, 0), "Gotham-Untere Strasse Waende"), make(CO, mat(walkT, 0.5), "Gotham-Deckplatten"),
     make(UP, mat(plainT, 2), "Gotham-Spuren neben Rampen"), make(LAMP, M(0xfff1c8, { emissive: 0xffe2a0, emissiveIntensity: 1.2, side: THREE.DoubleSide }), "Gotham-Untere Strasse Leuchten")];
   if (postG.length) { const m = new THREE.Mesh(mergeGeometries(postG, false), M(0x8a8782, { roughness: 0.9 })); m.name = "Gotham-Untere Strasse Stuetzen"; m.castShadow = m.receiveShadow = true; m.userData.keep = true; m.userData.noLift = true; scene.add(m); GDECK.meshes.push(m); }

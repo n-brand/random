@@ -264,6 +264,14 @@ function gdeckBuild() {
   const segD = (p, o) => { let m = 1e9; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / LL)); m = Math.min(m, Math.hypot(p[0] - a[0] - dx * t, p[1] - a[1] - dz * t)); } return m; };
   for (const r of roads) { if (r.loop) continue; for (const end of [0, 1]) { const e = end ? r.pts[r.pts.length - 1] : r.pts[0];
     if (roads.some(o => o !== r && segD(e, o) < o.HW)) { if (end) { r.cb = true; r.joinB = true; r.sB = r.L; } else { r.ca = true; r.joinA = true; r.sA = 0; } } } }
+  // Muendung verlaengern (Nicolas 2026-11-13, Park Row am Ring -1855/645: "hier ist noch ein loch"): trifft eine Strasse schraeg auf die andere, lag ihre
+  // gerade Endkante auf der spitzen Seite noch ausserhalb der anderen (Keil ohne Boden, Wand und Decke). Das Ende wird in Fahrtrichtung verlaengert,
+  // bis beide Raender (+-HW) 1 m tief im Innenraum der anderen liegen (hoechstens 40 m)
+  for (const r of roads) for (const end of [0, 1]) { if (!(end ? r.joinB : r.joinA)) continue; const P = r.pts, e = end ? P[P.length - 1] : P[0], q = end ? P[P.length - 2] : P[1], l = Math.hypot(e[0] - q[0], e[1] - q[1]) || 1, ux = (e[0] - q[0]) / l, uz = (e[1] - q[1]) / l;
+    const inside = (x, z) => roads.some(o => o !== r && segD([x, z], o) < o.HW - 1);
+    let t = 0; while (t < 40 && !(inside(e[0] + ux * t - uz * r.HW, e[1] + uz * t + ux * r.HW) && inside(e[0] + ux * t + uz * r.HW, e[1] + uz * t - ux * r.HW))) t += 1;
+    if (t > 0 && t < 40) { const n = [e[0] + ux * t, e[1] + uz * t]; if (end) P.push(n); else P.unshift(n); r.s = [0]; for (let i = 1; i < P.length; i++) r.s.push(r.s[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+      const L0 = r.L; r.L = r.s[r.s.length - 1]; if (end) r.sB = r.L; else { r.sB += r.L - L0; r.sA = 0; } r.ext = (r.ext || 0) + t; } }
   const grid = new Map(), C = GDECK.C;
   roads.forEach((r, ri) => { for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j]; for (const k of new Set([glKey(Math.floor(a[0] / C), Math.floor(a[1] / C)), glKey(Math.floor(b[0] / C), Math.floor(b[1] / C))])) { if (!grid.has(k)) grid.set(k, []); grid.get(k).push([ri, j]); } } });
   GDECK.roads = roads; GDECK.grid = grid; GDECK.building = false;
