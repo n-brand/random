@@ -102,7 +102,7 @@ const UMSETZUNG = [
     inhalt: "Weitere geheime Dinge, grösserer Hangar, U-Boot, tieferes Meer, Schnellboot, Inneneinrichtung der Mansion, Klavier mit Geheimcode.",
     warum: "Unabhängig von Gotham, kommt nach der Stadt." },
   { phase: "fahrzeuge", nr: "P8", titel: "Fahrzeuge", status: "offen", braucht: ["T5"],
-    inhalt: "Tumbler 2.0 (drei eigene Entwürfe), Bus, U-Bahn-Zug, U-Boot, Schnellboot. Autofähre nach Arkham erst mit der Arkham-Insel (später).",
+    inhalt: "Tumbler 2.0 (drei eigene Entwürfe), Bus, U-Bahn-Zug, U-Boot, Schnellboot. Autofähre nach Arkham erst mit der Arkham-Insel (später). Erinnerung: Abschleppwagen (Gotham Towing) anpassen, kann noch nicht abschleppen.",
     warum: "Jedes Fahrzeug zuerst auf der Teststrecke." },
   { phase: "spiel", nr: "S6", titel: "Eigene Figuren", status: "offen", braucht: ["S1"],
     inhalt: "Personalisierbare Spielfigur, Kleider anziehen (Figurenmodell mit Skelett).",

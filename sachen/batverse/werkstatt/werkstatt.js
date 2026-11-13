@@ -17,7 +17,7 @@ const MODELLE = [
   { name: "Gotham Fire Ladder", spec: SPEC_FIRE_LADDER, bau: () => buildFireTruck("ladder") },
   { name: "Gotham Fire Chief", spec: SPEC_FIRE_CHIEF, bau: () => buildFireChief() },
   { name: "Gotham Fire Crane", spec: SPEC_FIRE_CRANE, bau: () => buildFireCrane() },
-  { name: "Gotham Towing (Abschleppwagen)", spec: SPEC_TOW, bau: () => buildTowTruck() },
+  { name: "Gotham Towing (Abschleppwagen)", spec: SPEC_TOW, bau: () => buildTowTruck(), offen: "Noch anzupassen: kann noch nicht abschleppen (Haken/Unterfahrlift ohne Funktion)." },
   { name: "Gotham Transit (Bus)", spec: SPEC_BUS, bau: () => buildBus() },
   { name: "Gotham Construction (Grossmuldenkipper)", spec: SPEC_HAUL, bau: () => buildHaulTruck() },
   { name: "Panzer", spec: SPEC_TANK, bau: () => buildTank() },
@@ -188,7 +188,7 @@ function laden(i) {
   $info.innerHTML = `<table>
     <tr><td>Länge</td><td>${fmt(size.z)} m</td></tr><tr><td>Breite</td><td>${fmt(size.x)} m</td></tr><tr><td>Höhe</td><td>${fmt(size.y)} m</td></tr>
     <tr><td>Radstand</td><td>${fmt(s.wb)} m</td></tr><tr><td>Spur</td><td>${s.track ? fmt(s.track) + " m" : "Zweirad"}</td></tr>
-    <tr><td>Höchstgeschw.</td><td>${Math.round((s.maxF || s.maxN) * 3.6)} km/h</td></tr><tr><td>Beschleunigung</td><td>${fmt(s.acc)} m/s²</td></tr></table>`;
+    <tr><td>Höchstgeschw.</td><td>${Math.round((s.maxF || s.maxN) * 3.6)} km/h</td></tr><tr><td>Beschleunigung</td><td>${fmt(s.acc)} m/s²</td></tr></table>${m.offen ? `<div class="note">Erinnerung: ${m.offen}</div>` : ""}`;   // offene Punkte je Modell
   if (modus !== "drive") { controls.target.set(AKT.x, size.y * 0.45, AKT.z); camera.position.set(AKT.x + size.z * 1.1 + 3, size.y + 2.5, AKT.z + size.z * 1.3 + 3); }
   tonAn();
   try { localStorage.setItem("werkstatt-modell", String(i)); } catch (e) {}
