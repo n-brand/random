@@ -22,6 +22,7 @@ function perfFrame(ms) {
   PERF.n = 0; PERF.sum = 0; PERF.max = 0; PERF.t0 = now;
 }
 addEventListener("keydown", e => { if (e.code === "F3") { e.preventDefault(); perfToggle(); } });
+let shadowTick = 0;
 function frame() {
   const tF = performance.now(), dt = Math.min(clock.getDelta(), 0.05);
   if (walking) walkStep(dt);
@@ -70,6 +71,8 @@ function frame() {
   const focus = walking ? player.pos : controls.target;
   sunFollow(focus, 90);                                                      // in ganzen Schatten-Texeln (basis.js, gegen Flimmern)
   tilesUpdate();                                                             // K3: Kacheln in der Ladeweite nachladen (Zeitbudget)
+  // Schatten (Leistung 2026-11-13: 108 Aufrufe, ca. 0,7 ms): nur jedes zweite Bild neu, in Fahrzeugen, Boot und Fluggeraeten jedes Bild (sonst hinkt der Schatten nach)
+  renderer.shadowMap.autoUpdate = false; if ((++shadowTick & 1) === 0 || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
   perfFrame(performance.now() - tF);
   requestAnimationFrame(frame);

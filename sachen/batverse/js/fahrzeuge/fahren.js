@@ -440,7 +440,7 @@ function carFrame(dt) {
   vehFrame++;
   const prev = CAR;
   for (const v of VEH) {
-    v.g.visible = v.on || Math.hypot(camera.position.x - v.x, camera.position.z - v.z) + Math.abs(camera.position.y - v.y) * 0.5 < 160;   // weit weg ausblenden
+    v.g.visible = v.on || (Math.hypot(camera.position.x - v.x, camera.position.z - v.z) + Math.abs(camera.position.y - v.y) * 0.5 < 160 && (ugVis || v.y > terrainH(v.x, v.z) - 1.5));   // weit weg ausblenden; unter der Erde (Garage, Batcave) nur, wenn der Untergrund sichtbar ist (start.js)
     v.spun = Math.abs(v.y - LY) < 0.5 && Math.hypot(v.x - tt.position.x, v.z - tt.position.z) < ttR;
     if (v.spun && dt > 0) {                                                // Drehscheibe: mitdrehen (wie der Spieler)
       const c = Math.cos(w), s = Math.sin(w), dx = v.x - tt.position.x, dz = v.z - tt.position.z;

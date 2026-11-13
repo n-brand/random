@@ -35,6 +35,8 @@ const UNDERGROUND = [];
 // Untergrund oben ausblenden (Nicolas 2026-11-13: "wenn man oben ist, Hoehlen/Batcave entladen"): sichtbar nur, wenn die Kamera unter dem Gelaende ist,
 // "Von unten" an ist oder die Kamera naeher als 60 m und tiefer als 20 m ueber dem Boden an einem Zugang ist (Waterfall Exit, Westweg-Tunnel, Silo, Garagenrampe, Meerestunnel; sonst saehe man
 // durch die Oeffnung ins Leere). Spart oben ca. 0,2-0,8 ms und 50-120 Zeichenaufrufe.
+// auch bewegliche Gruppen ganz unter der Erde (Drehscheibe, Tore und Geraete der Batcave; Fahrzeuge regelt fahren.js)
+{ const bb = new THREE.Box3(), c = new THREE.Vector3(); for (const o of scene.children) { if (!o.userData.dynamic || VEH.some(v => v.g === o)) continue; bb.setFromObject(o); if (bb.isEmpty()) continue; bb.getCenter(c); if (bb.max.y < terrainH(c.x, c.z) - 1.5 && seaD(c.x, c.z) < -40) UNDERGROUND.push(o); } }
 const UG_PORTALS = [[-107, -186], [HF_XP, HF_CZ], [SILO.x, SILO.z], ...SEA_TUNNEL.slice(-2)];   // Meerestunnel nur am Ausgang zur Bucht   // Garagenrampe nur, solange ihre Klappe offen ist (GRAMP.f)
 let ugVis = true;
 scene.onBeforeRender = (r, sc, cam) => { const p = cam.position; gHideStep(cam);   // Gotham-Zellen weit weg aus (gotham-gelaende.js)
