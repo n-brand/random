@@ -17,6 +17,9 @@
     #wrap { position: relative; overflow: hidden; touch-action: none; cursor: grab; background: #263022; }
     #wrap.drag { cursor: grabbing; }
     svg { width: 100%; height: 100%; display: block; }
+    #map { position: absolute; left: 0; top: 0; }
+    #map.over { will-change: transform; }
+    #ui { position: absolute; inset: 0; pointer-events: none; }
     aside { overflow: auto; padding: 12px 14px; border-left: 1px solid var(--line); background: var(--panel); }
     aside h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
     aside label { display: flex; align-items: center; gap: 8px; padding: 2px 0; cursor: pointer; }
@@ -45,6 +48,7 @@
   <main>
     <div id="wrap">
       <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+      <svg id="ui" xmlns="http://www.w3.org/2000/svg"></svg>
       <div class="zoom"><button id="zin" title="Hineinzoomen">+</button><button id="zout" title="Herauszoomen">−</button><button id="zfit" title="Alles zeigen">⤢</button></div>
       <div id="tip"></div>
     </div>
@@ -532,7 +536,11 @@
     // Massstab und Kompass (ui) bleiben am Bildschirm. Schriften drehen gegen, damit sie lesbar bleiben.
     const rotG = el("g", {}); for (const n of [...svg.children]) if (n !== rotG) rotG.appendChild(n);
     let rotA = 0, rotTxt = null;
-    const ui = el("g", { "pointer-events": "none" });
+    // Fluessig drehen (Nicolas 2026-11-13: Drehen laggte): jede neue Drehung von rotG zeichnet die ganze Karte neu (lange Strassenpfade, Schriften).
+    // Waehrend Stern-Ziehen und Dreh-Animation dreht darum nur die Grafikkarte das fertige Bild per CSS (live, ohne Neuzeichnen); die Karte ist dann
+    // so gross wie die Bilddiagonale (keine leeren Ecken). Beim Loslassen einmal richtig drehen (apply). Massstab und Kompass liegen in #ui darueber.
+    let over = false, rotDone = 0;
+    const uiSvg = document.getElementById("ui"), ui = el("g", { "pointer-events": "none" }, uiSvg);
     const rot = (x, z, a) => { const c = Math.cos(a * Math.PI / 180), n = Math.sin(a * Math.PI / 180); return [x * c - z * n, x * n + z * c]; };
     const wrap = document.getElementById("wrap"), tip = document.getElementById("tip"), info = document.getElementById("info");
     let vb = { x: G.ansicht.x0, y: G.ansicht.z0, w: G.ansicht.x1 - G.ansicht.x0, h: G.ansicht.z1 - G.ansicht.z0 };
@@ -543,11 +551,20 @@
       vb.x = vb.w >= X1 - X0 ? (X0 + X1) / 2 - vb.w / 2 : clamp(vb.x, X0, X1 - vb.w);
       vb.y = vb.h >= Z1 - Z0 ? (Z0 + Z1) / 2 - vb.h / 2 : clamp(vb.y, Z0, Z1 - vb.h); };
     function apply() {
-      keepIn();
-      svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+      keepIn(); rotDone = rotA; svg.style.transform = "";
+      { const r = wrap.getBoundingClientRect(), k = vb.w / (r.width || 1), D = over ? Math.ceil(Math.hypot(r.width, r.height)) + 4 : 0, ox = over ? (D - r.width) / 2 : 0, oy = over ? (D - r.height) / 2 : 0;
+        svg.classList.toggle("over", over); svg.style.width = over ? D + "px" : ""; svg.style.height = over ? D + "px" : ""; svg.style.left = -ox + "px"; svg.style.top = -oy + "px";
+        fullRot(); svg.setAttribute("viewBox", `${vb.x - ox * k} ${vb.y - oy * k} ${vb.w + 2 * ox * k} ${vb.h + 2 * oy * k}`); uiSvg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+      drawUi();
+    }
+    // nur Kompass/Massstab neu und die fertige Karte per CSS um den Rest drehen (waehrend des Drehens)
+    function quickRot() { svg.style.transform = `rotate(${rotA - rotDone}deg)`; drawUi(); }
+    function fullRot() {
       { const cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2; rotG.setAttribute("transform", rotA ? `rotate(${rotA} ${cx} ${cy})` : "");
         if (rotTxt !== rotA) { rotTxt = rotA; for (const t of rotG.querySelectorAll("text")) { if (t.dataset.t0 === undefined) t.dataset.t0 = t.getAttribute("transform") || "";
           const x = +t.getAttribute("x") || 0, y = +t.getAttribute("y") || 0; t.setAttribute("transform", rotA ? `${t.dataset.t0} rotate(${-rotA} ${x} ${y})` : t.dataset.t0); } } }
+    }
+    function drawUi() {
       const r = wrap.getBoundingClientRect(), k = vb.w / r.width; ui.innerHTML = "";
       const step = [50, 100, 250, 500, 1000, 2000].find(s => s / k > 90) || 2000, x0 = vb.x + 16 * k, y0 = vb.y + vb.h - 18 * k;
       el("rect", { x: x0 - 6 * k, y: y0 - 22 * k, width: step + 12 * k, height: 30 * k, fill: "#000a", rx: 4 * k }, ui);
@@ -580,11 +597,13 @@
     const ptr = new Map(); let moved = 0, pinch = 0;
     let crank = null, rotAnim = 0;
     const sternMitte = () => { const c = wrap.querySelector("[data-stern]"), b = c.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; };
-    const setRot = (a, anim) => { cancelAnimationFrame(rotAnim); if (!anim) { rotA = a; apply(); return; }
-      const a0 = rotA, d = ((a - a0) % 360 + 540) % 360 - 180, t0 = performance.now(); const st = t => { const u = Math.min(1, (t - t0) / 450), e = u * u * (3 - 2 * u); rotA = a0 + d * e; apply(); if (u < 1) rotAnim = requestAnimationFrame(st); else rotA = a; };
+    const setRot = (a, anim) => { cancelAnimationFrame(rotAnim); if (!anim) { rotA = a; if (over) quickRot(); else apply(); return; }
+      if (!over) { over = true; apply(); }
+      const a0 = rotA, d = ((a - a0) % 360 + 540) % 360 - 180, t0 = performance.now(); const st = t => { const u = Math.min(1, (t - t0) / 450), e = u * u * (3 - 2 * u); rotA = a0 + d * e;
+        if (u < 1) { quickRot(); rotAnim = requestAnimationFrame(st); } else { rotA = a; over = false; apply(); } };
       rotAnim = requestAnimationFrame(st); };
     wrap.addEventListener("pointerdown", ev => { if (ev.target.closest(".zoom")) return;
-      if (ev.target.closest("[data-stern]")) { ev.stopPropagation(); wrap.setPointerCapture(ev.pointerId); const [mx, my] = sternMitte(); crank = { id: ev.pointerId, a: Math.atan2(ev.clientY - my, ev.clientX - mx), moved: 0 }; return; } wrap.setPointerCapture(ev.pointerId); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); moved = 0; wrap.classList.add("drag"); });
+      if (ev.target.closest("[data-stern]")) { ev.stopPropagation(); wrap.setPointerCapture(ev.pointerId); const [mx, my] = sternMitte(); crank = { id: ev.pointerId, a: Math.atan2(ev.clientY - my, ev.clientX - mx), moved: 0 }; cancelAnimationFrame(rotAnim); over = true; apply(); return; } wrap.setPointerCapture(ev.pointerId); ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); moved = 0; wrap.classList.add("drag"); });
     wrap.addEventListener("pointermove", ev => {
       if (crank && crank.id === ev.pointerId) { const [mx, my] = sternMitte(), a = Math.atan2(ev.clientY - my, ev.clientX - mx); let d = a - crank.a; d = Math.atan2(Math.sin(d), Math.cos(d));
         crank.a = a; crank.moved += Math.abs(d); if (crank.moved > 0.05) setRot(rotA + d * 180 / Math.PI, false); return; }
@@ -596,6 +615,7 @@
       { const [a, b] = rot(dx / r.width * vb.w, dy / r.height * vb.h, -rotA); vb.x -= a; vb.y -= b; } ptr.set(ev.pointerId, [ev.clientX, ev.clientY]); apply();
     });
     const up = ev => { if (crank && crank.id === ev.pointerId) { const c = crank; crank = null;
+        if (c.moved > 0.05) { over = false; apply(); }
         if (c.moved <= 0.05) { const nu = -(G.manorLage?.dreh || 0), isN = Math.abs(((rotA - nu) % 360 + 540) % 360 - 180) < 1; setRot(isN ? 0 : nu, true); } return; }   // Klick: Norden oben <-> Ausgangslage
       if (!ptr.has(ev.pointerId)) return; ptr.delete(ev.pointerId); if (!ptr.size) wrap.classList.remove("drag");
       if (moved < 6 && !pinch) click(ev); if (!ptr.size) pinch = 0; };
