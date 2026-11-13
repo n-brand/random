@@ -186,12 +186,14 @@ function glandBuild() {
   roads.forEach((r, ri) => { for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j]; for (const k of new Set([glKey(Math.floor(a[0] / C), Math.floor(a[1] / C)), glKey(Math.floor(b[0] / C), Math.floor(b[1] / C))])) { if (!grid.has(k)) grid.set(k, []); grid.get(k).push([ri, j]); } } });
   // grobe Vorpruefung: 100-m-Zellen, in deren Naehe (+1 Zelle) eine Festlandstrasse liegt
   const near = new Set(); for (const r of roads) for (const [x, z] of r.pts) { const i = Math.floor(x / 100), k = Math.floor(z / 100); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) near.add(glKey(i + a, k + b)); }
-  GLAND.roads = roads; GLAND.grid = grid; GLAND.near = near; GLAND.building = false;
+  // dasselbe als Feld (Leistung 2026-11-13: Set-Abfrage je Gelaendepunkt war teurer): 100-m-Zellen ueber +-4400 m
+  const NA = new Uint8Array(88 * 88); for (const k of near) { const i = Math.floor(k / 100000 + 0.5) , kk = k - i * 100000; if (i >= -44 && i < 44 && kk >= -44 && kk < 44) NA[(i + 44) * 88 + kk + 44] = 1; }
+  GLAND.roads = roads; GLAND.grid = grid; GLAND.near = near; GLAND.nearA = NA; GLAND.building = false;
 }
 // naechste Festlandstrasse: { r, d (seitlicher Abstand), y (Fahrbahnhoehe dort) } innerhalb von reach, sonst null
 function glandNear(x, z, reach) {
   if (GLAND.building) return null; if (!GLAND.roads) glandBuild();
-  if (!GLAND.near.has(glKey(Math.floor(x / 100), Math.floor(z / 100)))) return null;
+  const ni = Math.floor(x / 100) + 44, nk = Math.floor(z / 100) + 44; if (ni < 0 || ni >= 88 || nk < 0 || nk >= 88 || !GLAND.nearA[ni * 88 + nk]) return null;
   const C = GLAND.C, ci = Math.floor(x / C), ck = Math.floor(z / C), m = Math.ceil(reach / C); let best = null;
   for (let a = -m; a <= m; a++) for (let b = -m; b <= m; b++) { const L = GLAND.grid.get(glKey(ci + a, ck + b)); if (!L) continue;
     for (const [ri, j] of L) { const r = GLAND.roads[ri], p = r.pts[j - 1], q = r.pts[j], dx = q[0] - p[0], dz = q[1] - p[1], LL = dx * dx + dz * dz, t = LL ? Math.max(0, Math.min(1, ((x - p[0]) * dx + (z - p[1]) * dz) / LL)) : 0;
@@ -218,6 +220,29 @@ function gothamRoadAt(x, z, feet) {
 // als Rampe in der Strassenmitte (RW 7 m, RL 80 m bei ca. 6,9 %, die letzten 12 m flach), die obere Fahrbahn laeuft beidseits daran vorbei; ein Ende
 // an einer Bruecke oder nahe am Kai bleibt zu (Wand 30 m vor dem Ende). Gelaende darunter ausgeschnitten (bis HW + 6, damit das 4-m-Raster nicht
 // in den Raum ragt), obendrauf deckt eine Platte bis HW + 12 den Ausschnitt ab (gotham-unterstrasse.js). Boden: gothamDeckAt (oben wer oben ist).
+// Leistung (Nicolas 2026-11-13): grosse Gotham-Netze (Strassen, Gehsteige, Bordsteine, Kai, untere Strasse) in Zellen von GCELL m teilen. Jede Zelle
+// wird nur gezeichnet, wenn sie im Blickfeld liegt (eigene Huelle) und naeher als die Sichtweite plus 200 m ist (gHideStep, jedes Bild aus start.js);
+// vorher war je Netz die ganze Insel ein Stueck und wurde immer ganz gezeichnet. free: Punktdaten nach dem Hochladen auf die Grafikkarte freigeben
+// (spart JS-Speicher; die Teile sind dann nicht mehr per Rechtsklick anwaehlbar, der Strahl trifft das Gelaende/die Fahrbahn darunter).
+const GCELL = 768, GHIDE = [];
+function freeAfterUpload() { this.array = null; }
+function gsplit(g, m, name, opt = {}) {
+  const grp = new THREE.Group(); grp.name = name; grp.userData.keep = true; grp.userData.noLift = true;
+  const pos = g.attributes.position.array, idx = g.index ? g.index.array : null, nTri = (idx ? idx.length : pos.length / 3) / 3, buckets = new Map();
+  for (let t = 0; t < nTri; t++) { const a = idx ? idx[t * 3] : t * 3, b = idx ? idx[t * 3 + 1] : t * 3 + 1, c = idx ? idx[t * 3 + 2] : t * 3 + 2;
+    const cx = (pos[a * 3] + pos[b * 3] + pos[c * 3]) / 3, cz = (pos[a * 3 + 2] + pos[b * 3 + 2] + pos[c * 3 + 2]) / 3, k = Math.floor(cx / GCELL) * 100000 + Math.floor(cz / GCELL);
+    let B = buckets.get(k); if (!B) buckets.set(k, B = []); B.push(a, b, c); }
+  const v = new THREE.Vector3();
+  for (const B of buckets.values()) { const sg = new THREE.BufferGeometry(); for (const [k, at] of Object.entries(g.attributes)) sg.setAttribute(k, at); sg.setIndex(B);
+    const box = new THREE.Box3(); for (const i of B) box.expandByPoint(v.fromArray(pos, i * 3)); sg.boundingBox = box; sg.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
+    if (opt.free) sg.index.onUpload(freeAfterUpload);
+    const o = new THREE.Mesh(sg, m); o.name = name; o.receiveShadow = opt.recv !== false; o.castShadow = !!opt.cast; o.userData.keep = true; o.userData.noLift = true; if (opt.free) o.raycast = () => {};
+    grp.add(o); GHIDE.push(o); }
+  if (opt.free) for (const at of Object.values(g.attributes)) at.onUpload(freeAfterUpload);
+  scene.add(grp); return grp;
+}
+function gHideStep(cam) { const lim = (TILES.range * TILE + 150) + 200, p = cam.position;
+  for (const o of GHIDE) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < lim; } }
 const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12 };
 function gdeckBuild() {
   GDECK.building = true; const roads = [];

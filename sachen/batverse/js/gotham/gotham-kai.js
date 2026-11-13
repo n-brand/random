@@ -31,12 +31,13 @@ const KAI = { breite: 12, bruestung: 1.1, dicke: 0.5, fuss: GOT.WY - 0.6 };
     for (let i = 0; i < n; i++) { if (PAR.includes(s) && (gap[i] || gap[(i + 1) % n])) continue; const a = base + i * 2, b = a + 1, c = a + 2, d = a + 3; idx.push(a, b, c, b, d, c); }
   }
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
-  const mesh = new THREE.Mesh(g, M(0xffffff, { map: tex, roughness: 0.9, side: THREE.DoubleSide })); mesh.name = "Gotham-Kaimauer"; mesh.userData.keep = true; mesh.userData.noLift = true; mesh.receiveShadow = true; scene.add(mesh);
+  const mesh = gsplit(g, M(0xffffff, { map: tex, roughness: 0.9, side: THREE.DoubleSide }), "Gotham-Kaimauer", { free: true });   // in Zellen (Leistung)
   KAI.mesh = mesh; KAI.len = L;
   // Kollision der Bruestung (Regel: weiter innen als die sichtbare Flaeche)
   let acc = 0;
   for (let i = 0; i < n; i++) { const a = P[i], b = P[(i + 1) % n], qa = N[i], qb = N[(i + 1) % n], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    for (; acc < l; acc += 0.8) { const t = acc / l, qx = qa[0] + (qb[0] - qa[0]) * t, qz = qa[1] + (qb[1] - qa[1]) * t; if (atBridge(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)) continue; circles.push([a[0] + (b[0] - a[0]) * t + qx * 0.45, a[1] + (b[1] - a[1]) * t + qz * 0.45, 0.45, H]); }
+    for (; acc < l; acc += 1.2) {   // alle 1,2 m (Leistung 2026-11-13; Luecke 0,3 m < Person)
+      const t = acc / l, qx = qa[0] + (qb[0] - qa[0]) * t, qz = qa[1] + (qb[1] - qa[1]) * t; if (atBridge(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)) continue; circles.push([a[0] + (b[0] - a[0]) * t + qx * 0.65, a[1] + (b[1] - a[1]) * t + qz * 0.65, 0.65, H]   /* r 0,65 alle 1,2 m: ueberlappen sich, Aussenkante wie vorher */); }
     acc -= l; }
 }
 // Boden am Ufer genau: auf dem Kai (innen) Strassenebene, davor 6 m Kies knapp ueber dem Wasser (das 4-m-Raster haette dort eine Rampe).

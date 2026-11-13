@@ -38,7 +38,7 @@ const tallCircle = (x, z, r, y0, y1) => { for (let t = y0 + 6; t < y1 + 6; t += 
     top.position.set(cx, Y + 0.01, cz); top.rotation.y = rot; G.add(top);
     for (const sd of [-1, 1]) { boxAtW(2.5, 0.2, L, walkM, cx + nx * sd * (b.w / 2 + 1.25), Y + 0.08, cz + nz * sd * (b.w / 2 + 1.25), rot);   // Gehweg
       boxAtW(0.25, 1.1, L, steel, cx + nx * sd * (half - 0.12), Y + 0.55, cz + nz * sd * (half - 0.12), rot);                                  // Gelaender
-      for (let s = 0.4; s < L; s += 0.8) { const [px, pz] = at(s); circles.push([px + nx * sd * (half - 0.45), pz + nz * sd * (half - 0.45), 0.45, Y + 1.1]); } }
+      for (let s = 0.4; s < L; s += 1.2) { const [px, pz] = at(s); circles.push([px + nx * sd * (half - 0.65), pz + nz * sd * (half - 0.65), 0.65, Y + 1.1]); } }   // r 0,65 alle 1,2 m (ueberlappend)
     // Pfeiler unter dem Festlandstueck (alle 30 m, wo Luft unter der Fahrbahn ist)
     const sFar = L - ext - 25;                                                // Lage des anderen Ufers
     for (let s = sFar + 30; s < L - 8; s += 30) { const [px, pz] = at(s), g = genH(px, pz); if (Y - 3 - g > 1) boxAtW(half * 1.6, Y - 3 - g + 2, 3, conc, px, (Y - 3 + g - 2) / 2, pz, rot);

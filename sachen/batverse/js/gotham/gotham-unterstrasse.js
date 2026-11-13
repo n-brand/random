@@ -71,7 +71,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
       for (const sg of [1, -1]) { wall(WA, QW, sg * RW / 2, s => rampY(s) - 0.6, S + 1); wall(WA, QW, sg * (RW / 2 + 0.3), S, S + 1); flat(WA, QW, sg * RW / 2, sg * (RW / 2 + 0.3), S + 1, 3, 3);
         flat(UP, Q, sg * RW / 2, s => sg * gdeckUp(r, s), S + 0.05, 12, 4);
         flat(WK, Q, s => sg * gdeckUp(r, s), sg * (r.w / 2 + 0.3), S + 0.15, 2, 2); wall(WA, Q, s => sg * gdeckUp(r, s), S + 0.04, S + 0.15);   // Gehsteig (15 cm) neben dem oberen Trichter
-        for (let s = sw0; s <= sw1; s += 0.8) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; ring(x + nx * sg * (RW / 2 + 0.15), z + nz * sg * (RW / 2 + 0.15), 0.45, S + 1); } }
+        for (let s = sw0; s <= sw1; s += 1.2) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; ring(x + nx * sg * (RW / 2 + 0.15), z + nz * sg * (RW / 2 + 0.15), 0.65, S + 1); } }
       // Naht zur anschliessenden Strasse: 4 m Asphalt ueber das Strassenende hinaus (knapp unter deren Fahrbahn), sonst bleibt ein Wiesenstreifen
       { const P = r.pts, e = end ? P[P.length - 1] : P[0], q = end ? P[P.length - 2] : P[1], l = Math.hypot(e[0] - q[0], e[1] - q[1]) || 1, ux = (e[0] - q[0]) / l, uz = (e[1] - q[1]) / l, nx = end ? -uz : uz, nz = end ? ux : -ux, k = UP.P.length / 3;
         const joins = [...GOTHAM_STADT.haupt, ...GOTHAM_STADT.neben].some(o => o.id !== r.id && o.pts.some(([a, b]) => { const g = GOT.toGame(a, b); return Math.hypot(g[0] - e[0] - ux * 4, g[1] - e[1] - uz * 4) < 10; }));
@@ -81,15 +81,15 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
     }
     // geschlossene Enden: Wand quer ueber die ganze Breite
     for (const end of [0, 1]) { if (!(end ? r.cb : r.ca) || r.loop || (end ? r.joinB : r.joinA)) continue; const sx = end ? r.sB : r.sA; cross(WA, r, sx, -HW, HW, LY - 0.6, DY);
-      for (let d = -HW; d <= HW; d += 0.8) { const [x, z, nx, nz] = sub(r, sx, sx + 0.5)[0]; ring(x + nx * d, z + nz * d, 0.45, DY); } }
+      for (let d = -HW; d <= HW; d += 1.2) { const [x, z, nx, nz] = sub(r, sx, sx + 0.5)[0]; ring(x + nx * d, z + nz * d, 0.65, DY); } }
     // Seitenwaende innen (Kollision), Stuetzen und Deckenleuchten alle 15 m
-    for (let s = r.sA; s <= r.sB; s += 0.8) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; const h = gdeckHW(r, s) - 0.45; for (const sg of [1, -1]) ring(x + nx * sg * h, z + nz * sg * h, 0.45, DY); }
+    for (let s = r.sA; s <= r.sB; s += 1.2) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; const h = gdeckHW(r, s) - 0.65; for (const sg of [1, -1]) ring(x + nx * sg * h, z + nz * sg * h, 0.65, DY); }   // r 0,65 alle 1,2 m (ueberlappend, Leistung 2026-11-13)
     for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { if (gdeckK(r, s) < 0.999) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; if (inOther(x, z, r, 15)) continue;   // an Kreuzungen unten 15 m frei zum Abbiegen posts.push([x, z]); ring(x, z, 0.6, DY);   // nicht im Trichter
       for (const sg of [1, -1]) { const lx = x + nx * sg * HW / 2, lz = z + nz * sg * HW / 2, k = LAMP.P.length / 3, tx = -nz, tz = nx;
         for (const [a, b] of [[-1.2, -0.15], [1.2, -0.15], [-1.2, 0.15], [1.2, 0.15]]) { LAMP.P.push(lx + tx * a + nx * b, DY - 0.03, lz + tz * a + nz * b); LAMP.U.push(0, 0); } LAMP.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }
   }
   const make = (Gm, m, name) => { if (!Gm.I.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(Gm.P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(Gm.U, 2)); g.setIndex(Gm.I); g.computeVertexNormals(); g.computeBoundingSphere();
-    const o = new THREE.Mesh(g, m); o.name = name; o.receiveShadow = true; o.castShadow = name !== "Gotham-Untere Strasse Leuchten"; o.userData.keep = true; o.userData.noLift = true; scene.add(o); return o; };
+    return gsplit(g, m, name, { cast: name !== "Gotham-Untere Strasse Leuchten", free: /Waende|Decke|Deckplatten|Gehsteige|Leuchten|Sperr|Trichter|Mittellinie|Randlinien/.test(name) }); };
   const postG = posts.map(([x, z]) => new THREE.CylinderGeometry(0.45, 0.5, DY - LY, 12).translate(x, (LY + DY) / 2, z));
   GDECK.meshes = [make(FL, mat(lines(true), 2), "Gotham-Untere Strasse"), make(FLT, mat(plainT, 2), "Gotham-Untere Strasse Trichter"), make(FLX, mat(plainT, 2.5), "Gotham-Untere Kreuzungen"), make(LG, M(0xd9b23c, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Mittellinie"), make(LW, M(0xd8d8d2, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Randlinien"), make(FL2, mat(lines(false), 2), "Gotham-Untere Strasse Rampen"), make(WK, mat(walkT, 1), "Gotham-Untere Strasse Gehsteige"),
     make(CE, mat(conc, 0, 0x6e6c68), "Gotham-Untere Strasse Decke"), make(WA, mat(conc, 0), "Gotham-Untere Strasse Waende"), make(CO, mat(walkT, 0.5), "Gotham-Deckplatten"),

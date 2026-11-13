@@ -103,7 +103,7 @@ function* gstrGen() {                                                       // A
       prev = { k, bad }; }
   }
   const make = (G, m, name) => { if (!G.I.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(G.P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(G.U, 2)); g.setIndex(G.I); g.computeVertexNormals(); g.computeBoundingSphere();
-    const o = new THREE.Mesh(g, m); o.name = name; o.receiveShadow = true; o.userData.keep = true; o.userData.noLift = true; scene.add(o); return o; };
+    return gsplit(g, m, name, { free: /Gehsteige|Bordstein|Bankett/.test(name) }); };   // in Zellen, weit weg ausgeblendet; Gehsteige/Bordsteine ohne JS-Kopie
   const A4 = geo(), A2 = geo(), A0 = geo(), W = geo(), K = geo(), X = geo(), KF = geo(), RS = GSTR.RAISE;   // Bordsteinkante eigenes Netz (Normalen in zwei Etappen statt einer langen)
   // Punkt auf einer anderen Fahrbahn (nicht ri) oder Kreuzungsflaeche -> auf deren Rand schieben (ri -1: alle Strassen)
   const mkFix = ri => (x, z) => { for (let it = 0; it < 3; it++) { let moved = false;
