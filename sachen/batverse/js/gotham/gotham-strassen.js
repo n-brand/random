@@ -125,7 +125,7 @@ function* gstrGen() {                                                       // A
     if (N) g.setAttribute("normal", new THREE.BufferAttribute(N, 3)); else { g.computeVertexNormals(); N = g.attributes.normal.array; } g.computeBoundingSphere();
     if (!c) SAVE.push({ name, P, U, I, N });
         return gsplit(g, m, name, { free: /Gehsteige|Bordstein|Bankett/.test(name) }); };   // in Zellen, weit weg ausgeblendet; Gehsteige/Bordsteine ohne JS-Kopie
-  const A4 = geo(), A2 = geo(), A0 = geo(), W = geo(), K = geo(), X = geo(), KF = geo(), Kies = geo(), XL = geo(), RS = GSTR.RAISE;   // Bordsteinkante eigenes Netz (Normalen in zwei Etappen statt einer langen)
+  const A4 = geo(), A2 = geo(), A0 = geo(), W = geo(), K = geo(), X = geo(), KF = geo(), Kies = geo(), XL = geo(), PZG = geo(), RS = GSTR.RAISE;   // Bordsteinkante eigenes Netz (Normalen in zwei Etappen statt einer langen)
   if (!CACHED) {   // ohne Zwischenspeicher: Geometrie berechnen (teuer, ca. 2 s in Etappen)
   // Punkt auf einer anderen Fahrbahn (nicht ri) oder Kreuzungsflaeche -> auf deren Rand schieben (ri -1: alle Strassen)
   const mkFix = ri => (x, z) => { for (let it = 0; it < 3; it++) { let moved = false;
@@ -136,7 +136,8 @@ function* gstrGen() {                                                       // A
           const qx = A[0] + dx * t, qz = A[1] + dz * t, d = Math.hypot(x - qx, z - qz); if (d < o.w / 2) { const l = d || 1; x = qx + (x - qx) / l * (o.w / 2 + 0.01); z = qz + (z - qz) / l * (o.w / 2 + 0.01); moved = true; break; } } }
       if (!moved) break; } return [x, z]; };
   for (let ri = 0; ri < GSTR.roads.length; ri++) { const r = GSTR.roads[ri]; if (ri && (ri < 20 || ri % 3 === 2)) yield;   // Hauptstrassen (lang) einzeln
-    band(r.w >= 12.5 ? A4 : r.w >= 8 ? A2 : A0, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, r.w < 8 ? 4 : 0, r.zweistock ? gdeckOpen : null);   // G2e: ueber den Rampen keine Fahrbahn
+    band(r.w >= 12.5 ? A4 : r.w >= 8 ? A2 : A0, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, r.w < 8 ? 4 : 0, r.zweistock ? (x, z) => gdeckOpen(x, z) || gdeckPortalZone(x, z) : null);   // G2e: ueber den Rampen keine Fahrbahn
+    if (r.zweistock) band(PZG, r.pts, r.w / 2, -r.w / 2, Y + 0.05, 12, 0, (x, z) => !gdeckPortalZone(x, z, 4.5) || gdeckOpen(x, z));   // Portalzone (Variante B): ohne gestrichelte Spurlinien, die setzt gotham-unterstrasse.js
     // Gehsteig 15 cm hoch (GSTR.RAISE), Bordstein = Kante plus 0,3 m Deckstein; die Kreuzungsflaeche bekommt einen runden Bordstein
     // Ecken genau: Punkte, die auf einer anderen Fahrbahn oder Kreuzungsflaeche liegen, werden auf deren Rand geschoben (die Vierecke dort werden
     // flach), so enden Gehsteig und Bordstein genau an der Kante und die Gehsteige beider Strassen fuellen die Ecke
@@ -191,6 +192,7 @@ function* gstrGen() {                                                       // A
   GSTR.meshes = [];
   GSTR.meshes.push(make(A4, mat(lineTex(true), 2), "Gotham-Strassen 4 Spuren")); yield;
   GSTR.meshes.push(make(A2, mat(lineTex(false), 2), "Gotham-Strassen 2 Spuren")); yield;
+  GSTR.meshes.push(make(PZG, mat(lineTex(false), 2), "Gotham-Strassen Portalzone")); yield;
   GSTR.meshes.push(make(A0, mat(plain, 2), "Gotham-Gassen")); yield;
   GSTR.meshes.push(make(W, mat(walk, 1), "Gotham-Gehsteige")); yield;
   GSTR.meshes.push(make(Kies, mat(gravel, 1), "Gotham-Bankett")); yield;

@@ -243,7 +243,7 @@ function gsplit(g, m, name, opt = {}) {
 }
 function gHideStep(cam) { const lim = (TILES.range * TILE + 150) + 200, p = cam.position;
   for (const o of GHIDE) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < lim; } }
-const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12 };
+const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12, PZ: 80 };
 function gdeckBuild() {
   GDECK.building = true; const roads = [];
   // alle anderen Strassenlinien (Spielkoordinaten, alle 4 m), fuer "endet hier eine andere Strasse?"
@@ -290,8 +290,14 @@ function gdeckK(r, s) { const u = Math.min(r.ca ? 1e9 : s - r.sA, r.cb ? 1e9 : r
 const gdeckHW = (r, s) => GDECK.RW / 2 + (r.HW - GDECK.RW / 2) * gdeckK(r, s);
 // Trichter oben (Nicolas 2026-11-12: Spuren fuehrten oben ins Nichts): im ebenen Rampenteil (FL 30 m vor dem Strassenende) laufen die beiden Spuren
 // neben der Rampe in die Rampenspuren zusammen; Aussenkante der oberen Fahrbahn bei s (volle Breite w/2 ab FL, am Strassenende RW/2), daneben Gehsteig
-function gdeckUp(r, s) { const u = Math.min(r.ca ? 1e9 : s, r.cb ? 1e9 : r.L - s); return GDECK.RW / 2 + (r.w / 2 - GDECK.RW / 2) * sst(0, GDECK.FL, u); }
+// Variante B (Nicolas 2026-11-13, Plan docs/superpowers/specs/2026-11-13-rampen-spuren-oben-design.md): kein Trichter mehr, die obere Spur bleibt bis zum
+// Strassenende voll breit (vorher Gehsteig-Keil in den letzten 30 m, Seitenstrassen am Ende stiessen darauf); die innere Spur ist die Rampe
+function gdeckUp(r, s) { return r.w / 2; }
 const gdeckInRamp = (r, s) => (!r.ca && s < r.sA) || (!r.cb && s > r.sB);
+// Portalzone (Variante B): die ersten PZ m Deck hinter einem offenen Rampenportal; Abstand hinter dem Portal, sonst -1
+function gdeckPortalU(r, s, ext = 0) { const L = GDECK.PZ + ext; if (!r.ca && s >= r.sA && s <= r.sA + L) return s - r.sA; if (!r.cb && s <= r.sB && s >= r.sB - L) return r.sB - s; return -1; }
+// ext: Zone laenger (das Band zeichnet ein Viereck nur, wenn beide Probenreihen gut sind; die Portalzone reicht darum eine Probe weiter, sonst 4-m-Loch am Zonenende)
+function gdeckPortalZone(x, z, ext = 0) { const n = gdeckNear(x, z, 12); return !!n && n.d < n.r.w / 2 + 0.6 && gdeckPortalU(n.r, n.s, ext) >= 0; }
 // grob: liegt (x, z) im Gotham-Rechteck (vor gotham-raster.js schon nutzbar)
 function inGothamG0(x, z) { return x > -4240 && x < -400 && z > -1040 && z < 2800; }
 // Gelaende: Ausschnitt unter dem unteren Raum und unter den Rampen
@@ -312,7 +318,7 @@ function gothamDeckAt(x, z, feet) {
   if (feet <= GOT.STR - 2.5 && !(s >= r.sA && s <= r.sB && n.d < gdeckHW(r, s))) for (const o of G.roads) { if (o === r) continue; const m = gdeckNearOn(o, x, z); if (m && m.s >= o.sA && m.s <= o.sB && m.d < gdeckHW(o, m.s)) return G.LY; }
   if (s < 0 || s > r.L || n.d > r.HW + G.COVER) return null;
   if (gdeckInRamp(r, s) && n.d < G.RW / 2) return gdeckRampY(r, s);
-  if (gdeckInRamp(r, s) && feet > GOT.STR - 2.5 && n.d > gdeckUp(r, s) && n.d < r.w / 2 + 4) return GOT.STR + 0.15;   // Gehsteig neben dem oberen Trichter
+  if (gdeckInRamp(r, s) && feet > GOT.STR - 2.5 && n.d > gdeckUp(r, s) && n.d < r.w / 2 + 4 && !(GSTR.onRoad && GSTR.onRoad(x, z, 0.3))) return GOT.STR + 0.15;   // Gehsteig neben dem oberen Trichter
   if (feet > GOT.STR - 2.5) return GOT.STR;
   if (s >= r.sA && s <= r.sB) { const hw = gdeckHW(r, s); if (n.d < hw) return G.LY + (n.d > hw - 2 * gdeckK(r, s) && !G.roads.some(o => { if (o === r) return false; const m = gdeckNearOn(o, x, z); return m && m.s >= o.sA && m.s <= o.sB && m.d < gdeckHW(o, m.s) + 0.3; }) ? 0.15 : 0); }   // in Kreuzungen kein Gehsteig   // Gehsteige unten 15 cm hoch (im Trichter schmaler)
   return null;
