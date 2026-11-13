@@ -126,6 +126,26 @@ function vehPushStep(C, nx, nz) {
   }
   return pushed;
 }
+// Abschleppen (modelle.js TOW/towFind/towFollow): das gezogene Auto hat keine Kollisionskreise (sonst blockiert es den Abschleppwagen), seine
+// Rollachse folgt dem Gelaende, die gegriffene Achse ist TOW.lift angehoben. Geparkt bleibt es am Haken haengen.
+function towToggle(C) {
+  if (C.towed) { const n = C.towed.v.label; towDrop(C); return toast(n + " abgesetzt"); }
+  if (Math.abs(C.v) > 3) return carMsg("Zum Anhängen anhalten");
+  const t = towFind(C, VEH);
+  if (!t || typeof t === "string") return carMsg(t ? t + " lässt sich nicht abschleppen (nur Autos)" : "Kein Auto am Haken – rückwärts an eine Achse fahren");
+  C.towed = t; t.v.towBy = C; t.v.yG = t.v.y; const prev = CAR; CAR = t.v; carCircles(false); CAR = prev;
+  toast(t.v.label + " hängt am Haken – Leertaste setzt es ab");
+}
+function towDrop(C) {
+  const v = C.towed.v; C.towed = null; v.towBy = null; v.v = 0; v.settled = false; v.y = v.yG ?? v.y;
+  const prev = CAR; CAR = v; carCircles(true); CAR = prev;
+}
+function towStep(C, dt) {
+  const v = C.towed.v; if (C.dead || v.dead) return towDrop(C);
+  const p = towFollow(C, C.towed), prev = CAR; CAR = v; carNear();
+  const gr = carGround(v.yG ?? v.y); v.yG = gr.y; v.y = gr.y + TOW.lift * 0.5; v.pitch = gr.pitch + p; v.roll = gr.roll; v.air = false; v.v = C.v; carPose(dt); v.v = 0;
+  CAR = prev; carNear();
+}
 function carMsg(t) { if (clock.elapsedTime - CAR.msgT > 2.5) { CAR.msgT = clock.elapsedTime; toast(t); } }
 function useCar(want) {
   if (!walking || ghost) return false;
@@ -152,6 +172,7 @@ function useCar(want) {
   let best = null, bd = 1e9;
   for (const v of VEH) { const d = Math.hypot(p.x - v.x, p.z - v.z); if (!v.dead && (!want || v === want) && d < v.spec.enter + (want ? 1.5 : 0) && d < bd && Math.abs(p.y - v.y) < 2) { best = v; bd = d; } }   // want: das angezielte Fahrzeug (Rechtsklick)
   if (!best) return false;
+  if (best.towBy) towDrop(best.towBy);                                       // Einsteigen in ein Auto am Haken: es wird abgesetzt
   CAR = best; const C = best;
   C.on = true; C.v = 0; keys.clear(); player.yaw = C.h; player.pitch = -0.12; carCircles(false);
   toast(C.spec.msg + ", M Ton an/aus");
@@ -164,6 +185,7 @@ function summonVehicle(v) {
   if (!v) return false;
   if (!walking || ghost) { toast("Zuerst „Begehen“ starten, dann das Fahrzeug holen"); return false; }
   if (CAR && CAR.on) { if (CAR === v) return toast(v.label + ": du sitzt schon drin"), false; useCar(); if (CAR.on) return false; }
+  if (v.towBy) towDrop(v.towBy); if (v.towed) towDrop(v);                   // Holen loest den Haken
   const p = player.pos, yaw = player.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);
   const len = Math.max(...v.spec.pts.map(Math.abs)) + v.spec.R, prev = CAR, saved = { x: v.x, z: v.z, y: v.y, h: v.h };
   CAR = v;
@@ -254,7 +276,7 @@ function carStep(dt) {
     C.boostLock = C.boostE <= 0;
     if (boostKey && C.boostE <= 0) carMsg("Nitro leer – lädt nach");
   }
-  const max = C.wet ? 0.3 : sp.maxF + (boosting ? 40 / 3.6 : 0);   // Nitro: 40 km/h ueber dem Hoechsttempo ; sonst nur W bis zum Hoechsttempo, im Wasser steckt man fest
+  const max = C.wet ? 0.3 : sp.maxF * (C.towed ? TOW.slow : 1) + (boosting ? 40 / 3.6 : 0);   // mit Auto am Haken langsamer   // Nitro: 40 km/h ueber dem Hoechsttempo ; sonst nur W bis zum Hoechsttempo, im Wasser steckt man fest
   // Lenken (Fahrradmodell, bei Tempo weniger Einschlag), Gas/Bremse
   // Anlaufzeit (Nicolas 2026-11-11): kurz A/D tippen lenkt nur leicht, erst gehalten voller Einschlag (25 % -> 100 % in 0,45 s, weich)
   if (st && Math.sign(st) === C.stDir) C.stHold = (C.stHold || 0) + dt; else { C.stHold = 0; C.stDir = Math.sign(st); }
@@ -291,6 +313,7 @@ function carStep(dt) {
       else if (player.jump) carMsg("Für den Sprung schneller fahren (ab 50 km/h)");
     }
   }
+  if (sp.tow && player.jump) towToggle(C);                                     // Abschleppwagen: Leertaste = Auto anhaengen / absetzen
   player.jump = false;
   // Bewegen mit Kollision (Kreise entlang der Karosserie)
   const fx = -Math.sin(C.h), fz = -Math.cos(C.h), x0 = C.x, z0 = C.z;
@@ -421,7 +444,7 @@ function carFrame(dt) {
       const c = Math.cos(w), s = Math.sin(w), dx = v.x - tt.position.x, dz = v.z - tt.position.z;
       v.x = tt.position.x + dx * c + dz * s; v.z = tt.position.z - dx * s + dz * c; v.h += w; if (v.on) player.yaw += w;
     }
-    if (v.on) continue;
+    if (v.on || v.towBy) continue;                                         // am Haken: Lage kommt aus towStep
     const lifting = L && L.state === "moving" && CAR_LIFT.inCar({ x: v.x, y: v.y, z: v.z }), atBay = (bay && Math.hypot(v.x - bay.x, v.z - bay.z) < 4) || GRAMP.inF(v.x, v.z, 1.5);   // Hebebuehne, Garagenrampe: jedes Bild
     let run = lifting || atBay || !v.settled || (vehFrame + v.idx) % 15 === 0;
     if (run && !lifting && v.settled && Math.hypot(player.pos.x - v.x, player.pos.z - v.z) > 80) run = false;   // geparkt und weit weg
@@ -440,6 +463,7 @@ function carFrame(dt) {
   CAR = active || prev;
   if (active) {
     if (L && L.state === "moving" && CAR_LIFT.inCar({ x: active.x, y: active.y, z: active.z })) { active.y = L.y; active.air = false; active.vy = 0; }
+    if (active.towed) towStep(active, dt);
     if (walking) { carNear(); carPose(0); carCamera(dt); engineUpdate(active); }
   }
 }

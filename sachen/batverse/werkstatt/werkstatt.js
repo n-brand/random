@@ -17,7 +17,7 @@ const MODELLE = [
   { name: "Gotham Fire Ladder", spec: SPEC_FIRE_LADDER, bau: () => buildFireTruck("ladder") },
   { name: "Gotham Fire Chief", spec: SPEC_FIRE_CHIEF, bau: () => buildFireChief() },
   { name: "Gotham Fire Crane", spec: SPEC_FIRE_CRANE, bau: () => buildFireCrane() },
-  { name: "Gotham Towing (Abschleppwagen)", spec: SPEC_TOW, bau: () => buildTowTruck(), offen: "Noch anzupassen: kann noch nicht abschleppen (Haken/Unterfahrlift ohne Funktion)." },
+  { name: "Gotham Towing (Abschleppwagen)", spec: SPEC_TOW, bau: () => buildTowTruck() },
   { name: "Gotham Transit (Bus)", spec: SPEC_BUS, bau: () => buildBus() },
   { name: "Gotham Construction (Grossmuldenkipper)", spec: SPEC_HAUL, bau: () => buildHaulTruck() },
   { name: "Panzer", spec: SPEC_TANK, bau: () => buildTank() },
@@ -140,6 +140,17 @@ function schieben(A) {
     if (!v.dead) { v.g.position.set(v.x, 0, v.z); v.g.rotation.set(0, v.h, 0); } }
   return pushed;
 }
+// Abschleppen (wie towToggle/towStep in fahren.js, Rechnung in modelle.js): Zielauto mit einer Achse in der Radgabel, Rollachse folgt; Boden eben
+function hinstellen(v) { v.g.position.set(v.x, 0, v.z); v.g.rotation.set(0, v.h, 0); }
+function absetzen(A) { const v = A.towed.v; A.towed = null; if (!v.dead) hinstellen(v); }
+function abschleppen(A, tap) {
+  if (tap) { if (A.towed) { const n = A.towed.v.name; absetzen(A); toast(n + " abgesetzt"); }
+    else if (Math.abs(A.v) > 3) toast("Zum Anhängen anhalten");
+    else { const t = towFind(A, ZIELAUTOS); if (!t || typeof t === "string") toast(t ? t + " lässt sich nicht abschleppen (nur Autos)" : "Kein Auto am Haken – rückwärts an eine Achse fahren");
+      else { A.towed = t; toast(t.v.name + " hängt am Haken – Leertaste setzt es ab"); } } }
+  if (!A.towed) return; const v = A.towed.v; if (v.dead) return absetzen(A);
+  const p = towFollow(A, A.towed); v.g.position.set(v.x, TOW.lift * 0.5, v.z); v.g.rotation.set(p, v.h, 0, "YXZ");
+}
 // Feuer zum Loeschen (Nicolas 2026-11-12): nur wenn ein Modell mit Wasserwerfer gewaehlt ist; Flammen und Rauch an fuenf Stellen im Innenfeld,
 // Wasser schwaecht sie (staerke 1 -> 0), geloescht nach ca. 2 s Strahl, nach 30 s brennt es wieder
 const FEUER = [], feuerGruppe = new THREE.Group(); feuerGruppe.visible = false; scene.add(feuerGruppe);
@@ -161,6 +172,7 @@ const $info = $("info"), $speed = $("speed"), $nitro = $("nitro"), fmt = v => St
 function laden(i) {
   $nitro.hidden = true;
   world.userData.car.leave();                                             // Jet / The Bat aussteigen (bleiben stehen, wo sie sind)
+  if (AKT && AKT.towed) absetzen(AKT);                                     // Modellwechsel: Auto vom Haken
   if (AKT && !AKT.flug) { engineStop(true); scene.remove(AKT.g); AKT.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
   const m = MODELLE[i];
   if (m.flug) {
@@ -276,7 +288,7 @@ function folgeKamera(A, s, dt) {
     camera.position.set(tx + ex + TG.sx, Math.max(0.3, ty + ey + TG.sy), tz + ez); camera.up.set(0, 1, 0); camera.lookAt(tx, ty + 0.3, tz); }
 }
 function fahren(dt) {
-  const A = AKT, s = A.spec, vmax = s.maxF || s.maxN || 30, gas = down("KeyW", "ArrowUp"), brems = down("KeyS", "ArrowDown"), links = down("KeyA", "ArrowLeft"), rechts = down("KeyD", "ArrowRight");
+  const A = AKT, s = A.spec, vmax = (s.maxF || s.maxN || 30) * (A.towed ? TOW.slow : 1), gas = down("KeyW", "ArrowUp"), brems = down("KeyS", "ArrowDown"), links = down("KeyA", "ArrowLeft"), rechts = down("KeyD", "ArrowRight");
   // wie im Spiel (fahren.js carStep): Gas/Bremse/Ausrollen, Lenken mit Anlaufzeit, Kurvenphysik (modelle.js); Gelaende ist hier eben
   const th = gas ? 1 : brems ? -1 : 0, st = (links ? 1 : 0) - (rechts ? 1 : 0);
   if (st && Math.sign(st) === A.stDir) A.stHold = (A.stHold || 0) + dt; else { A.stHold = 0; A.stDir = Math.sign(st); }
@@ -292,7 +304,7 @@ function fahren(dt) {
     if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);
     A.wz = { tip: M0.tip, el, ready: M0.ready }; }
   else if (A.dumpG) dumpPose(A.dumpG, A, down("Space"), dt);   // Muldenkipper: Mulde kippen (wie fahren.js carPose)
-  else if (down("Space") && !A.turret && !s.jump && !s.boost && !s.hover) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm = schiessen, mit Sprung/Nitro = springen/Nitro)
+  else if (down("Space") && !A.turret && !s.jump && !s.boost && !s.hover && !s.tow) A.v -= Math.sign(A.v) * Math.min(Math.abs(A.v), 14 * dt);   // Handbremse (mit Turm = schiessen, mit Sprung/Nitro = springen/Nitro)
   // DeLorean schwebt wie im Spiel (fahren.js hoverStep): Leertaste klappt die Raeder auch beim Fahren fluessig ein und hebt im gleichen Takt ab,
   // dann Leertaste hoch, C runter, C unten halten oder H landet (Raeder klappen beim Sinken aus). Boden hier eben (y 0).
   if (s.hover) { const sp2 = down("Space"), hk = down("KeyH"), tap = (sp2 && !A.hvPrev) || (hk && !A.hPrev); A.hvPrev = sp2; A.hPrev = hk;
@@ -335,6 +347,7 @@ function fahren(dt) {
   A.v = Math.max(th < 0 ? -(s.revMax || 8) : -16, Math.min(vmax + (boosting ? 40 / 3.6 : 0) + (A.air ? 6 : 0), A.v));
   A.x -= Math.sin(A.h) * A.v * dt; A.z -= Math.cos(A.h) * A.v * dt;   // vorne = -z im Modell
   if (s.push && schieben(A)) A.v *= Math.max(0, 1 - dt * 1.2);           // Schaufel schiebt Zielfahrzeuge (wie vehPushStep in fahren.js)
+  if (s.tow) abschleppen(A, tap);                                         // Abschleppwagen: Leertaste = Zielauto anhaengen / absetzen (wie towToggle in fahren.js)
   const lim = 580; A.x = Math.max(-lim, Math.min(lim, A.x)); A.z = Math.max(-lim, Math.min(lim, A.z));
   A.lean += ((s.track ? 0 : A.steer * Math.min(1, Math.abs(A.v) / 6) * 0.9) - A.lean) * Math.min(1, dt * 5);   // Zweirad legt sich in die Kurve (wie fahren.js)
   if (A.beacon) { const t = performance.now() / 1000 * 6, on = Math.sin(t) > 0; A.beacon[0].emissiveIntensity = 0.2 + 2.4 * (on ? 1 : 0); A.beacon[1].emissiveIntensity = 0.2 + 2.4 * (on ? 0 : 1); }   // Blinklicht beim Fahren (wie fahren.js)

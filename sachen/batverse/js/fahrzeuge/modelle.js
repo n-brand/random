@@ -919,19 +919,46 @@ function buildTowTruck() {
   for (const sd of [-1, 1]) arm(sd * 0.7, 1.15, zR - 2.2, sd * 0.15, 3.2, zR - 0.3, 0.16, paint);                                // A-Rahmen
   arm(0, 3.2, zR - 0.3, 0, 2.6, zR + 0.6, 0.18, paint); meshIn(g, new THREE.CylinderGeometry(0.012, 0.012, 1.4, 4), black, 0, 1.9, zR + 0.6);
   meshIn(g, new THREE.TorusGeometry(0.1, 0.03, 6, 12, Math.PI * 1.4), chrome, 0, 1.15, zR + 0.6);
-  boxIn(g, -0.12, 0.12, 0.45, 0.6, zR - 0.4, zR + 1.0, steel); boxIn(g, -0.9, 0.9, 0.42, 0.56, zR + 0.85, zR + 1.05, steel);   // Unterfahrlift
   for (const z of [-2.2, 2.0]) boxIn(g, -0.95, 0.95, 0.5, 1.2, z - 0.6, z + 0.6, black);                                        // Radhaeuser
   mergeStatic(g);
+  // Unterfahrlift (beweglich, hebt beim Abschleppen an): Ausleger, Querholm, zwei Radgabeln (Abstand Spur eines Autos)
+  const lift = new THREE.Group(); g.add(lift);
+  boxIn(lift, -0.12, 0.12, 0.45, 0.6, zR - 0.4, zR + 1.0, steel); boxIn(lift, -0.9, 0.9, 0.42, 0.56, zR + 0.85, zR + 1.05, steel);
+  for (const sd of [-1, 1]) { boxIn(lift, sd * 0.8 - 0.04, sd * 0.8 + 0.04, 0.42, 0.52, zR + 1.05, zR + 1.95, steel); boxIn(lift, sd * 1.05 - 0.04, sd * 1.05 + 0.04, 0.42, 0.52, zR + 1.05, zR + 1.95, steel); }
+  boxIn(lift, -0.12, 0.12, 0.45, 0.6, zR + 1.0, zR + 1.5, steel);                                                            // Ausleger ausgefahren
   const wheels = [];
   for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 0.98, -2.2, 0.48, 0.3, true, tireM, rimM, 0, 24));
   for (const sd of [-1, 1]) for (const x of [0.82, 1.12]) wheels.push(addWheel(g, sd * x, 2.0, 0.48, 0.28, false, tireM, rimM, 0, 24));
   for (const w of wheels) sedanCap(w, 0.28, 0xc8ccd0, 0xe2e5e8, 8);
-  return { g, wheels, beacon: tow };
+  return { g, wheels, beacon: tow, lift };
 }
 const SPEC_TOW = { name: "Gotham Towing", wheels: [[-0.98, -2.2], [0.98, -2.2], [-0.98, 2.0], [0.98, 2.0]], wb: 4.2, track: 1.96, pts: [-2.6, -0.8, 1.0, 2.8], R: 1.15, circR: 1.1, enter: 4.5,
-  maxN: 26, maxF: 33.3, acc: 7, steer: 0.6, jump: false, grade: 32, camD: 12, camH: 2.0, seat: [-0.55, 2.2, -1.2], bodyH: 2.8, bike: false, brake: 22,
+  maxN: 26, maxF: 33.3, acc: 7, steer: 0.6, jump: false, grade: 32, camD: 13, camH: 2.2, seat: [-0.55, 2.2, -1.2], bodyH: 2.8, bike: false, brake: 22,
+  tow: { z: 5.6 },                                                                                                              // Radgabeln des Unterfahrlifts (lokal z): dort sitzt die gegriffene Achse
   exits: [[-2.1, -1.2], [2.1, -1.2], [-2.1, 1.0], [2.1, 1.0], [0, -4.8], [0, 5.2]],
-  msg: "Gotham Towing (Abschleppwagen): W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen" };
+  msg: "Gotham Towing (Abschleppwagen): W/S Gas/Bremse, A/D lenken, rückwärts an ein Auto + Leertaste = abschleppen / absetzen, V Kamera, R zurücksetzen, Shift aussteigen" };
+// Abschleppen (Nicolas 2026-11-13, Spiel und Werkstatt): rueckwaerts an die Vorder- oder Hinterachse eines Autos, Leertaste = der Unterfahrlift greift
+// diese Achse, hebt sie an (TOW.lift) und das Auto rollt auf der anderen Achse hinterher (Anhaenger: die Rollachse wird zum Haken gezogen);
+// nochmal Leertaste = absetzen. Nur Autos (keine Zweiraeder, keine Ketten, Radstand bis TOW.maxWb). Mit Last faehrt der Abschleppwagen langsamer.
+const TOW = { reach: 2.0, lift: 0.5, maxWb: 3.6, slow: 0.7 };
+function towHitch(T) { const z = T.spec.tow.z; return [T.x + z * Math.sin(T.h), T.z + z * Math.cos(T.h)]; }
+function towAxles(v) { const zs = v.spec.wheels.map(w => w[1]); return [Math.min(...zs), Math.max(...zs)]; }
+// naechstes Auto mit einer Achse am Haken: { v, az (gegriffene Achse, lokal z), oz (Rollachse) } oder Grund als Text
+function towFind(T, list) {
+  const [hx, hz] = towHitch(T); let best = null, bd = TOW.reach, why = "";
+  for (const v of list) { if (v === T || v.on || v.dead) continue;
+    for (const az of towAxles(v)) { const d = Math.hypot(v.x + az * Math.sin(v.h) - hx, v.z + az * Math.cos(v.h) - hz); if (d >= bd) continue;
+      if (v.spec.bike || v.spec.tracks || !v.spec.track || v.spec.wb > TOW.maxWb) { why = v.label || v.name || v.spec.name; continue; }
+      const [a, b] = towAxles(v); best = { v, az, oz: az === a ? b : a }; bd = d; } }
+  return best || why;
+}
+// Lage des gezogenen Autos aus dem Haken: Rollachse bleibt am Boden und wird nachgezogen, gegriffene Achse sitzt in der Radgabel; liefert die Neigung
+function towFollow(T, t) {
+  const v = t.v, [hx, hz] = towHitch(T), D = Math.abs(t.az - t.oz), sg = Math.sign(t.az - t.oz);
+  const gx = v.x + t.oz * Math.sin(v.h), gz = v.z + t.oz * Math.cos(v.h), dx = hx - gx, dz = hz - gz, l = Math.hypot(dx, dz) || 1;
+  v.h = Math.atan2(sg * dx / l, sg * dz / l); v.x = hx - t.az * Math.sin(v.h); v.z = hz - t.az * Math.cos(v.h);
+  return -sg * Math.atan2(TOW.lift, D);                                                                                          // vorne gegriffen (sg < 0) = Nase hoch
+}
 // Stadtbus: Niederflur, 12 m, Fensterband, zwei Tueren rechts, Zielanzeige vorne, Dachaufbauten
 function buildBus() {
   const g = new THREE.Group(), HW = 1.27, zF = -6.0, zR = 6.0, H = 3.05;
@@ -1268,7 +1295,7 @@ const SPEC_BATPOD = { name: "Batpod", wheels: [[0, -1.18], [0, 1.18]], wb: 2.36,
   msg: "Batpod: W/S Gas/Bremse, A/D lenken, Leertaste Sprung (ab 50 km/h), V Kamera, R zurücksetzen, L Autoaufzug, Shift absteigen" };
 function addVehicle(spec, built, x, z, y, h, label = spec.name, color = 0x16181b) {
   built.g.userData.dynamic = true; built.g.userData.noLift = true; scene.add(built.g);
-  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, wheelGlow: built.wheelGlow || null, folds: built.folds || null, glowM: built.glowM || null, fold: 0, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
+  const C = { spec, g: built.g, wheels: built.wheels, jetM: built.jetM || null, flame: built.flame || null, beacon: built.beacon || null, monitor: built.monitor || null, dumpG: built.dump || null, towed: null, towBy: null, turret: built.turret || null, gun: built.gun || null, gunMin: built.gunMin || null, wheelGlow: built.wheelGlow || null, folds: built.folds || null, glowM: built.glowM || null, fold: 0, elev: 0, x, z, y, h, v: 0, vy: 0, air: false, wet: false, on: false, view: 0, steer: 0, jet: 0, lean: 0,
     pitch: 0, roll: 0, circ: null, safe: null, safeT: 0, msgT: 0, settled: false, spun: false, home: { x, z, y, h }, idx: VEH.length, label, color };
   C.leave = () => { if (C.on) { C.on = false; C.v = 0; speedEl.hidden = true; engineStop(); } };
   VEH.push(C); return C;
