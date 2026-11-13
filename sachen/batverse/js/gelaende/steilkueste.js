@@ -6,7 +6,8 @@
 // Felshaut vor der ganzen Kueste (das Gelaende-Raster ist dort 2-6 m grob): Schichten mit Vorspruengen, Ueberhaenge, Risse, Absatz ueber dem
 // Wasser, ausgewaschene Kerbe und nasses/gruenes Band an der Wasserlinie. Oeffnungen fuer die Wasserhoehlen und den Batcave-Eingang,
 // dahinter Hoehlenroehren (nach hinten dunkler) mit Wasser. Felsnadeln im Meer, Brocken am Fuss. Alles in Klippenfarbe.
-{
+// Leistung (2026-11-13): als Generator nach dem Start in Etappen gebaut (Kachel-Aufgabe unten, vorher 0,56 s beim Laden); Zufallsfolgen bleiben gleich
+function* coastGen() {
   const cCliff = new THREE.Color(0x85827c), cBeige = new THREE.Color(0x9c9381), cWet = new THREE.Color(0x3d3c39), cAlgae = new THREE.Color(0x3f5130), tc = new THREE.Color();
   const cwAt = (x, z) => Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
   // Batcave-Eingang: dort, wo der Wassertunnel die Kueste kreuzt
@@ -43,6 +44,7 @@
       cur.push([x, z, nx, nz]);
     }
   }
+  yield;
   // ---- Felswand (Nicolas, 2026-11-07: realistische Alpenfelswand) ----
   // Pro Spalte (0,8 m) 56 Reihen. Versatz zum Meer aus: Pfeilern und tiefen Spalten (gross), geneigten Gesteinsschichten mit eigener
   // Tiefe je Schicht und Abschnitt, Gesteinsplatten (Zellen), Ueberhaengen an den Schichtkoepfen und unter der Kante, Erosionsrinnen,
@@ -61,10 +63,10 @@
   const bump = (y, c, w) => Math.max(0, 1 - Math.abs(y - c) / w);
   const feet = [];                                                          // Wandfuss fuer Geroell
   let lineNo = 0;
-  for (const line of lines) {
+  let yl = 0; for (const line of lines) { if (++yl % 3 === 0) yield;
     if (line.length < 4) continue;
     const base = pos.length / 3, A0 = 137 * ++lineNo; let along = 0;
-    for (let i = 0; i < line.length; i++) {
+    for (let i = 0; i < line.length; i++) { if (i % 250 === 249) yield;
       const [x, z, nx, nz] = line[i];
       if (i) along += Math.hypot(x - line[i - 1][0], z - line[i - 1][1]);
       const a = along + A0, cw = cwAt(x, z), top = terrainH(x - nx * 0.9 * cw, z - nz * 0.9 * cw), bot = SEA_Y - 4;
@@ -104,6 +106,7 @@
       idx.push(a0, b0, a0 + 1, a0 + 1, b0, b0 + 1);
     }
   }
+  yield;
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
   g.setIndex(idx); g.computeVertexNormals();
@@ -111,7 +114,7 @@
   const N = g.attributes.normal, col = new Float32Array(pos.length);
   const cGrey = new THREE.Color(0x8a867f), cSlate = new THREE.Color(0x4e5156), cBrown = new THREE.Color(0x7c6b58), cWeather = new THREE.Color(0xb0a998),
     cMoss = new THREE.Color(0x56692f), cGrass = new THREE.Color(0x5f8a3a), cWetS = new THREE.Color(0x2f3032);
-  for (let v = 0; v < pos.length / 3; v++) {
+  for (let v = 0; v < pos.length / 3; v++) { if (v % 30000 === 29999) yield;
     const [a, y, rec, crev, li, lip, top] = meta.slice(v * 7, v * 7 + 7), ny = N.getY(v);
     tc.copy(cGrey).lerp(cSlate, sst(0.45, 0.85, hash2(li, 77)) * 0.7).lerp(cBrown, 0.45 * sst(0.55, 0.85, vnoise(a / 40 + 3, y / 30)));
     tc.lerp(cWeather, 0.35 * sst(-0.2, -0.9, rec) + 0.15 * vnoise(a / 3, y / 3));                 // vorstehend: verwittert, heller
@@ -125,6 +128,7 @@
     col.set([tc.r, tc.g, tc.b], v * 3);
   }
   g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  yield;
   // Gesteinstextur mit Relief: Hoehenbild (Koernung, Bruchlinien, kleine Platten) -> Farbe und Normalmap
   const TS = 512, hc = document.createElement("canvas"); hc.width = hc.height = TS;
   { const g2 = hc.getContext("2d"), rr = rng(4711); g2.fillStyle = "#808080"; g2.fillRect(0, 0, TS, TS);
@@ -132,6 +136,7 @@
     for (let i = 0; i < 9000; i++) { const v = 70 + rr() * 120; g2.fillStyle = `rgba(${v},${v},${v},.5)`; g2.fillRect(rr() * TS, rr() * TS, 1 + rr() * 2, 1 + rr() * 2); }
     g2.strokeStyle = "rgba(20,20,20,.75)";
     for (let i = 0; i < 70; i++) { g2.lineWidth = 0.8 + rr() * 1.8; g2.beginPath(); let x = rr() * TS, y = rr() * TS, ang = rr() < 0.6 ? (rr() - 0.5) * 0.5 : Math.PI / 2 + (rr() - 0.5) * 0.6; g2.moveTo(x, y); for (let k = 0; k < 8 + rr() * 10; k++) { ang += (rr() - 0.5) * 0.7; x += Math.cos(ang) * (6 + rr() * 12); y += Math.sin(ang) * (6 + rr() * 12); g2.lineTo(x, y); } g2.stroke(); } }
+  yield;
   const hd = hc.getContext("2d").getImageData(0, 0, TS, TS).data, nc = document.createElement("canvas"); nc.width = nc.height = TS;
   { const nctx = nc.getContext("2d"), out = nctx.createImageData(TS, TS), H = (x, y) => hd[(((y + TS) % TS) * TS + ((x + TS) % TS)) * 4] / 255;
     for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) { const dx = (H(x - 1, y) - H(x + 1, y)) * 3, dy = (H(x, y - 1) - H(x, y + 1)) * 3, l = Math.hypot(dx, dy, 1), k = (y * TS + x) * 4; out.data[k] = (dx / l * 0.5 + 0.5) * 255; out.data[k + 1] = (dy / l * 0.5 + 0.5) * 255; out.data[k + 2] = (1 / l * 0.5 + 0.5) * 255; out.data[k + 3] = 255; }
@@ -142,6 +147,7 @@
   skinMat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace("#include <map_fragment>", "#include <map_fragment>\n diffuseColor.rgb *= 1.55;"); };   // Textur als Detail (mittelgrau -> neutral)
   const skin = new THREE.Mesh(g, skinMat);
   skin.castShadow = skin.receiveShadow = true; skin.userData.keep = true; scene.add(skin);
+  yield;
   // ---- Geroell und Brocken am Wandfuss, Polster und Bueschel in Spalten und auf Absaetzen ----
   {
     const scree = [], fr2 = rng(2026);
@@ -167,6 +173,7 @@
     tufts.forEach(([x, y, z, s], k) => { o.position.set(x, y + s * 0.3, z); o.rotation.set(0, fr2() * 6, 0); o.scale.set(s, s * (0.55 + fr2() * 0.4), s); o.updateMatrix(); tim.setMatrixAt(k, o.matrix); tim.setColorAt(k, cc.setHSL(0.2 + fr2() * 0.08, 0.35 + fr2() * 0.2, 0.2 + fr2() * 0.12)); });
     tim.castShadow = true; tim.computeBoundingSphere(); scene.add(tim);
   }
+  yield;
   // ---- Hoehlenroehren (halbe Ellipse, nach hinten schmaler und dunkler), Wasser darin, Kollision an den Seiten ----
   const tp = [], tcol = [], tidx = [], wp = [], widx = [];
   for (const h of holes) {
@@ -197,6 +204,7 @@
   const tubes = new THREE.Mesh(tg, M(0xffffff, { vertexColors: true, roughness: 1, side: THREE.DoubleSide })); tubes.receiveShadow = true; tubes.userData.keep = true; scene.add(tubes);
   const wg = new THREE.BufferGeometry(); wg.setAttribute("position", new THREE.Float32BufferAttribute(wp, 3)); wg.setAttribute("uv", new THREE.Float32BufferAttribute(wp.flatMap((v, i) => i % 3 === 1 ? [] : [v / 10]), 2)); wg.setIndex(widx); wg.computeVertexNormals();
   const cwater = new THREE.Mesh(wg, mat.sea); cwater.userData.keep = true; scene.add(cwater);
+  yield;
   // ---- Felsnadeln und Brocken am Fuss (Felsgenerator, in Klippenfarbe) ----
   const geos = [], sr = rng(919);
   for (const st of SEA_STACKS) {
@@ -211,3 +219,5 @@
   }
   if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.95 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
 }
+TILES.tasks.push({ gen: null, plan() {}, step() { if (TILES.startup || this.done) return false; if (!this.gen) this.gen = coastGen();
+  const t0 = performance.now(); while (performance.now() - t0 < 6) if (this.gen.next().done) { this.done = true; this.gen = null; return false; } return false; } });
