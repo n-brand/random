@@ -13,7 +13,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   const G = GDECK, S = GOT.STR, LY = G.LY, DY = G.DY, RW = G.RW;
   const conc = canvasTex(128, 128, (c, w, h) => { c.fillStyle = "#8a8782"; c.fillRect(0, 0, w, h); for (let i = 0; i < 3000; i++) { const v = 110 + Math.random() * 40; c.fillStyle = `rgb(${v},${v - 2},${v - 6})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
     c.fillStyle = "rgba(0,0,0,0.25)"; c.fillRect(0, 0, w, 2); c.fillRect(0, 0, 2, h); }); conc.wrapS = conc.wrapT = THREE.RepeatWrapping;
-  const asph = (c, w, h) => { c.fillStyle = "#35373a"; c.fillRect(0, 0, w, h); for (let i = 0; i < 5000; i++) { const v = 40 + Math.random() * 28; c.fillStyle = `rgb(${v},${v + 1},${v + 3})`; c.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5); } };
+  const asph = (c, w, h) => { const im = c.createImageData(w, h), d = im.data; for (let i = 0; i < w * h; i++) { const k = Math.random() < 0.15, v = k ? 40 + Math.random() * 28 : 53 + (Math.random() - 0.5) * 6; d[i * 4] = v; d[i * 4 + 1] = v + 2; d[i * 4 + 2] = v + 5; d[i * 4 + 3] = 255; } c.putImageData(im, 0, 0); };   // Pixel direkt (schneller)
   const lines = vier => { const t = canvasTex(256, 256, (c, w, h) => { asph(c, w, h); const L = (v, col, dash) => { c.fillStyle = col; for (let u = 0; u < w; u += dash ? w / 2 : w) c.fillRect(u, v * h - 1.5, dash ? w / 4 : w, 3); };
     L(0.035, "#d8d8d2"); L(0.965, "#d8d8d2"); if (vier) { L(0.47, "#d9b23c"); L(0.53, "#d9b23c"); L(0.25, "#d8d8d2", true); L(0.75, "#d8d8d2", true); } else { L(0.485, "#d9b23c"); L(0.515, "#d9b23c"); } });
     t.wrapS = THREE.RepeatWrapping; return t; };
@@ -40,8 +40,10 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   const cross = (Gm, r, s, d0, d1, y0, y1) => { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0], k = Gm.P.length / 3;
     for (const d of [d0, d1]) for (const y of [y0, y1]) { Gm.P.push(x + nx * d, y, z + nz * d); Gm.U.push(d / 3, y / 3); } Gm.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); };
   // liegt (x, z) im Innenraum einer anderen zweistoeckigen Strasse (Kreuzung unten): dort keine Waende
-  const inOther = (x, z, me, pad = -0.2) => G.roads.some(o => { if (o === me) return false; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / LL)), s = o.s[j - 1] + t * Math.sqrt(LL);
-    if (Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t) < o.HW + pad && s > o.sA && s < o.sB) return true; } return false; });
+  const inOther = (x, z, me, pad = -0.2) => { const C = G.C, ci = Math.floor(x / C), ck = Math.floor(z / C), m = Math.ceil((17 + Math.max(0, pad)) / C);   // ueber das Raster GDECK.grid (Leistung 2026-11-13: vorher alle Punkte aller Strassen, ca. 0,4 s Laden)
+    for (let a = -m; a <= m; a++) for (let b = -m; b <= m; b++) { const L = G.grid.get(glKey(ci + a, ck + b)); if (!L) continue;
+      for (const [ri, j] of L) { const o = G.roads[ri]; if (o === me) continue; const A = o.pts[j - 1], B = o.pts[j], dx = B[0] - A[0], dz = B[1] - A[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - A[0]) * dx + (z - A[1]) * dz) / LL)), s = o.s[j - 1] + t * Math.sqrt(LL);
+        if (Math.hypot(x - A[0] - dx * t, z - A[1] - dz * t) < o.HW + pad && s > o.sA && s < o.sB) return true; } } return false; };
   let curR = null; const ring = (x, z, r, top) => { if (!inOther(x, z, curR)) circles.push([x, z, r, top]); };
   // wie sub, aber in den Trichtern alle 1 m
   const subF = (r, s0, s1) => { const Q = sub(r, s0, s1), out = []; for (let i = 0; i < Q.length; i++) { if (i) { const a = Q[i - 1], b = Q[i], n = gdeckK(r, (a[4] + b[4]) / 2) < 1 || inOther(a[0], a[1], r, 20) || inOther(b[0], b[1], r, 20) ? Math.ceil(b[4] - a[4]) : 1; for (let k = 1; k < n; k++) out.push(sub(r, a[4] + (b[4] - a[4]) * k / n, a[4] + (b[4] - a[4]) * k / n + 0.5)[0]); } out.push(Q[i]); } return out; };
