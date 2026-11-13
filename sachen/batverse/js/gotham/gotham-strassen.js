@@ -151,8 +151,19 @@ function* gstrGen() {                                                       // A
     for (const sg of [1, -1]) { band(Kies, r.pts, sg * r.w / 2, sg * (r.w / 2 + 2), ys, 2, 2, null); }
   }
   for (const r of GLAND.roads || []) for (const e of [0, r.pts.length - 1]) { const [x, z] = r.pts[e]; for (const o of GLAND.roads) { if (o === r) continue; let best = 1e9, by = 0; for (let j = 0; j < o.pts.length; j++) { const d = Math.hypot(o.pts[j][0] - x, o.pts[j][1] - z); if (d < best) { best = d; by = o.y[j]; } } if (best < o.w / 2 + 6) { const rr = Math.max(r.w, o.w) / 2 + 3, k = XL.P.length / 3; XL.P.push(x, by + 0.04, z); XL.U.push(x / 8, z / 8); for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2; XL.P.push(x + Math.cos(t) * rr, by + 0.04, z + Math.sin(t) * rr); XL.U.push((x + Math.cos(t) * rr) / 8, (z + Math.sin(t) * rr) / 8); if (a) XL.I.push(k, k + a + 1, k + a); } } } }
-  for (const [x, z, rr] of GSTR.patches) { const k = X.P.length / 3; X.P.push(x, Y + 0.06, z); X.U.push(x / 8, z / 8);
-    for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2; X.P.push(x + Math.cos(t) * rr, Y + 0.06, z + Math.sin(t) * rr); X.U.push((x + Math.cos(t) * rr) / 8, (z + Math.sin(t) * rr) / 8); if (a) X.I.push(k, k + a + 1, k + a); } }
+  // Kreuzungsflaechen: Scheibe (24 Stuecke). Liegt ein Teil ueber einer Rampenoeffnung der zweistoeckigen Strassen (gdeckOpen), wird die Scheibe aus feinen
+  // Ringen gebaut (ca. 0,5 m) und die Stuecke ueber der Oeffnung fallen weg (Nicolas 2026-11-13: Kreise ragten bei [-978, 1286] in die Luft ueber der Rampe)
+  for (const [x, z, rr] of GSTR.patches) {
+    let cut = false; for (let ri = 1; ri <= 4 && !cut; ri++) for (let a = 0; a < 24; a++) { const t = a / 24 * Math.PI * 2; if (gdeckOpen(x + Math.cos(t) * rr * ri / 4, z + Math.sin(t) * rr * ri / 4)) { cut = true; break; } }
+    if (!cut) { const k = X.P.length / 3; X.P.push(x, Y + 0.06, z); X.U.push(x / 8, z / 8);
+      for (let a = 0; a <= 24; a++) { const t = a / 24 * Math.PI * 2; X.P.push(x + Math.cos(t) * rr, Y + 0.06, z + Math.sin(t) * rr); X.U.push((x + Math.cos(t) * rr) / 8, (z + Math.sin(t) * rr) / 8); if (a) X.I.push(k, k + a + 1, k + a); }
+      continue; }
+    const NR = Math.max(2, Math.ceil(rr / 0.5)), NA = Math.max(24, Math.ceil(Math.PI * 2 * rr / 0.5)), k = X.P.length / 3;
+    X.P.push(x, Y + 0.06, z); X.U.push(x / 8, z / 8);
+    for (let i = 1; i <= NR; i++) for (let a = 0; a < NA; a++) { const t = a / NA * Math.PI * 2, q = rr * i / NR, px = x + Math.cos(t) * q, pz = z + Math.sin(t) * q; X.P.push(px, Y + 0.06, pz); X.U.push(px / 8, pz / 8); }
+    const V = (i, a) => i === 0 ? k : k + 1 + (i - 1) * NA + (a % NA), at = (i, a) => [x + Math.cos((a + 0.5) / NA * Math.PI * 2) * rr * (i + 0.5) / NR, z + Math.sin((a + 0.5) / NA * Math.PI * 2) * rr * (i + 0.5) / NR];
+    for (let i = 0; i < NR; i++) for (let a = 0; a < NA; a++) { if (gdeckOpen(...at(i, a))) continue;
+      if (i === 0) X.I.push(k, V(1, a + 1), V(1, a)); else X.I.push(V(i, a), V(i, a + 1), V(i + 1, a + 1), V(i, a), V(i + 1, a + 1), V(i + 1, a)); } }
   // Rand der Kreuzungsflaechen: Bordstein im Bogen, wo dahinter Gehsteig liegt (nicht ueber Fahrbahnen, nicht in einer anderen Kreuzungsflaeche)
   const inOtherPatch = (x, z, me) => { const ci = Math.floor(x / PC), ck = Math.floor(z / PC); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const L = pgrid.get(key(ci + a, ck + b)); if (L) for (const p of L) if (p !== me && Math.hypot(p[0] - x, p[1] - z) < p[2]) return true; } return false; };
   let pi = 0; for (const p of GSTR.patches) { if (++pi % 20 === 0) yield; const [cx, cz, rr] = p, na = Math.max(12, Math.ceil(Math.PI * 2 * rr / 0.6)); let prev = null;
