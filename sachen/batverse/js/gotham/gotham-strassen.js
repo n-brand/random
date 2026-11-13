@@ -185,6 +185,14 @@ function* gstrGen() {                                                       // A
         for (const d of [rr + 0.3, rr + 4.5]) { const [x, z] = fixA(cx + c * d, cz + sn * d); W.P.push(x, Y + RS - 0.004, z); W.U.push(x / 2, z / 2); }
         if (prev && !(bad && prev.bad)) W.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);
         prev = { k, bad }; } } }
+  // Kaikante (Nicolas 2026-11-13, -1089/1919: "strasse ist in der luft"): Fahrbahn, Gehsteig, Bordstein und Kreuzungsflaechen ragten an 22 Stellen ueber
+  // die Kaimauer hinaus (ueber dem Kies 20 m tiefer). Jeder Punkt der Insel-Netze, der weniger als 1 m innerhalb der Uferlinie liegt, wird dorthin
+  // zurueckgeschoben (Richtung aus der Ableitung von edgeSD); nicht an Brueckenenden (40 m) und nicht auf dem Festland (weiter als 20 m draussen)
+  { const LIM = -1, brE = GOTHAM_STADT.bruecken.flatMap(b => [b.pts[0], b.pts[b.pts.length - 1]].map(([x, z]) => GOT.toGame(x, z)));
+    const kaiFix = (x, z) => { for (let it = 0; it < 4; it++) { const sd = GOT.edgeSD(x, z); if (sd <= LIM || sd > 20) break; if (brE.some(b => Math.hypot(b[0] - x, b[1] - z) < 40)) break;
+      const gx = GOT.edgeSD(x + 0.5, z) - GOT.edgeSD(x - 0.5, z), gz = GOT.edgeSD(x, z + 0.5) - GOT.edgeSD(x, z - 0.5), gl = Math.hypot(gx, gz) || 1; x -= gx / gl * (sd - LIM + 0.02); z -= gz / gl * (sd - LIM + 0.02); } return [x, z]; };
+    let nk = 0; for (const G of [A4, A2, A0, PZG, W, K, KF, X]) { const P = G.P; for (let i = 0; i < P.length; i += 3) { const sd = GOT.edgeSD(P[i], P[i + 2]); if (sd > LIM && sd < 20) { const [x, z] = kaiFix(P[i], P[i + 2]); if (x !== P[i] || z !== P[i + 2]) nk++; P[i] = x; P[i + 2] = z; } } yield; }
+    GSTR.kaiFixed = nk; }
   }   // Ende: nur ohne Zwischenspeicher
   yield;
   const kerb = M(0xc9c6bf, { roughness: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 });
