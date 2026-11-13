@@ -11,7 +11,16 @@
 // und auf anderen Fahrbahnen aus. Gehsteige liegen 15 cm hoeher (Bordstein, auch begehbar: GSTR.walkAt), sonst Boden = Strassenebene (-12).
 // Aufbau ca. 0,3 s: nicht beim Start, sondern einmal danach im Kachel-Zeitplan (gstrBuild), Gotham ist beim Start ohnehin weit weg.
 const GSTR = { roads: [], patches: [], done: false, RAISE: 0.15, walkAt: null };   // RAISE: Gehsteig ueber der Fahrbahn (Bordstein 15 cm)
+async function gstrCacheLoad(ck) {
+  try { if (!window.TH_DB || !window.TH_HASH) throw 0;
+    const t = await (await fetch(document.querySelector('script[src$="gotham/gotham-strassen.js"]').src)).text(); let h = 2166136261; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619);
+    ck.key = TH_HASH + "-" + (h >>> 0).toString(36);
+    const rec = await new Promise(ok => { const rq = TH_DB.transaction("cache").objectStore("cache").get("GSTR"); rq.onsuccess = () => ok(rq.result); rq.onerror = () => ok(null); });
+    if (rec && rec.key === ck.key && Array.isArray(rec.meshes)) ck.data = rec.meshes;
+  } catch (e) {} ck.state = 1;
+}
 function* gstrGen() {                                                       // Aufbau in Etappen (yield = hier darf pausiert werden), Leistung 2026-11-13
+  const ck = { state: 0, data: null, key: null }; gstrCacheLoad(ck);
   const S = GOTHAM_STADT, Y = GOT.STR, toG = ([x, z]) => GOT.toGame(x, z);
   const resample = (P, st) => { const out = [P[0]]; for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], l = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(l / st));
     for (let k = 1; k <= n; k++) out.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); } return out; };
@@ -59,14 +68,20 @@ function* gstrGen() {                                                       // A
       for (const [rk, k] of L) { if (rk <= ri) continue; const o = GSTR.roads[rk], q = cross(a, b, o.pts[k - 1], o.pts[k]); if (q) addPatch(q[0], q[1], Math.max(r.w, o.w) / 2 + 2); } }
     for (const e of [r.pts[0], r.pts[r.pts.length - 1]]) { const o = onOther(e[0], e[1], ri, 1); if (o) addPatch(e[0], e[1], Math.max(r.w, o.kind === "haupt" ? r.w : o.w) / 2 + 2); }
   }
+  // Zwischenspeicher (Leistung 2026-11-13): fertige Netze aus IndexedDB, wenn sich weder die Dateien bis gelaende.js (TH_HASH, enthaelt Stadtdaten
+  // und Festlandstrassen) noch diese Datei geaendert haben; dann entfaellt die ganze Geometrie-Rechnung (ca. 2 s in Etappen)
+  while (!ck.state) yield;
+  const CACHED = ck.data;
   // Gehsteige und Bordsteine (Nicolas 2026-11-12: Loecher an Kreuzungsecken, Bordstein als Erhoehung): an Kreuzungen und Einmuendungen alle 2 m
   // statt 4 m abgetastet (sonst enden sie in 4-m-Stufen und lassen Wiesenecken frei)
   const inPatch = (x, z) => !!nearPatch(x, z, 0);
+  if (!CACHED) {
   for (let ri = 0; ri < GSTR.roads.length; ri++) { const r = GSTR.roads[ri], F = [r.pts[0]]; if (ri % 15 === 14) yield;
     for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
       const fine = [a, b].some(p => nearPatch(p[0], p[1], 10) || onOtherW(p[0], p[1], ri, r.walk + 3)), n = fine ? Math.max(1, Math.ceil(l / 2)) : 1;   // an Kreuzungen alle 2 m (1 m war doppelt so viele Punkte, kaum sichtbar besser)
       for (let k = 1; k <= n; k++) F.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
     r.fine = F; }
+  }   // Ende: nur ohne Zwischenspeicher
   // Texturen: Asphalt (Koernung), Linien quer zur Fahrbahn (v 0..1 = linker bis rechter Rand), 12 m je Wiederholung laengs
   // Koernung direkt in die Pixel (vorher 5000 einzelne Rechtecke mit Farbwechsel, ca. 50 ms je Textur)
   const asph = (c, w, h) => { const im = c.createImageData(w, h), d = im.data; for (let i = 0; i < w * h; i++) { const k = Math.random() < 0.15, v = k ? 45 + Math.random() * 30 : 59 + (Math.random() - 0.5) * 6; d[i * 4] = v; d[i * 4 + 1] = v + 2; d[i * 4 + 2] = v + 5; d[i * 4 + 3] = 255; } c.putImageData(im, 0, 0); };
@@ -102,9 +117,16 @@ function* gstrGen() {                                                       // A
       if (prev !== null && (fix ? !(bad && prev.bad) : !bad && !prev.bad)) G.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);   // mit fix: nur ganz innen liegende Vierecke weg
       prev = { k, bad }; }
   }
-  const make = (G, m, name) => { if (!G.I.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(G.P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(G.U, 2)); g.setIndex(G.I); g.computeVertexNormals(); g.computeBoundingSphere();
-    return gsplit(g, m, name, { free: /Gehsteige|Bordstein|Bankett/.test(name) }); };   // in Zellen, weit weg ausgeblendet; Gehsteige/Bordsteine ohne JS-Kopie
-  const A4 = geo(), A2 = geo(), A0 = geo(), W = geo(), K = geo(), X = geo(), KF = geo(), RS = GSTR.RAISE;   // Bordsteinkante eigenes Netz (Normalen in zwei Etappen statt einer langen)
+  // Netz bauen: aus dem Zwischenspeicher (gleicher Name) oder aus den berechneten Baendern; berechnete Daten werden fuer den Speicher gemerkt
+  const SAVE = [];
+  const make = (G, m, name) => { const c = CACHED && CACHED.find(e => e.name === name); let P, U, I, N;
+    if (c) ({ P, U, I, N } = c); else { if (!G.I.length) return null; P = new Float32Array(G.P); U = new Float32Array(G.U); I = P.length / 3 > 65535 ? new Uint32Array(G.I) : new Uint16Array(G.I); }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(P, 3)); g.setAttribute("uv", new THREE.BufferAttribute(U, 2)); g.setIndex(new THREE.BufferAttribute(I, 1));
+    if (N) g.setAttribute("normal", new THREE.BufferAttribute(N, 3)); else { g.computeVertexNormals(); N = g.attributes.normal.array; } g.computeBoundingSphere();
+    if (!c) SAVE.push({ name, P, U, I, N });
+        return gsplit(g, m, name, { free: /Gehsteige|Bordstein|Bankett/.test(name) }); };   // in Zellen, weit weg ausgeblendet; Gehsteige/Bordsteine ohne JS-Kopie
+  const A4 = geo(), A2 = geo(), A0 = geo(), W = geo(), K = geo(), X = geo(), KF = geo(), Kies = geo(), XL = geo(), RS = GSTR.RAISE;   // Bordsteinkante eigenes Netz (Normalen in zwei Etappen statt einer langen)
+  if (!CACHED) {   // ohne Zwischenspeicher: Geometrie berechnen (teuer, ca. 2 s in Etappen)
   // Punkt auf einer anderen Fahrbahn (nicht ri) oder Kreuzungsflaeche -> auf deren Rand schieben (ri -1: alle Strassen)
   const mkFix = ri => (x, z) => { for (let it = 0; it < 3; it++) { let moved = false;
       const pc = nearPatch(x, z, 0); if (pc) { const dx = x - pc[0], dz = z - pc[1], l = Math.hypot(dx, dz) || 1; x = pc[0] + dx / l * (pc[2] + 0.01); z = pc[1] + dz / l * (pc[2] + 0.01); moved = true; }
@@ -123,7 +145,7 @@ function* gstrGen() {                                                       // A
     for (const sg of [1, -1]) { band(W, r.fine, sg * (r.w / 2 + 0.3), sg * (r.w / 2 + r.walk), Y + RS, 2, 2, inO, fix); band(K, r.fine, sg * r.w / 2, sg * (r.w / 2 + 0.3), Y + RS + 0.002, 2, 1, inO, fix); vband(KF, r.fine, sg * r.w / 2, Y + 0.04, Y + RS, inO, fix); }
   }
   // G2d: Festlandstrassen (GLAND aus gotham-gelaende.js): Fahrbahn mit Markierung auf dem Hoehenverlauf, 2 m Bankett aus Kies, Kreuzungen zwischen ihnen als Asphaltflaechen auf ihrer Hoehe
-  const Kies = geo(), XL = geo();
+
   for (const r of GLAND.roads || []) { const yr = Array.from(r.y, v => v + 0.02), ys = Array.from(r.y, v => v - 0.02);
     band(r.w >= 12.5 ? A4 : A2, r.pts, r.w / 2, -r.w / 2, yr, 12, 0, null);
     for (const sg of [1, -1]) { band(Kies, r.pts, sg * r.w / 2, sg * (r.w / 2 + 2), ys, 2, 2, null); }
@@ -148,6 +170,7 @@ function* gstrGen() {                                                       // A
         for (const d of [rr + 0.3, rr + 4.5]) { const [x, z] = fixA(cx + c * d, cz + sn * d); W.P.push(x, Y + RS - 0.004, z); W.U.push(x / 2, z / 2); }
         if (prev && !(bad && prev.bad)) W.I.push(prev.k, k, prev.k + 1, prev.k + 1, k, k + 1);
         prev = { k, bad }; } } }
+  }   // Ende: nur ohne Zwischenspeicher
   yield;
   const kerb = M(0xc9c6bf, { roughness: 0.9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5 });
   // Netze einzeln bauen, dazwischen pausieren (Normalen der grossen Netze kosten je bis ca. 0,1 s)
@@ -161,6 +184,7 @@ function* gstrGen() {                                                       // A
   GSTR.meshes.push(make(K, kerb, "Gotham-Bordsteine")); yield;
   GSTR.meshes.push(make(KF, kerb, "Gotham-Bordsteinkanten")); yield;
   GSTR.meshes.push(make(X, mat(plain, 3), "Gotham-Kreuzungen")); yield;
+  if (!CACHED && ck.key && SAVE.length && window.TH_DB) setTimeout(() => { try { TH_DB.transaction("cache", "readwrite").objectStore("cache").put({ key: ck.key, meshes: SAVE }, "GSTR"); } catch (e) {} }, 2000);
   GSTR.onRoad = (x, z, pad = 0) => !!onOther(x, z, -1, pad);                // fuer spaeter (Fuellbauten, Verkehr)
   // auf einem Gehsteig (nicht auf einer Fahrbahn oder Kreuzungsflaeche): dort ist der Boden GSTR.RAISE hoeher (groundAt in laufen.js)
   GSTR.walkAt = (x, z) => !onOther(x, z, -1, 0) && !inPatch(x, z) && !!onOtherW(x, z, -1, 0);
