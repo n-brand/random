@@ -78,14 +78,6 @@ function gstrBuild() {
   const geo = () => ({ P: [], U: [], I: [] });
   // Band entlang der Linie zwischen den seitlichen Abstaenden d0 und d1 (links positiv); skip(x, z) laesst Vierecke aus; uv: u laengs/rep, v quer (0..1 oder Meter/vrep)
   function band(G, P, d0, d1, y, rep, vrep, skip, fix) {
-    // ohne fix: an jedem Wechsel ausgelassen/gezeichnet einen Punkt genau auf die Grenze setzen (Nicolas 2026-11-13, Bild: vor der Rampe fehlten bis 7 m
-    // Fahrbahn, man sah die Unterseite der Platte), Grenze per Halbierung auf ca. 1 cm, der neue Punkt liegt auf der gezeichneten Seite
-    if (skip && !fix && typeof y === "number") { const Q = [P[0]], mid = p => skip(p[0], p[1]);   // nur fuer Baender symmetrisch zur Linie (d0 = -d1)
-      for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], ba = mid(a), bb = mid(b);
-        if (ba !== bb) { let lo = 0, hi = 1; for (let k = 0; k < 12; k++) { const t = (lo + hi) / 2, p = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; if (mid(p) === ba) lo = t; else hi = t; }
-          const t = ba ? hi : lo; Q.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
-        Q.push(b); }
-      P = Q; }
     const n = P.length, N = P.map((p, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [-dz / l, dx / l]; });
     let s = 0, prev = null;
     for (let i = 0; i < n; i++) { if (i) s += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
