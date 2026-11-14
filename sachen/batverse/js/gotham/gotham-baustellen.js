@@ -6,7 +6,8 @@
 // reich = zwei Container, aufgeraeumt; arm = ein Container, ein Haufen mehr, Zaun mit Luecken. Hoechstens ca. 100 Dreiecke je Baustelle,
 // je Material ein Netz, in 768-m-Zellen (gsplit, weit weg ausgeblendet). Zufall fest aus der ID-Nummer.
 // Aufbau nach dem Start als Kachel-Aufgabe (nach den Strassen: das Tor sucht GSTR.onRoad), Zwischenspeicher IndexedDB "GBST".
-const GBST = { list: [], done: false, Y: GOT.STR, maxTris: 0 };
+const GBST = { list: [], done: false, Y: GOT.STR, maxTris: 0, CC: 128, cells: null, live: new Map() };
+const gbstCKey = (i, k) => i * 100000 + k;
 async function gbstCacheLoad(ck) {
   try { if (!window.TH_DB || !window.TH_HASH) throw 0;
     const hash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619); return (h >>> 0).toString(36); };
@@ -14,7 +15,7 @@ async function gbstCacheLoad(ck) {
     const [a, b] = await Promise.all([src("gotham/gotham-baustellen.js"), src("gotham/stadt.js")]);
     ck.key = TH_HASH + "-" + hash(a) + "-" + hash(b);
     const rec = await new Promise(ok => { const rq = TH_DB.transaction("cache").objectStore("cache").get("GBST"); rq.onsuccess = () => ok(rq.result); rq.onerror = () => ok(null); });
-    if (rec && rec.key === ck.key && Array.isArray(rec.meshes) && Array.isArray(rec.gates) && Array.isArray(rec.ins)) ck.data = rec;
+    if (rec && rec.key === ck.key && Array.isArray(rec.meshes) && Array.isArray(rec.gates) && Array.isArray(rec.ins) && Array.isArray(rec.fences)) ck.data = rec;
   } catch (e) {} ck.state = 1;
 }
 // Liste aller Baustellen (schnell, immer gerechnet: IDs und Register sind mit und ohne Zwischenspeicher gleich)
@@ -108,6 +109,7 @@ function* gbstGen(useCache = true) {
       // Erde (6 cm ueber der Strasse, ueber der Deckplatte zweistoeckiger Strassen), UV in Metern (Textur 8 m)
       { const c = b.poly.map(([x, z]) => [x, Y + 0.06, z]); quad(A.erde, c[0], c[3], c[2], c[1], [0, 1, 0], b.poly.map(([x, z]) => [x / 8, z / 8])); }
       // Zaun: vier Seiten, Tor 5 m mittig auf der Torseite; arm: Felder (ca. 6 m) mit 25 % Luecken
+      b.fence = [];
       gbstSides(F).forEach((sd, k) => {
         const len = Math.hypot(sd[2] - sd[0], sd[3] - sd[1]), segs = [];
         if (k === b.gate && len > 7) segs.push([0, len / 2 - 2.5], [len / 2 + 2.5, len]); else segs.push([0, len]);
@@ -115,6 +117,7 @@ function* gbstGen(useCache = true) {
           for (let f = 0; f < nf; f++) { if (poor && nf > 1 && r() < 0.25) continue;
             const u0 = a0 + (a1 - a0) * f / nf, u1 = a0 + (a1 - a0) * (f + 1) / nf, p = t => F.at(sd[0] + (sd[2] - sd[0]) * t / len, sd[1] + (sd[3] - sd[1]) * t / len);
             const [x0, z0] = p(u0), [x1, z1] = p(u1), nx = -(z1 - z0), nz = x1 - x0, nl = Math.hypot(nx, nz) || 1;
+            b.fence.push([x0, z0, x1, z1]);
             quad(A.zaun, [x0, Y, z0], [x1, Y, z1], [x1, Y + 2, z1], [x0, Y + 2, z0], [nx / nl, 0, nz / nl], [[u0 / 3, 0], [u1 / 3, 0], [u1 / 3, 1], [u0 / 3, 1]]); } }
       });
       // Container und Stapel auf freien Plaetzen (lokal s/t), weg vom Tor
@@ -138,9 +141,11 @@ function* gbstGen(useCache = true) {
       if (++n % 40 === 0) yield;
     }
     D = Object.keys(NAMES).map(k => ({ k, p: new Float32Array(A[k].p), n: new Float32Array(A[k].n), uv: new Float32Array(A[k].uv), c: A[k].c.length ? new Float32Array(A[k].c) : null }));
-    if (ck.key && window.TH_DB) setTimeout(() => { try { TH_DB.transaction("cache", "readwrite").objectStore("cache").put({ key: ck.key, meshes: D, gates: GBST.list.map(b => b.gate), ins: GBST.list.map(b => b.ins), conts: GBST.list.map(b => b.cont) }, "GBST"); } catch (e) {} }, 2500);
+    if (ck.key && window.TH_DB) setTimeout(() => { try { TH_DB.transaction("cache", "readwrite").objectStore("cache").put({ key: ck.key, meshes: D, gates: GBST.list.map(b => b.gate), ins: GBST.list.map(b => b.ins), conts: GBST.list.map(b => b.cont), fences: GBST.list.map(b => b.fence) }, "GBST"); } catch (e) {} }, 2500);
   }
-  if (CACHED && ck.data.conts) GBST.list.forEach((b, i) => { b.cont = ck.data.conts[i] || []; });
+  if (CACHED) GBST.list.forEach((b, i) => { b.cont = ck.data.conts[i] || []; b.fence = ck.data.fences[i] || []; });
+  // Zellen fuer die Kollision (GBST.CC, Mitte der Baustelle)
+  GBST.cells = new Map(); for (const b of GBST.list) { const k = gbstCKey(Math.floor(b.cx / GBST.CC), Math.floor(b.cz / GBST.CC)); if (!GBST.cells.has(k)) GBST.cells.set(k, []); GBST.cells.get(k).push(b); }
   GBST.meshes = [];
   for (const d of D) { const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(d.p, 3)); g.setAttribute("normal", new THREE.BufferAttribute(d.n, 3)); g.setAttribute("uv", new THREE.BufferAttribute(d.uv, 2));
@@ -151,3 +156,25 @@ function* gbstGen(useCache = true) {
 function gbstBuild() { if (!GSTR.done) gstrBuild(); for (const _ of gbstGen(false)); GBST.done = true; }   // Tests: alles auf einmal, ohne Zwischenspeicher
 TILES.tasks.push({ gen: null, plan() {}, step() { if (GBST.done || TILES.startup || !TILES.frame || TILES.frame < 40) return false;
   if (!this.gen) this.gen = gbstGen(); const t0 = performance.now(); while (performance.now() - t0 < 6) if (this.gen.next().done) { GBST.done = true; this.gen = null; return false; } return false; } });
+
+// ---- Kollision nur in der Naehe (Nicolas 2026-11-14 "Nur in der Naehe", Task 6) ----
+// Zaun und Container sind fest, aber nur fuer Baustellen in der 128-m-Zelle des Spielers bzw. aktiven Fahrzeugs und den 8 Nachbarzellen
+// (Zusatzraster COLL.cellsX, collAdd/collRemove; solids/circles bleiben unberuehrt). Je Bild hoechstens eine Zelle anlegen oder entfernen (Anlegen zuerst);
+// die Nachbarn sind immer schon da (mind. 128 m Vorlauf, Baustellen reichen hoechstens ca. 40 m ueber ihre Zelle hinaus).
+// Gedrehte Kanten als Kette kleiner achsparalleler Quader (0,5 x 0,5 m alle 0,4 m), Hoehe Strasse - 0,2 bis Oberkante (nicht auf der unteren Strasse).
+// Haufen und Stapel ohne Kollision. Container: Quader 0,3 m innerhalb der sichtbaren Wand (Regel Barrieren weiter innen).
+function gbstColl(b) {
+  const Y = GBST.Y, S = [], h = 0.25, chain = (x0, z0, x1, z1, top) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.ceil(L / 0.4));
+    for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, z = z0 + (z1 - z0) * i / n; S.push({ x0: x - h, x1: x + h, y0: Y - 0.2, y1: top, z0: z - h, z1: z + h, on: true }); } };
+  for (const [x0, z0, x1, z1] of b.fence || []) chain(x0, z0, x1, z1, Y + 2);
+  for (const [x, z, ux, uz, l, w] of b.cont || []) { const vx = -uz, vz = ux, a = l / 2 - 0.3, c = w / 2 - 0.3, P = (s, t) => [x + ux * s + vx * t, z + uz * s + vz * t];
+    const q = [P(-a, -c), P(a, -c), P(a, c), P(-a, c)]; for (let k = 0; k < 4; k++) chain(q[k][0], q[k][1], q[(k + 1) % 4][0], q[(k + 1) % 4][1], Y + 2.6); }
+  return { S, C: [] };
+}
+function gbstCollStep() {
+  if (!GBST.done || !GBST.cells) return;
+  const px = CAR && CAR.on ? CAR.x : player.pos.x, pz = CAR && CAR.on ? CAR.z : player.pos.z, ci = Math.floor(px / GBST.CC), ck = Math.floor(pz / GBST.CC), want = new Set();
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const k = gbstCKey(ci + a, ck + b); if (GBST.cells.has(k)) want.add(k); }
+  for (const k of want) if (!GBST.live.has(k)) { const parts = GBST.cells.get(k).map(gbstColl); for (const p of parts) collAdd(p.S, p.C); GBST.live.set(k, parts); return; }
+  for (const [k, parts] of GBST.live) if (!want.has(k)) { for (const p of parts) collRemove(p.S, p.C); GBST.live.delete(k); return; }
+}

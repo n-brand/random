@@ -122,7 +122,7 @@ const S = (x0, x1, y0, y1, z0, z1, on = true) => { const s = { x0, x1, y0, y1, z
 // Kollisions-Raster (Plan K2, 2026-11-11): Quader und Kreise in 16-m-Zellen, Abfragen pruefen nur die Zellen im gesuchten Rechteck statt aller.
 // Wird beim ersten Abfragen und immer wenn solids/circles laenger werden neu aufgebaut. Lage (x/z) eines Eintrags darf sich danach nicht aendern,
 // Hoehe (y0/y1, top) und on schon. Bewegte Kreise (Fahrzeuge, c.dyn = true) stehen in einer eigenen Liste und gelten immer. Riesige Quader (> 256 Zellen) ebenso.
-const COLL = { cs: 16, cells: new Map(), bigS: [], dynC: [], nS: -1, nC: -1, q: 0 };
+const COLL = { cs: 16, cells: new Map(), cellsX: new Map(), bigS: [], dynC: [], nS: -1, nC: -1, q: 0 };
 const collKey = (i, k) => (i + 32768) * 65536 + (k + 32768);
 function collBuild() {
   const { cs, cells } = COLL; cells.clear(); COLL.bigS = []; COLL.dynC = [];
@@ -133,14 +133,21 @@ function collBuild() {
   for (const c of circles) if (c.dyn) COLL.dynC.push(c); else put(c, c[0] - c[2], c[0] + c[2], c[1] - c[2], c[1] + c[2], 1);
   COLL.nS = solids.length; COLL.nC = circles.length;
 }
+// Zusatzraster (Baustellen 2026-11-14): Teile, die nur zeitweise gelten (Kollision nur in der Naehe des Spielers). Sie stehen NICHT in solids/circles
+// (kein collBuild), sondern nur in COLL.cellsX; collAdd legt an, collRemove entfernt dieselben Objekte wieder.
+function collAddX(o, x0, x1, z0, z1, t, add) { const cs = COLL.cs, X = COLL.cellsX;
+  for (let i = Math.floor(x0 / cs), i1 = Math.floor(x1 / cs); i <= i1; i++) for (let k = Math.floor(z0 / cs), k1 = Math.floor(z1 / cs); k <= k1; k++) { const key = collKey(i, k);
+    let c = X.get(key); if (add) { if (!c) X.set(key, c = [[], []]); c[t].push(o); } else if (c) { const L = c[t], j = L.indexOf(o); if (j >= 0) { L[j] = L[L.length - 1]; L.pop(); } if (!c[0].length && !c[1].length) X.delete(key); } } }
+function collAdd(S = [], C = []) { for (const s of S) collAddX(s, s.x0, s.x1, s.z0, s.z1, 0, true); for (const c of C) collAddX(c, c[0] - c[2], c[0] + c[2], c[1] - c[2], c[1] + c[2], 1, true); }
+function collRemove(S = [], C = []) { for (const s of S) collAddX(s, s.x0, s.x1, s.z0, s.z1, 0, false); for (const c of C) collAddX(c, c[0] - c[2], c[0] + c[2], c[1] - c[2], c[1] + c[2], 1, false); }
 // Alle Quader [0] und Kreise [1], die das Rechteck x0..x1 / z0..z1 beruehren koennten (neue Listen, ohne Doppelte)
 function collNear(x0, x1, z0, z1) {
   if (COLL.nS !== solids.length || COLL.nC !== circles.length) collBuild();
   const { cs, cells } = COLL, q = ++COLL.q, S1 = COLL.bigS.slice(), C1 = COLL.dynC.slice();
   for (let i = Math.floor(x0 / cs), i1 = Math.floor(x1 / cs); i <= i1; i++) for (let k = Math.floor(z0 / cs), k1 = Math.floor(z1 / cs); k <= k1; k++) {
-    const c = cells.get(collKey(i, k)); if (!c) continue;
-    for (const s of c[0]) if (s._q !== q) { s._q = q; S1.push(s); }
-    for (const o of c[1]) if (o._q !== q) { o._q = q; C1.push(o); }
+    for (const c of [cells.get(collKey(i, k)), COLL.cellsX.size ? COLL.cellsX.get(collKey(i, k)) : null]) { if (!c) continue;
+      for (const s of c[0]) if (s._q !== q) { s._q = q; S1.push(s); }
+      for (const o of c[1]) if (o._q !== q) { o._q = q; C1.push(o); } }
   }
   return [S1, C1];
 }
