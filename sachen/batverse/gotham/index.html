@@ -311,7 +311,7 @@
     for (const s of NEBEN) markLine(s.pts, s.w / 2 + 3, 1);
 
     // ---------- Fuellbauten entlang aller Strassen, dann in die Blockinnenraeume ----------
-    const BUILD = [];
+    const BUILD = [], VORPLATZ = [];
     const sizeFor = (b, x, z) => { const w = b ? b.wohlstand : .5, fab = b && /Fabrik/.test(b.name);
       if (fab) return [rr(40, 90), rr(30, 60), rr(9, 18)];
       if (w > .8) return [rr(28, 55), rr(26, 48), 30 + Math.pow(rnd(), 1.6) * 220];
@@ -340,6 +340,15 @@
         if (rectFree(x, z, w2, d2, ux, uz)) { BUILD.push({ c: rectCorners(x, z, w2, d2, ux, uz), h: h * .7 }); markRect(x, z, w2, d2, ux, uz, 0.8); }
       }
     }
+    // Vorplatz und freier Rand (Wayne Tower, Nicolas 2026-11-14): Fuellbauten dort NACH dem Erzeugen entfernen (vorher belegt, wuerden sich alle
+    // folgenden Fuellbauten verschieben und neue IDs bekommen). Nebenstrassen bleiben unberuehrt.
+    { const SD = { n: [0, -1], s: [0, 1], o: [1, 0], w: [-1, 0] }, rects = [];
+      for (const o of G.orte) { if (o.frei) rects.push([o.x - o.w / 2 - o.frei, o.x + o.w / 2 + o.frei, o.z - o.d / 2 - o.frei, o.z + o.d / 2 + o.frei]);
+        if (o.vorplatz) { const [ux, uz] = SD[o.vorplatz.seite], t = o.vorplatz.tiefe, hw = o.w / 2, hd = o.d / 2;
+          rects.push(ux ? [ux > 0 ? o.x + hw : o.x - hw - t, ux > 0 ? o.x + hw + t : o.x - hw, o.z - hd, o.z + hd] : [o.x - hw, o.x + hw, uz > 0 ? o.z + hd : o.z - hd - t, uz > 0 ? o.z + hd + t : o.z - hd]);
+          VORPLATZ.push(rects[rects.length - 1]); } }
+      const hits = (q, [x0, x1, z0, z1]) => { if (q.c.some(([x, z]) => x >= x0 && x <= x1 && z >= z0 && z <= z1)) return true; for (let x = x0; x <= x1; x += 1) for (let z = z0; z <= z1; z += 1) if (inPoly(x, z, q.c)) return true; return false; };
+      for (let i = BUILD.length - 1; i >= 0; i--) if (rects.some(r => hits(BUILD[i], r))) BUILD.splice(i, 1); }
     // Klare ID je Fuellbau (Nicolas 2026-11-12): FB-0001 … in Erzeugungsreihenfolge (fester Zufallsstart, also gleich bei jedem Laden; aendern sich
     // Strassen oder Bezirke, verschieben sich die Nummern). Klick auf einen Fuellbau zeigt und kopiert die ID mit dem Punkt.
     // Feste IDs (Nicolas 2026-11-14, Plan Baustellen und Gebaeude-IDs): Bezug ist die bisherige stadt.js (GOTHAM_STADT.fuell). Ein Fuellbau bekommt die
