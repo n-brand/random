@@ -35,7 +35,7 @@ function bautRay(o, d) {
 function bautHoverStep() {
   if (BHOV.off || !BHOV.el) return;
   const orbit = !walking, geist = ghost;
-  if (!(orbit || geist) || BHOV.down || document.body.classList.contains("paused") || (orbit && BHOV.mx < 0)) return bautHoverShow(null);
+  if (!(orbit || geist) || BHOV.down || document.body.classList.contains("paused") || (orbit && BHOV.mx < 0)) { BHOV.moved = true; return bautHoverShow(null); }
   const now = performance.now(); if (now - BHOV.t < 125) return;
   const camMoved = BHOV.cam.distanceToSquared(camera.position) > 0.01 || BHOV.q.angleTo(camera.quaternion) > 0.002;
   if (!BHOV.moved && !camMoved) return;

@@ -30,6 +30,8 @@ const tallCircle = (x, z, r, y0, y1) => { for (let t = y0 + 6; t < y1 + 6; t += 
     L += ext;
     const at = s => [a[0] + ux * s, a[1] + uz * s], half = b.w / 2 + 2.5, br = { name: b.name, a, ux, uz, nx, nz, L, half, w: b.w };
     GBR.list.push(br);
+    { const q = half + 3.2, id = "GO-BR-" + b.name.split(" (")[0].replace(/^Gotham-/, "").replace(/-?[Bb]rücke$/, "").toUpperCase().replace(/Ü/g, "UE").replace(/Ä/g, "AE").replace(/Ö/g, "OE").replace(/[^A-Z0-9]+/g, "-");   // Gebaeude-ID (bauten.js)
+      bautAdd({ id, name: b.name, art: "Brücke", poly: [[-q, 0], [q, 0], [q, L], [-q, L]].map(([d, s]) => [a[0] + ux * s + nx * d, a[1] + uz * s + nz * d]), y0: GOT.WY - 2, y1: Y + 64, info: Math.round(L) + " m" }); }
     // Fahrbahn: Stahlkasten, darauf Asphalt (mit Markierung) und Gehwege
     const [cx, cz] = at(L / 2);
     boxAtW(half * 2, 3, L, dark, cx, Y - 1.55, cz, rot);

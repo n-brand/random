@@ -55,6 +55,7 @@ function buildGate(C, U, name, gy, wing = 16, house = true) {
   if (house) {
   const hx0 = 2.2, hx1 = 6.4, hz1 = zc - OPEN - 4.6, hz0 = hz1 - 4.4, T = 0.4;
   const hg = Math.max(...[[hx0, hz0], [hx1, hz0], [hx0, hz1], [hx1, hz1]].map(([x, z]) => tH(x, z))), fy = hg + 0.2, top = fy + 2.8, xm = (hx0 + hx1) / 2, zm = (hz0 + hz1) / 2;
+  bautAdd({ id: "WM-TORHAUS", name: "Torhaus (" + name + ")", art: "Torhaus", poly: [[hx0, hz0], [hx1, hz0], [hx1, hz1], [hx0, hz1]].map(([x, z]) => toW(x, z)), y0: hg - 0.5, y1: top + 2 });   // Gebaeude-ID (bauten.js)
   B(hx0 - 0.15, hx1 + 0.15, hg - 1.2, fy, hz0 - 0.15, hz1 + 0.15, capM);
   B(hx0, xm - 0.55, fy, top, hz1 - T, hz1, stoneM); B(xm + 0.55, hx1, fy, top, hz1 - T, hz1, stoneM); B(xm - 0.55, xm + 0.55, fy + 2.15, top, hz1 - T, hz1, stoneM);   // Strassenseite mit Tuer
   B(hx0, xm - 0.7, fy, top, hz0, hz0 + T, stoneM); B(xm + 0.7, hx1, fy, top, hz0, hz0 + T, stoneM); B(xm - 0.7, xm + 0.7, fy, fy + 1.0, hz0, hz0 + T, stoneM); B(xm - 0.7, xm + 0.7, fy + 1.9, top, hz0, hz0 + T, stoneM);   // hinten mit Fenster
