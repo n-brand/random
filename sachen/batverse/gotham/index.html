@@ -362,7 +362,7 @@
         for (const q of BUILD) if (!q.id) q.id = "FB-" + String(next++).padStart(4, "0");
         BUILD.fbNext = next;
       }
-      if (!BUILD.fbNext) BUILD.fbNext = BUILD.length + 1;
+      if (!BUILD.fbNext) { BUILD.fbNext = BUILD.length + 1; BUILD.noRef = true; }
     }
     // Zeichnen: je Hoehenklasse ein Pfad
     const HB = [[0, 12, "#5b5650"], [12, 25, "#6c6760"], [25, 50, "#7f7b74"], [50, 100, "#95938e"], [100, 180, "#acadab"], [180, 999, "#c9ccd0"]];
@@ -542,6 +542,8 @@
     // Linien vereinfacht (Douglas-Peucker 0,25 m), Zahlen auf 0,1 m. Ergebnis kommt nach gotham/stadt.js (const GOTHAM_STADT = ...). Nach Aenderungen an
     // Strassen, Bezirken oder Orten in daten.js neu erzeugen: Karte oeffnen, in der Konsole copy(gothamExport()) und in gotham/stadt.js einsetzen.
     window.gothamExport = () => {
+      // Ohne Bezug (stadt.js nicht geladen) wuerden alle festen IDs neu vergeben und alte Nummern wieder benutzt: dann kein Export
+      if (BUILD.noRef) throw new Error("gothamExport: stadt.js nicht geladen (Bezug fuer feste Fuellbau-IDs fehlt) - Karte ueber den lokalen Server oeffnen");
       const r1 = v => Math.round(v * 10) / 10, dp = (P, tol) => { if (P.length < 3) return P; let m = 0, k = 0; const a = P[0], b = P[P.length - 1], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1;
         for (let i = 1; i < P.length - 1; i++) { const d = Math.abs((P[i][0] - a[0]) * dz - (P[i][1] - a[1]) * dx) / l; if (d > m) { m = d; k = i; } }
         return m > tol ? [...dp(P.slice(0, k + 1), tol).slice(0, -1), ...dp(P.slice(k), tol)] : [a, b]; };

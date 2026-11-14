@@ -12,8 +12,8 @@ async function gbstCacheLoad(ck) {
   try { if (!window.TH_DB || !window.TH_HASH) throw 0;
     const hash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619); return (h >>> 0).toString(36); };
     const src = f => fetch(document.querySelector('script[src$="' + f + '"]').src).then(r => r.text());
-    const [a, b] = await Promise.all([src("gotham/gotham-baustellen.js"), src("gotham/stadt.js")]);
-    ck.key = TH_HASH + "-" + hash(a) + "-" + hash(b);
+    const [a, b, c] = await Promise.all([src("gotham/gotham-baustellen.js"), src("gotham/stadt.js"), src("gotham/gotham-strassen.js")]);   // Strassen: Einzug und Tor haengen an GSTR
+    ck.key = TH_HASH + "-" + hash(a) + "-" + hash(b) + "-" + hash(c);
     const rec = await new Promise(ok => { const rq = TH_DB.transaction("cache").objectStore("cache").get("GBST"); rq.onsuccess = () => ok(rq.result); rq.onerror = () => ok(null); });
     if (rec && rec.key === ck.key && Array.isArray(rec.meshes) && Array.isArray(rec.gates) && Array.isArray(rec.ins) && Array.isArray(rec.fences)) ck.data = rec;
   } catch (e) {} ck.state = 1;
@@ -60,11 +60,11 @@ function gbstGate(b) {
 function* gbstGen(useCache = true) {
   const ck = { state: 0, data: null, key: null }; if (useCache) gbstCacheLoad(ck); else ck.state = 1;
   GBST.list = gbstList();
-  while (!ck.state) yield;
+  while (!ck.state) yield "wait";
   const CACHED = !!ck.data, Y = GBST.Y;
   // Grundriss auf freie Flaeche zuschneiden (Karten-Grundrisse reichen teils auf Gehsteige):
   // je Seite nach innen, bis die Kante frei ist (0,5-m-Schritte, hoechstens 8 m); Ergebnis mit im Zwischenspeicher
-  if (!CACHED) { while (!GSTR.done) yield; GBST.list.forEach(b => { b.ins = gbstInset(b); }); yield; }
+  if (!CACHED) { while (!GSTR.done) yield "wait"; GBST.list.forEach(b => { b.ins = gbstInset(b); }); yield; }
   else GBST.list.forEach((b, i) => { b.ins = ck.data.ins[i]; });
   for (const b of GBST.list) { const F = gbstFrame(b), [i0, i1, i2, i3] = b.ins; b.poly = [F.at(i3, i0), F.at(F.L1 - i1, i0), F.at(F.L1 - i1, F.L2 - i2), F.at(i3, F.L2 - i2)];
     bautAdd({ id: b.id, name: "Baustelle", art: "Baustelle", poly: b.poly, y0: Y - 1, y1: Y + 8, info: b.bezirk + (b.h ? " · geplant ca. " + Math.round(b.h) + " m" : "") }); }
@@ -155,7 +155,9 @@ function* gbstGen(useCache = true) {
 }
 function gbstBuild() { if (!GSTR.done) gstrBuild(); for (const _ of gbstGen(false)); GBST.done = true; }   // Tests: alles auf einmal, ohne Zwischenspeicher
 TILES.tasks.push({ gen: null, plan() {}, step() { if (GBST.done || TILES.startup || !TILES.frame || TILES.frame < 40) return false;
-  if (!this.gen) this.gen = gbstGen(); const t0 = performance.now(); while (performance.now() - t0 < 6) if (this.gen.next().done) { GBST.done = true; this.gen = null; return false; } return false; } });
+  if (!this.gen) this.gen = gbstGen(); const t0 = performance.now();
+  while (performance.now() - t0 < 6) { const r = this.gen.next(); if (r.done) { GBST.done = true; this.gen = null; return false; } if (r.value === "wait") return false; }   // Warten (Zwischenspeicher, Strassen): nicht 6 ms leer drehen
+  return false; } });
 
 // ---- Kollision nur in der Naehe (Nicolas 2026-11-14 "Nur in der Naehe", Task 6) ----
 // Zaun und Container sind fest, aber nur fuer Baustellen in der 128-m-Zelle des Spielers bzw. aktiven Fahrzeugs und den 8 Nachbarzellen

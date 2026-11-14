@@ -25,12 +25,13 @@ function bautInPoly(P, x, z) {
     if ((P[i][1] > z) !== (P[j][1] > z) && x < (P[j][0] - P[i][0]) * (z - P[i][1]) / (P[j][1] - P[i][1]) + P[i][0]) c = !c;
   return c;
 }
-// Eintrag am Punkt: Grundriss enthaelt (x, z) und y liegt in y0-1..y1+1; bei mehreren der kleinste Grundriss
+// Eintrag am Punkt: Grundriss enthaelt (x, z) und y liegt in y0-0,1..y1+0,1 (die Hoehe entscheidet, die Hoehenbereiche der Eintraege haben
+// schon Reserve ueber Dach bzw. ab Boden); bei mehreren der kleinste Grundriss. Keine groessere Toleranz: sonst galt der Rasen ueber der Tiefgarage als Garage.
 function bautAt(x, y, z) {
   const c = BAUT_GRID.get(Math.floor(x / BAUT_CS) + "," + Math.floor(z / BAUT_CS)); if (!c) return null;
   let best = null;
   for (const e of c) {
-    if (y < e.y0 - 1 || y > e.y1 + 1 || x < e.bb[0] || x > e.bb[2] || z < e.bb[1] || z > e.bb[3]) continue;
+    if (y < e.y0 - 0.1 || y > e.y1 + 0.1 || x < e.bb[0] || x > e.bb[2] || z < e.bb[1] || z > e.bb[3]) continue;
     if ((!best || e.area < best.area) && bautInPoly(e.poly, x, z)) best = e;
   }
   return best;

@@ -26,8 +26,8 @@ function bautRay(o, d) {
   const under = o.y < terrainH(o.x, o.z) - 1;                         // unter dem Gelaende (Geist in Hoehle/Garage, "Von unten"): Gelaende nicht pruefen
   for (let s = 0.5; s < (under ? 300 : 2500);) {
     const x = o.x + d.x * s, y = o.y + d.y * s, z = o.z + d.z * s;
+    if (!under && y < terrainH(x, z) - 0.2) return bautAt(x, y, z);       // Gelaende zuerst: auf dem Rasen ueber der Tiefgarage nicht die Garage
     const e = bautAt(x, y, z); if (e) return e;
-    if (!under && y < terrainH(x, z) - 0.2) return null;
     s += Math.min(6, Math.max(0.5, s * 0.006));
   }
   return null;
