@@ -65,6 +65,7 @@
   <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a> · Himmelsrichtungen: Kompass unten rechts (wie Wayne Manor; ziehen dreht die Karte, Klick = Norden oben / zurück), Karte x nach rechts, z nach unten, 1 Einheit = 1 m wie im Spiel</footer>
 
   <script src="daten.js"></script>
+  <script src="stadt.js"></script><!-- Bezug fuer feste Fuellbau-IDs (gothamExport); offline fehlt er, dann Nummern in Erzeugungsreihenfolge -->
   <script>
     "use strict";
     const G = GOTHAM, svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
@@ -341,7 +342,28 @@
     }
     // Klare ID je Fuellbau (Nicolas 2026-11-12): FB-0001 … in Erzeugungsreihenfolge (fester Zufallsstart, also gleich bei jedem Laden; aendern sich
     // Strassen oder Bezirke, verschieben sich die Nummern). Klick auf einen Fuellbau zeigt und kopiert die ID mit dem Punkt.
-    BUILD.forEach((q, i) => { q.id = "FB-" + String(i + 1).padStart(4, "0"); });
+    // Feste IDs (Nicolas 2026-11-14, Plan Baustellen und Gebaeude-IDs): Bezug ist die bisherige stadt.js (GOTHAM_STADT.fuell). Ein Fuellbau bekommt die
+    // ID des alten, wenn seine Mitte darin liegt oder hoechstens 5 m von dessen Mitte; bei mehreren Anwaertern gewinnt die naechste Mitte (Paare nach
+    // Abstand). Sonst neue Nummer ab fbNext (hoechste je vergebene + 1, wird mit exportiert); alte Nummern ohne Nachfolger werden nie neu vergeben.
+    {
+      const OLD = typeof GOTHAM_STADT !== "undefined" && GOTHAM_STADT.fuell || null, num = id => +id.slice(3), mid = c => [c.reduce((a, p) => a + p[0], 0) / c.length, c.reduce((a, p) => a + p[1], 0) / c.length];
+      if (!OLD) BUILD.forEach((q, i) => { q.id = "FB-" + String(i + 1).padStart(4, "0"); });
+      else {
+        const om = OLD.map(o => mid(o.c)), grid = new Map(), key = (x, z) => Math.floor(x / 50) + "," + Math.floor(z / 50);
+        om.forEach((m, k) => { const g = key(m[0], m[1]); if (!grid.has(g)) grid.set(g, []); grid.get(g).push(k); });
+        const pairs = [];
+        BUILD.forEach((q, i) => { const [x, z] = q.m = mid(q.c), gx = Math.floor(x / 50), gz = Math.floor(z / 50);
+          for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (const k of grid.get((gx + a) + "," + (gz + b)) || []) {
+            const d = Math.hypot(om[k][0] - x, om[k][1] - z); if (d <= 5 || inPoly(x, z, OLD[k].c)) pairs.push([d, i, k]); } });
+        pairs.sort((a, b) => a[0] - b[0]);
+        const used = new Set();
+        for (const [, i, k] of pairs) if (!BUILD[i].id && !used.has(k)) { BUILD[i].id = OLD[k].id; used.add(k); }
+        let next = GOTHAM_STADT.fbNext || Math.max(0, ...OLD.map(o => num(o.id))) + 1;
+        for (const q of BUILD) if (!q.id) q.id = "FB-" + String(next++).padStart(4, "0");
+        BUILD.fbNext = next;
+      }
+      if (!BUILD.fbNext) BUILD.fbNext = BUILD.length + 1;
+    }
     // Zeichnen: je Hoehenklasse ein Pfad
     const HB = [[0, 12, "#5b5650"], [12, 25, "#6c6760"], [25, 50, "#7f7b74"], [50, 100, "#95938e"], [100, 180, "#acadab"], [180, 999, "#c9ccd0"]];
     for (const [a, b, col] of HB) {
@@ -529,6 +551,8 @@
         bruecken: BR.map(b => ({ id: b.id, name: b.name, w: b.w, seite: b.seite || null, pts: L(b.pts) })),
         neben: NEBEN.map(s => ({ b: G.bezirke.indexOf(s.b), w: s.w, pts: L(s.pts) })),
         fuell: BUILD.map(q => ({ id: q.id, h: Math.round(q.h * 10) / 10, c: q.c.map(([x, z]) => [r1(x), r1(z)]) })),
+        fbNext: BUILD.fbNext,                                                       // naechste freie Fuellbau-Nummer (nie neu vergeben)
+        baustellen: G.orte.filter(o => o.typ === "baustelle").map(o => ({ id: o.id, x: r1(o.x), z: r1(o.z), w: o.w, d: o.d })),
       }) + ";\n";
     };
 
