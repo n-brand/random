@@ -243,7 +243,10 @@ function gsplit(g, m, name, opt = {}) {
 }
 function gHideStep(cam) { const lim = (TILES.range * TILE + 150) + 200, p = cam.position;
   for (const o of GHIDE) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < lim; } }
-const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12, PZ: 80 };
+const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12, PZ: 80,
+  // Rampen mitten im Wayne Circle (Nicolas 2026-11-14 "Alle vier bauen"): Startpunkte (Spielkoordinaten) zwischen den Hauptstrassen, je FL + RL = 110 m in
+  // Laufrichtung des Rings; die inneren Spuren tauchen ab (Variante B), oben und unten bleibt je eine Spur pro Richtung neben dem Schacht
+  RING_RAMPS: [[-1810, 782], [-1908.3, 1056.5], [-2290.7, 1019.5], [-2235.8, 681.7]] };
 function gdeckBuild() {
   GDECK.building = true; const roads = [];
   // alle anderen Strassenlinien (Spielkoordinaten, alle 4 m), fuer "endet hier eine andere Strasse?"
@@ -272,6 +275,10 @@ function gdeckBuild() {
     let t = 0; while (t < 40 && !(inside(e[0] + ux * t - uz * r.HW, e[1] + uz * t + ux * r.HW) && inside(e[0] + ux * t + uz * r.HW, e[1] + uz * t - ux * r.HW))) t += 1;
     if (t > 0 && t < 40) { const n = [e[0] + ux * t, e[1] + uz * t]; if (end) P.push(n); else P.unshift(n); r.s = [0]; for (let i = 1; i < P.length; i++) r.s.push(r.s[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
       const L0 = r.L; r.L = r.s[r.s.length - 1]; if (end) r.sB = r.L; else { r.sB += r.L - L0; r.sA = 0; } r.ext = (r.ext || 0) + t; } }
+  // Rampen als Abschnitte { a: Strassenhoehe, b: unten (Portal), sg: Richtung von a nach b, mid: mitten in der Strasse }
+  for (const r of roads) { r.ramps = []; if (!r.ca) r.ramps.push({ a: 0, b: r.sA, sg: 1 }); if (!r.cb) r.ramps.push({ a: r.L, b: r.sB, sg: -1 });
+    if (r.loop && r.id === "ring") for (const [x, z] of GDECK.RING_RAMPS) { let bs = 0, bd = 1e9; for (let j = 1; j < r.pts.length; j++) { const A = r.pts[j - 1], B = r.pts[j], dx = B[0] - A[0], dz = B[1] - A[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - A[0]) * dx + (z - A[1]) * dz) / LL)), d = Math.hypot(x - A[0] - dx * t, z - A[1] - dz * t); if (d < bd) { bd = d; bs = r.s[j - 1] + t * Math.sqrt(LL); } }
+      const len = GDECK.FL + GDECK.RL; if (bs + len < r.L) r.ramps.push({ a: bs, b: bs + len, sg: 1, mid: true }); } }
   const grid = new Map(), C = GDECK.C;
   roads.forEach((r, ri) => { for (let j = 1; j < r.pts.length; j++) { const a = r.pts[j - 1], b = r.pts[j]; for (const k of new Set([glKey(Math.floor(a[0] / C), Math.floor(a[1] / C)), glKey(Math.floor(b[0] / C), Math.floor(b[1] / C))])) { if (!grid.has(k)) grid.set(k, []); grid.get(k).push([ri, j]); } } });
   GDECK.roads = roads; GDECK.grid = grid; GDECK.building = false;
@@ -291,7 +298,8 @@ function gdeckNear(x, z, reach) {
 function gdeckNearOn(o, x, z) { let best = null; for (let j = 1; j < o.pts.length; j++) { const a = o.pts[j - 1], b = o.pts[j], dx = b[0] - a[0], dz = b[1] - a[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / LL)), d = Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t);
   if (!best || d < best.d) best = { d, s: o.s[j - 1] + t * Math.sqrt(LL) }; } return best && best.d < o.HW + 2 ? best : null; }
 // Rampenboden (an offenen Enden), sonst LY bzw. Strassenhoehe
-function gdeckRampY(r, s) { const G = GDECK, u = Math.min(r.ca ? 1e9 : s, r.cb ? 1e9 : r.L - s); return u <= G.FL ? GOT.STR : u >= G.FL + G.RL ? G.LY : GOT.STR + (G.LY - GOT.STR) * (u - G.FL) / G.RL; }
+function gdeckRampOf(r, s) { if (!r.ramps) return null; for (const p of r.ramps) { const u = (s - p.a) * p.sg; if (u >= 0 && u <= (p.b - p.a) * p.sg) return p; } return null; }
+function gdeckRampY(r, s) { const G = GDECK, p = gdeckRampOf(r, s); if (!p) return G.LY; const u = (s - p.a) * p.sg; return u <= G.FL ? GOT.STR : u >= G.FL + G.RL ? G.LY : GOT.STR + (G.LY - GOT.STR) * (u - G.FL) / G.RL; }
 // Trichter (Nicolas 2026-11-12, Bild: unten muessen die Spuren zur Rampe zusammenlaufen): an offenen Enden wird die untere Strasse auf den letzten
 // TL 50 m vor der Rampe von HW auf RW/2 schmaler (Seitenwaende schraeg, Gehsteige laufen aus); gdeckK = 0 an der Rampe, 1 = volle Breite
 function gdeckK(r, s) { const u = Math.min(r.ca ? 1e9 : s - r.sA, r.cb ? 1e9 : r.sB - s); return sst(0, GDECK.TL, u); }
@@ -301,9 +309,9 @@ const gdeckHW = (r, s) => GDECK.RW / 2 + (r.HW - GDECK.RW / 2) * gdeckK(r, s);
 // Variante B (Nicolas 2026-11-13, Plan docs/superpowers/specs/2026-11-13-rampen-spuren-oben-design.md): kein Trichter mehr, die obere Spur bleibt bis zum
 // Strassenende voll breit (vorher Gehsteig-Keil in den letzten 30 m, Seitenstrassen am Ende stiessen darauf); die innere Spur ist die Rampe
 function gdeckUp(r, s) { return r.w / 2; }
-const gdeckInRamp = (r, s) => (!r.ca && s < r.sA) || (!r.cb && s > r.sB);
+const gdeckInRamp = (r, s) => !!gdeckRampOf(r, s);
 // Portalzone (Variante B): die ersten PZ m Deck hinter einem offenen Rampenportal; Abstand hinter dem Portal, sonst -1
-function gdeckPortalU(r, s, ext = 0) { const L = GDECK.PZ + ext; if (!r.ca && s >= r.sA && s <= r.sA + L) return s - r.sA; if (!r.cb && s <= r.sB && s >= r.sB - L) return r.sB - s; return -1; }
+function gdeckPortalU(r, s, ext = 0) { const L = GDECK.PZ + ext; for (const p of r.ramps || []) { const q = (s - p.b) * p.sg; if (q >= 0 && q <= L) return q; } return -1; }
 // ext: Zone laenger (das Band zeichnet ein Viereck nur, wenn beide Probenreihen gut sind; die Portalzone reicht darum eine Probe weiter, sonst 4-m-Loch am Zonenende)
 function gdeckPortalZone(x, z, ext = 0) { const n = gdeckNear(x, z, 12); return !!n && n.d < n.r.w / 2 + 0.6 && gdeckPortalU(n.r, n.s, ext) >= 0; }
 // grob: liegt (x, z) im Gotham-Rechteck (vor gotham-raster.js schon nutzbar)
@@ -314,8 +322,8 @@ function gothamDeckH(x, z, g) {
   const n = gdeckNear(x, z, 24); if (!n) return g; const r = n.r, s = n.s;
   if (s >= r.sA - 6 && s <= r.sB + 6 && n.d < r.HW + 6) return Math.min(g, GDECK.LY - 0.5);
   // Rampe: nur wo sie abfaellt (6 m Vorlauf gegen das 4-m-Raster); im ebenen Teil am Strassenende bleibt das Gelaende (Nicolas 2026-11-12, Bild: Wiesenstreifen mit Kante)
-  const u = Math.min(r.ca ? 1e9 : s, r.cb ? 1e9 : r.L - s);
-  if (u >= GDECK.FL - 6 && gdeckInRamp(r, s) && n.d < GDECK.RW / 2 + 6) return Math.min(g, gdeckRampY(r, Math.max(0, Math.min(r.L, s))) - 0.5);
+  const p = gdeckRampOf(r, s), u = p ? (s - p.a) * p.sg : -1;
+  if (u >= GDECK.FL - 6 && n.d < GDECK.RW / 2 + 6) return Math.min(g, gdeckRampY(r, Math.max(0, Math.min(r.L, s))) - 0.5);
   return g;
 }
 // Boden: oben die Fahrbahn (wer oben ist), unten der Boden der unteren Strasse, in der Rampe der Rampenboden; sonst null
@@ -325,7 +333,7 @@ function gothamDeckAt(x, z, feet) {
   // unten an Kreuzungen/Muendungen: liegt der Punkt im Innenraum einer anderen Strasse (nicht der naechsten), gilt deren Boden
   if (feet <= GOT.STR - 2.5 && !(s >= r.sA && s <= r.sB && n.d < gdeckHW(r, s))) for (const o of G.roads) { if (o === r) continue; const m = gdeckNearOn(o, x, z); if (m && m.s >= o.sA && m.s <= o.sB && m.d < gdeckHW(o, m.s)) return G.LY; }
   if (s < 0 || s > r.L || n.d > r.HW + G.COVER) return null;
-  if (gdeckInRamp(r, s) && n.d < G.RW / 2) return gdeckRampY(r, s);
+  if (gdeckInRamp(r, s) && n.d < G.RW / 2) { const ry = gdeckRampY(r, s); return gdeckRampOf(r, s).mid && feet < ry - 2.5 ? G.LY : ry; }   // Ring-Rampe: unter dem ebenen Teil liegt unten die Strasse
   if (gdeckInRamp(r, s) && feet > GOT.STR - 2.5 && n.d > gdeckUp(r, s) && n.d < r.w / 2 + 4 && !(GSTR.onRoad && GSTR.onRoad(x, z, 0.3))) return GOT.STR + 0.15;   // Gehsteig neben dem oberen Trichter
   if (feet > GOT.STR - 2.5) return GOT.STR;
   if (s >= r.sA && s <= r.sB) { const hw = gdeckHW(r, s); if (n.d < hw) return G.LY + (n.d > hw - 2 * gdeckK(r, s) && !G.roads.some(o => { if (o === r) return false; const m = gdeckNearOn(o, x, z); return m && m.s >= o.sA && m.s <= o.sB && m.d < gdeckHW(o, m.s) + 0.3; }) ? 0.15 : 0); }   // in Kreuzungen kein Gehsteig   // Gehsteige unten 15 cm hoch (im Trichter schmaler)
@@ -336,7 +344,7 @@ function gothamDeckCam(x, y, z) {
   if (!GDECK.roads || y > GOT.STR + 0.3 || y < GDECK.LY - 1 || !inGothamG0(x, z)) return undefined;
   const n = gdeckNear(x, z, 26); if (!n) return undefined; const r = n.r, s = n.s, G = GDECK;
   if (s < 0 || s > r.L || n.d > r.HW + G.COVER) return undefined;
-  if (gdeckInRamp(r, s) && n.d < G.RW / 2 - 0.5) return y < gdeckRampY(r, s) + 0.3;
+  if (gdeckInRamp(r, s) && n.d < G.RW / 2 - 0.5) { const ry = gdeckRampY(r, s); if (gdeckRampOf(r, s).mid && y < Math.min(G.DY, ry - 1) - 0.3) return y > G.DY - 0.3; return y < ry + 0.3; }
   if (s >= r.sA && s <= r.sB && n.d < gdeckHW(r, s) - 0.6) return y > G.DY - 0.3;
   return y < GOT.STR + 0.2;
 }
