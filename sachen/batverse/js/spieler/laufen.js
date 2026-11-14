@@ -32,12 +32,14 @@ function pushOut(p, feet) {
     const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }   // D1: Kreise ohne Hoehe (Baumstaemme) nur am Gelaende, nicht in Tunneln darunter
   }
-  gbrPush(p, feet + STEP, feet + BODY, RADIUS);                            // feste Brueckenteile (gotham-bruecken.js)
+  dkPush(p, feet + STEP, feet + BODY, RADIUS);                             // gedrehte Kollision (kern/drehkoll.js)
   const far = Math.hypot(p.x, p.z);
   if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
 }
 // Boden ohne Quader: unter der Erde in der Garage (Boden dort aus Quadern), sonst Gelaende
-function groundAt(x, z, feet = 0) {
+// gedrehte Teile und Hohlraeume (kern/drehkoll.js) ueber dem bisherigen Boden
+function groundAt(x, z, feet = 0) { return dkGround(x, z, feet, groundAt0(x, z, feet)); }
+function groundAt0(x, z, feet = 0) {
   { const g = gothamBridgeAt(x, z, feet); if (g !== null) return g; }      // Gotham-Bruecken (G2c): Fahrbahn fuer wen oben ist
   { const g = gothamRoadAt(x, z, feet); if (g !== null) return g; }      // Gotham-Festlandstrassen (G2d)
   if (GSTR.walkAt && feet > GOT.STR - 1 && feet < GOT.STR + 3 && inGothamG0(x, z) && GSTR.walkAt(x, z)) return GOT.STR + GSTR.RAISE;   // Gotham-Gehsteige 15 cm hoch
@@ -105,7 +107,7 @@ function updatePlayer(dt, moveX, moveZ, run) {
   // Klippenkante weiter innen (Nicolas): das Gelaende faellt 4-5 m vor der Kuestenlinie ab, davor steht die Felswand; 5 m Abstand, landeinwaerts geht immer
   if (player.pos.y > -3 && !swim && coastEdge(next.x, next.z, player.pos.x, player.pos.z, 5)) { next.x = player.pos.x; next.z = player.pos.z; }
   // Steile Haenge sperren: nur das Gelaende zaehlt (Stufen wie der Brunnenrand regelt supportAt)
-  const slopeG = (x, z) => gothamBridgeAt(x, z, player.pos.y) ?? gothamDeckAt(x, z, player.pos.y) ?? slopeG0(x, z);   // Gotham-Bruecken (G2c)
+  const slopeG = (x, z) => dkGround(x, z, player.pos.y, gothamBridgeAt(x, z, player.pos.y) ?? gothamDeckAt(x, z, player.pos.y) ?? slopeG0(x, z));   // Gotham-Bruecken (G2c)
   const slopeG0 = (x, z) => GRAMP.inF(x, z) ? GRAMP.y(z) : hfCap(x, z) !== null && player.pos.y > (x > HF_XP ? HF_Y + 5.3 : hfCap(x, z) - 2) ? Math.max(terrainH(x, z), hfCap(x, z)) + 0.04 : (player.pos.y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, player.pos.y) || (player.pos.y < HILL - 3 && inRect(CSH_OUT, x, z)) || (player.pos.y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (player.pos.y < 3 && inRect(WF_PORTAL, x, z)) || (player.pos.y < -20 && waterCaveAt(x, z)) || (player.pos.y < -8 && caveUpAt(x, z)) || inSilo(x, z, 0.5) ? -100 : terrainH(x, z);   // im Tunnel zaehlt der Hang darueber nicht
   const g0 = slopeG(player.pos.x, player.pos.z), g1 = slopeG(next.x, next.z), moved = Math.hypot(next.x - player.pos.x, next.z - player.pos.z);
   // auch im Sprung: liegt der Boden voraus mehr als 1 m ueber den Fuessen, ist es eine Wand (Nicolas 2026-11-12: vom Kies mit Springen auf den Kai)

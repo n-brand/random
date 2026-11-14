@@ -8,47 +8,11 @@
 // Stahlturm (zwei Beine aussen neben dem Deck, Querriegel und Kreuzstreben ueber der Durchfahrt, 62 m ueber der Fahrbahn), zwei Tragseile im Bogen
 // von den Seil-Enden (bis 70 m hinter den Tuermen, kleiner Stahlschuh am Deck) ueber die Turmspitzen, Haenger alle 10 m. Gelaender 1,1 m mit Kollision, Boden ueber
 // gothamBridgeAt (nur wer oben ist, nicht wer darunter schwimmt). Die Kaimauer hat an jeder Bruecke eine Luecke in der Bruestung (gotham-kai.js).
-const GBR = { list: [], parts: [], grid: new Map(), q: 0 };
+const GBR = { list: [] };
 // Feste Brueckenteile (Nicolas 2026-11-14: "der DeLorean sollte nicht durch die Brueckenteile durchfliegen koennen", "generell sollen die
 // Brueckenteile fest sein"): Fahrbahnkasten, Querriegel, Kreuzstreben, Turmbeine, Pfeiler, Seil-Enden, Tragseile und Haenger als gedrehte Quader
-// in einem 16-m-Raster, je 0,3 m groesser als sichtbar (Nicolas: lieber frueher halten). Seitlich schieben sie Fahrzeuge und Fussgaenger weg
-// (gbrPush), von unten sind sie Decke (gbrCeil), von oben Boden (gothamBridgeAt), Flugzeuge und Kamera pruefen Punkte (gbrIn).
-// Teil: Mitte cx/cy/cz, Laengsrichtung ux/uz, halbe Laenge hl, halbe Breite hw (quer), halbe Hoehe hh; floor = 0: kein Boden (Fahrbahnkasten: der Boden kommt von gothamBridgeAt)
-// chain = 1: Stueck einer Kette (Fahrbahnkasten, Tragseil): steckt etwas ganz darin, nur quer hinausschieben, nicht ins naechste Stueck
-function gbrPart(cx, cy, cz, ux, uz, hl, hw, hh, floor = 1, chain = 0, m = 0.3) {
-  const o = { cx, cz, ux, uz, hl: hl + m, hw: hw + m, y0: cy - hh - m, y1: cy + hh + m, top: cy + hh, floor, chain, _q: 0 };
-  GBR.parts.push(o);
-  const cs = 16, ex = Math.abs(ux) * o.hl + Math.abs(uz) * o.hw, ez = Math.abs(uz) * o.hl + Math.abs(ux) * o.hw;
-  for (let i = Math.floor((cx - ex) / cs); i <= Math.floor((cx + ex) / cs); i++) for (let k = Math.floor((cz - ez) / cs); k <= Math.floor((cz + ez) / cs); k++) {
-    const key = collKey(i, k); let c = GBR.grid.get(key); if (!c) GBR.grid.set(key, c = []); c.push(o); }
-  return o;
-}
-// Teile, deren Grundriss den Kreis (x, z, R) beruehrt; fn(o, a, b, ca, cb) mit Lage a/b im Teil und naechstem Punkt ca/cb
-function gbrEach(x, z, R, fn) {
-  const cs = 16, q = ++GBR.q;
-  for (let i = Math.floor((x - R) / cs), i1 = Math.floor((x + R) / cs); i <= i1; i++) for (let k = Math.floor((z - R) / cs), k1 = Math.floor((z + R) / cs); k <= k1; k++) {
-    const c = GBR.grid.get(collKey(i, k)); if (!c) continue;
-    for (const o of c) { if (o._q === q) continue; o._q = q;
-      const dx = x - o.cx, dz = z - o.cz, a = dx * o.ux + dz * o.uz, b = -dx * o.uz + dz * o.ux;
-      const ca = Math.max(-o.hl, Math.min(o.hl, a)), cb = Math.max(-o.hw, Math.min(o.hw, b));
-      if ((a - ca) ** 2 + (b - cb) ** 2 < R * R || (a === ca && b === cb)) fn(o, a, b, ca, cb); }
-  }
-}
-// seitlich hinausschieben, wenn sich y0..y1 (Koerper ab Stufenhoehe) mit dem Teil ueberschneidet
-function gbrPush(p, y0, y1, R) {
-  gbrEach(p.x, p.z, R, (o, a, b, ca, cb) => {
-    if (o.y1 <= y0 || o.y0 >= y1) return;
-    const ea = a - ca, eb = b - cb, d = Math.hypot(ea, eb); let na, nb;
-    if (d > 1e-6) { na = ca + ea / d * R; nb = cb + eb / d * R; }
-    else if (!o.chain && o.hl - Math.abs(a) < o.hw - Math.abs(b)) { na = (a < 0 ? -1 : 1) * (o.hl + R); nb = b; }
-    else { na = a; nb = (b < 0 ? -1 : 1) * (o.hw + R); }
-    p.x = o.cx + na * o.ux - nb * o.uz; p.z = o.cz + na * o.uz + nb * o.ux;
-  });
-}
-// Decke: tiefste Unterkante eines Teils ab Hoehe y im Kreis (x, z, R), sonst Infinity
-function gbrCeil(x, z, R, y) { let c = Infinity; gbrEach(x, z, R, o => { if (o.y0 >= y && o.y0 < c) c = o.y0; }); return c; }
-// Punkt (mit Rand m) in einem Teil?
-function gbrIn(x, y, z, m = 0) { let hit = false; gbrEach(x, z, m, o => { if (y > o.y0 - m && y < o.y1 + m) hit = true; }); return hit; }
+// (kern/drehkoll.js). gbrPart(cx, cy, cz, ux, uz, hl, hw, hh, floor, chain) ist die Kurzform fuer dkAdd.
+const gbrPart = (cx, cy, cz, ux, uz, hl, hw, hh, floor = 1, chain = 0) => dkAdd({ cx, cy, cz, ux, uz, hl, hw, hh, floor, chain });
 // Hohe Hindernisse: Kreise mit Oberkante gelten nur in den 8 m darunter, darum gestapelt alle 6 m (Turmbeine, Pfeiler, Ankerbloecke).
 // Nicolas 2026-11-12: man lief in Turmbeine hinein.
 const tallCircle = (x, z, r, y0, y1) => { for (let t = y0 + 6; t < y1 + 6; t += 6) circles.push([x, z, r, Math.min(t, y1)]); };
@@ -117,10 +81,9 @@ const tallCircle = (x, z, r, y0, y1) => { for (let t = y0 + 6; t < y1 + 6; t += 
   GBR.group = G; GBR.Y = Y;
 }
 // Boden auf einer Bruecke (Fahrbahn und Gehwege), nur fuer wen oben ist (Fuesse hoechstens 3 m unter der Fahrbahn); sonst null
-// Dazu die Oberseite fester Teile (Querriegel, Seile ...), wenn die Fuesse hoechstens 0,6 m darunter sind (Nicolas 2026-11-14: Brueckenteile fest)
+// (die Oberseite der festen Teile liefert dkFloor ueber dkGround in groundAt/carSlopeG)
 function gothamBridgeAt(x, z, feet) {
-  let best = null;
-  if (feet >= GBR.Y - 3) for (const b of GBR.list) { const dx = x - b.a[0], dz = z - b.a[1], s = dx * b.ux + dz * b.uz; if (s < 0 || s > b.L) continue; if (Math.abs(dx * b.nx + dz * b.nz) <= b.half) { best = GBR.Y; break; } }
-  if (GBR.grid.has(collKey(Math.floor(x / 16), Math.floor(z / 16)))) gbrEach(x, z, 0, o => { if (o.floor && o.top <= feet + 0.6 && (best === null || o.top > best)) best = o.top; });
-  return best;
+  if (feet < GBR.Y - 3) return null;
+  for (const b of GBR.list) { const dx = x - b.a[0], dz = z - b.a[1], s = dx * b.ux + dz * b.uz; if (s < 0 || s > b.L) continue; if (Math.abs(dx * b.nx + dz * b.nz) <= b.half) return GBR.Y; }
+  return null;
 }
