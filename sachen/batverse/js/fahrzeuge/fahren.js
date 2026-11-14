@@ -34,6 +34,7 @@ function carPush(p, feet, R) {
     const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + R;
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }
   }
+  gbrPush(p, feet + CAR_STEP, feet + CAR.spec.bodyH, R);                   // feste Brueckenteile (gotham-bruecken.js)
 }
 const carSlopeG = (x, z, y) => gothamBridgeAt(x, z, y) ?? gothamDeckAt(x, z, y) ?? carSlopeG0(x, z, y);   // G2e: zweistoeckige Strassen   // Gotham-Bruecken: Fahrbahn statt Gelaende darunter (G2c)
 const carSlopeG0 = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : hfCap(x, z) !== null && y > (x > HF_XP ? HF_Y + 5.3 : hfCap(x, z) - 2) ? Math.max(terrainH(x, z), hfCap(x, z)) + 0.04 : (y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, y) || (y < HILL - 3 && inRect(CSH_OUT, x, z)) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
@@ -235,7 +236,10 @@ function hoverStep(C, dt, th, st) {
   for (let it = 0; it < 2; it++) { let sx = 0, sz = 0; for (const lz of sp.pts) { const px = nx + lz * Math.sin(C.h), pz = nz + lz * Math.cos(C.h), q = { x: px, z: pz }; carPush(q, C.y, sp.R); sx += q.x - px; sz += q.z - pz; } nx += sx; nz += sz; }
   const far = Math.hypot(nx, nz); if (far > LIMIT) { nx *= LIMIT / far; nz *= LIMIT / far; }
   C.x = nx; C.z = nz;
-  let ny = Math.min(400, C.y + C.vy * dt); const floor = carGround(Math.max(C.y, ny) + 0.3).y;
+  let ny = Math.min(400, C.y + C.vy * dt);
+  { let cap = Infinity; for (const lz of sp.pts) cap = Math.min(cap, gbrCeil(C.x + lz * Math.sin(C.h), C.z + lz * Math.cos(C.h), sp.R, C.y + sp.bodyH - 0.3) - sp.bodyH - 0.05);   // Brueckenteile als Decke (Nicolas 2026-11-14: nicht durch die Fahrbahn hochfliegen)
+    if (ny > cap) { ny = Math.max(cap, Math.min(ny, C.y)); if (C.vy > 0) C.vy = 0; } }
+  const floor = carGround(Math.max(C.y, ny) + 0.3).y;
   if (floor < terrainH(C.x, C.z) - 2) ny = Math.min(ny, floor + 1.5);   // unter der Erde (Garage, Tunnel, Hoehle): nur knapp ueber dem Boden schweben
   if (C.hoverWant) {
     const min = floor + 0.6 * e;                                          // Abheben im Takt der Klapp-Animation
@@ -381,6 +385,7 @@ function carStep(dt) {
 }
 // Kamera: hinter dem Fahrzeug (stoesst nicht durch Waende/Gelaende) oder Fahrersicht
 const camBlocked = (x, y, z) => {
+  if (gbrIn(x, y, z, 0.2)) return true;                                   // feste Brueckenteile
   { const b = gothamDeckCam(x, y, z); if (b !== undefined) return b; }   // zweistoeckige Strassen (G2e): Platte und Waende
   for (const s of nearS) if (s.on && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && y > s.y0 && y < s.y1) return true;
   for (const [cx, cz, r, top] of nearC) if (r > 0 && (x - cx) ** 2 + (z - cz) ** 2 < r * r && (top === undefined ? y > terrainH(cx, cz) - 3 : y < top && y > top - 8)) return true;

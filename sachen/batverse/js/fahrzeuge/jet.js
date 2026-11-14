@@ -70,6 +70,7 @@ function jetMat(x, y, z, h, p, r) { jetMx.makeRotationFromEuler(jetE.set(p, h, r
 function jetNear(J) { const R = 45; const [a, b] = collNear(J.x - R - 2, J.x + R + 2, J.z - R - 2, J.z + R + 2); nearS = a.filter(s => s.x1 > J.x - R && s.x0 < J.x + R && s.z1 > J.z - R && s.z0 < J.z + R); nearC = b.filter(c => !JET.circ.includes(c) && !FLY.circ.includes(c) && Math.abs(c[0] - J.x) < R + c[2] && Math.abs(c[1] - J.z) < R + c[2]); }
 // Punkt frei? Quader, Kreise (Baumstaemme ohne Hoehe nur bis r * 22 ueber dem Gelaende, etwas unter der Baumspitze (Laubbaum ca. 9,4 s, Nadelbaum 12,6 s hoch)), Gelaende, Wasser
 function jetAir(x, y, z) {
+  if (gbrIn(x, y, z, 0.5)) return false;                                 // feste Brueckenteile
   for (const s of nearS) if (s.on && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && y > s.y0 && y < s.y1) return false;
   for (const [cx, cz, r, top] of nearC) if (r > 0 && (x - cx) ** 2 + (z - cz) ** 2 < r * r) { if (top === undefined) { const t = terrainH(cx, cz); if (y > t - 3 && y < t + r * 22) return false; } else if (y < top && y > top - 8) return false; }
   const w = waterAt(x, z); if (w !== null && y < w + 0.2) return false;

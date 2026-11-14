@@ -123,6 +123,7 @@ function batNear(B) { const R = 18; const [a, b] = collNear(B.x - R - 2, B.x + R
 // Punkt im freien Luftraum? Wie die Fahrzeugkamera (camBlocked), in der unteren Hoehle aber mit den echten Deckenhoehen:
 // Halle ab LY+LH-3,8, Seegewoelbe ab SEA_Y+11,2 (jeweils mit Rand nach innen, Nicolas: Barrieren lieber weiter innen), auch ueber dem Wasser
 function batAir(x, y, z) {
+  if (gbrIn(x, y, z, 0.5)) return false;                                 // feste Brueckenteile
   for (const s of nearS) if (s.on && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && y > s.y0 && y < s.y1) return false;
   for (const [cx, cz, r, top] of nearC) if (r > 0 && (x - cx) ** 2 + (z - cz) ** 2 < r * r && (top === undefined ? y > terrainH(cx, cz) - 3 : y < top && y > top - 8)) return false;
   if (y >= terrainH(x, z) + 0.2) return true;

@@ -32,6 +32,7 @@ function pushOut(p, feet) {
     const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
     if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }   // D1: Kreise ohne Hoehe (Baumstaemme) nur am Gelaende, nicht in Tunneln darunter
   }
+  gbrPush(p, feet + STEP, feet + BODY, RADIUS);                            // feste Brueckenteile (gotham-bruecken.js)
   const far = Math.hypot(p.x, p.z);
   if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }
 }
