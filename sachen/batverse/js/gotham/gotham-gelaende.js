@@ -243,7 +243,7 @@ function gsplit(g, m, name, opt = {}) {
 }
 function gHideStep(cam) { const lim = (TILES.range * TILE + 150) + 200, p = cam.position;
   for (const o of GHIDE) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < lim; } }
-const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12, PZ: 80,
+const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12, PZ: 80, UZ: 30,
   // Rampen mitten im Wayne Circle (Nicolas 2026-11-14 "Alle vier bauen"): Startpunkte (Spielkoordinaten) zwischen den Hauptstrassen, je FL + RL = 110 m in
   // Laufrichtung des Rings; die inneren Spuren tauchen ab (Variante B), oben und unten bleibt je eine Spur pro Richtung neben dem Schacht
   RING_RAMPS: [[-1810, 782], [-1908.3, 1056.5], [-2290.7, 1019.5], [-2235.8, 681.7]] };

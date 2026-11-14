@@ -25,19 +25,22 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   const MK = geo(), FLB = geo(), FL = geo(), FLX = geo(), FLT = geo(), LG = geo(), LW = geo(), FL2 = geo(), WK = geo(), CE = geo(), WA = geo(), CO = geo(), UP = geo(), LAMP = geo();
   // Fahrbahn-Markierung oben an den Rampen (Variante B, Nicolas 2026-11-13): Atlas 4 Kacheln (0 geradeaus, 1 LOWER mit Pfeil links hinunter, 2 Einfaedeln
   // nach rechts, 3 nur rechts), Spitze oben in der Kachel = in Fahrtrichtung; decal legt ein Rechteck w (quer) x l (laengs) mit Spitze in Richtung (fx, fz)
-  const mkTex = canvasTex(512, 128, c => { c.clearRect(0, 0, 512, 128); c.fillStyle = "#e6e6df"; c.strokeStyle = "#e6e6df"; c.lineCap = "butt"; c.lineJoin = "miter";
+  const mkTex = canvasTex(640, 128, c => { c.clearRect(0, 0, 640, 128); c.fillStyle = "#e6e6df"; c.strokeStyle = "#e6e6df"; c.lineCap = "butt"; c.lineJoin = "miter";
     const head = (x, y, a) => { c.save(); c.translate(x, y); c.rotate(a); c.beginPath(); c.moveTo(0, -26); c.lineTo(-22, 8); c.lineTo(22, 8); c.closePath(); c.fill(); c.restore(); };   // Spitze bei (x, y), a = Richtung (0 = oben)
     const path = (pts) => { c.lineWidth = 18; c.beginPath(); c.moveTo(...pts[0]); for (const p of pts.slice(1)) c.lineTo(...p); c.stroke(); };
     path([[64, 128], [64, 40]]); head(64, 22, 0);                                                              // 0 geradeaus
     c.save(); c.translate(128, 0); path([[70, 74], [70, 52], [44, 26]]); head(36, 18, -Math.PI / 4); c.font = "bold 30px sans-serif"; c.textAlign = "center"; c.fillText("LOWER", 64, 112); c.restore();   // 1 LOWER
     c.save(); c.translate(256, 0); c.lineWidth = 18; c.beginPath(); c.moveTo(48, 128); c.lineTo(48, 78); c.quadraticCurveTo(48, 40, 82, 30); c.stroke(); head(92, 26, Math.PI * 0.42); c.restore();   // 2 einfaedeln rechts
-    c.save(); c.translate(384, 0); path([[48, 128], [48, 54], [84, 54]]); head(100, 54, Math.PI / 2); c.restore(); });   // 3 nur rechts
-  const decal = (x, z, fx, fz, w, l, tile, y) => { const rx = -fz, rz = fx, k = MK.P.length / 3, u0 = tile / 4, u1 = (tile + 1) / 4;
+    c.save(); c.translate(384, 0); path([[48, 128], [48, 54], [84, 54]]); head(100, 54, Math.PI / 2); c.restore();   // 3 nur rechts
+    c.save(); c.translate(512, 0); path([[64, 82], [64, 40]]); head(64, 22, 0); c.font = "bold 30px sans-serif"; c.textAlign = "center"; c.fillText("UPPER", 64, 112); c.restore(); });   // 4 UPPER (Rampe hinauf, Ring-Rampen unten)
+  const decal = (x, z, fx, fz, w, l, tile, y) => { const rx = -fz, rz = fx, k = MK.P.length / 3, u0 = tile / 5, u1 = (tile + 1) / 5;
     for (const [a, b, u, v] of [[-1, -1, u0, 0], [1, -1, u1, 0], [-1, 1, u0, 1], [1, 1, u1, 1]]) { MK.P.push(x + rx * a * w / 2 + fx * b * l / 2, y, z + rz * a * w / 2 + fz * b * l / 2); MK.U.push(u, v); }
     MK.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); (GDECK.mkPts || (GDECK.mkPts = [])).push([x, z, tile]); };
   // Linie durch Weltpunkte (Breite w) ins Netz LW
   const lineW = (pts, w, y) => { for (let i = 1; i < pts.length; i++) { const [ax, az] = pts[i - 1], [bx, bz] = pts[i], l = Math.hypot(bx - ax, bz - az) || 1, nx = -(bz - az) / l * w / 2, nz = (bx - ax) / l * w / 2, k = LW.P.length / 3;
     LW.P.push(ax + nx, y, az + nz, ax - nx, y, az - nz, bx + nx, y, bz + nz, bx - nx, y, bz - nz); LW.U.push(0, 0, 0, 0, 0, 0, 0, 0); LW.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } };
+  const lineG = (pts, w, y) => { for (let i = 1; i < pts.length; i++) { const [ax, az] = pts[i - 1], [bx, bz] = pts[i], l = Math.hypot(bx - ax, bz - az) || 1, nx = -(bz - az) / l * w / 2, nz = (bx - ax) / l * w / 2, k = LG.P.length / 3;
+    LG.P.push(ax + nx, y, az + nz, ax - nx, y, az - nz, bx + nx, y, bz + nz, bx - nx, y, bz - nz); LG.U.push(0, 0, 0, 0, 0, 0, 0, 0); LG.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } };
   // Proben eines Stuecks s0..s1 (mit genauen Enden): [x, z, nx, nz, s]
   const sub = (r, s0, s1) => { const out = [], P = r.pts, at = s => { let j = 1; while (j < P.length - 1 && r.s[j] < s) j++; const a = P[j - 1], b = P[j], l = r.s[j] - r.s[j - 1] || 1, t = Math.max(0, Math.min(1, (s - r.s[j - 1]) / l));
     let dx = (b[0] - a[0]) / l, dz = (b[1] - a[1]) / l;
@@ -75,7 +78,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
     // Spurlinien enden dort, gelbe Doppellinie und Randlinien laufen als eigene Streifen glatt bis an die Rampe (gleiche Lage wie in den Texturen)
     const f0 = r.ca ? r.sA : r.sA + G.TL, f1 = r.cb ? r.sB : r.sB - G.TL, half = s => hw(s) - wk(s);
     // Ring-Rampen (mid): unten von 20 m vor dem Rampenbeginn bis zum Portal eigene Markierung statt der 4-Spur-Textur
-    const mids = r.ramps.filter(p => p.mid), zoneL = p => [Math.min(p.a - 20 * p.sg, p.b), Math.max(p.a - 20 * p.sg, p.b)];
+    const mids = r.ramps.filter(p => p.mid), zoneL = p => [Math.min(p.a - 20 * p.sg, p.b + G.UZ * p.sg), Math.max(p.a - 20 * p.sg, p.b + G.UZ * p.sg)];
     const cutR = (lo, hi, holes) => { const out = []; let c = lo; for (const [h0, h1] of holes.slice().sort((x, y) => x[0] - y[0])) { if (h1 <= c || h0 >= hi) continue; if (h0 > c) out.push([c, h0]); c = Math.max(c, h1); } if (c < hi) out.push([c, hi]); return out; };
     for (const [a, b] of cutR(f0, f1, mids.map(zoneL))) if (b - a > 0.5) flat(FL, subF(r, a, b), s => half(s), s => -half(s), LY + 0.03, 12, 0, "aus");
     // Kreuzungen unten (Nicolas 2026-11-12, Bild: Gehsteige und Linien liefen quer durch): dort schlichter Asphalt ueber die ganze Breite, ohne Linien
@@ -103,7 +106,8 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
       const eE = sub(r, rp.a, rp.a)[0], oth = [...GOTHAM_STADT.haupt, ...GOTHAM_STADT.neben].filter(o => o.id !== r.id).map(o => ({ w: o.w, P: o.pts.map(([a, b]) => GOT.toGame(a, b)) })).filter(o => o.P.some(p => Math.hypot(p[0] - eE[0], p[1] - eE[1]) < G.FL + G.RL + G.PZ + 120));
       const onOth = (x, z, pad) => oth.some(o => { for (let j = 1; j < o.P.length; j++) { const A = o.P[j - 1], B = o.P[j], dx = B[0] - A[0], dz = B[1] - A[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - A[0]) * dx + (z - A[1]) * dz) / LL)); if (Math.hypot(x - A[0] - dx * t, z - A[1] - dz * t) < o.w / 2 + pad) return true; } return false; });
       flat(FL2, Q, RW / 2, -RW / 2, s => rampY(s) + 0.03, 12, 0);
-      for (const sg of [1, -1]) { wall(WA, QW, sg * RW / 2, mid ? LY - 0.6 : s => rampY(s) - 0.6, S + 1); wall(WA, QW, sg * (RW / 2 + 0.3), mid ? LY - 0.6 : S, S + 1);   // Ring: Waende bis unten (daneben faehrt man unten) flat(WA, QW, sg * RW / 2, sg * (RW / 2 + 0.3), S + 1, 3, 3);
+      for (const sg of [1, -1]) { wall(WA, QW, sg * RW / 2, mid ? LY - 0.6 : s => rampY(s) - 0.6, S + 1); wall(WA, QW, sg * (RW / 2 + 0.3), mid ? LY - 0.6 : S, S + 1);   // Ring: Waende bis unten (daneben faehrt man unten)
+        for (const sx of [wA, rp.b]) cross(WA, r, sx, sg * RW / 2, sg * (RW / 2 + 0.3), mid ? LY - 0.6 : rampY(sx) - 0.6, S + 1);   // Stirnflaechen an beiden Wandenden (Nicolas 2026-11-14: man sah durch die Mauer, zwischen Innen- und Aussenflaeche) flat(WA, QW, sg * RW / 2, sg * (RW / 2 + 0.3), S + 1, 3, 3);
         flat(UP, Q, sg * RW / 2, s => sg * gdeckUp(r, s), S + 0.05, 12, 4);
         if (!mid) { let run = []; const put = () => { if (run.length > 1) { flat(WK, run, s => sg * gdeckUp(r, s), sg * (r.w / 2 + 0.3), S + 0.15, 2, 2); wall(WA, run, s => sg * gdeckUp(r, s), S + 0.04, S + 0.15); } run = []; };   // Gehsteig (15 cm) neben der oberen Spur, nicht in Einmuendungen
           for (const q of subF(r, s0, s1)) { if (onOth(q[0] + q[2] * sg * (r.w / 2 + 0.15), q[1] + q[3] * sg * (r.w / 2 + 0.15), 0.3)) put(); else run.push(q); } put(); }
@@ -147,12 +151,20 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
       if (mid) flat(UP, rp.sg > 0 ? sub(r, rp.a - 4.5, rp.a + 0.5) : sub(r, rp.a - 0.5, rp.a + 4.5), -r.w / 2, r.w / 2, S + 0.045, 12, 4);   // Fahrbahn direkt vor dem Rampenbeginn (das Band setzt eine Probe frueher aus)
       if (mid) { cross(WA, r, wA, -RW / 2 - 0.3, RW / 2 + 0.3, LY - 0.6, DY); for (let d = -RW / 2; d <= RW / 2 + 0.01; d += 1.2) { const [x, z, nx, nz] = sub(r, wA, wA + 0.5)[0]; ring(x + nx * d, z + nz * d, 0.65, DY); }
         const YL = LY + 0.045, atL = (s, d) => { const [x, z, nx, nz] = sub(r, s, s)[0]; return [x + nx * d, z + nz * d]; }, sZ = rp.a - 20 * rp.sg, D1 = RW / 2 + 0.3, Lz = Math.abs(wA - sZ);
-        const Qz = subF(r, Math.min(sZ, rp.b), Math.max(sZ, rp.b)); flat(FLT, Qz, s => half(s), s => -half(s), LY + 0.03, 4, 4, "aus");
+        const sE = rp.b + G.UZ * rp.sg, Qz = subF(r, Math.min(sZ, sE), Math.max(sZ, sE)); flat(FLT, Qz, s => half(s), s => -half(s), LY + 0.03, 4, 4, "aus");
         for (const sg of [1, -1]) { flat(LW, Qz, s => sg * (half(s) * 0.93 - 0.08), s => sg * (half(s) * 0.93 + 0.08), LY + 0.04, 4, 4, "aus");   // Randlinie
           const wl = []; for (let q = sw0; q < sw1; q += 2) wl.push(atL(q, sg * (D1 + 0.25))); wl.push(atL(sw1, sg * (D1 + 0.25))); lineW(wl, 0.16, YL);   // Linie neben der Rampenwand
           const ol = []; for (let k = 0; k <= 25; k++) { const t = k / 25; ol.push(atL(sZ + (wA - sZ) * t, sg * D1 * t)); } lineW(ol, 0.16, YL);   // Umriss der Sperrflaeche
           for (let c = 3; c < Lz - 1; c += 2.5) { const q1 = sZ + rp.sg * c, q2 = q1 + rp.sg * 1.5, d2 = D1 * Math.min(1, (c + 1.5) / Lz) - 0.25; if (d2 > 0.5) lineW([atL(q1, sg * 0.15), atL(q2, sg * d2)], 0.3, YL); } }   // Schraegstriche
         for (const u of [-62, -47, -32]) { const q = rp.a + u * rp.sg, [x, z] = atL(q, rp.sg * 2.25), [, , nx, nz] = sub(r, q, q)[0]; decal(x, z, nz * rp.sg, -nx * rp.sg, 1.8, 5, 2, LY + 0.08); }   // innere Spur endet: rechts einfaedeln
+        // Auffahrt von unten (Nicolas 2026-11-14, Bild: von unten nach oben ueberarbeiten): auf den UZ m vor dem Portal fuehren die Linien weich in die Rampe:
+        // gelbe Doppellinie von der Lage der 4-Spur-Textur (+-0,54) auf die der Rampe (+-0,1), Spurlinie +-4,5 erst gestrichelt, dann durchgezogen zur Wandlinie;
+        // Pfeile fuer die Gegenrichtung: innen UPPER (Rampe hinauf), aussen geradeaus (unten bleiben)
+        const back = sg2 => sg2 * -rp.sg, sP = t => rp.b + rp.sg * t, sm = t => t * t * (3 - 2 * t);
+        for (const sg of [1, -1]) { const yl = []; for (let t = 0; t <= G.UZ; t += 1) yl.push(atL(sP(t), sg * (0.105 + (0.54 - 0.105) * sm(t / G.UZ)))); lineG(yl, 0.16, LY + 0.047);
+          const LL = 15, sl = []; for (let t = 0; t <= LL; t += 1) sl.push(atL(sP(t), sg * (D1 + 0.25 + (4.5 - D1 - 0.25) * sm(t / LL)))); lineW(sl, 0.16, YL);
+          for (let t = LL + 1.5; t < G.UZ; t += 6) lineW([atL(sP(t), sg * 4.5), atL(sP(Math.min(G.UZ, t + 3)), sg * 4.5)], 0.16, YL); }
+        for (const t of [10, 22]) { const q = sP(t), [, , nx, nz] = sub(r, q, q)[0], fx = -nz * rp.sg, fz = nx * rp.sg; let [x, z] = atL(q, -rp.sg * 2.1); decal(x, z, fx, fz, 2.6, 6, 4, LY + 0.08); [x, z] = atL(q, -rp.sg * 6.7); decal(x, z, fx, fz, 1.6, 5, 0, LY + 0.08); }
       }
       // keine Querwand mehr: die Seitenwaende laufen im Trichter schraeg bis an die Rampenwaende
     }
@@ -161,7 +173,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
       for (let d = -HW; d <= HW; d += 1.2) { const [x, z, nx, nz] = sub(r, sx, sx + 0.5)[0]; ring(x + nx * d, z + nz * d, 0.65, DY); } }
     // Seitenwaende innen (Kollision), Stuetzen und Deckenleuchten alle 15 m
     for (let s = r.sA; s <= r.sB; s += 1.2) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; const h = gdeckHW(r, s) - 0.65; for (const sg of [1, -1]) ring(x + nx * sg * h, z + nz * sg * h, 0.65, DY); }   // r 0,65 alle 1,2 m (ueberlappend, Leistung 2026-11-13)
-    for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { if (gdeckK(r, s) < 0.999 || mids.some(p => s > Math.min(p.a - 25 * p.sg, p.b) - 4 && s < Math.max(p.a - 25 * p.sg, p.b) + 8)) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; if (inOther(x, z, r, 15)) continue; posts.push([x, z]); ring(x, z, 0.6, DY);   // an Kreuzungen unten 15 m frei zum Abbiegen, nicht im Trichter (posts.push stand seit 2026-11-13 versehentlich im Kommentar)
+    for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { if (gdeckK(r, s) < 0.999 || mids.some(p => s > Math.min(p.a - 25 * p.sg, p.b) - 4 && s < Math.max(p.a - 25 * p.sg, p.b) + G.UZ + 5)) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; if (inOther(x, z, r, 15)) continue; posts.push([x, z]); ring(x, z, 0.6, DY);   // an Kreuzungen unten 15 m frei zum Abbiegen, nicht im Trichter (posts.push stand seit 2026-11-13 versehentlich im Kommentar)
       for (const sg of [1, -1]) { const lx = x + nx * sg * HW / 2, lz = z + nz * sg * HW / 2, k = LAMP.P.length / 3, tx = -nz, tz = nx;
         for (const [a, b] of [[-1.2, -0.15], [1.2, -0.15], [-1.2, 0.15], [1.2, 0.15]]) { LAMP.P.push(lx + tx * a + nx * b, DY - 0.03, lz + tz * a + nz * b); LAMP.U.push(0, 0); } LAMP.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }
   }
