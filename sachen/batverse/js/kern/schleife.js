@@ -49,6 +49,7 @@ function frame() {
   }
   carFrame(dt);
   shotsStep(dt); wasserFrame(dt);                                                             // Panzer: Schiessen, Granaten, Explosionen, Wracks (schiessen.js)
+  if (typeof bautHoverStep === "function") bautHoverStep();                                    // Gebaeude-ID beim Hovern (Orbit/Geist, ui/bauten-hover.js)
   if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
   const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
   const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < terrainH(player.pos.x, player.pos.z) - 2 && wfInTunnel(player.pos.x, player.pos.z)) || inHfTun(player.pos.x, player.pos.z, player.pos.y) || (player.pos.y < HILL - 2 && inRect(CSH_OUT, player.pos.x, player.pos.z)) || (player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;

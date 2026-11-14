@@ -46,6 +46,9 @@ body.walk #hint { display: block; }
 #lift-panel[hidden] { display: none; }
 #door-hint { position: fixed; left: 50%; top: 58%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 7px 14px; color: var(--text); font: inherit; font-size: .85rem; backdrop-filter: blur(8px); z-index: 6; cursor: pointer; }
 #door-hint[hidden] { display: none; }
+#baut-tip { position: fixed; z-index: 7; pointer-events: none; background: rgba(15, 18, 24, .88); color: #f2f4f8; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 4px 9px; font: 600 12px/1.35 system-ui, sans-serif; white-space: nowrap; }
+#baut-tip.mid { left: 50%; top: calc(50% + 16px); transform: translateX(-50%); }
+#baut-tip[hidden] { display: none; }
 #teleport { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 10px; border-radius: 9px; cursor: pointer; }
 #teleport { color-scheme: dark; }
 #teleport option { color: #f2f4f8; background: #1f232b; }
