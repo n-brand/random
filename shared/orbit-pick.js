@@ -3,6 +3,7 @@
 // Einbinden (in jeder 3D-Seite, nach dem Anlegen von renderer, scene, camera und controls):
 //   import { installOrbitPick } from "../../shared/orbit-pick.js";
 //   installOrbitPick({ renderer, camera, controls, scene });
+// Optional idAt: (punkt) => { id, art } | null liefert die ID aus einem Register (Vorrang vor userData.id am getroffenen Objekt).
 // Optional actions: [{ icon: "<svg..>", label: "Text", run: (punkt) => {} }] -> statt sofort zu kopieren erscheint an der Maus ein
 // kleines Menue mit Symbol-Knoepfen: "Koordinaten kopieren" plus die eigenen Aktionen (z. B. Wayne Manor: hierhin teleportieren).
 import * as THREE from "three";
@@ -12,7 +13,7 @@ export const PICK_ICONS = {
   pin: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>',
 };
 
-export function installOrbitPick({ renderer, camera, controls, scene, title = document.title, actions = null, mode = null }) {
+export function installOrbitPick({ renderer, camera, controls, scene, title = document.title, actions = null, mode = null, idAt = null }) {
   const el = renderer.domElement, ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   let down = null;
   // Kontextmenue (nur mit actions)
@@ -80,7 +81,10 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
     const azimut = (THREE.MathUtils.radToDeg(Math.atan2(off.x, off.z)) + 360) % 360, neigung = THREE.MathUtils.radToDeg(Math.asin(off.y / (dist || 1)));
     // ID (Nicolas 2026-11-12): Objekte mit userData.id (z. B. Gotham-Fuellbau FB-0123, Baustelle BS-03) geben ihre ID mit; gesucht wird vom
     // getroffenen Teil nach oben durch die Eltern. Die ID steht in der zweiten Zeile und in der kurzen Meldung.
-    let idO = null; for (let o = hit && hit.object; o; o = o.parent) if (o.userData && o.userData.id) { idO = o; break; }
+    // Option idAt(punkt) -> { id, art } (Register der Seite, z. B. Batverse BAUTEN) hat Vorrang vor userData.id
+    let idO = null; const reg = hit && idAt ? idAt(hit.point) : null;
+    if (reg) idO = { userData: reg };
+    else for (let o = hit && hit.object; o; o = o.parent) if (o.userData && o.userData.id) { idO = o; break; }
     const lines = [
       `${title} - ${mode ? mode() : "Orbit-Ansicht"}`,
       idO ? `ID: ${idO.userData.id}${idO.userData.art ? " (" + idO.userData.art + ")" : ""}` : null,
