@@ -99,6 +99,7 @@ addEventListener("keydown", e => {
   if (window.settingsOpen && settingsOpen()) { if (e.code === "Escape" || e.code === "KeyT") closeSettings(); return; }   // K6: Einstellungen offen
   if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
   if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
+  if (e.code === "KeyK" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (e.shiftKey) skMiniToggle(); else if (typeof skBigToggle === "function") skBigToggle(); return; }   // T6: K grosse Karte, Umschalt+K Minikarte (ui/stadtkarte.js)
   if (e.code === "KeyG" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (ghost) ghostToWalk(); else startGhost(); return; }   // G: Geist an/aus (Nicolas 2026-11-09)
   if (!walking) return;
   if (e.code === "Escape") { if (performance.now() - unlockT < 350) return; return setWalk(false); }   // Esc bei gefangener Maus gibt sie nur frei (#pause)

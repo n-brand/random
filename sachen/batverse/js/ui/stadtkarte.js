@@ -53,15 +53,15 @@ function skPaint(c, scale, from = 0, to = SK.paths.length) {
     c.restore(); }
 }
 
-// Wasser als Bild (8-m-Raster aus GOT, gleiche Flaechen wie das Spiel), erst bei Bedarf
-function skWater() {
-  if (SK.water) return SK.water;
+// Wasser als Bild (8-m-Raster aus GOT, gleiche Flaechen wie das Spiel); als Generator (je 60 Zeilen ein yield) oder am Stueck
+function* skWaterGen() {
   const V = SK.view, C = 8, NX = Math.ceil((V.x1 - V.x0) / C), NZ = Math.ceil((V.z1 - V.z0) / C), cv = document.createElement("canvas");
   cv.width = NX; cv.height = NZ; const c = cv.getContext("2d"), im = c.createImageData(NX, NZ), d = im.data;
-  for (let k = 0; k < NZ; k++) for (let i = 0; i < NX; i++) { const mx = V.x0 + (i + 0.5) * C, mz = V.z0 + (k + 0.5) * C, q = (k * NX + i) * 4;
-    if (GOT.sdw(mx, mz) < 0 && GOT.sdi(mx, mz) > 0) { d[q] = 0x1d; d[q + 1] = 0x3b; d[q + 2] = 0x55; d[q + 3] = 255; } }
-  c.putImageData(im, 0, 0); return SK.water = { cv, C };
+  for (let k = 0; k < NZ; k++) { for (let i = 0; i < NX; i++) { const mx = V.x0 + (i + 0.5) * C, mz = V.z0 + (k + 0.5) * C, q = (k * NX + i) * 4;
+    if (GOT.sdw(mx, mz) < 0 && GOT.sdi(mx, mz) > 0) { d[q] = 0x1d; d[q + 1] = 0x3b; d[q + 2] = 0x55; d[q + 3] = 255; } } if (k % 60 === 59) yield; }
+  c.putImageData(im, 0, 0); SK.water = { cv, C };
 }
+function skWater() { if (!SK.water) for (const _ of skWaterGen()); return SK.water; }
 
 // ===================== Eigene Position =====================
 // { mx, mz, ang (Karten-Norden = 0, im Uhrzeigersinn), mode, under }
@@ -74,4 +74,61 @@ function skPos() {
   camera.getWorldDirection(skDir);
   const [mx, mz] = GOT.toMap(p.x, p.z), [ax, az] = GOT.toMap(p.x + skDir.x, p.z + skDir.z);
   return { mx, mz, ang: Math.atan2(ax - mx, -(az - mz)), mode, under: (p.y ?? 0) < terrainH(p.x, p.z) - 1.5 };
+}
+
+// ===================== Minikarte (unten rechts, dreht mit der Blickrichtung) =====================
+// Hintergrundbild der ganzen Ansicht (SK.BGS px/m), nach dem Ladebildschirm als Kachel-Aufgabe in Portionen (hoechstens ca. 4 ms je Bild)
+SK.BGS = 0.5; SK.bgDone = false; SK.bgMax = 0;
+SK.mini = { on: (() => { try { return localStorage.getItem("wm-minikarte") !== "0"; } catch (e) { return true; } })(), last: null, D: 400, prev: null, v: 0 };
+function* skBgGen() {
+  const V = SK.view, s = SK.BGS, cv = document.createElement("canvas"); cv.width = Math.ceil((V.x1 - V.x0) * s); cv.height = Math.ceil((V.z1 - V.z0) * s);
+  const c = cv.getContext("2d"); c.fillStyle = SK.LAND; c.fillRect(0, 0, cv.width, cv.height); yield;
+  if (!SK.water) yield* skWaterGen(); const w = SK.water;
+  c.setTransform(s, 0, 0, s, -V.x0 * s, -V.z0 * s); c.imageSmoothingEnabled = true; c.drawImage(w.cv, V.x0, V.z0, w.cv.width * w.C, w.cv.height * w.C); yield;
+  for (let i = 0; i < SK.paths.length; i++) { skPaint(c, s, i, i + 1); yield; }
+  SK.bg = cv; SK.bgDone = true;
+}
+TILES.tasks.push({ gen: null, done: false, t0: 0, last: 0, plan() {}, step() {
+  if (TILES.startup || this.done || TILES.loading()) return false;
+  const now = performance.now(); if (now - this.last > 8) this.t0 = now; this.last = now;   // neues Bild: eigene 4-ms-Scheibe
+  if (now - this.t0 > 4) return false;
+  if (!this.gen) this.gen = skBgGen();
+  const a = performance.now(), r = this.gen.next(); SK.bgMax = Math.max(SK.bgMax, performance.now() - a);
+  if (r.done) { this.done = true; return false; } return true; } });
+
+function skMiniToggle() { SK.mini.on = !SK.mini.on; try { localStorage.setItem("wm-minikarte", SK.mini.on ? "1" : "0"); } catch (e) {} SK.mini.last = null;
+  if (typeof toast === "function") toast("Minikarte " + (SK.mini.on ? "an" : "aus") + " (Umschalt+K)"); }
+
+// je Bild aus schleife.js; zeichnet nur neu, wenn sich Lage, Richtung oder Massstab sichtbar aendern
+function skMiniStep() {
+  const el = document.getElementById("minikarte"), big = typeof skBigIsOpen === "function" && skBigIsOpen();
+  const show = SK.bgDone && SK.mini.on && !big && !document.getElementById("loading");
+  if (el.hidden === show) el.hidden = !show; if (!show) { SK.mini.prev = null; return; }
+  const P = skPos(), now = performance.now(), M = SK.mini;
+  // Massstab: zu Fuss 400 m, im Fahrzeug/Flug mit dem Tempo groesser (bis 1200 m), weich
+  let v = 0; if (M.prev) { const dt = (now - M.prev.t) / 1000; if (dt > 0 && dt < 0.5) v = Math.hypot(P.mx - M.prev.mx, P.mz - M.prev.mz) / dt; } M.prev = { mx: P.mx, mz: P.mz, t: now };
+  if (v < 200) M.v += (v - M.v) * 0.05;                                       // Spruenge (Teleport) nicht mitzaehlen
+  const goal = P.mode === "car" || P.mode === "boat" || P.mode === "fly" ? Math.min(1200, 400 + 6 * M.v) : 400; M.D += (goal - M.D) * 0.04;
+  const dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(el.clientWidth * dpr);
+  if (el.width !== W) { el.width = el.height = W; M.last = null; }
+  const L = M.last; if (L && Math.abs(L.mx - P.mx) * W / M.D < 0.5 && Math.abs(L.mz - P.mz) * W / M.D < 0.5 && Math.abs(L.ang - P.ang) < 0.009 && Math.abs(L.D - M.D) / M.D < 0.002 && L.under === P.under) return;
+  M.last = { mx: P.mx, mz: P.mz, ang: P.ang, D: M.D, under: P.under };
+  const c = el.getContext("2d"), R = W / 2, k = W / M.D, V = SK.view;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, W);
+  c.save(); c.beginPath(); c.arc(R, R, R - dpr, 0, Math.PI * 2); c.clip(); c.fillStyle = SK.LAND; c.fillRect(0, 0, W, W);
+  c.translate(R, R); c.rotate(-P.ang); c.scale(k, k); c.translate(-P.mx, -P.mz);
+  c.imageSmoothingEnabled = true; c.drawImage(SK.bg, V.x0, V.z0, SK.bg.width / SK.BGS, SK.bg.height / SK.BGS);
+  c.restore();
+  const txt = (t, x, y, px, col) => { c.font = `700 ${px * dpr}px system-ui, sans-serif`; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3 * dpr; c.strokeStyle = "#000"; c.fillStyle = col; c.strokeText(t, x, y); c.fillText(t, x, y); };
+  // ausserhalb der Karte: Pfeil am Rand Richtung Kartenmitte
+  if (P.mx < V.x0 || P.mx > V.x1 || P.mz < V.z0 || P.mz > V.z1) {
+    const a = Math.atan2((V.x0 + V.x1) / 2 - P.mx, -((V.z0 + V.z1) / 2 - P.mz)) - P.ang, r = R - 14 * dpr;
+    c.save(); c.translate(R + Math.sin(a) * r, R - Math.cos(a) * r); c.rotate(a); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2 * dpr;
+    c.beginPath(); c.moveTo(0, -9 * dpr); c.lineTo(7 * dpr, 6 * dpr); c.lineTo(-7 * dpr, 6 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+  { const a = -P.ang, r = R - 10 * dpr; txt("N", R + Math.sin(a) * r, R - Math.cos(a) * r, 11, "#fff"); }   // Norden am Rand
+  if (P.under) txt("unter Tage", R, W - 24 * dpr, 10, "#e8c547");
+  // eigener Pfeil (oben = Blickrichtung)
+  c.save(); c.translate(R, R); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2 * dpr;
+  c.beginPath(); c.moveTo(0, -10 * dpr); c.lineTo(7 * dpr, 8 * dpr); c.lineTo(0, 4 * dpr); c.lineTo(-7 * dpr, 8 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore();
+  c.beginPath(); c.arc(R, R, R - dpr, 0, Math.PI * 2); c.lineWidth = 2 * dpr; c.strokeStyle = "rgba(255,255,255,.55)"; c.stroke();
 }
