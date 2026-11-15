@@ -26,6 +26,8 @@ function areaRun(A, budget) {
   for (const m of mergeWorldStatic(A.grp)) if (m.name === "Untergrund") { UNDERGROUND.push(m); m.visible = vis; }
   A.state = "done"; return true;
 }
+// liegt der Punkt in einem Bereich, der noch nicht fertig ist? (geparkte Fahrzeuge warten dann, sonst fielen sie durch den fehlenden Boden)
+function areaPending(x, z) { for (const A of AREAS) if (A.state !== "done" && Math.hypot(x - A.x, z - A.z) < A.r) return true; return false; }
 // alle Bereiche, deren Kreis den Punkt enthaelt, sofort fertig bauen
 function areaEnsure(x, z) { for (const A of AREAS) if (A.state !== "done" && Math.hypot(x - A.x, z - A.z) < A.r) areaRun(A, 1e9); }
 // Kachel-Aufgabe: je Bild ein Bereich (der naechste in Reichweite), im ersten Bild nur Bereiche, in denen die Kamera steht (dann ganz)

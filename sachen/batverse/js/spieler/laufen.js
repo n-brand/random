@@ -204,7 +204,7 @@ function startGhost() {
 }
 // Geist -> Begehen an der aktuellen Stelle (Taste G, Nicolas 2026-11-09): landet auf dem Boden unter der Geist-Position, Blick bleibt
 function ghostToWalk() {
-  const p = player.pos.clone(), yaw = player.yaw, pitch = player.pitch;
+  const p = player.pos.clone(), yaw = player.yaw, pitch = player.pitch; areaEnsure(p.x, p.z);   // Bereich unter dem Geist fertig
   startWalk(p.x, p.z, yaw);
   player.pos.set(p.x, p.y + 0.3, p.z); player.pos.y = supportAt(player.pos, p.y + 0.3); player.vy = 0; player.pitch = pitch;
   updatePlayer(0.001, 0, 0, false);

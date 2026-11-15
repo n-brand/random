@@ -150,6 +150,7 @@ function towStep(C, dt) {
 function carMsg(t) { if (clock.elapsedTime - CAR.msgT > 2.5) { CAR.msgT = clock.elapsedTime; toast(t); } }
 function useCar(want) {
   if (want && want.lazy) vehReal(want);
+  if (want) areaEnsure(want.x, want.z);                                    // Bereich am Fahrzeug fertig (kern/bereiche.js)
   if (!walking || ghost) return false;
   const p = player.pos;
   if (CAR && CAR.on) {
@@ -185,6 +186,7 @@ function useCar(want) {
 // Fahrzeug zum Spieler holen (Teleport-Menue): vor den Spieler in Blickrichtung auf freien Boden (sonst seitlich/weiter weg)
 function summonVehicle(v) {
   if (v && v.lazy) vehReal(v);
+  areaEnsure(player.pos.x, player.pos.z);                                  // Bereich am Spieler fertig (dort kommt das Fahrzeug hin; der alte Platz braucht nichts)
   if (!v) return false;
   if (!walking || ghost) { toast("Zuerst „Begehen“ starten, dann das Fahrzeug holen"); return false; }
   if (CAR && CAR.on) { if (CAR === v) return toast(v.label + ": du sitzt schon drin"), false; useCar(); if (CAR.on) return false; }
@@ -444,6 +446,7 @@ function carFrame(dt) {
       v.x = tt.position.x + dx * c + dz * s; v.z = tt.position.z - dx * s + dz * c; v.h += w; if (v.on) player.yaw += w;
     }
     if (v.on || v.towBy) continue;                                         // am Haken: Lage kommt aus towStep
+    if (areaPending(v.x, v.z)) { const P = walking ? player.pos : camera.position; if (Math.hypot(P.x - v.x, P.z - v.z) < 80) areaEnsure(v.x, v.z); else continue; }   // Bereich noch nicht gebaut (kern/bereiche.js): warten, nah sofort bauen
     const lifting = L && L.state === "moving" && CAR_LIFT.inCar({ x: v.x, y: v.y, z: v.z }), atBay = (bay && Math.hypot(v.x - bay.x, v.z - bay.z) < 4) || GRAMP.inF(v.x, v.z, 1.5);   // Hebebuehne, Garagenrampe: jedes Bild
     let run = lifting || atBay || !v.settled || (vehFrame + v.idx) % 15 === 0;
     if (run && !lifting && v.settled && Math.hypot(player.pos.x - v.x, player.pos.z - v.z) > 80) run = false;   // geparkt und weit weg

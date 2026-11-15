@@ -44,7 +44,7 @@ function updateLift(dt) {
   if (L.state === "idle" && L.target !== L.at) L.state = "closing";
   if (L.state === "closing") {
     L.open[L.at] = Math.max(0, L.open[L.at] - dt / 0.9);
-    if (L.open[L.at] <= 0) { L.state = "moving"; L.t = 0; L.from = L.y; L.to = STOPS[L.target].y; }
+    if (L.open[L.at] <= 0) { L.state = "moving"; L.t = 0; L.from = L.y; L.to = STOPS[L.target].y; if (L.to < HILL - 3) areaEnsure(SHAFT.cx, SHAFT.cz); }   // Hoehle: Bereich fertig, bevor man ankommt
   } else if (L.state === "moving") {
     L.t = Math.min(1, L.t + dt / Math.max(2.5, Math.abs(L.to - L.from) / 7));   // ca. 7 m/s (A2: Haus -> Hoehle unten ca. 8 s)
     L.y = lerp(L.from, L.to, sst(0, 1, L.t));
