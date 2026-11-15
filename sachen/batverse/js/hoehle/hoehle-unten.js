@@ -61,12 +61,14 @@ function caveAt(x, z) { return cmAt(Math.floor((x - CX0) / CELL), Math.floor((z 
 // Wendeplatz: niedrige Steinbruestung am Seeufer (Zellen mit Wasser daneben), sonst rutscht man beim Wenden in den See
 {
   const stoneM = M(0x7a756c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 0.95 });
+  areaAdd({ id: "batcave", x: SHAFT.cx, z: SHAFT.cz, r: 600, gen: function* () {   // Bereich (Steinbruestung) (kern/bereiche.js): erst in der Naehe, in Portionen
   for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
     const x = CX0 + (i + 0.5) * CELL, z = CZ0 + (j + 0.5) * CELL;
     if (x < -30 || x > -12 || z < -36 || z > 70 || (z > 15.4 && z < 17.2 && x > -24.8) || cmAt(i, j) !== 1) continue;   // Luecke beim Steinweg zu Treppe und Steg   // Wendeplatz und Tunnel entlang des Sees
     if (![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => cmAt(i + a, j + b) === 2)) continue;
     B(x - CELL / 2, x + CELL / 2, LY - 0.4, LY + 0.72 + 0.22 * vnoise(x * 0.9, z * 0.9), z - CELL / 2, z + CELL / 2, stoneM);
   }
+  } });
 }
 const caveLights = [], gates = [];
 {
@@ -79,6 +81,7 @@ const caveLights = [], gates = [];
     return lerp(ceilBase(x, z), SEA_Y + 12 + 2 * dome - 0.8 * vnoise(x * 0.3 + 2, z * 0.3), sst(6, -6, sd));   // B3: Gewoelbe ueber dem See
   };
   const inShaft = (x, z) => x > SHAFT_OUT[0] - 0.3 && x < SHAFT_OUT[1] + 0.3 && z > SHAFT_OUT[2] - 0.3 && z < SHAFT_OUT[3] + 0.3;
+  areaAdd({ id: "batcave", x: SHAFT.cx, z: SHAFT.cz, r: 600, gen: function* () {   // Bereich (kern/bereiche.js): erst in der Naehe, in Portionen
   const G = { rock: [], floor: [], bed: [], water: [] };
   const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
   const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.25, z * 0.25];
@@ -107,6 +110,7 @@ const caveLights = [], gates = [];
   }
   const ucDisp = (ci, cj) => { const key = ci * 4096 + cj; return ucBlock.has(key) ? [0, 0] : ucD.get(key) || [0, 0]; };
   for (let j = 0; j < CNZ; j++) for (let i = 0; i < CNX; i++) {
+    if (i === 0) yield;
     const t = CM[j * CNX + i];
     if (!t || t === 3) continue;
     const c = [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)];   // 00, 10, 11, 01
@@ -135,40 +139,38 @@ const caveLights = [], gates = [];
       else if (t === 1 && nt === 2) push(G.rock, [[ax, BED, az], [bx, BED, bz], [bx, LY, bz], [ax, LY, az]], uvWall);
     }
   }
-  const mk = (arr, m) => {
-    const g = new THREE.BufferGeometry(), a = new Float32Array(arr), n = a.length / 5, pos = new Float32Array(n * 3), uv = new Float32Array(n * 2);
-    for (let k = 0; k < n; k++) { pos.set(a.subarray(k * 5, k * 5 + 3), k * 3); uv.set(a.subarray(k * 5 + 3, k * 5 + 5), k * 2); }
-    g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.computeVertexNormals();
-    const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; mesh.userData.keep = true; scene.add(mesh); return mesh;
-  };
-  mk(G.rock, M(0x77736c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true, side: THREE.DoubleSide }));
-  mk(G.floor, M(0x55575c, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 0.95, side: THREE.DoubleSide }));
-  mk(G.bed, M(0x2d3a40, { roughness: 1, side: THREE.DoubleSide }));
-  mk(G.water, mat.sea);
-  // Meer als Zunge in den Wassertunnel (von 20 m hinter der Klippe bis ins Meer), ueberlappt mit dem Hoehlenwasser
-  {
-    const curve = new THREE.CatmullRomCurve3(SEA_TUNNEL.map(([x, z]) => new THREE.Vector3(x, 0, z))), len = curve.getLength();
-    let t0 = 0, t1 = 1;
-    for (let t = 0; t <= 1; t += 0.002) { const p = curve.getPointAt(t), sd = seaD(p.x, p.z); if (sd < -20) t0 = t; if (sd > 4 && t1 === 1) t1 = t; }
-    ribbon(curve, len, SEA_TUN_W + 1.2, mat.sea, 4, 0, { t0, t1, y: () => SEA_Y - 0.02 });
-  }
+  const mk = areaMesh;                                                     // in Portionen (kern/bereiche.js), vorher alles in einem Bild
+  yield* mk(G.rock, M(0x77736c, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true, side: THREE.DoubleSide }));
+  yield* mk(G.floor, M(0x55575c, { map: texClone(rockTex, 1 / 3, 1 / 3), roughness: 0.95, side: THREE.DoubleSide }));
+  yield* mk(G.bed, M(0x2d3a40, { roughness: 1, side: THREE.DoubleSide }));
+  yield* mk(G.water, mat.sea);
+  yield;
   // Kollision: Boden (Zeilen-Laeufe), Wasser gesperrt, Felswaende an jeder Kante zu Fels
   const runs = (test, fn) => { for (let j = 0; j < CNZ; j++) { let s = -1; for (let i = 0; i <= CNX; i++) { const ok = i < CNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
   const X = i => CX0 + i * CELL, Z = j => CZ0 + j * CELL;
-  runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), BED - 1.5, LY, Z(j), Z(j + 1)));   // B1: bis unter den Grund
-  runs((i, j) => CM[j * CNX + i] === 2 || CM[j * CNX + i] === 4, (a, b, j) => S(X(a), X(b), BED - 0.5, BED, Z(j), Z(j + 1)));   // Grund im Wasser (man kann hinein und schwimmen)
+  runs((i, j) => CM[j * CNX + i] === 1, (a, b, j) => S(X(a), X(b), BED - 1.5, LY, Z(j), Z(j + 1)));   // B1: bis unter den Grund yield;
+  runs((i, j) => CM[j * CNX + i] === 2 || CM[j * CNX + i] === 4, (a, b, j) => S(X(a), X(b), BED - 0.5, BED, Z(j), Z(j + 1)));   // Grund im Wasser (man kann hinein und schwimmen) yield;
   const isC = v => v === 1 || v === 2;
   // Wandkollision um WM nach innen geschoben: die sichtbaren Felsecken sind bis 0,35 m verrauscht, sonst sieht man durch die Wand
   const WM = 0.4;
-  runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j - 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j) - 0.3 + WM, Z(j) + WM));
-  runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j + 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM));
+  runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j - 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j) - 0.3 + WM, Z(j) + WM)); yield;
+  runs((i, j) => isC(CM[j * CNX + i]) && cmAt(i, j + 1) === 0, (a, b, j) => S(X(a), X(b), BED, LY + LH, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM)); yield;
   for (let i = 0; i < CNX; i++) for (const d of [-1, 1]) {                // senkrechte Kanten spaltenweise
+    if (d === -1 && i % 40 === 39) yield;
     let s = -1;
     for (let j = 0; j <= CNZ; j++) {
       const ok = j < CNZ && isC(CM[j * CNX + i]) && cmAt(i + d, j) === 0;
       if (ok && s < 0) s = j;
       if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 + WM : xl - WM, d < 0 ? xl + WM : xl + 0.3 - WM, BED, LY + LH, Z(s), Z(j)); s = -1; }
     }
+  }
+  } });
+  // Meer als Zunge in den Wassertunnel (von 20 m hinter der Klippe bis ins Meer), ueberlappt mit dem Hoehlenwasser
+  {
+    const curve = new THREE.CatmullRomCurve3(SEA_TUNNEL.map(([x, z]) => new THREE.Vector3(x, 0, z))), len = curve.getLength();
+    let t0 = 0, t1 = 1;
+    for (let t = 0; t <= 1; t += 0.002) { const p = curve.getPointAt(t), sd = seaD(p.x, p.z); if (sd < -20) t0 = t; if (sd > 4 && t1 === 1) t1 = t; }
+    ribbon(curve, len, SEA_TUN_W + 1.2, mat.sea, 4, 0, { t0, t1, y: () => SEA_Y - 0.02 });
   }
 
   const C = (px, py) => caveMp(px, py);

@@ -25,11 +25,13 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
   const hole = (x, z) => inShaft(x, z) || inRect(STW, x, z);
   const jit = (x, z) => [x + (vnoise(x * 0.45 + 13, z * 0.45) - 0.5) * 0.7, z + (vnoise(x * 0.45, z * 0.45 + 17) - 0.5) * 0.7];
   const ceilY = (x, z) => UY + UH - 2.2 * vnoise(x * 0.12 + 40, z * 0.12) - 1.0 * vnoise(x * 0.4 + 9, z * 0.4) + (axtIn(x, z, 0.6) || inRect(HGX, x, z, 0.6) ? 3 : 0);   // Gang und Hangar-Erweiterung 3 m hoeher (The Bat)
+  areaAdd({ id: "batcave", x: SHAFT.cx, z: SHAFT.cz, r: 600, gen: function* () {   // Bereich (kern/bereiche.js): erst in der Naehe, in Portionen
   const rock = [], floor = [];
   const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
   const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.5, z * 0.5];
   const corner = (i, j) => jit(UCX0 + i * CELL, CZ0 + j * CELL);
   for (let j = 0; j < UCNZ; j++) for (let i = 0; i < UCNX; i++) {
+    if (i === 0 && j % 2 === 1) yield;
     if (!CMU[j * UCNX + i]) continue;
     const c = [corner(i, j), corner(i + 1, j), corner(i + 1, j + 1), corner(i, j + 1)], cx = UCX0 + (i + 0.5) * CELL, cz = CZ0 + (j + 0.5) * CELL;
     if (!hole(cx, cz)) push(floor, c.map(([x, z]) => [x, UY, z]), uvFlat);
@@ -40,24 +42,21 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
       push(rock, [[ax, UY, az], [bx, UY, bz], [bx, ceilY(bx, bz), bz], [ax, ceilY(ax, az), az]], uvWall);
     }
   }
-  const mk = (arr, m) => {
-    const g = new THREE.BufferGeometry(), a = new Float32Array(arr), n = a.length / 5, pos = new Float32Array(n * 3), uv = new Float32Array(n * 2);
-    for (let k = 0; k < n; k++) { pos.set(a.subarray(k * 5, k * 5 + 3), k * 3); uv.set(a.subarray(k * 5 + 3, k * 5 + 5), k * 2); }
-    g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.computeVertexNormals();
-    const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; mesh.userData.keep = true; scene.add(mesh); return mesh;
-  };
+  const mk = areaMesh;                                                     // in Portionen (kern/bereiche.js), vorher alles in einem Bild
   const grate = canvasTex(64, 64, (g, w, h) => { g.fillStyle = "#5d6168"; g.fillRect(0, 0, w, h); g.fillStyle = "#3b3e44"; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 3); });
   grate.repeat.set(1, 1);
-  mk(rock, M(0x6f6b64, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true, side: THREE.DoubleSide }));
-  mk(floor, M(0xffffff, { map: grate, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide }));
+  yield* mk(rock, M(0x6f6b64, { map: texClone(rockTex, 1 / 2, 1 / 2), roughness: 1, flatShading: true, side: THREE.DoubleSide }));
+  yield* mk(floor, M(0xffffff, { map: grate, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide }));
+  yield;
   // Kollision: Boden (ohne Treppen- und Schachtloch), Felswaende
   const X = i => UCX0 + i * CELL, Z = j => CZ0 + j * CELL;
   const rowRuns = (test, fn) => { for (let j = 0; j < UCNZ; j++) { let s = -1; for (let i = 0; i <= UCNX; i++) { const ok = i < UCNX && test(i, j); if (ok && s < 0) s = i; if (!ok && s >= 0) { fn(s, i, j); s = -1; } } } };
-  rowRuns((i, j) => CMU[j * UCNX + i] === 1 && !hole(X(i) + CELL / 2, Z(j) + CELL / 2), (a, b, j) => S(X(a), X(b), UY - 0.5, UY, Z(j), Z(j + 1)));
+  rowRuns((i, j) => CMU[j * UCNX + i] === 1 && !hole(X(i) + CELL / 2, Z(j) + CELL / 2), (a, b, j) => S(X(a), X(b), UY - 0.5, UY, Z(j), Z(j + 1))); yield;
   const WM = 0.4;                                                          // wie unten: Kollision nach innen geschoben
-  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j - 1), (a, b, j) => S(X(a), X(b), UY, UY + UH + 3, Z(j) - 0.3 + WM, Z(j) + WM));
-  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j + 1), (a, b, j) => S(X(a), X(b), UY, UY + UH + 3, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM));
+  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j - 1), (a, b, j) => S(X(a), X(b), UY, UY + UH + 3, Z(j) - 0.3 + WM, Z(j) + WM)); yield;
+  rowRuns((i, j) => CMU[j * UCNX + i] && !cmuAt(i, j + 1), (a, b, j) => S(X(a), X(b), UY, UY + UH + 3, Z(j + 1) - WM, Z(j + 1) + 0.3 - WM)); yield;
   for (let i = 0; i < UCNX; i++) for (const d of [-1, 1]) {
+    if (d === -1 && i % 40 === 39) yield;
     let s = -1;
     for (let j = 0; j <= UCNZ; j++) {
       const ok = j < UCNZ && CMU[j * UCNX + i] && !cmuAt(i + d, j);
@@ -65,6 +64,7 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
       if (!ok && s >= 0) { const xl = d < 0 ? X(i) : X(i + 1); S(d < 0 ? xl - 0.3 + WM : xl - WM, d < 0 ? xl + WM : xl + 0.3 - WM, UY, UY + UH + 3, Z(s), Z(j)); s = -1; }
     }
   }
+  } });
 
   // Treppe zwischen den Ebenen: Lauf A (Spur Nord) unten im Osten hinein nach Westen, Podest, Lauf B (Spur Sued) zurueck nach Osten, oben Podest im Osten
   {

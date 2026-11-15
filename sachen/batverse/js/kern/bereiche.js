@@ -1,7 +1,7 @@
 "use strict";
 // Bereiche erst in der Naehe bauen (Nicolas 2026-11-15, Plan docs/superpowers/plans/2026-11-15-bereiche-erst-in-der-naehe.md): ein Bereich hat
 // Generator-Funktionen, die Netze und Kollision bauen (mit B, cyl, S, circles wie sonst) und zwischen kleinen Portionen mit yield abgeben.
-// Eine Kachel-Aufgabe baut den naechsten Bereich in Reichweite (Kamera, Spieler oder aktives Fahrzeug naeher als r) im Zeitbudget (3 ms, solange der
+// Eine Kachel-Aufgabe baut den naechsten Bereich in Reichweite (Kamera, Spieler oder aktives Fahrzeug naeher als r) im Zeitbudget (2 ms, solange der
 // Ladebildschirm steht TILES.slice()); areaEnsure(x, z) baut sofort fertig (Teleport, Aufzug, Fahrzeug holen ...).
 // Waehrend ein Bereich baut, landet alles, was in world kaeme, in seiner Gruppe; neue solids/circles kommen ins Zusatzraster (collAdd), also kein
 // collBuild ueber alles. Fertig: statische Teile wie in start.js zusammenfassen (mergeWorldStatic), Untergrund-Teile in UNDERGROUND.
@@ -35,8 +35,22 @@ TILES.tasks.push({ plan() {}, step() {
   for (const A of AREAS) { if (A.state === "done") continue; const d = Math.min(...pts.map(p => Math.hypot(p.x - A.x, p.z - A.z))); if (d < A.r && d < bd) { bd = d; best = A; } }
   if (!best) return false;
   if (TILES.startup) { if (Math.hypot(camera.position.x - best.x, camera.position.z - best.z) < best.r) areaRun(best, 1e9); return false; }
-  areaRun(best, TILES.loading() ? TILES.slice() : 3); return false;
+  areaRun(best, TILES.loading() ? TILES.slice() : 2); return false;   // 2 ms: eine Portion kann darueber gehen, so bleibt das Bild unter +5 ms
 } });
+// Netz aus [x, y, z, u, v, ...]-Folge in Portionen bauen (Leistung 2026-11-15: die Hoehlennetze kosteten am Stueck bis 40 ms in einem Bild):
+// Positionen/UV je ca. 20 000 Punkte, dann Flaechen-Normalen (wie computeVertexNormals ohne Index) je 30 000 Punkte; Netz bleibt einzeln (keep)
+function* areaMesh(arr, m) {
+  const n = arr.length / 5, pos = new Float32Array(n * 3), uv = new Float32Array(n * 2), nor = new Float32Array(n * 3);
+  for (let k0 = 0; k0 < n; k0 += 20000) { const k1 = Math.min(n, k0 + 20000); for (let k = k0; k < k1; k++) { pos[k * 3] = arr[k * 5]; pos[k * 3 + 1] = arr[k * 5 + 1]; pos[k * 3 + 2] = arr[k * 5 + 2]; uv[k * 2] = arr[k * 5 + 3]; uv[k * 2 + 1] = arr[k * 5 + 4]; } yield; }
+  for (let t0 = 0; t0 < n; t0 += 30000) { const t1 = Math.min(n, t0 + 30000);
+    for (let k = t0; k + 2 < t1 + 3 && k + 2 < n; k += 3) { const a = k * 3, b = a + 3, c = a + 6;
+      const cbx = pos[c] - pos[b], cby = pos[c + 1] - pos[b + 1], cbz = pos[c + 2] - pos[b + 2], abx = pos[a] - pos[b], aby = pos[a + 1] - pos[b + 1], abz = pos[a + 2] - pos[b + 2];
+      let x = cby * abz - cbz * aby, y = cbz * abx - cbx * abz, z = cbx * aby - cby * abx; const l = Math.hypot(x, y, z) || 1; x /= l; y /= l; z /= l;
+      for (const q of [a, b, c]) { nor[q] = x; nor[q + 1] = y; nor[q + 2] = z; } }
+    yield; }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+  const mesh = new THREE.Mesh(g, m); mesh.receiveShadow = true; mesh.userData.keep = true; (AREA_PARENT || scene).add(mesh); return mesh;
+}
 // Statische Netze unter root je Material zusammenfassen (weniger Zeichenaufrufe); vorher in start.js, jetzt auch fuer fertige Bereiche.
 // Liefert die neuen Netze (in der Szene); Teile ganz unter dem Gelaende (nicht an der Kueste) heissen "Untergrund".
 function mergeWorldStatic(root) {
