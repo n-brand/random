@@ -18,6 +18,8 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   asphT.wrapS = asphT.wrapT = THREE.RepeatWrapping;
   const stripeT = canvasTex(128, 32, (c, w, h) => { c.fillStyle = "#e0b31c"; c.fillRect(0, 0, w, h); c.fillStyle = "#1d1d1d"; for (let x = -32; x < w + 32; x += 32) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 16, h); c.lineTo(x + 32, 0); c.lineTo(x + 16, 0); c.fill(); } });
   stripeT.wrapS = stripeT.wrapT = THREE.RepeatWrapping;
+  const exitT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#1f7a3a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 72px Arial, sans-serif"; c.textAlign = "center"; c.fillText("AUSGANG", w / 2 - 30, 100);
+    c.beginPath(); c.moveTo(w - 70, 58); c.lineTo(w - 22, 80); c.lineTo(w - 70, 102); c.closePath(); c.fill(); c.font = "32px Arial, sans-serif"; c.fillText("Exit · Lower Level", w / 2 - 30, 142); });
   const signT = canvasTex(512, 160, (c, w, h) => { c.fillStyle = "#1b3f8f"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.fillRect(10, 10, 140, 140); c.fillStyle = "#1b3f8f"; c.font = "bold 130px Arial, sans-serif"; c.textAlign = "center"; c.fillText("P", 80, 128);
     c.fillStyle = "#fff"; c.font = "bold 56px Arial, sans-serif"; c.textAlign = "left"; c.fillText("WAYNE TOWER", 170, 75); c.font = "38px Arial, sans-serif"; c.fillText("Parkhaus · Public", 170, 125); });
   const M2 = o => new THREE.MeshStandardMaterial(Object.assign({ side: THREE.DoubleSide }, o));
@@ -29,7 +31,8 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
     stripe: M2({ map: stripeT, roughness: 0.6, emissive: 0x806010, emissiveIntensity: 0.3 }),
     red: M2({ color: 0xc8202a, emissive: 0x5a0a0e, emissiveIntensity: 0.5 }), white: M2({ color: 0xf0f0f0, emissive: 0x606060, emissiveIntensity: 0.4 }),
     metal: M2({ color: 0x5b6670, metalness: 0.5, roughness: 0.5, emissive: 0x2a3036, emissiveIntensity: 0.4 }),
-    sign: M2({ map: signT, emissive: 0xffffff, emissiveMap: signT, emissiveIntensity: 0.5 }),
+    sign: M2({ map: signT, emissive: 0xffffff, emissiveMap: signT, emissiveIntensity: 0.5, side: THREE.FrontSide }),   // nur von der Ringstrasse lesbar
+    exit: M2({ map: exitT, emissive: 0xffffff, emissiveMap: exitT, emissiveIntensity: 0.5, side: THREE.FrontSide }),   // Rueckseite (Nicolas 2026-11-15: von innen "Ausgang")
   };
   // ---------- Geometrie in Turm-Koordinaten (x = a, z = b, y relativ zu WTO.Y) ----------
   const G = {}; for (const k of Object.keys(mats)) G[k] = { P: [], U: [], I: [] };
@@ -38,10 +41,19 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   const wallQ = (k, a0, b0, a1, b1, y0, y1, sc = 3) => { const L = Math.hypot(a1 - a0, b1 - b0); quad(k, [[a0, y0, b0], [a1, y0, b1], [a1, y1, b1], [a0, y1, b0]], [[0, y0 / sc], [L / sc, y0 / sc], [L / sc, y1 / sc], [0, y1 / sc]]); };
   const box = (k, a0, a1, b0, b1, y0, y1) => { wallQ(k, a0, b0, a1, b0, y0, y1); wallQ(k, a1, b0, a1, b1, y0, y1); wallQ(k, a1, b1, a0, b1, y0, y1); wallQ(k, a0, b1, a0, b0, y0, y1); flat(k, a0, a1, b0, b1, y1); };
   // Flaeche der Tiefgarage in 2-m-Zeilen ohne Loch (Wendel in TG 1), je Zeile zusammenhaengende Stuecke
-  const hole1 = (a, b) => Math.hypot(a - H.ca, b - H.cb) < H.R + H.w / 2 + 0.3 && !(a > H.ca - H.R - H.w / 2 - 0.2 && a < H.ca - H.R + H.w / 2 + 0.2 && b > H.cb);
-  const runs = hole => { const out = []; for (let b = T.b0; b < T.b1 - 0.01; b += 2) { let s = null; for (let a = T.a0; a <= T.a1 + 0.01; a += 1) { const ok = a < T.a1 - 0.01 && !hole(a + 0.5, b + 1); if (ok && s === null) s = a; if (!ok && s !== null) { out.push([s, a, b, Math.min(T.b1, b + 2)]); s = null; } } } return out; };
+  // (Nicolas 2026-11-15, Geist in TG1: "relativ viel offen": der Rand war in 2-m-Stufen gezackt) Loch bis an die Aussenwand, im Band der Wendel 0,5-m-Zellen
+  const hole1 = (a, b) => Math.hypot(a - H.ca, b - H.cb) < H.R + H.w / 2 + 0.25 && !(a > H.ca - H.R - H.w / 2 - 0.2 && a < H.ca - H.R + H.w / 2 + 0.2 && b > H.cb);
+  const runs = hole => { const out = [], band = b => b > H.cb - H.R - H.w - 1 && b < H.cb + H.R + H.w + 1;
+    for (let b = T.b0; b < T.b1 - 0.01;) { const st = band(b) || band(b + 2) ? 0.5 : 2, b1 = Math.min(T.b1, b + st); let s = null;
+      for (let a = T.a0; a <= T.a1 + 0.01; a += st) { const ok = a < T.a1 - 0.01 && !hole(a + st / 2, (b + b1) / 2); if (ok && s === null) s = a; if (!ok && s !== null) { out.push([s, a, b, b1]); s = null; } }
+      b = b1; } return out; };
   const R1 = runs(hole1), R2 = runs(() => false);
-  for (const [a0, a1, b0, b1] of R1) { flat("floor", a0, a1, b0, b1, L1); quad("conc", [[a0, C2, b0], [a1, C2, b0], [a1, C2, b1], [a0, C2, b1]], [[a0 / 3, b0 / 3], [a1 / 3, b0 / 3], [a1 / 3, b1 / 3], [a0 / 3, b1 / 3]]); }   // TG1-Boden, TG2-Decke
+  // TG1-Boden und TG2-Decke als eine Flaeche mit rundem Loch (glatter Rand an der Wendel-Aussenwand; die Zellen R1 sind nur noch Kollision)
+  { const rW = H.R + H.w / 2 + 0.2, aS = H.ca - H.R + H.w / 2 + 0.25, th1 = 2 * Math.PI + Math.acos((aS - H.ca) / rW), sh = new THREE.Shape([[T.a0, T.b0], [T.a1, T.b0], [T.a1, T.b1], [T.a0, T.b1]].map(([a, b]) => new THREE.Vector2(a, b)));
+    const hp = []; for (let k = 0; k <= 96; k++) { const t = Math.PI + (th1 - Math.PI) * k / 96; hp.push(new THREE.Vector2(H.ca + rW * Math.cos(t), H.cb + rW * Math.sin(t))); }
+    hp.push(new THREE.Vector2(aS, H.cb)); sh.holes.push(new THREE.Path(hp));
+    for (const [k, y] of [["floor", L1], ["conc", C2]]) { const g = new THREE.ShapeGeometry(sh, 4).rotateX(Math.PI / 2).translate(0, y, 0), uv = g.attributes.uv; for (let j = 0; j < uv.count; j++) uv.setXY(j, uv.getX(j) / 4, uv.getY(j) / 4);
+      const G2 = G[k], n = G2.P.length / 3; G2.P.push(...g.attributes.position.array); G2.U.push(...uv.array); for (const ix of g.index.array) G2.I.push(n + ix); } }
   for (const [a0, a1, b0, b1] of R2) flat("floor", a0, a1, b0, b1, L2);
   flat("conc", T.a0, T.a1, T.b0, T.b1, C1);                                                  // TG1-Decke (Unterseite der Strassenplatte)
   // Waende je Ebene mit Oeffnungen: Sued (+b) zum Kerngang, Nord (-b) in TG1 zur Zufahrt
@@ -49,7 +61,9 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
     wallQ("conc", T.a0, T.b1, KG.a0, T.b1, y0, y1); wallQ("conc", KG.a1, T.b1, T.a1, T.b1, y0, y1);
     if (nord) { wallQ("conc", T.a0, T.b0, nord[0], T.b0, y0, y1); wallQ("conc", nord[1], T.b0, T.a1, T.b0, y0, y1); } else wallQ("conc", T.a0, T.b0, T.a1, T.b0, y0, y1);
     wallQ("conc", T.a0, T.b0, T.a0, T.b1, y0, y1); wallQ("conc", T.a1, T.b0, T.a1, T.b1, y0, y1);
-    wallQ("stripe", T.a0, T.b1 - 0.02, T.a1, T.b1 - 0.02, y0, y0 + 0.5, 1); wallQ("stripe", T.a0, T.b0 + 0.02, T.a1, T.b0 + 0.02, y0, y0 + 0.5, 1);
+    // Warnstreifen am Wandfuss, nicht durch die Oeffnungen (Nicolas 2026-11-15: lief als gelber Balken quer ueber die Einfahrt)
+    for (const [a0, a1] of [[T.a0, KG.a0], [KG.a1, T.a1]]) wallQ("stripe", a0, T.b1 - 0.02, a1, T.b1 - 0.02, y0, y0 + 0.5, 1);
+    for (const [a0, a1] of nord ? [[T.a0, nord[0]], [nord[1], T.a1]] : [[T.a0, T.a1]]) wallQ("stripe", a0, T.b0 + 0.02, a1, T.b0 + 0.02, y0, y0 + 0.5, 1);
     // Stuetzen, Lampen, Parkfelder
     for (const [a, b] of WTO.tgPfeiler) box("conc", a - 0.35, a + 0.35, b - 0.35, b + 0.35, y0, y1);
     for (let a = T.a0 + 6; a < T.a1 - 4; a += 10) for (let b = T.b0 + 8; b < T.b1 - 4; b += 12) if (y1 === C2 ? true : !hole1(a, b)) quad("lamp", [[a - 1.5, y1 - 0.06, b - 0.3], [a + 1.5, y1 - 0.06, b - 0.3], [a + 1.5, y1 - 0.06, b + 0.3], [a - 1.5, y1 - 0.06, b + 0.3]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
@@ -68,8 +82,13 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   const inStrip = (a, b) => a > H.ca - rO - 0.3 && a < H.ca - rI + 0.3;
   for (let i = 0; i < 72; i++) { const t0 = i / 72 * 2 * Math.PI, t1 = (i + 1) / 72 * 2 * Math.PI, [a0, b0] = P(rO + 0.2, t0), [a1, b1] = P(rO + 0.2, t1), [am, bm] = P(rO + 0.2, (t0 + t1) / 2);
     const top = !(inStrip(am, bm) && bm > H.cb), bot = !(inStrip(am, bm) && bm < H.cb);
-    if (top) wallQ("conc", a0, b0, a1, b1, L1, C1); if (bot) wallQ("conc", a0, b0, a1, b1, L2, C2);
+    if (!top) wallQ("conc", a0, b0, a1, b1, L2, L1 - 0.3); else if (!bot) wallQ("conc", a0, b0, a1, b1, C2, C1); else wallQ("conc", a0, b0, a1, b1, L2, C1);   // offen nur an den Anschluessen (vorher Schlitz zwischen den Ebenen)
     const [e0, f0] = P(rI - 0.2, t0), [e1, f1] = P(rI - 0.2, t1); wallQ("stripe", e0, f0, e1, f1, L2, L2 + 0.8, 1); wallQ("conc", e0, f0, e1, f1, L2 + 0.8, C1); }
+  // Innenseite der Anschlussstreifen (Nicolas 2026-11-15: offen zum Schacht): TG1 Bruestung 1,1 m ueber dem Streifen (haengt bis unter die Platte),
+  // TG2 3 m hohe Wand unter der Wendel (darueber faehrt die Rampe)
+  { const aI = H.ca - rI + 0.25, L = Math.sqrt((rO + 0.2) ** 2 - (H.ca - aI) ** 2); WTU.bru = { aI, L };
+    for (const k of [0, 1]) { const b0 = k ? H.cb : H.cb - L, b1 = k ? H.cb + L : H.cb, y0 = k ? L1 - 0.3 : L2, y1 = k ? L1 + 1.1 : L2 + 3;
+      wallQ("conc", aI, b0, aI, b1, y0, y1); wallQ("stripe", aI - 0.02, b0, aI - 0.02, b1, y0 + (k ? 0.3 : 0), y0 + (k ? 0.8 : 0.5), 1); } }
   // Kerngang (TG-Suedwand bis Kern) in beiden Ebenen, Tuer zum Wayne-Aufzug geschlossen (Task 7)
   for (const [y0, y1] of [[L1, C1], [L2, C2]]) { flat("floor", KG.a0, KG.a1, T.b1, K.b0, y0); quad("conc", [[KG.a0, y1, T.b1], [KG.a1, y1, T.b1], [KG.a1, y1, K.b0], [KG.a0, y1, K.b0]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     wallQ("conc", KG.a0, T.b1, KG.a0, K.b0, y0, y1); wallQ("conc", KG.a1, T.b1, KG.a1, K.b0, y0, y1); wallQ("conc", KG.a0, K.b0, KG.a1, K.b0, y0, y1);
@@ -77,12 +96,14 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
     quad("lamp", [[-0.6, y1 - 0.06, -30], [0.6, y1 - 0.06, -30], [0.6, y1 - 0.06, -28], [-0.6, y1 - 0.06, -28]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
   // Zufahrt: ebener Tunnel auf TG1-Hoehe von der Nordwand bis an die untere Ringstrasse; Gehweg 1,5 m (Westseite, 15 cm), Schranke, Parkhaus-Schild
   { const e0 = Z.end[0], e1 = Z.end[1], eM = Math.min(e0, e1);
-    for (let b = T.b0; b > eM - 0.01; b -= 10) { const bb = Math.max(eM - 1, b - 10); flat("floor", Z.a0 + 1.5, Z.a1, bb, b, L1); flat("conc", Z.a0, Z.a0 + 1.5, bb, b, L1 + 0.15); quad("conc", [[Z.a0, C1, bb], [Z.a1, C1, bb], [Z.a1, C1, b], [Z.a0, C1, b]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+    const eX = Math.max(e0, e1); for (let b = T.b0; b > eX + 0.01; b -= 10) { const bb = Math.max(eX, b - 10); flat("floor", Z.a0 + 1.5, Z.a1, bb, b, L1); flat("conc", Z.a0, Z.a0 + 1.5, bb, b, L1 + 0.15); quad("conc", [[Z.a0, C1, bb], [Z.a1, C1, bb], [Z.a1, C1, b], [Z.a0, C1, b]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
       quad("lamp", [[(Z.a0 + Z.a1) / 2 - 0.3, C1 - 0.06, b - 6], [(Z.a0 + Z.a1) / 2 + 0.3, C1 - 0.06, b - 6], [(Z.a0 + Z.a1) / 2 + 0.3, C1 - 0.06, b - 3], [(Z.a0 + Z.a1) / 2 - 0.3, C1 - 0.06, b - 3]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
-    wallQ("conc", Z.a0, T.b0, Z.a0, e0, L1, C1); wallQ("conc", Z.a1, T.b0, Z.a1, e1, L1, C1); wallQ("conc", Z.a0 + 1.5, T.b0, Z.a0 + 1.5, eM, L1, L1 + 0.15);
+    if (eM < eX) { flat("floor", Z.a0 + 1.5, Z.a1, eM - 0.3, eX, L1 - 0.01); quad("conc", [[Z.a0, C1 + 0.01, eM - 0.3], [Z.a1, C1 + 0.01, eM - 0.3], [Z.a1, C1 + 0.01, eX], [Z.a0, C1 + 0.01, eX]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }   // Keil bis an die schraege Ringwand, knapp unter/ueber den Flaechen der Ringstrasse
+    wallQ("conc", Z.a0, T.b0, Z.a0, e0, L1, C1); wallQ("conc", Z.a1, T.b0, Z.a1, e1, L1, C1); wallQ("conc", Z.a0 + 1.5, T.b0, Z.a0 + 1.5, eM, L1, L1 + 0.15); wallQ("conc", Z.a0, T.b0, Z.a0 + 1.5, T.b0, L1, L1 + 0.15);   // Stirnseite des Gehwegs an der Garage (man sah darunter durch)
     for (let b = T.b0 - 5; b > eM + 3; b -= 6) flat("line", (Z.a0 + 1.5 + Z.a1) / 2 - 0.08, (Z.a0 + 1.5 + Z.a1) / 2 + 0.08, b - 3, b, L1 + 0.02);   // Mittellinie gestrichelt
     // Schild ueber der Einfahrt (von der Ringstrasse lesbar) und Pfosten der Schranke
-    const sb = eM + 1.2; quad("sign", [[Z.a1 - 0.5, -2.6, sb], [Z.a0 + 0.5, -2.6, sb], [Z.a0 + 0.5, -1.2, sb], [Z.a1 - 0.5, -1.2, sb]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+    const sb = Math.max(e0, e1) + 1.2; quad("sign", [[Z.a1 - 0.5, -2.6, sb], [Z.a0 + 0.5, -2.6, sb], [Z.a0 + 0.5, -1.2, sb], [Z.a1 - 0.5, -1.2, sb]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+    quad("exit", [[Z.a0 + 0.5, -2.6, sb + 0.04], [Z.a1 - 0.5, -2.6, sb + 0.04], [Z.a1 - 0.5, -1.2, sb + 0.04], [Z.a0 + 0.5, -1.2, sb + 0.04]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     box("metal", Z.a0 + 1.6, Z.a0 + 2.0, Z.schranke - 0.2, Z.schranke + 0.2, L1, L1 + 1.1); }
   // ---------- in die Welt setzen ----------
   const grp = WTU.group = new THREE.Group(); grp.name = "Wayne Tower unten"; grp.position.set(WTO.cx, WTO.Y, WTO.cz); grp.rotation.y = WTO.rot;
@@ -112,14 +133,15 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
     wtPartR(a, b, -Math.sin(th), Math.cos(th), ds / 2 + 0.05, H.w / 2, y - 0.3, y, { chain: 1, m: 0.05 }); }
   for (let i = 0; i < 72; i++) { const th = (i + 0.5) / 72 * 2 * Math.PI, [a, b] = P(rO + 0.2, th), ds = (rO + 0.2) * 2 * Math.PI / 72, da = -Math.sin(th), db = Math.cos(th);
     const top = !(inStrip(a, b) && b > H.cb), bot = !(inStrip(a, b) && b < H.cb);
-    if (top) wtPartR(a, b, da, db, ds / 2, 0.15, L1, C1, { floor: 0 }); if (bot) wtPartR(a, b, da, db, ds / 2, 0.15, L2, C2, { floor: 0 });
+    if (!top) wtPartR(a, b, da, db, ds / 2, 0.15, L2, L1 - 0.3, { floor: 0 }); else if (!bot) wtPartR(a, b, da, db, ds / 2, 0.15, C2, C1, { floor: 0 }); else wtPartR(a, b, da, db, ds / 2, 0.15, L2, C1, { floor: 0 });
     const [c, d] = P(rI - 0.2, th); wtPartR(c, d, da, db, (rI - 0.2) * Math.PI / 72, 0.15, L2, C1, { floor: 0 }); }
+  { const { aI, L } = WTU.bru; wtPartU(aI - 0.15, aI + 0.15, H.cb, H.cb + L, L1 - 0.3, L1 + 1.1, { floor: 0 }); wtPartU(aI - 0.15, aI + 0.15, H.cb - L, H.cb, L2, L2 + 3, { floor: 0 }); }
   // Zufahrt: Boden, Gehweg, Waende, Decke
   { const e0 = Z.end[0], e1 = Z.end[1], eM = Math.min(e0, e1);
     for (let b = T.b0 + 0.5; b > eM - 1.5; b -= 10) { const bb = Math.max(eM - 2, b - 10); wtPartU(Z.a0 + 1.5, Z.a1, bb, b, L1 - 0.5, L1, { chain: 1, m: 0.05 }); wtPartU(Z.a0, Z.a0 + 1.5, bb, b, L1 - 0.5, L1 + 0.15, { chain: 1, m: 0.05 }); }
     wtPartU(Z.a0 - 0.15, Z.a0 + 0.15, e0, T.b0, L1, C1); wtPartU(Z.a1 - 0.15, Z.a1 + 0.15, e1, T.b0, L1, C1); }
   GR_NOSKIRT.push(WTO.poly(T.a0 - 4, T.a1 + 4, T.b0 - 4, T.b1 + 4), WTO.poly(Z.a0 - 4, Z.a1 + 4, Math.min(...Z.end) - 4, T.b0), WTO.poly(-40, 40, -40, 40));   // Tiefgaragen, Zufahrt, unter dem Turm
-  GR_HOLES.push(WTO.poly(Z.a0 - 0.3, Z.a1 + 0.3, Math.min(...Z.end) - 1, Math.max(...Z.end) + 9));   // Gelaende am Tunnelmund (gotham-raster.js)
+  GR_HOLES.push(WTO.poly(Z.a0 - 3, Z.a1 + 3, Math.min(...Z.end) - 1, Math.max(...Z.end) + 8));   // 3 m breiter: 4-m-Dreiecke daneben ragten sonst in den Tunnel   // Gelaende am Tunnelmund (gotham-raster.js)
   for (const r of [{ poly: WTO.poly(T.a0, T.a1, T.b0, T.b1), y0: L2 - 0.2, y1: C1 }, { poly: WTO.poly(KG.a0, KG.a1, T.b1 - 1, K.b0), y0: L2 - 0.2, y1: C1 },
     { poly: WTO.poly(Z.a0, Z.a1, Math.min(...Z.end) - 3, T.b0 + 1), y0: L1 - 0.2, y1: C1 }]) dkRoom({ poly: r.poly, y0: WTO.Y + r.y0, y1: WTO.Y + r.y1 });
   bautAdd({ id: "GO-WAYNE-TG1", name: "Tiefgarage 1 (Wayne Tower)", art: "Parkhaus", poly: WTO.poly(T.a0, T.a1, T.b0, T.b1), y0: WTO.Y + L1 - 0.3, y1: WTO.Y + C1, info: "öffentlich" });
@@ -153,11 +175,13 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   for (const a of [-22.5, -13.5, -4.5, 4.5, 13.5, 22.5]) for (const b of [-1.5, 7.5, 16.5, 25.5]) { const n = 16, k0 = G.light.P.length / 3; G.light.P.push(a, Hl.y1 - 0.04, b); G.light.U.push(0.5, 0.5);
     for (let i = 0; i <= n; i++) { const t = i / n * Math.PI * 2; G.light.P.push(a + Math.cos(t) * 0.8, Hl.y1 - 0.04, b + Math.sin(t) * 0.8); G.light.U.push(0, 0); if (i) G.light.I.push(k0, k0 + i, k0 + i + 1); } }
   // Gang: Boden (steigt), Decke, Waende, Lampen; endet an der Ringwand
-  for (let a = Hl.a1; a < aE - 0.01; a += 4) { const a1 = Math.min(aE, a + 4), y0 = gy(a), y1 = gy(a1);
+  for (let a = Hl.a1; a < aE0 - 0.01; a += 4) { const a1 = Math.min(aE0, a + 4), y0 = gy(a), y1 = gy(a1);   // bis an die Ringwand (darueber hinaus flimmerten Boden und Decke mit denen der Ringstrasse)
     quad("road", [[a, y0, Gg.b1], [a1, y1, Gg.b1], [a1, y1, Gg.b0], [a, y0, Gg.b0]], [[a / 4, Gg.b1 / 4], [a1 / 4, Gg.b1 / 4], [a1 / 4, Gg.b0 / 4], [a / 4, Gg.b0 / 4]]);
     quad("conc", [[a, y0 + 4.5, Gg.b0], [a1, y1 + 4.5, Gg.b0], [a1, y1 + 4.5, Gg.b1], [a, y0 + 4.5, Gg.b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     for (const b of [Gg.b0, Gg.b1]) quad("conc", [[a, y0, b], [a1, y1, b], [a1, y1 + 4.5, b], [a, y0 + 4.5, b]], [[a / 3, y0 / 3], [a1 / 3, y1 / 3], [a1 / 3, (y1 + 4.5) / 3], [a / 3, (y0 + 4.5) / 3]]);
     if (Math.round(a) % 12 === 2) quad("lamp", [[a, y0 + 4.44, 19.7], [a + 3, y1 + 4.44, 19.7], [a + 3, y1 + 4.44, 20.3], [a, y0 + 4.44, 20.3]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
+  if (aE > aE0) { const y = gy(aE0); quad("road", [[aE0, y - 0.01, Gg.b1], [aE + 0.3, y - 0.01, Gg.b1], [aE + 0.3, y - 0.01, Gg.b0], [aE0, y - 0.01, Gg.b0]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+    quad("conc", [[aE0, y + 4.51, Gg.b0], [aE + 0.3, y + 4.51, Gg.b0], [aE + 0.3, y + 4.51, Gg.b1], [aE0, y + 4.51, Gg.b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }   // Keil bis an die schraege Ringwand
   const grp = new THREE.Group(); grp.name = "Wayne Tower geheim"; grp.position.set(WTO.cx, WTO.Y, WTO.cz); grp.rotation.y = WTO.rot;
   for (const [k, g] of Object.entries(G)) { if (!g.I.length) continue; const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(g.P, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(g.U, 2)); geo.setIndex(g.I); geo.computeVertexNormals();
     const m = new THREE.Mesh(geo, mats[k]); m.name = "Wayne Tower geheim " + k; m.userData.keep = true; m.userData.noLift = true; grp.add(m); }
@@ -187,7 +211,7 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   for (const b of [Gg.b0, Gg.b1]) for (let a = Hl.a1; a < aE; a += 20) { const a1 = Math.min(aE0, a + 20); if (a1 > a) wtPartU(a, a1, b - 0.15, b + 0.15, gy(a), gy(a1) + 4.5); }
   dkRoom({ poly: WTO.poly(Hl.a0, Hl.a1, Hl.b0, Hl.b1), y0: WTO.Y + Hl.y0 - 0.2, y1: WTO.Y + Hl.y1 });
   dkRoom({ poly: WTO.poly(Hl.a1 - 1, aE + 3, Gg.b0, Gg.b1), y0: WTO.Y + Hl.y0 - 0.2, y1: WTO.Y + WTO.lv.tg1 + 4.6 });
-  GR_NOSKIRT.push(WTO.poly(Hl.a1, aE + 4, Gg.b0 - 4, Gg.b1 + 4)); GR_HOLES.push(WTO.poly(aE0 - 1, aE + 9, Gg.b0 - 0.3, Gg.b1 + 0.3));
+  GR_NOSKIRT.push(WTO.poly(Hl.a1, aE + 4, Gg.b0 - 4, Gg.b1 + 4)); GR_HOLES.push(WTO.poly(aE0 - 8, aE + 1, Gg.b0 - 3, Gg.b1 + 3));
   bautAdd({ id: "GO-WAYNE-GEHEIM", name: "Geheimer Wayne-Stock", art: "Geheim", poly: WTO.poly(Hl.a0, Hl.a1, Hl.b0, Hl.b1), y0: WTO.Y + Hl.y0 - 0.3, y1: WTO.Y + Hl.y1 });
   bautAdd({ id: "GO-WAYNE-GANG", name: "Geheimgang Wayne Tower", art: "Geheim", poly: WTO.poly(Hl.a1, aE, Gg.b0, Gg.b1), y0: WTO.Y + Hl.y0 - 0.3, y1: WTO.Y + WTO.lv.tg1 + 4.5 });
 }
