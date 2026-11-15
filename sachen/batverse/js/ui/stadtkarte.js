@@ -102,6 +102,7 @@ function skMiniToggle() { SK.mini.on = !SK.mini.on; try { localStorage.setItem("
 // je Bild aus schleife.js; zeichnet nur neu, wenn sich Lage, Richtung oder Massstab sichtbar aendern
 function skMiniStep() {
   const el = document.getElementById("minikarte"), big = typeof skBigIsOpen === "function" && skBigIsOpen();
+  if (big) skBigStep();
   const show = SK.bgDone && SK.mini.on && !big && !document.getElementById("loading");
   if (el.hidden === show) el.hidden = !show; if (!show) { SK.mini.prev = null; return; }
   const P = skPos(), now = performance.now(), M = SK.mini;
@@ -131,4 +132,67 @@ function skMiniStep() {
   c.save(); c.translate(R, R); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2 * dpr;
   c.beginPath(); c.moveTo(0, -10 * dpr); c.lineTo(7 * dpr, 8 * dpr); c.lineTo(0, 4 * dpr); c.lineTo(-7 * dpr, 8 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore();
   c.beginPath(); c.arc(R, R, R - dpr, 0, Math.PI * 2); c.lineWidth = 2 * dpr; c.strokeStyle = "rgba(255,255,255,.55)"; c.stroke();
+}
+
+// ===================== Grosse Karte (Taste K, Esc schliesst; Spiel laeuft weiter) =====================
+// Norden oben, ziehen = verschieben, Mausrad/+/- = zoomen (Faktor 1,18 wie die Planungskarte), "zu mir" zentriert; gezeichnet nur bei Aenderung
+SK.big = { cx: 0, cz: 0, scale: 0.5, dirty: true, last: null, drag: null };
+{
+  const box = document.getElementById("stadtkarte"), cv = box.querySelector("canvas");
+  const minS = () => { const V = SK.view; return Math.max(box.clientWidth / (V.x1 - V.x0), box.clientHeight / (V.z1 - V.z0)); };   // Ansicht fuellt den Schirm (ausserhalb kein Wasserbild)
+  const clampS = s => Math.max(minS(), Math.min(8, s));
+  const zoomAt = (f, x, y) => { const B = SK.big, r = box.getBoundingClientRect(), s2 = clampS(B.scale * f), ox = x - r.left - r.width / 2, oy = y - r.top - r.height / 2;
+    B.cx += ox / B.scale - ox / s2; B.cz += oy / B.scale - oy / s2; B.scale = s2; B.dirty = true; };
+  const toMe = () => { const P = skPos(); SK.big.cx = P.mx; SK.big.cz = P.mz; SK.big.dirty = true; };
+  window.skBigIsOpen = () => !box.hidden;
+  window.skBigOpen = () => {
+    if (!box.hidden) return;
+    if (dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); }   // Maus frei (wie das T-Menue)
+    keys.clear(); box.hidden = false; toMe(); SK.big.scale = clampS(box.clientWidth / 1500);   // Start: ca. 1500 m Breite
+  };
+  window.skBigClose = () => { if (box.hidden) return; box.hidden = true; SK.mini.last = null; if (typeof grabMouse === "function") grabMouse(); };
+  window.skBigToggle = () => box.hidden ? skBigOpen() : skBigClose();
+  box.addEventListener("wheel", e => { e.preventDefault(); zoomAt(e.deltaY > 0 ? 1 / 1.18 : 1.18, e.clientX, e.clientY); }, { passive: false });
+  cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); SK.big.drag = { x: e.clientX, y: e.clientY }; });
+  cv.addEventListener("pointermove", e => { const B = SK.big, d = B.drag; if (!d) return; B.cx -= (e.clientX - d.x) / B.scale; B.cz -= (e.clientY - d.y) / B.scale; d.x = e.clientX; d.y = e.clientY; B.dirty = true; });
+  for (const ev of ["pointerup", "pointercancel"]) cv.addEventListener(ev, () => { SK.big.drag = null; });
+  const mid = () => { const r = box.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  document.getElementById("sk-in").addEventListener("click", () => zoomAt(1.18 * 1.18, ...mid()));
+  document.getElementById("sk-out").addEventListener("click", () => zoomAt(1 / (1.18 * 1.18), ...mid()));
+  document.getElementById("sk-me").addEventListener("click", toMe);
+  document.getElementById("sk-close").addEventListener("click", skBigClose);
+  document.getElementById("btn-map").addEventListener("click", e => { e.currentTarget.blur(); skBigToggle(); });
+  addEventListener("resize", () => { SK.big.dirty = true; });
+}
+
+// je Bild aus skMiniStep (nur wenn offen)
+function skBigStep() {
+  const B = SK.big, box = document.getElementById("stadtkarte"), cv = box.querySelector("canvas"), P = skPos();
+  const dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(box.clientWidth * dpr), H = Math.round(box.clientHeight * dpr);
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; B.dirty = true; }
+  { const V = SK.view; B.scale = Math.max(B.scale, box.clientWidth / (V.x1 - V.x0), box.clientHeight / (V.z1 - V.z0)); const hx = box.clientWidth / 2 / B.scale, hz = box.clientHeight / 2 / B.scale;   // nicht ueber den Rand der Ansicht schieben
+    B.cx = hx * 2 >= V.x1 - V.x0 ? (V.x0 + V.x1) / 2 : Math.max(V.x0 + hx, Math.min(V.x1 - hx, B.cx)); B.cz = hz * 2 >= V.z1 - V.z0 ? (V.z0 + V.z1) / 2 : Math.max(V.z0 + hz, Math.min(V.z1 - hz, B.cz)); }
+  const L = B.last; if (!B.dirty && L && Math.abs(L.mx - P.mx) * B.scale < 0.5 && Math.abs(L.mz - P.mz) * B.scale < 0.5 && Math.abs(L.ang - P.ang) < 0.009) return;
+  B.dirty = false; B.last = { mx: P.mx, mz: P.mz, ang: P.ang };
+  const t0 = performance.now(), c = cv.getContext("2d"), s = B.scale * dpr, V = SK.view;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = SK.LAND; c.fillRect(0, 0, W, H);
+  c.setTransform(s, 0, 0, s, W / 2 - B.cx * s, H / 2 - B.cz * s);
+  const w = SK.water || skWater(); c.imageSmoothingEnabled = true; c.drawImage(w.cv, V.x0, V.z0, w.cv.width * w.C, w.cv.height * w.C);
+  skPaint(c, s);
+  // Namen: Bezirke immer, grosse Orte ab 0,3 px/m, alle Orte ab 0,8 px/m (CSS-Pixel)
+  c.setTransform(1, 0, 0, 1, 0, 0); c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
+  const sx = x => W / 2 + (x - B.cx) * s, sy = z => H / 2 + (z - B.cz) * s;
+  for (const l of SK.labels) { if (!l.bezirk && !(l.big ? B.scale >= 0.3 : B.scale >= 0.8)) continue;
+    const x = sx(l.x), y = sy(l.z); if (x < -200 || y < -50 || x > W + 200 || y > H + 50) continue;
+    c.font = `${l.bezirk ? 700 : 600} ${(l.bezirk ? 15 : l.big ? 13 : 11) * dpr}px system-ui, sans-serif`;
+    c.lineWidth = 4 * dpr; c.strokeStyle = "#000"; c.fillStyle = l.bezirk ? "rgba(255,255,255,.75)" : "#fff"; c.strokeText(l.text, x, y); c.fillText(l.text, x, y); }
+  // eigener Pfeil
+  c.save(); c.translate(sx(P.mx), sy(P.mz)); c.rotate(P.ang); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2.5 * dpr;
+  c.beginPath(); c.moveTo(0, -14 * dpr); c.lineTo(10 * dpr, 11 * dpr); c.lineTo(0, 5 * dpr); c.lineTo(-10 * dpr, 11 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore();
+  // Massstab unten links (1-2-5-Stufen, ca. 120 px)
+  { const raw = 120 / B.scale, e = 10 ** Math.floor(Math.log10(raw)), m = raw / e >= 5 ? 5 : raw / e >= 2 ? 2 : 1, len = m * e, px = len * s, x0 = 16 * dpr, y0 = H - 22 * dpr;
+    c.fillStyle = "rgba(0,0,0,.6)"; c.fillRect(x0 - 6 * dpr, y0 - 20 * dpr, px + 12 * dpr, 28 * dpr);
+    c.strokeStyle = "#fff"; c.lineWidth = 3 * dpr; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + px, y0); c.stroke();
+    c.fillStyle = "#fff"; c.font = `${11 * dpr}px system-ui, sans-serif`; c.textAlign = "left"; c.fillText(len >= 1000 ? len / 1000 + " km" : len + " m", x0, y0 - 9 * dpr); }
+  SK.bigMs = performance.now() - t0;
 }

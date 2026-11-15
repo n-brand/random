@@ -20,7 +20,7 @@ Gotham ist ca. 2,7 x 2,8 km gross, die Welt endet heute bei ca. 700 m. Darum zue
 | T3 ✅ | **Einstellungen** (K6) | Menü „Einstellungen“: Ladeweite (z. B. 2-8 Kacheln = 256 m bis 1 km), Lautstärke (gibt es schon als Regler im T-Menü), Grafikstufe. Gespeichert im Browser (`localStorage`, wirkt wie ein Cookie, wird aber nicht an einen Server geschickt; Lautstärke ist dort schon gespeichert) |
 | T4 ✅ | **Ladescreen** (K7) | Eigener Ladebildschirm, getrennt für PC (breit, Tastenbelegung als Tipps) und Handy (hochkant/quer, Touch-Tipps), mit Fortschritt der echten Ladeschritte |
 | T5 ✅ | **Teststrecke für Bauteile** (`werkstatt/`, 2026-11-12) | Eigene Testseite ausserhalb der Welt (`werkstatt/`): lädt ein einzelnes Modell (Fahrzeug, Gebäude-Vorlage) auf eine leere Fläche mit Piste, ohne die Welt zu ändern. Werkzeug: VS Code mit Live Server reicht (wie heute); Vite, CodeSandbox oder StackBlitz bringen hier wenig, weil das Projekt ohne Build läuft – Empfehlung: nicht einführen |
-| T6 | Gotham-Karte im Spiel | Die 2D-Karte (`gotham/`) auch im Spiel als Kartenansicht (Taste) mit eigener Position |
+| T6 (fertig 2026-11-15) | Gotham-Karte im Spiel | Die 2D-Karte (`gotham/`) auch im Spiel als Kartenansicht (Taste) mit eigener Position |
 
 ## Phase 1 – Gotham: Grundgerüst
 

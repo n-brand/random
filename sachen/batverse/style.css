@@ -185,3 +185,12 @@ body.walk.paused #pause { display: block; }
 /* T6 Minikarte (js/ui/stadtkarte.js): unten rechts ueber der Fusszeile; am Handy oben rechts (unten rechts liegt der Blick-Joystick) */
 #minikarte { position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 48px); width: 180px; height: 180px; border-radius: 50%; z-index: 4; pointer-events: none; box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
 body.touch #minikarte { width: 120px; height: 120px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 60px); right: 10px; }
+/* T6 grosse Karte */
+#stadtkarte { position: fixed; inset: 0; z-index: 40; background: #1d3b55; }
+#stadtkarte canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#stadtkarte canvas:active { cursor: grabbing; }
+#stadtkarte .sk-btns { position: absolute; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 6px; }
+#stadtkarte .sk-btns button { min-width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font-size: 18px; cursor: pointer; padding: 0 10px; }
+#stadtkarte #sk-me { font-size: 13px; }
+#stadtkarte .sk-hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); background: rgba(0, 0, 0, .6); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
+body.touch #stadtkarte .sk-hint { display: none; }

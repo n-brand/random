@@ -69,7 +69,7 @@ $("btn-below").addEventListener("click", e => {
 // ein Klick ins Bild faengt sie wieder, Esc nochmal beendet das Begehen. Am Handy (touch) nichts davon.
 let unlockT = 0;
 function grabMouse() {
-  if (!walking || touch || dragging || (window.tpMenuOpen && tpMenuOpen()) || (window.settingsOpen && settingsOpen())) return;
+  if (!walking || touch || dragging || (window.tpMenuOpen && tpMenuOpen()) || (window.settingsOpen && settingsOpen()) || (window.skBigIsOpen && skBigIsOpen())) return;
   dragging = true; document.body.classList.add("looking");
   const p = renderer.domElement.requestPointerLock?.(); if (p && p.catch) p.catch(() => { dragging = false; document.body.classList.remove("looking"); });
 }
@@ -95,6 +95,7 @@ for (const id of ["btn-fs", "btn-fs2"]) $(id).addEventListener("click", e => { e
 document.addEventListener("fullscreenchange", () => { for (const id of ["btn-fs", "btn-fs2"]) $(id).setAttribute("aria-pressed", String(!!document.fullscreenElement)); });
 addEventListener("keydown", e => {
   if (document.fullscreenElement && (e.ctrlKey || e.metaKey) && !["KeyC", "KeyV", "KeyX", "KeyA"].includes(e.code)) e.preventDefault();   // Vollbild: Strg+W/T/N/R usw. abfangen
+  if (window.skBigIsOpen && skBigIsOpen()) { if (e.code === "Escape" || (e.code === "KeyK" && !e.shiftKey && !e.repeat)) skBigClose(); if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault(); return; }   // T6: grosse Karte offen
   if (e.code === "KeyF" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { toggleFullscreen(); return; }
   if (window.settingsOpen && settingsOpen()) { if (e.code === "Escape" || e.code === "KeyT") closeSettings(); return; }   // K6: Einstellungen offen
   if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
@@ -186,7 +187,7 @@ for (const b of document.querySelectorAll("#veh-btns button")) b.addEventListene
 // Modus als Klasse am body (fuer die Handy-Knoepfe): car, boat, fly, drive; Sprung-Knopf heisst beim Fliegen "Hoch"
 let modeNow = "";
 function syncModeClasses() {
-  document.body.classList.toggle("paused", walking && !touch && !dragging && !(window.tpMenuOpen && tpMenuOpen()) && !(window.settingsOpen && settingsOpen()));   // Maus frei: Hinweis zeigen
+  document.body.classList.toggle("paused", walking && !touch && !dragging && !(window.tpMenuOpen && tpMenuOpen()) && !(window.skBigIsOpen && skBigIsOpen()) && !(window.settingsOpen && settingsOpen()));   // Maus frei: Hinweis zeigen
   const m = !walking ? "" : FLY.on || JET.on ? "fly" : BOAT.on ? "boat" : CAR && CAR.on ? "car" : "";
   const tank = m === "car" && !!CAR.turret;                                  // Panzer: Zielvisier (Nicolas 2026-11-11)
   const key = m + JET.on + tank + (m === "car" ? CAR.spec.name : "");          // Fahrzeugname: Knopftext (Nitro/Haken) wechselt auch von Auto zu Auto
