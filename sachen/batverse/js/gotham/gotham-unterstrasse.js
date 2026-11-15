@@ -67,6 +67,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
     for (let a = -m; a <= m; a++) for (let b = -m; b <= m; b++) { const L = G.grid.get(glKey(ci + a, ck + b)); if (!L) continue;
       for (const [ri, j] of L) { const o = G.roads[ri]; if (o === me) continue; const A = o.pts[j - 1], B = o.pts[j], dx = B[0] - A[0], dz = B[1] - A[1], LL = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - A[0]) * dx + (z - A[1]) * dz) / LL)), s = o.s[j - 1] + t * Math.sqrt(LL);
         if (Math.hypot(x - A[0] - dx * t, z - A[1] - dz * t) < o.HW + pad && s > o.sA && s < o.sB) return true; } } return false; };
+  const gapsOf = (r, sg) => (G.gaps || []).filter(g => g.road === r.id && g.side === sg).map(g => [g.s0, g.s1]);
   let curR = null; const ring = (x, z, r, top) => { if (!inOther(x, z, curR)) circles.push([x, z, r, top]); };
   // wie sub, aber in den Trichtern alle 1 m
   const subF = (r, s0, s1) => { const Q = sub(r, s0, s1), out = []; for (let i = 0; i < Q.length; i++) { if (i) { const a = Q[i - 1], b = Q[i], n = gdeckK(r, (a[4] + b[4]) / 2) < 1 || inOther(a[0], a[1], r, 20) || inOther(b[0], b[1], r, 20) ? Math.ceil(b[4] - a[4]) : 1; for (let k = 1; k < n; k++) out.push(sub(r, a[4] + (b[4] - a[4]) * k / n, a[4] + (b[4] - a[4]) * k / n + 0.5)[0]); } out.push(Q[i]); } return out; };
@@ -88,7 +89,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
       flat(FLT, Q, s => half(s), s => -half(s), LY + 0.03, 4, 4, "aus");
       const yel = s => 2 * half(s) * (0.015 + 0.015 * gdeckK(r, s)), edge = s => half(s) * 0.93;   // wie Textur: gelb 0,47/0,53 (4 Spuren) bzw. 0,485/0,515 (Rampe), Rand 0,035
       for (const sg of [1, -1]) { flat(LG, Q, s => sg * (yel(s) - 0.08), s => sg * (yel(s) + 0.08), LY + 0.04, 4, 4, "aus"); flat(LW, Q, s => sg * (edge(s) - 0.08), s => sg * (edge(s) + 0.08), LY + 0.04, 4, 4, "aus"); } }
-    for (const sg of [1, -1]) { flat(WK, inner, s => sg * (hw(s) - wk(s)), s => sg * hw(s), LY + 0.15, 2, 2, "aus"); wall(WA, inner, s => sg * (hw(s) - wk(s)), LY, LY + 0.15); wall(WA, inner, s => sg * hw(s), LY - 0.6, DY); }
+    for (const sg of [1, -1]) { flat(WK, inner, s => sg * (hw(s) - wk(s)), s => sg * hw(s), LY + 0.15, 2, 2, "aus"); wall(WA, inner, s => sg * (hw(s) - wk(s)), LY, LY + 0.15); for (const [a, b] of cutR(r.sA, r.sB, gapsOf(r, sg))) if (b - a > 0.5) wall(WA, subF(r, a, b), s => sg * hw(s), LY - 0.6, DY); }   // Wandoeffnungen (Wayne Tower: Zufahrt, Geheimgang)
     { const sh = mids.map(p => [Math.min(p.a + G.FL * p.sg, p.b), Math.max(p.a + G.FL * p.sg, p.b)]);   // Decke ueber dem abfallenden Teil der Ring-Rampen offen
       for (const [a, b] of cutR(r.sA, r.sB, sh)) flat(CE, subF(r, a, b), -HW, HW, DY, 3, 3);
       for (const [a, b] of sh) for (const sg of [1, -1]) flat(CE, subF(r, a, b), sg * (RW / 2 + 0.3), sg * HW, DY, 3, 3); }
@@ -172,7 +173,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
     for (const end of [0, 1]) { if (!(end ? r.cb : r.ca) || r.loop || (end ? r.joinB : r.joinA)) continue; const sx = end ? r.sB : r.sA; cross(WA, r, sx, -HW, HW, LY - 0.6, DY);
       for (let d = -HW; d <= HW; d += 1.2) { const [x, z, nx, nz] = sub(r, sx, sx + 0.5)[0]; ring(x + nx * d, z + nz * d, 0.65, DY); } }
     // Seitenwaende innen (Kollision), Stuetzen und Deckenleuchten alle 15 m
-    for (let s = r.sA; s <= r.sB; s += 1.2) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; const h = gdeckHW(r, s) - 0.65; for (const sg of [1, -1]) ring(x + nx * sg * h, z + nz * sg * h, 0.65, DY); }   // r 0,65 alle 1,2 m (ueberlappend, Leistung 2026-11-13)
+    for (let s = r.sA; s <= r.sB; s += 1.2) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; const h = gdeckHW(r, s) - 0.65; for (const sg of [1, -1]) if (!gapsOf(r, sg).some(([a, b]) => s > a - 0.65 && s < b + 0.65)) ring(x + nx * sg * h, z + nz * sg * h, 0.65, DY); }   // r 0,65 alle 1,2 m (ueberlappend, Leistung 2026-11-13)
     for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { if (gdeckK(r, s) < 0.999 || mids.some(p => s > Math.min(p.a - 25 * p.sg, p.b) - 4 && s < Math.max(p.a - 25 * p.sg, p.b) + G.UZ + 5)) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; if (inOther(x, z, r, 15)) continue; posts.push([x, z]); ring(x, z, 0.6, DY);   // an Kreuzungen unten 15 m frei zum Abbiegen, nicht im Trichter (posts.push stand seit 2026-11-13 versehentlich im Kommentar)
       for (const sg of [1, -1]) { const lx = x + nx * sg * HW / 2, lz = z + nz * sg * HW / 2, k = LAMP.P.length / 3, tx = -nz, tz = nx;
         for (const [a, b] of [[-1.2, -0.15], [1.2, -0.15], [-1.2, 0.15], [1.2, 0.15]]) { LAMP.P.push(lx + tx * a + nx * b, DY - 0.03, lz + tz * a + nz * b); LAMP.U.push(0, 0); } LAMP.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }

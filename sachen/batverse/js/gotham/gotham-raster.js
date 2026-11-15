@@ -83,6 +83,10 @@ for (let bk = 0; bk < GR_NB; bk++) for (let bi = 0; bi < GR_NB; bi++) {
   if (far < GOT_R0 - 20) continue;                                           // ganz im Bereich der Manor: nichts zu zeichnen
   GR.blocks.push({ bi, bk, x0, z0, x1, z1, S: 0, want: 8, d: 0, mesh: null });
 }
+// Loecher im Gelaende (Wayne Tower 2026-11-15: am Mund der Tunnel zur unteren Ringstrasse lief die Schraege des Gelaende-Ausschnitts durch den Tunnel):
+// Spiel-Polygone; Dreiecke mit Mitte darin fallen in den feinen Stufen (bis 8 m) weg. Von oben deckt dort die Deckplatte der Ringstrasse.
+const GR_HOLES = [], GR_NOSKIRT = [];   // NOSKIRT: ueber Raeumen unter der Erde keine Schuerzen (hingen sonst als gruene Wand in die Tiefgarage)
+const grHole = (x, z, L = GR_HOLES) => { for (const P of L) if (bautInPoly(P, x, z)) return true; return false; };
 function grBuild(b, S) {
   const n = GR_B / S + 1, P = [], N = [], Cc = [], U = [], I = [], c = new THREE.Color(), gi0 = b.bi * GR_B, gk0 = b.bk * GR_B, keep = [];
   const off = (x, z) => Math.hypot(x, z) < GOT_R0 || ((z < GOT_R.z0 + 10 || x > GOT_R.x1 - 10) && Math.abs(x) < T_A + T_B && Math.abs(z) < T_A + T_B) ? -0.3 : 0;   // Uebergangsstreifen unter dem Hauptraster (Kreis und gerade Kanten)
@@ -97,12 +101,14 @@ function grBuild(b, S) {
   }
   for (let v = 0; v < n - 1; v++) for (let u = 0; u < n - 1; u++) {
     const a = v * n + u, bb = a + 1, cc = a + n, d = cc + 1;
-    if (keep[a] && keep[cc] && keep[bb]) I.push(idx[a], idx[cc], idx[bb]);
-    if (keep[bb] && keep[cc] && keep[d]) I.push(idx[bb], idx[cc], idx[d]);
+    const hole = (i, j, k) => S <= 2 && GR_HOLES.length && grHole((P[idx[i] * 3] + P[idx[j] * 3] + P[idx[k] * 3]) / 3, (P[idx[i] * 3 + 2] + P[idx[j] * 3 + 2] + P[idx[k] * 3 + 2]) / 3);
+    if (keep[a] && keep[cc] && keep[bb] && !hole(a, cc, bb)) I.push(idx[a], idx[cc], idx[bb]);
+    if (keep[bb] && keep[cc] && keep[d] && !hole(bb, cc, d)) I.push(idx[bb], idx[cc], idx[d]);
   }
   // Schuerzen an den vier Kanten (haengen 2-14 m hinunter, verdecken Risse zu groeberen Nachbarn und zum Fernring)
   const sk = 2 + S * 1.5;
   const edge = (list) => { for (let t = 0; t < list.length - 1; t++) { const p = list[t], q = list[t + 1]; if (!keep[p] || !keep[q]) continue;
+    if (GR_NOSKIRT.length && grHole((P[idx[p] * 3] + P[idx[q] * 3]) / 2, (P[idx[p] * 3 + 2] + P[idx[q] * 3 + 2]) / 2, GR_NOSKIRT)) continue;
     const ia = idx[p], ib = idx[q], A = P.slice(ia * 3, ia * 3 + 3), B2 = P.slice(ib * 3, ib * 3 + 3);
     const la = add(A[0], A[1] - sk, A[2], N[ia * 3], N[ia * 3 + 1], N[ia * 3 + 2], A[1]), lb = add(B2[0], B2[1] - sk, B2[2], N[ib * 3], N[ib * 3 + 1], N[ib * 3 + 2], B2[1]);
     I.push(ia, la, ib, ib, la, lb, ia, ib, la, ib, lb, la); } };

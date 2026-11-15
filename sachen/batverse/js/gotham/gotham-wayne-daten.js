@@ -24,4 +24,22 @@ const WTO = (() => {
     eingang: { w: 14, h: 7.5 },                                               // Eingang in der Mitte der Vorplatzseite
   };
 })();
-if (typeof GDECK !== "undefined") GDECK.gaps = GDECK.gaps || [];             // Wandoeffnungen der unteren Strassen { road, s0, s1, side } (Task 5/6)
+GDECK.gaps = GDECK.gaps || [];                                                // Wandoeffnungen der unteren Strassen { road, s0, s1, side } (gotham-unterstrasse.js)
+// Wandoeffnung in der unteren Ringstrasse fuer einen Gang in Turm-Koordinaten von (a0..a1) auf der Linie b (a-Gang) bzw. umgekehrt: probe(a, b) -> Spielpunkt,
+// geht in Richtung (da, db) bis in den Innenraum des Rings; liefert die Enden je Seite und traegt die Luecke ein (Seite zum Turm hin)
+function wtGap(q0, q1, start, da, db) {
+  if (!GDECK.roads) gdeckBuild(); const R = GDECK.roads.find(o => o.id === "ring"), P = (q, t) => da ? [start + da * t, q] : [q, start + db * t];
+  const ends = [q0, q1].map(q => { for (let t = 0; t < 400; t += 0.25) { const [x, z] = WTO.toW(...P(q, t)); const n = gdeckNearOn(R, x, z); if (n && n.d < R.HW) return { t, s: n.s, x, z }; } return null; });
+  const s0 = Math.min(ends[0].s, ends[1].s), s1 = Math.max(ends[0].s, ends[1].s), sm = (s0 + s1) / 2;
+  let j = 1; while (j < R.pts.length - 1 && R.s[j] < sm) j++; const p = R.pts[j - 1], q = R.pts[j], l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, nx = -(q[1] - p[1]) / l, nz = (q[0] - p[0]) / l;
+  const side = Math.sign((WTO.cx - p[0]) * nx + (WTO.cz - p[1]) * nz) || 1;
+  GDECK.gaps.push({ road: "ring", s0, s1, side });
+  return ends.map(e => start + (da || db) * e.t);
+}
+// Tiefgaragen (Task 5): noerdlich des Turms (-b, Seite des Kerns), TG1 Boden -5,5 / Decke -1, TG2 Boden -11 / Decke -6
+WTO.tg = { a0: -35, a1: 35, b0: -100, b1: -37 };
+WTO.helix = { ca: 20, cb: -78, R: 8, w: 4.6 };                                // Wendelrampe: eine Umdrehung, oben bei (ca - R, cb) Richtung -b, ca. 11 %
+WTO.kernGang = { a0: -2.2, a1: 2.2 };                                         // Gang TG-Suedwand -> Kern (beide Ebenen)
+WTO.tgPfeiler = [[-30, -55], [-20, -55], [-10, -55], [0, -55], [20, -55], [30, -55], [-30, -85], [-10, -85], [0, -85]];
+WTO.zufahrt = { a0: -24.5, a1: -15.5, schranke: -104 };                       // 7,5 m Fahrbahn + 1,5 m Gehweg (Westseite), gerade nach Norden zur Ringstrasse
+WTO.zufahrt.end = wtGap(WTO.zufahrt.a0, WTO.zufahrt.a1, WTO.tg.b0, 0, -1);

@@ -166,6 +166,7 @@ function wtPart(a0, a1, b0, b1, y0, y1, opt = {}) {
 }
 // Nachtlicht (aus der Schleife): Fenster, Lobby, Schrift, Lichtband
 function wtStep() {
+  if (typeof wtSchrankeStep === "function") wtSchrankeStep();
   const m = WTB.mats; if (!m) return; const n = typeof night === "number" ? night : 0;
   if (m._n === n) return; m._n = n;
   m.fac.emissiveIntensity = n * 1.1; m.lobby.emissiveIntensity = n * 0.5; m.sign.emissiveIntensity = 0.25 + n * 0.6; m.light.emissiveIntensity = 0.6 + n * 2.4;
