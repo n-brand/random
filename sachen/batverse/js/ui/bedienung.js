@@ -134,6 +134,7 @@ addEventListener("keydown", e => {
     if (e.code === "KeyM") return engineMute();
     { const v = VEH.find(c => c.on), p = v ? { x: v.x, y: v.y, z: v.z } : player.pos;   // Garagenrampe (Nicolas 2026-11-10): unten am Tor das Rolltor, sonst die Klappe
       if (e.code === "KeyL" && GRAMP.gate && GRAMP.near(p) && !(CAR_LIFT && CAR_LIFT.near(player.pos))) return toggleGate(p.y < HILL - 2.5 && (inPoly(GARAGE, p.x, p.z) || Math.hypot(p.x - 4.5, p.z - (GRAMP.D0 + GRAMP.D1) / 2) < 9) ? GRAMP.door : GRAMP.gate); }
+    if (e.code === "KeyL" && typeof wtPlatteNah === "function" && wtPlatteNah()) return wtPlatteToggle();   // Wayne Tower: getarnte Wandplatte zum Geheimgang
     if (e.code === "KeyL" && CAR_LIFT) return CAR_LIFT.near(player.pos) ? CAR_LIFT.use() : toast("Kein Autoaufzug in der Nähe");
     if (CAR_LIFT && CAR_LIFT.inCar(player.pos) && /^(Digit|Numpad)[1-3]$/.test(e.code)) return CAR_LIFT.pick(CAR_LIFT.order[+e.code.slice(-1) - 1]);
     keys.add(e.code); if (e.code === "Space") player.jump = true;

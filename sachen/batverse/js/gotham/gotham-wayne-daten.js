@@ -33,8 +33,8 @@ function wtGap(q0, q1, start, da, db) {
   const s0 = Math.min(ends[0].s, ends[1].s), s1 = Math.max(ends[0].s, ends[1].s), sm = (s0 + s1) / 2;
   let j = 1; while (j < R.pts.length - 1 && R.s[j] < sm) j++; const p = R.pts[j - 1], q = R.pts[j], l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, nx = -(q[1] - p[1]) / l, nz = (q[0] - p[0]) / l;
   const side = Math.sign((WTO.cx - p[0]) * nx + (WTO.cz - p[1]) * nz) || 1;
-  GDECK.gaps.push({ road: "ring", s0, s1, side });
-  return ends.map(e => start + (da || db) * e.t);
+  const gap = { road: "ring", s0, s1, side }; GDECK.gaps.push(gap);
+  const out = ends.map(e => start + (da || db) * e.t); out.gap = gap; return out;
 }
 // Tiefgaragen (Task 5): noerdlich des Turms (-b, Seite des Kerns), TG1 Boden -5,5 / Decke -1, TG2 Boden -11 / Decke -6
 WTO.tg = { a0: -35, a1: 35, b0: -100, b1: -37 };
@@ -43,3 +43,8 @@ WTO.kernGang = { a0: -2.2, a1: 2.2 };                                         //
 WTO.tgPfeiler = [[-30, -55], [-20, -55], [-10, -55], [0, -55], [20, -55], [30, -55], [-30, -85], [-10, -85], [0, -85]];
 WTO.zufahrt = { a0: -24.5, a1: -15.5, schranke: -104 };                       // 7,5 m Fahrbahn + 1,5 m Gehweg (Westseite), gerade nach Norden zur Ringstrasse
 WTO.zufahrt.end = wtGap(WTO.zufahrt.a0, WTO.zufahrt.a1, WTO.tg.b0, 0, -1);
+// Geheimer Stock (Task 6): Halle unter dem Turm (Boden -8, Decke -0,3 unter der Lobby-Platte), Kern-Tuer in der Nordwand; Gang nach Osten (+a) zur
+// unteren Ringstrasse, 7 m breit, steigt gleichmaessig von -8 auf -5,5, endet an einer getarnten Wandplatte in der Ringwand
+WTO.halle = { a0: -34, a1: 34, b0: -14, b1: 34, y0: -8, y1: -0.3 };
+WTO.gang = { b0: 16.5, b1: 23.5 };
+WTO.gang.end = wtGap(WTO.gang.b0, WTO.gang.b1, WTO.halle.a1, 1, 0);

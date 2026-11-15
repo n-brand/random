@@ -126,6 +126,79 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   bautAdd({ id: "GO-WAYNE-TG2", name: "Tiefgarage 2 (Wayne Tower)", art: "Parkhaus", poly: WTO.poly(T.a0, T.a1, T.b0, T.b1), y0: WTO.Y + L2 - 0.3, y1: WTO.Y + C2, info: "öffentlich" });
   bautAdd({ id: "GO-WAYNE-ZUFAHRT", name: "Zufahrt Parkhaus Wayne Tower", art: "Tunnel", poly: WTO.poly(Z.a0, Z.a1, Math.min(...Z.end), T.b0), y0: WTO.Y + L1 - 0.3, y1: WTO.Y + C1 });
 }
+// ---------- Geheimer Stock und Gang (Task 6; Nicolas: weite niedrige Halle, runde Pfeiler, runde Deckenleuchten, graue Waende, glaenzender Boden,
+// Vorbild karten/planung/wayne-geheimstock-vorbild.png; Tumbler, Prototypen, Gadgets erst am Schluss) ----------
+{
+  const Hl = WTO.halle, Gg = WTO.gang, K = WTO.kern, D = WTO.kernTuer, aE = Math.max(...Gg.end), aE0 = Math.min(...Gg.end);
+  const gy = a => Hl.y0 + (WTO.lv.tg1 - Hl.y0) * Math.max(0, Math.min(1, (a - Hl.a1) / (aE0 - Hl.a1)));   // Gangboden: -8 an der Halle, -5,5 an der Ringwand
+  const M2 = o => new THREE.MeshStandardMaterial(Object.assign({ side: THREE.DoubleSide }, o));
+  const wallT = canvasTex(128, 128, (c, w, h) => { c.fillStyle = "#8e9094"; c.fillRect(0, 0, w, h); for (let i = 0; i < 900; i++) { const v = 128 + Math.random() * 30; c.fillStyle = `rgba(${v},${v + 1},${v + 4},0.5)`; c.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    c.fillStyle = "rgba(0,0,0,0.15)"; c.fillRect(0, 0, w, 1); c.fillRect(0, 0, 1, h); }); wallT.wrapS = wallT.wrapT = THREE.RepeatWrapping;
+  const mats = { wall: M2({ map: wallT, roughness: 0.8, emissive: 0x6c6e72, emissiveIntensity: 0.35 }), floor: M2({ color: 0x7b7f86, roughness: 0.12, metalness: 0.25, emissive: 0x2a2c30, emissiveIntensity: 0.35 }),
+    ceil: M2({ color: 0x9c9ea2, roughness: 0.9, emissive: 0x8a8c90, emissiveIntensity: 0.4 }), light: M2({ color: 0xffffff, emissive: 0xf4f8ff, emissiveIntensity: 1.4 }),
+    pillar: M2({ color: 0xa4a6aa, roughness: 0.5, emissive: 0x5a5c60, emissiveIntensity: 0.35 }), metal: WTU.mats.metal, road: WTU.mats.floor, conc: WTU.mats.conc, lamp: WTU.mats.lamp, line: WTU.mats.line };
+  const G = {}; for (const k of Object.keys(mats)) G[k] = { P: [], U: [], I: [] };
+  const quad = (k, p, uv) => { const g = G[k], n = g.P.length / 3; for (const q of p) g.P.push(...q); for (const t of uv) g.U.push(...t); g.I.push(n, n + 1, n + 2, n, n + 2, n + 3); };
+  const flat = (k, a0, a1, b0, b1, y, sc = 4) => quad(k, [[a0, y, b1], [a1, y, b1], [a1, y, b0], [a0, y, b0]], [[a0 / sc, b1 / sc], [a1 / sc, b1 / sc], [a1 / sc, b0 / sc], [a0 / sc, b0 / sc]]);
+  const wallQ = (k, a0, b0, a1, b1, y0, y1, sc = 3) => { const L = Math.hypot(a1 - a0, b1 - b0); quad(k, [[a0, y0, b0], [a1, y0, b1], [a1, y1, b1], [a0, y1, b0]], [[0, y0 / sc], [L / sc, y0 / sc], [L / sc, y1 / sc], [0, y1 / sc]]); };
+  // Halle: Boden, Decke, Waende (Nord mit Kern-Tuer, Ost mit Gang)
+  flat("floor", Hl.a0, Hl.a1, Hl.b0, Hl.b1, Hl.y0, 6); quad("ceil", [[Hl.a0, Hl.y1, Hl.b0], [Hl.a1, Hl.y1, Hl.b0], [Hl.a1, Hl.y1, Hl.b1], [Hl.a0, Hl.y1, Hl.b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+  wallQ("wall", Hl.a0, Hl.b0, -D.w / 2, Hl.b0, Hl.y0, Hl.y1); wallQ("wall", D.w / 2, Hl.b0, Hl.a1, Hl.b0, Hl.y0, Hl.y1); wallQ("wall", -D.w / 2, Hl.b0, D.w / 2, Hl.b0, Hl.y0 + D.h, Hl.y1);
+  wallQ("wall", Hl.a0, Hl.b1, Hl.a1, Hl.b1, Hl.y0, Hl.y1); wallQ("wall", Hl.a0, Hl.b0, Hl.a0, Hl.b1, Hl.y0, Hl.y1);
+  wallQ("wall", Hl.a1, Hl.b0, Hl.a1, Gg.b0, Hl.y0, Hl.y1); wallQ("wall", Hl.a1, Gg.b1, Hl.a1, Hl.b1, Hl.y0, Hl.y1); wallQ("wall", Hl.a1, Gg.b0, Hl.a1, Gg.b1, Hl.y0 + 4.5, Hl.y1);
+  quad("metal", [[-D.w / 2, Hl.y0, Hl.b0 + 0.05], [D.w / 2, Hl.y0, Hl.b0 + 0.05], [D.w / 2, Hl.y0 + D.h, Hl.b0 + 0.05], [-D.w / 2, Hl.y0 + D.h, Hl.b0 + 0.05]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+  // runde Pfeiler (frei bleiben Kern-Tuer und der Weg zum Gang) und runde Deckenleuchten
+  const pillars = []; for (const a of [-27, -18, -9, 0, 9, 18, 27]) for (const b of [-6, 3, 12, 21, 30]) if (!(a >= 18 && b >= 12 && b <= 30) && !(Math.abs(a) < 3 && b < -3)) pillars.push([a, b]);
+  const pg = pillars.map(([a, b]) => new THREE.CylinderGeometry(0.55, 0.55, Hl.y1 - Hl.y0, 20).translate(a, (Hl.y0 + Hl.y1) / 2, b));
+  for (const a of [-22.5, -13.5, -4.5, 4.5, 13.5, 22.5]) for (const b of [-1.5, 7.5, 16.5, 25.5]) { const n = 16, k0 = G.light.P.length / 3; G.light.P.push(a, Hl.y1 - 0.04, b); G.light.U.push(0.5, 0.5);
+    for (let i = 0; i <= n; i++) { const t = i / n * Math.PI * 2; G.light.P.push(a + Math.cos(t) * 0.8, Hl.y1 - 0.04, b + Math.sin(t) * 0.8); G.light.U.push(0, 0); if (i) G.light.I.push(k0, k0 + i, k0 + i + 1); } }
+  // Gang: Boden (steigt), Decke, Waende, Lampen; endet an der Ringwand
+  for (let a = Hl.a1; a < aE - 0.01; a += 4) { const a1 = Math.min(aE, a + 4), y0 = gy(a), y1 = gy(a1);
+    quad("road", [[a, y0, Gg.b1], [a1, y1, Gg.b1], [a1, y1, Gg.b0], [a, y0, Gg.b0]], [[a / 4, Gg.b1 / 4], [a1 / 4, Gg.b1 / 4], [a1 / 4, Gg.b0 / 4], [a / 4, Gg.b0 / 4]]);
+    quad("conc", [[a, y0 + 4.5, Gg.b0], [a1, y1 + 4.5, Gg.b0], [a1, y1 + 4.5, Gg.b1], [a, y0 + 4.5, Gg.b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+    for (const b of [Gg.b0, Gg.b1]) quad("conc", [[a, y0, b], [a1, y1, b], [a1, y1 + 4.5, b], [a, y0 + 4.5, b]], [[a / 3, y0 / 3], [a1 / 3, y1 / 3], [a1 / 3, (y1 + 4.5) / 3], [a / 3, (y0 + 4.5) / 3]]);
+    if (Math.round(a) % 12 === 2) quad("lamp", [[a, y0 + 4.44, 19.7], [a + 3, y1 + 4.44, 19.7], [a + 3, y1 + 4.44, 20.3], [a, y0 + 4.44, 20.3]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
+  const grp = new THREE.Group(); grp.name = "Wayne Tower geheim"; grp.position.set(WTO.cx, WTO.Y, WTO.cz); grp.rotation.y = WTO.rot;
+  for (const [k, g] of Object.entries(G)) { if (!g.I.length) continue; const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(g.P, 3)); geo.setAttribute("uv", new THREE.Float32BufferAttribute(g.U, 2)); geo.setIndex(g.I); geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mats[k]); m.name = "Wayne Tower geheim " + k; m.userData.keep = true; m.userData.noLift = true; grp.add(m); }
+  { const m = new THREE.Mesh(mergeGeometries(pg, false), mats.pillar); m.name = "Wayne Tower geheim Pfeiler"; m.userData.keep = true; m.userData.noLift = true; grp.add(m); }
+  grp.userData.keep = true; grp.userData.noLift = true; grp.userData.dynamic = true; scene.add(grp); WTU.geheim = grp;
+  // Wandplatte: in der Wand der unteren Ringstrasse, gleiche Waende-Textur (Material der Strasse, u = s / 3, v = y / 3), faehrt in 2 s nach unten in den Boden
+  // (nach oben ginge sie durch die Deckplatte auf Strassenhoehe)
+  { const gap = Gg.end.gap, R = GDECK.roads.find(o => o.id === "ring"), LY = GDECK.LY, DY = GDECK.DY;
+    const at = s => { let j = 1; while (j < R.pts.length - 1 && R.s[j] < s) j++; const p = R.pts[j - 1], q = R.pts[j], l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, t = (s - R.s[j - 1]) / l, nx = -(q[1] - p[1]) / l, nz = (q[0] - p[0]) / l, d = gap.side * (R.HW - 0.02);
+      return [p[0] + (q[0] - p[0]) * t + nx * d, p[1] + (q[1] - p[1]) * t + nz * d]; };
+    const wm = (GDECK.meshes || []).find(g => g && g.name === "Gotham-Untere Strasse Waende"), mat = wm && wm.children[0] ? wm.children[0].material : mats.wall;
+    const A = at(gap.s0 - 0.3), Bp = at(gap.s1 + 0.3), y0 = LY - 0.6, y1 = DY, geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute([A[0], y0, A[1], Bp[0], y0, Bp[1], Bp[0], y1, Bp[1], A[0], y1, A[1]], 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute([(gap.s0 - 0.3) / 3, y0 / 3, (gap.s1 + 0.3) / 3, y0 / 3, (gap.s1 + 0.3) / 3, y1 / 3, (gap.s0 - 0.3) / 3, y1 / 3], 2)); geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, mat); m.name = "Wayne Tower Wandplatte"; m.userData.dynamic = true; m.userData.keep = true; m.userData.noLift = true; scene.add(m);
+    const mx = (A[0] + Bp[0]) / 2, mz = (A[1] + Bp[1]) / 2, L = Math.hypot(Bp[0] - A[0], Bp[1] - A[1]);
+    const part = dkAdd({ cx: mx, cy: (y0 + y1) / 2, cz: mz, ux: (Bp[0] - A[0]) / L, uz: (Bp[1] - A[1]) / L, hl: L / 2, hw: 0.15, hh: (y1 - y0) / 2, floor: 0 }); WTU.parts.push(part);
+    WTU.platte = { m, part, x: mx, z: mz, open: 0, want: 0, h: y1 - y0 + 0.2 }; }
+  // Kollision, Hohlraeume, Register
+  wtPartU(Hl.a0, Hl.a1, Hl.b0, Hl.b1, Hl.y0 - 0.5, Hl.y0, { chain: 1, m: 0.05 });
+  wtPartU(Hl.a0, -D.w / 2, Hl.b0 - 0.15, Hl.b0 + 0.15, Hl.y0, Hl.y1); wtPartU(D.w / 2, Hl.a1, Hl.b0 - 0.15, Hl.b0 + 0.15, Hl.y0, Hl.y1); wtPartU(-D.w / 2, D.w / 2, Hl.b0 - 0.15, Hl.b0 + 0.15, Hl.y0 + D.h, Hl.y1);
+  wtPartU(Hl.a0, Hl.a1, Hl.b1 - 0.15, Hl.b1 + 0.15, Hl.y0, Hl.y1); wtPartU(Hl.a0 - 0.15, Hl.a0 + 0.15, Hl.b0, Hl.b1, Hl.y0, Hl.y1);
+  wtPartU(Hl.a1 - 0.15, Hl.a1 + 0.15, Hl.b0, Gg.b0, Hl.y0, Hl.y1); wtPartU(Hl.a1 - 0.15, Hl.a1 + 0.15, Gg.b1, Hl.b1, Hl.y0, Hl.y1);
+  WTU.kernTuer.geheim = wtPartU(-D.w / 2, D.w / 2, Hl.b0 - 0.15, Hl.b0 + 0.05, Hl.y0, Hl.y0 + D.h);
+  for (const [a, b] of pillars) wtPartU(a - 0.55, a + 0.55, b - 0.55, b + 0.55, Hl.y0, Hl.y1);
+  for (let a = Hl.a1 - 0.5; a < aE + 1; a += 5) { const a1 = Math.min(aE + 1.5, a + 5); wtPartU(a, a1, Gg.b0, Gg.b1, gy((a + a1) / 2) - 0.5, gy((a + a1) / 2), { chain: 1, m: 0.05 }); }
+  for (const b of [Gg.b0, Gg.b1]) for (let a = Hl.a1; a < aE; a += 20) { const a1 = Math.min(aE0, a + 20); if (a1 > a) wtPartU(a, a1, b - 0.15, b + 0.15, gy(a), gy(a1) + 4.5); }
+  dkRoom({ poly: WTO.poly(Hl.a0, Hl.a1, Hl.b0, Hl.b1), y0: WTO.Y + Hl.y0 - 0.2, y1: WTO.Y + Hl.y1 });
+  dkRoom({ poly: WTO.poly(Hl.a1 - 1, aE + 3, Gg.b0, Gg.b1), y0: WTO.Y + Hl.y0 - 0.2, y1: WTO.Y + WTO.lv.tg1 + 4.6 });
+  GR_NOSKIRT.push(WTO.poly(Hl.a1, aE + 4, Gg.b0 - 4, Gg.b1 + 4)); GR_HOLES.push(WTO.poly(aE0 - 1, aE + 9, Gg.b0 - 0.3, Gg.b1 + 0.3));
+  bautAdd({ id: "GO-WAYNE-GEHEIM", name: "Geheimer Wayne-Stock", art: "Geheim", poly: WTO.poly(Hl.a0, Hl.a1, Hl.b0, Hl.b1), y0: WTO.Y + Hl.y0 - 0.3, y1: WTO.Y + Hl.y1 });
+  bautAdd({ id: "GO-WAYNE-GANG", name: "Geheimgang Wayne Tower", art: "Geheim", poly: WTO.poly(Hl.a1, aE, Gg.b0, Gg.b1), y0: WTO.Y + Hl.y0 - 0.3, y1: WTO.Y + WTO.lv.tg1 + 4.5 });
+}
+// Wandplatte: L im Fahrzeug hoechstens 15 m davor (beide Seiten) oeffnet bzw. schliesst sie
+function wtPlatteNah() { const P = WTU.platte; if (!P || typeof CAR === "undefined" || !CAR || !CAR.on) return false; return Math.hypot(CAR.x - P.x, CAR.z - P.z) < 15 && Math.abs(CAR.y - GDECK.LY) < 4; }
+function wtPlatteToggle() { const P = WTU.platte; P.want = P.want ? 0 : 1; toast(P.want ? "Wandplatte öffnet" : "Wandplatte schließt"); }
+function wtPlatteStep(dtIn) {
+  const P = WTU.platte; if (!P) return; const now = performance.now() / 1000, dt = dtIn ?? Math.min(0.1, now - (P.t || now)); P.t = now;
+  if (P.open === P.want) return; P.open = P.want > P.open ? Math.min(1, P.open + dt / 2) : Math.max(0, P.open - dt / 2);
+  P.m.position.y = -P.open * P.h; P.part.on = P.open < 0.7;
+}
 // Schranke: oeffnet, wenn das aktive Fahrzeug langsamer als 3 m/s hoechstens 6 m vor ihr steht (beide Seiten), schliesst 4 s spaeter; zu ist sie fest
 function wtSchrankeStep(dtIn) {
   const S = WTU.schranke; if (!S) return; const Z = WTO.zufahrt, now = performance.now() / 1000, dt = dtIn ?? Math.min(0.1, now - (S.t || now)); S.t = now;
