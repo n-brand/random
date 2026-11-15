@@ -36,7 +36,7 @@ function carPush(p, feet, R) {
   }
   dkPush(p, feet + CAR_STEP, feet + CAR.spec.bodyH, R);                    // gedrehte Kollision (kern/drehkoll.js: Brueckenteile, Wayne Tower)
 }
-const carSlopeG = (x, z, y) => dkGround(x, z, y, gothamBridgeAt(x, z, y) ?? gothamDeckAt(x, z, y) ?? carSlopeG0(x, z, y));   // dkGround: gedrehte Teile, Hohlraeume   // G2e: zweistoeckige Strassen   // Gotham-Bruecken: Fahrbahn statt Gelaende darunter (G2c)
+const carSlopeG = (x, z, y) => dkSlope(x, z, y, gothamBridgeAt(x, z, y) ?? gothamDeckAt(x, z, y) ?? carSlopeG0(x, z, y));   // dkGround: gedrehte Teile, Hohlraeume   // G2e: zweistoeckige Strassen   // Gotham-Bruecken: Fahrbahn statt Gelaende darunter (G2c)
 const carSlopeG0 = (x, z, y) => GRAMP.inF(x, z) ? GRAMP.y(z) : hfCap(x, z) !== null && y > (x > HF_XP ? HF_Y + 5.3 : hfCap(x, z) - 2) ? Math.max(terrainH(x, z), hfCap(x, z)) + 0.04 : (y < HILL - 0.2 && GRAMP.inP(x, z)) || inHfTun(x, z, y) || (y < HILL - 3 && inRect(CSH_OUT, x, z)) || (y < terrainH(x, z) - 1.5 && wfInTunnel(x, z)) || (y < 3 && inRect(WF_PORTAL, x, z)) || (y < -20 && waterCaveAt(x, z)) || (y < HILL - 1 && inPoly(GARAGE, x, z)) || y < -8 ? -100 : terrainH(x, z);
 // Bodenhoehe unter dem Fahrzeug: Mitte oder Mittel der Raeder (Hebebuehne: Raeder auf den Schienen), dazu Neigung
 const hullE = new THREE.Euler(), hullV = new THREE.Vector3();

@@ -67,6 +67,8 @@ function dkInRoom(x, y, z) {
   for (const r of c) if (y >= r.y0 && y <= r.y1 && x >= r.bb[0] && x <= r.bb[2] && z >= r.bb[1] && z <= r.bb[3] && bautInPoly(r.poly, x, z)) return r;
   return null;
 }
+// Hangpruefung (slopeG, carSlopeG): nur das Gelaende zaehlt, Stufen regelt groundAt; in Hohlraeumen aber der dk-Boden (sonst Gelaende darueber)
+function dkSlope(x, z, feet, g) { if (!dkInRoom(x, feet + 0.5, z)) return g; const d = dkFloor(x, z, feet); return d === null ? g : d; }
 // Boden mit gedrehten Teilen: im Hohlraum gilt nur der dk-Boden, sonst der hoehere von beiden (g = bisheriger Boden)
 function dkGround(x, z, feet, g) {
   const d = dkFloor(x, z, feet); if (d === null) return g;

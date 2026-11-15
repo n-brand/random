@@ -20,6 +20,7 @@ const WTO = (() => {
     vorplatz: O.vorplatz ? { dir: SD[O.vorplatz.seite], tiefe: O.vorplatz.tiefe } : null,
     // Aufzugskern innen an der Nordseite (b < 0): nur dort reicht er durch alle Ruecksprunge bis aufs Dach (Stufe 3: b >= -22); Tiefgaragen ebenfalls im Norden
     kern: { a0: -4, a1: 4, b0: -22, b1: -14 },
+    kernTuer: { w: 2.4, h: 3 },                                               // Aufzugstuer in der Lobby (+b-Seite des Kerns)
     eingang: { w: 14, h: 7.5 },                                               // Eingang in der Mitte der Vorplatzseite
   };
 })();

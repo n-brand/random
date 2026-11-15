@@ -58,6 +58,9 @@ function wtPart(a0, a1, b0, b1, y0, y1, opt = {}) {
     light: M2({ color: 0xfff1c4, emissive: 0xffe08a, emissiveIntensity: 0.6, roughness: 0.5, side: THREE.DoubleSide }),
     metal: M2({ color: 0x4a4f55, metalness: 0.6, roughness: 0.4 }),
     red: M2({ color: 0x400000, emissive: 0xff2010, emissiveIntensity: 1.5 }),
+    lfloor: M2({ color: 0xcfc9bd, roughness: 0.25, metalness: 0.05 }),             // Lobby (Task 4, Rohbau): glatter heller Stein
+    ceil: M2({ color: 0xd8d6d0, roughness: 0.9, emissive: 0xd8d6d0, emissiveIntensity: 0.45 }),   // von unten kommt kein Licht: leicht selbst hell
+    core: M2({ color: 0x8b8781, roughness: 0.6 }),
   };
   // ---------- Geometrie in Turm-Koordinaten (x = a, z = b) ----------
   const G = {}; for (const k of Object.keys(mats)) G[k] = { P: [], U: [], I: [] };
@@ -117,6 +120,18 @@ function wtPart(a0, a1, b0, b1, y0, y1, opt = {}) {
       const up = (p[1][0] - p[0][0]) * (p[2][1] - p[0][1]) - (p[1][1] - p[0][1]) * (p[2][0] - p[0][0]) < 0; const o = up ? p : [p[0], p[3], p[2], p[1]];
       quad("plaza", o.map(([a, b]) => [a, 0.08, b]), o.map(([a, b]) => [a / 4, b / 4])); qa = qb; da0 = db0; } }
   flat("plaza", -S - 2, S + 2, -S - 2, -S, 0.08); flat("plaza", -S - 2, S + 2, S, S + 2, 0.08); flat("plaza", -S - 2, -S, -S, S, 0.08); flat("plaza", S, S + 2, -S, S, 0.08);
+  // ---------- Lobby und Aufzugskern (Task 4, Rohbau; Einrichtung erst am Schluss) ----------
+  { const K = WTO.kern, D = WTO.kernTuer, I = S - 0.4;                          // I: Innenkante der Sockelwand
+    const around = (fn) => { fn(-I, I, -I, K.b0); fn(-I, I, K.b1, I); fn(-I, K.a0, K.b0, K.b1); fn(K.a1, I, K.b0, K.b1); };   // Flaeche ohne den Kern
+    around((a0, a1, b0, b1) => flat("lfloor", a0, a1, b0, b1, 0.1, 6));
+    around((a0, a1, b0, b1) => quad("ceil", [[a0, 9.4, b0], [a1, 9.4, b0], [a1, 9.4, b1], [a0, 9.4, b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]));   // Decke (nach unten)
+    for (const a of [-24, -12, 12, 24]) for (const b of [-26, -2, 22]) box("stone", a - 0.6, a + 0.6, b - 0.6, b + 0.6, 0.1, 9.4);           // Stuetzen
+    for (const a of [-24, -12, 0, 12, 24]) for (const b of [-28, -8, 12, 28]) if (!(a === 0 && b === -8)) quad("light", [[a - 2, 9.35, b - 0.5], [a + 2, 9.35, b - 0.5], [a + 2, 9.35, b + 0.5], [a - 2, 9.35, b + 0.5]], [[0, 0], [1, 0], [1, 1], [0, 1]]);   // Lichtfelder
+    // Kern: Waende aussen, Tuer zur Lobby (+b) in der Mitte; Tuerblaetter zu (der Aufzug kommt in Task 7)
+    wallQ("core", K.a1, K.b0, K.a0, K.b0, 0.1, 9.4); wallQ("core", K.a0, K.b0, K.a0, K.b1, 0.1, 9.4); wallQ("core", K.a1, K.b1, K.a1, K.b0, 0.1, 9.4);
+    wallQ("core", K.a0, K.b1, -D.w / 2, K.b1, 0.1, 9.4); wallQ("core", D.w / 2, K.b1, K.a1, K.b1, 0.1, 9.4); wallQ("core", -D.w / 2, K.b1, D.w / 2, K.b1, D.h, 9.4);
+    box("metal", -D.w / 2, D.w / 2, K.b1 - 0.12, K.b1 - 0.02, 0.1, D.h);
+    box("stone", -D.w / 2 - 0.25, D.w / 2 + 0.25, K.b1, K.b1 + 0.15, D.h, D.h + 0.3); }
   // ---------- in die Welt setzen ----------
   const grp = WTB.group = new THREE.Group(); grp.name = "Wayne Tower";
   grp.position.set(WTO.cx, Y, WTO.cz); grp.rotation.y = WTO.rot;
@@ -139,6 +154,13 @@ function wtPart(a0, a1, b0, b1, y0, y1, opt = {}) {
     wtPart(-h - 0.3, h + 0.3, -h - 0.3, -h + 0.1, T.y1, T.y1 + 1.2); wtPart(-h - 0.3, h + 0.3, h - 0.1, h + 0.3, T.y1, T.y1 + 1.2); wtPart(-h - 0.3, -h + 0.1, -h, h, T.y1, T.y1 + 1.2); wtPart(h - 0.1, h + 0.3, -h, h, T.y1, T.y1 + 1.2);
     for (const sa of [-1, 1]) for (const sb of [-1, 1]) wtPart(sa * h - 1.2, sa * h + 1.2, sb * h - 1.2, sb * h + 1.2, T.y0, T.y1 + 4); });
   { const K = WTO.krone; for (const [h, a, b] of [[K.h, WTO.lv.dach, 280], [13, 280, 292], [9, 292, K.y1]]) wtPart(-h, h, -h, h, a, b); wtPart(-0.6, 0.6, -0.6, 0.6, K.y1, K.antenne); }
+  // Lobby: Boden, Decke (Boden von Geschoss 1), Stuetzen, Kern mit geschlossener Tuer (WTB.kernTuer, Task 7 oeffnet sie)
+  { const K = WTO.kern, D = WTO.kernTuer, I = S - 0.4;
+    for (const [a0, a1, b0, b1] of [[-I, I, -I, K.b0], [-I, I, K.b1, I], [-I, K.a0, K.b0, K.b1], [K.a1, I, K.b0, K.b1]]) { wtPart(a0, a1, b0, b1, -0.3, 0.1, { chain: 1 }); wtPart(a0, a1, b0, b1, 9.4, 9.8, { chain: 1 }); }
+    for (const a of [-24, -12, 12, 24]) for (const b of [-26, -2, 22]) wtPart(a - 0.6, a + 0.6, b - 0.6, b + 0.6, 0.1, 9.4);
+    wtPart(K.a0, K.a1, K.b0 - 0.15, K.b0 + 0.15, 0.1, 9.4); wtPart(K.a0 - 0.15, K.a0 + 0.15, K.b0, K.b1, 0.1, 9.4); wtPart(K.a1 - 0.15, K.a1 + 0.15, K.b0, K.b1, 0.1, 9.4);
+    wtPart(K.a0, -D.w / 2, K.b1 - 0.15, K.b1 + 0.15, 0.1, 9.4); wtPart(D.w / 2, K.a1, K.b1 - 0.15, K.b1 + 0.15, 0.1, 9.4); wtPart(-D.w / 2, D.w / 2, K.b1 - 0.15, K.b1 + 0.15, D.h, 9.4);
+    WTB.kernTuer = wtPart(-D.w / 2, D.w / 2, K.b1 - 0.15, K.b1 + 0.05, 0.1, D.h); }
   // Register
   bautAdd({ id: "GO-WAYNE-TOWER", name: "Wayne Tower", art: "Hochhaus", poly: WTO.poly(-S, S, -S, S), y0: Y - 0.5, y1: Y + WTO.krone.antenne, info: "320 m" });
 }
