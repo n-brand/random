@@ -50,6 +50,7 @@ function frame() {
   carFrame(dt);
   shotsStep(dt); wasserFrame(dt);                                                             // Panzer: Schiessen, Granaten, Explosionen, Wracks (schiessen.js)
   if (typeof gbstCollStep === "function") gbstCollStep();                                      // Baustellen: Kollision nur in der Naehe (gotham-baustellen.js)
+  if (typeof wtStep === "function") wtStep();                                                  // Wayne Tower: Nachtlicht (gotham-wayne-turm.js)
   if (typeof bautHoverStep === "function") bautHoverStep();                                    // Gebaeude-ID beim Hovern (Orbit/Geist, ui/bauten-hover.js)
   if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
   const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
