@@ -4,7 +4,9 @@
 "use strict";
 
 // ===================== Daten: Pfade in Kartenkoordinaten (x rechts, z unten = Sueden) =====================
-const SK = (() => {
+const SK = { paths: null, labels: null, view: GOTHAM.ansicht, WATER: "#1d3b55", LAND: "#2f3d28", OUT: "#11161b" };   // OUT: ausserhalb der Kartenansicht
+// Pfade erst beim ersten Gebrauch bauen (ca. 1,5 ms; Review M6: nicht beim Laden)
+function skEnsure() { if (SK.paths) return;
   const G = GOTHAM, S = GOTHAM_STADT, paths = [], labels = [];
   const poly = (P, p = new Path2D()) => { P.forEach((q, i) => i ? p.lineTo(q[0], q[1]) : p.moveTo(q[0], q[1])); p.closePath(); return p; };
   const line = (P, p = new Path2D()) => { P.forEach((q, i) => i ? p.lineTo(q[0], q[1]) : p.moveTo(q[0], q[1])); return p; };
@@ -35,15 +37,16 @@ const SK = (() => {
     else { const W = Math.max(o.w, 18), D = Math.max(o.d, 18), a = (o.dreh || 0) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
       poly([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => [o.x + u * W / 2 * c - v * D / 2 * s, o.z + u * W / 2 * s + v * D / 2 * c]), p); }
     add({ p, fill: T.farbe, alpha: o.ebene < 0 ? 0.35 : 0.9, stroke: "#000", w: 3, ort: true });
-    labels.push({ x: o.x, z: o.z - Math.max(o.d, 18) / 2 - 10, text: o.name.replace(/ \(.*\)$/, ""), size: o.typ === "wahrzeichen" || o.w > 150 ? 40 : 26, big: o.w >= 40 || o.typ === "wahrzeichen" }); }
+    labels.push({ x: o.x, z: o.z - Math.max(o.d, 18) / 2 - 10, text: o.name.replace(/ \(.*\)$/, ""), big: o.w >= 40 || o.typ === "wahrzeichen" }); }
   // Bezirksnamen: Mitte der Eckpunkte auf der Insel
   for (const b of G.bezirke) { let x = 0, z = 0, n = 0; for (const q of b.poly) if (GOT.sdi(q[0], q[1]) < 0) { x += q[0]; z += q[1]; n++; }
-    if (n) labels.push({ x: x / n, z: z / n, text: b.name, size: 46, bezirk: true }); }
-  return { paths, labels, view: G.ansicht, WATER: "#1d3b55", LAND: "#2f3d28" };
-})();
+    if (n) labels.push({ x: x / n, z: z / n, text: b.name, bezirk: true }); }
+  SK.paths = paths; SK.labels = labels;
+}
 
 // Pfade in einen Kontext zeichnen (Transformation Karte -> Pixel ist gesetzt; scale = Pixel je Meter fuer Mindestbreiten)
-function skPaint(c, scale, from = 0, to = SK.paths.length) {
+function skPaint(c, scale, from = 0, to) {
+  skEnsure(); if (to === undefined) to = SK.paths.length;
   for (let i = from; i < to; i++) { const e = SK.paths[i];
     if (e.fuell && scale < 0.05) continue;                                   // ganz herausgezoomt: Fuellbauten waeren nur Rauschen
     c.save(); if (e.clip) c.clip(e.clip); c.globalAlpha = e.alpha ?? 1;
@@ -67,10 +70,10 @@ function skWater() { if (!SK.water) for (const _ of skWaterGen()); return SK.wat
 // { mx, mz, ang (Karten-Norden = 0, im Uhrzeigersinn), mode, under }
 const skDir = new THREE.Vector3();
 function skPos() {
-  let p = camera.position, mode = "orbit";
+  let p = controls.target, mode = "orbit";                                    // Orbit: der angeschaute Punkt (Review M3), nicht die Kamera
   if (walking && !ghost) { p = player.pos; mode = "walk"; } else if (ghost) mode = "ghost";
   for (const [o, m] of [[typeof CAR !== "undefined" && CAR, "car"], [typeof BOAT !== "undefined" && BOAT, "boat"], [typeof FLY !== "undefined" && FLY, "fly"], [typeof JET !== "undefined" && JET, "fly"]])
-    if (o && o.on && o.x !== undefined) { p = { x: o.x, y: o.y ?? 0, z: o.z }; mode = m; break; }
+    if (o && o.on && o.x !== undefined) { p = { x: o.x, y: o.y ?? (o.g ? o.g.position.y : 0), z: o.z }; mode = m; break; }   // Boot hat kein y (M2)
   camera.getWorldDirection(skDir);
   const [mx, mz] = GOT.toMap(p.x, p.z), [ax, az] = GOT.toMap(p.x + skDir.x, p.z + skDir.z);
   return { mx, mz, ang: Math.atan2(ax - mx, -(az - mz)), mode, under: (p.y ?? 0) < terrainH(p.x, p.z) - 1.5 };
@@ -81,6 +84,7 @@ function skPos() {
 SK.BGS = 0.5; SK.bgDone = false; SK.bgMax = 0;
 SK.mini = { on: (() => { try { return localStorage.getItem("wm-minikarte") !== "0"; } catch (e) { return true; } })(), last: null, D: 400, prev: null, v: 0 };
 function* skBgGen() {
+  skEnsure();
   const V = SK.view, s = SK.BGS, cv = document.createElement("canvas"); cv.width = Math.ceil((V.x1 - V.x0) * s); cv.height = Math.ceil((V.z1 - V.z0) * s);
   const c = cv.getContext("2d"); c.fillStyle = SK.LAND; c.fillRect(0, 0, cv.width, cv.height); yield;
   if (!SK.water) yield* skWaterGen(); const w = SK.water;
@@ -91,6 +95,7 @@ function* skBgGen() {
 SK.frame = 0;
 TILES.tasks.push({ gen: null, done: false, t0: 0, f: -1, plan() {}, step() {
   if (TILES.startup || this.done || TILES.loading()) return false;
+  if (!SK.mini.on && (SK.water || !skBigIsOpen())) return false;   // Minikarte aus: nicht bauen (M12), nur das Wasser fuer die offene grosse Karte
   const now = performance.now(); if (this.f !== SK.frame) { this.f = SK.frame; this.t0 = now; }   // neues Bild (Zaehler aus skMiniStep): eigene 4-ms-Scheibe
   if (now - this.t0 > 4) return false;
   if (!this.gen) this.gen = skBgGen();
@@ -110,7 +115,7 @@ function skMiniStep() {
   const P = skPos(), now = performance.now(), M = SK.mini;
   // Massstab: zu Fuss 400 m, im Fahrzeug/Flug mit dem Tempo groesser (bis 1200 m), weich
   let v = 0; if (M.prev) { const dt = (now - M.prev.t) / 1000; if (dt > 0 && dt < 0.5) v = Math.hypot(P.mx - M.prev.mx, P.mz - M.prev.mz) / dt; } M.prev = { mx: P.mx, mz: P.mz, t: now };
-  if (v < 200) M.v += (v - M.v) * 0.05;                                       // Spruenge (Teleport) nicht mitzaehlen
+  if (v < 500) M.v += (v - M.v) * 0.05;                                       // Spruenge (Teleport) nicht mitzaehlen
   const goal = P.mode === "car" || P.mode === "boat" || P.mode === "fly" ? Math.min(1200, 400 + 6 * M.v) : 400; M.D += (goal - M.D) * 0.04;
   const dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(el.clientWidth * dpr);
   if (el.width !== W) { el.width = el.height = W; M.last = null; }
@@ -118,7 +123,7 @@ function skMiniStep() {
   M.last = { mx: P.mx, mz: P.mz, ang: P.ang, D: M.D, under: P.under };
   const c = el.getContext("2d"), R = W / 2, k = W / M.D, V = SK.view;
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, W);
-  c.save(); c.beginPath(); c.arc(R, R, R - dpr, 0, Math.PI * 2); c.clip(); c.fillStyle = SK.LAND; c.fillRect(0, 0, W, W);
+  c.save(); c.beginPath(); c.arc(R, R, R - dpr, 0, Math.PI * 2); c.clip(); c.fillStyle = SK.OUT; c.fillRect(0, 0, W, W);
   c.translate(R, R); c.rotate(-P.ang); c.scale(k, k); c.translate(-P.mx, -P.mz);
   c.imageSmoothingEnabled = true; c.drawImage(SK.bg, V.x0, V.z0, SK.bg.width / SK.BGS, SK.bg.height / SK.BGS);
   c.restore();
@@ -174,15 +179,17 @@ function skBigStep() {
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; B.dirty = true; }
   { const V = SK.view; B.scale = Math.max(B.scale, Math.min(box.clientWidth / (V.x1 - V.x0), box.clientHeight / (V.z1 - V.z0)) * 0.95); const hx = box.clientWidth / 2 / B.scale, hz = box.clientHeight / 2 / B.scale;   // nicht ueber den Rand der Ansicht schieben
     B.cx = hx * 2 >= V.x1 - V.x0 ? (V.x0 + V.x1) / 2 : Math.max(V.x0 + hx, Math.min(V.x1 - hx, B.cx)); B.cz = hz * 2 >= V.z1 - V.z0 ? (V.z0 + V.z1) / 2 : Math.max(V.z0 + hz, Math.min(V.z1 - hz, B.cz)); }
+  if (B.noWater && SK.water) B.dirty = true;
   const L = B.last; if (!B.dirty && L && Math.abs(L.mx - P.mx) * B.scale < 0.5 && Math.abs(L.mz - P.mz) * B.scale < 0.5 && Math.abs(L.ang - P.ang) < 0.009) return;
   B.last = { mx: P.mx, mz: P.mz, ang: P.ang };
   const t0 = performance.now(), s = B.scale * dpr, V = SK.view;
   if (B.dirty || !B.layer || B.layer.width !== W || B.layer.height !== H) {
     B.dirty = false; if (!B.layer) B.layer = document.createElement("canvas"); B.layer.width = W; B.layer.height = H;
     const c = B.layer.getContext("2d");
-    c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = "#11161b"; c.fillRect(0, 0, W, H);   // ausserhalb der Ansicht: dunkel
+    c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = SK.OUT; c.fillRect(0, 0, W, H);   // ausserhalb der Ansicht: dunkel
     c.setTransform(s, 0, 0, s, W / 2 - B.cx * s, H / 2 - B.cz * s); c.fillStyle = SK.LAND; c.fillRect(V.x0, V.z0, V.x1 - V.x0, V.z1 - V.z0);
-    const w = SK.water || skWater(); c.imageSmoothingEnabled = true; c.drawImage(w.cv, V.x0, V.z0, w.cv.width * w.C, w.cv.height * w.C);
+    const w = SK.water || (TILES.loading() ? skWater() : null); B.noWater = !w;   // sonst bringt es die Hintergrund-Aufgabe (kein Ruckler, M5)
+    if (w) { c.imageSmoothingEnabled = true; c.drawImage(w.cv, V.x0, V.z0, w.cv.width * w.C, w.cv.height * w.C); }
     skPaint(c, s);
     // Namen: Bezirke immer, grosse Orte ab 0,3 px/m, alle Orte ab 0,8 px/m (CSS-Pixel)
     c.setTransform(1, 0, 0, 1, 0, 0); c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
@@ -197,8 +204,12 @@ function skBigStep() {
       c.fillStyle = "#fff"; c.font = `${11 * dpr}px system-ui, sans-serif`; c.textAlign = "left"; c.fillText(len >= 1000 ? len / 1000 + " km" : len + " m", x0, y0 - 9 * dpr); }
   }
   const c = cv.getContext("2d"); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(B.layer, 0, 0);
-  // eigener Pfeil (je Bild, die Karte darunter bleibt)
-  c.save(); c.translate(W / 2 + (P.mx - B.cx) * s, H / 2 + (P.mz - B.cz) * s); c.rotate(P.ang); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2.5 * dpr;
-  c.beginPath(); c.moveTo(0, -14 * dpr); c.lineTo(10 * dpr, 11 * dpr); c.lineTo(0, 5 * dpr); c.lineTo(-10 * dpr, 11 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore();
+  // eigener Pfeil (je Bild, die Karte darunter bleibt); ausserhalb des Bildes ein Randpfeil in seine Richtung (M8)
+  const px = W / 2 + (P.mx - B.cx) * s, pz = H / 2 + (P.mz - B.cz) * s, m = 24 * dpr;
+  if (px < m || pz < m || px > W - m || pz > H - m) { const dx = px - W / 2, dz = pz - H / 2, k = Math.min((W / 2 - m) / Math.max(Math.abs(dx), 1e-6), (H / 2 - m) / Math.max(Math.abs(dz), 1e-6));
+    c.save(); c.translate(W / 2 + dx * k, H / 2 + dz * k); c.rotate(Math.atan2(dx, -dz)); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2.5 * dpr;
+    c.beginPath(); c.moveTo(0, -14 * dpr); c.lineTo(11 * dpr, 8 * dpr); c.lineTo(-11 * dpr, 8 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+  else { c.save(); c.translate(px, pz); c.rotate(P.ang); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2.5 * dpr;
+  c.beginPath(); c.moveTo(0, -14 * dpr); c.lineTo(10 * dpr, 11 * dpr); c.lineTo(0, 5 * dpr); c.lineTo(-10 * dpr, 11 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore(); }
   SK.bigMs = performance.now() - t0;
 }

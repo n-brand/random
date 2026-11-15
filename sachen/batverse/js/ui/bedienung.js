@@ -158,7 +158,7 @@ addEventListener("keydown", e => {
 let shiftTap = false;
 addEventListener("keydown", e => { shiftTap = (e.code === "ShiftLeft" || e.code === "ShiftRight") && !e.repeat ? !(e.metaKey || e.altKey || e.ctrlKey) : e.repeat && shiftTap && e.code.startsWith("Shift"); }, true);
 addEventListener("blur", () => { shiftTap = false; });
-addEventListener("keyup", e => { keys.delete(e.code); if (!e.code.startsWith("Shift") || !shiftTap || !walking || ghost) return; shiftTap = false; if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); });
+addEventListener("keyup", e => { keys.delete(e.code); if (!e.code.startsWith("Shift") || !shiftTap || !walking || ghost || (window.skBigIsOpen && skBigIsOpen())) return; shiftTap = false; if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); });
 addEventListener("blur", () => keys.clear());
 function joystick(el) {
   const knob = el.querySelector("span"), state = { x: 0, y: 0, id: null };
