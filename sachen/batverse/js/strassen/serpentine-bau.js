@@ -8,7 +8,7 @@
 // Natursteinbruestung an den Kehren, sonst Leitpfosten; Felsbrocken, Geroell und wenig Pflanzen. Kollision fuer Felsen, Planken, Mauern.
 {
   const hw = SERP_W / 2, S2 = SERP.samples, NS = S2.length;
-  const fr = rng(4242);
+  const fr = rng(4242), rockS = rng(4244);                                  // rockS: eigener Felsen-Zufall (makeRock)
   // ---- Hilfen ----
   const tang = i => { const a = S2[Math.max(0, i - 1)], b = S2[Math.min(NS - 1, i + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]); return [(b[0] - a[0]) / l, (b[1] - a[1]) / l]; };
   // Abstand zu anderen Strassenstuecken (nicht dem eigenen Abschnitt um s0)
@@ -105,20 +105,20 @@
       if (oi.d < 14 && oi.y > y0 + 1.5 && fr() < 0.95) {                  // Bergseite mit Strasse darueber: Felsabbruch fuellt den Streifen dazwischen
         const gap = oi.d + 2 - 2 * hw, d = Math.max(1.4, gap - 1.4), w = 5 + fr() * 5, h = oi.y - y0 + 0.4;
         const off = hw + 0.8 + d / 2, cx = x0 + nx * off, cz = z0 + nz * off;
-        placeRock(makeRock(w / 2, h / 2, d / 2, fr()), cx, y0 - 0.7 + h / 2, cz, rot, oi.y - 0.35);
+        placeRock(makeRock(w / 2, h / 2, d / 2, fr(), 4, rockS), cx, y0 - 0.7 + h / 2, cz, rot, oi.y - 0.35);
         rockCirc(cx, cz, w, d, rot, y0 + h * 0.6);
       } else if (oi.d < 16 && oi.y < y0 - 1.5) {                          // Talseite mit Strasse darunter: dort steht schon deren Felsabbruch
       } else if (dp < 0.8 && fr() < 0.93) {                               // Bergseite frei: Felswand im Einschnitt (fast durchgehend)
         const cut = Math.max(0, -dp), w = 4.5 + fr() * 5, d = 2.5 + fr() * 3.5, h = Math.min(11, Math.max(3.2, cut + 2.5 + fr() * 4.5));
         const off = hw + 1.25 + d * 0.42, cx = x0 + nx * off, cz = z0 + nz * off;
         if (otherRoad(cx, cz, s0) < hw + 1.1 + d * 0.5 || plateauH(cx, cz) > HILL - 2) continue;
-        placeRock(makeRock(w / 2, h / 2, d / 2, fr()), cx, y0 - 1 + h * 0.36, cz, rot);
+        placeRock(makeRock(w / 2, h / 2, d / 2, fr(), 4, rockS), cx, y0 - 1 + h * 0.36, cz, rot);
         rockCirc(cx, cz, w, d, rot, y0 + h * 0.85);
       } else if (dp > 2.5 && fr() < 0.6) {                                // Talseite: Felsabbruch unter dem Rand
         const w = 4 + fr() * 6, d = 3 + fr() * 4, h = Math.min(14, dp + 3 + fr() * 3);
         const off = hw + 1.7 + d * 0.45, cx = x0 + nx * off, cz = z0 + nz * off;
         if (otherRoad(cx, cz, s0) < hw + 1.1 + d * 0.5) continue;
-        placeRock(makeRock(w / 2, h / 2, d / 2, fr()), cx, y0 - 0.5 - h * 0.45, cz, rot, y0 - 0.35);
+        placeRock(makeRock(w / 2, h / 2, d / 2, fr(), 4, rockS), cx, y0 - 0.5 - h * 0.45, cz, rot, y0 - 0.35);
         rockCirc(cx, cz, w, d, rot, y0 - 0.35);                            // von unten gesperrt, von der Fahrbahn darueber nicht
       }
     }
@@ -132,7 +132,7 @@
     const y = terrainH(x, z), sn = serpNear(x, z, 30), rot = sn ? -Math.atan2(...(() => { const q = Math.max(1, Math.min(NS - 2, Math.round(sn.s))); return [S2[q + 1][1] - S2[q - 1][1], S2[q + 1][0] - S2[q - 1][0]]; })()) : fr() * 6;
     // nicht ueber eine hoeher liegende Fahrbahn in der Naehe hinausragen
     let yTop = Infinity; for (const [sx, sz, s] of S2) { const ry = SERP.y(s); if (ry > y && Math.hypot(x - sx, z - sz) < 13) yTop = Math.min(yTop, ry - 0.35); }
-    const gR = makeRock(w / 2, h / 2, d / 2, fr()), rr = rot + (fr() - 0.5) * 0.6;   // gleiche Zufallsreihenfolge wie vorher (gleiche Felsen)
+    const gR = makeRock(w / 2, h / 2, d / 2, fr(), 4, rockS), rr = rot + (fr() - 0.5) * 0.6;   // gleiche Zufallsreihenfolge wie vorher (gleiche Felsen)
     placeRock(gR, x, y - h * 0.15, z, rr, yTop);
     rockCirc(x, z, w, d, rr, Math.min(yTop, y + h * 0.8)); n++;
   }
@@ -140,7 +140,7 @@
   for (let k = 0, n = 0; k < 400 && n < 18; k++) {
     const x = 30 + fr() * 85, z = -60 + fr() * 120, s = 1.2 + fr() * 2.2;
     if (serpZone(x, z) < 0.6 || serpNear(x, z, hw + s + 1) || plateauH(x, z) > HILL - 2) continue;
-    const y = terrainH(x, z); placeRock(makeRock(s, s * (0.6 + fr() * 0.3), s * (0.8 + fr() * 0.4), fr(), 3), x, y + s * 0.25, z, fr() * 6);
+    const y = terrainH(x, z); placeRock(makeRock(s, s * (0.6 + fr() * 0.3), s * (0.8 + fr() * 0.4), fr(), 3, rockS), x, y + s * 0.25, z, fr() * 6);
     circles.push([x, z, s * 0.85, y + s * 1.2]); n++;
   }
   if (rockGeos.length) {

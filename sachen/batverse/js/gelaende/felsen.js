@@ -8,13 +8,14 @@ const rockR = rng(4243);
   const fbm3 = (x, y, z) => n3(x, y, z) * 0.55 + n3(x * 2.03 + 5, y * 2.03 + 1, z * 2.03 + 9) * 0.3 + n3(x * 4.1 + 2, y * 4.1 + 7, z * 4.1 + 3) * 0.15;
   const TONES = [0x8d8a84, 0x6c6964, 0x7f6f5d, 0xa59b88, 0x77736b].map(h => new THREE.Color(h));
   const cMoss = new THREE.Color(0x5b6a3c), cLichen = new THREE.Color(0xb7b29a), tmpC = new THREE.Color();
-  function makeRock(sx, sy, sz, seed, detail = 4) {
+  // rnd: eigener Zufall je Nutzer (2026-11-15: sonst haengt die Form jedes Felsens davon ab, ob andere Felsen vorher gebaut wurden; Serpentine baut spaeter)
+  function makeRock(sx, sy, sz, seed, detail = 4, rnd = rockR) {
     let g = new THREE.IcosahedronGeometry(1, detail);
     g.deleteAttribute("uv"); g.deleteAttribute("normal"); g = mergeVertices(g);
     const P = g.attributes.position, a = seed * 7.31, tone = TONES[Math.floor(seed * 13.7) % TONES.length];
     // Bruchflaechen: 3-5 Ebenen schneiden die Form ab (Felsabbrueche)
-    const cuts = []; for (let k = 0, n = 4 + Math.floor(rockR() * 3); k < n; k++) { const t = rockR() * 6.28, p = (rockR() - 0.35) * 1.2; cuts.push([Math.cos(t) * Math.cos(p), Math.sin(p) * 0.6, Math.sin(t) * Math.cos(p), 0.5 + rockR() * 0.28]); }
-    const dip = (rockR() - 0.5) * 0.5;                                          // Schichten leicht geneigt
+    const cuts = []; for (let k = 0, n = 4 + Math.floor(rnd() * 3); k < n; k++) { const t = rnd() * 6.28, p = (rnd() - 0.35) * 1.2; cuts.push([Math.cos(t) * Math.cos(p), Math.sin(p) * 0.6, Math.sin(t) * Math.cos(p), 0.5 + rnd() * 0.28]); }
+    const dip = (rnd() - 0.5) * 0.5;                                          // Schichten leicht geneigt
     const lay = [], crk = [];
     for (let i = 0; i < P.count; i++) {
       let x = P.getX(i), y = P.getY(i), z = P.getZ(i);

@@ -53,20 +53,20 @@ waterAnim.push([mat.sea.normalMap, 0.05], [mat.water.normalMap, 0.04]);
     waterAnim.push([sp, k, "mist"]);
   }
   // Felsbrocken am Ufer und unter dem Fall (einige halb im Wasser)
-  const geos = [], wr = rng(515);
+  const geos = [], wr = rng(515), rockW = rng(4245);                        // rockW: eigener Felsen-Zufall (makeRock)
   for (let k = 0, n = 0; k < 200 && n < 16; k++) {
     const a = wr() * 6.28, L = LAKES.find(q => q.name === "Wasserfall-Teich"), rr = 0.85 + wr() * 0.45;
     const x = L.cx + Math.cos(a) * L.rx * rr, z = L.cz + Math.sin(a) * L.rz * rr, s = 0.8 + wr() * 2.0;
     if (Math.hypot(x - fx, z - fz) < 4.5 || terrainH(x, z) > 1.5 || wfNear(x, z, s + 4)) continue;   // nicht in den Vorhang, nicht an die Wand, nicht auf die Ausfahrt (A8)
     const y = Math.max(terrainH(x, z), WATER_Y - 1.2);
-    const g = makeRock(s, s * (0.55 + wr() * 0.3), s * (0.8 + wr() * 0.4), wr(), 3); g.rotateY(wr() * 6); g.translate(x, y + s * 0.15, z); geos.push(g);
+    const g = makeRock(s, s * (0.55 + wr() * 0.3), s * (0.8 + wr() * 0.4), wr(), 3, rockW); g.rotateY(wr() * 6); g.translate(x, y + s * 0.15, z); geos.push(g);
     if (terrainH(x, z) > WATER_Y) circles.push([x, z, s * 0.8, y + s]);
     n++;
   }
   for (const [dx, dz, s] of [[1.5, 3.5, 1.6], [-1.2, -3.6, 1.9], [2.6, -1.5, 1.2]]) {   // Brocken direkt am Fuss
     const x = lx + outX * (1.5 + dx) + dirX * dz, z = lz + outZ * (1.5 + dx) + dirZ * dz;
     if (wfNear(x, z, s + 3.5)) continue;                                    // Ausfahrt (A8) frei
-    const g = makeRock(s, s * 0.7, s, wr(), 3); g.translate(x, WATER_Y - 0.2, z); geos.push(g);
+    const g = makeRock(s, s * 0.7, s, wr(), 3, rockW); g.translate(x, WATER_Y - 0.2, z); geos.push(g);
   }
   // Felsplatten vor der Wand links und rechts vom Fall (Schichten, Vorspruenge); hinter dem Vorhang bleibt frei (A8)
   for (const side of [-1, 1]) for (let k = 0, along = 4.2 + wr() * 1.5; k < 16 && along < 30; k++) {
@@ -74,7 +74,7 @@ waterAnim.push([mat.sea.normalMap, 0.05], [mat.water.normalMap, 0.04]);
     const a = side * (along + w * 0.4), cx0 = lx + dirX * a, cz0 = lz + dirZ * a;
     // Wandfuss hier: so weit nach aussen, bis das Gelaende unter 60 % der Hoehe liegt
     let o = 0; while (o < 8 && terrainH(cx0 + outX * o, cz0 + outZ * o) > y + h * 0.3) o += 0.5;
-    const g = makeRock(w / 2, h / 2, dd / 2, wr());
+    const g = makeRock(w / 2, h / 2, dd / 2, wr(), 4, rockW);
     g.rotateY(-Math.atan2(dirZ, dirX)); g.translate(cx0 + outX * (o - dd * 0.45), y + h / 2, cz0 + outZ * (o - dd * 0.45));
     const P = g.attributes.position; for (let q = 0; q < P.count; q++) if (P.getY(q) > HILL + 0.3) P.setY(q, HILL + 0.3);
     g.computeVertexNormals(); geos.push(g);

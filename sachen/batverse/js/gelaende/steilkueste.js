@@ -206,16 +206,16 @@ function* coastGen() {
   const cwater = new THREE.Mesh(wg, mat.sea); cwater.userData.keep = true; scene.add(cwater);
   yield;
   // ---- Felsnadeln und Brocken am Fuss (Felsgenerator, in Klippenfarbe) ----
-  const geos = [], sr = rng(919);
+  const geos = [], sr = rng(919), rockK = rng(4246);                        // rockK: eigener Felsen-Zufall (makeRock)
   for (const st of SEA_STACKS) {
-    const H = st.h + 8, g2 = makeRock(st.r, H / 2, st.r * 0.9, sr(), 4), P = g2.attributes.position;
+    const H = st.h + 8, g2 = makeRock(st.r, H / 2, st.r * 0.9, sr(), 4, rockK), P = g2.attributes.position;
     for (let q = 0; q < P.count; q++) { const f = clamp01((P.getY(q) + H / 2) / H), k = lerp(1.15, 0.45, f); P.setX(q, P.getX(q) * k); P.setZ(q, P.getZ(q) * k); }
     g2.computeVertexNormals(); g2.rotateY(sr() * 6); g2.translate(st.x, SEA_Y - 8 + H / 2, st.z); geos.push(g2);
     circles.push([st.x, st.z, st.r * 1.05, SEA_Y + st.h]);
   }
   for (const h of holes) if (h.w >= 6) for (const s of [-1, 1]) for (let k = 0; k < 2; k++) {
     const u = s * (h.w / 2 + 2 + sr() * 4), v = -2 - sr() * 3, sz = 1.2 + sr() * 1.8, x = h.cx - h.nx * v - h.nz * u, z = h.cz - h.nz * v + h.nx * u;
-    const g2 = makeRock(sz, sz * 0.7, sz, sr(), 3); g2.rotateY(sr() * 6); g2.translate(x, SEA_Y - 0.4, z); geos.push(g2);
+    const g2 = makeRock(sz, sz * 0.7, sz, sr(), 3, rockK); g2.rotateY(sr() * 6); g2.translate(x, SEA_Y - 0.4, z); geos.push(g2);
   }
   if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.95 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
 }
