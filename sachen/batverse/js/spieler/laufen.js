@@ -44,20 +44,20 @@ function groundAt0(x, z, feet = 0) {
   { const g = gothamRoadAt(x, z, feet); if (g !== null) return g; }      // Gotham-Festlandstrassen (G2d)
   if (GSTR.walkAt && feet > GOT.STR - 1 && feet < GOT.STR + 3 && inGothamG0(x, z) && GSTR.walkAt(x, z)) return GOT.STR + GSTR.RAISE;   // Gotham-Gehsteige 15 cm hoch
   { const g = gothamDeckAt(x, z, feet); if (g !== null) return g; }      // zweistoeckige Strassen (G2e): oben Fahrbahn, unten Lower Level, Rampen
-  const sn = serpNear(x, z, SERP_W / 2);
+  const sn = serpNear(x, z, SERP_W / 2);                                  // Boden auf Strassen: yf = glatt zwischen den 1-m-Proben (vorher Stufen, Zittern)
   if (GRAMP.inF(x, z) && feet > GY + HILL - 2) return GRAMP.y(z);          // Garagenrampe: Klappe (Hoehe je nach Stellung), Wendeplatz unter der Decke
   if (feet < HILL - 1 && GRAMP.inP(x, z)) return GY + HILL;
   if (feet > HILL - 3 && Math.hypot(x - RON.x, z - RON.z) < RON.r - 0.3) { const fd = Math.hypot(x - FOUNT.x, z - FOUNT.z); return fd < FOUNT.r - 0.4 ? FOUNT.floor + HILL : fd < FOUNT.r ? FOUNT.rim + HILL : HILL + 0.05; }   // Rondell eben wie der Kiesbelag (Nicolas: Rolls stand schief, Serpentinen-Anfang/Angleichung)
-  if (sn && feet > sn.y - 2) return sn.y + 0.07;                         // Serpentine (A5)
+  if (sn && feet > sn.y - 2) return sn.yf + 0.07;                         // Serpentine (A5)
   // Portalkopf Westweg (Nicolas 2026-11-11: Loch oben auf dem Tunnel): ueber der Tunneldecke traegt das Gelaendestueck ueber dem Tunnelmund
   // (gleiche Formel wie in aufzuege/autoaufzug.js), nicht die Kiesstrasse darunter
   { const cap = hfCap(x, z); if (cap !== null && feet > (x > HF_XP ? HF_Y + 5.3 : cap - 2)) return Math.max(terrainH(x, z), cap) + 0.04; }
-  for (const R of [...ROADS2, HFR]) { const rn = roadNear(R, x, z, R.w / 2); if (rn && feet > rn.y - 2 && (R !== HFR || feet < rn.y + 4)) return rn.y + 0.12; }   // Hauptstrasse, Zufahrt (E4), Westweg
+  for (const R of [...ROADS2, HFR]) { const rn = roadNear(R, x, z, R.w / 2); if (rn && feet > rn.y - 2 && (R !== HFR || feet < rn.y + 4)) return rn.yf + 0.12; }   // Hauptstrasse, Zufahrt (E4), Westweg
   if (inSilo(x, z)) return BED - 20;                                       // Flugzeug-Silo: kein Gelaende (Klappen und Boden sind Quader)
   if (inHfTun(x, z, feet) || (feet < HILL - 1 && inRect(CSH_OUT, x, z))) return BED - 20;   // A3: Tunnel und Autoaufzug-Schacht
-  if (feet < 3 && inRect(WF_PORTAL, x, z)) { const w = wfNear(x, z, WF_HW + 1); if (w) return w.y + 0.07; }   // Portalöffnung: Gelaende ist dort ausgeschnitten, es gilt die Fahrbahn
-  if (feet < terrainH(x, z) - 1.5) { const w = wfInTunnel(x, z); if (w) return w.y + 0.07; }
-  { const w = wfNear(x, z, 3); if (w && w.s > WFT.sG1 && feet > w.y - 2) return w.y + 0.14; }   // Kiesstrasse am Westufer (Sackgasse)   // A8: Waterfall-Exit-Tunnel: glatt nach dem Strassenverlauf (15 %, Quader waeren Stufen)
+  if (feet < 3 && inRect(WF_PORTAL, x, z)) { const w = wfNear(x, z, WF_HW + 1); if (w) return w.yf + 0.07; }   // Portalöffnung: Gelaende ist dort ausgeschnitten, es gilt die Fahrbahn
+  if (feet < terrainH(x, z) - 1.5) { const w = wfInTunnel(x, z); if (w) return w.yf + 0.07; }
+  { const w = wfNear(x, z, 3); if (w && w.s > WFT.sG1 && feet > w.y - 2) return w.yf + 0.14; }   // Kiesstrasse am Westufer (Sackgasse)   // A8: Waterfall-Exit-Tunnel: glatt nach dem Strassenverlauf (15 %, Quader waeren Stufen)
   if (feet < -20 && waterCaveAt(x, z)) return BED;                          // E2: Grund in den Wasserhoehlen
   if (inPoly(HOUSE, x, z)) return BED - 20;                              // im Haus traegt nur der Boden (Quader), darunter Garage/Schacht
   const ca = caveAt(x, z);
@@ -148,7 +148,10 @@ function stopDrag() {
   document.body.classList.remove("looking");
   if (document.pointerLockElement === renderer.domElement) document.exitPointerLock();
 }
-function startWalk(x = START.x, z = START.z, yaw = START.yaw) {
+// Begehen startet auf dem Vorplatz vor dem Wayne Tower, Blick zum Turm (Nicolas 2026-11-15; vorher Rondell der Manor = START)
+const WALK_START = (() => { if (typeof WTO === "undefined" || !WTO.vorplatz) return START; const [ax, az] = WTO.toW(0, 0), d = WTO.vorplatz.dir;
+  const [x, z] = WTO.toW(d[0] * (35 + WTO.vorplatz.tiefe / 2), d[1] * (35 + WTO.vorplatz.tiefe / 2)); return { x, z, yaw: Math.atan2(-(ax - x), -(az - z)) }; })();
+function startWalk(x = WALK_START.x, z = WALK_START.z, yaw = WALK_START.yaw) {
   if (!walking) { orbitView.pos.copy(camera.position); orbitView.target.copy(controls.target); }
   walking = true; ghost = false;
   document.body.classList.add("walk"); document.body.classList.remove("ghost"); hintEl.innerHTML = HINT_WALK;

@@ -21,13 +21,23 @@ const SERP = (() => {
   const box = samples.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
   return { curve, len, samples, box, y: s => lerp(SERP_TOP, SERP_FOOT, clamp01(s / len)) };
 })();
+// Laengsposition zwischen den 1-m-Proben: Punkt auf die Nachbarstrecken der naechsten Probe i projizieren (Nicolas 2026-11-15: Zittern beim Laufen und
+// Fahren auf der Serpentine; vorher galt die Hoehe der naechsten Probe, also Stufen von ca. 8 cm je Meter). Nur fuer yf (Boden beim Laufen/Fahren); d, s, y bleiben wie bisher (Gelaende, Wald unveraendert).
+function sampleS(S, i, x, z) {
+  let bs = S[i][2], bq = Infinity;
+  for (const j of [i - 1, i]) { const a = S[j], b = S[j + 1]; if (!a || !b) continue;
+    const ux = b[0] - a[0], uz = b[1] - a[1], L = ux * ux + uz * uz; if (!L) continue;
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * ux + (z - a[1]) * uz) / L)), q = (x - a[0] - ux * t) ** 2 + (z - a[1] - uz * t) ** 2;
+    if (q < bq) { bq = q; bs = a[2] + (b[2] - a[2]) * t; } }
+  return bs;
+}
 // Naechster Strassenpunkt (bis max Meter): { d, s, y } oder null
 function serpNear(x, z, max) {
   const b = SERP.box;
   if (x < b[0] - max || x > b[1] + max || z < b[2] - max || z > b[3] + max) return null;
-  let best = max * max, bs = -1;
-  for (const [sx, sz, s] of SERP.samples) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < best) { best = q; bs = s; } }
-  return bs < 0 ? null : { d: Math.sqrt(best), s: bs, y: SERP.y(bs) };
+  let best = max * max, bi = -1; const S = SERP.samples;
+  for (let i = 0; i < S.length; i++) { const q = (x - S[i][0]) ** 2 + (z - S[i][1]) ** 2; if (q < best) { best = q; bi = i; } }
+  return bi < 0 ? null : { d: Math.sqrt(best), s: S[bi][2], y: SERP.y(S[bi][2]), get yf() { return SERP.y(sampleS(S, bi, x, z)); } };   // yf: glatt fuer Laufen/Fahren; s/y wie bisher (Gelaende unveraendert)
 }
 // Gelaende an die Fahrbahn angleichen: gewichtetes Mittel der Strassenhoehe in der Naehe (zwischen zwei Schleifen weicher Uebergang)
 function serpBlend(x, z) {

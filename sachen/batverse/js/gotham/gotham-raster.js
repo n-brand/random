@@ -134,10 +134,18 @@ TILES.tasks.push({
     }
     q.sort((a, c) => a.d - c.d); GR.queue = q;
   },
+  // Hoehen vorher in Portionen (je ca. 1,5 ms) berechnen: ein Block in Stufe 1 rechnete beim ersten Mal 15-30 ms am Stueck genH (Ruckler beim Drehen
+  // in der Orbit-Ansicht, Nicolas 2026-11-15); danach kostet grBuild nur noch ca. 1-2 ms, weil grH zwischenspeichert
+  pre: null,
   step() {
     if (TILES.startup) return false;
-    const b = GR.queue.shift(); if (!b) return false;
-    if (b.want !== b.S) grBuild(b, b.want);
+    let P = this.pre;
+    if (!P) { const b = GR.queue.shift(); if (!b) return false; if (b.want === b.S) return true; P = this.pre = { b, S: b.want, v: -1, u: -1 }; }
+    const { b, S } = P, n = GR_B / S, M = GR_NB * GR_B, gi0 = b.bi * GR_B, gk0 = b.bk * GR_B, t0 = performance.now();
+    const cl = g => Math.max(0, Math.min(M, g));
+    while (P.v <= n + 1 && performance.now() - t0 < 1.5) { const gk = cl(gk0 + P.v * S); for (let k = 0; k < 8 && P.v <= n + 1; k++) { grH(cl(gi0 + P.u * S), gk); if (++P.u > n + 1) { P.u = -1; P.v++; break; } } }   // Zeit je 8 Punkte pruefen (genH kann je Punkt teuer sein)
+    if (P.v <= n + 1) return true;
+    this.pre = null; if (S !== b.S) grBuild(b, S);
     return true;
   },
 });

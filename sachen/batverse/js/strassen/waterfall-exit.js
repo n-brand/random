@@ -24,9 +24,9 @@ const WFT = (() => {
 function wfNear(x, z, max) {
   const b = WFT.box;
   if (x < b[0] - max || x > b[1] + max || z < b[2] - max || z > b[3] + max) return null;
-  let bq = max * max, bs = -1;
-  for (const [sx, sz, s] of WFT.samples) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < bq) { bq = q; bs = s; } }
-  return bs < 0 ? null : { d: Math.sqrt(bq), s: bs, y: WFT.y(bs) };
+  let bq = max * max, bi = -1; const S = WFT.samples;
+  for (let i = 0; i < S.length; i++) { const q = (x - S[i][0]) ** 2 + (z - S[i][1]) ** 2; if (q < bq) { bq = q; bi = i; } }
+  return bi < 0 ? null : { d: Math.sqrt(bq), s: S[bi][2], y: WFT.y(S[bi][2]), get yf() { return WFT.y(sampleS(S, bi, x, z)); } };   // yf glatt zwischen den Proben (sampleS, serpentine.js)
 }
 const wfInTunnel = (x, z) => { const w = wfNear(x, z, WF_HW); return w && w.s < WFT.sP + 0.5 ? w : null; };
 // Gelaende draussen an die Fahrbahn angleichen (Damm durch den Teich, Rampe aufs Ufer)

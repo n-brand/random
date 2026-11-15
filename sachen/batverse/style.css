@@ -184,6 +184,7 @@ body.walk.paused #pause { display: block; }
 
 /* T6 Minikarte (js/ui/stadtkarte.js): unten rechts ueber der Fusszeile; am Handy oben rechts (unten rechts liegt der Blick-Joystick) */
 #minikarte { position: fixed; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 48px); width: 180px; height: 180px; border-radius: 50%; z-index: 4; pointer-events: none; box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
+#minikarte[hidden], #stadtkarte[hidden] { display: none; }   /* sonst gilt die allgemeine canvas-Regel (display: block) */
 body.touch #minikarte { width: 120px; height: 120px; bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 60px); right: 10px; }
 @media (max-height: 500px) { body.touch #minikarte { width: 100px; height: 100px; right: auto; left: calc(env(safe-area-inset-left, 0px) + 10px); top: calc(env(safe-area-inset-top, 0px) + 10px); } }   /* Handy quer: rechts liegen die Fahrzeugknoepfe (Review M10) */
 /* T6 grosse Karte */

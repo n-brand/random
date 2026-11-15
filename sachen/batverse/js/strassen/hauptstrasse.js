@@ -24,7 +24,8 @@ function roadNear(R, x, z, max) {
   for (let gx = Math.floor((x - max) / G); gx <= gx1; gx++) for (let gz = Math.floor((z - max) / G); gz <= gz1; gz++) {
     const L = R.grid.get(gx + "," + gz); if (L) for (const [sx, sz, s] of L) { const q = (x - sx) ** 2 + (z - sz) ** 2; if (q < bq) { bq = q; bs = s; } }
   }
-  return bs < 0 ? null : { d: Math.sqrt(bq), s: bs, y: R.y(bs) };
+  if (bs < 0) return null; const S = R.samples, i = Math.round(bs / (S[1][2] - S[0][2]));
+  return { d: Math.sqrt(bq), s: bs, y: R.y(bs), get yf() { return R.y(S[i] && Math.abs(S[i][2] - bs) < 1e-6 ? sampleS(S, i, x, z) : bs); } };   // yf glatt zwischen den Proben (sampleS, serpentine.js)
 }
 const smooth = (a, r) => a.map((_, i) => { let t = 0, n = 0; for (let k = Math.max(0, i - r); k <= Math.min(a.length - 1, i + r); k++) { t += a[k]; n++; } return t / n; });
 const profileAt = (R, s) => { const f = clamp01(s / R.len) * (R.ys.length - 1), i = Math.floor(f); return lerp(R.ys[i], R.ys[Math.min(R.ys.length - 1, i + 1)], f - i); };
