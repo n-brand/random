@@ -96,8 +96,8 @@ function buildLiftPanel(which) {
   liftPanelFor = which; liftPanelKey = "";
 }
 const wliftNum = () => { const v = +liftPanel.querySelector(".lp-num input").value; if (v >= 1 && v <= WTO.lv.N) WLIFT.pick(WLIFT.stops.findIndex(s => s.floor === v)); else toast("Geschoss 1-" + WTO.lv.N); };
-liftPanel.addEventListener("keydown", e => { if (liftPanelFor === "W" && e.key === "Enter" && e.target.matches("input")) { e.preventDefault(); wliftNum(); } e.stopPropagation(); });
-liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; if (liftPanelFor === "W") return b.dataset.go ? wliftNum() : WLIFT.pick(+b.dataset.stop); if (liftPanelFor === "C") CAR_LIFT.pick(+b.dataset.stop); else pickStop(+b.dataset.stop); });
+liftPanel.addEventListener("keydown", e => { if (!e.target.matches("input")) return; if (e.key === "Enter") { e.preventDefault(); wliftNum(); e.target.blur(); } e.stopPropagation(); });   // nur das Zahlenfeld schluckt Tasten
+liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; b.blur(); if (liftPanelFor === "W") return b.dataset.go ? wliftNum() : WLIFT.pick(+b.dataset.stop); if (liftPanelFor === "C") CAR_LIFT.pick(+b.dataset.stop); else pickStop(+b.dataset.stop); });
 function updateLiftPanel() {
   const which = !walking || ghost ? "" : inCar(player.pos) ? "P" : CAR_LIFT && CAR_LIFT.inCar(player.pos) ? "C" : typeof WLIFT !== "undefined" && WLIFT.inCar(player.pos) ? "W" : "";
   if (which && which !== liftPanelFor) buildLiftPanel(which);

@@ -45,6 +45,12 @@ const WLIFT = (() => {
       if (along) b.position.set(b.userData.base, y + D.h / 2, c); else b.position.set(c, y + D.h / 2, b.userData.base); g.add(b); return b; });
     g.userData.leaves = leaves; doorG.add(g); return g; };
   for (const st of stops) if (!st.floor) st.door = mkDoor(st.side, st.y);
+  // Schwelle unter jeder Tuer (Review 2026-11-15: zwischen Kabinenboden und Flurboden lag ein 0,2-m-Streifen ohne Boden, unter der Erde kam man nicht
+  // hinein und beim Hinausgehen sprang man auf Strassenhoehe) und der Kern unter der Erde als Hohlraum (dort gilt der dk-Boden, nicht das Gelaende)
+  const sill = (side, y) => { const along = side.endsWith("b"), c = side === "-b" ? K.b0 : side === "+b" ? K.b1 : K.a1, m = along ? (K.a0 + K.a1) / 2 : (K.b0 + K.b1) / 2;
+    return along ? wtPartU(m - D.w / 2, m + D.w / 2, c - 0.45, c + 0.45, y - 0.3, y, { m: 0.05 }) : wtPartU(c - 0.45, c + 0.45, m - D.w / 2, m + D.w / 2, y - 0.3, y, { m: 0.05 }); };
+  for (const st of stops) if (!st.floor) sill(st.side, st.y);
+  dkRoom({ poly: WTO.poly(K.a0, K.a1, K.b0 - 0.5, K.b1 + 0.5), y0: Y + lv.tg2 - 0.2, y1: Y - 0.3 });
   const floorDoor = mkDoor("+b", 0); floorDoor.visible = false;
   // ---------- Kabine (faehrt) ----------
   const cab = new THREE.Group(); grp.add(cab);
@@ -67,7 +73,7 @@ const WLIFT = (() => {
     for (const [a0, a1, b0, b1] of [[-h, h, -h, K.b0], [-h, h, K.b1, h], [-h, K.a0, K.b0, K.b1], [K.a1, h, K.b0, K.b1]]) { flat(gf, a0, a1, b0, b1, 0.02, 6);
       quad(gc, [[a0, 4.65, b0], [a1, 4.65, b0], [a1, 4.65, b1], [a0, 4.65, b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]); parts.push(wtPartU(a0, a1, b0, b1, -0.3, 0.02, { chain: 1, m: 0.05 })); }
     for (const [a0, b0, a1, b1] of [[-h, -h, h, -h], [h, -h, h, h], [h, h, -h, h], [-h, h, -h, -h]]) wallQ(gw, a0, b0, a1, b1, 0, 4.7, 3, 4.7);
-    coreWalls(gk, 0, 4.65, "+b"); parts.push(...coreParts(0, 4.65, "+b"));
+    coreWalls(gk, 0, 4.65, "+b"); parts.push(...coreParts(0, 4.65, "+b"), sill("+b", 0.02));
     const q = Math.round(h * 0.5); for (const a of [-q, q]) for (const b of [-q, q]) if (!(b < K.b1 + 2 && Math.abs(a) < K.a1 + 2)) { box(gx, a - 0.5, a + 0.5, b - 0.5, b + 0.5, 0, 4.65); parts.push(wtPartU(a - 0.5, a + 0.5, b - 0.5, b + 0.5, 0, 4.65)); }
     for (let a = -h + 6; a < h - 4; a += 9) for (let b = -h + 6; b < h - 4; b += 9) if (!(a > K.a0 - 2 && a < K.a1 + 2 && b > K.b0 - 2 && b < K.b1 + 2)) quad(gl, [[a - 1.5, 4.6, b - 0.25], [a + 1.5, 4.6, b - 0.25], [a + 1.5, 4.6, b + 0.25], [a - 1.5, 4.6, b + 0.25]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     mesh(gf, mats.floor, G, "Geschoss Boden"); mesh(gc, mats.ceil, G, "Geschoss Decke"); mesh(gw, mats.win, G, "Geschoss Fenster"); mesh(gk, mats.core, G, "Geschoss Kern"); mesh(gx, mats.col, G, "Geschoss Stuetzen"); mesh(gl, mats.light, G, "Geschoss Licht");
@@ -76,7 +82,7 @@ const WLIFT = (() => {
   let fY = 0;                                                                                     // Hoehe, auf der fDoorPart liegt
   function showFloor(k) {                                                                         // k = 0: keins
     for (const F of FL) { const on = k > 0 && F.ti === tierOf(k); if (on) { const y = lv.g(k); for (const p of F.parts) dkMove(p, y - F.y); F.y = y; F.G.position.y = y; } F.G.visible = on; for (const p of F.parts) p.on = on; }
-    if (k > 0) { const y = lv.g(k); dkMove(fDoorPart, y - fY); fY = y; floorDoor.position.y = y; } floorDoor.visible = k > 0; L.shown = k;
+    if (k > 0) { const y = lv.g(k); dkMove(fDoorPart, y - fY); fY = y; floorDoor.position.y = y; } else fDoorPart.on = false; floorDoor.visible = k > 0; L.shown = k;
   }
   // ---------- Bedienung ----------
   // in der Kabine: ganzer Kern (an offenen Tueren rutscht man sonst knapp hinaus und blieb beim Fahren an Terrassenkanten haengen)

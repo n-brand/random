@@ -182,6 +182,7 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
     quad("conc", [[a, y0 + 4.5, Gg.b0], [a1, y1 + 4.5, Gg.b0], [a1, y1 + 4.5, Gg.b1], [a, y0 + 4.5, Gg.b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     for (const b of [Gg.b0, Gg.b1]) quad("conc", [[a, y0, b], [a1, y1, b], [a1, y1 + 4.5, b], [a, y0 + 4.5, b]], [[a / 3, y0 / 3], [a1 / 3, y1 / 3], [a1 / 3, (y1 + 4.5) / 3], [a / 3, (y0 + 4.5) / 3]]);
     if (Math.round(a) % 12 === 2) quad("lamp", [[a, y0 + 4.44, 19.7], [a + 3, y1 + 4.44, 19.7], [a + 3, y1 + 4.44, 20.3], [a, y0 + 4.44, 20.3]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
+  for (const [b, e] of [[Gg.b0, Gg.end[0]], [Gg.b1, Gg.end[1]]]) if (e > aE0) { const y = gy(aE0); quad("conc", [[aE0, y, b], [e, y, b], [e, y + 4.5, b], [aE0, y + 4.5, b]], [[aE0 / 3, y / 3], [e / 3, y / 3], [e / 3, (y + 4.5) / 3], [aE0 / 3, (y + 4.5) / 3]]); }   // Seitenwand bis an die eigene Ringwand (Review: Keil offen)
   if (aE > aE0) { const y = gy(aE0); quad("road", [[aE0, y - 0.01, Gg.b1], [aE + 0.3, y - 0.01, Gg.b1], [aE + 0.3, y - 0.01, Gg.b0], [aE0, y - 0.01, Gg.b0]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     quad("conc", [[aE0, y + 4.51, Gg.b0], [aE + 0.3, y + 4.51, Gg.b0], [aE + 0.3, y + 4.51, Gg.b1], [aE0, y + 4.51, Gg.b1]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }   // Keil bis an die schraege Ringwand
   const grp = new THREE.Group(); grp.name = "Wayne Tower geheim"; grp.position.set(WTO.cx, WTO.Y, WTO.cz); grp.rotation.y = WTO.rot;
@@ -210,9 +211,9 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   WTU.kernTuer.geheim = wtPartU(-D.w / 2, D.w / 2, Hl.b0 - 0.15, Hl.b0 + 0.05, Hl.y0, Hl.y0 + D.h);
   for (const [a, b] of pillars) wtPartU(a - 0.55, a + 0.55, b - 0.55, b + 0.55, Hl.y0, Hl.y1);
   for (let a = Hl.a1 - 0.5; a < aE + 1; a += 5) { const a1 = Math.min(aE + 1.5, a + 5); wtPartU(a, a1, Gg.b0, Gg.b1, gy((a + a1) / 2) - 0.5, gy((a + a1) / 2), { chain: 1, m: 0.05 }); }
-  for (const b of [Gg.b0, Gg.b1]) for (let a = Hl.a1; a < aE; a += 20) { const a1 = Math.min(aE0, a + 20); if (a1 > a) wtPartU(a, a1, b - 0.15, b + 0.15, gy(a), gy(a1) + 4.5); }
+  for (const [b, e] of [[Gg.b0, Gg.end[0]], [Gg.b1, Gg.end[1]]]) for (let a = Hl.a1; a < e; a += 20) { const a1 = Math.min(e, a + 20); if (a1 > a) wtPartU(a, a1, b - 0.15, b + 0.15, gy(a), gy(a1) + 4.5); }
   dkRoom({ poly: WTO.poly(Hl.a0, Hl.a1, Hl.b0, Hl.b1), y0: WTO.Y + Hl.y0 - 0.2, y1: WTO.Y + Hl.y1 });
-  dkRoom({ poly: WTO.poly(Hl.a1 - 1, aE + 3, Gg.b0, Gg.b1), y0: WTO.Y + Hl.y0 - 0.2, y1: WTO.Y + WTO.lv.tg1 + 4.6 });
+  for (let a = Hl.a1 - 1; a < aE + 3; a += 20) { const a1 = Math.min(aE + 3, a + 20); dkRoom({ poly: WTO.poly(a, a1, Gg.b0, Gg.b1), y0: WTO.Y + gy(a) - 0.2, y1: WTO.Y + gy(a) + 4.4 }); }   // Scheiben unter der steigenden Decke (Review: Kamera kam bis 2,6 m ueber die Decke)
   GR_NOSKIRT.push(WTO.poly(Hl.a1, aE + 4, Gg.b0 - 4, Gg.b1 + 4)); GR_HOLES.push(WTO.poly(aE0 - 8, aE + 1, Gg.b0 - 3, Gg.b1 + 3));
   bautAdd({ id: "GO-WAYNE-GEHEIM", name: "Geheimer Wayne-Stock", art: "Geheim", poly: WTO.poly(Hl.a0, Hl.a1, Hl.b0, Hl.b1), y0: WTO.Y + Hl.y0 - 0.3, y1: WTO.Y + Hl.y1 });
   bautAdd({ id: "GO-WAYNE-GANG", name: "Geheimgang Wayne Tower", art: "Geheim", poly: WTO.poly(Hl.a1, aE, Gg.b0, Gg.b1), y0: WTO.Y + Hl.y0 - 0.3, y1: WTO.Y + WTO.lv.tg1 + 4.5 });
