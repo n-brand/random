@@ -4,36 +4,9 @@
 
 // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
 const UNDERGROUND = [];
-{
-  const tM = performance.now();                                             // Messung (Leistung 2026-11-15): LOADT.merge, LOADT.frame1, LOADT.tiles1, LOADT.render1 (ms)
-  scene.updateMatrixWorld(true);
-  const groups = new Map(), gone = [];
-  scene.traverse(o => {
-    if (!o.isMesh || o.isInstancedMesh || o.userData.keep) return;
-    const m = o.material;
-    if (Array.isArray(m) || m.transparent || m.vertexColors) return;
-    for (let q = o.parent; q; q = q.parent) if (q.userData.dynamic) return;
-    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
-    for (const k of Object.keys(g.attributes)) if (k !== "position" && k !== "normal" && k !== "uv") g.deleteAttribute(k);
-    if (!g.attributes.normal) g.computeVertexNormals();
-    if (!g.attributes.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
-    g.applyMatrix4(o.matrixWorld);
-    // Untergrund (Leistung 2026-11-13): ganz unter dem Gelaende liegende Teile (Hoehlen, Batcave) in eigene Netze, damit sie oben ausgeblendet werden koennen
-    g.computeBoundingBox(); const bb = g.boundingBox, cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2, ug = bb.max.y < terrainH(cx, cz) - 1.5 && seaD(cx, cz) < -40;   // an der Kueste nie (Wasserhoehlen sieht man vom Boot; seaD an Land negativ)
-    const key = m.uuid + (o.castShadow ? "c" : "") + (o.receiveShadow ? "r" : "") + (ug ? "u" : "");
-    if (!groups.has(key)) groups.set(key, { m, cast: o.castShadow, recv: o.receiveShadow, ug, list: [] });
-    groups.get(key).list.push(g);
-    gone.push(o);
-  });
-  for (const o of gone) { o.parent.remove(o); o.geometry.dispose(); }
-  for (const { m, cast, recv, ug, list } of groups.values()) {
-    const merged = new THREE.Mesh(mergeGeometries(list, false), m);
-    merged.castShadow = cast; merged.receiveShadow = recv; if (ug) { merged.name = "Untergrund"; UNDERGROUND.push(merged); }
-    scene.add(merged);
-    list.forEach(g => g.dispose());
-  }
-  if (window.LOADT) LOADT.merge = Math.round(performance.now() - tM);
-}
+{ const tM = performance.now();                                         // Messung (Leistung 2026-11-15): LOADT.merge
+  for (const m of mergeWorldStatic(scene)) if (m.name === "Untergrund") UNDERGROUND.push(m);   // mergeWorldStatic: kern/bereiche.js
+  if (window.LOADT) LOADT.merge = Math.round(performance.now() - tM); }
 // Untergrund oben ausblenden (Nicolas 2026-11-13: "wenn man oben ist, Hoehlen/Batcave entladen"): sichtbar nur, wenn die Kamera unter dem Gelaende ist,
 // "Von unten" an ist oder die Kamera naeher als 60 m und tiefer als 20 m ueber dem Boden an einem Zugang ist (Waterfall Exit, Westweg-Tunnel, Silo, Garagenrampe, Meerestunnel; sonst saehe man
 // durch die Oeffnung ins Leere). Spart oben ca. 0,2-0,8 ms und 50-120 Zeichenaufrufe.
