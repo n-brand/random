@@ -1,7 +1,7 @@
 "use strict";
 // Bereiche erst in der Naehe bauen (Nicolas 2026-11-15, Plan docs/superpowers/plans/2026-11-15-bereiche-erst-in-der-naehe.md): ein Bereich hat
 // Generator-Funktionen, die Netze und Kollision bauen (mit B, cyl, S, circles wie sonst) und zwischen kleinen Portionen mit yield abgeben.
-// Eine Kachel-Aufgabe baut den naechsten Bereich in Reichweite (Kamera, Spieler oder aktives Fahrzeug naeher als r) im Zeitbudget (2 ms, solange der
+// Eine Kachel-Aufgabe baut den naechsten Bereich in Reichweite (Kamera, Spieler oder aktives Fahrzeug naeher als r) im Zeitbudget (1 ms, solange der
 // Ladebildschirm steht TILES.slice()); areaEnsure(x, z) baut sofort fertig (Teleport, Aufzug, Fahrzeug holen ...).
 // Waehrend ein Bereich baut, landet alles, was in world kaeme, in seiner Gruppe; neue solids/circles kommen ins Zusatzraster (collAdd), also kein
 // collBuild ueber alles. Fertig: statische Teile wie in start.js zusammenfassen (mergeWorldStatic), Untergrund-Teile in UNDERGROUND.
@@ -37,7 +37,7 @@ TILES.tasks.push({ plan() {}, step() {
   for (const A of AREAS) { if (A.state === "done") continue; const d = Math.min(...pts.map(p => Math.hypot(p.x - A.x, p.z - A.z))); if (d < A.r && d < bd) { bd = d; best = A; } }
   if (!best) return false;
   if (TILES.startup) { if (Math.hypot(camera.position.x - best.x, camera.position.z - best.z) < best.r) areaRun(best, 1e9); return false; }
-  areaRun(best, TILES.loading() ? TILES.slice() : 2); return false;   // 2 ms: eine Portion kann darueber gehen, so bleibt das Bild unter +5 ms
+  areaRun(best, TILES.loading() ? TILES.slice() : 1); return false;   // 1 ms: die letzte Portion geht darueber (bis ca. 4 ms), so bleibt das Bild unter +5 ms
 } });
 // Netz aus [x, y, z, u, v, ...]-Folge in Portionen bauen (Leistung 2026-11-15: die Hoehlennetze kosteten am Stueck bis 40 ms in einem Bild):
 // Positionen/UV je ca. 20 000 Punkte, dann Flaechen-Normalen (wie computeVertexNormals ohne Index) je 30 000 Punkte; Netz bleibt einzeln (keep)

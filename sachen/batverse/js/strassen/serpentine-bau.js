@@ -82,6 +82,9 @@
       }
     } }
 
+  // Felsen, Geroell, Leitplanken, Bruestung, Leitpfosten erst in der Naehe (Bereich, kern/bereiche.js; Fahrbahn bleibt beim Laden, Nicolas 2026-11-15)
+  { const sm = SERP.samples[Math.floor(SERP.samples.length / 2)];
+  areaAdd({ id: "serpentine", x: sm[0], z: sm[1], r: 600, gen: function* () { let yc = 0;
   // ---- Felsen: verformte Kugel mit Bruchflaechen, Schichten, Rissen, Moos; viele zu einem Netz ----
   const rockGeos = [];
   // yTop: Felsen oben kappen (Felsabbrueche unter einer hoeher liegenden Fahrbahn duerfen nicht ueber deren Rand ragen)
@@ -97,6 +100,7 @@
   // Bergseitig im Einschnitt und talseitig unter dem Fahrbahnrand
   let i = 18;
   while (i < NS - 6) {
+    if (++yc % 2 === 0) yield;
     const [x0, z0, s0] = S2[i], [tx, tz] = tang(i), y0 = SERP.y(s0), rot = -Math.atan2(tz, tx);
     if (x0 > 97) break;                                                    // Torbereich (A6) frei lassen
     for (const sd of [-1, 1]) {
@@ -126,6 +130,7 @@
   }
   // Felsnasen und Abbrueche zwischen den Schleifen und am Hang (halb im Boden, unregelmaessig verteilt)
   for (let k = 0, n = 0; k < 900 && n < 46; k++) {
+    if (++yc % 3 === 0) yield;
     const x = 26 + fr() * 100, z = -70 + fr() * 140, w = 3 + fr() * 6, d = 2.5 + fr() * 4, h = 2 + fr() * 5;
     if (serpZone(x, z) < 0.5 || serpNear(x, z, hw + 1.2 + Math.max(w, d) * 0.55) || plateauH(x, z) > HILL - 2) continue;
     if (vnoise(x / 18 + 5, z / 18 + 11) < 0.42) continue;                   // in Gruppen, nicht gleichmaessig
@@ -138,6 +143,7 @@
   }
   // Einzelne grosse Brocken neben der Strasse und zwischen den Schleifen
   for (let k = 0, n = 0; k < 400 && n < 18; k++) {
+    if (++yc % 3 === 0) yield;
     const x = 30 + fr() * 85, z = -60 + fr() * 120, s = 1.2 + fr() * 2.2;
     if (serpZone(x, z) < 0.6 || serpNear(x, z, hw + s + 1) || plateauH(x, z) > HILL - 2) continue;
     const y = terrainH(x, z); placeRock(makeRock(s, s * (0.6 + fr() * 0.3), s * (0.8 + fr() * 0.4), fr(), 3, rockS), x, y + s * 0.25, z, fr() * 6);
@@ -149,14 +155,17 @@
       for (let k = 0; k < 2600; k++) { const v = 150 + rr() * 100; g.fillStyle = `rgba(${v},${v},${v},.5)`; g.fillRect(rr() * w, rr() * h, 1 + rr() * 2, 1 + rr() * 2); }
       g.strokeStyle = "rgba(60,60,60,.5)"; for (let k = 0; k < 40; k++) { g.lineWidth = 0.6 + rr(); g.beginPath(); let x = rr() * w, y = rr() * h; g.moveTo(x, y); for (let q = 0; q < 6; q++) { x += (rr() - 0.5) * 30; y += (rr() - 0.5) * 30; g.lineTo(x, y); } g.stroke(); }
     });
+    yield;                                                                 // Textur und Zusammenfassen in zwei Bildern
     const rockMesh = new THREE.Mesh(mergeGeometries(rockGeos, false), M(0xffffff, { vertexColors: true, map: detail, bumpMap: detail, bumpScale: 2.5, roughness: 0.93 }));
-    rockMesh.castShadow = rockMesh.receiveShadow = true; rockMesh.userData.keep = true; scene.add(rockMesh);
+    rockMesh.castShadow = rockMesh.receiveShadow = true; rockMesh.userData.keep = true; (AREA_PARENT || scene).add(rockMesh);
     rockGeos.forEach(g => g.dispose());
   }
   // Geroell am Fuss der Felsen und auf steilen Stellen, wenige Pflanzen in Spalten
+  yield;
   {
     const list = [], plants = [];
     for (let c = 0; c < 46; c++) {
+      if (c % 6 === 5) yield;
       const cx = 28 + fr() * 90, cz = -62 + fr() * 124, rad = 3 + fr() * 7;
       if (serpZone(cx, cz) < 0.5 || plateauH(cx, cz) > HILL - 2) continue;
       for (let k = 0, n = 25 + fr() * 50; k < n; k++) {
@@ -166,6 +175,7 @@
       }
     }
     for (let k = 0; k < 900 && plants.length < 260; k++) {
+      if (k % 150 === 149) yield;
       const x = 28 + fr() * 92, z = -64 + fr() * 128;
       if (serpZone(x, z) < 0.5 || serpNear(x, z, hw + 0.8) || plateauH(x, z) > HILL - 2 || vnoise(x / 7 + 3, z / 7) < 0.5) continue;
       plants.push([x, terrainH(x, z), z, 0.25 + fr() * 0.35]);
@@ -173,13 +183,15 @@
     const o = new THREE.Object3D(), cc = new THREE.Color();
     const scree = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), M(0xffffff, { map: rockTex, roughness: 0.95 }), list.length);
     list.forEach(([x, y, z, s], k) => { o.position.set(x, y, z); o.rotation.set(fr() * 6, fr() * 6, fr() * 6); o.scale.set(s * (0.8 + fr() * 0.5), s * (0.5 + fr() * 0.4), s * (0.8 + fr() * 0.5)); o.updateMatrix(); scree.setMatrixAt(k, o.matrix); scree.setColorAt(k, cc.copy(TONES[k % TONES.length]).multiplyScalar(0.85 + fr() * 0.3)); });
-    scree.castShadow = scree.receiveShadow = true; scree.computeBoundingSphere(); scene.add(scree);
+    scree.castShadow = scree.receiveShadow = true; scree.computeBoundingSphere(); (AREA_PARENT || scene).add(scree);
+    yield;
     const tuft = new THREE.InstancedMesh(new THREE.ConeGeometry(0.5, 1, 6).translate(0, 0.5, 0), M(0xffffff, { roughness: 1 }), plants.length);
     plants.forEach(([x, y, z, s], k) => { o.position.set(x, y - 0.05, z); o.rotation.set(0, fr() * 6, 0); o.scale.set(s, s * (0.6 + fr() * 0.8), s); o.updateMatrix(); tuft.setMatrixAt(k, o.matrix); tuft.setColorAt(k, cc.setHSL(0.22 + fr() * 0.06, 0.35, 0.28 + fr() * 0.1)); });
-    tuft.computeBoundingSphere(); scene.add(tuft);
+    tuft.computeBoundingSphere(); (AREA_PARENT || scene).add(tuft);
   }
 
   // ---- Leitplanken (W-Profil) an der Talseite und an den Kehren, Natursteinbruestung an den Kehren, Leitpfosten sonst ----
+  yield;
   const need = { "-1": new Uint8Array(NS), "1": new Uint8Array(NS) }, kehreAt = new Uint8Array(NS);
   for (let k = 0; k < NS; k++) { kehreAt[k] = turnAt(k) > 0.75 ? 1 : 0; for (const sd of [-1, 1]) need[sd][k] = k > 14 && k < NS - 3 && S2[k][0] < 103 && (drop(k, sd) > 1.4 || (kehreAt[k] && drop(k, sd) > 0.2)) ? 1 : 0; }
   for (const sd of [-1, 1]) {                                             // Luecken unter 7 m schliessen, Stuecke unter 8 m weglassen
@@ -194,6 +206,7 @@
   for (const sd of [-1, 1]) {
     const a = need[sd];
     for (let k = 0; k < NS; k++) {
+      if (k % 30 === 0) yield;
       if (!a[k]) continue;
       let j = k; while (j < NS && a[j]) j++;
       const base = railPos.length / 3, L = j - k;
@@ -217,11 +230,12 @@
   }
   if (railPos.length) {
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(railPos, 3)); g.setIndex(railIdx); g.computeVertexNormals();
-    const m = new THREE.Mesh(g, steel); m.castShadow = true; m.receiveShadow = true; m.userData.keep = true; scene.add(m);
+    const m = new THREE.Mesh(g, steel); m.castShadow = true; m.receiveShadow = true; m.userData.keep = true; (AREA_PARENT || scene).add(m);
   }
-  if (postGeos.length) { const m = new THREE.Mesh(mergeGeometries(postGeos, false), postMat); m.castShadow = true; m.userData.keep = true; scene.add(m); }
-  if (wallGeos.length) { const m = new THREE.Mesh(mergeGeometries(wallGeos, false), M(0xffffff, { map: texClone(brickTex, 1 / 1.5, 1 / 1.5), roughness: 0.95 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
+  if (postGeos.length) { const m = new THREE.Mesh(mergeGeometries(postGeos, false), postMat); m.castShadow = true; m.userData.keep = true; (AREA_PARENT || scene).add(m); }
+  if (wallGeos.length) { const m = new THREE.Mesh(mergeGeometries(wallGeos, false), M(0xffffff, { map: texClone(brickTex, 1 / 1.5, 1 / 1.5), roughness: 0.95 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; (AREA_PARENT || scene).add(m); }
   // Leitpfosten (weiss, schwarzes Band, Reflektor) alle ca. 25 m, wo keine Planke steht
+  yield;
   {
     const pl = [];
     for (let k = 20; k < NS - 4; k += 25) for (const sd of [-1, 1]) if (!need[sd][k] && S2[k][0] < 104) { const [x, z, s] = S2[k], [ox, oz] = outer(k, sd); pl.push([x + ox * (hw + 0.75), SERP.y(s), z + oz * (hw + 0.75), sd]); }
@@ -230,6 +244,8 @@
     const band = new THREE.InstancedMesh(new THREE.BoxGeometry(0.125, 0.22, 0.105).translate(0, 0.78, 0), M(0x1a1a1a, { roughness: 0.6 }), pl.length);
     const refl = new THREE.InstancedMesh(new THREE.BoxGeometry(0.13, 0.08, 0.04).translate(0, 0.78, 0), new THREE.MeshStandardMaterial({ color: 0xffa020, emissive: 0x804000, roughness: 0.2, metalness: 0.3 }), pl.length);
     pl.forEach(([x, y, z], k) => { o.position.set(x, y - 0.15, z); o.rotation.set(0, fr() * 0.2, 0); o.updateMatrix(); body.setMatrixAt(k, o.matrix); band.setMatrixAt(k, o.matrix); refl.setMatrixAt(k, o.matrix); circles.push([x, z, 0.12, y + 1.1]); });
-    for (const im of [body, band, refl]) { im.castShadow = true; im.computeBoundingSphere(); scene.add(im); }
+    for (const im of [body, band, refl]) { im.castShadow = true; im.computeBoundingSphere(); (AREA_PARENT || scene).add(im); }
+  }
+  } });
   }
 }
