@@ -156,7 +156,7 @@ function* gbstGen(useCache = true) {
 function gbstBuild() { if (!GSTR.done) gstrBuild(); for (const _ of gbstGen(false)); GBST.done = true; }   // Tests: alles auf einmal, ohne Zwischenspeicher
 TILES.tasks.push({ gen: null, plan() {}, step() { if (GBST.done || TILES.startup || !TILES.frame || TILES.frame < 40) return false;
   if (!this.gen) this.gen = gbstGen(); const t0 = performance.now();
-  while (performance.now() - t0 < 6) { const r = this.gen.next(); if (r.done) { GBST.done = true; this.gen = null; return false; } if (r.value === "wait") return false; }   // Warten (Zwischenspeicher, Strassen): nicht 6 ms leer drehen
+  while (performance.now() - t0 < TILES.slice()) { const r = this.gen.next(); if (r.done) { GBST.done = true; this.gen = null; return false; } if (r.value === "wait") return false; }   // Warten (Zwischenspeicher, Strassen): nicht 6 ms leer drehen
   return false; } });
 
 // ---- Kollision nur in der Naehe (Nicolas 2026-11-14 "Nur in der Naehe", Task 6) ----

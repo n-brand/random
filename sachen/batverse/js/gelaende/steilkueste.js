@@ -220,4 +220,4 @@ function* coastGen() {
   if (geos.length) { const m = new THREE.Mesh(mergeGeometries(geos, false), M(0xffffff, { vertexColors: true, map: rockTex, roughness: 0.95 })); m.castShadow = m.receiveShadow = true; m.userData.keep = true; scene.add(m); }
 }
 TILES.tasks.push({ gen: null, plan() {}, step() { if (TILES.startup || this.done) return false; if (!this.gen) this.gen = coastGen();
-  const t0 = performance.now(); while (performance.now() - t0 < 6) if (this.gen.next().done) { this.done = true; this.gen = null; return false; } return false; } });
+  const t0 = performance.now(); while (performance.now() - t0 < TILES.slice()) if (this.gen.next().done) { this.done = true; this.gen = null; return false; } return false; } });

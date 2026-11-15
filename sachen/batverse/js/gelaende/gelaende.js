@@ -108,6 +108,9 @@ function terrainBlocks(pos, nrm, col, cut, colAt, mtl) {
     step() {
       const b = TERR.queue.shift(); if (!b) return false;
       // Leistung (2026-11-13): im ersten Bild (TILES.startup) weiter entfernte Bloecke erst grob (Stufe 8), die Verfeinerung folgt beim naechsten Planen im Zeitbudget (vorher 1,5 s im ersten Bild)
+      // Bloecke mit Ausschnitt (Rand zu Gotham, Portale) gibt es nur fein (je ca. 14 ms): im ersten Bild nur bis 300 m, die weiteren baut das naechste Planen im
+      // Zeitbudget (Leistung 2026-11-15: 34 solche Bloecke kosteten im ersten Bild 482 ms, bei der Startansicht ueber Gotham)
+      if (TILES.startup && b.hasCut && b.d > 300) return true;
       const S = TILES.startup && !b.hasCut && b.d > 120 ? Math.max(b.want, 8) : b.want;
       if (S !== b.S) { build(b, S); for (const o of [b, B(b.bi - 1, b.bj), B(b.bi + 1, b.bj), B(b.bi, b.bj - 1), B(b.bi, b.bj + 1)]) if (o) fixEdges(o); }
       return true;

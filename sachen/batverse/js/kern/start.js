@@ -5,6 +5,7 @@
 // Statische Quader/Zylinder je Material zu einem Netz zusammenfassen (weniger Zeichenaufrufe)
 const UNDERGROUND = [];
 {
+  const tM = performance.now();                                             // Messung (Leistung 2026-11-15): LOADT.merge, LOADT.frame1, LOADT.tiles1, LOADT.render1 (ms)
   scene.updateMatrixWorld(true);
   const groups = new Map(), gone = [];
   scene.traverse(o => {
@@ -31,6 +32,7 @@ const UNDERGROUND = [];
     scene.add(merged);
     list.forEach(g => g.dispose());
   }
+  if (window.LOADT) LOADT.merge = Math.round(performance.now() - tM);
 }
 // Untergrund oben ausblenden (Nicolas 2026-11-13: "wenn man oben ist, Hoehlen/Batcave entladen"): sichtbar nur, wenn die Kamera unter dem Gelaende ist,
 // "Von unten" an ist oder die Kamera naeher als 60 m und tiefer als 20 m ueber dem Boden an einem Zugang ist (Waterfall Exit, Westweg-Tunnel, Silo, Garagenrampe, Meerestunnel; sonst saehe man
@@ -48,7 +50,10 @@ scene.onBeforeRender = (r, sc, cam) => { const p = cam.position; gHideStep(cam);
   const tick = () => { const L = $("loading"); if (!L) return; if (GBST.done || performance.now() - t0 > 30000) return L.remove();
     if (st) st.textContent = !GSTR.done ? "Gotham: Straßen …" : "Gotham: Baustellen …"; requestAnimationFrame(tick); };
   requestAnimationFrame(tick); }
-frame();
+{ const L = window.LOADT || {}, tu = tilesUpdate, rr = renderer.render; L.tiles1 = 0; L.render1 = 0;   // erstes Bild aufschluesseln
+  tilesUpdate = function (...a) { const t = performance.now(), r = tu.apply(this, a); L.tiles1 += performance.now() - t; return r; };
+  renderer.render = function (...a) { const t = performance.now(), r = rr.apply(this, a); L.render1 += performance.now() - t; return r; };
+  const t = performance.now(); frame(); L.frame1 = Math.round(performance.now() - t); L.tiles1 = Math.round(L.tiles1); L.render1 = Math.round(L.render1); tilesUpdate = tu; renderer.render = rr; }
 
 // ?debug: Spieler und Umrechnung von aussen steuerbar (fuer Tests im Browser)
 if (location.search.includes("debug")) {

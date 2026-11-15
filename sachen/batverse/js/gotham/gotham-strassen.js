@@ -217,4 +217,4 @@ function* gstrGen() {                                                       // A
 // ganz auf einmal (Tests); im Spiel in Etappen ueber die Kachel-Aufgabe: je Bild hoechstens ca. 6 ms (vorher 2,7 s am Stueck, Nicolas 2026-11-13: lag)
 function gstrBuild() { for (const _ of gstrGen()); GSTR.done = true; }
 TILES.tasks.push({ gen: null, plan() {}, step() { if (GSTR.done || TILES.startup || !TILES.frame || TILES.frame < 30) return false;
-  if (!this.gen) this.gen = gstrGen(); const t0 = performance.now(); while (performance.now() - t0 < 6) if (this.gen.next().done) { GSTR.done = true; this.gen = null; return false; } return false; } });
+  if (!this.gen) this.gen = gstrGen(); const t0 = performance.now(); while (performance.now() - t0 < TILES.slice()) if (this.gen.next().done) { GSTR.done = true; this.gen = null; return false; } return false; } });

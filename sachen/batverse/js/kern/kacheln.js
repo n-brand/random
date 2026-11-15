@@ -20,6 +20,9 @@ THREE.ShaderChunk.fog_fragment = THREE.ShaderChunk.fog_fragment.replace("float f
   `float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
 		if ( fogFar > 100.0 ) fogFactor = ${FAR_A.toFixed(2)} * fogFactor + ${(1 - FAR_A).toFixed(2)} * smoothstep( fogFar, fogFar * ${FAR_K.toFixed(2)}, vFogDepth );`);
 TILES.budget = TILES.mobile ? 2 : 4;                                      // ms pro Bild fuer den Aufbau
+// Solange der Ladebildschirm steht (Leistung 2026-11-15: spielt niemand), bekommen Kacheln und Aufgaben 30 ms je Bild statt 4/6 ms
+TILES.loading = () => !!document.getElementById("loading");
+TILES.slice = () => TILES.loading() ? 30 : 6;                             // Zeitscheibe der Generatoren (Strassen, Baustellen, Steilkueste)
 TILES.cacheMax = TILES.mobile ? 16 : 48;                                   // ausgeblendete Zellen im Zwischenspeicher je Ebene
 // Ladeweite in Kacheln (128 m), Vorgabe PC 7 (896 m), Handy 4 (512 m). Seit K5 folgen Nebel und Sichtweite der Ladeweite (tilesView).
 TILES.range = (() => { try { const v = parseInt(localStorage.getItem("wm-range"), 10); if (v >= 2 && v <= 12) return v; } catch (e) {} return TILES.mobile ? 4 : 7; })();
@@ -67,7 +70,7 @@ function tilesUpdate() {
   const ci = Math.floor(p.x / TILE * 2), ck = Math.floor(p.z / TILE * 2);  // neu planen, sobald man eine halbe Kachel weiter ist (und alle 30 Bilder)
   if (ci !== TILES.cx || ck !== TILES.cz || ++TILES.frame % 30 === 0) { TILES.cx = ci; TILES.cz = ck; tilesPlan(p.x, p.z, tileDir.x, tileDir.z); }
   const q = TILES.queue;
-  while (q.length && (TILES.startup ? q[0].pri < 320 : performance.now() - t0 < TILES.budget)) {   // K7: beim Start nur die Naehe sofort, der Rest im Zeitbudget
+  while (q.length && (TILES.startup ? q[0].pri < 320 : performance.now() - t0 < (TILES.loading() ? 30 : TILES.budget))) {   // K7: beim Start nur die Naehe sofort, der Rest im Zeitbudget
     const { L, i, k } = q.shift(), key = tileKey(i, k);
     if (L.cells.has(key)) continue;
     let c = L.cache.get(key);
@@ -75,7 +78,7 @@ function tilesUpdate() {
     L.cells.set(key, c);
     if (c.obj) scene.add(c.obj);
   }
-  for (const t of TILES.tasks) while ((TILES.startup || performance.now() - t0 < TILES.budget) && t.step());
+  { const B = TILES.loading() ? 30 : TILES.budget; for (const t of TILES.tasks) while ((TILES.startup || performance.now() - t0 < B) && t.step()); }
   TILES.startup = false;
   tilesView();
   TILES.ms = performance.now() - t0;
