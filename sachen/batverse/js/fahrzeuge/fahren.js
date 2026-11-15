@@ -186,9 +186,9 @@ function useCar(want) {
 // Fahrzeug zum Spieler holen (Teleport-Menue): vor den Spieler in Blickrichtung auf freien Boden (sonst seitlich/weiter weg)
 function summonVehicle(v) {
   if (v && v.lazy) vehReal(v);
-  areaEnsure(player.pos.x, player.pos.z);                                  // Bereich am Spieler fertig (dort kommt das Fahrzeug hin; der alte Platz braucht nichts)
   if (!v) return false;
   if (!walking || ghost) { toast("Zuerst „Begehen“ starten, dann das Fahrzeug holen"); return false; }
+  areaEnsure(player.pos.x, player.pos.z);                                  // Bereich am Spieler fertig (dort kommt das Fahrzeug hin; der alte Platz braucht nichts)
   if (CAR && CAR.on) { if (CAR === v) return toast(v.label + ": du sitzt schon drin"), false; useCar(); if (CAR.on) return false; }
   if (v.towBy) towDrop(v.towBy); if (v.towed) towDrop(v);                   // Holen loest den Haken
   const p = player.pos, yaw = player.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw);

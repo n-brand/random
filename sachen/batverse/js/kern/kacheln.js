@@ -79,6 +79,7 @@ function tilesUpdate() {
     if (c.obj) scene.add(c.obj);
   }
   { const B = TILES.loading() ? 30 : TILES.budget; for (const t of TILES.tasks) while ((TILES.startup || performance.now() - t0 < B) && t.step()); }
+  if (typeof areaStep === "function") areaStep();                          // Bereiche (kern/bereiche.js): eigene Zeitscheibe
   TILES.startup = false;
   tilesView();
   TILES.ms = performance.now() - t0;

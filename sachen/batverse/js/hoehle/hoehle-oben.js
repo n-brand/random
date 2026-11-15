@@ -25,7 +25,7 @@ function caveUpAt(x, z) { return cmuAt(Math.floor((x - UCX0) / CELL), Math.floor
   const hole = (x, z) => inShaft(x, z) || inRect(STW, x, z);
   const jit = (x, z) => [x + (vnoise(x * 0.45 + 13, z * 0.45) - 0.5) * 0.7, z + (vnoise(x * 0.45, z * 0.45 + 17) - 0.5) * 0.7];
   const ceilY = (x, z) => UY + UH - 2.2 * vnoise(x * 0.12 + 40, z * 0.12) - 1.0 * vnoise(x * 0.4 + 9, z * 0.4) + (axtIn(x, z, 0.6) || inRect(HGX, x, z, 0.6) ? 3 : 0);   // Gang und Hangar-Erweiterung 3 m hoeher (The Bat)
-  areaAdd({ id: "batcave", x: SHAFT.cx, z: SHAFT.cz, r: 600, gen: function* () {   // Bereich (kern/bereiche.js): erst in der Naehe, in Portionen
+  areaAdd({ id: "batcave", x: SHAFT.cx, z: SHAFT.cz, r: 600, ug: true, gen: function* () {   // Bereich (kern/bereiche.js): erst in der Naehe, in Portionen
   const rock = [], floor = [];
   const push = (arr, pts, uvf) => { for (const k of [0, 1, 2, 0, 2, 3]) { const [x, y, z] = pts[k]; arr.push(x, y, z, ...uvf(x, y, z)); } };
   const uvWall = (x, y, z) => [(x + z) * 0.25, y * 0.25], uvFlat = (x, y, z) => [x * 0.5, z * 0.5];

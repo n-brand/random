@@ -48,7 +48,7 @@
   function update(dt) {
     if (L.state === "idle" && L.target !== L.at) L.state = "closing";
     if (L.state === "closing") { L.open[L.at] = Math.max(0, L.open[L.at] - dt / 1.6); if (L.open[L.at] <= 0) {
-      L.state = "moving"; L.t = 0; L.from = L.y; L.to = stops[L.target].y; if (L.to < HILL - 3) areaEnsure(SHAFT.cx, SHAFT.cz);   // Batcave: Bereich fertig
+      L.state = "moving"; L.t = 0; L.from = L.y; L.to = stops[L.target].y; if (L.to < 0) areaEnsure(SHAFT.cx, SHAFT.cz);   // Batcave (Garage liegt hoeher): Bereich fertig
       L.rotFrom = L.rot; L.rotTo = L.rot;                                         // kein Drehteller mehr (Nicolas 2026-11-08: "der Autoaufzug soll sich nicht drehen")
     } }
     else if (L.state === "moving") {
