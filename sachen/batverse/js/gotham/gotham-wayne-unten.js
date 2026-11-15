@@ -80,19 +80,22 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
       const [c0, d0] = P(H.R, t0), [c1, d1] = P(H.R, t1); quad("line", [[c0 - 0.0, y0 + 0.02, d0], [c1, y1 + 0.02, d1], [c1 + 0.12 * Math.cos(t1), y1 + 0.02, d1 + 0.12 * Math.sin(t1)], [c0 + 0.12 * Math.cos(t0), y0 + 0.02, d0 + 0.12 * Math.sin(t0)]], [[0, 0], [1, 0], [1, 1], [0, 1]]); } }
   // Aussenwand (offen an den Anschluessen: TG1 von +b her, TG2 nach -b hinaus) und Mittelsaeule mit Warnstreifen
   const inStrip = (a, b) => a > H.ca - rO - 0.3 && a < H.ca - rI + 0.3;
-  for (let i = 0; i < 72; i++) { const t0 = i / 72 * 2 * Math.PI, t1 = (i + 1) / 72 * 2 * Math.PI, [a0, b0] = P(rO + 0.2, t0), [a1, b1] = P(rO + 0.2, t1), [am, bm] = P(rO + 0.2, (t0 + t1) / 2);
-    const top = !(inStrip(am, bm) && bm > H.cb), bot = !(inStrip(am, bm) && bm < H.cb);
-    if (!top) wallQ("conc", a0, b0, a1, b1, L2, L1 - 0.3); else if (!bot) wallQ("conc", a0, b0, a1, b1, C2, C1); else wallQ("conc", a0, b0, a1, b1, L2, C1);   // offen nur an den Anschluessen (vorher Schlitz zwischen den Ebenen)
+  // Aussenwand 0,3 m stark (Nicolas 2026-11-15: "sieht aus wie duennes Papier"): Innen- und Aussenflaeche, Stirnseiten an den Oeffnungen, Deck-/Unterflaechen
+  const span = i => { i = (i + 72) % 72; const [am, bm] = P(rO + 0.35, (i + 0.5) / 72 * 2 * Math.PI), top = !(inStrip(am, bm) && bm > H.cb), bot = !(inStrip(am, bm) && bm < H.cb); return !top ? [L2, L1 - 0.3] : !bot ? [C2, C1] : [L2, C1]; };
+  for (let i = 0; i < 72; i++) { const t0 = i / 72 * 2 * Math.PI, t1 = (i + 1) / 72 * 2 * Math.PI, [y0, y1] = span(i), r1 = rO + 0.2, r2 = rO + 0.5;
+    const [a0, b0] = P(r1, t0), [a1, b1] = P(r1, t1), [c0, d0] = P(r2, t0), [c1, d1] = P(r2, t1);
+    wallQ("conc", a0, b0, a1, b1, y0, y1); wallQ("conc", c0, d0, c1, d1, y0, y1);
+    if (y1 < C1) quad("conc", [[a0, y1, b0], [a1, y1, b1], [c1, y1, d1], [c0, y1, d0]], [[0, 0], [1, 0], [1, 1], [0, 1]]); if (y0 > L2) quad("conc", [[a0, y0, b0], [a1, y0, b1], [c1, y0, d1], [c0, y0, d0]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+    for (const [n, a, b, c, d] of [[i - 1, a0, b0, c0, d0], [i + 1, a1, b1, c1, d1]]) { const sp = span(n); if (sp[0] !== y0 || sp[1] !== y1) wallQ("conc", a, b, c, d, y0, y1); }
     const [e0, f0] = P(rI - 0.2, t0), [e1, f1] = P(rI - 0.2, t1); wallQ("stripe", e0, f0, e1, f1, L2, L2 + 0.8, 1); wallQ("conc", e0, f0, e1, f1, L2 + 0.8, C1); }
   // Innenseite der Anschlussstreifen (Nicolas 2026-11-15: offen zum Schacht): TG1 Bruestung 1,1 m ueber dem Streifen (haengt bis unter die Platte),
   // TG2 3 m hohe Wand unter der Wendel (darueber faehrt die Rampe)
   { const aI = H.ca - rI + 0.25, L = Math.sqrt((rO + 0.2) ** 2 - (H.ca - aI) ** 2); WTU.bru = { aI, L };
     for (const k of [0, 1]) { const b0 = k ? H.cb : H.cb - L, b1 = k ? H.cb + L : H.cb, y0 = k ? L1 - 0.3 : L2, y1 = k ? L1 + 1.1 : L2 + 3;
-      wallQ("conc", aI, b0, aI, b1, y0, y1); wallQ("stripe", aI - 0.02, b0, aI - 0.02, b1, y0 + (k ? 0.3 : 0), y0 + (k ? 0.8 : 0.5), 1); } }
+      box("conc", aI - 0.15, aI + 0.15, b0, b1, y0, y1); wallQ("stripe", aI - 0.17, b0, aI - 0.17, b1, y0 + (k ? 0.3 : 0), y0 + (k ? 0.8 : 0.5), 1); } }
   // Kerngang (TG-Suedwand bis Kern) in beiden Ebenen, Tuer zum Wayne-Aufzug geschlossen (Task 7)
   for (const [y0, y1] of [[L1, C1], [L2, C2]]) { flat("floor", KG.a0, KG.a1, T.b1, K.b0, y0); quad("conc", [[KG.a0, y1, T.b1], [KG.a1, y1, T.b1], [KG.a1, y1, K.b0], [KG.a0, y1, K.b0]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     wallQ("conc", KG.a0, T.b1, KG.a0, K.b0, y0, y1); wallQ("conc", KG.a1, T.b1, KG.a1, K.b0, y0, y1); wallQ("conc", KG.a0, K.b0, KG.a1, K.b0, y0, y1);
-    box("metal", -WTO.kernTuer.w / 2, WTO.kernTuer.w / 2, K.b0 + 0.02, K.b0 + 0.12, y0, y0 + WTO.kernTuer.h);
     quad("lamp", [[-0.6, y1 - 0.06, -30], [0.6, y1 - 0.06, -30], [0.6, y1 - 0.06, -28], [-0.6, y1 - 0.06, -28]], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
   // Zufahrt: ebener Tunnel auf TG1-Hoehe von der Nordwand bis an die untere Ringstrasse; Gehweg 1,5 m (Westseite, 15 cm), Schranke, Parkhaus-Schild
   { const e0 = Z.end[0], e1 = Z.end[1], eM = Math.min(e0, e1);
@@ -168,7 +171,6 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   wallQ("wall", Hl.a0, Hl.b0, -D.w / 2, Hl.b0, Hl.y0, Hl.y1); wallQ("wall", D.w / 2, Hl.b0, Hl.a1, Hl.b0, Hl.y0, Hl.y1); wallQ("wall", -D.w / 2, Hl.b0, D.w / 2, Hl.b0, Hl.y0 + D.h, Hl.y1);
   wallQ("wall", Hl.a0, Hl.b1, Hl.a1, Hl.b1, Hl.y0, Hl.y1); wallQ("wall", Hl.a0, Hl.b0, Hl.a0, Hl.b1, Hl.y0, Hl.y1);
   wallQ("wall", Hl.a1, Hl.b0, Hl.a1, Gg.b0, Hl.y0, Hl.y1); wallQ("wall", Hl.a1, Gg.b1, Hl.a1, Hl.b1, Hl.y0, Hl.y1); wallQ("wall", Hl.a1, Gg.b0, Hl.a1, Gg.b1, Hl.y0 + 4.5, Hl.y1);
-  quad("metal", [[-D.w / 2, Hl.y0, Hl.b0 + 0.05], [D.w / 2, Hl.y0, Hl.b0 + 0.05], [D.w / 2, Hl.y0 + D.h, Hl.b0 + 0.05], [-D.w / 2, Hl.y0 + D.h, Hl.b0 + 0.05]], [[0, 0], [1, 0], [1, 1], [0, 1]]);
   // runde Pfeiler (frei bleiben Kern-Tuer und der Weg zum Gang) und runde Deckenleuchten
   const pillars = []; for (const a of [-27, -18, -9, 0, 9, 18, 27]) for (const b of [-6, 3, 12, 21, 30]) if (!(a >= 18 && b >= 12 && b <= 30) && !(Math.abs(a) < 3 && b < -3)) pillars.push([a, b]);
   const pg = pillars.map(([a, b]) => new THREE.CylinderGeometry(0.55, 0.55, Hl.y1 - Hl.y0, 20).translate(a, (Hl.y0 + Hl.y1) / 2, b));

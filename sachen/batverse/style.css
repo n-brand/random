@@ -68,6 +68,8 @@ body.walk #hint { display: block; }
 #lift-panel .lp-title { font-size: .72rem; color: var(--muted); text-align: center; }
 #lift-panel button { border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text); font: inherit; font-size: .85rem; padding: 7px 12px; border-radius: 8px; cursor: pointer; text-align: left; white-space: nowrap; }
 #lift-panel button.here { background: var(--text); color: #0b0d12; font-weight: 800; }
+#lift-panel .lp-num { display: flex; gap: 4px; }
+#lift-panel .lp-num input { width: 9em; font: inherit; font-size: .85rem; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, .08); color: var(--text); }
 #lift-panel button.target { background: var(--accent); color: #1a1405; font-weight: 800; }
 .stick { display: none; position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); width: 120px; height: 120px; border-radius: 50%; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .25); touch-action: none; z-index: 5; }
 .stick span { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px; border-radius: 50%; background: rgba(255, 255, 255, .35); }

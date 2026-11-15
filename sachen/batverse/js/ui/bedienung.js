@@ -144,6 +144,7 @@ addEventListener("keydown", e => {
     if (/^(Digit|Numpad)[1-3]$/.test(e.code)) return CAR_LIFT.pick(CAR_LIFT.order[+e.code.slice(-1) - 1]);
     if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) CAR_LIFT.step(e.code === "ArrowUp" ? 1 : -1); return; }
   }
+  if (typeof WLIFT !== "undefined" && WLIFT.inCar(player.pos) && (e.code === "ArrowUp" || e.code === "ArrowDown")) { e.preventDefault(); if (!e.repeat) WLIFT.step(e.code === "ArrowUp" ? 1 : -1); return; }   // Wayne-Aufzug
   if (inCar(player.pos)) {
     if (/^(Digit|Numpad)[1-5]$/.test(e.code)) return pickStop(STOP_ORDER[+e.code.slice(-1) - 1]);
     if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) stepStop(e.code === "ArrowUp" ? 1 : -1); return; }

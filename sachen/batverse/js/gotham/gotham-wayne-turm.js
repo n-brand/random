@@ -130,7 +130,6 @@ function wtPart(a0, a1, b0, b1, y0, y1, opt = {}) {
     // Kern: Waende aussen, Tuer zur Lobby (+b) in der Mitte; Tuerblaetter zu (der Aufzug kommt in Task 7)
     wallQ("core", K.a1, K.b0, K.a0, K.b0, 0.1, 9.4); wallQ("core", K.a0, K.b0, K.a0, K.b1, 0.1, 9.4); wallQ("core", K.a1, K.b1, K.a1, K.b0, 0.1, 9.4);
     wallQ("core", K.a0, K.b1, -D.w / 2, K.b1, 0.1, 9.4); wallQ("core", D.w / 2, K.b1, K.a1, K.b1, 0.1, 9.4); wallQ("core", -D.w / 2, K.b1, D.w / 2, K.b1, D.h, 9.4);
-    box("metal", -D.w / 2, D.w / 2, K.b1 - 0.12, K.b1 - 0.02, 0.1, D.h);
     box("stone", -D.w / 2 - 0.25, D.w / 2 + 0.25, K.b1, K.b1 + 0.15, D.h, D.h + 0.3); }
   // ---------- in die Welt setzen ----------
   const grp = WTB.group = new THREE.Group(); grp.name = "Wayne Tower";
@@ -150,13 +149,15 @@ function wtPart(a0, a1, b0, b1, y0, y1, opt = {}) {
   // Stufen: Waende, Terrassen-Streifen (Boden), Bruestung
   WTO.tiers.forEach((T, i) => { const h = T.h, inner = i < 2 ? WTO.tiers[i + 1].h : WTO.krone.h;
     wtPart(-h, h, -h - th / 2, -h + th / 2, T.y0, T.y1); wtPart(-h, h, h - th / 2, h + th / 2, T.y0, T.y1); wtPart(-h - th / 2, -h + th / 2, -h, h, T.y0, T.y1); wtPart(h - th / 2, h + th / 2, -h, h, T.y0, T.y1);
-    for (const [a0, a1, b0, b1] of [[-h, h, -h, -inner], [-h, h, inner, h], [-h, -inner, -inner, inner], [inner, h, -inner, inner]]) wtPart(a0, a1, b0, b1, T.y1 - 0.4, T.y1, { chain: 1 });
+    const C = WTO.kern, cut = ([a0, a1, b0, b1]) => b1 <= C.b0 || b0 >= C.b1 || a1 <= C.a0 || a0 >= C.a1 ? [[a0, a1, b0, b1]] : [[a0, C.a0, b0, b1], [C.a1, a1, b0, b1], [C.a0, C.a1, b0, C.b0], [C.a0, C.a1, C.b1, b1]].filter(([p0, p1, q0, q1]) => p1 - p0 > 0.01 && q1 - q0 > 0.01);   // ohne den Kern (dort traegt die Aufzugskabine; sonst schob die Dachterrasse den Spieler aus der Kabine)
+    for (const r of [[-h, h, -h, -inner], [-h, h, inner, h], [-h, -inner, -inner, inner], [inner, h, -inner, inner]]) for (const [a0, a1, b0, b1] of cut(r)) wtPart(a0, a1, b0, b1, T.y1 - 0.4, T.y1, { chain: 1, m: 0.05 });   // 5 cm Rand: 0,3 m ragte in die Aufzugskabine (man landete beim Vorbeifahren darauf)
     wtPart(-h - 0.3, h + 0.3, -h - 0.3, -h + 0.1, T.y1, T.y1 + 1.2); wtPart(-h - 0.3, h + 0.3, h - 0.1, h + 0.3, T.y1, T.y1 + 1.2); wtPart(-h - 0.3, -h + 0.1, -h, h, T.y1, T.y1 + 1.2); wtPart(h - 0.1, h + 0.3, -h, h, T.y1, T.y1 + 1.2);
     for (const sa of [-1, 1]) for (const sb of [-1, 1]) wtPart(sa * h - 1.2, sa * h + 1.2, sb * h - 1.2, sb * h + 1.2, T.y0, T.y1 + 4); });
-  { const K = WTO.krone; for (const [h, a, b] of [[K.h, WTO.lv.dach, 280], [13, 280, 292], [9, 292, K.y1]]) wtPart(-h, h, -h, h, a, b); wtPart(-0.6, 0.6, -0.6, 0.6, K.y1, K.antenne); }
+  { const K = WTO.krone; for (const [h, a, b] of [[K.h, WTO.lv.dach, 280], [13, 280, 292], [9, 292, K.y1]]) if (a > WTO.lv.dach) wtPart(-h, h, -h, h, a, b); else { const C = WTO.kern;   // unterste Kronenstufe ohne die Ecke des Kerns (Aufzugshaus auf dem Dach)
+    wtPart(-h, h, C.b1 + 0.3, h, a, b); wtPart(-h, C.a0 - 0.3, -h, C.b1 + 0.3, a, b); wtPart(C.a1 + 0.3, h, -h, C.b1 + 0.3, a, b); } wtPart(-0.6, 0.6, -0.6, 0.6, K.y1, K.antenne); }
   // Lobby: Boden, Decke (Boden von Geschoss 1), Stuetzen, Kern mit geschlossener Tuer (WTB.kernTuer, Task 7 oeffnet sie)
   { const K = WTO.kern, D = WTO.kernTuer, I = S - 0.4;
-    for (const [a0, a1, b0, b1] of [[-I, I, -I, K.b0], [-I, I, K.b1, I], [-I, K.a0, K.b0, K.b1], [K.a1, I, K.b0, K.b1]]) { wtPart(a0, a1, b0, b1, -0.3, 0.1, { chain: 1 }); wtPart(a0, a1, b0, b1, 9.4, 9.8, { chain: 1 }); }
+    for (const [a0, a1, b0, b1] of [[-I, I, -I, K.b0], [-I, I, K.b1, I], [-I, K.a0, K.b0, K.b1], [K.a1, I, K.b0, K.b1]]) { wtPart(a0, a1, b0, b1, -0.3, 0.1, { chain: 1 }); wtPart(a0, a1, b0, b1, 9.0, 9.42, { chain: 1, m: 0.05 }); }
     for (const a of [-24, -12, 12, 24]) for (const b of [-26, -2, 22]) wtPart(a - 0.6, a + 0.6, b - 0.6, b + 0.6, 0.1, 9.4);
     wtPart(K.a0, K.a1, K.b0 - 0.15, K.b0 + 0.15, 0.1, 9.4); wtPart(K.a0 - 0.15, K.a0 + 0.15, K.b0, K.b1, 0.1, 9.4); wtPart(K.a1 - 0.15, K.a1 + 0.15, K.b0, K.b1, 0.1, 9.4);
     wtPart(K.a0, -D.w / 2, K.b1 - 0.15, K.b1 + 0.15, 0.1, 9.4); wtPart(D.w / 2, K.a1, K.b1 - 0.15, K.b1 + 0.15, 0.1, 9.4); wtPart(-D.w / 2, D.w / 2, K.b1 - 0.15, K.b1 + 0.15, D.h, 9.4);
@@ -167,6 +168,7 @@ function wtPart(a0, a1, b0, b1, y0, y1, opt = {}) {
 // Nachtlicht (aus der Schleife): Fenster, Lobby, Schrift, Lichtband
 function wtStep() {
   if (typeof wtSchrankeStep === "function") { wtSchrankeStep(); wtPlatteStep(); }
+  if (typeof wliftStep === "function") wliftStep();
   const m = WTB.mats; if (!m) return; const n = typeof night === "number" ? night : 0;
   if (m._n === n) return; m._n = n;
   m.fac.emissiveIntensity = n * 1.1; m.lobby.emissiveIntensity = n * 0.5; m.sign.emissiveIntensity = 0.25 + n * 0.6; m.light.emissiveIntensity = 0.6 + n * 2.4;

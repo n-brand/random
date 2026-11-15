@@ -86,18 +86,25 @@ liftPanel.innerHTML = '<div class="lp-title">Aufzug</div>' + [...STOP_ORDER].rev
 // Zwei Aufzuege (A3): Personenaufzug "P" und Autoaufzug "C" (CAR_LIFT, wird spaeter gebaut). Die Anzeige zeigt den, in dem man steht.
 let CAR_LIFT = null, liftPanelKey = "", liftPanelFor = "P";
 function buildLiftPanel(which) {
+  if (which === "W") {                                                       // Wayne-Aufzug (Wayne Tower): benannte Halte als Knoepfe, Geschosse ueber eine Zahl
+    const S = WLIFT.stops, btn = i => `<button type="button" data-stop="${i}">${S[i].name}</button>`, N = WTO.lv.N;
+    liftPanel.innerHTML = `<div class="lp-title">Wayne-Aufzug</div>` + btn(S.length - 1) + `<div class="lp-num"><input type="number" min="1" max="${N}" placeholder="Geschoss 1-${N}" aria-label="Geschoss"><button type="button" data-go="1">OK</button></div>` + [3, 2, 1, 0].map(btn).join("");
+    liftPanelFor = which; liftPanelKey = ""; return;
+  }
   const U = which === "C" ? { title: "Autoaufzug", stops: CAR_LIFT.stops, order: CAR_LIFT.order } : { title: "Aufzug", stops: STOPS, order: STOP_ORDER };
   liftPanel.innerHTML = `<div class="lp-title">${U.title}</div>` + [...U.order].reverse().map(i => `<button type="button" data-stop="${i}">${U.order.indexOf(i) + 1}&nbsp; ${U.stops[i].name}</button>`).join("");
   liftPanelFor = which; liftPanelKey = "";
 }
-liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; if (liftPanelFor === "C") CAR_LIFT.pick(+b.dataset.stop); else pickStop(+b.dataset.stop); });
+const wliftNum = () => { const v = +liftPanel.querySelector(".lp-num input").value; if (v >= 1 && v <= WTO.lv.N) WLIFT.pick(WLIFT.stops.findIndex(s => s.floor === v)); else toast("Geschoss 1-" + WTO.lv.N); };
+liftPanel.addEventListener("keydown", e => { if (liftPanelFor === "W" && e.key === "Enter" && e.target.matches("input")) { e.preventDefault(); wliftNum(); } e.stopPropagation(); });
+liftPanel.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; if (liftPanelFor === "W") return b.dataset.go ? wliftNum() : WLIFT.pick(+b.dataset.stop); if (liftPanelFor === "C") CAR_LIFT.pick(+b.dataset.stop); else pickStop(+b.dataset.stop); });
 function updateLiftPanel() {
-  const which = !walking || ghost ? "" : inCar(player.pos) ? "P" : CAR_LIFT && CAR_LIFT.inCar(player.pos) ? "C" : "";
+  const which = !walking || ghost ? "" : inCar(player.pos) ? "P" : CAR_LIFT && CAR_LIFT.inCar(player.pos) ? "C" : typeof WLIFT !== "undefined" && WLIFT.inCar(player.pos) ? "W" : "";
   if (which && which !== liftPanelFor) buildLiftPanel(which);
   const show = !!which;
-  if (liftPanel.hidden === show) { liftPanel.hidden = !show; if (show) toast(which === "C" ? "Autoaufzug: Pfeil hoch/runter oder Tasten 1-3" : "Aufzug: Pfeil hoch/runter oder Tasten 1-5"); }
+  if (liftPanel.hidden === show) { liftPanel.hidden = !show; if (show) toast(which === "C" ? "Autoaufzug: Pfeil hoch/runter oder Tasten 1-3" : which === "W" ? "Wayne-Aufzug: Pfeil hoch/runter, Geschoss eingeben oder Halt anklicken" : "Aufzug: Pfeil hoch/runter oder Tasten 1-5"); }
   if (!show) return;
-  const L = which === "C" ? CAR_LIFT.L : LIFT, key = which + L.at + "/" + L.target + "/" + L.state;
+  const L = which === "C" ? CAR_LIFT.L : which === "W" ? WLIFT.L : LIFT, key = which + L.at + "/" + L.target + "/" + L.state;
   if (key === liftPanelKey) return;
   liftPanelKey = key;
   for (const b of liftPanel.querySelectorAll("button")) {
