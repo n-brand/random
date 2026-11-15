@@ -1,3 +1,4 @@
+- **Ladebildschirm bis die Baustellen stehen** (Nicolas 2026-11-15: sie laden als Letztes): start.js entfernt `#loading` erst bei `GBST.done` (hoechstens 30 s), `.ld-step` zeigt solange "Gotham: Straßen …" bzw. "Gotham: Baustellen …"; die Bildschleife laeuft darunter (Strassen und Baustellen sind Kachel-Aufgaben).
 # random
 
 Sammelprojekt fuer zufaellige kleine Sachen und Tests (Experimente, Mini-Tools, Spielereien).
