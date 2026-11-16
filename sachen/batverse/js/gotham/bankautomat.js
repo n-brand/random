@@ -1,7 +1,7 @@
 // Batverse – Bankautomat als eigenes Modell (Nicolas 2026-11-16, PLAN-BANKAUTOMAT.md Schritt A4; Vorbild: Schraegbild von Nicolas, "noch zu blockig").
 // Freistehend, vorne = -z, Boden y 0, ca. 0,92 x 0,8 x 2,35 m. Aufbau wie im Vorbild:
 // - zwei blaue Seitenwangen (abgerundet, weisse Zierkante vorne), blaues Dach, darueber ein Schildkasten (grau, blaue Leuchtfront ATM, ragt seitlich etwas ueber)
-// - oben eine Nische: hinten gewoelbte graue Blende (Zylinderstueck) mit Bildschirm in dunklem Rahmen und je vier Seitentasten, links Karten- und Belegschlitz
+// - oben eine Nische: graue Bildschirmplatte, ca. 20 Grad nach hinten geneigt, mit Bildschirm in dunklem Rahmen, je vier Seitentasten, links Karten- und Belegschlitz
 // - schraeges dunkles Pult mit Tastenfeld (12 helle Tasten) und drei Farbtasten (rot, gelb, gruen)
 // - unten Front mit weisser Rahmenkante und eingelassener Klappe, Ausgabeschacht
 // Genutzt in der Werkstatt (aktuelles Umbauprojekt); im Spiel stehen noch die einfachen Saeulen aus gotham-orte.js.
@@ -23,18 +23,19 @@ function buildBankautomat() {
   const sign = canvasTex(256, 72, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#3b98ff"); gr.addColorStop(1, "#1764d6"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 46px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("ATM", w / 2, h / 2 + 2); });
   add(rbox(W + 0.06, 0.26, D * 0.7, 0.03), grauH, 0, H + 0.13, 0.02);
   const sf = add(new THREE.PlaneGeometry(W - 0.02, 0.2), M(0xffffff, { map: sign, emissive: 0xffffff, emissiveMap: sign, emissiveIntensity: 0.7, metalness: 0 }), 0, H + 0.13, 0.02 - D * 0.35 - 0.004); sf.rotation.y = Math.PI; sf.castShadow = false;
-  // Nische oben: Rueckwand, gewoelbte Blende (Zylinderstueck, Achse senkrecht, wolbt sich nach vorne) mit Bildschirm
-  const IW = W - 2 * T, ZN = -D / 2 + 0.26;                                 // Innenbreite, Vorderkante der Blende
-  add(new THREE.BoxGeometry(IW, 0.95, 0.03), grau, 0, 1.55, 0.25);
-  const R = 0.9, th = 2 * Math.asin((IW / 2) / R), blende = new THREE.CylinderGeometry(R, R, 0.78, 24, 1, true, Math.PI - th / 2, th);
-  add(blende, grau, 0, 1.52, ZN + R, 0, 0).material = M(0xa3a9b0, { side: THREE.DoubleSide });
-  const zB = ZN + R - Math.sqrt(R * R - 0.0);                               // vorderster Punkt der Blende (Mitte)
+  // Nische oben (Nicolas 2026-11-16, Skizze: "innen schraeger, Anzeige leicht nach oben zeigend"): dunkle Rueckwand, davor eine graue Bildschirmplatte,
+  // die vom Pult aus ca. 20 Grad nach hinten geneigt ist (Drehpunkt hinter dem Pult); darauf Bildschirm im Rahmen, je vier Seitentasten, Schlitze links
+  const IW = W - 2 * T;                                                     // Innenbreite
+  add(new THREE.BoxGeometry(IW, 0.95, 0.03), dunkel, 0, 1.55, 0.27);
+  const panel = new THREE.Group(); panel.position.set(0, 1.1, -D / 2 + 0.24); panel.rotation.x = 0.36; g.add(panel);
+  const Q = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = o.receiveShadow = true; panel.add(o); return o; };
+  Q(rbox(IW, 0.9, 0.05, 0.03), grau, 0, 0.45, 0.025);
   const scr = canvasTex(256, 192, (c, w, h) => { c.fillStyle = "#0d55d0"; c.fillRect(0, 0, w, h); c.fillStyle = "#0a3f9e"; c.fillRect(0, 0, w, 30); c.fillStyle = "#fff"; c.font = "bold 18px Arial, sans-serif"; c.fillText("ATM", 10, 21);
     c.textAlign = "center"; c.font = "bold 22px Arial, sans-serif"; c.fillText("Hallo, Bruce", w / 2, 78); c.fillStyle = "#b9c2ea"; c.fillRect(58, 98, 140, 30); c.fillStyle = "#22e06a"; c.fillRect(58, 142, 140, 30); });
-  add(rbox(0.46, 0.38, 0.05, 0.03), dunkel, 0, 1.55, zB - 0.012);
-  const sc = add(new THREE.PlaneGeometry(0.34, 0.27), M(0xffffff, { map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.6, metalness: 0 }), 0, 1.55, zB - 0.04); sc.rotation.y = Math.PI; sc.castShadow = false;
-  for (const s of [-1, 1]) for (let k = 0; k < 4; k++) add(rbox(0.035, 0.022, 0.015, 0.006), M(0xd7dbe0), s * 0.195, 1.65 - k * 0.065, zB - 0.04);
-  for (const [y, w] of [[1.62, 0.09], [1.52, 0.07]]) add(rbox(w, 0.022, 0.03, 0.008), schwarz, 0.3, y, zB + 0.02);   // Karten- und Belegschlitz links (von vorne gesehen; vorne = -z, +x liegt links)
+  Q(rbox(0.46, 0.38, 0.04, 0.03), dunkel, 0, 0.5, -0.01);
+  Q(new THREE.PlaneGeometry(0.34, 0.27), M(0xffffff, { map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.6, metalness: 0 }), 0, 0.5, -0.032, Math.PI).castShadow = false;
+  for (const s of [-1, 1]) for (let k = 0; k < 4; k++) Q(rbox(0.035, 0.022, 0.015, 0.006), M(0xd7dbe0), s * 0.195, 0.6 - k * 0.065, -0.025);
+  for (const [y, w] of [[0.62, 0.09], [0.52, 0.07]]) Q(rbox(w, 0.022, 0.02, 0.008), schwarz, 0.3, y, -0.005);   // Karten- und Belegschlitz links (von vorne gesehen; vorne = -z, +x liegt links)
   // schraeges Pult mit Tastenfeld und Farbtasten (neigt sich nach vorne unten, ca. 18 Grad)
   const tilt = -0.32, pult = new THREE.Group(); pult.position.set(0, 1.06, -D / 2 + 0.17); pult.rotation.x = tilt; g.add(pult);
   const P = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; pult.add(o); };
