@@ -82,6 +82,11 @@ const ZIELE = [], zielGruppe = new THREE.Group(); flaeche.add(zielGruppe);   // 
 const FUELLBAU = (() => { const g = buildFuellbau({ breite: 24, tiefe: 20, geschosse: 7, seed: 11, id: "FB-MUSTER" }); g.position.set(238, 0, -10); g.rotation.y = -Math.PI / 2; scene.add(g);
   const bs = buildBaustelle({ breite: 18, tiefe: 20, seed: 5, id: "BS-MUSTER" }); bs.position.set(238, 0.15, 11.2); bs.rotation.y = -Math.PI / 2; scene.add(bs);   // Baustelle als Lueckenfueller daneben (Nicolas 2026-11-12)
   const walk = new THREE.Mesh(new THREE.BoxGeometry(28, 0.15, 46), new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 })); walk.position.set(236, 0.075, 0); walk.receiveShadow = true; scene.add(walk); return g; })();
+// Gebaeude-Vorlagen G3/G4 (js/gotham/gebaeude-vorlagen.js): alle sechs nebeneinander oestlich der Strecke, Front nach Westen, Huelle und Anbauten; Rechtsklick-ID GBV-<Vorlage>
+const VORLAGEN = (() => { const g = new THREE.Group(); g.name = "Gebäude-Vorlagen"; const D = { kratzer: [34, 32, 120], buero: [28, 22, 42], laden: [12, 14, 9.4], miet: [24, 18, 28.2], fabrik: [40, 30, 10], lager: [36, 28, 8] };
+  let z = -150; GBV.TYPES.forEach((t, i) => { const [L1, L2, h] = D[t], p = gbvPick({ h, area: 0, wohl: 0.5, bezirk: "", id: "GBV-" + i }), o = { P0: [300, z], e1: [0, 1], e2: [1, 0], L1, L2, front: 0, type: t, N: t === "fabrik" || t === "lager" ? 1 : Math.round(h / GBV.GH), H: t === "fabrik" || t === "lager" ? h : Math.round(h / GBV.GH) * GBV.GH, glas: true, seed: 11 + i, fire: [false, false, false, false], y: 0 };
+    const out = new Map(); gbvShell(o, out); gbvDetails(o, out); const m = gbvMesh(out); m.userData.id = "GBV-" + t; m.userData.art = GBV.NAMES[t]; g.add(m); z += L1 + 12; });
+  scene.add(g); return g; })();
 // ---------- Fluggeraete ----------
 const FLUG = { jet: () => JET, bat: () => FLY };
 // Startbahn (Kampfjet) und Landeplatz (The Bat) am Nordrand der Flaeche

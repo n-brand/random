@@ -1,4 +1,4 @@
-// Batverse – Gotham: Fuellbau-Vorlage (G3/G4, erster Entwurf Nicolas 2026-11-12 "wie stellst du dir die Fuellbauten vor").
+// ENTWURF (seit G3/G4 ersetzt durch js/gotham/gebaeude-vorlagen.js, bleibt als Muster in der Werkstatt). Batverse – Gotham: Fuellbau-Vorlage (G3/G4, erster Entwurf Nicolas 2026-11-12 "wie stellst du dir die Fuellbauten vor").
 // Klassisches Skript (braucht THREE, canvasTex aus kern/basis.js, mergeGeometries). buildFuellbau(o) -> THREE.Group, Ursprung = Mitte Grundflaeche am Boden,
 // Front (Laeden, Feuertreppe) nach +z. Alles je Material zusammengefasst (wenige Zeichenaufrufe), Fenster als Textur je Fensterachse (3 m),
 // nachts einzelne Fenster hell (emissiveMap). Regel Gotham: jedes Geschoss mind. 4,7 m.

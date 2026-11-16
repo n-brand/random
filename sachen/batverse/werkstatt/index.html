@@ -102,7 +102,7 @@
     // Wie im Spiel: Grundgeruest (kern/basis.js) und Fahrzeugmodelle (fahrzeuge/modelle.js) als klassische Skripte, danach die Werkstatt (werkstatt.js).
     // ghost / teleportToPoint braucht das Rechtsklick-Menue aus basis.js; hier setzt "Hierhin teleportieren" das Fahrzeug an den Punkt.
     Object.assign(window, { THREE, OrbitControls, installOrbitPick, PICK_ICONS, mergeGeometries, mergeVertices, ghost: false, teleportToPoint: p => window.werkstattTeleport && window.werkstattTeleport(p) });
-    for (const f of ["../js/kern/basis.js", "../js/fahrzeuge/modelle.js", "flug-shim.js", "../js/fahrzeuge/motorton.js", "../js/fahrzeuge/the-bat.js", "../js/fahrzeuge/jet.js", "../js/gotham/fuellbau.js", "werkstatt.js"]) { const s = document.createElement("script"); s.src = f; s.async = false; document.body.appendChild(s); }
+    for (const f of ["../js/kern/basis.js", "../js/fahrzeuge/modelle.js", "flug-shim.js", "../js/fahrzeuge/motorton.js", "../js/fahrzeuge/the-bat.js", "../js/fahrzeuge/jet.js", "../js/gotham/fuellbau.js", "../js/gotham/gebaeude-vorlagen.js", "werkstatt.js"]) { const s = document.createElement("script"); s.src = f; s.async = false; document.body.appendChild(s); }
   </script>
 </body>
 </html>
