@@ -1,3 +1,13 @@
+- **U1 Teil A: Hauptsammler** (Nicolas 2026-11-16 "Ja, U1 Teil A"): `js/gotham/gotham-kanal.js` (FILES nach gotham-orte.js), `KAN`, `kanStep(dt)` in schleife.js (Wasser fliesst). Baut die 9 Strassen aus `GOTHAM.kanal.hauptsammler` (`GSTR.roads` mit dieser id), zusammen 13,9 km.
+  - Linien alle 4 m. Sie enden 16 m vor der Kaikante; die Auslässe kommen mit Teil B. Ringe schliessen sich.
+  - Höhen: Sohle `KAN.Y` = Strasse - 17 (-29), Gewölbe bis 6 m. Liegt ein U-Bahn-Raum darüber (`dkInRoom` auf -24), sinkt die Decke weich auf -24,9.
+  - Querschnitt 8 m: Rinne 2,4 m breit und 0,3 m tief (0,4 m war für die Stufenregel zu hoch, man kam nicht heraus), Wasser mit laufender Textur; Stege beidseits; Ziegelwände mit Gewölbe aus 3 Stücken je Seite; Lampen alle 16 m im Wechsel.
+  - Kreuzungen: Wände im Innenraum eines anderen Sammlers fallen weg (`KAN.inOther`). Enden sind zu, ausser im Innenraum eines anderen.
+  - Kollision je 4-m-Stück: `dkRoom` 0,4 m innerhalb der Wand und 0,5 m vor den Enden (Regel Barrieren weiter innen), Stege und Rinne als `dkAdd`-Boden.
+  - 188 Gullideckel alle 70 m auf der Fahrbahn (nicht an Kreuzungen, nicht über U-Bahn, unterer Strasse oder Tiefgarage) mit Leiter im Kanal. Rechtsklick auf den Deckel steigt hinunter, auf die Leiter hinauf (gates mit call). Später nur mit dem Gullihaken (OFFENE-FRAGEN 20).
+  - Netze je Sammler in `UNDERGROUND`, Deckel über der Erde.
+  - Gemessen: ca. 137 000 Dreiecke (nur unten sichtbar), Aufbau ca. 400 ms in 343 Schritten, längster 25 ms.
+  - Geprüft: Gulli hinunter (Boden -29, im Raum), laufen, aus der Rinne auf beide Stege, quer gegen die Wand (hält bei 3,3 m von der Mitte), Bild im Kanal mit Hinweis "Leiter hinaufsteigen".
 - **Schiffe rund statt eckig** (Nicolas 2026-11-16: "Schiffe sind zu eckig, Regel wie beim Rolls Spectre"): Rümpfe sind Lofts aus Querschnitten (`shipHull` in gotham-schiffe.js mit `loftIn` und `mergeVertices`, 81 Stationen).
   - Rumpfform: runde Kimm, Bug wurzelförmig zugespitzt mit hochgezogenem Vorfuss, Heck abgerundet, Deckanstieg am Bug.
   - Zwei Lofts (unter Wasser rot, darüber Rumpffarbe). Zwischenpunkte an den Kanten halten die weiche Schattierung schmal.

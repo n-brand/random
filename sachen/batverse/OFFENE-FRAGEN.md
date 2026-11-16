@@ -55,6 +55,13 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 19. **Umfang:** Laut Karte ist der Hafen 420 m lang. Gebaut ist ein gerader Kai von 190 m an der Inselspitze, denn danach knickt die Küste ab. Soll ein zweiter Kai um die Spitze herum dazukommen?
    - *Bis dahin:* ein Kai.
 
+## Kanalisation (U1)
+
+20. **Gullideckel öffnen:** Laut Plan nur mit dem Gullihaken aus dem Inventar. Das Inventar (S1) gibt es noch nicht.
+    - *Bis dahin:* Rechtsklick auf den Deckel steigt hinunter, Rechtsklick auf die Leiter unten steigt hinauf. Den Gullihaken baue ich mit S1 ein.
+21. **Höhe unter der U-Bahn:** Der Kanal ist 6 m hoch (Sohle 17 m unter der Strasse). Wo ein U-Bahn-Tunnel darüber liegt, wäre er im Weg; dort sinkt die Decke weich auf etwa 4 m. Ist das so in Ordnung, oder soll der Kanal dort tiefer liegen?
+    - *Bis dahin:* Decke dort tiefer.
+
 ## Ältere offene Punkte (aus CLAUDE.md)
 
 10. **Batcave, Uferkante:** Das Hochklettern aus dem Wasser mit gehaltener Leertaste (B1) bleibt vorerst. Soll es bleiben?

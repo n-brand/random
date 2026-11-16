@@ -77,7 +77,7 @@ const UMSETZUNG = [
       { gruppe: "Freizeit", gebaeude: ["Fitnessstudio / Boxclub", "Skatepark und Basketballplätze", "Botanischer Garten / Gewächshaus", "Zirkus oder Rummelplatz"] },
       { gruppe: "Läden und Lokale (klein, viele, zuletzt)", gebaeude: ["Läden (Juwelier, Schneider, Kleider, Waffen)", "Café und Bäckerei (Laden im EG)", "Waschsalon, Pfandleihe, Tattoo, Barbier", "Restaurants und Bars"] },
     ] },
-  { phase: "untergrund", nr: "U1-U3", titel: "Kanalisation und Kanal-Hub", status: "offen", braucht: ["P3a", "V1"],
+  { phase: "untergrund", nr: "U1-U3", titel: "Kanalisation und Kanal-Hub", status: "laeuft", stand: "Teil A: 9 Hauptsammler (14 km) mit Rinne und fliessendem Wasser, Stegen, Ziegelgewölbe und Lampen, begehbar; 188 Gullideckel mit Leiter (Rechtsklick hinunter/hinauf). Offen: Auslässe mit Absturzschacht, Nebensammler, Übergänge zur U-Bahn, Kanal-Hub mit Schurkenbasis.", braucht: ["P3a", "V1"],
     inhalt: "Hauptsammler unter ausgewählten Strassen (inkl. West Avenue zur Uferstrasse West), Nebensammler, Gullideckel, Auslässe, Übergänge zur U-Bahn, Kanal-Hub mit Schurkenbasis unter dem Wayne Tower.",
     warum: "Nach den Gebäuden darüber, weil die Eingänge oben liegen." },
   { phase: "geheim", nr: "P5", titel: "Geheimbasis im Container", status: "offen", braucht: ["G2"],
