@@ -26,7 +26,7 @@ Bei jeder Frage steht, was bis zur Antwort gilt. Neue Fragen kommen unten dazu.
 Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, damit du sie ändern kannst.
 
 7. **Eingänge:** Wie kommt man zu Fuss hinunter?
-   - *Bis dahin:* Je Station ein Eingang mit Treppe auf einer freien Fläche neben der Strasse, nicht im Gehsteig (dort müssten Gehsteig und Gelände aufgeschnitten werden).
+   - *Bis dahin:* Je Station ein gläserner Aufzug-Pavillon mit U-Schild auf dem nächsten freien Gehsteig. Rechtsklick fährt hinunter, ein zweiter Pavillon am Bahnsteigende fährt hinauf. Echte Treppen müssten Gehsteig und Gelände aufschneiden.
 8. **Mitfahren:** Sollen die Züge mitfahrbar sein, wie ein fahrender Aufzug, oder erst nur fahren?
    - *Bis dahin:* erst nur fahren, Mitfahren später.
 9. **Kreuzungen der Ringe:** An den 6 Umsteigestationen kreuzen sich zwei Ringe auf derselben Höhe (Bahnsteig 11 m unter der Strasse).

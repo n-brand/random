@@ -109,6 +109,7 @@ function grBuild(b, S) {
   const sk = 2 + S * 1.5;
   const edge = (list) => { for (let t = 0; t < list.length - 1; t++) { const p = list[t], q = list[t + 1]; if (!keep[p] || !keep[q]) continue;
     if (GR_NOSKIRT.length && grHole((P[idx[p] * 3] + P[idx[q] * 3]) / 2, (P[idx[p] * 3 + 2] + P[idx[q] * 3 + 2]) / 2, GR_NOSKIRT)) continue;
+    if (typeof ubUnder === "function" && ubUnder((P[idx[p] * 3] + P[idx[q] * 3]) / 2, (P[idx[p] * 3 + 2] + P[idx[q] * 3 + 2]) / 2)) continue;   // ueber U-Bahn-Tunneln keine Schuerzen (hingen in die Roehre)
     const ia = idx[p], ib = idx[q], A = P.slice(ia * 3, ia * 3 + 3), B2 = P.slice(ib * 3, ib * 3 + 3);
     const la = add(A[0], A[1] - sk, A[2], N[ia * 3], N[ia * 3 + 1], N[ia * 3 + 2], A[1]), lb = add(B2[0], B2[1] - sk, B2[2], N[ib * 3], N[ib * 3 + 1], N[ib * 3 + 2], B2[1]);
     I.push(ia, la, ib, ib, la, lb, ia, ib, la, ib, lb, la); } };
