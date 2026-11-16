@@ -65,7 +65,8 @@ function shipStep(dt) {
   engineUpdate({ v: Math.abs(S.v) * (S.L > 60 ? 1.6 : 1.3), throttle: Math.abs(th) > 0.1 ? 1 : 0, air: false, wet: false });
 }
 // je Bild (schleife.js): nicht gefahrene Schiffe schaukeln leicht
-function shipIdle(dt) { SHIP.t += SHIP.cur ? 0 : dt; for (const S of SHIP.list) if (S !== SHIP.cur && Math.abs(camera.position.x - S.x) < 1500 && Math.abs(camera.position.z - S.z) < 1500) shipPose(S); }
+function shipIdle(dt) { shipHook();   // Verlassen-Haken erst, wenn world.userData.car existiert (beim Laden gab es ihn noch nicht: Fehler bei jedem Start)
+  SHIP.t += SHIP.cur ? 0 : dt; for (const S of SHIP.list) if (S !== SHIP.cur && Math.abs(camera.position.x - S.x) < 1500 && Math.abs(camera.position.z - S.z) < 1500) shipPose(S); }
 // Rumpf als Loft aus Querschnitten wie beim Spectre (Nicolas 2026-11-16 "Schiffe zu eckig - Regel wie beim Rolls Spectre"): Stationen alle L/80,
 // Querschnitt mit runder Kimm, Bug spitz zulaufend (Wurzelkurve) mit hochgezogenem Vorfuss, Heck abgerundet; weich schattiert (mergeVertices). Vorne = -z, y relativ zur Wasserlinie.
 // o: { L, W, keel (y Kiel), split (y Farbwechsel), deck (y Deck), bow (Laenge Bugzulauf), stern (Laenge Heckrundung), sheer (Deckanstieg am Bug), lower, upper (Materialien) }
@@ -115,4 +116,4 @@ function buildTug() {
   return g;
 }
 // Verlassen von aussen (Teleport, Geist, Orbit): wie bei den anderen Fahrzeugen ueber world.userData.car.leave
-{ const prev = world.userData.car.leave; world.userData.car.leave = () => { prev(); const S = SHIP.cur; if (S) { SHIP.cur = null; S.v = 0; S.rud = 0; engineStop(); shipPark(S); } }; }
+function shipHook() { if (SHIP.hooked || !world.userData.car) return; SHIP.hooked = true; const prev = world.userData.car.leave; world.userData.car.leave = () => { prev(); const S = SHIP.cur; if (S) { SHIP.cur = null; S.v = 0; S.rud = 0; engineStop(); shipPark(S); } }; }

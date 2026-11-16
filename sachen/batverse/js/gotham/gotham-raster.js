@@ -80,7 +80,7 @@ const GR = { blocks: [], queue: [], tris: 0, mat: M(0xffffff, { map: grassTex, v
 for (let bk = 0; bk < GR_NB; bk++) for (let bi = 0; bi < GR_NB; bi++) {
   const x0 = GOT_R.x0 + bi * GR_B * GR_C, z0 = GOT_R.z0 + bk * GR_B * GR_C, x1 = x0 + GR_B * GR_C, z1 = z0 + GR_B * GR_C;
   const far = Math.hypot(Math.max(Math.abs(x0), Math.abs(x1)), Math.max(Math.abs(z0), Math.abs(z1)));   // weitester Punkt zur Manor
-  if (far < GOT_R0 - 20) continue;                                           // ganz im Bereich der Manor: nichts zu zeichnen
+  if (far < GOT_R0 - 80) continue;                                           // ganz im Bereich der Manor: nichts zu zeichnen
   GR.blocks.push({ bi, bk, x0, z0, x1, z1, S: 0, want: 8, d: 0, mesh: null });
 }
 // Loecher im Gelaende (Wayne Tower 2026-11-15: am Mund der Tunnel zur unteren Ringstrasse lief die Schraege des Gelaende-Ausschnitts durch den Tunnel):
@@ -89,14 +89,15 @@ const GR_HOLES = [], GR_NOSKIRT = [];   // NOSKIRT: ueber Raeumen unter der Erde
 const grHole = (x, z, L = GR_HOLES) => { for (const P of L) if (bautInPoly(P, x, z)) return true; return false; };
 function grBuild(b, S) {
   const n = GR_B / S + 1, P = [], N = [], Cc = [], U = [], I = [], c = new THREE.Color(), gi0 = b.bi * GR_B, gk0 = b.bk * GR_B, keep = [];
-  const off = (x, z) => Math.hypot(x, z) < GOT_R0 || ((z < GOT_R.z0 + 10 || x > GOT_R.x1 - 10) && Math.abs(x) < T_A + T_B && Math.abs(z) < T_A + T_B) ? -0.3 : 0;   // Uebergangsstreifen unter dem Hauptraster (Kreis und gerade Kanten)
+  const RIN = GOT_R0 - 20 - 1.5 * S * GR_C;   // Nicolas 2026-11-16 (Risse aus der Mega-Orbit-Ansicht): grobe Stufen reichen weiter unter das Hauptraster, sonst fehlt am 1050-m-Kreis ein Streifen bis ca. 45 m
+  const off = (x, z) => Math.hypot(x, z) < GOT_R0 ? -0.3 - 0.06 * S * GR_C : ((z < GOT_R.z0 + 10 || x > GOT_R.x1 - 10) && Math.abs(x) < T_A + T_B && Math.abs(z) < T_A + T_B) ? -0.3 : 0;   // Uebergangsstreifen unter dem Hauptraster (Kreis: grob tiefer, gerade Kanten)
   const add = (x, y, z, nx, ny, nz, h) => { P.push(x, y, z); N.push(nx, ny, nz); grColor(x, h, z, ny, c); Cc.push(c.r, c.g, c.b); U.push(x / 10, -z / 10); return P.length / 3 - 1; };
   const idx = new Int32Array(n * n);
   for (let v = 0; v < n; v++) for (let u = 0; u < n; u++) {
     const gi = gi0 + u * S, gk = gk0 + v * S, x = GOT_R.x0 + gi * GR_C, z = GOT_R.z0 + gk * GR_C, h = grH(gi, gk);
     const hx = grH(Math.min(GR_NB * GR_B, gi + S), gk) - grH(Math.max(0, gi - S), gk), hz = grH(gi, Math.min(GR_NB * GR_B, gk + S)) - grH(gi, Math.max(0, gk - S));
     const nx = -hx, nz = -hz, ny = 4 * S * GR_C / 2, l = Math.hypot(nx, ny, nz);
-    keep.push(Math.hypot(x, z) > GOT_R0 - 20);
+    keep.push(Math.hypot(x, z) > RIN);
     idx[v * n + u] = add(x, h + off(x, z), z, nx / l, ny / l, nz / l, h);
   }
   for (let v = 0; v < n - 1; v++) for (let u = 0; u < n - 1; u++) {
