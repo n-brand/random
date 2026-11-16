@@ -83,6 +83,7 @@ function frame() {
       }
     }
   }
+  if (typeof dayStep === "function") dayStep(dt);                                            // Tageszeit: Sonne, Mond, Sterne (kern/tageszeit.js)
   if (ut !== under) { under = ut > under ? Math.min(ut, under + dt * 2) : Math.max(ut, under - dt * 2); applyNight(); }
   const rn = night < nightTarget ? Math.min(nightTarget, night + dt * 0.8) : Math.max(nightTarget, night - dt * 0.8);
   if (rn !== night) { night = rn; applyNight(); }

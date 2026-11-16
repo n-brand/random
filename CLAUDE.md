@@ -1,3 +1,8 @@
+- **Tageszeit: Sonne, Mond, Sterne** (Nicolas 2026-11-16: "Tag-Nacht-Zyklus 10 min Tag, 10 min Nacht, im Orbit-Menü umstellbar"): `js/kern/tageszeit.js` (FILES nach kern/tag-nacht.js), `DAY` { t, run, len 1200 }, `dayStep(dt)` in schleife.js.
+  - DAY.t = Anteil am Zyklus (0 = 06:00 Sonnenaufgang, 0,25 Mittag, 0,5 18:00, 0,75 Mitternacht), ein Zyklus 20 min. Die Sonne läuft von Osten über Süden nach Westen; nachts ist das gerichtete Licht der Mond (gegenüber). `night`/`nightTarget` folgen der Sonnenhöhe weich (`applyNight` wie bisher), Morgen- und Abendrot färben Himmel, Nebel und Sonnenlicht.
+  - Sonne und Mond als Sprites am Himmel (folgen der Kamera, kein Nebel), 900 Sterne als Punkte, nur über der Erde.
+  - Orbit-Leiste: Regler Uhrzeit, Anzeige hh:mm, Knopf "Zeit läuft/steht". Der Knopf "Nacht" springt jetzt auf Mitternacht bzw. Mittag. Stand im Browser (`wm-time`, `wm-time-run`).
+  - Geprüft: 60 s = 1/20 Zyklus, Sonne/Mond/Sterne je Tageszeit, Nacht-Knopf, Bild Abend und Nacht.
 - **Polizeipräsidium: freie Sicht, Zufahrt, Verwahrstelle** (Nicolas 2026-11-16, Orbit-Punkt FB-0563: "verdeckt praktisch das Polizeigebäude"):
   - FB-0563 ist entfernt (`GGEB_SKIP` in gotham-gebaeude.js; seine Fläche ist für Lückenbaustellen gesperrt, die Sperrfläche um "gcpd" für `ggebGaps` ist 104 x 120 m).
   - Präsidium 8 m nach vorne (`SH` in gotham-polizei.js; mehr passt zwischen den Nachbarhäusern nicht, das Grundstück ist 80 m breit). Vorplatz bis an den Gehsteig mit drei Fahnenmasten.

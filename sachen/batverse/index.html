@@ -40,7 +40,8 @@
     <button type="button" id="btn-walk-low" class="big">Begehen</button>
     <button type="button" id="btn-ghost" title="Durch alles fliegen: WASD waagrecht, Leertaste hoch, C runter, Shift schneller, Esc zurück">Geist</button>
     <button type="button" id="btn-walk-top" aria-pressed="false">Karte: aus</button>
-    <button type="button" id="btn-night" aria-pressed="false">Nacht</button>
+    <button type="button" id="btn-night" aria-pressed="false" title="Springt auf Mitternacht bzw. Mittag">Nacht</button>
+    <span id="daytime" title="Uhrzeit (ein Tag = 20 Minuten: 10 Tag, 10 Nacht)"><input id="time-slider" type="range" min="0" max="1439" step="1" aria-label="Uhrzeit"><span id="time-label">12:00</span><button type="button" id="btn-time-run" aria-pressed="true">Zeit läuft</button></span>
     <button type="button" id="btn-below" aria-pressed="false">Von unten</button>
     <button type="button" id="btn-fs" aria-pressed="false" title="Vollbild (Taste F): sperrt Strg+W, Esc gedrückt halten zum Verlassen">Vollbild</button>
     <button type="button" id="btn-draw" aria-pressed="false" title="Farbig einzeichnen, nochmal klicken löscht die Zeichnung">Zeichnen</button>
@@ -149,6 +150,7 @@
       "hoehle/batcave-ausbau.js",
       "hoehle/hoehle-oben.js",
       "kern/tag-nacht.js",
+      "kern/tageszeit.js",
       "spieler/laufen.js",
       "ui/teleport.js",
       "kern/tore.js",

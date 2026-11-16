@@ -218,3 +218,9 @@ body.walk:not(.drive):not(.ghost) #hotbar { display: flex; }
 body.touch #hotbar { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
 body.touch .inv-slot { width: 38px; height: 38px; } body.touch .inv-slot svg { width: 28px; height: 28px; }
 body.touch .inv-grid, body.touch .inv-bar { grid-template-columns: repeat(9, 38px); }
+
+/* Tageszeit in der Orbit-Leiste (Nicolas 2026-11-16) */
+#daytime { display: inline-flex; align-items: center; gap: 6px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 8px; }
+#time-slider { width: 120px; }
+#time-label { font: 600 13px system-ui, sans-serif; min-width: 3.2em; text-align: center; }
+#btn-time-run { padding: 4px 8px; font-size: 12px; }

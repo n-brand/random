@@ -221,7 +221,7 @@ function walkStep(dt) {
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
   updatePlayer(dt, mx, mz, keys.has("ShiftLeft") || keys.has("ShiftRight"));
 }
-$("btn-night").addEventListener("click", e => { nightTarget = nightTarget ? 0 : 1; e.currentTarget.setAttribute("aria-pressed", String(!!nightTarget)); });
+$("btn-night").addEventListener("click", e => { e.currentTarget.blur(); daySet(night > 0.5 ? 0.25 : 0.75); });   // Tageszeit (kern/tageszeit.js): Mittag bzw. Mitternacht
 addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
