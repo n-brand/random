@@ -25,7 +25,8 @@ const AIM_M = (() => {
 function aimHit(max) { AIM_ray.setFromCamera({ x: 0, y: 0 }, camera); const o = AIM_ray.ray.origin, d = AIM_ray.ray.direction, a = o.clone().addScaledVector(d, 0.6), b = new THREE.Vector3();
   for (let s = 0.6; s < max; s += 3) { b.copy(o).addScaledVector(d, Math.min(max, s + 3)); const h = shotSeg(a, b, null, 0.25); if (h) return h; a.copy(b); } return null; }
 function weaponUse() {
-  const id = weaponHeld(); if (!id || !onFoot() || AIM.cd > 0 || AIM.grap) return;
+  const id = weaponHeld(); if (id && typeof GUN_SPEC !== "undefined" && GUN_SPEC[id]) { if (onFoot() && !AIM.grap) gunTrigger(true); return; }   // Schusswaffen (schusswaffen.js)
+  if (!id || !onFoot() || AIM.cd > 0 || AIM.grap) return;
   AIM_ray.setFromCamera({ x: 0, y: 0 }, camera); const d = AIM_ray.ray.direction.clone(), o = camera.position.clone().addScaledVector(d, 0.5); o.y -= 0.15;
   if (id === "batarang" || id === "rauchbombe") {
     if (!invTake(id, 1)) return; AIM.cd = 0.35; const bat = id === "batarang", m = new THREE.Mesh(bat ? AIM_M.bat : AIM_M.bomb, bat ? AIM_M.batM : AIM_M.bombM);
@@ -63,9 +64,9 @@ function aimArc() {
 function weaponsStep(dt) {
   AIM.cd = Math.max(0, AIM.cd - dt);
   const can = onFoot() && !!weaponHeld(); if (!can && AIM.on) AIM.on = false;
-  const zt = AIM.on ? 1.8 : 1; if (Math.abs(AIM.z - zt) > 0.001 || (AIM.on && camera.fov !== 70 / AIM.z)) { AIM.z += (zt - AIM.z) * Math.min(1, dt * 12); if (Math.abs(AIM.z - zt) < 0.002) AIM.z = zt; if (onFoot()) { camera.fov = 70 / AIM.z; camera.updateProjectionMatrix(); } }
+  const zt = AIM.on ? (typeof gunZoom === "function" ? gunZoom() : 1.8) : 1; if (Math.abs(AIM.z - zt) > 0.001 || (AIM.on && camera.fov !== 70 / AIM.z)) { AIM.z += (zt - AIM.z) * Math.min(1, dt * 12); if (Math.abs(AIM.z - zt) < 0.002) AIM.z = zt; if (onFoot()) { camera.fov = 70 / AIM.z; camera.updateProjectionMatrix(); } }
   document.body.classList.toggle("aiming", AIM.on); document.body.classList.toggle("armed", can);
-  aimArc();
+  aimArc(); if (typeof gunStep === "function") gunStep(dt);
   // Wurfgeschosse
   for (let i = AIM.proj.length - 1; i >= 0; i--) { const P = AIM.proj[i]; P.t += dt;
     if (P.id === "batarang") { batarangStep(P, dt, i); continue; }

@@ -54,6 +54,7 @@ function invHandRender() {
   const el = INV_HAND.el || (INV_HAND.el = Object.assign(document.createElement("div"), { id: "hand" })); if (!el.parentNode) document.body.appendChild(el);
   const G = typeof KONTO_GELD_SVG !== "undefined" ? KONTO_GELD_SVG : null, id = INV.sel === INV_SEL_BAR ? "geld-bar" : INV.sel === INV_SEL_KARTE ? "geld-karte" : invHeld();
   const svg = !id ? "" : id === "geld-bar" ? G && G.bar : id === "geld-karte" ? G && G.karte : INV_ITEMS[id].svg;
+  if (typeof GUN_SPEC !== "undefined" && GUN_SPEC[id]) { el.hidden = true; return; }   // Schusswaffen zeigt schusswaffen.js als 3D-Modell
   el.hidden = !svg; if (!svg || INV_HAND.key === id + svg.length) return; INV_HAND.key = id + svg.length;
   el.innerHTML = '<svg viewBox="0 0 26 26" aria-hidden="true">' + svg + '</svg>'; el.classList.remove("neu"); void el.offsetWidth; el.classList.add("neu"); }
 // ---- Verschieben wie in Minecraft (INV.cursor = Stapel an der Maus) ----

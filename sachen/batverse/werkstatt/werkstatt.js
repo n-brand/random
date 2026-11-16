@@ -487,6 +487,7 @@ function loop(t) {
     for (const v of ZIELAUTOS) if (v.dead && Math.hypot(p.x - v.x, p.z - v.z) < 3 && p.y < 4) { if (v.t < 14) { v.t = 14; toast(v.name + ": Feuer gelöscht"); } return true; }
     return false; });
   renderer.render(scene, camera);
+  if (typeof gunRender === "function") gunRender();                        // Schusswaffe in der Hand (../js/spieler/schusswaffen.js)
   requestAnimationFrame(loop);
 }
 groesse();
