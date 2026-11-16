@@ -87,6 +87,14 @@ const VORLAGEN = (() => { const g = new THREE.Group(); g.name = "Gebäude-Vorlag
   let z = -150; GBV.TYPES.forEach((t, i) => { const [L1, L2, h] = D[t], p = gbvPick({ h, area: 0, wohl: 0.5, bezirk: "", id: "GBV-" + i }), o = { P0: [300, z], e1: [0, 1], e2: [1, 0], L1, L2, front: 0, type: t, N: t === "fabrik" || t === "lager" ? 1 : Math.round(h / GBV.GH), H: t === "fabrik" || t === "lager" ? h : Math.round(h / GBV.GH) * GBV.GH, glas: true, seed: 11 + i, fire: [false, false, false, false], y: 0 };
     const out = new Map(); gbvShell(o, out); gbvDetails(o, out); const m = gbvMesh(out); m.userData.id = "GBV-" + t; m.userData.art = GBV.NAMES[t]; g.add(m); z += L1 + 12; });
   scene.add(g); return g; })();
+// ---------- Aktuelles Umbauprojekt (Nicolas 2026-11-16: "die Werkstatt ist nicht nur fuer Autos; man soll sich automatisch zum aktuellen Umbauprojekt teleportieren") ----------
+// Beim Oeffnen faehrt die Kamera hierhin; in der Auswahl oben "Aktuelles Projekt". Neues Projekt: nur PROJEKT aendern (Name, Bau, Platz, Plan).
+const PROJEKT = { name: "Bankautomat", plan: "PLAN-BANKAUTOMAT.md", bau: () => buildBankautomat(), x: 236, z: 40, h: -Math.PI / 2 };
+const projektG = (() => { const g = PROJEKT.bau(); g.position.set(PROJEKT.x, 0.15, PROJEKT.z); g.rotation.y = PROJEKT.h; g.userData.id = "PROJEKT"; g.userData.art = PROJEKT.name; scene.add(g);
+  const pl = new THREE.Mesh(new THREE.BoxGeometry(8, 0.15, 8), new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 })); pl.position.set(PROJEKT.x, 0.075, PROJEKT.z); pl.receiveShadow = true; scene.add(pl); return g; })();
+function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = new THREE.Box3().setFromObject(projektG), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z);
+  const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 2.2 + fz * r * 0.9, c.y + r * 0.4, c.z + fz * r * 2.2 - fx * r * 0.9); controls.update();
+  $info.innerHTML = "<table><tr><td>Projekt</td><td>" + PROJEKT.name + "</td></tr><tr><td>Masse</td><td>" + fmt(s.x) + " x " + fmt(s.z) + " x " + fmt(s.y) + " m</td></tr></table><div class=\"note\">Aktuelles Umbauprojekt, Plan: " + PROJEKT.plan + "</div>"; }
 // ---------- Fluggeraete ----------
 const FLUG = { jet: () => JET, bat: () => FLY };
 // Startbahn (Kampfjet) und Landeplatz (The Bat) am Nordrand der Flaeche
@@ -220,8 +228,9 @@ window.werkstattTeleport = p => { if (!AKT || AKT.flug) return; AKT.x = p.x; AKT
 // ---------- Auswahl und Ansicht ----------
 const pick = $("pick");
 MODELLE.forEach((m, i) => { const o = document.createElement("option"); o.value = i; o.textContent = m.name; pick.appendChild(o); });
+{ const og = document.createElement("optgroup"); og.label = "Umbauprojekt"; const o = document.createElement("option"); o.value = "projekt"; o.textContent = "Aktuelles Projekt: " + PROJEKT.name; og.appendChild(o); pick.insertBefore(og, pick.firstChild); }
 { const og = document.createElement("optgroup"); og.label = "Gebäude-Vorlagen (kommen mit G3)"; const o = document.createElement("option"); o.disabled = true; o.textContent = "noch keine"; og.appendChild(o); pick.appendChild(og); }
-pick.onchange = () => laden(+pick.value);
+pick.onchange = () => pick.value === "projekt" ? projektZeigen() : laden(+pick.value);
 let modus = "orbit";
 const setModus = m => { const war = modus; modus = m;
   if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"]]) $(id).setAttribute("aria-pressed", String(m === k));
@@ -478,5 +487,5 @@ function loop(t) {
 }
 groesse();
 let start = 0; try { start = Math.min(MODELLE.length - 1, Math.max(0, +localStorage.getItem("werkstatt-modell") || 0)); } catch (e) {}
-pick.value = start; laden(start);
+laden(start); pick.value = "projekt"; projektZeigen();   // beim Oeffnen zum aktuellen Umbauprojekt
 requestAnimationFrame(loop);
