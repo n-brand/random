@@ -86,7 +86,7 @@ const UMSETZUNG = [
   { phase: "verkehr", nr: "V3/V4", titel: "Taxi-Depot und Parken", status: "fertig", stand: "Taxi-Depot mit Hof, Zaun, Wagenhalle und 12 Taxis; 5 befahrbare Parkhäuser (5 Ebenen, Rampen 15 %, geparkte Autos); Tiefgaragen-Einfahrten an 141 grossen Gebäuden (befahrbar sind die Tiefgaragen des Wayne Towers).", braucht: ["G3/G4"],
     inhalt: "Taxi-Depot, Tiefgaragen bei grossen Gebäuden, 5 Parkhäuser.",
     warum: "Ergänzt den Verkehr, wenn die Gebäude stehen." },
-  { phase: "spiel", nr: "S1", titel: "Inventar mit Hotbar", status: "offen", braucht: [],
+  { phase: "spiel", nr: "S1", titel: "Inventar mit Hotbar", status: "fertig", stand: "Hotbar mit 9 Plätzen (Tasten 1-9), Inventar auf I mit 27 weiteren Plätzen, stapelbare Gegenstände (Werkzeug, Waffen, Munition, Kleidung, Wertsachen), gespeichert im Browser; Gullihaken öffnet die Kanaldeckel, Ausrüstung, Gold, Bargeld und Batsuit gibt es in der Geheimbasis.", braucht: [],
     inhalt: "Leiste unten mit Tasten 1-9, Gegenstände, Waffen, Kleider, Goldbarren, Munition.",
     warum: "Grundlage für Geld, Shop und Waffen." },
   { phase: "spiel", nr: "S3", titel: "Kontostand", status: "offen", braucht: ["S1"],

@@ -196,3 +196,25 @@ body.touch #minikarte { width: 120px; height: 120px; bottom: auto; top: calc(env
 #stadtkarte #sk-me { font-size: 13px; }
 #stadtkarte .sk-hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); background: rgba(0, 0, 0, .6); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
 body.touch #stadtkarte .sk-hint { display: none; }
+
+/* S1 Inventar mit Hotbar (Nicolas 2026-11-16) */
+#hotbar { display: none; position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 62px); transform: translateX(-50%); gap: 4px; padding: 4px; background: rgba(12,14,18,.72); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; z-index: 5; }
+body.walk:not(.drive):not(.ghost) #hotbar { display: flex; }
+.inv-slot { position: relative; width: 46px; height: 46px; padding: 0; border-radius: 7px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.12); cursor: pointer; display: grid; place-items: center; }
+.inv-slot svg { width: 34px; height: 34px; }
+.inv-slot.sel { border-color: #e8c547; background: rgba(232,197,71,.16); }
+.inv-slot.pick { border-color: #6ab0ff; background: rgba(106,176,255,.2); }
+.inv-k { position: absolute; left: 3px; top: 1px; font: 600 9px system-ui, sans-serif; color: rgba(255,255,255,.55); }
+.inv-n { position: absolute; right: 3px; bottom: 1px; font: 700 11px system-ui, sans-serif; color: #fff; text-shadow: 0 1px 2px #000; }
+#inventar { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.55); display: grid; place-items: center; }
+#inventar[hidden] { display: none; }
+.inv-box { background: #15181d; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; padding: 14px; color: #e8e8e8; font: 13px system-ui, sans-serif; max-width: calc(100vw - 32px); }
+.inv-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.inv-close { background: none; border: 0; color: #ccc; font-size: 22px; cursor: pointer; }
+.inv-grid, .inv-bar { display: grid; grid-template-columns: repeat(9, 46px); gap: 4px; }
+.inv-sep { margin: 10px 0 4px; font-size: 11px; opacity: .7; }
+.inv-info { margin-top: 10px; min-height: 18px; }
+.inv-hint { margin-top: 6px; font-size: 11px; opacity: .6; }
+body.touch #hotbar { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
+body.touch .inv-slot { width: 38px; height: 38px; } body.touch .inv-slot svg { width: 28px; height: 28px; }
+body.touch .inv-grid, body.touch .inv-bar { grid-template-columns: repeat(9, 38px); }

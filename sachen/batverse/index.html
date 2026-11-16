@@ -51,6 +51,7 @@
 
   <div class="hud">
     <button type="button" id="btn-act" title="Einsteigen/Aussteigen (Rechtsklick/Shift), Tor schalten (Taste E)">Aktion<span class="k"> (E)</span></button>
+    <button type="button" id="btn-inv" title="Inventar (Taste I)">Inventar<span class="k"> (I)</span></button>
     <button type="button" id="btn-map" title="Gotham-Karte (Taste K, Umschalt+K Minikarte)">Karte<span class="k"> (K)</span></button>
     <button type="button" id="btn-tp" title="Teleport-Menue, Fahrzeuge holen, Lautstaerke (Taste T)">Menü<span class="k"> (T)</span></button>
     <button type="button" id="btn-fs2" aria-pressed="false">Vollbild<span class="k"> (F)</span></button>
@@ -67,7 +68,9 @@
   <div id="tank-sight" aria-hidden="true"><svg viewBox="-70 -70 140 140" width="140" height="140"><circle r="44" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".7"/><path d="M-66 0H-12M12 0H66M0 -66V-12M0 12V40" stroke="currentColor" stroke-width="2"/><path d="M-8 18L0 10L8 18M-6 28L0 22L6 28" fill="none" stroke="currentColor" stroke-width="1.5"/><circle r="2" fill="currentColor"/><path d="M-44 -4V4M44 -4V4M-22 -3V3M22 -3V3" stroke="currentColor" stroke-width="1.5"/></svg><span>Leertaste: schießen</span></div>
   <div id="ghost-tag">Geist</div>
   <div id="pause"><b>Klicken zum Weiterspielen</b><span>Esc: Begehen beenden</span></div>
-  <div id="hint">WASD gehen &middot; Esc Maus frei &middot; Leertaste springen &middot; Shift rennen &middot; G Geist &middot; Esc beenden</div>
+  <div id="hotbar" aria-label="Hotbar"></div>
+  <div id="inventar" hidden><div class="inv-box"><div class="inv-head"><b>Inventar</b><button type="button" class="inv-close" aria-label="Schliessen">&times;</button></div><div class="inv-grid"></div><div class="inv-sep">Hotbar (1–9)</div><div class="inv-bar"></div><div class="inv-info"></div><div class="inv-hint">I oder Esc schliesst</div></div></div>
+  <div id="hint">WASD gehen &middot; Esc Maus frei &middot; Leertaste springen &middot; Shift rennen &middot; 1–9 Hotbar &middot; I Inventar &middot; G Geist &middot; Esc beenden</div>
   <div id="toast"></div>
   <canvas id="draw-layer"></canvas>
   <div id="draw-colors" role="group" aria-label="Stiftfarbe"></div>
@@ -140,6 +143,7 @@
       "aufzuege/personenaufzug.js",
       "ui/karten-overlay.js",
       "ui/stadtkarte.js",
+      "ui/inventar.js",
       "aussen/aussenanlage.js",
       "hoehle/hoehle-unten.js",
       "hoehle/batcave-ausbau.js",

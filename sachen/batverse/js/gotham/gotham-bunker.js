@@ -92,7 +92,8 @@ function* gcbGen() {
     const em = new THREE.Mesh(new THREE.CircleGeometry(0.1, 12), M.gelb); em.position.set(0.29, 1.8, 0); em.rotation.y = Math.PI / 2; suit.add(em); }
   { const p = f.W(-14, -14, 0); suit.position.set(p[0], YF - 2.6, p[2]); suit.rotation.y = Math.atan2(ax, az); suit.userData.keep = true; scene.add(suit); }
   box("stahl", -14, -14, 2, 2, YF - 0.02, YF + 0.005);
-  const suitHit = new THREE.Mesh(new THREE.BoxGeometry(2, 2.6, 2), new THREE.MeshBasicMaterial({ visible: false })); { const p = f.W(-14, -14, YF + 1.3); suitHit.position.set(p[0], p[1], p[2]); scene.add(suitHit); }
+  const suitHit = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 2.2), new THREE.MeshBasicMaterial({ visible: false })); { const p = f.W(-14, -14, YF + 0.3);   // Schalter = Bodenluke (die Figur selbst ist der Batsuit zum Nehmen)
+ suitHit.position.set(p[0], p[1], p[2]); scene.add(suitHit); }
   gates.push({ name: "Anzug", g: suitHit, open: 0, target: 0, dur: 5, verbs: ["hochfahren", "versenken"], msgs: ["Der Anzug fährt aus dem Boden", "Der Anzug fährt in den Boden"], a: W(-15, -14), b: W(-13, -14), near: 8, anim: k => { suit.position.y = YF - 2.6 + k * 2.6; } });
   // Wandtore mit Motorrad und Batpod (Nischen in der Wand b = -HB, Tore fahren hoch)
   const niche = (a0, label, spec, build) => { const a1 = a0 + 4, d = 4; room(a0 + 0.4, a1 - 0.4, -HB - d + 0.4, -HB + 0.5, YF - 1, YF + 3.2); dk((a0 + a1) / 2, -HB - d / 2, 4, d, YF - 0.5, YF, { ceil: 0 });
@@ -124,6 +125,12 @@ function* gcbGen() {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.2, t1 - t0), M.wand), p = f.W(-HA + 0.15, (t0 + t1) / 2, YF + 1.6); wall.position.set(p[0], p[1], p[2]); wall.rotation.y = Math.atan2(bx, bz); wall.userData.keep = true; scene.add(wall);
     const solid = dk(-HA + 0.15, (t0 + t1) / 2, 0.3, t1 - t0, YF, YF + 3.2, { floor: 0, m: 0.1 }), slide = [bx * (t1 - t0 + 0.2), bz * (t1 - t0 + 0.2)];
     gates.push({ name: "Geheimwand", g: wall, open: 0, target: 0, dur: 3, verbs: ["öffnen", "schliessen"], a: W(-HA, t0), b: W(-HA, t1), near: 10, solid, anim: k => { wall.position.set(p[0] + slide[0] * k, p[1], p[2] + slide[1] * k); solid.on = k < 0.5; } }); }
+  // S1 Inventar: Ausruestung, Tresor und Anzug nehmen (Rechtsklick, wenn Wand/Tresor offen bzw. Anzug oben)
+  { const hit = (a, b, la, lb, y0, y1) => { const m = new THREE.Mesh(new THREE.BoxGeometry(la, y1 - y0, lb), new THREE.MeshBasicMaterial({ visible: false })), p = f.W(a, b, (y0 + y1) / 2); m.position.set(p[0], p[1], p[2]); m.rotation.y = Math.atan2(ax, az); scene.add(m); return m; };
+    const g = n => gates.find(t => t.name === n), give = (list) => { const got = []; for (const [id, n] of list) { const k = invAdd(id, n); if (k) got.push(k + " " + INV_ITEMS[id].name); } toast(got.length ? "Genommen: " + got.join(", ") : "Inventar voll"); };
+    gates.push({ name: "Ausrüstung", g: hit(-HA + 0.5, -9, 0.8, 6, YF + 0.4, YF + 3.4), call: () => { if (g("Waffenwand").open < 0.9) return toast("Erst die Waffenwand aufklappen"); give([["greifhaken", invHas("greifhaken") ? 0 : 1], ["batarang", 8], ["rauchbombe", 4], ["munition", 30]].filter(q => q[1])); }, verbs: ["nehmen", "nehmen"], a: W(-HA, -12), b: W(-HA, -6), near: 5 });
+    gates.push({ name: "Tresor", g: hit(-HA - 2, 9, 3, 5.4, YF, YF + 2), call: () => { if (g("Geheimwand").open < 0.9) return toast("Der Tresor ist hinter der Geheimwand"); give([["goldbarren", 1], ["bargeld", 1]]); }, verbs: ["Gold und Bargeld nehmen", "Gold und Bargeld nehmen"], a: W(-HA - 3, 6), b: W(-HA - 3, 12), near: 6 });
+    gates.push({ name: "Batsuit", g: hit(-14, -14, 0.9, 0.9, YF + 0.9, YF + 2.6), call: () => { if (g("Anzug").open < 0.9) return toast("Erst den Anzug hochfahren"); if (invHas("batsuit")) return toast("Den Batsuit hast du schon"); give([["batsuit", 1]]); }, verbs: ["nehmen", "nehmen"], a: W(-15, -14), b: W(-13, -14), near: 4 }); }
   // Reifenstapel und Werkbank hinten
   for (const [a, b, n] of [[-38, 13, 5], [-36.6, 13, 4], [-38, 14.5, 6], [-36.6, 14.5, 3]]) for (let k = 0; k < n; k++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.18, 8, 16), M.reifen); const p = f.W(a, b, YF + 0.18 + k * 0.36); t.position.set(p[0], p[1], p[2]); t.rotation.x = Math.PI / 2; t.userData.keep = true; scene.add(t); }
   box("holz", -30, 15.8, 5, 1.2, YF + 0.85, YF + 0.95); for (const [a, b] of [[-32.3, 15.4], [-27.7, 15.4], [-32.3, 16.2], [-27.7, 16.2]]) box("stahl", a, b, 0.08, 0.08, YF, YF + 0.85); box("dunkel", -30, 17.4, 5, 0.06, YF + 1.2, YF + 2.6); box("gelb", -31, 15.6, 0.6, 0.35, YF + 0.95, YF + 1.25);
