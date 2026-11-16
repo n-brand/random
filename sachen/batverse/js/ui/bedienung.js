@@ -12,7 +12,9 @@ $("btn-below").addEventListener("click", e => {
   if (belowView) {
     belowSave.pos.copy(camera.position); belowSave.target.copy(controls.target);
     controls.maxPolarAngle = Math.PI;
-    controls.target.set(-30, -18, 18); camera.position.set(40, -75, 70);
+    const t = controls.target;   // Nicolas 2026-11-16 ("Von unten ist nicht bei Gotham"): am aktuellen Ort bleiben; nur an der Manor die bisherige Ansicht auf Garage und Hoehle
+    if (Math.abs(t.x) < 400 && Math.abs(t.z) < 400) { controls.target.set(-30, -18, 18); camera.position.set(40, -75, 70); }
+    else { const dx = camera.position.x - t.x, dz = camera.position.z - t.z, l = Math.hypot(dx, dz) || 1, ty = terrainH(t.x, t.z) - 18; controls.target.set(t.x, ty, t.z); camera.position.set(t.x + dx / l * 90, ty - 57, t.z + dz / l * 90); }
   } else {
     controls.maxPolarAngle = Math.PI * 0.495;
     camera.position.copy(belowSave.pos); controls.target.copy(belowSave.target);
