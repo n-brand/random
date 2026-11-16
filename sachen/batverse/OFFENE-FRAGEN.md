@@ -34,6 +34,13 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 10a. **Weichen zum Ringwechsel:** An den Umsteigestationen sollen Züge auf den anderen Ring wechseln können (je Kreuzung 4 Verbindungskurven). Das ist noch nicht gebaut: Jede Kurve bräuchte einen eigenen Tunnel durch die Wände beider Ringe.
    - *Bis dahin:* Züge fahren nur im eigenen Ring. Bauen, sobald du sagst, dass es wichtig ist.
 
+## Casino
+
+14. **Innenraum:** Das Casino (Uptown, frühere Baustelle BS-02) ist nur von aussen gebaut. Man läuft bis an die Fassade, die Drehtüren sind reine Optik. Soll es einen begehbaren Saal geben, mit Spieltischen und Automaten?
+   - *Bis dahin:* nur aussen.
+15. **Standort:** Uptown, BS-02 bei etwa -2170 / -47 (Spielkoordinaten), weil Uptown der reichste Bezirk ist. Soll es woanders stehen?
+   - *Bis dahin:* dort.
+
 ## Ältere offene Punkte (aus CLAUDE.md)
 
 10. **Batcave, Uferkante:** Das Hochklettern aus dem Wasser mit gehaltener Leertaste (B1) bleibt vorerst. Soll es bleiben?

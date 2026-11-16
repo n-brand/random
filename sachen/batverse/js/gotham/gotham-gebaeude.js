@@ -138,7 +138,7 @@ function* ggebGaps() {
   const orte = G.orte.filter(o => o.typ !== "baustelle").map(o => { const W = Math.max(o.w, 18) / 2 + 4, D = Math.max(o.d, 18) / 2 + 4, a = (o.dreh || 0) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => GOT.toGame(o.x + u * W * c - v * D * s, o.z + u * W * s + v * D * c)); });
   const inB = (x, z) => { const i = Math.floor(x / GGEB.CC), k = Math.floor(z / GGEB.CC); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (const q of GGEB.cells.get(ggebCKey(i + a, k + b)) || []) if (ggebIn(x, z, q.poly)) return true; return false; };
-  const bs = GBST.list.filter(b => b.id[0] === "B" && b.id[1] === "S");
+  const bs = gbstList().filter(b => b.id[0] === "B" && b.id[1] === "S");   // alle BS, auch belegte (GBST.skip, Casino)
   const busy = (x, z) => GSTR.onRoad(x, z, 0.5) || GSTR.walkAt(x, z) || GOT.edgeSD(x, z) > -8 || inB(x, z) || orte.some(P => ggebIn(x, z, P)) || bs.some(b => ggebIn(x, z, b.poly)) || taken.some(P => ggebIn(x, z, P));
   const inP = (x, z, P) => ggebIn(x, z, P);
   for (const r of GSTR.roads) { const P = r.pts; if (!P || P.length < 2) continue;

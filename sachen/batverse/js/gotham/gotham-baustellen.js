@@ -6,7 +6,8 @@
 // reich = zwei Container, aufgeraeumt; arm = ein Container, ein Haufen mehr, Zaun mit Luecken. Hoechstens ca. 100 Dreiecke je Baustelle,
 // je Material ein Netz, in 768-m-Zellen (gsplit, weit weg ausgeblendet). Zufall fest aus der ID-Nummer.
 // Aufbau nach dem Start als Kachel-Aufgabe (nach den Strassen: das Tor sucht GSTR.onRoad), Zwischenspeicher IndexedDB "GBST".
-const GBST = { list: [], done: false, Y: GOT.STR, maxTris: 0, CC: 128, cells: null, live: new Map() };
+const GBST = { skip: ["BS-02"], list: [],   // skip: BS-02 traegt das Casino (gotham-casino.js)
+  done: false, Y: GOT.STR, maxTris: 0, CC: 128, cells: null, live: new Map() };
 const gbstCKey = (i, k) => i * 100000 + k;
 async function gbstCacheLoad(ck) {
   try { if (!window.TH_DB || !window.TH_HASH) throw 0;
@@ -59,7 +60,7 @@ function gbstGate(b) {
 }
 function* gbstGen(useCache = true) {
   const ck = { state: 0, data: null, key: null }; if (useCache) gbstCacheLoad(ck); else ck.state = 1;
-  GBST.list = gbstList().filter(b => b.id[0] === "B");   // Fuellbauten sind seit G3/G4 Gebaeude (gotham-gebaeude.js), Baustellen nur noch BS-01..08
+  GBST.list = gbstList().filter(b => b.id[0] === "B" && !GBST.skip.includes(b.id));   // Fuellbauten sind seit G3/G4 Gebaeude (gotham-gebaeude.js), Baustellen nur noch BS-01..08
   while (!ck.state) yield "wait";
   const CACHED = !!ck.data, Y = GBST.Y;
   // Grundriss auf freie Flaeche zuschneiden (Karten-Grundrisse reichen teils auf Gehsteige):
