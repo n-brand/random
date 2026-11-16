@@ -39,6 +39,7 @@ und den Skizzen unter `karten/planung/`. Bauplan und Stand der einzelnen Schritt
 | Vollbild | Knopf "Vollbild" oder F; sperrt Strg+W (Chrome/Edge), Esc gedrueckt halten zum Verlassen | |
 | Karten | Knopf "Karte" blendet die Lageplaene ein | |
 | Stadtkarte | M oder K oeffnet und schliesst die grosse Gotham-Karte, Umschalt+K Minikarte an/aus; in Fahrzeugen N = Ton an/aus | Knopf "Karte" |
+| Handy | P oeffnet das Handy: Internet mit drei Fahrzeug-Haendlern (Kauf wird geliefert), Bank, Garage (gekaufte Fahrzeuge holen); Autohaeuser in Gotham per Rechtsklick | Knopf "Handy" |
 | Von unten | Knopf "Von unten": Blick unter das Gelaende auf Garage und Hoehle | |
 
 Esc beendet Begehen, Geist und Fahren. Taste T oder die Auswahl "Teleport (Test)" springt zu festen Zielen

@@ -82,3 +82,5 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 13. **Nord- und West-Süd-Zufahrt** enden etwa 450 m vor der Weltgrenze, weil die Karte dort endet. Verlängern oder so lassen?
 
 26. **Kontostand:** Startguthaben 100 000 $, ein Bargeld-Bündel (Tresor der Geheimbasis, Bankautomat) ist 10 000 $ wert. Bruce Wayne hätte eigentlich Milliarden; für den Fahrzeug-Shop (S4) braucht es aber einen Rahmen. Passen die Beträge?
+
+27. **Fahrzeug-Shop:** Händler, Fahrzeuge und Preise sind von mir gewählt (z. B. Motorrad 9 000 $, Aventador 420 000 $, Tumbler 5 000 000 $). Der Militärhändler hat noch kein Gebäude (Phase 6 weggelassen), seine Fahrzeuge kommen vor den Wayne Tower. Gekaufte Fahrzeuge bleiben gespeichert und lassen sich nicht verkaufen. Passt das so, oder willst du andere Fahrzeuge, Preise oder einen Verkauf?

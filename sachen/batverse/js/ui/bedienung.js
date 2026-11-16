@@ -97,6 +97,7 @@ for (const id of ["btn-fs", "btn-fs2"]) $(id).addEventListener("click", e => { e
 document.addEventListener("fullscreenchange", () => { for (const id of ["btn-fs", "btn-fs2"]) $(id).setAttribute("aria-pressed", String(!!document.fullscreenElement)); });
 addEventListener("keydown", e => {
   if (document.fullscreenElement && (e.ctrlKey || e.metaKey) && !["KeyC", "KeyV", "KeyX", "KeyA"].includes(e.code)) e.preventDefault();   // Vollbild: Strg+W/T/N/R usw. abfangen
+  if (typeof handyIsOpen === "function" && handyIsOpen()) { if (e.code === "Escape" || (e.code === "KeyP" && !e.repeat)) handyClose(); return; }   // S4: Handy offen
   if (typeof kontoIsOpen === "function" && kontoIsOpen()) { if (e.code === "Escape") kontoClose(); return; }   // S3: Bankautomat offen
   if (typeof invIsOpen === "function" && invIsOpen()) { if (e.code === "Escape" || (e.code === "KeyI" && !e.repeat)) invClose(); return; }   // S1: Inventar offen
   if (window.skBigIsOpen && skBigIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyK" || e.code === "KeyM") && !e.shiftKey && !e.repeat)) skBigClose(); if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault(); return; }   // T6: grosse Karte offen
@@ -158,7 +159,8 @@ addEventListener("keydown", e => {
     if (e.code === "ArrowUp" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) stepStop(e.code === "ArrowUp" ? 1 : -1); return; }
   }
   if (!ghost && typeof invSelect === "function" && /^(Digit|Numpad)[1-9]$/.test(e.code) && !e.repeat) return invSelect(+e.code.slice(-1) - 1);   // S1: Hotbar (Aufzuege haben ihre Ziffern oben schon genommen)
-  if (!ghost && e.code === "KeyI" && !e.repeat && typeof invOpen === "function") return invOpen();   // S1: Inventar
+  if (!ghost && e.code === "KeyI" && !e.repeat && typeof invOpen === "function") return invOpen();
+  if (e.code === "KeyP" && !e.repeat && typeof handyOpen === "function") return handyOpen();   // S4: Handy   // S1: Inventar
   keys.add(e.code);
   if (e.code === "Space") { player.jump = true; e.preventDefault(); }
 });

@@ -244,3 +244,43 @@ body.touch #konto { top: calc(env(safe-area-inset-top, 0px) + 186px); right: 10p
 .bank-btns button:disabled { opacity: .4; cursor: default; }
 .bank-log { list-style: none; margin: 4px 0 0; padding: 0; }
 .bank-log li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }
+
+/* S4 Handy (Nicolas 2026-11-16) */
+#handy { position: fixed; inset: 0; z-index: 42; display: flex; align-items: center; justify-content: flex-end; padding: 12px max(4vw, 16px); background: rgba(0,0,0,.25); }
+#handy[hidden] { display: none; }
+.h-phone { width: min(360px, 92vw); height: min(700px, 88vh); display: flex; flex-direction: column; background: #0b0e13; color: #e9edf2; border: 8px solid #1b1f26; border-radius: 34px; box-shadow: 0 10px 40px rgba(0,0,0,.6); overflow: hidden; font: 14px system-ui, sans-serif; }
+.h-top { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px 4px; font-size: 12px; }
+.h-money { color: #e8c56a; font-weight: 700; }
+.h-close { background: none; border: 0; color: #cfd6df; font-size: 22px; line-height: 1; cursor: pointer; }
+.h-bar { display: flex; align-items: center; gap: 8px; margin: 0 10px 6px; padding: 4px 8px; background: #1a2029; border-radius: 10px; }
+.h-bar[hidden] { display: none; }
+.h-back { background: none; border: 0; color: #9fc4ff; font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.h-url { font-size: 12px; opacity: .75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-screen { flex: 1; overflow-y: auto; }
+.h-nav { display: flex; justify-content: center; padding: 6px 0 10px; }
+.h-home { width: 110px; height: 5px; border: 0; border-radius: 3px; background: #cfd6df; cursor: pointer; }
+.h-apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 8px; padding: 28px 16px; }
+.h-app { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: 0; color: #e9edf2; font: 12px system-ui, sans-serif; cursor: pointer; }
+.h-app svg { width: 58px; height: 58px; padding: 13px; box-sizing: border-box; border-radius: 16px; background: linear-gradient(160deg, #2c5d9a, #1a3358); color: #fff; }
+.h-page { padding: 4px 14px 16px; }
+.h-page h2 { margin: 6px 0 8px; font-size: 20px; }
+.h-sub { margin: 12px 0 6px; font-size: 12px; opacity: .7; }
+.h-big { font-size: 28px; font-weight: 700; color: #e8c56a; }
+.h-link { display: block; width: 100%; text-align: left; margin: 6px 0; padding: 10px 12px; border-radius: 10px; border: 1px solid #263142; border-left: 4px solid var(--c); background: #141a23; color: #e9edf2; cursor: pointer; font: 14px system-ui, sans-serif; }
+.h-link span, .h-item span, .h-car span { display: block; font-size: 12px; opacity: .7; margin-top: 2px; }
+.h-hero { margin: 0 -14px 10px; padding: 18px 14px; background: linear-gradient(135deg, var(--c), #10151d 85%); }
+.h-hero h2 { margin: 0; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+.h-hero span { font-size: 12px; color: #fff; opacity: .85; }
+.h-item { margin: 8px 0; padding: 10px; border-radius: 10px; background: #141a23; border: 1px solid #263142; }
+.h-it-top { display: flex; justify-content: space-between; gap: 8px; }
+.h-price { font-weight: 700; color: var(--c); white-space: nowrap; }
+.h-cols { display: flex; gap: 6px; margin-top: 8px; }
+.h-col { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #3a4556; cursor: pointer; }
+.h-col.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--c); }
+.h-buy { width: 100%; margin-top: 8px; padding: 8px; border: 0; border-radius: 8px; background: var(--c); color: #111; font: 700 13px system-ui, sans-serif; cursor: pointer; }
+.h-buy:disabled { background: #3a4556; color: #aab3bf; cursor: default; }
+.h-car { display: flex; align-items: center; gap: 10px; margin: 8px 0; padding: 8px 10px; border-radius: 10px; background: #141a23; }
+.h-car i { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #555; flex: none; }
+.h-car div { flex: 1; }
+.h-car button { padding: 6px 12px; border: 0; border-radius: 8px; background: #2c5d9a; color: #fff; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+@media (max-width: 600px) { #handy { justify-content: center; } }

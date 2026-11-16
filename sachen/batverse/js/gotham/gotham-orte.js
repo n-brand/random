@@ -95,6 +95,9 @@ function* gortGen() {
       else sign(front, sideLen(front) / 2, Y + Hb - 2, Math.min(fl * 0.7, 24), 0.15, ins);
     }
     bautAdd({ id: "GO-" + o.id.toUpperCase(), name: o.name.split(" (")[0], art: "Gebäude", poly: [Wp(0, 0), Wp(L1, 0), Wp(L1, L2), Wp(0, L2)], y0: Y - 1, y1: Y + H + 10, info: (sgOf.get(o.id)?.text || o.name) + " · " + Math.round(H) + " m" });
+    if (o.id === "auto-billig" || o.id === "auto-teuer") { const sd = f.side(front), u = sd[6] / 2, P = (d, h) => Wp(sd[0] + sd[2] * u + sd[4] * d, sd[1] + sd[3] * u + sd[5] * d);   // S4: Autohaus oeffnet den Shop, Lieferplatz vor der Front
+      GORT.lots = GORT.lots || {}; GORT.lots[o.id] = P(9); const hp = P(1), hm = new THREE.Mesh(new THREE.BoxGeometry(5, 3.5, 5), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(hp[0], Y + 1.75, hp[1]); scene.add(hm);
+      gates.push({ name: (o.id === "auto-billig" ? "Budget Cars" : "Prestige Motors") + " (Shop)", g: hm, call: () => typeof handyShop === "function" && handyShop(o.id === "auto-billig" ? "billig" : "teuer"), verbs: ["Fahrzeuge ansehen", "Fahrzeuge ansehen"], a: hp, b: hp, near: 8 }); }
     GORT.list.push(o.id); yield;
   }
   const grp = new THREE.Group(); grp.name = "Gotham Orte"; grp.userData.keep = true; grp.userData.noLift = true; const GM = gbvInit();
