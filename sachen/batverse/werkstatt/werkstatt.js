@@ -93,7 +93,7 @@ const PROJEKT = { name: "Bankautomat", plan: "PLAN-BANKAUTOMAT.md", bau: () => b
 const projektG = (() => { const g = PROJEKT.bau(); g.position.set(PROJEKT.x, 0.15, PROJEKT.z); g.rotation.y = PROJEKT.h; g.userData.id = "PROJEKT"; g.userData.art = PROJEKT.name; scene.add(g);
   const pl = new THREE.Mesh(new THREE.BoxGeometry(8, 0.15, 8), new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 })); pl.position.set(PROJEKT.x, 0.075, PROJEKT.z); pl.receiveShadow = true; scene.add(pl); return g; })();
 function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = new THREE.Box3().setFromObject(projektG), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z);
-  const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 2.2 + fz * r * 0.9, c.y + r * 0.4, c.z + fz * r * 2.2 - fx * r * 0.9); controls.update();
+  const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 1.9 + fz * r * 0.45, c.y + r * 0.25, c.z + fz * r * 1.9 - fx * r * 0.45); controls.update();
   $info.innerHTML = "<table><tr><td>Projekt</td><td>" + PROJEKT.name + "</td></tr><tr><td>Masse</td><td>" + fmt(s.x) + " x " + fmt(s.z) + " x " + fmt(s.y) + " m</td></tr></table><div class=\"note\">Aktuelles Umbauprojekt, Plan: " + PROJEKT.plan + "</div>"; }
 // ---------- Fluggeraete ----------
 const FLUG = { jet: () => JET, bat: () => FLY };
