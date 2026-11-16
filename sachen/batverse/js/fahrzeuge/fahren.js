@@ -178,7 +178,7 @@ function useCar(want) {
   if (best.towBy) towDrop(best.towBy);                                       // Einsteigen in ein Auto am Haken: es wird abgesetzt
   CAR = best; const C = best;
   C.on = true; C.v = 0; keys.clear(); player.yaw = C.h; player.pitch = -0.12; carCircles(false);
-  toast(C.spec.msg + ", M Ton an/aus");
+  toast(C.spec.msg + ", N Ton an/aus, M Karte");
   speedEl.hidden = false;
   engineStart(C.spec.name);
   return true;

@@ -214,4 +214,4 @@ function label(text, x, z, color) {
   scene.add(sp);
   cyl(0.4, 0.4, 14, M(color), x, gy + 7, z, scene, 8);
 }
-label("N", 0, -260, "#2b6cb0"); label("O", 260, 0, "#c05621"); label("S", 0, 260, "#2f855a"); label("W", -260, 0, "#6b46c1");
+// Pfosten N/O/S/W um die Manor entfernt (Nicolas 2026-11-16: "die Orientierungspunkte wegmachen um Wayne Manor"); label() bleibt fuer spaeter

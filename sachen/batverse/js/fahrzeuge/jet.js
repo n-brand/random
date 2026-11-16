@@ -5,7 +5,7 @@
 // Auftrag 2026-11-10: fliegt wie ein Flugzeug (nicht senkrecht wie The Bat): Startrollen, Abheben ab JET_VS, Landen auf Strasse/Flaeche.
 // Steuerung: Rechtsklick einsteigen, Shift aussteigen (nur am Boden und fast still), W/S Schub (bleibt stehen wie ein Gashebel; am Boden
 // S bei Schub 0 = Bremse, im Stand langsam rueckwaerts), A/D rollen (am Boden Bugrad lenken), Maus hoch/runter oder Pfeil hoch/runter =
-// Nase hoch/runter, V Kamera hinten/Cockpit, M Ton. Eigenes System wie FLY (nicht in VEH). Ursprung der Gruppe = Rumpfmitte (Drehpunkt
+// Nase hoch/runter, V Kamera hinten/Cockpit, N Ton. Eigenes System wie FLY (nicht in VEH). Ursprung der Gruppe = Rumpfmitte (Drehpunkt
 // und Kameraziel), die Raeder liegen JET_Y darunter. Vorne = -z. Masse ungefaehr wie das Vorbild: 18,9 m lang, 13,6 m Spannweite, 5 m hoch.
 const JET_Y = 2.0, JET_VS = 42, JET_VR = 34, JET_LIM = 1400;           // Drehpunkt ueber Radunterkante, Abhebe-/Rotiertempo (m/s), Flugraum
 function buildJet() {

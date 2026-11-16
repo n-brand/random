@@ -95,12 +95,12 @@ for (const id of ["btn-fs", "btn-fs2"]) $(id).addEventListener("click", e => { e
 document.addEventListener("fullscreenchange", () => { for (const id of ["btn-fs", "btn-fs2"]) $(id).setAttribute("aria-pressed", String(!!document.fullscreenElement)); });
 addEventListener("keydown", e => {
   if (document.fullscreenElement && (e.ctrlKey || e.metaKey) && !["KeyC", "KeyV", "KeyX", "KeyA"].includes(e.code)) e.preventDefault();   // Vollbild: Strg+W/T/N/R usw. abfangen
-  if (window.skBigIsOpen && skBigIsOpen()) { if (e.code === "Escape" || (e.code === "KeyK" && !e.shiftKey && !e.repeat)) skBigClose(); if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault(); return; }   // T6: grosse Karte offen
+  if (window.skBigIsOpen && skBigIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyK" || e.code === "KeyM") && !e.shiftKey && !e.repeat)) skBigClose(); if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault(); return; }   // T6: grosse Karte offen
   if (e.code === "KeyF" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { toggleFullscreen(); return; }
   if (window.settingsOpen && settingsOpen()) { if (e.code === "Escape" || e.code === "KeyT") closeSettings(); return; }   // K6: Einstellungen offen
   if (e.code === "KeyT" && !e.repeat && !(e.target instanceof HTMLSelectElement)) return toggleTp();   // TEST: Teleport-Menue
   if (tpMenuOpen()) { if (e.code === "Escape") toggleTp(); return; }
-  if (e.code === "KeyK" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (e.shiftKey) skMiniToggle(); else if (typeof skBigToggle === "function") skBigToggle(); return; }   // T6: K grosse Karte, Umschalt+K Minikarte (ui/stadtkarte.js)
+  if ((e.code === "KeyK" || e.code === "KeyM") && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (e.shiftKey) skMiniToggle(); else if (typeof skBigToggle === "function") skBigToggle(); return; }   // T6: K grosse Karte, Umschalt+K Minikarte (ui/stadtkarte.js)
   if (e.code === "KeyG" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { if (ghost) ghostToWalk(); else startGhost(); return; }   // G: Geist an/aus (Nicolas 2026-11-09)
   if (!walking) return;
   if (e.code === "Escape") { if (performance.now() - unlockT < 350) return; return setWalk(false); }   // Esc bei gefangener Maus gibt sie nur frei (#pause)
@@ -112,16 +112,16 @@ addEventListener("keydown", e => {
     // Aufzuege nicht mehr mit E, sondern per Rechtsklick auf die Tuer (Nicolas 2026-11-08, siehe tore.js)
     return;
   }
-  if (FLY.on) {                                                             // The Bat: V Kamera, M Ton, sonst Flugtasten
+  if (FLY.on) {                                                             // The Bat: V Kamera, N Ton, sonst Flugtasten
     if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault();
     if (e.code === "KeyV" && !e.repeat) { FLY.view = FLY.view === 1 ? 0 : 1; player.pitch = FLY.view ? 0 : -0.2; return toast(FLY.view ? "Cockpit" : "Kamera hinter The Bat"); }
-    if (e.code === "KeyM" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("The Bat"); return; }
+    if (e.code === "KeyN" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("The Bat"); return; }
     keys.add(e.code); return;
   }
-  if (JET.on) {                                                             // Kampfjet: V Kamera, M Ton, sonst Flugtasten
+  if (JET.on) {                                                             // Kampfjet: V Kamera, N Ton, sonst Flugtasten
     if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault();
     if (e.code === "KeyV" && !e.repeat) { JET.view = JET.view === 1 ? 0 : 1; player.yaw = JET.h; return toast(JET.view ? "Cockpit" : "Kamera hinter dem Jet"); }
-    if (e.code === "KeyM" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("Kampfjet"); return; }
+    if (e.code === "KeyN" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("Kampfjet"); return; }
     if (e.code === "KeyR" && !e.repeat) return jetReset();                     // R: zurueck an den Standplatz
     keys.add(e.code); return;
   }
@@ -134,7 +134,7 @@ addEventListener("keydown", e => {
     if (e.code === "KeyV") { CAR.view = 1 - CAR.view; player.pitch = CAR.view ? 0 : -0.12; return toast(CAR.view ? "Fahrersicht" : "Kamera hinter dem Auto"); }
     if (e.code === "KeyR") return carReset();
     if (e.code === "KeyH" && CAR.spec.hover) { if (CAR.flying && CAR.hoverWant) { CAR.hoverWant = false; return toast("Landen – Räder klappen aus"); } if (!CAR.flying) player.jump = true; return; }   // DeLorean: H wie Leertaste, im Flug landen
-    if (e.code === "KeyM") return engineMute();
+    if (e.code === "KeyN") return engineMute();   // Ton an/aus (Nicolas 2026-11-16: M oeffnet jetzt die Karte)
     { const v = VEH.find(c => c.on), p = v ? { x: v.x, y: v.y, z: v.z } : player.pos;   // Garagenrampe (Nicolas 2026-11-10): unten am Tor das Rolltor, sonst die Klappe
       if (e.code === "KeyL" && GRAMP.gate && GRAMP.near(p) && !(CAR_LIFT && CAR_LIFT.near(player.pos))) return toggleGate(p.y < HILL - 2.5 && (inPoly(GARAGE, p.x, p.z) || Math.hypot(p.x - 4.5, p.z - (GRAMP.D0 + GRAMP.D1) / 2) < 9) ? GRAMP.door : GRAMP.gate); }
     if (e.code === "KeyL" && typeof wtPlatteNah === "function" && wtPlatteNah()) return wtPlatteToggle();   // Wayne Tower: getarnte Wandplatte zum Geheimgang

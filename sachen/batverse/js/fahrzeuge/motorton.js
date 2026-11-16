@@ -5,7 +5,7 @@
 // ===================== Motorgeraeusch (Web Audio, ohne Dateien; Nicolas 2026-11-08) =====================
 // Zwei Oszillatoren (Grundton + Unterton) mit Zuendtakt-Modulation durch einen Tiefpass, dazu Rollgeraeusch (gefiltertes Rauschen).
 // Drehzahl aus Tempo und Gang (steigt im Gang, faellt beim Hochschalten), Gas macht lauter und heller. Anlassen beim Einsteigen,
-// Schubstoss beim Sprung. Je Fahrzeug eigener Klang (ENG_PROFILES nach spec.name). Taste M = Ton an/aus. Tab versteckt = Pause.
+// Schubstoss beim Sprung. Je Fahrzeug eigener Klang (ENG_PROFILES nach spec.name). Taste N = Ton an/aus (Spiel; vorher M, M oeffnet jetzt die Karte; Werkstatt weiter M). Tab versteckt = Pause.
 const ENGINE = { ctx: null, nodes: null, muted: false, noiseBuf: null, master: null, vol: (() => { try { const v = parseFloat(localStorage.getItem("wm-vol")); return isFinite(v) ? Math.min(1, Math.max(0, v)) : 0.25; } catch (e) { return 0.7; } })() };
 // Alle Motorgeraeusche laufen ueber einen Gesamtregler (Lautstaerke im T-Menue, im Browser gemerkt)
 function engineOut(ctx) { if (!ENGINE.master) { ENGINE.master = ctx.createGain(); ENGINE.master.gain.value = ENGINE.vol; ENGINE.master.connect(ctx.destination); } return ENGINE.master; }
@@ -106,7 +106,7 @@ function engineJet() {                                                       // 
 function engineMute() {
   ENGINE.muted = !ENGINE.muted;
   if (ENGINE.muted) engineStop(true); else if (CAR && CAR.on) engineStart(CAR.spec.name);
-  toast(ENGINE.muted ? "Ton aus (M)" : "Ton an (M)");
+  toast(ENGINE.muted ? "Ton aus (N)" : "Ton an (N)");
 }
 document.addEventListener("visibilitychange", () => { const c = ENGINE.ctx; if (c) document.hidden ? c.suspend() : c.resume(); });
 // DeLorean (Nicolas 2026-11-12): ruhiger V6 wie das Taxi

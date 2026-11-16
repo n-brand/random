@@ -1,3 +1,7 @@
+- **Mega-Orbit: alle Strassen, Karte auf M, Orientierungspunkte weg** (Nicolas 2026-11-16):
+  - `gHideStep` (gotham-gelaende.js) zeigt bei aktiver Übersicht (`OVERVIEW.on`) alle GHIDE-Zellen, also alle Strassen und Gehsteige.
+  - M öffnet und schliesst die grosse Karte wie K (bedienung.js). Ton an/aus in Fahrzeugen, The Bat und Jet liegt deshalb jetzt auf N (Handy-Knopf `data-key` KeyN, Meldungen, README); die Werkstatt behält M.
+  - Die Himmelsrichtungs-Pfosten N/O/S/W 260 m um die Manor (hoehle-oben.js, aus Schritt 1) sind entfernt; `label()` bleibt.
 - **Risse am 1050-m-Kreis** (Nicolas 2026-11-16, Bild aus der Mega-Orbit-Ansicht: treppenförmige Himmelsrisse auf dem Festland): Das Hauptraster endet am Kreis 1050 m um die Manor. Das Gotham-Raster behielt nur Punkte ab 1030 m; in der groben Stufe (32-m-Zellen) begannen ganze Dreiecke erst bis ca. 45 m weiter aussen.
   - Jetzt reicht es je nach Stufe weiter hinein (`RIN` = 1030 - 1,5 x Zellweite) und liegt innerhalb des Kreises unter dem Hauptraster (-0,3 m - 0,06 x Zellweite). Blöcke bis 80 m innerhalb werden mitgebaut.
   - Geprüft: Ansicht nachgestellt, keine Risse mehr.

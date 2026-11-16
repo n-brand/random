@@ -242,7 +242,7 @@ function gsplit(g, m, name, opt = {}) {
   if (opt.free) for (const at of Object.values(g.attributes)) at.onUpload(freeAfterUpload);
   scene.add(grp); return grp;
 }
-function gHideStep(cam) { const lim = (TILES.range * TILE + 150) + 200, p = cam.position;
+function gHideStep(cam) { const lim = typeof OVERVIEW !== "undefined" && OVERVIEW.on ? Infinity : (TILES.range * TILE + 150) + 200, p = cam.position;   // Mega-Orbit (Uebersicht): alle Strassen/Gehsteige zeigen (Nicolas 2026-11-16)
   for (const o of GHIDE) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < lim; }
   for (const o of GHIDE_FAR) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < cam.far; } }
 const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12, PZ: 80, UZ: 30,
