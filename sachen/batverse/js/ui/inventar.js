@@ -10,7 +10,6 @@ const INV_ITEMS = {
   rauchbombe: { name: "Rauchbombe", art: "Waffe", stack: 8, svg: '<circle cx="13" cy="15" r="7" fill="#4a4e55"/><rect x="11" y="5" width="4" height="4" fill="#9aa0a6"/><path d="M15 5c3-3 6 0 8-2" stroke="#ccc" stroke-width="1.5" fill="none"/>' },
   munition: { name: "9-mm-Munition", art: "Munition", stack: 64, svg: '<g fill="#c99a3a" stroke="#7a5a1a"><rect x="5" y="9" width="4" height="12" rx="1"/><rect x="11" y="7" width="4" height="14" rx="1"/><rect x="17" y="9" width="4" height="12" rx="1"/></g><g fill="#a0a4aa"><rect x="5" y="6" width="4" height="4" rx="2"/><rect x="11" y="4" width="4" height="4" rx="2"/><rect x="17" y="6" width="4" height="4" rx="2"/></g>' },
   goldbarren: { name: "Goldbarren", art: "Wert", stack: 16, svg: '<path d="M3 19 L7 9 H19 L23 19 Z" fill="#e0b03a" stroke="#8a6a1a"/><path d="M7 9 L9 12 H17 L19 9" fill="none" stroke="#f6d77a"/>' },
-  bargeld: { name: "Bargeld (Bündel)", art: "Wert", stack: 32, svg: '<rect x="3" y="8" width="20" height="11" rx="1" fill="#7a9a6a" stroke="#3d5a33"/><circle cx="13" cy="13.5" r="3" fill="none" stroke="#3d5a33"/><rect x="11" y="7" width="4" height="13" fill="#e8e2d0" opacity=".8"/>' },
   batsuit: { name: "Batsuit", art: "Kleidung", stack: 1, svg: '<path d="M9 4 L10 7 H16 L17 4 L18 8 L21 10 L20 22 H6 L5 10 L8 8 Z" fill="#1a1b1e" stroke="#555"/><path d="M10 13 L13 11 L16 13 L13 14 Z" fill="#e8c547"/>' },
   mantel: { name: "Mantel", art: "Kleidung", stack: 1, svg: '<path d="M8 4 H18 L22 9 L20 23 H6 L4 9 Z" fill="#5a4636" stroke="#2e231a"/><path d="M13 4 V23" stroke="#2e231a"/>' },
 };
@@ -22,7 +21,6 @@ const INV_DESC = {
   rauchbombe: "Im Bogen werfen (Linksklick). Beim Aufprall entsteht eine dichte Rauchwolke, die etwa 12 Sekunden hält.",
   munition: "9-mm-Patronen. Noch ohne passende Waffe.",
   goldbarren: "Feingold aus dem Tresor der Geheimbasis. Wertanlage.",
-  bargeld: "Ein Bündel Banknoten im Wert von 10 000 $. An jedem Bankautomaten in Gotham aufs Konto einzahlen.",
   batsuit: "Der gepanzerte Anzug aus der Geheimbasis im Container. Leicht, kugelsicher, mit Umhang.",
   mantel: "Ein langer Wollmantel für unauffällige Auftritte in der Stadt.",
 };

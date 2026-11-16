@@ -1,6 +1,6 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v398";
+const CACHE = "random-v399";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 // Google Fonts der Retro-Game-Hub-Praesentationen (CSS und Schriftdateien werden mitgespeichert)
@@ -66,11 +66,12 @@ self.addEventListener("fetch", event => {
         // Auch undurchsichtige Antworten (Stylesheet per <link> ohne CORS) speichern, sonst fehlen die Schriften offline
         if (res.ok || res.type === "opaque") {
           const copy = res.clone();
-          caches.open(CACHE).then(cache => cache.put(event.request, copy));
+          const key = url.replace(/\?v=\d+$/, "");                      // Skripte mit ?v=Zeitstempel (gegen alte Stände im Browser-Cache) unter der Adresse ohne ?v speichern
+          caches.open(CACHE).then(cache => cache.put(key === url ? event.request : key, copy));
         }
         return res;
       })
       // Seiten mit ?held=... auch offline finden
-      .catch(() => caches.match(event.request, { ignoreSearch: event.request.mode === "navigate" }))
+      .catch(() => caches.match(event.request, { ignoreSearch: event.request.mode === "navigate" || /\?v=\d+$/.test(url) }))
   );
 });

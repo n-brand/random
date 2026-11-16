@@ -4,7 +4,7 @@
 // Speicher-Form: { name, load() -> Promise<{ stand, log } | null>, save({ stand, log }) -> Promise }. Buchungen laufen immer lokal sofort, gespeichert wird danach.
 // Schnittstelle: kontoStand(), kontoKann(n), kontoEin(n, grund), kontoAus(n, grund) -> true/false, kontoFmt(n), kontoOn(fn). Bankautomat: kontoOpen()/kontoClose().
 "use strict";
-const KONTO_START = 100000, KONTO_BUENDEL = 10000;   // Startguthaben, Wert eines Bargeld-Buendels (OFFENE-FRAGEN 26)
+const KONTO_START = 100000;   // Startguthaben (OFFENE-FRAGEN 26)
 const KONTO_LOCAL = {
   name: "lokal",
   load: async () => { try { const d = JSON.parse(localStorage.getItem("wm-konto") || "null"); return d && Number.isFinite(d.stand) ? d : null; } catch (e) { return null; } },
@@ -29,11 +29,12 @@ function kontoAus(n, grund) { n = Math.round(n); if (!(n > 0) || !kontoKann(n)) 
 async function kontoSetBackend(b) { KONTO.backend = b; const d = await b.load(); if (d) { KONTO.stand = d.stand; KONTO.log = d.log || []; KONTO.bar = d.bar || 0; KONTO.woche = d.woche || { id: 0, ein: 0 }; } else await b.save({ stand: KONTO.stand, log: KONTO.log }); KONTO.ready = true; kontoRender(); }
 // Anzeige neben der Hotbar, kurz +/- bei Buchungen
 // Bankautomat (Nicolas 2026-11-16, Vorbild-Bilder PLAN-BANKAUTOMAT.md): Seiten Start (Einzahlen/Abheben), Betrag (-100..+100, Schnellbetraege), Erfolg.
-// Bargeld ist ein Betrag (KONTO.bar); Bargeld-Buendel im Inventar werden beim Oeffnen zu Bargeld gezaehlt (je KONTO_BUENDEL). Einzahlen hoechstens KONTO_LIMIT je Spielwoche.
+// Bargeld ist ein Betrag in Dollar (KONTO.bar, Nicolas 2026-11-16: keine Buendel, "normal einfach Zahlen"); dazu kontoBar(n, grund). Einzahlen hoechstens KONTO_LIMIT je Spielwoche.
 const ATM = { page: "start", mode: "ein", amt: 20, msg: "" };
 const atmMax = () => ATM.mode === "ein" ? Math.min(KONTO.bar, kontoLimitRest()) : KONTO.stand;
 function kontoRender() {
   const el = document.getElementById("konto"); if (el) el.querySelector(".k-stand").textContent = kontoFmt(KONTO.stand);
+  if (typeof atmScreensUpdate === "function") atmScreensUpdate();   // 3D-Bildschirme der Automaten (bankautomat.js) zeigen dieselben Werte
   const p = document.getElementById("bank"); if (!p || p.hidden) return;
   const rest = kontoLimitRest(), used = KONTO_LIMIT - rest, lim = p.querySelector(".atm-lim");
   lim.textContent = kontoFmt(used).replace(" $", "") + " / " + kontoFmt(KONTO_LIMIT); lim.classList.toggle("voll", rest <= 0);
@@ -52,8 +53,9 @@ kontoOn(n => { kontoRender(); const d = document.querySelector("#konto .k-delta"
 // Bankautomat-Fenster (Maus frei wie beim Inventar)
 const kontoIsOpen = () => { const b = document.getElementById("bank"); return b && !b.hidden; };
 function kontoOpen() { const b = document.getElementById("bank"); if (!b || !b.hidden) return; if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear();
-  const n = typeof invCount === "function" ? invCount("bargeld") : 0; if (n && invTake("bargeld", n)) { KONTO.bar += n * KONTO_BUENDEL; kontoSave(); toast(n + " Bargeld-Bündel gezählt: " + kontoFmt(n * KONTO_BUENDEL)); }
   ATM.page = "start"; b.hidden = false; kontoRender(); }
+// Bargeld dazu (z. B. Tresor der Geheimbasis) bzw. abziehen; Anzeige und Speicher nachfuehren
+function kontoBar(n, grund) { KONTO.bar = Math.max(0, KONTO.bar + Math.round(n)); kontoSave(); kontoRender(); if (grund) toast(grund + ": " + (n > 0 ? "+" : "") + kontoFmt(n) + " Bargeld"); }
 function kontoClose() { const b = document.getElementById("bank"); if (!b || b.hidden) return; b.hidden = true; if (typeof grabMouse === "function") grabMouse(); }
 function kontoAction(a, el) {
   if (a === "ein" || a === "ab") { ATM.mode = a; ATM.page = "betrag"; ATM.amt = Math.min(20, Math.max(0, Math.floor(atmMax()))); }

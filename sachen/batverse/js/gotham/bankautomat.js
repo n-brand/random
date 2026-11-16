@@ -6,6 +6,24 @@
 // - unten Front mit weisser Rahmenkante und eingelassener Klappe, Ausgabeschacht
 // Genutzt in der Werkstatt (aktuelles Umbauprojekt); im Spiel stehen noch die einfachen Saeulen aus gotham-orte.js.
 "use strict";
+// Bildschirm des Automaten = Startseite des Bankfensters (index.html #bank, style.css .atm*): Kopfzeile ATM / Einzahl-Limit / Kontostand / Bargeld,
+// "Hallo, Bruce", "Was moechtest du tun?", EINZAHLEN (lila), oder, ABHEBEN (gruen). Werte aus KONTO (konto.js), neu gezeichnet bei jeder Buchung (atmScreensUpdate).
+const ATM_SCREENS = [];
+function atmScreenDraw(c, w, h) {
+  const K = typeof KONTO !== "undefined" ? KONTO : null, fmt = n => typeof kontoFmt === "function" ? kontoFmt(n) : Math.round(n) + " $", s = w / 512;
+  c.fillStyle = "#0b4fc4"; c.fillRect(0, 0, w, h); c.fillStyle = "#093c99"; c.fillRect(0, 0, w, 58 * s);
+  c.fillStyle = "#fff"; c.textBaseline = "alphabetic"; c.textAlign = "left"; c.font = "bold " + 30 * s + "px Arial, sans-serif"; c.fillText("ATM", 16 * s, 40 * s);
+  const used = K && typeof kontoLimitRest === "function" ? KONTO_LIMIT - kontoLimitRest() : 0, cols = [["Einzahl-Limit (Woche)", fmt(used).replace(" $", "") + " / " + fmt(K ? KONTO_LIMIT : 10000), used >= 10000 ? "#ff5a5a" : "#fff", 112],
+    ["Kontostand", fmt(K ? K.stand : 100000), "#35d6ff", 300], ["Bargeld", fmt(K ? K.bar : 0), "#39f06a", 410]];
+  for (const [l, v, col, x] of cols) { c.fillStyle = "#fff"; c.font = "600 " + 11 * s + "px Arial, sans-serif"; c.fillText(l, x * s, 22 * s); c.fillStyle = col; c.font = "bold " + 17 * s + "px Arial, sans-serif"; c.fillText(v, x * s, 44 * s); }
+  c.textAlign = "center"; c.fillStyle = "#fff"; c.font = "bold " + 40 * s + "px Arial, sans-serif"; c.fillText("Hallo, Bruce", w / 2, 150 * s);
+  c.font = "600 " + 16 * s + "px Arial, sans-serif"; c.fillText("Was möchtest du tun?", w / 2, 180 * s);
+  const btn = (y, col, t) => { const x0 = w / 2 - 140 * s, bw = 280 * s, bh = 48 * s, r = 8 * s; c.fillStyle = col; c.beginPath(); c.moveTo(x0 + r, y); c.arcTo(x0 + bw, y, x0 + bw, y + bh, r); c.arcTo(x0 + bw, y + bh, x0, y + bh, r); c.arcTo(x0, y + bh, x0, y, r); c.arcTo(x0, y, x0 + bw, y, r); c.fill();
+    c.fillStyle = "#fff"; c.font = "800 " + 19 * s + "px Arial, sans-serif"; c.fillText(t, w / 2, y + 31 * s); };
+  btn(200 * s, "#b4bde8", "EINZAHLEN"); c.font = "bold " + 13 * s + "px Arial, sans-serif"; c.fillStyle = "#fff"; c.fillText("oder", w / 2, 270 * s); btn(285 * s, "#1ee05c", "ABHEBEN");
+}
+function atmScreenTex() { const t = canvasTex(512, 384, (c, w, h) => atmScreenDraw(c, w, h)); ATM_SCREENS.push(t); return t; }
+function atmScreensUpdate() { for (const t of ATM_SCREENS) { const cv = t.image; atmScreenDraw(cv.getContext("2d"), cv.width, cv.height); t.needsUpdate = true; } }
 function buildBankautomat() {
   const g = new THREE.Group(), M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0.25, ...o });
   const add = (geo, m, x, y, z, rx = 0, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, 0); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
@@ -19,6 +37,7 @@ function buildBankautomat() {
     add(rbox(0.02, H - 0.08, 0.012, 0.005), weiss, s * (W / 2 - T / 2), H / 2, -D / 2 - 0.003, 0, 0); }
   add(rbox(W, T, D, 0.035), blau, 0, H - T / 2, 0);                         // Dach
   add(rbox(W - 0.04, 0.06, D - 0.02, 0.02), dunkel, 0, 0.03, 0);            // Sockel
+  add(rbox(W - 0.04, H - 0.1, 0.04, 0.02), blau, 0, H / 2, D / 2 - 0.03);   // Rueckwand, ganz geschlossen (Nicolas 2026-11-16: "hinten schliessen")
   // Schildkasten: grau, ragt 3 cm seitlich ueber, vorne blaue Leuchtflaeche
   const sign = canvasTex(256, 72, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#3b98ff"); gr.addColorStop(1, "#1764d6"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 46px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("ATM", w / 2, h / 2 + 2); });
   add(rbox(W + 0.06, 0.26, D * 0.7, 0.03), grauH, 0, H + 0.13, 0.02);
@@ -30,8 +49,7 @@ function buildBankautomat() {
   const panel = new THREE.Group(); panel.position.set(0, 1.1, -D / 2 + 0.24); panel.rotation.x = 0.36; g.add(panel);
   const Q = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = o.receiveShadow = true; panel.add(o); return o; };
   Q(rbox(IW, 0.9, 0.05, 0.03), grau, 0, 0.45, 0.025);
-  const scr = canvasTex(256, 192, (c, w, h) => { c.fillStyle = "#0d55d0"; c.fillRect(0, 0, w, h); c.fillStyle = "#0a3f9e"; c.fillRect(0, 0, w, 30); c.fillStyle = "#fff"; c.font = "bold 18px Arial, sans-serif"; c.fillText("ATM", 10, 21);
-    c.textAlign = "center"; c.font = "bold 22px Arial, sans-serif"; c.fillText("Hallo, Bruce", w / 2, 78); c.fillStyle = "#b9c2ea"; c.fillRect(58, 98, 140, 30); c.fillStyle = "#22e06a"; c.fillRect(58, 142, 140, 30); });
+  const scr = atmScreenTex();                                              // gleicher Aufbau wie die Startseite des Bankfensters (#bank, konto.js)
   Q(rbox(0.46, 0.38, 0.04, 0.03), dunkel, 0, 0.5, -0.01);
   Q(new THREE.PlaneGeometry(0.34, 0.27), M(0xffffff, { map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.6, metalness: 0 }), 0, 0.5, -0.032, Math.PI).castShadow = false;
   for (const s of [-1, 1]) for (let k = 0; k < 4; k++) Q(rbox(0.035, 0.022, 0.015, 0.006), M(0xd7dbe0), s * 0.195, 0.6 - k * 0.065, -0.025);
@@ -49,6 +67,6 @@ function buildBankautomat() {
   add(rbox(IW - 0.18, 0.5, 0.02, 0.02), grauH, 0, 0.38, -D / 2 + 0.028);
   add(rbox(0.1, 0.015, 0.015, 0.005), schwarz, -0.18, 0.48, -D / 2 + 0.017);   // Griff
   add(rbox(0.36, 0.05, 0.05, 0.015), schwarz, 0, 0.84, -D / 2 + 0.03);       // Ausgabeschacht
-  add(new THREE.BoxGeometry(IW, 0.02, D - 0.1), dunkel, 0, 0.95, 0.04);     // Boden der Nische hinter dem Pult
+  add(new THREE.BoxGeometry(IW, 0.02, D - 0.2), dunkel, 0, 0.95, 0.0);     // Boden der Nische hinter dem Pult
   g.name = "Bankautomat"; return g;
 }

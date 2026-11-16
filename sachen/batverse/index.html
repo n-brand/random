@@ -194,7 +194,7 @@
     // K7: Skripte parallel holen, in fester Reihenfolge ausfuehren (async = false); nach jedem Skript Balken und Schritt weiterstellen
     // (zwischen zwei Skripten zeichnet der Browser). Zeiten je Datei (ab Ende des vorigen) in window.LOADT
     const NAMES = { kern: "Grundlagen", gelaende: "Gelände, Küste und Wald", strassen: "Strassen", haus: "Haus und Garage", aufzuege: "Aufzüge", ui: "Bedienung", aussen: "Aussenanlage", hoehle: "Batcave", spieler: "Spieler", fahrzeuge: "Fahrzeuge" };
-    const LD = window.LOADT = { t0: performance.now(), times: [] }, bar = document.querySelector("#loading .ld-bar i"), step = document.querySelector("#loading .ld-step");
+    const BV_V = Date.now(), LD = window.LOADT = { t0: performance.now(), times: [] }, bar = document.querySelector("#loading .ld-bar i"), step = document.querySelector("#loading .ld-step");
     const label = f => (f === "kern/start.js" ? "Welt zusammensetzen" : NAMES[f.split("/")[0]] || "Lade") + " …";
     let prev = performance.now(); step.textContent = label(FILES[0]);
     // Gelaende-Zwischenspeicher (Leistung 2026-11-13): Pruefsumme ueber die Texte aller Dateien bis gelaende.js (nur die bestimmen die Hoehen TH);
@@ -208,7 +208,7 @@
       if (rec && rec.hash === TH_HASH && rec.th instanceof Float32Array) window.TH_CACHE = rec.th;
     } catch (e) { console.warn("Gelaende-Zwischenspeicher nicht verfuegbar", e); }
     FILES.forEach((f, n) => {
-      const el = document.createElement("script"); el.src = "js/" + f; el.async = false;
+      const el = document.createElement("script"); el.src = "js/" + f + "?v=" + BV_V;   /* ?v: immer der aktuelle Stand (der Python-Server schickt keine Cache-Angaben, der Browser hielt geaenderte Skripte sonst noch eine Weile fuer frisch) */ el.async = false;
       el.onload = () => { const now = performance.now(); LD.times.push([f, Math.round(now - prev)]); prev = now; bar.style.width = Math.round(4 + (n + 1) / FILES.length * 92) + "%"; if (FILES[n + 1]) step.textContent = label(FILES[n + 1]); else LD.total = Math.round(now - LD.t0); };
       el.onerror = () => { step.textContent = "Fehler beim Laden: " + f + " (Seite neu laden)"; };
       document.body.appendChild(el);
