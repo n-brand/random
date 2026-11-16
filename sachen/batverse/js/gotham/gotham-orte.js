@@ -109,30 +109,72 @@ function gortPortal(out, f, k, ins, fl, Y, box, sign) {
   bx(L / 2, 2.6, W + 1, 5.2, Y + 10, Y + 12); sign(k, L / 2, Y + 11, W * 0.8, 5.25, ins);
   for (let i = 0; i < 6; i++) bx(L / 2, 2.6, (W + 1) * (1 - i / 6), 5, Y + 12 + i * 0.6, Y + 12.6 + i * 0.6);   // Giebel (gestuft)
 }
-// Kathedrale: Schiff, Seitenschiffe, Querhaus, zwei Westtuerme mit Helm, Rosette; Laengsachse = laengere Seite, Front an einer Schmalseite
+// Kathedrale (Nicolas 2026-11-16: "Fassade der Kirche komplett ueberarbeiten, ganz andere Fenster"; Loch und Fehler an der Rosette): gotisch.
+// Werkstein ohne Buerofenster, Spitzbogenfenster mit Buntglas (leuchten nachts), Strebepfeiler mit Fialen, drei Spitzbogenportale, Rosette,
+// Mittelschiff mit Obergaden, Seitenschiffe mit Pultdach, Querhaus, Vierungsturm, zwei Westtuerme mit glatten Helmen. Echte Dachprismen mit Giebeln (keine Stufen).
+// Lage: u quer zur Front (0..B), w von der Front nach hinten (0..D).
 function gortKirche(out, f, o, k, Y, box, sign, M, col) {
-  const [As, At, ds, dt, os, ot, L] = f.side(k), D = k % 2 ? o.w : o.d, B = L, at = (u, w) => [As + ds * u - os * w, At + dt * u - ot * w];   // u quer (0..B), w laengs von der Front (0..D)
-  const bx = (u, w, lu, lw, y0, y1, key = "stein", c) => { const [s, t] = at(u, w); gbvBox(out, key, f, s, t, ds ? lu : lw, ds ? lw : lu, y0, y1, c); return [s, t, ds ? lu : lw, ds ? lw : lu]; };
-  const nave = B * 0.42, H = o.h || 60, roof = col(0x3d4a52);
-  let b = bx(B / 2, D / 2 + 4, nave, D - 18, Y, Y + 26); box(b[0], b[1], b[2], b[3], Y, Y + 26);
-  for (const sx of [-1, 1]) { b = bx(B / 2 + sx * (nave / 2 + 5), D / 2 + 6, 10, D - 26, Y, Y + 13); box(b[0], b[1], b[2], b[3], Y, Y + 13);
-    for (let i = 0; i < 5; i++) bx(B / 2 + sx * (nave / 2 + 10 - i * 1.2), D / 2 + 6, 1.4, D - 26, Y + 13 + i * 0.9, Y + 13.9 + i * 0.9, "farbe", roof); }
-  b = bx(B / 2, D * 0.7, B - 4, 16, Y, Y + 26); box(b[0], b[1], b[2], b[3], Y, Y + 26);   // Querhaus
-  for (let i = 0; i < 9; i++) { bx(B / 2, D / 2 + 4, nave * (1 - i / 9) + 0.4, D - 18, Y + 26 + i * 1.3, Y + 27.3 + i * 1.3, "farbe", roof); bx(B / 2, D * 0.7, B - 4, 16 * (1 - i / 9) + 0.4, Y + 26 + i * 1.3, Y + 27.3 + i * 1.3, "farbe", roof); }   // Satteldaecher (gestuft)
-  const tw = Math.min(14, B * 0.26);
-  for (const sx of [-1, 1]) { const u = B / 2 + sx * (nave / 2 + tw / 2 - 1); b = bx(u, tw / 2 + 2, tw, tw, Y, Y + H * 0.62); box(b[0], b[1], b[2], b[3], Y, Y + H * 0.62);
-    bx(u, tw / 2 + 2, tw + 1, tw + 1, Y + H * 0.62, Y + H * 0.62 + 1, "kante");
-    const [s, t] = at(u, tw / 2 + 2), y0 = Y + H * 0.62 + 1, n = 14; for (let i = 0; i < n; i++) gbvBox(out, "farbe", f, s, t, tw * (1 - i / n) * 0.9 + 0.3, tw * (1 - i / n) * 0.9 + 0.3, y0 + i * (H * 0.38 + 6) / n, y0 + (i + 1) * (H * 0.38 + 6) / n, roof); }
-  bx(B / 2, 3, nave + 2, 2, Y, Y + 30, "stein");   // Westwand zwischen den Tuermen
-  bx(B / 2, 1.7, 7, 0.6, Y, Y + 9, "eisen");   // Portal
-  // Rosette (eigene Ebene vor der Westwand)
-  if (!M.rose) { const t = canvasTex(256, 256, (c, w) => { const r = w / 2; c.fillStyle = "#1a1410"; c.fillRect(0, 0, w, w); const C = ["#b8202a", "#2846a8", "#e0b030", "#2f8a4a", "#7a3aa0"];
-      for (let i = 0; i < 16; i++) { c.beginPath(); c.moveTo(r, r); c.arc(r, r, r - 10, i / 16 * 6.283, (i + 1) / 16 * 6.283); c.fillStyle = C[i % 5]; c.fill(); }
-      c.strokeStyle = "#1a1410"; c.lineWidth = 7; for (const rr of [r - 10, r * 0.62, r * 0.3]) { c.beginPath(); c.arc(r, r, rr, 0, 7); c.stroke(); } for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; c.beginPath(); c.moveTo(r + Math.cos(a) * r * 0.3, r + Math.sin(a) * r * 0.3); c.lineTo(r + Math.cos(a) * (r - 10), r + Math.sin(a) * (r - 10)); c.stroke(); }
-      c.beginPath(); c.rect(0, 0, w, w); c.arc(r, r, r - 6, 0, 7, true); c.fillStyle = "#8f8a80"; c.fill("evenodd"); });
-    M.rose = new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: 0xffffff, emissiveIntensity: 0.1, roughness: 0.4 }); }
-  const [s, t] = at(B / 2, 1.9), ow = f.dirW(os, ot), R = [ow[2], 0, -ow[0]], C = f.W(s, t, Y + 19), r = Math.min(6, nave * 0.38), P = (a, b2) => [C[0] + R[0] * a, C[1] + b2, C[2] + R[2] * a];
-  gbvQuad(gbvBucket(out, "rose"), P(-r, -r), P(r, -r), P(r, r), P(-r, r), ow, [[0, 0], [1, 0], [1, 1], [0, 1]]);
+  const [As, At, ds, dt, os, ot, L] = f.side(k), D = k % 2 ? o.w : o.d, B = L, H = o.h || 60;
+  const at = (u, w) => [As + ds * u - os * w, At + dt * u - ot * w], P = (u, w, y) => { const [s, t] = at(u, w); return f.W(s, t, y); };
+  const U = f.dirW(ds, dt), Wd = f.dirW(-os, -ot), nrm = (a, b, y = 0) => [U[0] * a + Wd[0] * b, y, U[2] * a + Wd[2] * b];
+  const bx = (u, w, lu, lw, y0, y1, key = "kstein") => { const [s, t] = at(u, w); gbvBox(out, key, f, s, t, ds ? lu : lw, ds ? lw : lu, y0, y1); return [s, t, ds ? lu : lw, ds ? lw : lu]; };
+  const coll = (u, w, lu, lw, y0, y1) => { const [s, t] = at(u, w); box(s, t, ds ? lu : lw, ds ? lw : lu, y0, y1); };
+  if (!M.kstein) { const st = canvasTex(256, 256, (c, w, h) => { c.fillStyle = "#a9a291"; c.fillRect(0, 0, w, h); for (let r = 0; r < 8; r++) for (let q = 0; q < 4; q++) { const v = 165 + Math.random() * 30, x = q * 64 + (r % 2) * 32;
+      c.fillStyle = `rgb(${v},${v - 6},${v - 18})`; c.fillRect(x + 1, r * 32 + 1, 62, 30); c.fillRect(x + 1 - 256, r * 32 + 1, 62, 30); } c.fillStyle = "rgba(60,55,45,0.18)"; for (let i = 0; i < 300; i++) c.fillRect(Math.random() * w, Math.random() * h, 2, 2); }); st.wrapS = st.wrapT = THREE.RepeatWrapping;
+    const glass = (c, x0, y0, w, h, seed) => { let s = seed; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, C = ["#b8202a", "#2846a8", "#e0b030", "#2f8a4a", "#7a3aa0", "#2a8fb0"];
+      for (let y = y0; y < y0 + h; y += 7) for (let x = x0; x < x0 + w; x += 7) { c.fillStyle = C[Math.floor(rnd() * C.length)]; c.fillRect(x, y, 6, 6); } };
+    const arch = (c, x, y, w, h) => { c.beginPath(); c.moveTo(x, y + h); c.lineTo(x, y + w * 0.55); c.arc(x + w, y + w * 0.55, w, Math.PI, Math.PI * 1.33, false); c.arc(x, y + w * 0.55, w, Math.PI * 1.67, 0, false); c.lineTo(x + w, y + h); c.closePath(); };
+    const lan = canvasTex(64, 192, (c, w, h) => { c.clearRect(0, 0, w, h); c.save(); arch(c, 8, 6, 48, 180); c.fillStyle = "#1a1612"; c.fill(); c.clip(); glass(c, 8, 6, 48, 180, 7); c.restore();
+      c.strokeStyle = "#8f877a"; c.lineWidth = 4; arch(c, 8, 6, 48, 180); c.stroke(); c.beginPath(); c.moveTo(32, 46); c.lineTo(32, 186); c.stroke(); c.beginPath(); c.arc(32, 36, 9, 0, 7); c.stroke(); for (const y of [80, 125, 160]) { c.beginPath(); c.moveTo(8, y); c.lineTo(56, y); c.stroke(); } });
+    const rose = canvasTex(256, 256, (c, w) => { const r = w / 2; c.clearRect(0, 0, w, w); c.beginPath(); c.arc(r, r, r - 2, 0, Math.PI * 2); c.fillStyle = "#8f877a"; c.fill(); c.beginPath(); c.arc(r, r, r - 8, 0, Math.PI * 2); c.fillStyle = "#1a1612"; c.fill();
+      const C = ["#b8202a", "#2846a8", "#e0b030", "#2f8a4a", "#7a3aa0", "#2a8fb0"]; for (let i = 0; i < 16; i++) { c.beginPath(); c.moveTo(r, r); c.arc(r, r, r - 14, i / 16 * Math.PI * 2, (i + 1) / 16 * Math.PI * 2); c.closePath(); c.fillStyle = C[i % 6]; c.fill(); }
+      for (let i = 0; i < 16; i++) { const a = (i + 0.5) / 16 * Math.PI * 2; c.beginPath(); c.arc(r + Math.cos(a) * r * 0.7, r + Math.sin(a) * r * 0.7, r * 0.12, 0, 7); c.fillStyle = C[(i + 3) % 6]; c.fill(); }
+      c.strokeStyle = "#8f877a"; c.lineWidth = 6; for (const rr of [r - 10, r * 0.55, r * 0.22]) { c.beginPath(); c.arc(r, r, rr, 0, Math.PI * 2); c.stroke(); }
+      for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; c.beginPath(); c.moveTo(r + Math.cos(a) * r * 0.22, r + Math.sin(a) * r * 0.22); c.lineTo(r + Math.cos(a) * (r - 10), r + Math.sin(a) * (r - 10)); c.stroke(); }
+      c.beginPath(); c.arc(r, r, r * 0.12, 0, 7); c.fillStyle = "#e0b030"; c.fill(); });
+    const portal = canvasTex(128, 192, (c, w, h) => { c.clearRect(0, 0, w, h); for (let i = 0; i < 4; i++) { c.save(); arch(c, 8 + i * 8, 8 + i * 8, 112 - i * 16, 184 - i * 8); const v = 150 - i * 22; c.fillStyle = `rgb(${v},${v - 6},${v - 16})`; c.fill(); c.restore(); }
+      c.save(); arch(c, 40, 40, 48, 152); c.fillStyle = "#3a2618"; c.fill(); c.restore(); c.fillStyle = "#c9c1ad"; c.fillRect(40, 66, 48, 30); c.fillStyle = "#2a1c12"; c.fillRect(63, 96, 2, 96); for (const y of [120, 150, 180]) c.fillRect(40, y, 48, 2); });
+    M.kstein = new THREE.MeshStandardMaterial({ map: st, roughness: 0.9 }); M.kdach = new THREE.MeshStandardMaterial({ color: 0x3d4a52, roughness: 0.8 });
+    M.fenster = new THREE.MeshStandardMaterial({ map: lan, emissiveMap: lan, emissive: 0xffffff, emissiveIntensity: 0.05, roughness: 0.4, alphaTest: 0.5 });   // ausserhalb des Bogens durchsichtig
+    M.rose = new THREE.MeshStandardMaterial({ map: rose, emissiveMap: rose, emissive: 0xffffff, emissiveIntensity: 0.05, roughness: 0.4, alphaTest: 0.5 }); M.portal = new THREE.MeshStandardMaterial({ map: portal, roughness: 0.85, alphaTest: 0.5 }); }
+  const q = (key, a, b, c, d, n, uv = [[0, 0], [1, 0], [1, 1], [0, 1]]) => gbvQuad(gbvBucket(out, key), a, b, c, d, n, uv), tri = (key, a, b, c, n) => gbvTri(gbvBucket(out, key), a, b, c, n, [0, 0], [1, 0], [0.5, 1]);
+  // Bild auf einer Wandflaeche: Mitte (u, w), Flaechennormale lokal (a, b), Breite ww, Hoehe y0..y1, 6 cm vor der Wand
+  const pane = (key, u, w, a, b, ww, y0, y1) => { const tu = -b, tw = a, cu = u + a * 0.06, cw = w + b * 0.06; q(key, P(cu - tu * ww / 2, cw - tw * ww / 2, y0), P(cu + tu * ww / 2, cw + tw * ww / 2, y0), P(cu + tu * ww / 2, cw + tw * ww / 2, y1), P(cu - tu * ww / 2, cw - tw * ww / 2, y1), nrm(a, b)); };
+  // Satteldach entlang w (Mitte uc, halbe Breite hb) bzw. entlang u (Mitte wc), mit Giebeldreiecken aus Stein
+  const roofW = (uc, w0, w1, hb, ye, yr) => { const l = Math.hypot(yr - ye, hb), nu = (yr - ye) / l, ny = hb / l;
+    q("kdach", P(uc - hb, w0, ye), P(uc - hb, w1, ye), P(uc, w1, yr), P(uc, w0, yr), nrm(-nu, 0, ny)); q("kdach", P(uc + hb, w0, ye), P(uc + hb, w1, ye), P(uc, w1, yr), P(uc, w0, yr), nrm(nu, 0, ny));
+    tri("kstein", P(uc - hb, w0, ye), P(uc + hb, w0, ye), P(uc, w0, yr), nrm(0, -1)); tri("kstein", P(uc - hb, w1, ye), P(uc + hb, w1, ye), P(uc, w1, yr), nrm(0, 1)); };
+  const roofU = (wc, u0, u1, hb, ye, yr) => { const l = Math.hypot(yr - ye, hb), nw = (yr - ye) / l, ny = hb / l;
+    q("kdach", P(u0, wc - hb, ye), P(u1, wc - hb, ye), P(u1, wc, yr), P(u0, wc, yr), nrm(0, -nw, ny)); q("kdach", P(u0, wc + hb, ye), P(u1, wc + hb, ye), P(u1, wc, yr), P(u0, wc, yr), nrm(0, nw, ny));
+    tri("kstein", P(u0, wc - hb, ye), P(u0, wc + hb, ye), P(u0, wc, yr), nrm(-1, 0)); tri("kstein", P(u1, wc - hb, ye), P(u1, wc + hb, ye), P(u1, wc, yr), nrm(1, 0)); };
+  const pyr = (key, u, w, h, y0, y1) => { const c = [[-1, -1], [1, -1], [1, 1], [-1, 1]], T = P(u, w, y1); for (let i = 0; i < 4; i++) { const [a1, b1] = c[i], [a2, b2] = c[(i + 1) % 4]; tri(key, P(u + a1 * h, w + b1 * h, y0), P(u + a2 * h, w + b2 * h, y0), T, nrm((a1 + a2) / 2, (b1 + b2) / 2, h / (y1 - y0))); } };
+  const nw = Math.min(22, B * 0.42), n0 = B / 2 - nw / 2, n1 = B / 2 + nw / 2, tw = Math.min(14, (B - nw) / 2 + 2), aw = Math.min(10, (B - nw) / 2 - 0.5), wT = D * 0.7, Ht = H * 0.62, wE = D - 6;
+  // Mittelschiff (Obergaden bis 26 m), Satteldach bis 36 m
+  bx(B / 2, (tw + wE) / 2, nw, wE - tw, Y, Y + 26); coll(B / 2, (tw + wE) / 2, nw, wE - tw, Y, Y + 26); roofW(B / 2, tw, wE, nw / 2 + 0.5, Y + 26, Y + 36);
+  // Seitenschiffe mit Pultdach (aussen 13 m, an der Obergadenwand 17 m), Strebepfeiler mit Fialen, Fenster
+  for (const sx of [-1, 1]) { const uo = sx < 0 ? n0 - aw : n1 + aw, um = sx < 0 ? n0 - aw / 2 : n1 + aw / 2, w0 = tw + 1, w1 = wE - 8;
+    bx(um, (w0 + w1) / 2, aw, w1 - w0, Y, Y + 13); coll(um, (w0 + w1) / 2, aw, w1 - w0, Y, Y + 13);
+    const ui = sx < 0 ? n0 : n1, l = Math.hypot(4, aw), nu = sx * 4 / l, ny = aw / l;
+    q("kdach", P(uo - sx * 0.4, w0, Y + 13), P(uo - sx * 0.4, w1, Y + 13), P(ui, w1, Y + 17), P(ui, w0, Y + 17), nrm(nu, 0, ny));
+    for (const ww of [w0, w1]) tri("kstein", P(uo, ww, Y + 13), P(ui, ww, Y + 13), P(ui, ww, Y + 17), nrm(0, ww === w0 ? -1 : 1));
+    for (let w = w0 + 3; w < w1 - 2; w += 6) { if (Math.abs(w - wT) < 10) continue; pane("fenster", uo, w, sx, 0, 2.4, Y + 2.5, Y + 10.5);   // Seitenschiff-Fenster
+      bx(uo + sx * 0.7, w + 3, 1.4, 1.2, Y, Y + 14); pyr("kstein", uo + sx * 0.7, w + 3, 0.7, Y + 14, Y + 17.5);   // Strebepfeiler mit Fiale
+      pane("fenster", ui, w, sx, 0, 2.2, Y + 18, Y + 24.5); } }   // Obergaden
+  // Querhaus mit Satteldach, grosse Fenster an den Stirnseiten, Vierungsturm (Dachreiter)
+  bx(B / 2, wT, B - 4, 16, Y, Y + 26); coll(B / 2, wT, B - 4, 16, Y, Y + 26); roofU(wT, 2, B - 2, 8.5, Y + 26, Y + 35);
+  for (const sx of [-1, 1]) { const ue = sx < 0 ? 2 : B - 2; pane("fenster", ue, wT - 3.2, sx, 0, 3, Y + 4, Y + 18); pane("fenster", ue, wT + 3.2, sx, 0, 3, Y + 4, Y + 18); pane("rose", ue, wT, sx, 0, 6, Y + 19, Y + 25); }
+  bx(B / 2, wT, 6, 6, Y + 30, Y + 38); pyr("kdach", B / 2, wT, 3.4, Y + 38, Y + 52);
+  // Ostende: hohes Fenster
+  pane("fenster", B / 2, wE, 0, 1, 3.4, Y + 4, Y + 20);
+  // Westfassade zwischen den Tuermen mit Giebel, Rosette, Mittelportal
+  bx(B / 2, 2.5, nw + 0.5, 1, Y, Y + 30); tri("kstein", P(n0 - 0.25, 2, Y + 30), P(n1 + 0.25, 2, Y + 30), P(B / 2, 2, Y + 38), nrm(0, -1)); tri("kstein", P(n0 - 0.25, 3, Y + 30), P(n1 + 0.25, 3, Y + 30), P(B / 2, 3, Y + 38), nrm(0, 1));
+  pane("rose", B / 2, 2, 0, -1, 11, Y + 14, Y + 25); pane("portal", B / 2, 2, 0, -1, 7.5, Y, Y + 11.5);
+  for (let i = 0; i < 6; i++) pane("fenster", B / 2 - 6.25 + i * 2.5, 2, 0, -1, 1.6, Y + 26, Y + 29.5);   // Galerie ueber der Rosette
+  // Westtuerme: Schaft bis Ht, Gesims, Schallfenster, Eckfialen, glatter Helm bis H + 6, Seitenportal
+  for (const sx of [-1, 1]) { const u = B / 2 + sx * (nw / 2 + tw / 2 - 0.5), w = tw / 2 + 2; bx(u, w, tw, tw, Y, Y + Ht); coll(u, w, tw, tw, Y, Y + Ht); bx(u, w, tw + 1, tw + 1, Y + Ht, Y + Ht + 1);
+    for (const [a, b] of [[0, -1], [sx, 0], [0, 1], [-sx, 0]]) { const cu = u + a * tw / 2, cw = w + b * tw / 2; for (const d of [-2.2, 2.2]) { const ou = cu + (b ? d : 0), ow = cw + (a ? d : 0); pane("fenster", ou, ow, a, b, 2, Y + Ht - 13, Y + Ht - 3); pane("fenster", ou, ow, a, b, 1.6, Y + Ht - 27, Y + Ht - 19); } }
+    for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) pyr("kstein", u + a * (tw / 2 - 0.3), w + b * (tw / 2 - 0.3), 0.8, Y + Ht + 1, Y + Ht + 6);
+    pyr("kdach", u, w, tw / 2 - 1.2, Y + Ht + 1, Y + H + 6); pane("portal", u, 2, 0, -1, 4.2, Y, Y + 7); }
 }
 // Stadion: Aussenmauer, Tribuenen rundum in Stufen (2 Sitzreihen je Stufe: 0,8 m hoch, 1,6 m tief), blaue Sitze, Spielfeld, 4 Flutlichtmasten
 function gortStadion(out, f, o, k, Y, box, sign, M) {
@@ -160,4 +202,4 @@ TILES.tasks.push({ gen: null, plan() {}, step() { if (GORT.done || TILES.startup
   return false; } });
 // je Bild (schleife.js): Schilder und Rosette leuchten nachts (nur bei Aenderung)
 function gortStep() { const M = GORT.mats; if (!M) return; const n = typeof night === "number" ? night : 0; if (GORT._n === n) return; GORT._n = n;
-  M.schild.emissiveIntensity = 0.15 + 0.85 * n; if (M.rose) M.rose.emissiveIntensity = 0.1 + 0.9 * n; }
+  M.schild.emissiveIntensity = 0.15 + 0.85 * n; if (M.rose) M.rose.emissiveIntensity = 0.05 + 0.9 * n; if (M.fenster) M.fenster.emissiveIntensity = 0.05 + 0.9 * n; }
