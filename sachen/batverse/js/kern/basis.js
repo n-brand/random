@@ -33,7 +33,7 @@ const orbitPick = installOrbitPick({ renderer, camera, controls, scene, mode: ()
 controls.target.set(-2060, -12, 860);
 controls.enableDamping = true;
 controls.minDistance = 4;
-controls.maxDistance = 900;
+controls.maxDistance = 2500;   // Nicolas 2026-11-16: weiter heraus fuer die Uebersicht (vorher 900; ab 700 m laedt overviewStep mehr)
 controls.maxPolarAngle = Math.PI * 0.495;
 
 const hemi = new THREE.HemisphereLight(0xdff1ff, 0x5a7a3a, 1.0);

@@ -63,6 +63,7 @@ function frame() {
   if (typeof ggebStep === "function") ggebStep();                                            // Gebaeude: Fenster nachts (gotham-gebaeude.js)
   if (typeof wtStep === "function") wtStep();                                                  // Wayne Tower: Nachtlicht (gotham-wayne-turm.js)
   if (typeof bautHoverStep === "function") bautHoverStep();                                    // Gebaeude-ID beim Hovern (Orbit/Geist, ui/bauten-hover.js)
+  if (typeof overviewStep === "function") overviewStep();                                    // Orbit-Uebersicht: weit heraus mehr laden, Schatten aus (ui/einstellungen.js)
   if (typeof skMiniStep === "function") skMiniStep();                                          // T6 Minikarte (ui/stadtkarte.js)
   if (walking && !ghost && LIFT.state === "moving" && inCar(player.pos)) { player.pos.y = LIFT.y; player.vy = 0; player.onGround = true; camera.position.y = LIFT.y + EYE; }
   const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);

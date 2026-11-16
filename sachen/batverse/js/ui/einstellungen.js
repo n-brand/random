@@ -81,3 +81,15 @@ if (setLoad("wm-res")) applyRes(SET.res);                                  // oh
   $("btn-settings").addEventListener("click", e => { e.currentTarget.blur(); openSettings(); });
   $("tp-settings").addEventListener("click", () => openSettings());
 }
+
+// Uebersicht (Nicolas 2026-11-16: im Orbit weiter herauszoomen, dann automatisch mehr auf einmal laden und Schatten verringern):
+// ab 700 m Abstand Kamera-Ziel vorübergehend Ladeweite +4 Kacheln (hoechstens 12), doppeltes Ladebudget, Schatten aus; unter 550 m wieder wie eingestellt.
+// Gespeichert wird nichts (die Einstellungen bleiben, wie sie sind); hat man die Ladeweite inzwischen von Hand geaendert, bleibt sie.
+const OVERVIEW = { on: false, range0: 0, range1: 0, budget0: 0 };
+function overviewSet(on) {
+  if (on === OVERVIEW.on) return; OVERVIEW.on = on;
+  if (on) { OVERVIEW.range0 = TILES.range; OVERVIEW.range1 = TILES.range = Math.min(12, TILES.range + 4); OVERVIEW.budget0 = TILES.budget; TILES.budget = TILES.budget * 2; if (SET.shadow) applyShadows(false); }
+  else { if (TILES.range === OVERVIEW.range1) TILES.range = OVERVIEW.range0; TILES.budget = OVERVIEW.budget0; if (SET.shadow) applyShadows(true); }
+  TILES.cx = NaN; if (typeof toast === "function") toast(on ? "Übersicht: weiter laden, Schatten aus" : "Normale Ansicht");
+}
+function overviewStep() { if (walking) { overviewSet(false); return; } const d = camera.position.distanceTo(controls.target); if (!OVERVIEW.on && d > 700) overviewSet(true); else if (OVERVIEW.on && d < 550) overviewSet(false); }
