@@ -308,7 +308,9 @@ function carStep(dt) {
     C.v = Math.max(th < 0 ? -(sp.revMax || 8) : -Math.max(16, sp.revMax || 0), C.v);                                     // rueckwaerts den Hang hinunter auch schneller
     // Sprung mit Schub (nur Tumbler: ohne Rampe)
     if (sp.jump && (player.jump || jumpHeld)) {
-      if (C.v >= 14 && !C.wet) { C.air = true; C.vy = 7.5; C.v += C.jetM ? 6 : 3; C.jet = 0.9; toast("Sprung!"); if (C.jetM) engineJet(); }   // Batpod: Sprung ohne Duese/Schub
+      const cd = sp.name === "Tumbler" ? 10 : 0, left = cd - (clock.elapsedTime - (C.jumpT ?? -99));   // Tumbler: Sprung nur alle 10 s (Nicolas 2026-11-16)
+      if (left > 0 && C.v >= 14 && !C.wet) { if (player.jump) carMsg("Sprung lädt noch " + Math.ceil(left) + " s"); }
+      else if (C.v >= 14 && !C.wet) { C.jumpT = clock.elapsedTime; C.air = true; C.vy = 7.5; C.v += C.jetM ? 6 : 3; C.jet = 0.9; toast("Sprung!"); if (C.jetM) engineJet(); }   // Batpod: Sprung ohne Duese/Schub
       else if (player.jump) carMsg("Für den Sprung schneller fahren (ab 50 km/h)");
     }
   }
