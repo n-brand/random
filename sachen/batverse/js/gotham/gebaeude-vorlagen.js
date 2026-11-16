@@ -102,15 +102,16 @@ function gbvWall(out, key, f, k, a, b, y0, y1, ins, vh, uo = 0, vo = 0) {
   gbvQuad(gbvBucket(out, key), f.W(s0, t0, y0), f.W(s1, t1, y0), f.W(s1, t1, y1), f.W(s0, t0, y1), n, [[uo + a / 3, vo + y0 / vh], [uo + b / 3, vo + y0 / vh], [uo + b / 3, vo + y1 / vh], [uo + a / 3, vo + y1 / vh]]);
 }
 // Quader lokal: Mitte (s, t), Groesse ls x lt, y0..y1; Material key (Farbe col bei "farbe")
-function gbvBox(out, key, f, s, t, ls, lt, y0, y1, col, top = true) {
+function gbvBox(out, key, f, s, t, ls, lt, y0, y1, col, top = true, bot = false) {
   const o = gbvBucket(out, key), c = [[s - ls / 2, t - lt / 2], [s + ls / 2, t - lt / 2], [s + ls / 2, t + lt / 2], [s - ls / 2, t + lt / 2]], N = [f.dirW(0, -1), f.dirW(1, 0), f.dirW(0, 1), f.dirW(-1, 0)];
   for (let k = 0; k < 4; k++) { const [a0, b0] = c[k], [a1, b1] = c[(k + 1) % 4], L = Math.hypot(a1 - a0, b1 - b0);
     gbvQuad(o, f.W(a0, b0, y0), f.W(a1, b1, y0), f.W(a1, b1, y1), f.W(a0, b0, y1), N[k], [[0, 0], [L / 3, 0], [L / 3, (y1 - y0) / 3], [0, (y1 - y0) / 3]], col); }
   if (top) gbvQuad(o, f.W(...c[0], y1), f.W(...c[1], y1), f.W(...c[2], y1), f.W(...c[3], y1), [0, 1, 0], [[0, 0], [ls / 3, 0], [ls / 3, lt / 3], [0, lt / 3]], col);
+  if (bot) gbvQuad(o, f.W(...c[0], y0), f.W(...c[1], y0), f.W(...c[2], y0), f.W(...c[3], y0), [0, -1, 0], [[0, 0], [ls / 3, 0], [ls / 3, lt / 3], [0, lt / 3]], col);   // Unterseite (Markise, Vordach, Podest: von unten sichtbar)
 }
 // Box entlang einer Seite: u laengs (Mitte), w nach aussen (Mitte), Laenge len, Tiefe dep
-function gbvBoxSide(out, key, f, k, u, w, len, dep, y0, y1, col) { const [As, At, ds, dt, os, ot] = f.side(k), s = As + ds * u + os * w, t = At + dt * u + ot * w;
-  gbvBox(out, key, f, s, t, ds ? len : dep, ds ? dep : len, y0, y1, col); }
+function gbvBoxSide(out, key, f, k, u, w, len, dep, y0, y1, col, bot = false) { const [As, At, ds, dt, os, ot] = f.side(k), s = As + ds * u + os * w, t = At + dt * u + ot * w;
+  gbvBox(out, key, f, s, t, ds ? len : dep, ds ? dep : len, y0, y1, col, true, bot); }
 // Zylinder (senkrecht) lokal
 function gbvCyl(out, key, f, s, t, r, y0, y1, seg = 10, top = true) { const o = gbvBucket(out, key);
   for (let i = 0; i < seg; i++) { const a0 = i / seg * Math.PI * 2, a1 = (i + 1) / seg * Math.PI * 2, P = (a, y) => f.W(s + Math.cos(a) * r, t + Math.sin(a) * r, y), am = (a0 + a1) / 2, n = f.dirW(Math.cos(am), Math.sin(am));
@@ -146,18 +147,19 @@ function gbvDetails(o, out) {
     // Laeden: Markisen (Farbe) und Schilder ueber den Schaufenstern, Hauseingang mit Stufen in der Mitte
     const nL = Math.max(1, Math.min(4, Math.floor((Lf - 3) / 6))), LW = (Lf - 3) / nL, cols = [[0.18, 0.49, 0.29], [0.17, 0.36, 0.61], [0.61, 0.17, 0.17], [0.7, 0.55, 0.15]];
     for (let i = 0; i < nL; i++) { let u0 = i * LW + (i >= Math.ceil(nL / 2) ? 3 : 0); const um = u0 + LW / 2, col = cols[Math.floor(r() * 4)];
-      gbvBoxSide(out, "farbe", f, k, um, 0.8, LW - 0.6, 1.6, y + 3.55, y + 3.65, col);                                                  // Markise (flach, 1,6 m vor der Wand)
+      gbvBoxSide(out, "farbe", f, k, um, 0.8, LW - 0.6, 1.6, y + 3.55, y + 3.65, col, true);                                                  // Markise (flach, 1,6 m vor der Wand)
       const [As, At, ds, dt, os, ot] = f.side(k), si = Math.floor(r() * GBV.SIGNS.length), sw = Math.min(LW - 1, 5), a = um - sw / 2, b = um + sw / 2, q = 0.06;   // Schild
       const P = (u, yy) => f.W(As + ds * u + os * q, At + dt * u + ot * q, yy), v0 = 1 - (si + 1) / 8, v1 = 1 - si / 8;
-      gbvQuad(gbvBucket(out, "schild"), P(a, y + 3.85), P(b, y + 3.85), P(b, y + 4.45), P(a, y + 4.45), f.dirW(os, ot), [[0, v0], [1, v0], [1, v1], [0, v1]]); }
+      const nw = f.dirW(os, ot), dw = f.dirW(ds, dt), mir = dw[0] * nw[2] - dw[2] * nw[0] < 0, su0 = mir ? 1 : 0, su1 = 1 - su0;   // Schrift von aussen lesbar (gespiegelte Achsen)
+      gbvQuad(gbvBucket(out, "schild"), P(a, y + 3.85), P(b, y + 3.85), P(b, y + 4.45), P(a, y + 4.45), nw, [[su0, v0], [su1, v0], [su1, v1], [su0, v1]]); }
     const dm = Math.ceil(nL / 2) * LW + 1.5; gbvBoxSide(out, "holz", f, k, dm, 0.05, 2.0, 0.12, y, y + 3.2); gbvBoxSide(out, "beton", f, k, dm, 0.5, 2.8, 1.0, y, y + 0.15);
     if (t === "miet" && o.N > 1) {   // Feuertreppe ueber zwei Achsen an der Front: Podest, Gelaender, Treppe je Geschoss
       const u0 = Math.min(Lf - 7, 3 + Math.floor(r() * Math.max(1, Lf / 3 - 3)) * 3), fw = 6;
-      for (let fl = 1; fl < o.N; fl++) { const yy = y + fl * GH + 0.9; gbvBoxSide(out, "eisen", f, k, u0 + fw / 2, 0.75, fw, 1.4, yy - 0.08, yy);
+      for (let fl = 1; fl < o.N; fl++) { const yy = y + fl * GH + 0.9; gbvBoxSide(out, "eisen", f, k, u0 + fw / 2, 0.75, fw, 1.4, yy - 0.08, yy, null, true);
         gbvBoxSide(out, "eisen", f, k, u0 + fw / 2, 1.42, fw, 0.05, yy, yy + 1.0);
         if (fl < o.N - 1) gbvBoxSide(out, "eisen", f, k, u0 + fw / 2, 0.45, fw * 0.75, 0.6, yy + GH * 0.45, yy + GH * 0.55); } }
   }
-  if (t === "kratzer" || t === "buero") { const [, , , , os, ot] = f.side(k); gbvBoxSide(out, "kante", f, k, Lf / 2, 1.5, Math.min(14, Lf - 2), 3, y + 4.2, y + 4.6);   // Vordach
+  if (t === "kratzer" || t === "buero") { const [, , , , os, ot] = f.side(k); gbvBoxSide(out, "kante", f, k, Lf / 2, 1.5, Math.min(14, Lf - 2), 3, y + 4.2, y + 4.6, null, true);   // Vordach
     gbvBoxSide(out, "eisen", f, k, Lf / 2, 0.05, Math.min(8, Lf - 4), 0.1, y, y + 3.6); }   // Eingangsfront dunkel
   if (t === "fabrik") { for (let i = 0; i < Math.max(2, Math.floor(o.L1 / 10)); i++) { const s = (i + 0.5) * o.L1 / Math.max(2, Math.floor(o.L1 / 10)); gbvBox(out, "fabrik", f, s, o.L2 / 2, 3, o.L2 - 2, top, top + 2.2); }   // Sheddach-Zaehne
     gbvCyl(out, "beton", f, o.L1 * 0.8, o.L2 * 0.3, 1.1, top, top + 14, 10); }   // Schornstein

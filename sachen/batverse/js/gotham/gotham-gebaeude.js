@@ -70,3 +70,38 @@ TILES.tasks.push({ gen: null, plan() {}, step() { if (GGEB.done || TILES.startup
   return false; } });
 // je Bild (schleife.js): Fenster nachts, nur bei Aenderung
 function ggebStep() { if (!GBV.mats) return; const n = typeof night === "number" ? night : 0; if (GGEB._n !== n) { GGEB._n = n; GBV.night(n); } }
+
+// ---- Nahdetails und Schatten in der Naehe (Task 3) ----
+// Anbauten (gbvDetails) und Schatten-Huellen je 256-m-Zelle (groesser als die Kollisionszellen: weniger Zeichenaufrufe) im Umkreis R (Handy 120 m) plus halbe
+// Zelldiagonale um Spieler/aktives Fahrzeug bzw. Kamera; Abbau erst 40 m weiter (kein Flackern am Rand). Aufbau in Portionen (je next() 2 Gebaeude, hoechstens
+// ca. 3 ms je Bild), immer nur eine Zelle zugleich, die naechste zuerst. Schatten-Huellen: die Huellen der Zelle nur fuers Schattenbild (colorWrite aus).
+GGEB.NC = 256; GGEB.R = TILES.mobile ? 120 : 200; GGEB.near = new Map(); GGEB.nearMax = 0; GGEB.nearCells = null; GGEB.nearCur = null;
+const ggebShadowM = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+function ggebFocus() { if (CAR && CAR.on) return { x: CAR.x, y: CAR.y, z: CAR.z }; if (walking && !ghost) return player.pos; return camera.position; }
+function* ggebNearGen(c) {
+  const out = new Map(), sh = new Map(); let n = 0;
+  for (const b of c.list) { const o = ggebO(b); gbvDetails(o, out); gbvShell(o, sh); if (++n % 2 === 0) yield; }
+  const grp = new THREE.Group(); grp.name = "Gotham-Gebäude nah " + c.key; grp.userData.keep = true; grp.userData.noLift = true;
+  for (const [key, o] of out) { if (!o.p.length) continue; const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(o.p, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(o.n, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(o.uv, 2));
+    if (o.c.length) g.setAttribute("color", new THREE.Float32BufferAttribute(o.c, 3));
+    const m = new THREE.Mesh(g, GBV.mats[key]); m.castShadow = m.receiveShadow = true; m.name = "Gotham-Gebäude nah " + key; m.userData.keep = true; m.userData.noLift = true; grp.add(m); yield; }
+  { const P = []; for (const o of sh.values()) for (let i = 0; i < o.p.length; i++) P.push(o.p[i]);
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+    const m = new THREE.Mesh(g, ggebShadowM); m.castShadow = true; m.receiveShadow = false; m.name = "Gotham-Gebäude Schatten"; m.userData.keep = true; m.userData.noLift = true; grp.add(m); }
+  c.grp = grp; scene.add(grp); c.state = "done";
+}
+function ggebNearStep() {
+  if (!GGEB.done) return;
+  if (!GGEB.nearCells) { GGEB.nearCells = new Map(); for (const b of GGEB.list) { const i = Math.floor(b.cx / GGEB.NC), j = Math.floor(b.cz / GGEB.NC), k = ggebCKey(i, j); if (!GGEB.nearCells.has(k)) GGEB.nearCells.set(k, { i, j, list: [] }); GGEB.nearCells.get(k).list.push(b); } }
+  const p = ggebFocus(), NC = GGEB.NC, half = NC * 0.7072, R = GGEB.R, Y = GGEB.Y;
+  const dist = k => { const q = GGEB.nearCells.get(k); return Math.hypot((q.i + 0.5) * NC - p.x, Math.max(0, (p.y ?? Y) - Y - 10), (q.j + 0.5) * NC - p.z); };
+  // Abbau (eine Zelle je Bild)
+  for (const [k, c] of GGEB.near) if (dist(k) > R + half + 40) { if (c.grp) { scene.remove(c.grp); c.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); }); } if (GGEB.nearCur === c) GGEB.nearCur = null; GGEB.near.delete(k); break; }
+  // naechste fehlende Zelle anfangen
+  if (!GGEB.nearCur) { let best = null, bd = 1e9; for (const k of GGEB.nearCells.keys()) { if (GGEB.near.has(k)) continue; const d = dist(k); if (d < R + half && d < bd) { bd = d; best = k; } }
+    if (best !== null) { const c = { key: best, list: GGEB.nearCells.get(best).list, state: "build", grp: null }; c.gen = ggebNearGen(c); GGEB.near.set(best, c); GGEB.nearCur = c; } }
+  // Portionen
+  const c = GGEB.nearCur; if (!c) return; const t0 = performance.now();
+  while (performance.now() - t0 < 3) { const a = performance.now(), r = c.gen.next(); GGEB.nearMax = Math.max(GGEB.nearMax, performance.now() - a); if (r.done) { GGEB.nearCur = null; break; } }
+}
