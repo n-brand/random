@@ -33,6 +33,7 @@ function weaponUse() {
     m.userData.dynamic = true; scene.add(m); const v = d.clone().multiplyScalar(bat ? 30 : 17); if (!bat) v.y += 3.5;
     // Batarang als Bumerang: fliegt hinaus (beim Zielen gerade bis zum Zielpunkt, sonst im Linksbogen ca. 22 m), kehrt dann in die Hand zurueck
     const tgt = bat && AIM.on ? (aimHit(45)?.p || o.clone().addScaledVector(d, 45)) : null;
+    if (bat && !tgt) { const a = 0.65, ca = Math.cos(a), sa = Math.sin(a), vx = v.x, vz = v.z; v.x = vx * ca - vz * sa; v.z = vx * sa + vz * ca; }   // ohne Zielen ca. 37 Grad rechts vom Ziel los (Nicolas 2026-11-16)
     AIM.proj.push({ id, m, v, t: 0, stuck: 0, out: true, tgt, range: tgt ? o.distanceTo(tgt) : 22, o: o.clone() }); if (!invHas(id)) toast(INV_ITEMS[id].name + ": der letzte (kommt zurück)");
   } else if (id === "greifhaken") {
     AIM.cd = 0.6; const h = aimHit(70); if (!h) return toast("Greifhaken: nichts in Reichweite (70 m)");
@@ -41,12 +42,30 @@ function weaponUse() {
     const from = player.pos.clone(), len = from.distanceTo(to); AIM.grap = { from, to, t: 0, dur: Math.max(0.35, len / 32), hit: h.p.clone() }; AIM_M.rope.visible = true; shotSound?.(0.15, 0.1);
   }
 }
+// Flugbahn beim Zielen mit der Rauchbombe (Nicolas 2026-11-16): gleiche Rechnung wie der Wurf (Start, 17 m/s + 3,5 m/s nach oben, Fall 9,8, shotSeg),
+// Punkte alle 0,09 s bis zum Aufprall (hoechstens 4 s), Ring am Aufprallpunkt. Nur waehrend rechts gehalten wird.
+const ARC = { dots: null, ring: null, M: new THREE.Matrix4(), p: new THREE.Vector3(), v: new THREE.Vector3(), b: new THREE.Vector3() };
+function aimArcInit() {
+  ARC.dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }), 48);
+  ARC.ring = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.48, 32), new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }));
+  ARC.ring.rotation.x = -Math.PI / 2; for (const o of [ARC.dots, ARC.ring]) { o.frustumCulled = false; o.userData.dynamic = true; o.renderOrder = 5; scene.add(o); } }
+function aimArc() {
+  const show = AIM.on && onFoot() && weaponHeld() === "rauchbombe" && !AIM.grap;
+  if (!show) { if (ARC.dots) ARC.dots.visible = ARC.ring.visible = false; return; }
+  if (!ARC.dots) aimArcInit();
+  AIM_ray.setFromCamera({ x: 0, y: 0 }, camera); const d = AIM_ray.ray.direction, p = ARC.p.copy(camera.position).addScaledVector(d, 0.5), v = ARC.v.copy(d).multiplyScalar(17), b = ARC.b; p.y -= 0.15; v.y += 3.5;
+  const dt = 0.03; let n = 0, hit = null;
+  for (let i = 0; i < 134; i++) { v.y -= 9.8 * dt; b.copy(p).addScaledVector(v, dt); const h = shotSeg(p, b, null, 0.3); if (h) { hit = h.p; break; } p.copy(b);
+    if (i % 3 === 2 && n < 48) ARC.dots.setMatrixAt(n++, ARC.M.makeTranslation(p.x, p.y, p.z)); }
+  ARC.dots.count = n; ARC.dots.instanceMatrix.needsUpdate = true; ARC.dots.visible = true;
+  ARC.ring.visible = !!hit; if (hit) ARC.ring.position.set(hit.x, hit.y + 0.05, hit.z); }
 // je Bild aus schleife.js
 function weaponsStep(dt) {
   AIM.cd = Math.max(0, AIM.cd - dt);
   const can = onFoot() && !!weaponHeld(); if (!can && AIM.on) AIM.on = false;
   const zt = AIM.on ? 1.8 : 1; if (Math.abs(AIM.z - zt) > 0.001 || (AIM.on && camera.fov !== 70 / AIM.z)) { AIM.z += (zt - AIM.z) * Math.min(1, dt * 12); if (Math.abs(AIM.z - zt) < 0.002) AIM.z = zt; if (onFoot()) { camera.fov = 70 / AIM.z; camera.updateProjectionMatrix(); } }
   document.body.classList.toggle("aiming", AIM.on); document.body.classList.toggle("armed", can);
+  aimArc();
   // Wurfgeschosse
   for (let i = AIM.proj.length - 1; i >= 0; i--) { const P = AIM.proj[i]; P.t += dt;
     if (P.id === "batarang") { batarangStep(P, dt, i); continue; }
@@ -71,6 +90,7 @@ function weaponsStep(dt) {
 // Batarang-Flug: hinaus, Rueckkehr (zielt auf die Hand, wird schneller), Fang = wieder im Inventar. Trifft er etwas, faellt er zu Boden
 // und bleibt liegen, bis man darueber laeuft (1,6 m, aufheben). Fliegt er nach 8 s nicht heim (weit weg/verloren), faellt er herunter.
 const BAT_HAND = new THREE.Vector3();
+const batTurnLeft = (v, a) => { const c = Math.cos(a), s = Math.sin(a), vx = v.x, vz = v.z; v.x = vx * c + vz * s; v.z = -vx * s + vz * c; };   // von oben gesehen gegen den Uhrzeiger
 function batarangStep(P, dt, i) {
   const m = P.m, hand = BAT_HAND.set(player.pos.x, player.pos.y + EYE - 0.35, player.pos.z);
   if (P.lie) { m.rotation.y += 0; if (onFoot() && Math.hypot(m.position.x - player.pos.x, m.position.z - player.pos.z) < 1.6 && Math.abs(m.position.y - player.pos.y) < 2.2) { invAdd("batarang", 1); toast("Batarang aufgehoben"); scene.remove(m); AIM.proj.splice(i, 1); } return; }
@@ -78,9 +98,11 @@ function batarangStep(P, dt, i) {
     if (h || P.t > 12) { m.position.copy(h ? h.p : b); m.position.y += 0.02; m.rotation.set(0, m.rotation.y, 0); P.lie = true; return; } m.position.copy(b); m.rotation.y += dt * 8; return; }
   m.rotation.y += dt * 32; m.rotation.z = 0.25;                              // dreht flach, leicht gekippt
   if (P.out) { if (P.tgt) P.v.copy(P.tgt).sub(m.position).normalize().multiplyScalar(30);
-    else { const c = Math.cos(dt * 0.9), s = Math.sin(dt * 0.9), vx = P.v.x, vz = P.v.z; P.v.x = vx * c - vz * s; P.v.z = vx * s + vz * c; P.v.y -= 1.2 * dt; }   // Linksbogen
+    else { batTurnLeft(P.v, dt * 1.65); P.v.y -= 1.2 * dt; }   // Linksbogen: rechts hinaus, kreuzt die Mitte bei ca. 22 m (Nicolas 2026-11-16: vorher Rechtskurve)
     if (m.position.distanceTo(P.o) >= P.range - 0.5 || (P.tgt && m.position.distanceTo(P.tgt) < 0.8)) P.out = false; }
-  else { const want = hand.clone().sub(m.position), dist = want.length(), sp = Math.min(38, 22 + P.t * 6); P.v.lerp(want.normalize().multiplyScalar(sp), Math.min(1, dt * 5));
+  else { const want = hand.clone().sub(m.position), dist = want.length(), sp = Math.min(38, 22 + P.t * 6);
+    if (!P.tgt && !P.home) { batTurnLeft(P.v, dt * 6); P.v.setLength(sp); const dv = Math.hypot(P.v.x, P.v.z), dw = Math.hypot(want.x, want.z); if ((P.v.x * want.x + P.v.z * want.z) / (dv * dw || 1) > 0.7 || P.t > 4) P.home = true; }   // weiter links herum, links zurueck
+    else P.v.lerp(want.normalize().multiplyScalar(sp), Math.min(1, dt * 5));
     if (dist < 1.1 || (dist < 2.5 && P.t > 0.6)) { invAdd("batarang", 1); scene.remove(m); AIM.proj.splice(i, 1); return; } }
   const a = m.position.clone(), b = a.clone().addScaledVector(P.v, dt), h = P.t > 0.05 ? shotSeg(a, b, null, 0.3) : null;
   if (h) { m.position.copy(h.p).addScaledVector(P.v.clone().normalize(), -0.35); if (h.hit && h.hit.veh) toast("Batarang trifft " + (h.hit.veh.label || "das Fahrzeug")); P.fall = true; P.v.multiplyScalar(-0.15); return; }
