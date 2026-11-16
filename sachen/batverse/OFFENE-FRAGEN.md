@@ -31,6 +31,8 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
    - *Bis dahin:* erst nur fahren, Mitfahren später.
 9. **Kreuzungen der Ringe:** An den 6 Umsteigestationen kreuzen sich zwei Ringe auf derselben Höhe (Bahnsteig 11 m unter der Strasse).
    - *Bis dahin:* Die Gleise kreuzen sich auf gleicher Höhe. Die Alternative wäre ein Ring eine Ebene tiefer.
+10a. **Weichen zum Ringwechsel:** An den Umsteigestationen sollen Züge auf den anderen Ring wechseln können (je Kreuzung 4 Verbindungskurven). Das ist noch nicht gebaut: Jede Kurve bräuchte einen eigenen Tunnel durch die Wände beider Ringe.
+   - *Bis dahin:* Züge fahren nur im eigenen Ring. Bauen, sobald du sagst, dass es wichtig ist.
 
 ## Ältere offene Punkte (aus CLAUDE.md)
 

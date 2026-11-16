@@ -38,6 +38,13 @@ function* ubGen() {
         const st = { name: "Umsteigen " + A.name.replace(/^Ring \d /, "") + " / " + B.name.replace(/^Ring \d /, ""), i, j, rings: [A, B], cross: [p[0] + rx * t, p[1] + rz * t] };
         const sh = k => Math.round((UB.PL + 25) / k.ds);   // Bahnsteig hinter der Kreuzung (sonst laege er quer ueber den Gleisen des anderen Rings)
         st.i = (i + sh(A)) % A.P.length; A.st.push({ ...st, i: st.i, ref: st }); B.st.push({ ...st, i: (j + sh(B)) % B.P.length, ref: st }); UB.stations.push(st); } } yield; }
+  // Abstellanlage (Teil C): Zufahrtsgleis vom Hauptbahnhof (Karte: depot.gleis, Anfang = Hauptbahnhof) zur Halle (depot x/z/w/d, Karten-Achsen)
+  { const D = U.depot, R1 = UB.rings[0], H0 = R1.st.find(q => q.haupt) || R1.st[0], P0 = R1.P[H0.i], G = D.gleis.slice(1).map(([x, z]) => GOT.toGame(x, z)), hall = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => GOT.toGame(D.x + a * D.w / 2, D.z + b * D.d / 2));
+    const hc = GOT.toGame(D.x, D.z), Q = [P0, ...G, hc], spur = []; for (let k = 0; k < Q.length - 1; k++) { const [ax, az] = Q[k], [bx, bz] = Q[k + 1], L = Math.hypot(bx - ax, bz - az); for (let t = 0; t < L; t += 4) spur.push([ax + (bx - ax) * t / L, az + (bz - az) * t / L]); }
+    spur.push(hc); UB.depot = { spur, hall, hc, hw: 3.2 }; }
+  const inSpur = (x, z, m = 0.3) => { const S = UB.depot.spur; for (let k = 0; k < S.length - 1; k++) { const [ax, az] = S[k], [bx, bz] = S[k + 1], dx = bx - ax, dz = bz - az, L = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L));
+    if (Math.hypot(x - ax - dx * t, z - az - dz * t) < UB.depot.hw - m) return true; } return false; };
+  const inHall = (x, z) => bautInPoly(UB.depot.hall, x, z);
   // Materialien
   const tile = canvasTex(128, 128, (c, w, h) => { c.fillStyle = "#d9d6cc"; c.fillRect(0, 0, w, h); c.strokeStyle = "#a9a59b"; c.lineWidth = 2; for (let x = 0; x <= w; x += 32) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = 0; y <= h; y += 16) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } });
   const beton = canvasTex(128, 128, (c, w, h) => { const r = rng(311); c.fillStyle = "#6d6a64"; c.fillRect(0, 0, w, h); for (let i = 0; i < 500; i++) { c.fillStyle = `rgba(${r() < 0.5 ? "0,0,0" : "255,255,255"},${r() * 0.07})`; c.fillRect(r() * w, r() * h, 3, 3); } c.fillStyle = "rgba(0,0,0,.15)"; c.fillRect(0, h - 6, w, 6); });
@@ -52,7 +59,7 @@ function* ubGen() {
   for (const r of UB.rings) {
     const P = r.P, n = P.length, inStation = i => { for (const st of r.st) { const di = Math.abs(i - st.i), d = Math.min(di, n - di) * r.ds; if (d <= UB.PL) return st; } return null; };
     // andere Tunnel (Kreuzungen): Wandstueck weglassen, wenn es im Innenraum eines anderen Rings liegt
-    const others = UB.rings.filter(o => o !== r), inOther = (x, z) => others.some(o => { const q = ubNear(o, x, z); return q.d < ubHW(o, q.i) - 0.3; });
+    const others = UB.rings.filter(o => o !== r), inOther = (x, z) => inSpur(x, z) || inHall(x, z) || others.some(o => { const q = ubNear(o, x, z); return q.d < ubHW(o, q.i) - 0.3; });
     const N = i => { const a = P[(i - 1 + n) % n], b = P[(i + 1) % n], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [-(b[1] - a[1]) / l, (b[0] - a[0]) / l]; };   // links
     for (let i = 0; i < n; i++) { const i1 = (i + 1) % n, p0 = P[i], p1 = P[i1], n0 = N(i), n1 = N(i1), h0 = ubHW(r, i), h1 = ubHW(r, i1), t0 = ubTrack(r, i), t1 = ubTrack(r, i1), st = inStation(i), ceil = BED + H;   // ueberall gleich hoch (eine hoehere Stationsdecke liess am Uebergang einen Spalt)
       const W = (p, nn, o, y) => [p[0] + nn[0] * o, y, p[1] + nn[1] * o], sv = i * r.ds / 2.5;
@@ -84,6 +91,43 @@ function* ubGen() {
     }
     // Kreuzungen: Raum und Boden ueber die ganze Kreuzung (sonst Kante im Schnitt der beiden Raeume)
   }
+  // Zufahrt (ein Gleis, 6,4 m breit) und Halle (3 Gleise, Waende/Decke, Lichtband); Waende im Ring-Innenraum bzw. in der Halle weggelassen
+  { const Dp = UB.depot, S = Dp.spur, hw = Dp.hw, ceil = BED + H, onRing = (x, z) => UB.rings.some(o => { const q = ubNear(o, x, z); return q.d < ubHW(o, q.i) - 0.3; });
+    for (let k = 0; k < S.length - 1; k++) { const p0 = S[k], p1 = S[k + 1], L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) || 1, ux = (p1[0] - p0[0]) / L, uz = (p1[1] - p0[1]) / L, nx = -uz, nz = ux, W = (p, o, y) => [p[0] + nx * o, y, p[1] + nz * o];
+      if (inHall((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2)) continue;
+      gbvQuad(B("bett"), W(p0, -hw, BED), W(p1, -hw, BED), W(p1, hw, BED), W(p0, hw, BED), [0, 1, 0], [[0, k * L / 2.5], [0, (k + 1) * L / 2.5], [1.3, (k + 1) * L / 2.5], [1.3, k * L / 2.5]]);
+      gbvQuad(B("decke"), W(p0, -hw, ceil), W(p0, hw, ceil), W(p1, hw, ceil), W(p1, -hw, ceil), [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+      for (const sd of [-1, 1]) { const a = W(p0, sd * hw, 0), b = W(p1, sd * hw, 0); if (onRing((a[0] + b[0]) / 2, (a[2] + b[2]) / 2) || inHall((a[0] + b[0]) / 2, (a[2] + b[2]) / 2)) continue;
+        gbvQuad(B("wand"), [a[0], BED, a[2]], [b[0], BED, b[2]], [b[0], ceil, b[2]], [a[0], ceil, a[2]], [-sd * nx, 0, -sd * nz], [[0, 0], [L / 2.5, 0], [L / 2.5, (ceil - BED) / 2.5], [0, (ceil - BED) / 2.5]]); }
+      for (const rs of [-0.7175, 0.7175]) gbvQuad(B("schiene"), W(p0, rs - 0.04, BED + 0.18), W(p1, rs - 0.04, BED + 0.18), W(p1, rs + 0.04, BED + 0.18), W(p0, rs + 0.04, BED + 0.18), [0, 1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+      if (!onRing((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2)) { dkRoom({ poly: [W(p0, -hw, 0), W(p1, -hw, 0), W(p1, hw, 0), W(p0, hw, 0)].map(q => [q[0], q[2]]), y0: BED - 0.3, y1: ceil });
+        dkAdd({ cx: (p0[0] + p1[0]) / 2, cy: BED - 0.25, cz: (p0[1] + p1[1]) / 2, ux, uz, hl: L / 2 + 0.05, hw: hw - 0.3, hh: 0.25, m: 0, ceil: 0 }); } }
+    // Halle: Rechteck aus den vier Ecken, drei Gleise laengs der laengeren Seite
+    const Hh = Dp.hall, [A0, A1, A2, A3] = Hh, ceilH = BED + H + 1.5;
+    gbvQuad(B("bett"), [A0[0], BED, A0[1]], [A1[0], BED, A1[1]], [A2[0], BED, A2[1]], [A3[0], BED, A3[1]], [0, 1, 0], [[0, 0], [24, 0], [24, 24], [0, 24]]);
+    gbvQuad(B("decke"), [A0[0], ceilH, A0[1]], [A3[0], ceilH, A3[1]], [A2[0], ceilH, A2[1]], [A1[0], ceilH, A1[1]], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+    const hcx = Dp.hc[0], hcz = Dp.hc[1];
+    for (let e = 0; e < 4; e++) { const a = Hh[e], b = Hh[(e + 1) % 4], L = Math.hypot(b[0] - a[0], b[1] - a[1]), mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, nx = hcx - mx, nz = hcz - mz, nl = Math.hypot(nx, nz) || 1, steps = Math.ceil(L / 4);
+      for (let q = 0; q < steps; q++) { const t0 = q / steps, t1 = (q + 1) / steps, x0 = a[0] + (b[0] - a[0]) * t0, z0 = a[1] + (b[1] - a[1]) * t0, x1 = a[0] + (b[0] - a[0]) * t1, z1 = a[1] + (b[1] - a[1]) * t1;
+        if (inSpur((x0 + x1) / 2 + nx / nl * 0.5, (z0 + z1) / 2 + nz / nl * 0.5, -0.5)) continue;   // Einfahrt offen
+        gbvQuad(B("wand"), [x0, BED, z0], [x1, BED, z1], [x1, ceilH, z1], [x0, ceilH, z0], [nx / nl, 0, nz / nl], [[0, 0], [1.6, 0], [1.6, 3], [0, 3]]); } }
+    const lng = Math.hypot(A1[0] - A0[0], A1[1] - A0[1]) >= Math.hypot(A3[0] - A0[0], A3[1] - A0[1]), [E0, E1, E3] = lng ? [A0, A1, A3] : [A0, A3, A1], ex = [(E1[0] - E0[0]), (E1[1] - E0[1])], ey = [(E3[0] - E0[0]), (E3[1] - E0[1])], hl = Math.hypot(...ex), hb = Math.hypot(...ey);
+    Dp.tracks = [];
+    for (const f of [0.25, 0.5, 0.75]) { const s0 = [E0[0] + ey[0] * f, E0[1] + ey[1] * f], s1 = [s0[0] + ex[0], s0[1] + ex[1]], ux = ex[0] / hl, uz = ex[1] / hl, nx = -uz, nz = ux; Dp.tracks.push([s0, s1]);
+      for (const rs of [-0.7175, 0.7175]) gbvQuad(B("schiene"), [s0[0] + nx * (rs - 0.04), BED + 0.18, s0[1] + nz * (rs - 0.04)], [s1[0] + nx * (rs - 0.04), BED + 0.18, s1[1] + nz * (rs - 0.04)], [s1[0] + nx * (rs + 0.04), BED + 0.18, s1[1] + nz * (rs + 0.04)], [s0[0] + nx * (rs + 0.04), BED + 0.18, s0[1] + nz * (rs + 0.04)], [0, 1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
+      for (let t = 4; t < hl; t += 12) gbvQuad(B("licht"), [s0[0] + ux * t - nx * 0.4, ceilH - 0.02, s0[1] + uz * t - nz * 0.4], [s0[0] + ux * t + nx * 0.4, ceilH - 0.02, s0[1] + uz * t + nz * 0.4], [s0[0] + ux * (t + 3) + nx * 0.4, ceilH - 0.02, s0[1] + uz * (t + 3) + nz * 0.4], [s0[0] + ux * (t + 3) - nx * 0.4, ceilH - 0.02, s0[1] + uz * (t + 3) - nz * 0.4], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
+    dkRoom({ poly: Hh, y0: BED - 0.3, y1: ceilH }); { const ux = ex[0] / hl, uz = ex[1] / hl; dkAdd({ cx: hcx, cy: BED - 0.25, cz: hcz, ux, uz, hl: hl / 2 - 0.3, hw: hb / 2 - 0.3, hh: 0.25, m: 0, ceil: 0 }); }
+    yield; }
+  // Graffiti "NBR" (Karte: Ring 4 zwischen Narrows und Fabrikviertel, "im Tunnel Richtung Fabrikviertel") an der Aussenwand, 8 m lang
+  { const r4 = UB.rings.find(q => /Narrows|Ost/.test(q.name)) || UB.rings[3], sa = r4.R.stationen, a0 = (sa.find(q => q.name === "Narrows") || { a: 150 }).a, a1 = (sa.find(q => q.name === "Fabrikviertel") || { a: 210 }).a;
+    const n = r4.P.length, k = Math.round(((a0 + a1) / 2) / 360 * n) % n, P = r4.P, a = P[(k - 1 + n) % n], b = P[(k + 1) % n], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, ux = (b[0] - a[0]) / l, uz = (b[1] - a[1]) / l, hw = ubHW(r4, k) - 0.04;
+    for (const sd of [-1, 1]) { const nx = uz * sd, nz = -ux * sd, cx = P[k][0] - uz * sd * hw, cz = P[k][1] + ux * sd * hw, [L0, R0] = (ux * nz - uz * nx) > 0 ? [[cx - ux * 4, cz - uz * 4], [cx + ux * 4, cz + uz * 4]] : [[cx + ux * 4, cz + uz * 4], [cx - ux * 4, cz - uz * 4]];
+      gbvQuad(B("graffiti"), [L0[0], BED + 1.2, L0[1]], [R0[0], BED + 1.2, R0[1]], [R0[0], BED + 3.6, R0[1]], [L0[0], BED + 3.6, L0[1]], [nx, 0, nz], [[0, 0], [1, 0], [1, 1], [0, 1]]); }
+    UB.graffiti = [P[k][0], P[k][1]];
+    mats.graffiti = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, map: canvasTex(512, 160, (c, w, h) => { c.clearRect(0, 0, w, h); c.lineJoin = "round";
+      c.font = "italic 900 132px Impact, Arial Black, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 14; c.strokeStyle = "#1b0b22"; c.strokeText("NBR", w / 2, h / 2 + 6);
+      const g = c.createLinearGradient(0, 20, 0, h - 20); g.addColorStop(0, "#ff7be6"); g.addColorStop(1, "#c21fa8"); c.fillStyle = g; c.fillText("NBR", w / 2, h / 2 + 6);
+      c.fillStyle = "rgba(255,79,216,.8)"; for (let i = 0; i < 9; i++) c.fillRect(120 + i * 32, h / 2 + 50, 3, 14 + (i * 37) % 30); }) }); }
   // Stationsschilder an den Tunnelwaenden (Name, Ringfarbe): ein Atlas fuer alle (je Zeile 64 px), ein Netz (vorher je Schild ein Netz)
   const SN = []; for (const r of UB.rings) for (const st of r.st) SN.push([r, st]);
   const atlas = canvasTex(512, 64 * SN.length, (c, w, h) => { SN.forEach(([r, st], q) => { const y = q * 64, name = st.name; c.fillStyle = "#1a1d22"; c.fillRect(0, y, w, 64); c.fillStyle = "#" + r.col.getHexString(); c.fillRect(0, y, 18, 64); c.fillRect(w - 18, y, 18, 64);
@@ -162,6 +206,9 @@ function ubTrainsInit() {
     for (const d of [1, -1]) for (let k = 0; k < 2; k++) { const s0 = stS[Math.floor(k * stS.length / 2)];
       UB.trains.push({ r, d, s: s0, v: 0, wait: k * 9 + (d > 0 ? 0 : 5), stS, next: null }); } }
   let n = 0; for (const t of UB.trains) for (let c = 0; c < 3; c++) band.setColorAt(n++, t.r.col);
+  UB.parked = n; const Dp = UB.depot, gray = new THREE.Color(0x777777);   // abgestellte Zuege (ausser Betrieb, graues Band) je Hallengleis ein Zug
+  for (const [s0, s1] of Dp.tracks || []) { const L = Math.hypot(s1[0] - s0[0], s1[1] - s0[1]), ux = (s1[0] - s0[0]) / L, uz = (s1[1] - s0[1]) / L, yaw = Math.atan2(-uz, ux);
+    for (let c = 0; c < 3; c++) { const t = L / 2 + (c - 1) * UB.CAR; ubQ.setFromEuler(ubE.set(0, yaw, 0)); ubV.set(s0[0] + ux * t, UB.BED + 0.35 + 1.65, s0[1] + uz * t); ubM.compose(ubV, ubQ, ubS); body.setMatrixAt(n, ubM); ubV.y = UB.BED + 0.35 + 0.9; ubM.compose(ubV, ubQ, ubS); band.setMatrixAt(n, ubM); band.setColorAt(n, gray); n++; } }
   band.instanceColor.needsUpdate = true; body.count = band.count = n; UB.last = performance.now();
 }
 // Lage auf dem Ring: s (m) -> Punkt auf dem Gleis der Richtung d, Blickwinkel

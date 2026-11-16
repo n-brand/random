@@ -51,7 +51,7 @@ const UMSETZUNG = [
   { phase: "grund", nr: "G5/G6", titel: "Seitengassen und Baustellen", status: "fertig", stand: "69 Gassen der Narrows mit Müllcontainern, Säcken, Kartons, Pfützen, Wäscheleinen und dampfenden Gullys; 966 Baustellen BL-… in den Lücken zwischen den Gebäuden (dazu BS-01 bis BS-08).", braucht: ["G3/G4"],
     inhalt: "Gassen im armen Viertel mit Müll, Wäscheleinen, Feuertreppen, Dampf. Baustellen als Lückenfüller zwischen den Füllbauten (Erde, Material, Metallstangen, Bauzaun; Vorlage buildBaustelle, Beispiel in der Werkstatt) und an 8 Plätzen.",
     warum: "Details nach den Vorlagen." },
-  { phase: "verkehr", nr: "V1", titel: "U-Bahn: 4 Ringlinien", status: "offen", braucht: ["G2"],
+  { phase: "verkehr", nr: "V1", titel: "U-Bahn: 4 Ringlinien", status: "laeuft", stand: "Tunnel mit zwei Gleisen, 27 Stationen (6 Umsteigestationen) mit Aufzug-Pavillons, 16 fahrende Züge, Abstellanlage mit Zufahrt, Graffiti NBR. Offen: Weichen zum Ringwechsel, Mitfahren.", braucht: ["G2"],
     inhalt: "Zentrumsring um den Wayne Tower und drei Ringe in Uptown, Westseite und Süden, je zwei Gleise (beide Richtungen wie die Yamanote-Linie in Tokio), 6 Umsteigestationen mit Weichen (Züge können den Ring wechseln), Hauptbahnhof mit Abstellanlage, fahrende Züge, Graffiti NBR.",
     warum: "Liegt unter den Strassen, muss vor den Kanälen geplant sein (Übergänge)." },
   { phase: "verkehr", nr: "V2", titel: "Bus", status: "offen", braucht: ["G2"],
