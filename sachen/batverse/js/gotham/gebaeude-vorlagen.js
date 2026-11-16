@@ -67,7 +67,8 @@ function gbvInit() {
   const F = (map, gl) => S(map, { emissiveMap: gl, emissive: 0xffffff, emissiveIntensity: 0 });
   GBV.mats = {
     ziegel: F(ziegel, glow(WZ)), stein: F(stein, glow(WS, 0.4)), glas: F(glas, glow(WG, 0.3)), fabrik: F(fabrik, glow(WF, 0.25)), laden: F(laden, glow(WLg, 0.6)),
-    blech: S(blech, { roughness: 0.7, metalness: 0.1 }),   // metalness 0.4 wirkte ohne Umgebungsbild fast schwarz brand: S(brand), dach: S(dach, { roughness: 0.95 }),
+    blech: S(blech, { roughness: 0.7, metalness: 0.1 }),   // metalness 0.4 wirkte ohne Umgebungsbild fast schwarz
+    brand: S(brand), dach: S(dach, { roughness: 0.95 }),   // Nicolas 2026-11-16 ("alle Daecher sind weiss"): standen versehentlich im Kommentar oben, Daecher und Brandwaende hatten kein Material (weiss)
     kante: new THREE.MeshStandardMaterial({ color: 0xcfc8ba, roughness: 0.8 }),
     eisen: new THREE.MeshStandardMaterial({ color: 0x1c1e21, roughness: 0.6, metalness: 0.5 }),
     holz: new THREE.MeshStandardMaterial({ color: 0x6b4a2e, roughness: 0.9 }),
