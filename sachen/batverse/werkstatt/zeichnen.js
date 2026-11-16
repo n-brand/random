@@ -3,7 +3,7 @@
 "use strict";
 {
   const css = document.createElement("style"); css.textContent = `
-    #w-draw-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; cursor: crosshair; }
+    #w-draw-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; cursor: crosshair; }
     body.w-drawing #w-draw-layer { pointer-events: auto; }
     #w-draw-colors { display: none; position: fixed; right: 16px; top: 50%; transform: translateY(-50%); flex-direction: column; gap: 10px; z-index: 21; padding: 10px; border-radius: 14px; background: rgba(20,24,30,.85); border: 1px solid rgba(255,255,255,.15); }
     body.w-drawing #w-draw-colors { display: flex; }
