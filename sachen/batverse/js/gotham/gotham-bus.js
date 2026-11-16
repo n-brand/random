@@ -5,6 +5,42 @@
 // seiner Seite, Busbahnhof (Ort "busbahnhof") mit Dach, Steigen und zwei abgestellten Bussen. Nur Optik (Busse ohne Kollision).
 "use strict";
 const GBUS = { lines: [], buses: [], done: false, VMAX: 12, ACC: 1.2, DWELL: 10, last: performance.now() };
+function busChain(L, pool) {
+  const len = q => q.P.reduce((a, p, i) => i ? a + Math.hypot(p[0] - q.P[i - 1][0], p[1] - q.P[i - 1][1]) : 0, 0);
+  let cur = (pool.some(q => q.id === L.strassen[0]) ? pool.filter(q => q.id === L.strassen[0]) : pool).sort((a, b) => len(b) - len(a))[0]; pool.splice(pool.indexOf(cur), 1);
+  const route = cur.P.map(p => [p[0], p[1], cur.w, cur.walk]);
+  while (pool.length) { const e = route[route.length - 1]; let best = null, bd = 1e9, rev = false;
+    for (const q of pool) for (const [p, r] of [[q.P[0], false], [q.P[q.P.length - 1], true]]) { const d = Math.hypot(p[0] - e[0], p[1] - e[1]); if (d < bd) { bd = d; best = q; rev = r; } }
+    if (bd > 900) break; if (bd > 40) console.warn("Bus " + L.name + ": Luecke " + Math.round(bd) + " m vor " + best.id + " (Strasse fehlt in der Linie?)"); pool.splice(pool.indexOf(best), 1); const P = rev ? [...best.P].reverse() : best.P; for (const p of P) route.push([p[0], p[1], best.w, best.walk]); }
+  return route;
+}
+// Wegsuche: Netz aus allen Strassen (Insel GSTR, Festland GLAND); Strassen der Linie kosten 1, andere 2,5 je Meter (Verbindungsstuecke, die in der
+// Linie fehlen, werden so trotzdem auf der Strasse gefahren); die Bruecken (GOT.cuts, Insel bis Festland) als eigene Stuecke, 1,2 je Meter. Kanten entlang jeder Strasse, Kreuzungen unter 12 m, Strassenenden (an Bruecken gekuerzt)
+// zusaetzlich zum naechsten Punkt einer anderen Strasse bis 45 m. Kuerzester Weg vom Anfang der ersten Linienstrasse bis zum Eintritt in die letzte,
+// dann die letzte ganz bis zu ihrem anderen Ende. Dijkstra mit Heap.
+function busPath(L, pool) {
+  const first = L.strassen[0], last = L.strassen[L.strassen.length - 1], inLine = new Set(L.strassen);
+  const all = [...pool, ...GSTR.roads.filter(r => !inLine.has(r.id)).map(r => ({ id: r.id, P: r.pts, w: r.w, walk: r.walk, extra: true })), ...(GLAND.roads || []).filter(r => !inLine.has(r.id)).map(r => ({ id: r.id, P: r.pts.map(q => [q[0], q[1]]), w: r.w || 10, walk: 2, extra: true })),
+    ...(GOT.cuts || []).map((c, k) => { const P = [], L = c.s0 + 25; for (let t = 0; t <= L; t += 4) P.push([c.a[0] + c.ux * t, c.a[1] + c.uz * t]); return { id: "bruecke-" + k, P, w: 14, walk: 2, extra: true, cost: 1.2 }; })].filter(q => q.P.length > 1);
+  const X = [], Z = [], W = [], K = [], pieceOf = [], E = [];
+  for (const [pi, q] of all.entries()) { const b = X.length, cost = q.cost || (q.extra ? 2.5 : 1); q.n0 = b;
+    q.P.forEach((p, k) => { X.push(p[0]); Z.push(p[1]); W.push(q.w); K.push(q.walk); pieceOf.push(pi); E.push([]); if (k) { const l = Math.hypot(p[0] - q.P[k - 1][0], p[1] - q.P[k - 1][1]) * cost; E[b + k].push(b + k - 1, l); E[b + k - 1].push(b + k, l); } }); q.n1 = X.length - 1; }
+  const n = X.length, C = 24, grid = new Map(), key = (a, b) => a * 100003 + b; for (let i = 0; i < n; i++) { const k = key(Math.floor(X[i] / C), Math.floor(Z[i] / C)); let c = grid.get(k); if (!c) grid.set(k, c = []); c.push(i); }
+  const near = (i, R, fn) => { const cx = Math.floor(X[i] / C), cz = Math.floor(Z[i] / C), m = Math.ceil(R / C); for (let a = -m; a <= m; a++) for (let b = -m; b <= m; b++) { const c = grid.get(key(cx + a, cz + b)); if (c) for (const j of c) if (pieceOf[j] !== pieceOf[i]) { const d = Math.hypot(X[j] - X[i], Z[j] - Z[i]); if (d < R) fn(j, d); } } };
+  for (let i = 0; i < n; i++) near(i, 12, (j, d) => { if (j > i) { E[i].push(j, d); E[j].push(i, d); } });
+  for (const q of all) for (const e of [q.n0, q.n1]) { let bj = -1, bd = 45; near(e, 45, (j, d) => { if (d < bd) { bd = d; bj = j; } }); if (bj >= 0) { E[e].push(bj, bd); E[bj].push(e, bd); } }
+  const starts = pool.filter(q => q.id === first), ends = pool.filter(q => q.id === last); if (!starts.length || !ends.length) return null;
+  const src = starts.sort((a, b) => b.P.length - a.P.length)[0].n0;
+  const dist = new Float64Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1); dist[src] = 0;
+  const H = [[0, src]], push = (d, v) => { H.push([d, v]); let i = H.length - 1; while (i) { const p = (i - 1) >> 1; if (H[p][0] <= H[i][0]) break; [H[p], H[i]] = [H[i], H[p]]; i = p; } };
+  const pop = () => { const t = H[0], e = H.pop(); if (H.length) { H[0] = e; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < H.length && H[l][0] < H[m][0]) m = l; if (r < H.length && H[r][0] < H[m][0]) m = r; if (m === i) break; [H[m], H[i]] = [H[i], H[m]]; i = m; } } return t; };
+  while (H.length) { const [du, u] = pop(); if (du > dist[u]) continue; const e = E[u]; for (let k = 0; k < e.length; k += 2) { const v = e[k], nd = du + e[k + 1]; if (nd < dist[v]) { dist[v] = nd; prev[v] = u; push(nd, v); } } }
+  let best = null; for (const q of ends) for (const [entry, other] of [[q.n0, q.n1], [q.n1, q.n0]]) if (isFinite(dist[entry]) && (!best || dist[entry] < best.d)) best = { d: dist[entry], entry, other };
+  if (!best) return null;
+  const idx = []; for (let v = best.entry; v >= 0; v = prev[v]) idx.push(v); idx.reverse();
+  const step = best.other > best.entry ? 1 : -1; for (let v = best.entry + step; step > 0 ? v <= best.other : v >= best.other; v += step) idx.push(v);
+  return idx.map(i => [X[i], Z[i], W[i], K[i]]);
+}
 function* gbusGen() {
   while (!GSTR.done || !GGEB.done || !GBST.done) yield "wait";
   if (!GLAND.roads && typeof glandBuild === "function") glandBuild();
@@ -12,13 +48,11 @@ function* gbusGen() {
   const pieces = id => [...GSTR.roads.filter(r => r.id === id).map(r => ({ id, P: r.pts, w: r.w, walk: r.walk })), ...((GLAND.roads || []).filter(r => r.id === id).map(r => ({ id, P: r.pts.map(q => [q[0], q[1]]), w: r.w || 10, walk: 2 })))].filter(q => q.P.length > 1);
   for (const L of B.linien) {
     const col = new THREE.Color(L.farbe), pool = L.strassen.flatMap(pieces); if (!pool.length) continue;
-    // verketten: laengstes Stueck der ersten Strasse, dann immer das naechste Ende
-    const len = q => q.P.reduce((a, p, i) => i ? a + Math.hypot(p[0] - q.P[i - 1][0], p[1] - q.P[i - 1][1]) : 0, 0);
-    let cur = (pool.some(q => q.id === L.strassen[0]) ? pool.filter(q => q.id === L.strassen[0]) : pool).sort((a, b) => len(b) - len(a))[0]; pool.splice(pool.indexOf(cur), 1);
-    const route = cur.P.map(p => [p[0], p[1], cur.w, cur.walk]);
-    while (pool.length) { const e = route[route.length - 1]; let best = null, bd = 1e9, rev = false;
-      for (const q of pool) for (const [p, r] of [[q.P[0], false], [q.P[q.P.length - 1], true]]) { const d = Math.hypot(p[0] - e[0], p[1] - e[1]); if (d < bd) { bd = d; best = q; rev = r; } }
-      if (bd > 900) break; if (bd > 40) console.warn("Bus " + L.name + ": Luecke " + Math.round(bd) + " m vor " + best.id + " (Strasse fehlt in der Linie?)"); pool.splice(pool.indexOf(best), 1); const P = rev ? [...best.P].reverse() : best.P; for (const p of P) route.push([p[0], p[1], best.w, best.walk]); }
+    // Wegsuche (Nicolas 2026-11-16: Linie 3 fuhr 368 m quer ueber einen Huegel): alle Punkte der Linienstrassen als Netz, Kanten entlang jeder Strasse
+    // und Einmuendungen/Kreuzungen zwischen Strassen unter 15 m; kuerzester Weg vom Anfang der ersten Strasse bis zum Eintritt in die letzte, dann die
+    // letzte ganz bis zu ihrem anderen Ende. Ohne Weg: alte Verkettung (immer zum naechsten Ende).
+    let route = busPath(L, pool);
+    if (!route) { console.warn("Bus " + L.name + ": kein zusammenhaengender Weg, Verkettung"); route = busChain(L, pool); }
     // gleichmaessig alle 4 m
     const R = []; for (let i = 0; i < route.length - 1; i++) { const a = route[i], b = route[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 0.01) continue; for (let s = 0; s < l; s += 4) R.push([a[0] + (b[0] - a[0]) * s / l, a[1] + (b[1] - a[1]) * s / l, a[2], a[3]]); }
     R.push(route[route.length - 1]);
@@ -75,6 +109,11 @@ function gbusStep() {
       if (dist - step < 0.05) { b.v = 0; b.wait = GBUS.DWELL; b.prev = tst; if (!tst) b.d = -b.d; } }
     const i = Math.max(0, Math.min(L.R.length - 2, Math.floor(b.s / 4))), f = b.s / 4 - i, p = L.R[i], q = L.R[i + 1], x0 = p[0] + (q[0] - p[0]) * f, z0 = p[1] + (q[1] - p[1]) * f;
     if (Math.abs(x0 - cam.x) > 700 || Math.abs(z0 - cam.z) > 700) { b.g.visible = false; continue; } b.g.visible = true;
-    const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, ux = (q[0] - p[0]) / l * b.d, uz = (q[1] - p[1]) / l * b.d, off = Math.min(p[2] / 4, 3.5), x = x0 - uz * off, z = z0 + ux * off;   // rechte Spur
-    const g = groundAt(x, z, b.y + 2); b.y = g === null || !isFinite(g) ? b.y : g; b.g.position.set(x, b.y, z); b.g.rotation.set(0, Math.atan2(-ux, -uz), 0); }
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, ux = (q[0] - p[0]) / l * b.d, uz = (q[1] - p[1]) / l * b.d, off0 = Math.min(p[2] / 4, 3.5);   // rechte Spur
+    // zweistoeckige Strassen: liegt unter der Spur die Abfahrtsrampe (Mitte offen), weich auf die aeussere Spur ausweichen (Nicolas 2026-11-16, Bus fiel in die Rampe)
+    const dk = p[2] >= 12 && typeof gothamDeckAt === "function" ? gothamDeckAt(x0 - uz * off0, z0 + ux * off0, GOT.STR + 1) : null, laneT = dk !== null && dk < GOT.STR - 0.8 ? 5.2 : off0;
+    b.lane = b.lane === undefined ? laneT : b.lane + (laneT - b.lane) * Math.min(1, dt * 2); const off = b.lane, x = x0 - uz * off, z = z0 + ux * off;
+    // Hoehe und Neigung aus dem Boden 5 m vor und hinter der Mitte (Nicolas 2026-11-16: "bei einer Steigung bewegt er sich nicht korrekt mit")
+    const gy = (px, pz, y0) => { const g = gothamDeckAt(px, pz, y0 + 1) ?? groundAt(px, pz, y0 + 2); return g === null || !isFinite(g) || Math.abs(g - y0) > 1.2 ? y0 : g; }, yF = gy(x + ux * 5, z + uz * 5, b.yF ?? b.y), yB = gy(x - ux * 5, z - uz * 5, b.yB ?? b.y);   // gy: mehr als 1,2 m je Bild hoeher (Ueberfuehrung) oder tiefer (Kanal unter einer Rampe ohne Kollision in der Ferne) ist nicht der eigene Boden
+    b.yF = yF; b.yB = yB; b.y = (yF + yB) / 2; b.g.position.set(x, b.y, z); b.g.rotation.set(Math.atan2(yF - yB, 10), Math.atan2(-ux, -uz), 0, "YXZ"); }
 }
