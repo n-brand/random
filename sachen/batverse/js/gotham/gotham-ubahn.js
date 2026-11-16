@@ -40,8 +40,10 @@ function* ubGen() {
         st.i = (i + sh(A)) % A.P.length; A.st.push({ ...st, i: st.i, ref: st }); B.st.push({ ...st, i: (j + sh(B)) % B.P.length, ref: st }); UB.stations.push(st); } } yield; }
   // Abstellanlage (Teil C): Zufahrtsgleis vom Hauptbahnhof (Karte: depot.gleis, Anfang = Hauptbahnhof) zur Halle (depot x/z/w/d, Karten-Achsen)
   { const D = U.depot, R1 = UB.rings[0], H0 = R1.st.find(q => q.haupt) || R1.st[0], P0 = R1.P[H0.i], G = D.gleis.slice(1).map(([x, z]) => GOT.toGame(x, z)), hall = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => GOT.toGame(D.x + a * D.w / 2, D.z + b * D.d / 2));
-    const hc = GOT.toGame(D.x, D.z), Q = [P0, ...G, hc], spur = []; for (let k = 0; k < Q.length - 1; k++) { const [ax, az] = Q[k], [bx, bz] = Q[k + 1], L = Math.hypot(bx - ax, bz - az); for (let t = 0; t < L; t += 4) spur.push([ax + (bx - ax) * t / L, az + (bz - az) * t / L]); }
-    spur.push(hc); UB.depot = { spur, hall, hc, hw: 3.2 }; }
+    const hc = GOT.toGame(D.x, D.z), ed = [0, 1, 2, 3].map(e => { const p = hall[e], q = hall[(e + 1) % 4], m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], l = Math.hypot(q[0] - p[0], q[1] - p[1]), o = [m[0] - hc[0], m[1] - hc[1]], ol = Math.hypot(...o); return { m, l, o: [o[0] / ol, o[1] / ol] }; }),
+      sh = Math.min(...ed.map(e => e.l)), gl = G[G.length - 1] || P0, door = ed.filter(e => e.l < sh + 1).sort((a, b) => Math.hypot(a.m[0] - gl[0], a.m[1] - gl[1]) - Math.hypot(b.m[0] - gl[0], b.m[1] - gl[1]))[0],
+      Q = [P0, ...G.filter(p => !bautInPoly(hall, p[0], p[1]) && Math.hypot(p[0] - door.m[0], p[1] - door.m[1]) > 40), [door.m[0] + door.o[0] * 25, door.m[1] + door.o[1] * 25], door.m, hc], cv = new THREE.CatmullRomCurve3(Q.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, "centripetal"), spur = cv.getSpacedPoints(Math.max(8, Math.round(cv.getLength() / 4))).map(v => [v.x, v.z]);   // als Kurve (an Ecken klafften sonst Keile ohne Wand/Boden/Decke)
+    UB.depot = { spur, hall, hc, hw: 3.2 }; }
   const inSpur = (x, z, m = 0.3) => { const S = UB.depot.spur; for (let k = 0; k < S.length - 1; k++) { const [ax, az] = S[k], [bx, bz] = S[k + 1], dx = bx - ax, dz = bz - az, L = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L));
     if (Math.hypot(x - ax - dx * t, z - az - dz * t) < UB.depot.hw - m) return true; } return false; };
   const inHall = (x, z) => bautInPoly(UB.depot.hall, x, z);
@@ -93,7 +95,8 @@ function* ubGen() {
   }
   // Zufahrt (ein Gleis, 6,4 m breit) und Halle (3 Gleise, Waende/Decke, Lichtband); Waende im Ring-Innenraum bzw. in der Halle weggelassen
   { const Dp = UB.depot, S = Dp.spur, hw = Dp.hw, ceil = BED + H, onRing = (x, z) => UB.rings.some(o => { const q = ubNear(o, x, z); return q.d < ubHW(o, q.i) - 0.3; });
-    for (let k = 0; k < S.length - 1; k++) { const p0 = S[k], p1 = S[k + 1], L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) || 1, ux = (p1[0] - p0[0]) / L, uz = (p1[1] - p0[1]) / L, nx = -uz, nz = ux, W = (p, o, y) => [p[0] + nx * o, y, p[1] + nz * o];
+    const NS = k => { const a = S[Math.max(0, k - 1)], b = S[Math.min(S.length - 1, k + 1)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [-(b[1] - a[1]) / l, (b[0] - a[0]) / l]; };   // Normale je Punkt (gemittelt)
+    for (let k = 0; k < S.length - 1; k++) { const p0 = S[k], p1 = S[k + 1], L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) || 1, ux = (p1[0] - p0[0]) / L, uz = (p1[1] - p0[1]) / L, nx = -uz, nz = ux, N0 = NS(k), N1 = NS(k + 1), W = (p, o, y) => { const q = p === p0 ? N0 : N1; return [p[0] + q[0] * o, y, p[1] + q[1] * o]; };
       if (inHall((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2)) continue;
       gbvQuad(B("bett"), W(p0, -hw, BED), W(p1, -hw, BED), W(p1, hw, BED), W(p0, hw, BED), [0, 1, 0], [[0, k * L / 2.5], [0, (k + 1) * L / 2.5], [1.3, (k + 1) * L / 2.5], [1.3, k * L / 2.5]]);
       gbvQuad(B("decke"), W(p0, -hw, ceil), W(p0, hw, ceil), W(p1, hw, ceil), W(p1, -hw, ceil), [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
@@ -103,13 +106,14 @@ function* ubGen() {
       if (!onRing((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2)) { dkRoom({ poly: [W(p0, -hw, 0), W(p1, -hw, 0), W(p1, hw, 0), W(p0, hw, 0)].map(q => [q[0], q[2]]), y0: BED - 0.3, y1: ceil });
         dkAdd({ cx: (p0[0] + p1[0]) / 2, cy: BED - 0.25, cz: (p0[1] + p1[1]) / 2, ux, uz, hl: L / 2 + 0.05, hw: hw - 0.3, hh: 0.25, m: 0, ceil: 0 }); } }
     // Halle: Rechteck aus den vier Ecken, drei Gleise laengs der laengeren Seite
+    { const k = S.findIndex(p => inHall(p[0], p[1])); Dp.entry = S[Math.max(0, k)]; }   // Punkt, an dem das Gleis in die Halle tritt
     const Hh = Dp.hall, [A0, A1, A2, A3] = Hh, ceilH = BED + H + 1.5;
     gbvQuad(B("bett"), [A0[0], BED, A0[1]], [A1[0], BED, A1[1]], [A2[0], BED, A2[1]], [A3[0], BED, A3[1]], [0, 1, 0], [[0, 0], [24, 0], [24, 24], [0, 24]]);
     gbvQuad(B("decke"), [A0[0], ceilH, A0[1]], [A3[0], ceilH, A3[1]], [A2[0], ceilH, A2[1]], [A1[0], ceilH, A1[1]], [0, -1, 0], [[0, 0], [1, 0], [1, 1], [0, 1]]);
     const hcx = Dp.hc[0], hcz = Dp.hc[1];
-    for (let e = 0; e < 4; e++) { const a = Hh[e], b = Hh[(e + 1) % 4], L = Math.hypot(b[0] - a[0], b[1] - a[1]), mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, nx = hcx - mx, nz = hcz - mz, nl = Math.hypot(nx, nz) || 1, steps = Math.ceil(L / 4);
+    for (let e = 0; e < 4; e++) { const a = Hh[e], b = Hh[(e + 1) % 4], L = Math.hypot(b[0] - a[0], b[1] - a[1]), mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, nx = hcx - mx, nz = hcz - mz, nl = Math.hypot(nx, nz) || 1, steps = Math.ceil(L);   // 1-m-Stuecke: Einfahrt passt genau zur Zufahrt
       for (let q = 0; q < steps; q++) { const t0 = q / steps, t1 = (q + 1) / steps, x0 = a[0] + (b[0] - a[0]) * t0, z0 = a[1] + (b[1] - a[1]) * t0, x1 = a[0] + (b[0] - a[0]) * t1, z1 = a[1] + (b[1] - a[1]) * t1;
-        if (inSpur((x0 + x1) / 2 + nx / nl * 0.5, (z0 + z1) / 2 + nz / nl * 0.5, -0.5)) continue;   // Einfahrt offen
+        if (Math.hypot((x0 + x1) / 2 - Dp.entry[0], (z0 + z1) / 2 - Dp.entry[1]) < hw - 0.2) continue;   // Einfahrt nur, wo das Gleis die Hallenwand kreuzt
         gbvQuad(B("wand"), [x0, BED, z0], [x1, BED, z1], [x1, ceilH, z1], [x0, ceilH, z0], [nx / nl, 0, nz / nl], [[0, 0], [1.6, 0], [1.6, 3], [0, 3]]); } }
     const lng = Math.hypot(A1[0] - A0[0], A1[1] - A0[1]) >= Math.hypot(A3[0] - A0[0], A3[1] - A0[1]), [E0, E1, E3] = lng ? [A0, A1, A3] : [A0, A3, A1], ex = [(E1[0] - E0[0]), (E1[1] - E0[1])], ey = [(E3[0] - E0[0]), (E3[1] - E0[1])], hl = Math.hypot(...ex), hb = Math.hypot(...ey);
     Dp.tracks = [];

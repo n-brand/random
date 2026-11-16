@@ -133,7 +133,8 @@ const wtPartU = (a0, a1, b0, b1, y0, y1, opt) => wtPartR((a0 + a1) / 2, (b0 + b1
   for (const [y0] of [[L1], [L2]]) wtPartU(KG.a0, KG.a1, T.b1 - 0.5, K.b0, y0 - 0.5, y0, { chain: 1, m: 0.05 });
   // Wendel: Fahrbahn in 5-Grad-Stuecken (Boden), Aussenwand, Mittelsaeule
   for (let i = 0; i < 72; i++) { const th = Math.PI + (i + 0.5) / 72 * 2 * Math.PI, [a, b] = P(H.R, th), y = hY(th), ds = H.R * 2 * Math.PI / 72;
-    wtPartR(a, b, -Math.sin(th), Math.cos(th), ds / 2 + 0.05, H.w / 2, y - 0.3, y, { chain: 1, m: 0.05 }); }
+    const g = (L2 - L1) / (2 * Math.PI * H.R), e = g * (ds / 2 + 0.05);   // geneigte Oberseite (dkAdd g): glatt statt Stufen
+    wtPartR(a, b, -Math.sin(th), Math.cos(th), ds / 2 + 0.05, H.w / 2, y - 0.3 - Math.abs(e), y + Math.abs(e), { chain: 1, m: 0.05, g }).top = WTO.Y + y; }   // Oberseite in der Mitte = y
   for (let i = 0; i < 72; i++) { const th = (i + 0.5) / 72 * 2 * Math.PI, [a, b] = P(rO + 0.2, th), ds = (rO + 0.2) * 2 * Math.PI / 72, da = -Math.sin(th), db = Math.cos(th);
     const top = !(inStrip(a, b) && b > H.cb), bot = !(inStrip(a, b) && b < H.cb);
     if (!top) wtPartR(a, b, da, db, ds / 2, 0.15, L2, L1 - 0.3, { floor: 0 }); else if (!bot) wtPartR(a, b, da, db, ds / 2, 0.15, C2, C1, { floor: 0 }); else wtPartR(a, b, da, db, ds / 2, 0.15, L2, C1, { floor: 0 });

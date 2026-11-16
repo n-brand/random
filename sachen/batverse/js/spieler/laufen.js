@@ -27,11 +27,15 @@ function pushOut(p, feet) {
       p.x += out[1] * (out[0] + RADIUS); p.z += out[2] * (out[0] + RADIUS);
     }
   }
+  // Kreise mehrmals aufloesen (Kreisketten an Waenden: genau zwischen zwei Kreisen schob einer Durchgang fast nur seitlich, beim Rennen rutschte man durch; Untergrund-Pruefung 2026-11-16)
+  for (let it = 0; it < 4; it++) { let moved = false;
   for (const [cx, cz, r, top] of nC) {
     if (top !== undefined && (feet >= top || feet < top - 8)) continue;   // Hindernis mit Hoehe gilt nur auf seiner Ebene
     const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
-    if (d < min && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; }   // D1: Kreise ohne Hoehe (Baumstaemme) nur am Gelaende, nicht in Tunneln darunter
+    if (d < min - 1e-4 && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; moved = true; }
   }
+  if (!moved) break; }
+
   dkPush(p, feet + STEP, feet + BODY, RADIUS);                             // gedrehte Kollision (kern/drehkoll.js)
   const far = Math.hypot(p.x, p.z);
   if (far > LIMIT) { p.x *= LIMIT / far; p.z *= LIMIT / far; }

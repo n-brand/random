@@ -16,8 +16,9 @@ function dkCells(o, fn) {
   const cs = DK.cs, ex = Math.abs(o.ux) * o.hl + Math.abs(o.uz) * o.hw, ez = Math.abs(o.uz) * o.hl + Math.abs(o.ux) * o.hw;
   for (let i = Math.floor((o.cx - ex) / cs), i1 = Math.floor((o.cx + ex) / cs); i <= i1; i++) for (let k = Math.floor((o.cz - ez) / cs), k1 = Math.floor((o.cz + ez) / cs); k <= k1; k++) fn(dkKey(i, k));
 }
-function dkAdd({ cx, cy, cz, ux, uz, hl, hw, hh, floor = 1, chain = 0, ceil = 1, m = 0.3 }) {
-  const o = { cx, cz, ux, uz, hl: hl + m, hw: hw + m, y0: cy - hh - m, y1: cy + hh + m, top: cy + hh, floor, chain, ceil, on: true, _q: 0 };
+// g: Neigung der Oberseite entlang (ux, uz) (m je m, ab der Mitte; Rampen ohne Stufen, Untergrund-Pruefung 2026-11-16: die Wayne-Wendel war eine Treppe aus 72 Stufen a 7,6 cm)
+function dkAdd({ cx, cy, cz, ux, uz, hl, hw, hh, floor = 1, chain = 0, ceil = 1, m = 0.3, g = 0 }) {
+  const o = { cx, cz, ux, uz, hl: hl + m, hw: hw + m, y0: cy - hh - m, y1: cy + hh + m, top: cy + hh, g, floor, chain, ceil, on: true, _q: 0 };
   DK.parts.push(o);
   dkCells(o, key => { let c = DK.grid.get(key); if (!c) DK.grid.set(key, c = []); c.push(o); });
   return o;
@@ -52,7 +53,7 @@ function dkPush(p, y0, y1, R) {
 // Decke: tiefste Unterkante eines Teils ab Hoehe y im Kreis (x, z, R), sonst Infinity
 function dkCeil(x, z, R, y) { let c = Infinity; dkEach(x, z, R, o => { if (o.ceil && o.y0 >= y && o.y0 < c) c = o.y0; }); return c; }
 // Boden: hoechste Oberseite (ohne Rand) eines Teils mit floor am Punkt, hoechstens 0,6 m ueber den Fuessen; sonst null
-function dkFloor(x, z, feet) { let best = null; dkEach(x, z, 0, o => { if (o.floor && o.top <= feet + 0.6 && (best === null || o.top > best)) best = o.top; }); return best; }
+function dkFloor(x, z, feet) { let best = null; dkEach(x, z, 0, o => { const t = o.g ? o.top + o.g * ((x - o.cx) * o.ux + (z - o.cz) * o.uz) : o.top; if (o.floor && t <= feet + 0.6 && (best === null || t > best)) best = t; }); return best; }
 // Punkt (mit Rand m) in einem Teil?
 function dkIn(x, y, z, m = 0) { let hit = false; dkEach(x, z, m, o => { if (y > o.y0 - m && y < o.y1 + m) hit = true; }); return hit; }
 // Hohlraeume: { poly: [[x, z] ...], y0, y1 } (Spielkoordinaten)
