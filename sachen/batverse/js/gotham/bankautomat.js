@@ -10,7 +10,7 @@
 // wie das HTML (640 x 504, Kopfzeile 62). Seite aus ATM (konto.js): start, betrag, ok; nach dem Schliessen haelt konto.js die letzte Seite ATM_HOLD ms.
 const ATM_SCREENS = [], ATM_FONT = '"Segoe UI", Arial, sans-serif';
 function atmScreenDraw(c, w, h) {
-  const K = typeof KONTO !== "undefined" ? KONTO : null, A = typeof ATM !== "undefined" ? ATM : { page: "start" }, F = typeof atmFmt === "function" ? atmFmt : n => "$" + n;
+  const K = typeof KONTO !== "undefined" ? KONTO : null, A = typeof ATM !== "undefined" ? ATM : { page: "start" }, F = typeof atmFmt === "function" ? atmFmt : n => n + " $";
   c.save(); c.scale(w / 640, h / 504);
   const font = (wt, px) => c.font = wt + " " + px + "px " + ATM_FONT;
   const txt = (t, x, y, wt, px, col, al) => { font(wt, px); c.fillStyle = col || "#fff"; c.textAlign = al || "center"; c.fillText(t, x, y); };
@@ -19,13 +19,13 @@ function atmScreenDraw(c, w, h) {
   c.textBaseline = "alphabetic";
   c.fillStyle = "#0b55d0"; c.fillRect(0, 0, 640, 504); c.fillStyle = "#093c99"; c.fillRect(0, 0, 640, 62);
   txt("ATM", 18, 41, "bold", 30, "#fff", "left");
-  const rest = K && typeof kontoLimitRest === "function" ? kontoLimitRest() : 1, lim = typeof atmLimTxt === "function" ? atmLimTxt() : "$0 / $10,000";
-  for (const [l, v, col, x] of [["Weekly Deposit Limit", lim, rest <= 0 ? "#ff4d4d" : "#fff", 150], ["Online Balance", F(K ? K.stand : 0), "#35d6ff", 360], ["Cash", F(K ? K.bar : 0), "#39f06a", 505]]) {
+  const rest = K && typeof kontoLimitRest === "function" ? kontoLimitRest() : 1, lim = typeof atmLimTxt === "function" ? atmLimTxt() : "0 $ / 10 000 $";
+  for (const [l, v, col, x] of [["Einzahl-Limit (Woche)", lim, rest <= 0 ? "#ff4d4d" : "#fff", 150], ["Kontostand", F(K ? K.stand : 0), "#35d6ff", 380], ["Bargeld", F(K ? K.bar : 0), "#39f06a", 520]]) {
     txt(l, x, 23, "600", 13, "#fff", "left"); txt(v, x, 49, "bold", 21, col, "left"); }
   const Y = 62;
   if (A.page === "betrag") {
     const ok = typeof atmOk === "function" ? atmOk() : true, dep = A.mode === "ein";
-    txt(dep ? "Select amount to deposit" : "Select amount to withdraw", 320, Y + 93, "bold", 22);
+    txt(dep ? "Betrag zum Einzahlen wählen" : "Betrag zum Abheben wählen", 320, Y + 93, "bold", 22);
     const fine = [["-100", 90], ["-10", 146], ["-1", 202], ["+1", 388], ["+10", 444], ["+100", 500]];
     for (const [t, x] of fine) { rr(x, Y + 120, 50, 36, 7, "#17c8f2"); txt(t, x + 25, Y + 145, "bold", 19); }
     rr(264, Y + 120, 112, 36, 18, "#0a3a96"); txt(F(A.amt), 320, Y + 145, "800", 20, ok ? "#fff" : "#ff8a7a");
@@ -33,18 +33,18 @@ function atmScreenDraw(c, w, h) {
     for (const [v, col, row] of q) { const x = 80 + col * 248, y = Y + 186 + row * 56; rr(x, y, 232, 44, 7, "#17c8f2");
       if (v === A.amt) { c.strokeStyle = "#fff"; c.lineWidth = 3; c.beginPath(); c.roundRect ? c.roundRect(x + 1.5, y + 1.5, 229, 41, 6) : c.rect(x + 1.5, y + 1.5, 229, 41); c.stroke(); }
       txt(F(v), x + 116, y + 29, "bold", 19); }
-    btn(80, Y + 366, 232, 46, "#ff6533", "CANCEL", 18); btn(328, Y + 366, 232, 46, "#1ee865", (dep ? "DEPOSIT " : "WITHDRAW ") + F(A.amt), 18, !ok);
+    btn(80, Y + 366, 232, 46, "#ff6533", "ABBRECHEN", 18); btn(328, Y + 366, 232, 46, "#1ee865", (dep ? "EINZAHLEN " : "ABHEBEN ") + F(A.amt), 18, !ok);
     const e = typeof atmErr === "function" ? atmErr() : ""; if (e) txt(e, 320, Y + 431, "600", 12, "#ffd0c8");
   } else if (A.page === "ok") {
-    txt("Success!", 320, Y + 103, "bold", 22); txt(A.msg || "", 320, Y + 128, "600", 14);
+    txt("Erfolgreich!", 320, Y + 103, "bold", 22); txt(A.msg || "", 320, Y + 128, "600", 14);
     c.fillStyle = "#0a3a96"; c.beginPath(); c.arc(320, Y + 190, 30, 0, Math.PI * 2); c.fill();
     c.strokeStyle = "#fff"; c.lineWidth = 5; c.lineCap = "round"; c.lineJoin = "round"; c.beginPath(); c.moveTo(307, Y + 190); c.lineTo(316, Y + 199); c.lineTo(334, Y + 180); c.stroke();
-    btn(96, Y + 300, 216, 46, "#17c8f2", "RETURN TO MENU", 18); btn(328, Y + 300, 216, 46, "#1ee865", "I'M DONE", 18);
+    btn(96, Y + 300, 216, 46, "#17c8f2", "ZURÜCK ZUM MENÜ", 18); btn(328, Y + 300, 216, 46, "#1ee865", "FERTIG", 18);
   } else {
-    font("bold", 24); const a1 = "Hello, ", wa = c.measureText(a1).width; font("400", 24); const wb = c.measureText("Bruce").width, x0 = 320 - (wa + wb) / 2;
+    font("bold", 24); const a1 = "Hallo, ", wa = c.measureText(a1).width; font("400", 24); const wb = c.measureText("Bruce").width, x0 = 320 - (wa + wb) / 2;
     txt(a1, x0, Y + 126, "bold", 24, "#fff", "left"); txt("Bruce", x0 + wa, Y + 126, "400", 24, "#fff", "left");
-    txt("What would you like to do?", 320, Y + 155, "600", 15);
-    btn(192, Y + 180, 256, 50, "#b4bde8", "DEPOSIT", 18, K && (K.bar <= 0 || rest <= 0)); txt("OR", 320, Y + 258, "bold", 13); btn(192, Y + 275, 256, 50, "#1ee865", "WITHDRAW", 18, K && K.stand <= 0);
+    txt("Was möchtest du tun?", 320, Y + 155, "600", 15);
+    btn(192, Y + 180, 256, 50, "#b4bde8", "EINZAHLEN", 18, K && (K.bar <= 0 || rest <= 0)); txt("ODER", 320, Y + 258, "bold", 13); btn(192, Y + 275, 256, 50, "#1ee865", "ABHEBEN", 18, K && K.stand <= 0);
   }
   c.restore();
 }

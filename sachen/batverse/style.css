@@ -249,7 +249,7 @@ body.touch #konto { top: calc(env(safe-area-inset-top, 0px) + 186px); right: 10p
 .atm-head { position: absolute; left: 0; top: 0; right: 0; height: 62px; background: #093c99; }
 .atm-head > b { position: absolute; left: 18px; top: 11px; font-size: 30px; line-height: 38px; }
 .atm-head div { position: absolute; top: 10px; display: flex; flex-direction: column; font-weight: 700; font-size: 21px; line-height: 26px; white-space: nowrap; }
-.atm-head div:nth-of-type(1) { left: 150px; } .atm-head div:nth-of-type(2) { left: 360px; } .atm-head div:nth-of-type(3) { left: 505px; }
+.atm-head div:nth-of-type(1) { left: 150px; } .atm-head div:nth-of-type(2) { left: 380px; } .atm-head div:nth-of-type(3) { left: 520px; }
 .atm-head small { font-size: 13px; line-height: 16px; font-weight: 600; }
 .atm-cy { color: #35d6ff; } .atm-gr { color: #39f06a; } .atm-lim.voll { color: #ff4d4d; }
 .bank-close { position: absolute; right: 4px; top: 2px; display: none; background: none !important; color: #cfe0ff !important; font-size: 24px !important; line-height: 1; }

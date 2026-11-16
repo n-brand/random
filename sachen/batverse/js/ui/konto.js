@@ -30,13 +30,13 @@ async function kontoSetBackend(b) { KONTO.backend = b; const d = await b.load();
 // Anzeige neben der Hotbar, kurz +/- bei Buchungen
 // Bankautomat (Nicolas 2026-11-16, Vorbild-Bilder PLAN-BANKAUTOMAT.md): Seiten Start (Einzahlen/Abheben), Betrag (-100..+100, Schnellbetraege), Erfolg.
 // Bargeld ist ein Betrag in Dollar (KONTO.bar, Nicolas 2026-11-16: keine Buendel, "normal einfach Zahlen"); dazu kontoBar(n, grund). Einzahlen hoechstens KONTO_LIMIT je Spielwoche.
-// Bildschirme wie die Vorbilder (Nicolas 2026-11-16 "genau diese Screens"): englische Texte, Betraege als $1,000 (atmFmt). Nach dem Schliessen zeigt der 3D-Bildschirm
+// Bildschirme wie die Vorbilder (Nicolas 2026-11-16 "genau diese Screens", Texte auf Deutsch), Betraege wie im Spiel 1 000 $ (atmFmt). Nach dem Schliessen zeigt der 3D-Bildschirm
 // noch ATM_HOLD ms die letzte Seite, dann wieder Start (Nicolas: "5 Sekunden spaeter wechselt es wieder auf die Default-Anzeige").
 const ATM = { page: "start", mode: "ein", amt: 20, msg: "", t: 0 }, ATM_HOLD = 5000;
-const atmFmt = n => (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString("en-US");
+const atmFmt = n => kontoFmt(n);
 const atmLimTxt = () => atmFmt(KONTO_LIMIT - kontoLimitRest()) + " / " + atmFmt(KONTO_LIMIT);
 const atmOk = () => ATM.amt > 0 && ATM.amt <= atmMax();
-const atmErr = () => atmOk() ? "" : ATM.amt <= 0 ? "Select an amount" : ATM.mode === "ein" ? (ATM.amt > KONTO.bar ? "Not enough cash" : "Over this week's deposit limit (" + atmFmt(kontoLimitRest()) + " left)") : "Not enough balance";
+const atmErr = () => atmOk() ? "" : ATM.amt <= 0 ? "Betrag wählen" : ATM.mode === "ein" ? (ATM.amt > KONTO.bar ? "So viel Bargeld hast du nicht" : "Über dem Einzahl-Limit dieser Woche (noch " + atmFmt(kontoLimitRest()) + ")") : "Nicht genug Guthaben";
 const atmMax = () => ATM.mode === "ein" ? Math.min(KONTO.bar, kontoLimitRest()) : KONTO.stand;
 function kontoRender() {
   const el = document.getElementById("konto"); if (el) el.querySelector(".k-stand").textContent = kontoFmt(KONTO.stand);
@@ -48,8 +48,8 @@ function kontoRender() {
   p.querySelector(".bank-stand").textContent = atmFmt(KONTO.stand); p.querySelector(".bank-cash").textContent = atmFmt(KONTO.bar);
   for (const pg of p.querySelectorAll(".atm-pg")) pg.hidden = pg.dataset.p !== ATM.page;
   p.querySelector('[data-a="ein"]').disabled = KONTO.bar <= 0 || rest <= 0; p.querySelector('[data-a="ab"]').disabled = KONTO.stand <= 0;
-  if (ATM.page === "betrag") { const ok = atmOk(), v = ATM.mode === "ein" ? "DEPOSIT" : "WITHDRAW";
-    p.querySelector(".atm-t").textContent = ATM.mode === "ein" ? "Select amount to deposit" : "Select amount to withdraw";
+  if (ATM.page === "betrag") { const ok = atmOk(), v = ATM.mode === "ein" ? "EINZAHLEN" : "ABHEBEN";
+    p.querySelector(".atm-t").textContent = ATM.mode === "ein" ? "Betrag zum Einzahlen wählen" : "Betrag zum Abheben wählen";
     p.querySelector(".atm-amt").textContent = atmFmt(ATM.amt); p.querySelector(".atm-amt").classList.toggle("bad", !ok); p.querySelector(".atm-go").textContent = v + " " + atmFmt(ATM.amt); p.querySelector(".atm-go").disabled = !ok;
     for (const q of p.querySelectorAll(".atm-q")) q.classList.toggle("sel", +q.dataset.q === ATM.amt);
     p.querySelector(".atm-err").textContent = atmErr(); }
@@ -74,8 +74,8 @@ function kontoAction(a, el) {
   else if (a === "menu") ATM.page = "start";
   else if (a === "fertig") return kontoClose();
   else if (a === "go") { const n = ATM.amt; if (!(n > 0 && n <= atmMax())) return kontoRender();
-    if (ATM.mode === "ein") { KONTO.bar -= n; kontoLimitRest(); KONTO.woche.ein += n; kontoEin(n, "Einzahlung Bargeld"); ATM.msg = "You have deposited " + atmFmt(n); }
-    else { kontoAus(n, "Bezug Bargeld"); KONTO.bar += n; ATM.msg = "You have withdrawn " + atmFmt(n); }
+    if (ATM.mode === "ein") { KONTO.bar -= n; kontoLimitRest(); KONTO.woche.ein += n; kontoEin(n, "Einzahlung Bargeld"); ATM.msg = "Du hast " + atmFmt(n) + " eingezahlt"; }
+    else { kontoAus(n, "Bezug Bargeld"); KONTO.bar += n; ATM.msg = "Du hast " + atmFmt(n) + " abgehoben"; }
     kontoSave(); ATM.page = "ok"; }
   else if (el && el.dataset.d) ATM.amt = Math.max(0, ATM.amt + +el.dataset.d);
   else if (el && el.dataset.q) ATM.amt = +el.dataset.q;
