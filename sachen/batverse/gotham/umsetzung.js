@@ -54,7 +54,7 @@ const UMSETZUNG = [
   { phase: "verkehr", nr: "V1", titel: "U-Bahn: 4 Ringlinien", status: "laeuft", stand: "Tunnel mit zwei Gleisen, 27 Stationen (6 Umsteigestationen) mit Aufzug-Pavillons, 16 fahrende Züge, Abstellanlage mit Zufahrt, Graffiti NBR. Offen: Weichen zum Ringwechsel, Mitfahren.", braucht: ["G2"],
     inhalt: "Zentrumsring um den Wayne Tower und drei Ringe in Uptown, Westseite und Süden, je zwei Gleise (beide Richtungen wie die Yamanote-Linie in Tokio), 6 Umsteigestationen mit Weichen (Züge können den Ring wechseln), Hauptbahnhof mit Abstellanlage, fahrende Züge, Graffiti NBR.",
     warum: "Liegt unter den Strassen, muss vor den Kanälen geplant sein (Übergänge)." },
-  { phase: "verkehr", nr: "V2", titel: "Bus", status: "offen", braucht: ["G2"],
+  { phase: "verkehr", nr: "V2", titel: "Bus", status: "fertig", stand: "4 Linien aus daten.js (Zentrum, West-Ost, Manor-Express, Hafen) mit 46 Haltestellen (Wartehäuschen, Mast in Linienfarbe), je Linie ein fahrender Bus hin und zurück, Busbahnhof mit Dach, Steigen, Wartehalle und zwei abgestellten Bussen.", braucht: ["G2"],
     inhalt: "Haltestellen zwischen den U-Bahn-Stationen, Linien, fahrender Bus, Busbahnhof.",
     warum: "Folgt den Hauptstrassen." },
   { phase: "gebaeude", nr: "P3a", titel: "Wayne Tower, Polizei, Hafen", status: "offen", braucht: ["G3/G4"],
