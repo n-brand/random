@@ -45,7 +45,7 @@ const UMSETZUNG = [
   { phase: "technik", nr: "T6", titel: "Gotham-Karte im Spiel", status: "fertig", stand: "Minikarte unten rechts (dreht mit, Umschalt+K) und grosse Karte auf Taste K, beide aus den Gotham-Daten (js/ui/stadtkarte.js).", braucht: ["G2"],
     inhalt: "Die 2D-Karte auch im Spiel als Kartenansicht (Taste) mit eigener Position.",
     warum: "Sobald Strassen stehen, braucht man die Karte zum Zurechtfinden." },
-  { phase: "grund", nr: "G3/G4", titel: "Gebäude-Vorlagen und Wohlstand", status: "offen", braucht: ["G2", "T5"],
+  { phase: "grund", nr: "G3/G4", titel: "Gebäude-Vorlagen und Wohlstand", status: "fertig", stand: "1657 Gebäude aus 6 Vorlagen (Wolkenkratzer, Büro, Laden mit Wohnung, Mietshaus, Fabrik, Lagerhalle) nach Wohlstand und Höhe; fern schlichte Hüllen (Skyline bis ca. 3,6 km), nah Anbauten, Schatten und Kollision; Werkstatt zeigt alle Vorlagen.", braucht: ["G2", "T5"],
     inhalt: "Wenige Vorlagen (Wolkenkratzer, Bürohaus, Mietshaus, Laden mit Wohnung, Fabrik, Lagerhalle), Geschosse mindestens 4,7 m. Wohlstand je Bezirk steuert Höhe und Art der Füllbauten.",
     warum: "Die Stadt füllt sich automatisch entlang der Strassen." },
   { phase: "grund", nr: "G5/G6", titel: "Seitengassen und Baustellen", status: "offen", braucht: ["G3/G4"],
