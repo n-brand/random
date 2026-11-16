@@ -1,24 +1,24 @@
 /* Werkstatt – Person-Modus: Stile fuer Hotbar, Inventar, Konto, Bankautomat, Tooltip und Zielkreis, aus ../style.css kopiert (Regeln nach Selektor, siehe Kopierskript-Muster in CLAUDE.md; dort aendern und hier nachziehen). */
 #hotbar { display: none; position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 62px); transform: translateX(-50%); gap: 4px; padding: 4px; background: rgba(12,14,18,.72); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; z-index: 5; }
 body.person #hotbar { display: flex; }
-.inv-slot { position: relative; width: 46px; height: 46px; padding: 0; border-radius: 7px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.12); cursor: pointer; display: grid; place-items: center; }
-.inv-slot svg { width: 34px; height: 34px; }
+:root { --slot: clamp(48px, min(4.4vw, 7.5vh), 76px); }   /* Platzgroesse Hotbar und Inventar, waechst mit dem Fenster (Nicolas 2026-11-16 "etwas groesser, dynamisch") */
+body.touch { --slot: clamp(36px, min(8vw, 9vh), 52px); }
+.inv-slot { position: relative; width: var(--slot); height: var(--slot); padding: 0; border-radius: 7px; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.12); cursor: pointer; display: grid; place-items: center; }
+.inv-slot svg { width: calc(var(--slot) * .72); height: calc(var(--slot) * .72); }
 .inv-slot.sel { border-color: #e8c547; background: rgba(232,197,71,.16); }
 .inv-slot.pick { border-color: #6ab0ff; background: rgba(106,176,255,.2); }
-.inv-k { position: absolute; left: 3px; top: 1px; font: 600 9px system-ui, sans-serif; color: rgba(255,255,255,.55); }
-.inv-n { position: absolute; right: 3px; bottom: 1px; font: 700 11px system-ui, sans-serif; color: #fff; text-shadow: 0 1px 2px #000; }
+.inv-k { position: absolute; left: 3px; top: 1px; font: 600 calc(var(--slot) * .19) system-ui, sans-serif; color: rgba(255,255,255,.55); }
+.inv-n { position: absolute; right: 3px; bottom: 1px; font: 700 calc(var(--slot) * .24) system-ui, sans-serif; color: #fff; text-shadow: 0 1px 2px #000; }
 #inventar { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.55); display: grid; place-items: center; }
 #inventar[hidden] { display: none; }
-.inv-box { background: #15181d; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; padding: 14px; color: #e8e8e8; font: 13px system-ui, sans-serif; max-width: calc(100vw - 32px); }
+.inv-box { background: #15181d; border: 1px solid rgba(255,255,255,.15); border-radius: 12px; padding: 14px; color: #e8e8e8; font: 14px system-ui, sans-serif; max-width: calc(100vw - 32px); }
 .inv-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .inv-close { background: none; border: 0; color: #ccc; font-size: 22px; cursor: pointer; }
-.inv-grid, .inv-bar { display: grid; grid-template-columns: repeat(9, 46px); gap: 4px; }
+.inv-grid, .inv-bar { display: grid; grid-template-columns: repeat(9, var(--slot)); gap: 4px; }
 .inv-sep { margin: 10px 0 4px; font-size: 11px; opacity: .7; }
 .inv-info { margin-top: 10px; min-height: 18px; }
 .inv-hint { margin-top: 6px; font-size: 11px; opacity: .6; }
 body.touch #hotbar { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
-body.touch .inv-slot { width: 38px; height: 38px; } body.touch .inv-slot svg { width: 28px; height: 28px; }
-body.touch .inv-grid, body.touch .inv-bar { grid-template-columns: repeat(9, 38px); }
 #konto { display: none; position: fixed; right: calc(env(safe-area-inset-right, 0px) + 16px); top: calc(env(safe-area-inset-top, 0px) + 58px); padding: 4px 12px; background: rgba(12,14,18,.72); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; color: #e8c56a; font: 700 16px system-ui, sans-serif; z-index: 5; white-space: nowrap; }   /* oben rechts (Nicolas 2026-11-16) */
 body.person #konto { display: block; }
 #konto .k-delta { position: absolute; right: 0; top: 100%; margin-top: 4px; font-size: 14px; text-shadow: 0 1px 3px #000; opacity: 0; transition: opacity .3s; }
@@ -26,38 +26,48 @@ body.person #konto { display: block; }
 .pos { color: #7fd38a; } .neg { color: #ff7a6a; }
 #bank { position: fixed; inset: 0; z-index: 41; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.45); padding: 12px; }
 #bank[hidden] { display: none; }
-.atm { position: relative; display: flex; align-items: center; gap: 14px; padding: 28px 22px; width: min(820px, 96vw); background: #0a0f12; border-radius: 34px; box-shadow: 0 0 0 10px #3f474f, 0 20px 60px rgba(0,0,0,.6); font-family: system-ui, sans-serif; }
+.atm { position: relative; display: flex; align-items: center; gap: 14px; padding: 28px 22px; background: #0a0f12; border-radius: 34px; box-shadow: 0 0 0 10px #3f474f, 0 20px 60px rgba(0,0,0,.6); font-family: "Segoe UI", Arial, sans-serif; }
+/* Bildschirm wie die Vorbilder (Nicolas 2026-11-16 "genau diese Screens"): feste Masse 640 x 504, gleiche Koordinaten zeichnet bankautomat.js atmScreenDraw auf den 3D-Bildschirm */
 .atm-slots { position: absolute; left: -96px; top: 18%; display: flex; flex-direction: column; gap: 46px; }
 .atm-slots i { display: block; width: 84px; height: 30px; border-radius: 15px; background: #020304; }
 @media (max-width: 1000px) { .atm-slots { display: none; } }
-.atm-side { display: flex; flex-direction: column; justify-content: space-around; align-self: stretch; padding: 40px 0 26px; }
+.atm-side { display: flex; flex-direction: column; justify-content: space-around; align-self: stretch; padding: 70px 0 30px; }
 .atm-side button { width: 46px; height: 34px; border-radius: 9px; border: 0; background: #4f585f; box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); cursor: pointer; }
 .atm-side button:active { transform: translateY(2px); }
-.atm-scr { flex: 1; min-height: 430px; display: flex; flex-direction: column; background: #0b4fc4; color: #fff; overflow: hidden; }
-.atm-head { display: flex; align-items: flex-start; gap: 18px; padding: 10px 16px 9px; background: #093c99; }
-.atm-head > b { font-size: 26px; margin-right: auto; align-self: center; }
-.atm-head div { display: flex; flex-direction: column; font-weight: 700; font-size: 18px; } .atm-head small { font-size: 11px; font-weight: 600; opacity: .9; }
-.atm-cy { color: #35d6ff; } .atm-gr { color: #39f06a; } .atm-lim.voll { color: #ff5a5a; }
-.bank-close { background: none; border: 0; color: #cfe0ff; font-size: 24px; line-height: 1; cursor: pointer; align-self: center; }
-.atm-pg { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px 26px 22px; text-align: center; }
+.atm-scr { position: relative; flex: none; width: 640px; height: 504px; background: #0b55d0; color: #fff; overflow: hidden; }
+.atm-scr button { font-family: inherit; color: #fff; border: 0; cursor: pointer; padding: 0; }
+.atm-head { position: absolute; left: 0; top: 0; right: 0; height: 62px; background: #093c99; }
+.atm-head > b { position: absolute; left: 18px; top: 11px; font-size: 30px; line-height: 38px; }
+.atm-head div { position: absolute; top: 10px; display: flex; flex-direction: column; font-weight: 700; font-size: 21px; line-height: 26px; white-space: nowrap; }
+.atm-head div:nth-of-type(1) { left: 150px; } .atm-head div:nth-of-type(2) { left: 360px; } .atm-head div:nth-of-type(3) { left: 505px; }
+.atm-head small { font-size: 13px; line-height: 16px; font-weight: 600; }
+.atm-cy { color: #35d6ff; } .atm-gr { color: #39f06a; } .atm-lim.voll { color: #ff4d4d; }
+.bank-close { position: absolute; right: 4px; top: 2px; display: none; background: none !important; color: #cfe0ff !important; font-size: 24px !important; line-height: 1; }
+body.touch .bank-close { display: block; }
+.atm-pg { position: absolute; left: 0; right: 0; top: 62px; bottom: 0; text-align: center; }
 .atm-pg[hidden] { display: none; }
-.atm-pg h2 { margin: 0; font-size: 34px; } .atm-pg h2 span { font-weight: 600; } .atm-pg p { margin: 0 0 6px; font-weight: 600; } .atm-pg h3 { margin: 0; font-size: 22px; }
-.atm-b { min-width: 260px; padding: 14px 18px; border: 0; border-radius: 8px; color: #fff; font: 800 18px system-ui, sans-serif; letter-spacing: .03em; cursor: pointer; }
+.atm-pg h2, .atm-pg h3, .atm-pg p { position: absolute; left: 0; right: 0; margin: 0; }
+.atm-pg h2 { top: 104px; font-size: 24px; line-height: 30px; font-weight: 700; } .atm-pg h2 span { font-weight: 400; }
+.atm-pg p { top: 140px; font-size: 15px; line-height: 20px; font-weight: 600; }
+.atm-pg h3 { top: 72px; font-size: 22px; line-height: 28px; font-weight: 700; }
+.atm-pg[data-p="ok"] h3 { top: 82px; } .atm-pg .atm-msg { top: 113px; font-size: 14px; line-height: 20px; }
+.atm-b { border-radius: 7px; font-size: 18px !important; font-weight: 800; letter-spacing: .02em; }
+.atm-pg[data-p="start"] .atm-b { position: absolute; left: 192px; width: 256px; height: 50px; }
+.atm-pg [data-a="ein"] { top: 180px; } .atm-pg [data-a="ab"] { top: 275px; }
 .atm-b:disabled { opacity: .45; cursor: default; }
-.atm-b.lav { background: #b4bde8; } .atm-b.grn { background: #1ee05c; } .atm-b.org { background: #ff6533; } .atm-b.cyan { background: #19c8f0; }
-.atm-or { font-weight: 700; font-size: 13px; }
-.atm-fine { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.atm-fine button { min-width: 52px; padding: 8px 6px; border: 0; border-radius: 7px; background: #12c4f2; color: #fff; font: 700 18px system-ui, sans-serif; cursor: pointer; }
-.atm-amt { min-width: 120px; padding: 8px 14px; border-radius: 999px; background: #08347f; font-weight: 800; font-size: 20px; }
-.atm-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; width: 100%; max-width: 560px; }
-.atm-q { padding: 12px; border: 3px solid transparent; border-radius: 8px; background: #12c4f2; color: #fff; font: 700 18px system-ui, sans-serif; cursor: pointer; }
-.atm-q.sel { border-color: #fff; }
-.atm-row { display: flex; gap: 16px; width: 100%; max-width: 560px; } .atm-row .atm-b { flex: 1; min-width: 0; }
-.atm-err { min-height: 18px; font-size: 13px; color: #ffd0c8; font-weight: 600; }
-.atm-check { width: 58px; height: 58px; border-radius: 50%; background: #083a94; display: grid; place-items: center; font-size: 32px; }
-@media (max-height: 760px) { .atm { transform: scale(.8); } }
-@media (max-height: 560px) { .atm { transform: scale(.6); } }
-@media (max-width: 600px) { .atm { padding: 14px 10px; gap: 6px; border-radius: 20px; } .atm-side button { width: 26px; height: 26px; } .atm-scr { min-height: 380px; } .atm-head { flex-wrap: wrap; gap: 8px; } .atm-b { min-width: 0; width: 100%; } }
+.atm-b.lav { background: #b4bde8; } .atm-b.grn { background: #1ee865; } .atm-b.org { background: #ff6533; } .atm-b.cyan { background: #17c8f2; }
+.atm-or { position: absolute; left: 0; right: 0; top: 245px; font-weight: 700; font-size: 13px; line-height: 18px; }
+.atm-fine { position: absolute; left: 0; right: 0; top: 120px; display: flex; justify-content: center; gap: 6px; }
+.atm-fine button { width: 50px; height: 36px; border-radius: 7px; background: #17c8f2; font-size: 19px; font-weight: 700; }
+.atm-amt { width: 112px; height: 36px; margin: 0 6px; border-radius: 18px; background: #0a3a96; font-weight: 800; font-size: 20px; line-height: 36px; }
+.atm-amt.bad { color: #ff8a7a; }
+.atm-quick { position: absolute; left: 80px; top: 186px; width: 480px; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 44px; gap: 12px 16px; }
+.atm-q { border: 3px solid transparent !important; border-radius: 7px; background: #17c8f2; font-size: 19px; font-weight: 700; }
+.atm-q.sel { border-color: #fff !important; }
+.atm-row { position: absolute; left: 80px; top: 366px; width: 480px; height: 46px; display: flex; gap: 16px; } .atm-row .atm-b { flex: 1; }
+.atm-pg[data-p="ok"] .atm-row { left: 96px; width: 448px; top: 300px; }
+.atm-err { position: absolute; left: 0; right: 0; top: 419px; font-size: 12px; line-height: 16px; color: #ffd0c8; font-weight: 600; }
+.atm-check { position: absolute; left: 290px; top: 160px; width: 60px; height: 60px; border-radius: 50%; background: #0a3a96; display: grid; place-items: center; font-size: 32px; font-weight: 700; }
 .bank-log { list-style: none; margin: 4px 0 0; padding: 0; }
 .bank-log li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }
 #aim-ring { display: none; position: fixed; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px; border: 2px solid rgba(255, 255, 255, .85); border-radius: 50%; pointer-events: none; z-index: 4; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }

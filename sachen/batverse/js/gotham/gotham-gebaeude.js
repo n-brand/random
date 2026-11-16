@@ -114,7 +114,7 @@ function ggebNearStep() {
 // Wie die Baustellen: 128-m-Zellen um Spieler bzw. aktives Fahrzeug und die 8 Nachbarn, je Bild hoechstens eine Zelle anlegen oder entfernen (Anlegen zuerst).
 GGEB.coll = new Map();
 function ggebColl(b) {
-  const F = b.F, Y = GGEB.Y, [cx, cz] = F.at(F.L1 / 2, F.L2 / 2), part = (ins, y0, y1) => dkAdd({ cx, cy: (y0 + y1) / 2, cz, ux: F.e1[0], uz: F.e1[1], hl: F.L1 / 2 - ins - 0.6, hw: F.L2 / 2 - ins - 0.6, hh: (y1 - y0) / 2, m: 0.3 });
+  const F = b.F, Y = GGEB.Y, [cx, cz] = F.at(F.L1 / 2, F.L2 / 2), part = (ins, y0, y1) => dkAdd({ cx, cy: (y0 + y1) / 2, cz, ux: F.e1[0], uz: F.e1[1], hl: F.L1 / 2 - ins - 0.15, hw: F.L2 / 2 - ins - 0.15, hh: (y1 - y0) / 2, m: 0.3 });   // Grenze 0,15 m vor der Fassade: Spieler-Mitte bleibt 0,45 m davor (Kamera near 0,15 sah vorher in die Wand, Nicolas 2026-11-16 FB-0544)
   if (b.type === "kratzer" && F.L1 >= 30 && F.L2 >= 30) { const yk = Y + Math.round(b.H * 0.4 / GBV.GH) * GBV.GH; return [part(0, Y - 0.2, yk), part(4, yk, Y + b.H)]; }
   return [part(0, Y - 0.2, Y + b.H)];
 }

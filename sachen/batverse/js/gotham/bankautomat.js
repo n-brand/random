@@ -6,24 +6,50 @@
 // - unten Front mit weisser Rahmenkante und eingelassener Klappe, Ausgabeschacht
 // Genutzt in der Werkstatt (aktuelles Umbauprojekt); im Spiel stehen noch die einfachen Saeulen aus gotham-orte.js.
 "use strict";
-// Bildschirm des Automaten = Startseite des Bankfensters (index.html #bank, style.css .atm*): Kopfzeile ATM / Einzahl-Limit / Kontostand / Bargeld,
-// "Hallo, Bruce", "Was moechtest du tun?", EINZAHLEN (lila), oder, ABHEBEN (gruen). Werte aus KONTO (konto.js), neu gezeichnet bei jeder Buchung (atmScreensUpdate).
-const ATM_SCREENS = [];
+// Bildschirm des Automaten = aktuelle Seite des Bankfensters (index.html #bank, style.css .atm*; Nicolas 2026-11-16 "genau diese Screens"): gleiche Koordinaten
+// wie das HTML (640 x 504, Kopfzeile 62). Seite aus ATM (konto.js): start, betrag, ok; nach dem Schliessen haelt konto.js die letzte Seite ATM_HOLD ms.
+const ATM_SCREENS = [], ATM_FONT = '"Segoe UI", Arial, sans-serif';
 function atmScreenDraw(c, w, h) {
-  const K = typeof KONTO !== "undefined" ? KONTO : null, fmt = n => typeof kontoFmt === "function" ? kontoFmt(n) : Math.round(n) + " $", s = w / 512;
-  c.fillStyle = "#0b4fc4"; c.fillRect(0, 0, w, h); c.fillStyle = "#093c99"; c.fillRect(0, 0, w, 58 * s);
-  c.fillStyle = "#fff"; c.textBaseline = "alphabetic"; c.textAlign = "left"; c.font = "bold " + 30 * s + "px Arial, sans-serif"; c.fillText("ATM", 16 * s, 40 * s);
-  const used = K && typeof kontoLimitRest === "function" ? KONTO_LIMIT - kontoLimitRest() : 0, cols = [["Einzahl-Limit (Woche)", fmt(used).replace(" $", "") + " / " + fmt(K ? KONTO_LIMIT : 10000), used >= 10000 ? "#ff5a5a" : "#fff", 112],
-    ["Kontostand", fmt(K ? K.stand : 100000), "#35d6ff", 300], ["Bargeld", fmt(K ? K.bar : 0), "#39f06a", 410]];
-  for (const [l, v, col, x] of cols) { c.fillStyle = "#fff"; c.font = "600 " + 11 * s + "px Arial, sans-serif"; c.fillText(l, x * s, 22 * s); c.fillStyle = col; c.font = "bold " + 17 * s + "px Arial, sans-serif"; c.fillText(v, x * s, 44 * s); }
-  c.textAlign = "center"; c.fillStyle = "#fff"; c.font = "bold " + 40 * s + "px Arial, sans-serif"; c.fillText("Hallo, Bruce", w / 2, 150 * s);
-  c.font = "600 " + 16 * s + "px Arial, sans-serif"; c.fillText("Was möchtest du tun?", w / 2, 180 * s);
-  const btn = (y, col, t) => { const x0 = w / 2 - 140 * s, bw = 280 * s, bh = 48 * s, r = 8 * s; c.fillStyle = col; c.beginPath(); c.moveTo(x0 + r, y); c.arcTo(x0 + bw, y, x0 + bw, y + bh, r); c.arcTo(x0 + bw, y + bh, x0, y + bh, r); c.arcTo(x0, y + bh, x0, y, r); c.arcTo(x0, y, x0 + bw, y, r); c.fill();
-    c.fillStyle = "#fff"; c.font = "800 " + 19 * s + "px Arial, sans-serif"; c.fillText(t, w / 2, y + 31 * s); };
-  btn(200 * s, "#b4bde8", "EINZAHLEN"); c.font = "bold " + 13 * s + "px Arial, sans-serif"; c.fillStyle = "#fff"; c.fillText("oder", w / 2, 270 * s); btn(285 * s, "#1ee05c", "ABHEBEN");
+  const K = typeof KONTO !== "undefined" ? KONTO : null, A = typeof ATM !== "undefined" ? ATM : { page: "start" }, F = typeof atmFmt === "function" ? atmFmt : n => "$" + n;
+  c.save(); c.scale(w / 640, h / 504);
+  const font = (wt, px) => c.font = wt + " " + px + "px " + ATM_FONT;
+  const txt = (t, x, y, wt, px, col, al) => { font(wt, px); c.fillStyle = col || "#fff"; c.textAlign = al || "center"; c.fillText(t, x, y); };
+  const rr = (x, y, bw, bh, r, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + bw, y, x + bw, y + bh, r); c.arcTo(x + bw, y + bh, x, y + bh, r); c.arcTo(x, y + bh, x, y, r); c.arcTo(x, y, x + bw, y, r); c.closePath(); c.fill(); };
+  const btn = (x, y, bw, bh, col, t, px, off) => { c.globalAlpha = off ? 0.45 : 1; rr(x, y, bw, bh, 7, col); txt(t, x + bw / 2, y + bh / 2 + px * 0.36, "800", px); c.globalAlpha = 1; };
+  c.textBaseline = "alphabetic";
+  c.fillStyle = "#0b55d0"; c.fillRect(0, 0, 640, 504); c.fillStyle = "#093c99"; c.fillRect(0, 0, 640, 62);
+  txt("ATM", 18, 41, "bold", 30, "#fff", "left");
+  const rest = K && typeof kontoLimitRest === "function" ? kontoLimitRest() : 1, lim = typeof atmLimTxt === "function" ? atmLimTxt() : "$0 / $10,000";
+  for (const [l, v, col, x] of [["Weekly Deposit Limit", lim, rest <= 0 ? "#ff4d4d" : "#fff", 150], ["Online Balance", F(K ? K.stand : 0), "#35d6ff", 360], ["Cash", F(K ? K.bar : 0), "#39f06a", 505]]) {
+    txt(l, x, 23, "600", 13, "#fff", "left"); txt(v, x, 49, "bold", 21, col, "left"); }
+  const Y = 62;
+  if (A.page === "betrag") {
+    const ok = typeof atmOk === "function" ? atmOk() : true, dep = A.mode === "ein";
+    txt(dep ? "Select amount to deposit" : "Select amount to withdraw", 320, Y + 93, "bold", 22);
+    const fine = [["-100", 90], ["-10", 146], ["-1", 202], ["+1", 388], ["+10", 444], ["+100", 500]];
+    for (const [t, x] of fine) { rr(x, Y + 120, 50, 36, 7, "#17c8f2"); txt(t, x + 25, Y + 145, "bold", 19); }
+    rr(264, Y + 120, 112, 36, 18, "#0a3a96"); txt(F(A.amt), 320, Y + 145, "800", 20, ok ? "#fff" : "#ff8a7a");
+    const q = [[20, 0, 0], [500, 1, 0], [50, 0, 1], [1000, 1, 1], [100, 0, 2], [5000, 1, 2]];
+    for (const [v, col, row] of q) { const x = 80 + col * 248, y = Y + 186 + row * 56; rr(x, y, 232, 44, 7, "#17c8f2");
+      if (v === A.amt) { c.strokeStyle = "#fff"; c.lineWidth = 3; c.beginPath(); c.roundRect ? c.roundRect(x + 1.5, y + 1.5, 229, 41, 6) : c.rect(x + 1.5, y + 1.5, 229, 41); c.stroke(); }
+      txt(F(v), x + 116, y + 29, "bold", 19); }
+    btn(80, Y + 366, 232, 46, "#ff6533", "CANCEL", 18); btn(328, Y + 366, 232, 46, "#1ee865", (dep ? "DEPOSIT " : "WITHDRAW ") + F(A.amt), 18, !ok);
+    const e = typeof atmErr === "function" ? atmErr() : ""; if (e) txt(e, 320, Y + 431, "600", 12, "#ffd0c8");
+  } else if (A.page === "ok") {
+    txt("Success!", 320, Y + 103, "bold", 22); txt(A.msg || "", 320, Y + 128, "600", 14);
+    c.fillStyle = "#0a3a96"; c.beginPath(); c.arc(320, Y + 190, 30, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = "#fff"; c.lineWidth = 5; c.lineCap = "round"; c.lineJoin = "round"; c.beginPath(); c.moveTo(307, Y + 190); c.lineTo(316, Y + 199); c.lineTo(334, Y + 180); c.stroke();
+    btn(96, Y + 300, 216, 46, "#17c8f2", "RETURN TO MENU", 18); btn(328, Y + 300, 216, 46, "#1ee865", "I'M DONE", 18);
+  } else {
+    font("bold", 24); const a1 = "Hello, ", wa = c.measureText(a1).width; font("400", 24); const wb = c.measureText("Bruce").width, x0 = 320 - (wa + wb) / 2;
+    txt(a1, x0, Y + 126, "bold", 24, "#fff", "left"); txt("Bruce", x0 + wa, Y + 126, "400", 24, "#fff", "left");
+    txt("What would you like to do?", 320, Y + 155, "600", 15);
+    btn(192, Y + 180, 256, 50, "#b4bde8", "DEPOSIT", 18, K && (K.bar <= 0 || rest <= 0)); txt("OR", 320, Y + 258, "bold", 13); btn(192, Y + 275, 256, 50, "#1ee865", "WITHDRAW", 18, K && K.stand <= 0);
+  }
+  c.restore();
 }
-function atmScreenTex() { const t = canvasTex(512, 384, (c, w, h) => atmScreenDraw(c, w, h)); ATM_SCREENS.push(t); return t; }
-function atmScreensUpdate() { for (const t of ATM_SCREENS) { const cv = t.image; atmScreenDraw(cv.getContext("2d"), cv.width, cv.height); t.needsUpdate = true; } }
+function atmScreenTex() { const t = canvasTex(640, 504, (c, w, h) => atmScreenDraw(c, w, h)); ATM_SCREENS.push(t); return t; }
+function atmScreensUpdate() { for (const t of ATM_SCREENS) { const cv = t.image, cx = cv.getContext("2d"); cx.clearRect(0, 0, cv.width, cv.height); atmScreenDraw(cx, cv.width, cv.height); t.needsUpdate = true; } }
 function buildBankautomat() {
   const g = new THREE.Group(), M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0.25, ...o });
   const add = (geo, m, x, y, z, rx = 0, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, 0); o.castShadow = o.receiveShadow = true; g.add(o); return o; };

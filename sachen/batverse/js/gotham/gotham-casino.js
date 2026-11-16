@@ -69,7 +69,7 @@ function* casinoGen() {
     const cone = new THREE.Mesh(new THREE.CylinderGeometry(9, 0.6, 260, 20, 1, true), beamM); cone.position.y = 130; const tilt = new THREE.Group(); tilt.rotation.z = 0.35; tilt.add(cone); piv.add(tilt); piv.userData.ph = sx > 0 ? 0 : Math.PI; beams.push(piv); }
   scene.add(g); g.updateMatrixWorld(true);
   // Kollision (Baukoerper) und Register
-  { const [cx, cz] = P(0, Z0 + BD / 2); dkAdd({ cx, cy: Y + H / 2, cz, ux: lx, uz: lz, hl: BW / 2 - 0.3, hw: BD / 2 - 0.3, hh: H / 2, m: 0.3 }); }
+  { const [cx, cz] = P(0, Z0 + BD / 2); dkAdd({ cx, cy: Y + H / 2, cz, ux: lx, uz: lz, hl: BW / 2, hw: BD / 2, hh: H / 2, m: 0.3 }); }   // Grenze 0,3 m vor der Fassade (Kamera nicht in der Wand)
   { const poly = [P(-BW / 2, Z0), P(BW / 2, Z0), P(BW / 2, Z0 + BD), P(-BW / 2, Z0 + BD)]; bautAdd({ id: "GO-CASINO", name: "Casino", art: "Gebäude", poly, y0: Y - 1, y1: Y + H + 12, info: "Uptown · Art déco, Roulette auf dem Dach · früher Baustelle BS-02" }); }
   CAS.anim = { glass, g, letters, bulbs, rou, ball, dice, beams, beamM, rouY: H + 10.4 + 1.2, rouZ: Z0 + BD / 2, t0: performance.now() };
 }

@@ -34,6 +34,7 @@ Allen Bildschirmen gemeinsam ist die Kopfzeile: "ATM", **Einzahl-Limit pro Woche
 ## Stand (2026-11-16)
 
 - **Gebaut:** A1 Bargeld als Betrag (Bündel werden beim Öffnen gezählt), A2 Wochenlimit 10 000 $ je 140 min (von Nicolas bestätigt), A3 Bildschirme Start, Betrag, Erfolg mit Kopfzeile als HTML-Fenster im Gerätedesign (Nicolas: "genau das Design vergrössert, mit einem HTML-div"), Seitentasten bedienen die Knöpfe daneben. A4 3D-Gerät nur in der Werkstatt (Umbauprojekt), im Spiel noch die alten Säulen.
+- **Nachtrag 2026-11-16:** Bildschirme genau wie die Vorbilder (englische Texte, $-Beträge), 3D-Bildschirm zeigt die aktuelle Seite und hält sie nach dem Schliessen 5 s.
 - **Offen:** A4 im Spiel, A5 Nahansicht (Kamera fährt vor den Bildschirm), A6 Klänge, Tastatur (Ziffern), Handy-Bank mit Bargeld/Limit.
 
 ## Umsetzung in Schritten
