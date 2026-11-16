@@ -83,7 +83,7 @@ const UMSETZUNG = [
   { phase: "geheim", nr: "P5", titel: "Geheimbasis im Container", status: "fertig", stand: "Blauer Seecontainer am Nordufer als Aufzug (5,5 m hinunter, auch mit Auto, Taste L), unten Halle 90 x 38 m mit Lichtdecke, Tumbler, Anzug aus dem Boden, Motorrad und Batpod hinter Wandtoren, Computer, aufklappbare Waffenwand, Geheimwand mit Tresor (Gold, Bargeld), Reifenstapel und Werkbank.", braucht: ["G2"],
     inhalt: "Seecontainer am Ostufer (x -1470 / z 181) als Autoaufzug, darunter Halle mit Lichtdecke, Batmobil, Anzug aus dem Boden, Waffenwand, Tresor.",
     warum: "Braucht die Uferstrasse Ost und die Ebene Tiefgarage 1." },
-  { phase: "verkehr", nr: "V3/V4", titel: "Taxi-Depot und Parken", status: "offen", braucht: ["G3/G4"],
+  { phase: "verkehr", nr: "V3/V4", titel: "Taxi-Depot und Parken", status: "fertig", stand: "Taxi-Depot mit Hof, Zaun, Wagenhalle und 12 Taxis; 5 befahrbare Parkhäuser (5 Ebenen, Rampen 15 %, geparkte Autos); Tiefgaragen-Einfahrten an 141 grossen Gebäuden (befahrbar sind die Tiefgaragen des Wayne Towers).", braucht: ["G3/G4"],
     inhalt: "Taxi-Depot, Tiefgaragen bei grossen Gebäuden, 5 Parkhäuser.",
     warum: "Ergänzt den Verkehr, wenn die Gebäude stehen." },
   { phase: "spiel", nr: "S1", titel: "Inventar mit Hotbar", status: "offen", braucht: [],

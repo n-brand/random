@@ -160,7 +160,12 @@ SK.big = { cx: 0, cz: 0, scale: 0.5, dirty: true, last: null, drag: null };
   window.skBigClose = () => { if (box.hidden) return; box.hidden = true; SK.mini.last = null; if (typeof grabMouse === "function") grabMouse(); };
   window.skBigToggle = () => box.hidden ? skBigOpen() : skBigClose();
   box.addEventListener("wheel", e => { e.preventDefault(); e.stopPropagation(); zoomAt(e.deltaY > 0 ? 1 / 1.18 : 1.18, e.clientX, e.clientY); }, { passive: false });
-  cv.addEventListener("pointerdown", e => { if (SK.big.drag) return; try { cv.setPointerCapture(e.pointerId); } catch (_) {} SK.big.drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; });
+  // Rechtsklick = dorthin teleportieren, danach schliesst die Karte (Nicolas 2026-11-16)
+  cv.addEventListener("contextmenu", e => e.preventDefault());
+  cv.addEventListener("pointerdown", e => { if (e.button !== 2) return; e.preventDefault(); e.stopPropagation(); const B = SK.big, r = cv.getBoundingClientRect(), mx = B.cx + (e.clientX - r.left - r.width / 2) / B.scale, mz = B.cz + (e.clientY - r.top - r.height / 2) / B.scale, [x, z] = GOT.toGame(mx, mz);
+    if (typeof GOT.water === "function" && GOT.water(x, z)) return toast("Dort ist Wasser");
+    skBigClose(); teleportToPoint({ x, y: terrainH(x, z) + 0.3, z }); toast("Teleportiert"); }, true);
+  cv.addEventListener("pointerdown", e => { if (e.button === 2 || SK.big.drag) return; try { cv.setPointerCapture(e.pointerId); } catch (_) {} SK.big.drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; });
   cv.addEventListener("pointermove", e => { const B = SK.big, d = B.drag; if (!d || d.id !== e.pointerId) return; B.cx -= (e.clientX - d.x) / B.scale; B.cz -= (e.clientY - d.y) / B.scale; d.x = e.clientX; d.y = e.clientY; B.dirty = true; });
   for (const ev of ["pointerup", "pointercancel"]) cv.addEventListener(ev, e => { if (SK.big.drag && SK.big.drag.id === e.pointerId) SK.big.drag = null; });
   const mid = () => { const r = box.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
