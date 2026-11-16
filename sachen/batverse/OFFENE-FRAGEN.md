@@ -84,3 +84,7 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 26. **Kontostand:** Startguthaben 100 000 $, ein Bargeld-Bündel (Tresor der Geheimbasis, Bankautomat) ist 10 000 $ wert. Bruce Wayne hätte eigentlich Milliarden; für den Fahrzeug-Shop (S4) braucht es aber einen Rahmen. Passen die Beträge?
 
 27. **Fahrzeug-Shop:** Händler, Fahrzeuge und Preise sind von mir gewählt (z. B. Motorrad 9 000 $, Aventador 420 000 $, Tumbler 5 000 000 $). Der Militärhändler hat noch kein Gebäude (Phase 6 weggelassen), seine Fahrzeuge kommen vor den Wayne Tower. Gekaufte Fahrzeuge bleiben gespeichert und lassen sich nicht verkaufen. Passt das so, oder willst du andere Fahrzeuge, Preise oder einen Verkauf?
+
+28. **Waffen zu Fuss:** Gebaut sind Batarang, Rauchbombe und Greifhaken. Batarangs machen noch keinen Schaden (es gibt noch keine Gegner) und lassen sich nicht wieder aufheben. Für die 9-mm-Munition gibt es noch keine Schusswaffe; die Gewehre an der Waffenwand sind nur Deko. Soll eine Schusswaffe dazukommen, oder bleibt Batman bei Gadgets?
+
+29. **Taste E:** Zu Fuss öffnet E jetzt das Inventar. Tore, Türen und die Hebebühne gehen zu Fuss nur noch per Rechtsklick (im Fahrzeug weiter mit E). Passt das?

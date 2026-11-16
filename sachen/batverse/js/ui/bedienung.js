@@ -82,7 +82,7 @@ renderer.domElement.addEventListener("mousedown", e => {
 });
 document.addEventListener("pointerlockchange", () => { if (document.pointerLockElement || !dragging) return; stopDrag(); unlockT = performance.now(); });
 const MOUSE_SENS = 0.0025 * 0.5;                                          // fest 50 % (Wunsch von Nicolas, nicht einstellbar)
-document.addEventListener("mousemove", e => { if (dragging) look(e.movementX * MOUSE_SENS / zoomK(), e.movementY * MOUSE_SENS / zoomK()); });   // im Panzer-Zoom feiner (schiessen.js)
+document.addEventListener("mousemove", e => { if (dragging) { const k = zoomK() * (typeof aimK === "function" ? aimK() : 1); look(e.movementX * MOUSE_SENS / k, e.movementY * MOUSE_SENS / k); } });   // im Panzer-Zoom feiner (schiessen.js)
 // Strg+W schliesst den Tab, das kann eine Webseite nicht verhindern: beim Begehen/Geist/Fahren fragt der Browser wenigstens nach (Nicolas)
 addEventListener("beforeunload", e => { if (walking) { e.preventDefault(); e.returnValue = ""; } });
 // Vollbild mit Tastensperre (Nicolas): im Vollbild bekommt die Seite Strg+W & Co. (Keyboard Lock, Chrome/Edge) und verhindert sie;
@@ -99,7 +99,7 @@ addEventListener("keydown", e => {
   if (document.fullscreenElement && (e.ctrlKey || e.metaKey) && !["KeyC", "KeyV", "KeyX", "KeyA"].includes(e.code)) e.preventDefault();   // Vollbild: Strg+W/T/N/R usw. abfangen
   if (typeof handyIsOpen === "function" && handyIsOpen()) { if (e.code === "Escape" || (e.code === "KeyP" && !e.repeat)) handyClose(); return; }   // S4: Handy offen
   if (typeof kontoIsOpen === "function" && kontoIsOpen()) { if (e.code === "Escape") kontoClose(); return; }   // S3: Bankautomat offen
-  if (typeof invIsOpen === "function" && invIsOpen()) { if (e.code === "Escape" || (e.code === "KeyI" && !e.repeat)) invClose(); return; }   // S1: Inventar offen
+  if (typeof invIsOpen === "function" && invIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyI" || e.code === "KeyE") && !e.repeat)) invClose(); return; }   // S1: Inventar offen
   if (window.skBigIsOpen && skBigIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyK" || e.code === "KeyM") && !e.shiftKey && !e.repeat)) skBigClose(); if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault(); return; }   // T6: grosse Karte offen
   if (e.code === "KeyF" && !e.repeat && !e.ctrlKey && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement)) { toggleFullscreen(); return; }
   if (window.settingsOpen && settingsOpen()) { if (e.code === "Escape" || e.code === "KeyT") closeSettings(); return; }   // K6: Einstellungen offen
@@ -112,6 +112,7 @@ addEventListener("keydown", e => {
   if (ghost && e.code === "KeyE" && !e.repeat) { const ag = findAimedGate(); if (ag && !ag.call) toggleGate(ag); return; }   // Geist: E schaltet Tore/Tueren/Hebebuehne
   if (ghost) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault(); return; }   // Geist: Aufzugstasten ohne Wirkung; Strg+Taste ohne Browserbefehl (Strg+W laesst sich nicht abfangen)
   if (e.code === "KeyE" && !e.repeat) {
+    if (!document.body.classList.contains("drive") && typeof invOpen === "function") return invOpen();   // zu Fuss: E = Inventar wie I (Nicolas 2026-11-16), Tore per Rechtsklick
     const ag = findAimedGate();
     if (ag && !ag.call) toggleGate(ag);                                          // Naehe regelt findAimedGate (gateNear)
     // Aufzuege nicht mehr mit E, sondern per Rechtsklick auf die Tuer (Nicolas 2026-11-08, siehe tore.js)

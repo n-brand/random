@@ -50,4 +50,7 @@ function invClose() { const b = document.getElementById("inventar"); if (!b || b
   document.getElementById("hotbar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (!b) return; e.currentTarget.blur?.(); invSelect(+b.dataset.i); });
   document.getElementById("inventar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (b) return invClick(+b.dataset.i); if (e.target.closest(".inv-close")) invClose(); });
   document.getElementById("btn-inv")?.addEventListener("click", e => { e.currentTarget.blur(); invIsOpen() ? invClose() : invOpen(); });
+  // Mausrad zu Fuss: naechster/voriger Hotbar-Platz (Nicolas 2026-11-16); im Fahrzeug, auf Karte und Menues nicht
+  let wAcc = 0; addEventListener("wheel", e => { if (!walking || ghost || document.body.classList.contains("drive") || invIsOpen() || e.target.closest?.("#stadtkarte, #handy, #bank, #tp-menu, #settings")) return;
+    wAcc += e.deltaY; if (Math.abs(wAcc) < 40) return; const d = Math.sign(wAcc); wAcc = 0; invSelect((INV.sel + d + 9) % 9); }, { passive: true });
   invRender(); }

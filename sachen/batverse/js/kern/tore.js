@@ -68,7 +68,8 @@ function toggleGate(t) {
 }
 // Rechtsklick ueber mousedown (wie die Villa): bei gefangener Maus schickt der Browser kein contextmenu
 renderer.domElement.addEventListener("contextmenu", e => { if (walking) e.preventDefault(); });
-renderer.domElement.addEventListener("mousedown", e => { if (!walking || e.button !== 2) return; e.preventDefault(); const g = findAimedGate();
+renderer.domElement.addEventListener("mousedown", e => { if (!walking || e.button !== 2) return; e.preventDefault(); if (typeof weaponHeld === "function" && weaponHeld() && onFoot()) return;   // S2: mit Waffe zielt Rechtsklick
+  const g = findAimedGate();
   if (g) return toggleGate(g);
   { const b = findAimedBay(); if (b) return parkInBay(b); }
   if (!ghost) { const v = findAimedVehicle(); if (v) enterVehicle(v); return; }
@@ -93,8 +94,9 @@ function updateGates(dt) {
   gateHintClock = 0;
   aimedGate = findAimedGate(); aimedVeh = aimedGate ? null : findAimedVehicle(); aimedBay = aimedGate ? null : findAimedBay();
   baySign.visible = !!aimedBay; if (aimedBay) baySign.position.set(aimedBay.x, GY + HILL + 1.6, aimedBay.z);
-  const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : aimedGate.call ? "Rechtsklick: " : "Rechtsklick/E: ") + aimedGate.name + " " + (aimedGate.verbs || ["öffnen", "schließen"])[aimedGate.target ? 1 : 0] : "";
+  const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : aimedGate.call || !document.body.classList.contains("drive") ? "Rechtsklick: " : "Rechtsklick/E: ") + aimedGate.name + " " + (aimedGate.verbs || ["öffnen", "schließen"])[aimedGate.target ? 1 : 0] : "";
   const vtxt = !aimedGate && aimedVeh ? (touch ? "Tippen: " : "Rechtsklick: ") + "einsteigen (" + vehName(aimedVeh) + ")" : aimedBay ? (touch ? "Tippen: " : "Rechtsklick: ") + "einparken (Platz " + aimedBay.n + ")" : "", show = !!(aimedGate || aimedVeh || aimedBay);
   if (hint.hidden !== !show) hint.hidden = !show;
-  if (show && hint.textContent !== (txt || vtxt)) hint.textContent = txt || vtxt;
+  const armed = show && typeof weaponHeld === "function" && weaponHeld() && onFoot(), ht = armed ? "Waffe in der Hand: Rechtsklick zielt (Mausrad: anderer Platz)" : txt || vtxt;   // S2
+  if (show && hint.textContent !== ht) hint.textContent = ht;
 }

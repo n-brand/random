@@ -284,3 +284,15 @@ body.touch #konto { top: calc(env(safe-area-inset-top, 0px) + 186px); right: 10p
 .h-car div { flex: 1; }
 .h-car button { padding: 6px 12px; border: 0; border-radius: 8px; background: #2c5d9a; color: #fff; font: 600 13px system-ui, sans-serif; cursor: pointer; }
 @media (max-width: 600px) { #handy { justify-content: center; } }
+
+/* S2 Zielen (Nicolas 2026-11-16) */
+#aim-ring { display: none; position: fixed; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px; border: 2px solid rgba(255, 255, 255, .85); border-radius: 50%; pointer-events: none; z-index: 4; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+#aim-ring::before, #aim-ring::after { content: ""; position: absolute; background: rgba(255,255,255,.85); }
+#aim-ring::before { left: 50%; top: -8px; bottom: -8px; width: 2px; margin-left: -1px; clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%, 0 70%, 100% 70%, 100% 100%, 0 100%); }
+#aim-ring::after { top: 50%; left: -8px; right: -8px; height: 2px; margin-top: -1px; clip-path: polygon(0 0, 30% 0, 30% 100%, 0 100%, 0 0, 70% 0, 100% 0, 100% 100%, 70% 100%); }
+body.aiming #aim-ring { display: block; }
+body.aiming #cross { display: none !important; }
+#weapon-btns { display: none; position: fixed; right: calc(env(safe-area-inset-right, 0px) + 150px); bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); gap: 8px; z-index: 6; }
+body.touch.armed #weapon-btns { display: flex; }
+#weapon-btns button { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: rgba(12,14,18,.7); color: #fff; font: 600 14px system-ui, sans-serif; }
+body.aiming #btn-aim { background: #c8202a; }

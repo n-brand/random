@@ -29,6 +29,7 @@ function shotAt(x, y, z, skip) {
   if (jetHit(x, y, z)) return { veh: JET };
   if (y < groundAt(x, z, y + 0.4)) return "ground";
   const [S, C] = collNear(x - 0.2, x + 0.2, z - 0.2, z + 0.2);
+  if (dkIn(x, y, z)) return "solid";                                        // gedrehte Quader (Gotham-Gebaeude, Mauern, Plattformen; S2 Greifhaken)
   for (const s of S) if (s.on && x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && y > s.y0 && y < s.y1) return "solid";
   for (const c of C) { if (c.dyn || c[2] <= 0) continue; const dx = x - c[0], dz = z - c[1]; if (dx * dx + dz * dz > c[2] * c[2]) continue;
     const top = c[3]; if (top === undefined ? y < terrainH(c[0], c[1]) + 7 && y > terrainH(c[0], c[1]) - 3 : y < top && y > top - 8) return "solid"; }
