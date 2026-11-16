@@ -5,6 +5,7 @@
 // Orbit-Rechtsklick -> "Hierhin teleportieren" (Nicolas 2026-11-08): Begehen am getroffenen Punkt, Blick in die bisherige Kamerarichtung
 function teleportToPoint(p) {
   areaEnsure(p.x, p.z);                                                    // Bereich am Ziel sofort fertig (kern/bereiche.js)
+  if (typeof ggebCollEnsure === "function") ggebCollEnsure(p.x, p.z);     // Gotham-Gebaeude: Kollision (Daecher) am Ziel sofort
   if (belowView) $("btn-below").click();
   const dir = controls.target.clone().sub(camera.position), yaw = walking ? player.yaw : Math.atan2(-dir.x, -dir.z);   // im Geist: Blickrichtung des Geists
   startWalk(p.x, p.z, yaw);

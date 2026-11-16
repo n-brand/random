@@ -225,7 +225,7 @@ function gothamRoadAt(x, z, feet) {
 // vorher war je Netz die ganze Insel ein Stueck und wurde immer ganz gezeichnet. free: Punktdaten nach dem Hochladen auf die Grafikkarte freigeben
 // (spart JS-Speicher; die Teile sind dann nicht mehr per Rechtsklick anwaehlbar, der Strahl trifft das Gelaende/die Fahrbahn darunter).
 const GCELL = 768, GHIDE = [], GHIDE_FAR = [];   // GHIDE_FAR: bis zur Kamera-Fernebene sichtbar (Gebaeude-Huellen, Skyline G3/G4)
-//   // 384 m getestet (2026-11-13): 5-9 % weniger Dreiecke, aber bis 37 Aufrufe mehr; bei G3 neu pruefen
+// 384 m getestet (2026-11-13): 5-9 % weniger Dreiecke, aber bis 37 Aufrufe mehr; bei G3 neu pruefen
 function freeAfterUpload() { this.array = null; }
 function gsplit(g, m, name, opt = {}) {
   const grp = new THREE.Group(); grp.name = name; grp.userData.keep = true; grp.userData.noLift = true;

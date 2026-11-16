@@ -97,9 +97,9 @@ function gbvFrame(o) {
   return { W, side, dirW };
 }
 // senkrechte Wand auf Seite k von a bis b (laengs, Meter), y0..y1, UV: u in Achsen (3 m), v = Meter / vh
-function gbvWall(out, key, f, k, a, b, y0, y1, ins, vh, uo = 0, vo = 0) {
+function gbvWall(out, key, f, k, a, b, y0, y1, ins, vh, uo = 0, vo = 0, base = 0) {   // v ab dem Gebaeudefuss (Gotham liegt auf -12; Review: sonst Fenster 2 m verschoben)
   const [As, At, ds, dt, os, ot] = f.side(k), p = u => [As + ds * u - os * ins, At + dt * u - ot * ins], [s0, t0] = p(a), [s1, t1] = p(b), n = f.dirW(os, ot);
-  gbvQuad(gbvBucket(out, key), f.W(s0, t0, y0), f.W(s1, t1, y0), f.W(s1, t1, y1), f.W(s0, t0, y1), n, [[uo + a / 3, vo + y0 / vh], [uo + b / 3, vo + y0 / vh], [uo + b / 3, vo + y1 / vh], [uo + a / 3, vo + y1 / vh]]);
+  gbvQuad(gbvBucket(out, key), f.W(s0, t0, y0), f.W(s1, t1, y0), f.W(s1, t1, y1), f.W(s0, t0, y1), n, [[uo + a / 3, vo + (y0 - base) / vh], [uo + b / 3, vo + (y0 - base) / vh], [uo + b / 3, vo + (y1 - base) / vh], [uo + a / 3, vo + (y1 - base) / vh]]);
 }
 // Quader lokal: Mitte (s, t), Groesse ls x lt, y0..y1; Material key (Farbe col bei "farbe")
 function gbvBox(out, key, f, s, t, ls, lt, y0, y1, col, top = true, bot = false) {
@@ -126,8 +126,8 @@ function gbvShell(o, out) {
   const hall = t === "fabrik" || t === "lager";
   const body = (ins, yb, yt, front) => {   // vier Waende (ins = Einzug je Seite), Dach, Dachkante
     for (let k = 0; k < 4; k++) { const len = f.side(k)[6] - 2 * ins, key = o.fire[k] && !hall && t !== "kratzer" ? "brand" : facade, vh = hall ? H : GH;
-      if (front && k === o.front && (t === "laden" || t === "miet") && yb === y) { gbvWall(out, "laden", f, k, ins, ins + len, y, y + GH, ins, GH, uo, vo); if (yt > y + GH + 0.01) gbvWall(out, key, f, k, ins, ins + len, y + GH, yt, ins, vh, uo, vo); }
-      else gbvWall(out, key, f, k, ins, ins + len, yb, yt, ins, vh, uo, vo); }
+      if (front && k === o.front && (t === "laden" || t === "miet") && yb === y) { gbvWall(out, "laden", f, k, ins, ins + len, y, y + GH, ins, GH, uo, vo, y); if (yt > y + GH + 0.01) gbvWall(out, key, f, k, ins, ins + len, y + GH, yt, ins, vh, uo, vo, y); }
+      else gbvWall(out, key, f, k, ins, ins + len, yb, yt, ins, vh, uo, vo, y); }
     const c = [[ins, ins], [o.L1 - ins, ins], [o.L1 - ins, o.L2 - ins], [ins, o.L2 - ins]];
     gbvQuad(gbvBucket(out, "dach"), ...c.map(([s, q]) => f.W(s, q, yt)), [0, 1, 0], c.map(([s, q]) => [s / 6, q / 6]));
     // Attika/Dachkante: 0,8 m hoch, 0,3 m stark, innen ohne Flaeche (vom Dach aus kaum sichtbar)
@@ -164,7 +164,7 @@ function gbvDetails(o, out) {
   if (t === "fabrik") { for (let i = 0; i < Math.max(2, Math.floor(o.L1 / 10)); i++) { const s = (i + 0.5) * o.L1 / Math.max(2, Math.floor(o.L1 / 10)); gbvBox(out, "fabrik", f, s, o.L2 / 2, 3, o.L2 - 2, top, top + 2.2); }   // Sheddach-Zaehne
     gbvCyl(out, "beton", f, o.L1 * 0.8, o.L2 * 0.3, 1.1, top, top + 14, 10); }   // Schornstein
   if (t === "lager") { const n = Math.max(1, Math.min(4, Math.floor(Lf / 9))); for (let i = 0; i < n; i++) { const um = (i + 0.5) * Lf / n; gbvBoxSide(out, "eisen", f, k, um, 0.06, 5, 0.12, y, y + 5);   // Rolltore
-    gbvBoxSide(out, "beton", f, k, um, 1.5, 6, 3, y, y + 0.9); } }   // Laderampe
+    gbvBoxSide(out, "beton", f, k, um, 0.5, 6, 1.0, y, y + 0.9); } }   // Laderampe, nur 1 m tief (Review: ragte 3 m auf Gehsteig/Strasse)
   // Dach: Wassertank (Miet, Laden, teils Buero), Treppenhaus, Lueftungen
   if (t === "miet" || t === "laden" || (t === "buero" && r() < 0.5)) { const s = o.L1 * (0.25 + r() * 0.5), q = o.L2 * (0.25 + r() * 0.5);
     for (const [a, b] of [[-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4]]) gbvBox(out, "eisen", f, s + a, q + b, 0.2, 0.2, top, top + 3);

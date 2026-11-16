@@ -9,7 +9,7 @@ async function ggebCacheLoad(ck) {
   try { if (!window.TH_DB || !window.TH_HASH) throw 0;
     const hash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619); return (h >>> 0).toString(36); };
     const src = f => fetch(document.querySelector('script[src$="' + f + '"]').src).then(r => r.text());
-    const T = await Promise.all(["gotham/gotham-gebaeude.js", "gotham/gebaeude-vorlagen.js", "gotham/stadt.js", "gotham/gotham-strassen.js"].map(src));   // Strassen: Einzug und Front haengen an GSTR
+    const T = await Promise.all(["gotham/gotham-gebaeude.js", "gotham/gebaeude-vorlagen.js", "gotham/stadt.js", "gotham/gotham-strassen.js", "gotham/gotham-baustellen.js"].map(src));   // Strassen: Einzug und Front haengen an GSTR
     ck.key = TH_HASH + "-" + T.map(hash).join("-");
     const rec = await new Promise(ok => { const rq = TH_DB.transaction("cache").objectStore("cache").get("GGEB"); rq.onsuccess = () => ok(rq.result); rq.onerror = () => ok(null); });
     if (rec && rec.key === ck.key && Array.isArray(rec.meshes) && Array.isArray(rec.ins) && Array.isArray(rec.fronts) && Array.isArray(rec.fires)) ck.data = rec;
@@ -116,10 +116,14 @@ function ggebColl(b) {
   if (b.type === "kratzer" && F.L1 >= 30 && F.L2 >= 30) { const yk = Y + Math.round(b.H * 0.4 / GBV.GH) * GBV.GH; return [part(0, Y - 0.2, yk), part(4, yk, Y + b.H)]; }
   return [part(0, Y - 0.2, Y + b.H)];
 }
+const GGEB_NB = [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+// sofort anlegen (Teleport: sonst steht man nach dem Teleport auf ein Dach auf der Strasse, Review)
+function ggebCollEnsure(x, z) { if (!GGEB.done || !GGEB.cells) return; const ci = Math.floor(x / GGEB.CC), ck = Math.floor(z / GGEB.CC);
+  for (const [a, b] of GGEB_NB) { const k = ggebCKey(ci + a, ck + b); if (GGEB.cells.has(k) && !GGEB.coll.has(k)) GGEB.coll.set(k, GGEB.cells.get(k).flatMap(ggebColl)); } }
 function ggebCollStep() {
   if (!GGEB.done || !GGEB.cells) return;
   const px = CAR && CAR.on ? CAR.x : player.pos.x, pz = CAR && CAR.on ? CAR.z : player.pos.z, ci = Math.floor(px / GGEB.CC), ck = Math.floor(pz / GGEB.CC), want = new Set();
-  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const k = ggebCKey(ci + a, ck + b); if (GGEB.cells.has(k)) want.add(k); }
+  for (const [a, b] of GGEB_NB) { const k = ggebCKey(ci + a, ck + b); if (GGEB.cells.has(k)) want.add(k); }   // Mitte zuerst
   for (const k of want) if (!GGEB.coll.has(k)) { GGEB.coll.set(k, GGEB.cells.get(k).flatMap(ggebColl)); return; }
   for (const [k, parts] of GGEB.coll) if (!want.has(k)) { for (const o of parts) dkRemove(o); GGEB.coll.delete(k); return; }
 }
