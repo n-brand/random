@@ -104,6 +104,7 @@ function* ubGen() {
   if (typeof GR !== "undefined") for (const b of GR.blocks) if (b.mesh) b.S = 0;
   UB.grp = grp; scene.add(grp); UNDERGROUND.push(grp); grp.visible = typeof ugVis === "boolean" ? ugVis : false;
   yield* ubEntrances();
+  ubTrainsInit();
 }
 // Aufzug-Pavillons: oben auf dem Gehsteig (naechster freier Gehsteigpunkt zur Station), unten am Bahnsteigende; Rechtsklick faehrt (Teleport mit Meldung).
 // Alle Pavillons oben zusammen in wenigen Netzen (Glas, Rahmen, U-Schild je Ringfarbe ueber Vertexfarben), ebenso unten; je Station ein unsichtbarer Klickkasten.
@@ -146,3 +147,43 @@ TILES.tasks.push({ gen: null, plan() {}, step() { if (UB.done || TILES.startup |
   return false; } });
 const ubUnder = (x, z) => !!UB.under && UB.under.has(Math.floor(x / 8) * 100000 + Math.floor(z / 8));
 function ubBuild() { for (const _ of ubGen()); UB.done = true; }   // Tests
+
+// ---- Teil B: fahrende Zuege (je Ring 2 je Richtung, 3 Wagen a 16 m), halten 20 s an jeder Station; alle Wagen in zwei InstancedMesh (Kasten, Farbband) ----
+// Rechtsverkehr: Richtung +1 faehrt auf dem Gleis rechts der Fahrtrichtung. Nur Optik (keine Kollision, noch kein Mitfahren: OFFENE-FRAGEN 8).
+UB.trains = []; UB.CAR = 16, UB.GAP = 0.6, UB.VMAX = 16, UB.ACC = 1.1, UB.DWELL = 20;
+function ubTrainsInit() {
+  const tex = canvasTex(256, 64, (c, w, h) => { c.fillStyle = "#c9ccd0"; c.fillRect(0, 0, w, h); c.fillStyle = "#1d2630";   // Seite: Fensterband, Tueren
+    for (let x = 8; x < w - 8; x += 31) c.fillRect(x, 14, 24, 20); c.fillStyle = "#5c6168"; for (const x of [60, 186]) c.fillRect(x - 10, 10, 20, 46); c.fillStyle = "#9da2a8"; c.fillRect(0, h - 6, w, 6); });
+  const body = new THREE.InstancedMesh(new THREE.BoxGeometry(UB.CAR - UB.GAP, 3.3, 2.8), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5, metalness: 0.3, emissive: 0x222326, emissiveIntensity: 1 }), 64);
+  const band = new THREE.InstancedMesh(new THREE.BoxGeometry(UB.CAR - UB.GAP + 0.04, 0.35, 2.86), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, emissive: 0x333333, emissiveIntensity: 1 }), 64);
+  for (const m of [body, band]) { m.count = 0; m.frustumCulled = false; m.userData.keep = true; m.userData.noLift = true; UB.grp.add(m); }
+  body.name = "U-Bahn Zuege"; band.name = "U-Bahn Zuege Farbband"; UB.inst = { body, band };
+  for (const r of UB.rings) { const stS = r.st.map(s => s.i * r.ds).sort((a, b) => a - b);
+    for (const d of [1, -1]) for (let k = 0; k < 2; k++) { const s0 = stS[Math.floor(k * stS.length / 2)];
+      UB.trains.push({ r, d, s: s0, v: 0, wait: k * 9 + (d > 0 ? 0 : 5), stS, next: null }); } }
+  let n = 0; for (const t of UB.trains) for (let c = 0; c < 3; c++) band.setColorAt(n++, t.r.col);
+  band.instanceColor.needsUpdate = true; body.count = band.count = n; UB.last = performance.now();
+}
+// Lage auf dem Ring: s (m) -> Punkt auf dem Gleis der Richtung d, Blickwinkel
+const ubM = new THREE.Matrix4(), ubQ = new THREE.Quaternion(), ubE = new THREE.Euler(), ubV = new THREE.Vector3(), ubS = new THREE.Vector3(1, 1, 1);
+function ubPose(r, s, d) {
+  const n = r.P.length, L = n * r.ds, u = ((s % L) + L) % L / r.ds, i = Math.floor(u) % n, f = u - Math.floor(u), a = r.P[i], b = r.P[(i + 1) % n];
+  const ux = b[0] - a[0], uz = b[1] - a[1], l = Math.hypot(ux, uz) || 1, nx = -uz / l, nz = ux / l, off = -d * (ubTrack(r, i) * (1 - f) + ubTrack(r, (i + 1) % n) * f);
+  return { x: a[0] + ux * f + nx * off, z: a[1] + uz * f + nz * off, yaw: Math.atan2(-uz, ux) };   // Drehung, die die lokale x-Achse (Wagenlaenge) auf die Fahrtrichtung legt
+}
+function ubTrainStep() {
+  if (!UB.inst) return; const now = performance.now(), dt = Math.min(0.1, (now - UB.last) / 1000); UB.last = now;
+  for (const t of UB.trains) { const L = t.r.P.length * t.r.ds;
+    if (t.wait > 0) { t.wait -= dt; continue; }
+    if (t.next === null) { const cur = ((t.s % L) + L) % L; let best = null, bd = 1e9; for (const ss of t.stS) { let dd = t.d > 0 ? ss - cur : cur - ss; if (dd < 5) dd += L; if (dd < bd) { bd = dd; best = ss; } } t.next = best; }
+    const cur = ((t.s % L) + L) % L; let dist = t.d > 0 ? t.next - cur : cur - t.next; if (dist < 0) dist += L;
+    t.v = Math.min(UB.VMAX, t.v + UB.ACC * dt, Math.sqrt(2 * UB.ACC * Math.max(0, dist)));
+    const step = Math.min(dist, t.v * dt); t.s += t.d * step;
+    if (dist - step < 0.05) { t.s = t.d > 0 ? t.next : t.next; t.v = 0; t.wait = UB.DWELL; t.next = null; } }
+  if (!UB.grp.visible) return;   // Matrizen nur, wenn man unten ist
+  let n = 0; const { body, band } = UB.inst;
+  for (const t of UB.trains) for (let c = 0; c < 3; c++) { const p = ubPose(t.r, t.s - t.d * (c * UB.CAR + UB.CAR / 2), t.d);
+    ubQ.setFromEuler(ubE.set(0, p.yaw, 0)); ubV.set(p.x, UB.BED + 0.35 + 1.65, p.z); ubM.compose(ubV, ubQ, ubS); body.setMatrixAt(n, ubM);
+    ubV.y = UB.BED + 0.35 + 0.9; ubM.compose(ubV, ubQ, ubS); band.setMatrixAt(n, ubM); n++; }
+  body.instanceMatrix.needsUpdate = band.instanceMatrix.needsUpdate = true;
+}
