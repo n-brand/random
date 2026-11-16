@@ -224,7 +224,8 @@ function gothamRoadAt(x, z, feet) {
 // wird nur gezeichnet, wenn sie im Blickfeld liegt (eigene Huelle) und naeher als die Sichtweite plus 200 m ist (gHideStep, jedes Bild aus start.js);
 // vorher war je Netz die ganze Insel ein Stueck und wurde immer ganz gezeichnet. free: Punktdaten nach dem Hochladen auf die Grafikkarte freigeben
 // (spart JS-Speicher; die Teile sind dann nicht mehr per Rechtsklick anwaehlbar, der Strahl trifft das Gelaende/die Fahrbahn darunter).
-const GCELL = 768, GHIDE = [];   // 384 m getestet (2026-11-13): 5-9 % weniger Dreiecke, aber bis 37 Aufrufe mehr; bei G3 neu pruefen
+const GCELL = 768, GHIDE = [], GHIDE_FAR = [];   // GHIDE_FAR: bis zur Kamera-Fernebene sichtbar (Gebaeude-Huellen, Skyline G3/G4)
+//   // 384 m getestet (2026-11-13): 5-9 % weniger Dreiecke, aber bis 37 Aufrufe mehr; bei G3 neu pruefen
 function freeAfterUpload() { this.array = null; }
 function gsplit(g, m, name, opt = {}) {
   const grp = new THREE.Group(); grp.name = name; grp.userData.keep = true; grp.userData.noLift = true;
@@ -237,12 +238,13 @@ function gsplit(g, m, name, opt = {}) {
     const box = new THREE.Box3(); for (const i of B) box.expandByPoint(v.fromArray(pos, i * 3)); sg.boundingBox = box; sg.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
     if (opt.free) sg.index.onUpload(freeAfterUpload);
     const o = new THREE.Mesh(sg, m); o.name = name; o.receiveShadow = opt.recv !== false; o.castShadow = !!opt.cast; o.userData.keep = true; o.userData.noLift = true; if (opt.free) o.raycast = () => {};
-    grp.add(o); GHIDE.push(o); }
+    grp.add(o); (opt.far ? GHIDE_FAR : GHIDE).push(o); }
   if (opt.free) for (const at of Object.values(g.attributes)) at.onUpload(freeAfterUpload);
   scene.add(grp); return grp;
 }
 function gHideStep(cam) { const lim = (TILES.range * TILE + 150) + 200, p = cam.position;
-  for (const o of GHIDE) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < lim; } }
+  for (const o of GHIDE) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < lim; }
+  for (const o of GHIDE_FAR) { const s = o.geometry.boundingSphere; o.visible = p.distanceTo(s.center) - s.radius < cam.far; } }
 const GDECK = { roads: null, building: false, C: 25, grid: null, RW: 7, RL: 80, FL: 30, CL: 30, TL: 50, LY: GOT.STR - 5.5, DY: GOT.STR - 1, COVER: 12, PZ: 80, UZ: 30,
   // Rampen mitten im Wayne Circle (Nicolas 2026-11-14 "Alle vier bauen"): Startpunkte (Spielkoordinaten) zwischen den Hauptstrassen, je FL + RL = 110 m in
   // Laufrichtung des Rings; die inneren Spuren tauchen ab (Variante B), oben und unten bleibt je eine Spur pro Richtung neben dem Schacht

@@ -50,6 +50,7 @@ function frame() {
   carFrame(dt);
   shotsStep(dt); wasserFrame(dt);                                                             // Panzer: Schiessen, Granaten, Explosionen, Wracks (schiessen.js)
   if (typeof gbstCollStep === "function") gbstCollStep();                                      // Baustellen: Kollision nur in der Naehe (gotham-baustellen.js)
+  if (typeof ggebStep === "function") ggebStep();                                            // Gebaeude: Fenster nachts (gotham-gebaeude.js)
   if (typeof wtStep === "function") wtStep();                                                  // Wayne Tower: Nachtlicht (gotham-wayne-turm.js)
   if (typeof bautHoverStep === "function") bautHoverStep();                                    // Gebaeude-ID beim Hovern (Orbit/Geist, ui/bauten-hover.js)
   if (typeof skMiniStep === "function") skMiniStep();                                          // T6 Minikarte (ui/stadtkarte.js)

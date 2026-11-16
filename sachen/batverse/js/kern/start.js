@@ -20,8 +20,8 @@ scene.onBeforeRender = (r, sc, cam) => { const p = cam.position; gHideStep(cam);
 // Ladebildschirm bis die Gotham-Baustellen stehen (Nicolas 2026-11-15: sie laden als Letztes; Strassen und Baustellen bauen sich als Kachel-Aufgabe
 // in den ersten Bildern auf, die Schleife laeuft darunter weiter). Hoechstens 30 s, dann geht er trotzdem weg.
 { const t0 = performance.now(), st = document.querySelector("#loading .ld-step");
-  const tick = () => { const L = $("loading"); if (!L) return; if (GBST.done || performance.now() - t0 > 30000) return L.remove();
-    if (st) st.textContent = !GSTR.done ? "Gotham: Straßen …" : "Gotham: Baustellen …"; requestAnimationFrame(tick); };
+  const tick = () => { const L = $("loading"); if (!L) return; if ((GBST.done && GGEB.done) || performance.now() - t0 > 30000) return L.remove();
+    if (st) st.textContent = !GSTR.done ? "Gotham: Straßen …" : !GGEB.done ? "Gotham: Gebäude …" : "Gotham: Baustellen …"; requestAnimationFrame(tick); };
   requestAnimationFrame(tick); }
 { const L = window.LOADT || {}, tu = tilesUpdate, rr = renderer.render; L.tiles1 = 0; L.render1 = 0;   // erstes Bild aufschluesseln
   tilesUpdate = function (...a) { const t = performance.now(), r = tu.apply(this, a); L.tiles1 += performance.now() - t; return r; };

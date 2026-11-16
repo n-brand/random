@@ -59,7 +59,7 @@ function gbstGate(b) {
 }
 function* gbstGen(useCache = true) {
   const ck = { state: 0, data: null, key: null }; if (useCache) gbstCacheLoad(ck); else ck.state = 1;
-  GBST.list = gbstList();
+  GBST.list = gbstList().filter(b => b.id[0] === "B");   // Fuellbauten sind seit G3/G4 Gebaeude (gotham-gebaeude.js), Baustellen nur noch BS-01..08
   while (!ck.state) yield "wait";
   const CACHED = !!ck.data, Y = GBST.Y;
   // Grundriss auf freie Flaeche zuschneiden (Karten-Grundrisse reichen teils auf Gehsteige):
