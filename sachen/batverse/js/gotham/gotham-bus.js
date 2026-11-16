@@ -18,7 +18,7 @@ function* gbusGen() {
     const route = cur.P.map(p => [p[0], p[1], cur.w, cur.walk]);
     while (pool.length) { const e = route[route.length - 1]; let best = null, bd = 1e9, rev = false;
       for (const q of pool) for (const [p, r] of [[q.P[0], false], [q.P[q.P.length - 1], true]]) { const d = Math.hypot(p[0] - e[0], p[1] - e[1]); if (d < bd) { bd = d; best = q; rev = r; } }
-      if (bd > 900) break; pool.splice(pool.indexOf(best), 1); const P = rev ? [...best.P].reverse() : best.P; for (const p of P) route.push([p[0], p[1], best.w, best.walk]); }
+      if (bd > 900) break; if (bd > 40) console.warn("Bus " + L.name + ": Luecke " + Math.round(bd) + " m vor " + best.id + " (Strasse fehlt in der Linie?)"); pool.splice(pool.indexOf(best), 1); const P = rev ? [...best.P].reverse() : best.P; for (const p of P) route.push([p[0], p[1], best.w, best.walk]); }
     // gleichmaessig alle 4 m
     const R = []; for (let i = 0; i < route.length - 1; i++) { const a = route[i], b = route[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]); if (l < 0.01) continue; for (let s = 0; s < l; s += 4) R.push([a[0] + (b[0] - a[0]) * s / l, a[1] + (b[1] - a[1]) * s / l, a[2], a[3]]); }
     R.push(route[route.length - 1]);

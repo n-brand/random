@@ -1,33 +1,53 @@
-// Batverse – Bankautomat als eigenes Modell (Nicolas 2026-11-16, PLAN-BANKAUTOMAT.md Schritt A4; erster Stand, wird dort ueberarbeitet).
-// Freistehende Saeule: blauer Rahmen, leuchtendes ATM-Schild oben, graues Gehaeuse, blauer Bildschirm mit je vier Seitentasten, Kartenschlitz,
-// Tastenfeld mit drei Farbtasten, Ausgabeschacht, untere Klappe. Vorne = -z, Boden y 0, ca. 0,9 x 0,75 x 2,25 m.
+// Batverse – Bankautomat als eigenes Modell (Nicolas 2026-11-16, PLAN-BANKAUTOMAT.md Schritt A4; Vorbild: Schraegbild von Nicolas, "noch zu blockig").
+// Freistehend, vorne = -z, Boden y 0, ca. 0,92 x 0,8 x 2,35 m. Aufbau wie im Vorbild:
+// - zwei blaue Seitenwangen (abgerundet, weisse Zierkante vorne), blaues Dach, darueber ein Schildkasten (grau, blaue Leuchtfront ATM, ragt seitlich etwas ueber)
+// - oben eine Nische: hinten gewoelbte graue Blende (Zylinderstueck) mit Bildschirm in dunklem Rahmen und je vier Seitentasten, links Karten- und Belegschlitz
+// - schraeges dunkles Pult mit Tastenfeld (12 helle Tasten) und drei Farbtasten (rot, gelb, gruen)
+// - unten Front mit weisser Rahmenkante und eingelassener Klappe, Ausgabeschacht
 // Genutzt in der Werkstatt (aktuelles Umbauprojekt); im Spiel stehen noch die einfachen Saeulen aus gotham-orte.js.
 "use strict";
 function buildBankautomat() {
-  const g = new THREE.Group(), M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, metalness: 0.2, ...o });
-  const box = (w, h, d, m, x, y, z) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); b.castShadow = b.receiveShadow = true; g.add(b); return b; };
-  const blau = M(0x1d4f9e, { metalness: 0.35 }), grau = M(0x8d939a), dunkel = M(0x30353b), schwarz = M(0x121417);
-  const W = 0.9, D = 0.75, H = 2.05;
-  // Rahmen (blau) und Gehaeuse (grau)
-  for (const s of [-1, 1]) box(0.07, H, D, blau, s * (W / 2 - 0.035), H / 2, 0);
-  box(W, 0.08, D, blau, 0, 0.04, 0); box(W, 0.07, D, blau, 0, H - 0.035, 0);
-  box(W - 0.14, H - 0.15, D - 0.06, grau, 0, H / 2, 0.02);
-  // Oberteil schraeg nach hinten (Bildschirmbereich) und Schild
-  const sign = canvasTex(256, 64, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#2f8cff"); gr.addColorStop(1, "#1556c8"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 44px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("ATM", w / 2, h / 2 + 2); });
-  box(W, 0.26, D * 0.62, M(0xffffff, { map: sign, emissive: 0xffffff, emissiveMap: sign, emissiveIntensity: 0.6, metalness: 0 }), 0, H + 0.13, -0.08);
-  // Bildschirm mit Rahmen und Seitentasten
-  const scr = canvasTex(256, 192, (c, w, h) => { c.fillStyle = "#0b4fc4"; c.fillRect(0, 0, w, h); c.fillStyle = "#083a94"; c.fillRect(0, 0, w, 30); c.fillStyle = "#fff"; c.font = "bold 20px Arial, sans-serif"; c.fillText("ATM", 10, 22);
-    c.font = "bold 22px Arial, sans-serif"; c.textAlign = "center"; c.fillText("Hallo, Bruce", w / 2, 80); c.fillStyle = "#b9c2ea"; c.fillRect(58, 100, 140, 30); c.fillStyle = "#22e06a"; c.fillRect(58, 145, 140, 30); });
-  box(0.62, 0.5, 0.06, dunkel, 0, 1.45, -D / 2 + 0.02);
-  const sc = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.3), M(0xffffff, { map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.55, metalness: 0 })); sc.position.set(0, 1.47, -D / 2 - 0.012); sc.rotation.y = Math.PI; g.add(sc);
-  for (const s of [-1, 1]) for (let k = 0; k < 4; k++) box(0.06, 0.035, 0.02, grau, s * 0.255, 1.6 - k * 0.075, -D / 2 - 0.015);
-  // Kartenschlitz, Tastenfeld mit Farbtasten, Ausgabeschacht, Klappe
-  box(0.12, 0.03, 0.03, schwarz, 0.22, 1.12, -D / 2 - 0.005);
-  box(0.36, 0.05, 0.22, dunkel, 0, 1.08, -D / 2 - 0.06);
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) box(0.045, 0.012, 0.04, M(0xe6e8ea), -0.1 + c * 0.055, 1.112, -D / 2 - 0.12 + r * 0.05);
-  [0xd8262b, 0xe9c22a, 0x29b34a].forEach((col, k) => box(0.06, 0.012, 0.04, M(col), 0.1, 1.112, -D / 2 - 0.12 + k * 0.05));
-  box(0.4, 0.06, 0.05, schwarz, 0, 0.92, -D / 2 - 0.005);
-  box(0.62, 0.55, 0.02, M(0x5d636a), 0, 0.45, -D / 2 - 0.0);
-  box(0.08, 0.02, 0.02, schwarz, 0.2, 0.62, -D / 2 - 0.015);
+  const g = new THREE.Group(), M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0.25, ...o });
+  const add = (geo, m, x, y, z, rx = 0, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, 0); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+  // abgerundeter Quader (Kanten r) aus einem Rechteck mit runden Ecken (w x h) und Fase in der Tiefe
+  const rbox = (w, h, d, r) => { const s = new THREE.Shape(), a = w / 2 - r, b = h / 2 - r; s.moveTo(-a, -h / 2); s.lineTo(a, -h / 2); s.quadraticCurveTo(w / 2, -h / 2, w / 2, -b); s.lineTo(w / 2, b); s.quadraticCurveTo(w / 2, h / 2, a, h / 2); s.lineTo(-a, h / 2); s.quadraticCurveTo(-w / 2, h / 2, -w / 2, b); s.lineTo(-w / 2, -b); s.quadraticCurveTo(-w / 2, -h / 2, -a, -h / 2);
+    const e = Math.min(r * 0.6, d * 0.3), geo = new THREE.ExtrudeGeometry(s, { depth: d - 2 * e, bevelEnabled: true, bevelThickness: e, bevelSize: e, bevelSegments: 3, curveSegments: 6 }); geo.translate(0, 0, -(d - 2 * e) / 2); return geo; };
+  const blau = M(0x1f4fa3, { metalness: 0.4, roughness: 0.4 }), weiss = M(0xe9eef4, { roughness: 0.35 }), grau = M(0xa3a9b0), grauH = M(0xc3c8ce), dunkel = M(0x2b3036), schwarz = M(0x111316);
+  const W = 0.92, D = 0.8, H = 2.05, T = 0.08;                             // Breite, Tiefe, Hoehe der Wangen, Wandstaerke
+  // Seitenwangen (Querschnitt in der Tiefe, rbox gedreht) mit weisser Zierkante vorne
+  for (const s of [-1, 1]) { add(rbox(D, H, T, 0.04), blau, s * (W / 2 - T / 2), H / 2, 0, 0, Math.PI / 2);
+    add(rbox(0.02, H - 0.08, 0.012, 0.005), weiss, s * (W / 2 - T / 2), H / 2, -D / 2 - 0.003, 0, 0); }
+  add(rbox(W, T, D, 0.035), blau, 0, H - T / 2, 0);                         // Dach
+  add(rbox(W - 0.04, 0.06, D - 0.02, 0.02), dunkel, 0, 0.03, 0);            // Sockel
+  // Schildkasten: grau, ragt 3 cm seitlich ueber, vorne blaue Leuchtflaeche
+  const sign = canvasTex(256, 72, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#3b98ff"); gr.addColorStop(1, "#1764d6"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 46px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("ATM", w / 2, h / 2 + 2); });
+  add(rbox(W + 0.06, 0.26, D * 0.7, 0.03), grauH, 0, H + 0.13, 0.02);
+  const sf = add(new THREE.PlaneGeometry(W - 0.02, 0.2), M(0xffffff, { map: sign, emissive: 0xffffff, emissiveMap: sign, emissiveIntensity: 0.7, metalness: 0 }), 0, H + 0.13, 0.02 - D * 0.35 - 0.004); sf.rotation.y = Math.PI; sf.castShadow = false;
+  // Nische oben: Rueckwand, gewoelbte Blende (Zylinderstueck, Achse senkrecht, wolbt sich nach vorne) mit Bildschirm
+  const IW = W - 2 * T, ZN = -D / 2 + 0.26;                                 // Innenbreite, Vorderkante der Blende
+  add(new THREE.BoxGeometry(IW, 0.95, 0.03), grau, 0, 1.55, 0.25);
+  const R = 0.9, th = 2 * Math.asin((IW / 2) / R), blende = new THREE.CylinderGeometry(R, R, 0.78, 24, 1, true, Math.PI - th / 2, th);
+  add(blende, grau, 0, 1.52, ZN + R, 0, 0).material = M(0xa3a9b0, { side: THREE.DoubleSide });
+  const zB = ZN + R - Math.sqrt(R * R - 0.0);                               // vorderster Punkt der Blende (Mitte)
+  const scr = canvasTex(256, 192, (c, w, h) => { c.fillStyle = "#0d55d0"; c.fillRect(0, 0, w, h); c.fillStyle = "#0a3f9e"; c.fillRect(0, 0, w, 30); c.fillStyle = "#fff"; c.font = "bold 18px Arial, sans-serif"; c.fillText("ATM", 10, 21);
+    c.textAlign = "center"; c.font = "bold 22px Arial, sans-serif"; c.fillText("Hallo, Bruce", w / 2, 78); c.fillStyle = "#b9c2ea"; c.fillRect(58, 98, 140, 30); c.fillStyle = "#22e06a"; c.fillRect(58, 142, 140, 30); });
+  add(rbox(0.46, 0.38, 0.05, 0.03), dunkel, 0, 1.55, zB - 0.012);
+  const sc = add(new THREE.PlaneGeometry(0.34, 0.27), M(0xffffff, { map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.6, metalness: 0 }), 0, 1.55, zB - 0.04); sc.rotation.y = Math.PI; sc.castShadow = false;
+  for (const s of [-1, 1]) for (let k = 0; k < 4; k++) add(rbox(0.035, 0.022, 0.015, 0.006), M(0xd7dbe0), s * 0.195, 1.65 - k * 0.065, zB - 0.04);
+  for (const [y, w] of [[1.62, 0.09], [1.52, 0.07]]) add(rbox(w, 0.022, 0.03, 0.008), schwarz, 0.3, y, zB + 0.02);   // Karten- und Belegschlitz links (von vorne gesehen; vorne = -z, +x liegt links)
+  // schraeges Pult mit Tastenfeld und Farbtasten (neigt sich nach vorne unten, ca. 18 Grad)
+  const tilt = -0.32, pult = new THREE.Group(); pult.position.set(0, 1.06, -D / 2 + 0.17); pult.rotation.x = tilt; g.add(pult);
+  const P = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; pult.add(o); };
+  P(rbox(IW, 0.04, 0.36, 0.015), dunkel, 0, 0, 0);
+  const key = rbox(0.038, 0.014, 0.034, 0.006), keyM = M(0xeceff2, { roughness: 0.4 });
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) P(key, keyM, 0.03 - c * 0.046, 0.026, -0.08 + r * 0.042);
+  [0xd8262b, 0xe9c22a, 0x29b34a].forEach((col, k) => P(rbox(0.05, 0.014, 0.034, 0.006), M(col, { roughness: 0.4 }), -0.12, 0.026, -0.08 + k * 0.042));
+  // untere Front: Platte mit weisser Rahmenkante, eingelassene Klappe, Ausgabeschacht
+  add(rbox(IW, 0.9, 0.04, 0.02), M(0x8b9198), 0, 0.5, -D / 2 + 0.05);
+  add(rbox(IW - 0.06, 0.02, 0.012, 0.005), weiss, 0, 0.94, -D / 2 + 0.028);
+  add(rbox(IW - 0.18, 0.5, 0.02, 0.02), grauH, 0, 0.38, -D / 2 + 0.028);
+  add(rbox(0.1, 0.015, 0.015, 0.005), schwarz, -0.18, 0.48, -D / 2 + 0.017);   // Griff
+  add(rbox(0.36, 0.05, 0.05, 0.015), schwarz, 0, 0.84, -D / 2 + 0.03);       // Ausgabeschacht
+  add(new THREE.BoxGeometry(IW, 0.02, D - 0.1), dunkel, 0, 0.95, 0.04);     // Boden der Nische hinter dem Pult
   g.name = "Bankautomat"; return g;
 }

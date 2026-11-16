@@ -29,6 +29,7 @@ const INV_DESC = {
 // Batarang-Symbol aus der Batsignal-Form (BAT_SIGNAL_PTS)
 if (typeof BAT_SIGNAL_PTS !== "undefined") { const P = BAT_SIGNAL_PTS, q = ([x, y]) => (13 + x * 12).toFixed(1) + " " + (13 + y * 12).toFixed(1), d = "M" + P.map(q).join(" L") + " L" + P.slice(1, -1).reverse().map(([x, y]) => q([-x, y])).join(" L") + " Z";
   INV_ITEMS.batarang.svg = '<path d="' + d + '" fill="#1d2025" stroke="#9aa0a6" stroke-width="0.9" stroke-linejoin="round"/>'; }
+const INV_TEST_ALLE = true;   // TEST: alle Gegenstaende besitzen (siehe Aufbau unten)
 const INV = { slots: new Array(36).fill(null), sel: 0, pick: -1 };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }
 function invSave() { try { localStorage.setItem("wm-inv", JSON.stringify({ s: INV.slots, sel: INV.sel })); } catch (e) {} }
 function invLoad() { try { const d = JSON.parse(localStorage.getItem("wm-inv") || "null"); if (d && Array.isArray(d.s) && d.s.length === 36) { INV.slots = d.s.map(q => q && INV_ITEMS[q.id] ? q : null); INV.sel = d.sel | 0; return true; } } catch (e) {} return false; }
@@ -77,6 +78,8 @@ addEventListener("keydown", e => { if (e.key === "Shift" && INV_TIP.i >= 0 && !I
 addEventListener("keyup", e => { if (e.key === "Shift" && INV_TIP.shift) { INV_TIP.shift = false; invTip(); } });
 // Aufbau: Startausstattung beim ersten Mal, Klicks
 { if (!invLoad()) { INV.slots[0] = { id: "gullihaken", n: 1 }; INV.slots[1] = { id: "batarang", n: 6 }; invSave(); }
+  // TEST (Nicolas 2026-11-16: "jedes Item zum Testen besitzen"): fehlende Gegenstaende beim Start auffuellen (je ein voller Stapel). Spaeter auf false.
+  if (INV_TEST_ALLE) { for (const id in INV_ITEMS) if (!invHas(id)) invAdd(id, INV_ITEMS[id].stack); }
   document.getElementById("hotbar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (!b) return; e.currentTarget.blur?.(); invSelect(+b.dataset.i); });
   document.getElementById("inventar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (b) return invClick(+b.dataset.i); if (e.target.closest(".inv-close")) invClose();
     if (e.target.closest('[data-sw="batsignal"]') && typeof GCPD !== "undefined") { GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts über Gotham)" : "Batsignal aus"); invRender(); } });   // Schalter im Inventar (Nicolas 2026-11-16)
