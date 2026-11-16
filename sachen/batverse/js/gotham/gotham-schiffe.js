@@ -66,18 +66,52 @@ function shipStep(dt) {
 }
 // je Bild (schleife.js): nicht gefahrene Schiffe schaukeln leicht
 function shipIdle(dt) { SHIP.t += SHIP.cur ? 0 : dt; for (const S of SHIP.list) if (S !== SHIP.cur && Math.abs(camera.position.x - S.x) < 1500 && Math.abs(camera.position.z - S.z) < 1500) shipPose(S); }
-// Hafenschlepper (eigener Entwurf): 26 x 9 m, roter Rumpf, schwarzes Schanzkleid, weisser Aufbau mit Steuerhaus, gelb-schwarzer Schornstein, Fender; vorne = -z
+// Rumpf als Loft aus Querschnitten wie beim Spectre (Nicolas 2026-11-16 "Schiffe zu eckig - Regel wie beim Rolls Spectre"): Stationen alle L/80,
+// Querschnitt mit runder Kimm, Bug spitz zulaufend (Wurzelkurve) mit hochgezogenem Vorfuss, Heck abgerundet; weich schattiert (mergeVertices). Vorne = -z, y relativ zur Wasserlinie.
+// o: { L, W, keel (y Kiel), split (y Farbwechsel), deck (y Deck), bow (Laenge Bugzulauf), stern (Laenge Heckrundung), sheer (Deckanstieg am Bug), lower, upper (Materialien) }
+function shipHull(g, o) {
+  const hw = f => { const ub = Math.max(0, (f - (o.L / 2 - o.bow)) / o.bow), us = Math.max(0, ((-o.L / 2 + o.stern) - f) / o.stern); return Math.max(0.25, o.W / 2 * Math.sqrt(Math.max(0, 1 - ub ** 1.6)) * Math.sqrt(1 - 0.45 * us * us)); };
+  const keel = f => { const ub = Math.max(0, (f - (o.L / 2 - o.bow)) / o.bow); return o.keel + (o.split - o.keel) * 0.85 * ub * ub; };
+  const dk = f => { const ub = Math.max(0, (f - (o.L / 2 - o.bow * 1.4)) / (o.bow * 1.4)); return o.deck + o.sheer * ub * ub; };
+  const n = 80, st = [], up = [];
+  for (let i = 0; i <= n; i++) { const f = -o.L / 2 + o.L * i / n, h = hw(f), yb = keel(f), rb = Math.min(h * 0.9, (o.split - o.keel) * 0.6, o.W * 0.12), p = [[0, yb]];
+    for (let k = 0; k <= 5; k++) { const a = -Math.PI / 2 + k / 5 * Math.PI / 2; p.push([h - rb + rb * Math.cos(a), yb + rb + rb * Math.sin(a)]); }
+    p.push([h, o.split - 0.6], [h, o.split]); st.push([f, p]);
+    const yd = dk(f); const e = Math.min(0.25, h * 0.2); up.push([f, [[0, o.split - 0.01], [h - e, o.split - 0.01], [h, o.split + 0.25], [h, o.split + 0.8], [h + 0.02, yd - 0.8], [h + 0.02, yd - 0.25], [h - e, yd], [0, yd]]]); }   // Zwischenpunkte an den Kanten: sonst mittelt mergeVertices die ganze Seite mit Boden/Deck (grauer Streifen)
+  for (const [S, m] of [[st, o.lower], [up, o.upper]]) { const mesh = loftIn(g, S, m), geo = mergeVertices(mesh.geometry); geo.computeVertexNormals(); mesh.geometry = geo; mesh.castShadow = true; mesh.receiveShadow = true; }
+  return { hw, dk };
+}
+// Quader mit runden Kanten (Grundriss gerundet, oben gefast) fuer Aufbauten; Mitte unten bei (x, y, z)
+function shipRBox(g, m, x, y, z, w, h, d, r = 1) {
+  const sh = new THREE.Shape(), a = w / 2 - r, b = d / 2 - r; sh.moveTo(-a, -d / 2); sh.lineTo(a, -d / 2); sh.quadraticCurveTo(w / 2, -d / 2, w / 2, -b); sh.lineTo(w / 2, b); sh.quadraticCurveTo(w / 2, d / 2, a, d / 2);
+  sh.lineTo(-a, d / 2); sh.quadraticCurveTo(-w / 2, d / 2, -w / 2, b); sh.lineTo(-w / 2, -b); sh.quadraticCurveTo(-w / 2, -d / 2, -a, -d / 2);
+  const bv = Math.min(r * 0.5, h * 0.2), geo = new THREE.ExtrudeGeometry(sh, { depth: h - 2 * bv, bevelEnabled: true, bevelThickness: bv, bevelSize: bv * 0.8, bevelSegments: 3, curveSegments: 6 });
+  geo.rotateX(-Math.PI / 2); geo.translate(x, y + bv, z); const o = new THREE.Mesh(geo, m); o.castShadow = true; o.receiveShadow = true; g.add(o); return o;
+}
+const shipMat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, metalness: 0.2, ...o });
+// Containerschiff (Rumpf, Aufbau mit Fensterbaendern und Bruecke, Schornstein); Container setzt gotham-hafen.js. zs/zf: z von Aufbau/Schornstein
+function buildCargoShip(L, W, deck, zs, zf) {
+  const g = new THREE.Group(), red = shipMat(0x8c2a22, { roughness: 0.85, metalness: 0.05 }), hull = shipMat(0x1d2836, { roughness: 0.85, metalness: 0.05 }), wht = shipMat(0xe8e6df), dark = shipMat(0x1d242c, { metalness: 0.5, roughness: 0.2 }), fun = shipMat(0x2b2e33);
+  shipHull(g, { L, W, keel: -6, split: 1, deck, bow: 34, stern: 14, sheer: 2.5, lower: red, upper: hull });
+  shipRBox(g, wht, 0, deck, zs, W - 6, 26, 14, 2); shipRBox(g, wht, 0, deck + 26, zs, W + 4, 2, 15, 1.2);
+  for (let k = 0; k < 7; k++) shipRBox(g, dark, 0, deck + 2.6 + k * 3.5, zs, W - 5.8, 1, 14.2, 2);
+  shipRBox(g, dark, 0, deck + 26.4, zs, W + 4.2, 1.1, 15.2, 1.2);
+  const f = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 3, 32, 24), fun); f.scale.z = 1.5; f.position.set(0, deck + 16, zf); f.castShadow = true; g.add(f);
+  const fb = new THREE.Mesh(new THREE.CylinderGeometry(2.65, 2.65, 2.4, 24), red); fb.scale.z = 1.5; fb.position.set(0, deck + 30, zf); g.add(fb);
+  return g;
+}
+// Hafenschlepper (eigener Entwurf): 26 x 9 m, Loft-Rumpf rot/schwarz, Holzdeck, weisser Aufbau und Steuerhaus mit runden Kanten, gelb-schwarzer Schornstein, Fender; vorne = -z
 function buildTug() {
-  const g = new THREE.Group(), M = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6, metalness: 0.15 }), red = M(0xa3221c), blk = M(0x1c1d20), wht = M(0xeeeeea), yel = M(0xe8b52a), win = M(0x1d2a38), wood = M(0x6a5a48);
-  const box = (m, x, y, z, w, h, d) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-  const hull = (m, y0, y1, w, inset) => { const sh = new THREE.Shape(), L = 26, b = w / 2; sh.moveTo(-b, L / 2); sh.lineTo(b, L / 2); sh.lineTo(b, -L / 2 + 7); sh.quadraticCurveTo(b * 0.8, -L / 2 + 1, 0, -L / 2 + inset); sh.quadraticCurveTo(-b * 0.8, -L / 2 + 1, -b, -L / 2 + 7); sh.lineTo(-b, L / 2);
-    const geo = new THREE.ExtrudeGeometry(sh, { depth: y1 - y0, bevelEnabled: false }); geo.rotateX(Math.PI / 2); geo.translate(0, y1, 0); const o = new THREE.Mesh(geo, m); o.castShadow = true; g.add(o); return o; };
-  hull(red, -2.4, 0.6, 9, 0); hull(blk, 0.6, 2.4, 9.1, 0.2); hull(wood, 2.4, 2.5, 8.4, 1.2);
-  box(wht, 0, 4, -1.5, 6.4, 3, 9); box(wht, 0, 6.6, -2.6, 5.4, 2.2, 5); box(win, 0, 6.8, -2.6, 5.5, 1.1, 5.1); box(blk, 0, 7.85, -2.6, 6, 0.3, 5.6);
-  box(yel, 0, 8.4, 3.2, 1.8, 3.5, 1.8); box(blk, 0, 10.5, 3.2, 1.85, 0.9, 1.85); box(blk, 0, 10.2, -3.6, 0.15, 4, 0.15);
-  for (let i = 0; i < 9; i++) { const f = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.22, 6, 12), blk); f.position.set(i % 2 ? 4.6 : -4.6, 1.2, -9 + Math.floor(i / 2) * 4.5); f.rotation.y = Math.PI / 2; g.add(f); }
-  box(blk, 0, 1.4, -13.2, 3, 2.4, 1.2);   // Bugfender
-  box(yel, 0, 3.1, 8, 1.2, 1.2, 1.2);    // Schlepphaken-Poller
+  const g = new THREE.Group(), red = shipMat(0xa3221c, { roughness: 0.8, metalness: 0.05 }), blk = shipMat(0x1c1d20, { roughness: 0.8, metalness: 0.05 }), wht = shipMat(0xeeeeea), yel = shipMat(0xe8b52a), win = shipMat(0x1d2a38, { metalness: 0.5, roughness: 0.15 }), wood = shipMat(0x6a5a48, { roughness: 0.9, metalness: 0 });
+  const H = shipHull(g, { L: 26, W: 9, keel: -2.6, split: 0.6, deck: 2.4, bow: 9, stern: 6, sheer: 1.2, lower: red, upper: blk });
+  { const sh = new THREE.Shape(), P = []; for (let i = 0; i <= 40; i++) { const f = -13 + 26 * i / 40; P.push([H.hw(f) * 0.9, -f]); } sh.moveTo(-P[0][0], P[0][1]); for (const [x, z] of P) sh.lineTo(-x, z); for (let i = P.length - 1; i >= 0; i--) sh.lineTo(P[i][0], P[i][1]);
+    const geo = new THREE.ShapeGeometry(sh); geo.rotateX(Math.PI / 2); geo.translate(0, 2.42, 0); const d = new THREE.Mesh(geo, wood); d.material.side = THREE.DoubleSide; d.receiveShadow = true; g.add(d); }   // Holzdeck (folgt dem Rumpf)
+  shipRBox(g, wht, 0, 2.4, -1.5, 6.4, 3, 9, 1.4); shipRBox(g, wht, 0, 5.4, -2.6, 5.4, 2.4, 5, 1.2); shipRBox(g, win, 0, 6.2, -2.6, 5.75, 1.2, 5.35, 1.3); shipRBox(g, blk, 0, 7.8, -2.6, 6, 0.3, 5.6, 1.3);
+  const fn = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.95, 3.5, 20), yel); fn.position.set(0, 8.4, 3.2); g.add(fn); const ft = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.9, 20), blk); ft.position.set(0, 10.5, 3.2); g.add(ft);
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 4, 8), blk); mast.position.set(0, 10, -3.6); g.add(mast);
+  for (let i = 0; i < 10; i++) { const f = 9 - Math.floor(i / 2) * 4.5, fz = -f, x = (H.hw(f) + 0.2) * (i % 2 ? 1 : -1), t = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.22, 8, 16), blk); t.position.set(x, 1.3, fz); t.rotation.y = Math.PI / 2; g.add(t); }
+  const bf = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.6, 16), blk); bf.rotation.z = Math.PI / 2; bf.position.set(0, 1.4, -13); g.add(bf);   // Bugfender
+  const po = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 1.2, 14), yel); po.position.set(0, 3, 8); g.add(po);   // Poller
   return g;
 }
 // Verlassen von aussen (Teleport, Geist, Orbit): wie bei den anderen Fahrzeugen ueber world.userData.car.leave

@@ -54,14 +54,9 @@ function* ghafGen() {
   yield;
   // Schiff am Kai (Wasserseite, t < 0): Rumpf dunkelblau mit rotem Unterwasserschiff, Aufbau weiss am Heck, Container an Deck
   const sOut = new Map(), scont = [];
-  const SL = Math.min(200, L - 6), SW = 32, sm = L / 2, tS = -2 - SW / 2, deck = WY + 17, hull = col(0x1d2836), red = col(0x8c2a22), wht = col(0xe8e6df), dark = col(0x23272c);
-  gbvBox(sOut, "farbe", f, sm, tS, SL - 24, SW, WY - 6, WY + 1, red, false); gbvBox(sOut, "farbe", f, sm, tS, SL - 24, SW, WY + 1, deck, hull);
-  for (let k = 0; k < 4; k++) { const w = SW * (1 - (k + 1) / 5.5), l = 6; gbvBox(sOut, "farbe", f, sm + (SL - 24) / 2 + l * (k + 0.5), tS, l, w, WY - 4 + k, deck, hull); gbvBox(sOut, "farbe", f, sm - (SL - 24) / 2 - l * (k + 0.5), tS, l, SW * (1 - k / 6), WY - 2 + k * 0.5, deck + 1, hull); }   // Bug (+s) spitz, Heck rund
-  const sx0 = sm - (SL - 24) / 2 + 4;   // Aufbau am Heck
-  gbvBox(sOut, "farbe", f, sx0 + 7, tS, 14, SW - 6, deck, deck + 26, wht); gbvBox(sOut, "farbe", f, sx0 + 7, tS, 15, SW + 4, deck + 26, deck + 28, wht);
-  for (let k = 0; k < 7; k++) gbvBox(sOut, "farbe", f, sx0 + 7, tS, 14.1, SW - 5.9, deck + 2.6 + k * 3.5, deck + 3.6 + k * 3.5, dark);   // Fensterbaender
-  gbvBox(sOut, "farbe", f, sx0 + 18, tS, 5, 6, deck, deck + 32, col(0x2b2e33)); gbvBox(sOut, "farbe", f, sx0 + 18, tS, 5.2, 6.2, deck + 30, deck + 32, red);   // Schornstein
-  for (let b = 0; sx0 + 26 + (b + 1) * (CL + 0.8) < sm + (SL - 24) / 2 - 2; b++) { const sc = sx0 + 26 + b * (CL + 0.8) + CL / 2, n = 2 + Math.floor(rnd() * 4);
+  const SL = Math.min(200, L - 6), SW = 32, sm = L / 2, tS = -13 - SW / 2,   /* Kiesstreifen am Mauerfuss liegt bis ca. 12 m vor der Mauer ueber dem Wasser */ deck = WY + 17, hull = col(0x1d2836), red = col(0x8c2a22), wht = col(0xe8e6df), dark = col(0x23272c);
+  const sx0 = sm - SL / 2 + 8;   // Aufbau am Heck (Rumpf und Aufbau: buildCargoShip in gotham-schiffe.js, Loft)
+  for (let b = 0; sx0 + 26 + (b + 1) * (CL + 0.8) < sm + SL / 2 - 36; b++) { const sc = sx0 + 26 + b * (CL + 0.8) + CL / 2, n = 2 + Math.floor(rnd() * 4);
     for (let r = 0; r < 12; r++) { const tc = tS - 6 * (CW + 0.1) + r * (CW + 0.1) + CW / 2, hh = Math.max(1, n - (r === 0 || r === 11 ? 1 : 0)); for (let k = 0; k < hh; k++) scont.push([sc, tc, deck + k * CHt, PAL[Math.floor(rnd() * PAL.length)]]); } }
   // Nicolas 2026-11-16: Schiffe fahrbar -> eigenes Netz um den Drehpunkt (Schiffsmitte), angemeldet in gotham-schiffe.js (shipAdd)
   yield;
@@ -102,12 +97,12 @@ function* ghafGen() {
   // Containerschiff als eigene Gruppe (Drehpunkt = Schiffsmitte), fahrbar ueber gotham-schiffe.js; dazu ein Hafenschlepper
   const h0 = Math.atan2(-dx, -dz);
   { const [px, pz] = Wp(sm, tS), sg = new THREE.Group(); sg.name = "Containerschiff"; sg.userData.keep = true; sg.userData.noLift = true;
-    const hm = gbvMesh(sOut); for (const m of hm.children) m.geometry.translate(-px, 0, -pz); sg.add(hm);
+    const body = buildCargoShip(SL, SW, deck - WY, -(sx0 + 7 - sm), -(sx0 + 18 - sm)); body.rotation.y = h0; body.position.y = WY; sg.add(body);
     const sim = new THREE.InstancedMesh(cGeo, cMat, scont.length); scont.forEach(([s, t, y, h], i) => { const p = f.W(s, t, y); sim.setMatrixAt(i, M4.compose(new THREE.Vector3(p[0] - px, p[1], p[2] - pz), qd, one)); sim.setColorAt(i, cc.set(h)); });
     sim.castShadow = true; sim.name = "Schiff Container"; sg.add(sim); sg.position.set(px, 0, pz); scene.add(sg);
     if (typeof shipAdd === "function") GHAF.ship = shipAdd({ g: sg, h: h0, h0, L: SL, W: SW, deckY: deck, label: "Containerschiff", maxV: 7, acc: 0.45, turn: 0.09, tall: true, cam: [200, 70], bridge: [0, sm - (sx0 + 7), deck + 28 - WY] }); }
   if (typeof buildTug === "function") { const T = { L: 26, W: 9 }; T.pts = shipPts(T);
-    for (const [s, t] of [[sm + SL / 2 + 30, -12], [sm - SL / 2 - 30, -12], [sm + SL / 2 + 30, -40], [sm, -60]]) { const [x, z] = Wp(s, t); if (shipScore(T, x, z, h0) >= -1) continue;
+    for (const [s, t] of [[sm + SL / 2 + 30, -22], [sm - SL / 2 - 30, -22], [sm + SL / 2 + 30, -45], [sm, -75]]) { const [x, z] = Wp(s, t); if (shipScore(T, x, z, h0) >= -1) continue;
       const tg = new THREE.Group(), inner = buildTug(); inner.position.y = WY; tg.add(inner); tg.name = "Hafenschlepper"; tg.userData.keep = true; tg.userData.noLift = true; tg.position.set(x, 0, z); scene.add(tg);
       GHAF.tug = shipAdd({ g: tg, h: h0, h0: 0, L: 26, W: 9, deckY: WY + 2.5, label: "Hafenschlepper", maxV: 11, acc: 2.2, turn: 0.45, cam: [32, 12], bridge: [0, -2.6, 7.4] }); shipPose(GHAF.tug); break; } }
   yield;

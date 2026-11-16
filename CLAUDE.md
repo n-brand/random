@@ -1,3 +1,10 @@
+- **Schiffe rund statt eckig** (Nicolas 2026-11-16: "Schiffe sind zu eckig, Regel wie beim Rolls Spectre"): Rümpfe sind Lofts aus Querschnitten (`shipHull` in gotham-schiffe.js mit `loftIn` und `mergeVertices`, 81 Stationen).
+  - Rumpfform: runde Kimm, Bug wurzelförmig zugespitzt mit hochgezogenem Vorfuss, Heck abgerundet, Deckanstieg am Bug.
+  - Zwei Lofts (unter Wasser rot, darüber Rumpffarbe). Zwischenpunkte an den Kanten halten die weiche Schattierung schmal.
+  - Aufbauten als `shipRBox` (Grundriss mit runden Ecken, oben gefast), Schornsteine rund. Containerschiff `buildCargoShip`, Schlepper `buildTug` (Holzdeck folgt dem Rumpf, Fender, Bugfender).
+  - Die Container bleiben Quader.
+  - Liegeplatz jetzt 13 m vor der Kaimauer: der Kiesstreifen am Mauerfuss liegt bis ca. 12 m davor über dem Wasser. Der Schlepper liegt bei t -22.
+  - Regel für neue Schiffe: Rumpf immer als Loft, keine Kästen.
 - **Schiffe fahrbar, Kranfundament** (Nicolas 2026-11-16: "Schiffe sollen fahrbar sein beim Hafen", "am Hafen hier darf nicht schneiden"): `js/gotham/gotham-schiffe.js` (FILES vor gotham-hafen.js), `SHIP` { list, cur, view }.
   - `shipAdd(o)`: Gruppe mit Drehpunkt, h/h0 (vorne = (-sin h, -cos h)), L/W, deckY, maxV, acc, turn, tall, cam, bridge.
   - Wasserprüfung `shipScore` über 12 Rumpfpunkte. Gesperrt (99) bei `GOT.dw` > 4 (Festland), `GOT.edgeSD` < 0,5 (Inselkante genau) oder bei `tall` über einer Brücke (`gothamBridgeAt`). Ein Zug ist erlaubt, wenn der Wert unter -1 liegt oder höchstens 0,2 schlechter wird (vom Liegeplatz weg).
