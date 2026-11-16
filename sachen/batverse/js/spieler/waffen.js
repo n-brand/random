@@ -11,10 +11,11 @@ const aimK = () => AIM.z;
 const AIM_V = new THREE.Vector3(), AIM_D = new THREE.Vector3(), AIM_ray = new THREE.Raycaster();
 // Modelle: Batarang (flach, schwarz), Rauchbombe (Kugel), Rauch (weiche Sprites), Seil
 const AIM_M = (() => {
-  // Batarang neu (Nicolas 2026-11-16 "ueberarbeiten"): 34 cm Spannweite, Ohren, Fluegel mit drei Zacken an der Hinterkante, abgeschraegte Kanten,
+  // Batarang neu (Nicolas 2026-11-16 "ueberarbeiten"): 34 cm Spannweite, abgeschraegte Kanten,
   // dunkles Metall mit Kante in Stahl (zwei Materialien: Flaechen / Seiten). Halbe Kontur rechts (x >= 0, y nach vorne), gespiegelt.
-  const sh = new THREE.Shape(), P = [[0, 0.62], [0.07, 0.86], [0.12, 0.62], [0.24, 0.6], [0.5, 0.74], [0.82, 0.86], [1, 0.62], [0.9, 0.36], [0.86, 0.04], [0.72, 0.18], [0.6, -0.06], [0.46, 0.12], [0.32, -0.12], [0.18, 0.1], [0.08, -0.06], [0, -0.3]], S = 0.17;
-  P.forEach(([x, y], i) => sh[i ? "lineTo" : "moveTo"](x * S, y * S - 0.04)); for (let i = P.length - 2; i > 0; i--) sh.lineTo(-P[i][0] * S, P[i][1] * S - 0.04);
+  // Form genau wie die Fledermaus des Batsignals (BAT_SIGNAL_PTS, gotham-polizei.js; Nicolas 2026-11-16), Canvas-y nach unten -> Form-y nach vorne
+  const sh = new THREE.Shape(), P = BAT_SIGNAL_PTS, S = 0.17;
+  P.forEach(([x, y], i) => sh[i ? "lineTo" : "moveTo"](x * S, -y * S)); for (let i = P.length - 2; i > 0; i--) sh.lineTo(-P[i][0] * S, -P[i][1] * S);
   const bat = new THREE.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.006, bevelSegments: 1 }); bat.rotateX(-Math.PI / 2); bat.translate(0, -0.004, 0);
   const smokeT = canvasTex(64, 64, (c, w) => { const g = c.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, "rgba(200,200,205,0.9)"); g.addColorStop(0.6, "rgba(170,172,178,0.45)"); g.addColorStop(1, "rgba(150,150,155,0)"); c.fillStyle = g; c.fillRect(0, 0, w, w); });
   const rope = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x222222 })); rope.visible = false; rope.frustumCulled = false; scene.add(rope);

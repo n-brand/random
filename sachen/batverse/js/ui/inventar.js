@@ -26,6 +26,9 @@ const INV_DESC = {
   batsuit: "Der gepanzerte Anzug aus der Geheimbasis im Container. Leicht, kugelsicher, mit Umhang.",
   mantel: "Ein langer Wollmantel für unauffällige Auftritte in der Stadt.",
 };
+// Batarang-Symbol aus der Batsignal-Form (BAT_SIGNAL_PTS)
+if (typeof BAT_SIGNAL_PTS !== "undefined") { const P = BAT_SIGNAL_PTS, q = ([x, y]) => (13 + x * 12).toFixed(1) + " " + (13 + y * 12).toFixed(1), d = "M" + P.map(q).join(" L") + " L" + P.slice(1, -1).reverse().map(([x, y]) => q([-x, y])).join(" L") + " Z";
+  INV_ITEMS.batarang.svg = '<path d="' + d + '" fill="#1d2025" stroke="#9aa0a6" stroke-width="0.9" stroke-linejoin="round"/>'; }
 const INV = { slots: new Array(36).fill(null), sel: 0, pick: -1 };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }
 function invSave() { try { localStorage.setItem("wm-inv", JSON.stringify({ s: INV.slots, sel: INV.sel })); } catch (e) {} }
 function invLoad() { try { const d = JSON.parse(localStorage.getItem("wm-inv") || "null"); if (d && Array.isArray(d.s) && d.s.length === 36) { INV.slots = d.s.map(q => q && INV_ITEMS[q.id] ? q : null); INV.sel = d.sel | 0; return true; } } catch (e) {} return false; }

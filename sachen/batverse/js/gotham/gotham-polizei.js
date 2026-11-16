@@ -106,8 +106,10 @@ function* gcpdGen() {
   if (typeof addVehicle === "function" && typeof SPEC_POLICE !== "undefined") for (const [s, tt] of [[10, -2], [16, -2], [L1 - 16, -2], [L1 - 10, -2]]) { const [x, , z] = f.W(s, tt, 0); addVehicle(SPEC_POLICE, () => buildPolice(), x, z, Y, Math.atan2(e2[0], e2[1]), "Gotham Police (Präsidium)", 0xeef0f2); }
 }
 // Fledermaus-Umriss (eigene Form: Fluegel mit drei Zacken unten, Kopf mit zwei Ohren), Mitte cx/cy, Breite w
+// Fledermaus des Batsignals: halbe Kontur (rechts, x 0..1, y nach unten wie im Canvas), gespiegelt; auch Form des Batarangs und seines Symbols (Nicolas 2026-11-16)
+const BAT_SIGNAL_PTS = [[0, -0.16], [0.05, -0.3], [0.09, -0.18], [0.3, -0.24], [0.62, -0.34], [1, -0.05], [0.78, 0.02], [0.66, 0.24], [0.5, 0.08], [0.36, 0.3], [0.22, 0.12], [0, 0.36]];
 function batShape(c, cx, cy, w, col) {
-  const s = w / 2, P = [[0, -0.16], [0.05, -0.3], [0.09, -0.18], [0.3, -0.24], [0.62, -0.34], [1, -0.05], [0.78, 0.02], [0.66, 0.24], [0.5, 0.08], [0.36, 0.3], [0.22, 0.12], [0, 0.36]];
+  const s = w / 2, P = BAT_SIGNAL_PTS;
   c.fillStyle = col; c.beginPath(); P.forEach(([x, y], i) => c[i ? "lineTo" : "moveTo"](cx + x * s, cy + y * s)); for (let i = P.length - 2; i >= 0; i--) c.lineTo(cx - P[i][0] * s, cy + P[i][1] * s); c.closePath(); c.fill();
 }
 TILES.tasks.push({ gen: null, plan() {}, step() { if (GCPD.done || TILES.startup || TILES.loading()) return false;
