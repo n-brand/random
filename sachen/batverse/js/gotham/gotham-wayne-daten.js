@@ -13,7 +13,7 @@ const WTO = (() => {
     // Rechteck in Turm-Koordinaten -> Spiel-Polygon (fuer Register und Hohlraeume)
     poly: (a0, a1, b0, b1) => [[a0, b0], [a1, b0], [a1, b1], [a0, b1]].map(([a, b]) => toW(a, b)),
     // Hoehen (Spec): Lobby 9,4 m, Geschosse 4,7 m, Ruecksprunge auf Geschossgrenzen
-    lv: { lobby: 0, g: k => 9.4 + 4.7 * (k - 1), dach: 258.5, tg1: -5.5, tg2: -11, geheim: -8, N: 52 },
+    lv: { lobby: 0, g: k => 9.4 + 4.7 * (k - 1), dach: 258.5, tg1: -5.5, tg2: -11, geheim: -11,   /* Nicolas 2026-11-16: geheimer Stock so hoch wie zwei Tiefgaragen-Etagen (11 m, vorher 8) */ N: 52 },
     // Stufen (halbe Breite, von, bis): Schaft 70 / 56 / 44 m, Krone 32 m bis 300, Antenne bis 320
     tiers: [{ h: 35, y0: 9.4, y1: 122.2 }, { h: 28, y0: 122.2, y1: 202.1 }, { h: 22, y0: 202.1, y1: 258.5 }],
     krone: { h: 16, y1: 300, antenne: 320 },
@@ -45,6 +45,6 @@ WTO.zufahrt = { a0: -24.5, a1: -15.5, schranke: -104 };                       //
 WTO.zufahrt.end = wtGap(WTO.zufahrt.a0, WTO.zufahrt.a1, WTO.tg.b0, 0, -1);
 // Geheimer Stock (Task 6): Halle unter dem Turm (Boden -8, Decke -0,3 unter der Lobby-Platte), Kern-Tuer in der Nordwand; Gang nach Osten (+a) zur
 // unteren Ringstrasse, 7 m breit, steigt gleichmaessig von -8 auf -5,5, endet an einer getarnten Wandplatte in der Ringwand
-WTO.halle = { a0: -34, a1: 34, b0: -14, b1: 34, y0: -8, y1: -0.3 };
+WTO.halle = { a0: -34, a1: 34, b0: -14, b1: 34, y0: -11, y1: -0.3 };
 WTO.gang = { b0: 16.5, b1: 23.5 };
 WTO.gang.end = wtGap(WTO.gang.b0, WTO.gang.b1, WTO.halle.a1, 1, 0);

@@ -1,3 +1,9 @@
+- **Geheimer Wayne-Stock: 2 Tiefgaragen hoch, neues Design** (Nicolas 2026-11-16: "so hoch wie 2 mal eine Tiefgarage", "Design besser, noch zu einfarbig"):
+  - Höhe: `WTO.lv.geheim` und `WTO.halle.y0` -8 -> -11 (2 x 5,5 m, Halle 10,7 m licht). Der Gang zur unteren Ringstrasse steigt jetzt von -11 auf -5,5 (Stufen max. 11 cm). Bis zur Decke des Kanal-Hubs (-24,3 Welt) bleiben 0,8 m.
+  - Seitenansicht (gotham/daten.js): Stock -11..0, Kanal-Hub -25..-12,3 wie im Spiel, Beschriftung der Kanalsohle angepasst.
+  - Design (gotham-wayne-unten.js): dunkler polierter Boden mit leuchtendem cyanfarbenem Linienraster (`floorT`, emissiveMap), unten 3,5 m dunkle Wandpaneele mit Lichtband darüber und unter der Decke, Deckenträger alle 9 m, Pfeiler mit dunklem Sockel und Leuchtring.
+  - Ausserdem: Drehscheibe (r 6,5 m) mit Leuchtrand als Platz für den Tumbler und ein goldenes Wayne-W an der Südwand.
+  - Geprüft: Boden -11, Gang hinauf, Bild der Halle.
 - **Kanal-Einmündungen dicht** (Nicolas 2026-11-16, Orbit-Punkt an Nebensammler 49: "bei den Kanalübergängen kann noch gefixt werden"): An schrägen Einmündungen fehlten Dreiecke in Boden und Wand, und über dem Gewölbe war ein Spalt.
   - Nebensammler werden verlängert, bis die Mitte UND beide Kanten im Hauptsammler liegen. Gelingt das nicht in 30 m (fast parallel), entfällt der Nebensammler (`KAN.rej.schraeg`, 5 Stück, jetzt 64).
   - Boden als Vieleck an der Hauptwand abgeschnitten (Sutherland-Hodgman, Schnittpunkte per Halbierung). Wände enden 10 cm hinter der Hauptwand-Fläche.
