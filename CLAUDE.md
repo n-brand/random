@@ -1,3 +1,13 @@
+- **U1 Teil C: Kanal-Hub und U-Bahn-Übergänge** (Nicolas 2026-11-16 "Ja, Teil C"), in gotham-kanal.js; U1-U3 damit fertig.
+  - **Hub** (`kanHubLines`, `kanHubBuild`): runde Halle unter dem Wayne Tower (Mitte WTO, `KAN.HR` 28 m). Die Galerie liegt auf Sammlerhöhe -29, der Hallenboden auf -37, die Decke auf -24,3; darüber liegen Geheimstock und Tiefgarage bis ca. -23.
+  - Der Hub ist in `KAN.sewers` als Kreis eingetragen (`hub`, `inOther` rechnet mit seinem Radius, in allen Rasterzellen seiner Fläche). Vier Zugänge (`spoke`, Hauptsammler-Querschnitt, Decke höchstens -24,5) laufen vom Hub zum Ringkanal; die Wand des Hubs ist dort offen, bis zum Gewölbe des Zugangs.
+  - Innen: Galerie als Gitterboden-Ring mit Geländer, Steg quer über die Halle, zwei Stahltreppen (32 Stufen) hinunter, 14 Pfeiler, Deckenträger, Lampen.
+  - Gemauerter Kanal quer durch die Halle (Gitterrost darüber, unter dem Wasserfall 12 m offen mit Geländer). Aus dem Zugang +u fällt das Abwasser als Wasserfall hinein, mit Gischt.
+  - Schurkenbasis: Kisten unter Planen, herumliegende Gewehre, Tisch mit zwei Bildschirmen und Stuhl, Boxsack an einer Kette, Fässer.
+  - Kollision: dkRoom (32-Eck), Böden, Galerie, Steg, Stufen, Geländer, Möbel als dkAdd.
+  - **U2** (`kanU2`): vier Stellen, wo ein Hauptsammler unter einem U-Bahn-Ring durchgeht (Mitte eines Abschnitts mit tiefer Decke, möglichst weit auseinander). Je eine Stahltür mit Schild KANAL in der Tunnelwand und U-BAHN in der Kanalwand; Rechtsklick geht hindurch (Teleport).
+  - Geprüft: Galerie (-29), Treppe hinunter bis -37, Bild der Halle, alle 4 Übergänge hin und zurück (Kanal -29, Gleisbett -24,1).
+- **Schiffsrumpf zeigte nach innen** (Nicolas 2026-11-16, Orbit-Punkt am Containerschiff: "man kann unten reinschauen"): `loftIn` braucht die Stationen in umgekehrter Reihenfolge (der Spectre dreht z vorher um). `shipHull` übergibt sie jetzt umgedreht, die Normalen zeigen nach aussen. Der graue Streifen auf dem Rumpf kam ebenfalls daher.
 - **U1 Teil B: Auslässe und Nebensammler** (Nicolas 2026-11-16 "Ja, Teil B"), alles in gotham-kanal.js.
   - **Auslässe** (`kanOutlet`): Wo ein Hauptsammler an der Kaikante endet (`outA`/`outB`, 6 Stück), gibt es innen ein Geländer am Sammlerende. Dahinter liegt ein Absturzschacht 8 x 8 m mit Becken auf Wasserhöhe; das Rinnenwasser fällt als Wasserfall hinein.
   - Ein Rohr (6 m, innen sichtbar) läuft senkrecht zur Kaikante (Gradient von `GOT.edgeSD`) bis zur Mauer. Die Mauer hat keine Rückseite, man sieht hinaus.

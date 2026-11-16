@@ -78,7 +78,7 @@ function shipHull(g, o) {
     for (let k = 0; k <= 5; k++) { const a = -Math.PI / 2 + k / 5 * Math.PI / 2; p.push([h - rb + rb * Math.cos(a), yb + rb + rb * Math.sin(a)]); }
     p.push([h, o.split - 0.6], [h, o.split]); st.push([f, p]);
     const yd = dk(f); const e = Math.min(0.25, h * 0.2); up.push([f, [[0, o.split - 0.01], [h - e, o.split - 0.01], [h, o.split + 0.25], [h, o.split + 0.8], [h + 0.02, yd - 0.8], [h + 0.02, yd - 0.25], [h - e, yd], [0, yd]]]); }   // Zwischenpunkte an den Kanten: sonst mittelt mergeVertices die ganze Seite mit Boden/Deck (grauer Streifen)
-  for (const [S, m] of [[st, o.lower], [up, o.upper]]) { const mesh = loftIn(g, S, m), geo = mergeVertices(mesh.geometry); geo.computeVertexNormals(); mesh.geometry = geo; mesh.castShadow = true; mesh.receiveShadow = true; }
+  for (const [S, m] of [[st, o.lower], [up, o.upper]]) { const mesh = loftIn(g, S.slice().reverse(), m),   /* Reihenfolge umgedreht: sonst zeigen die Flaechen nach innen (Nicolas: man konnte von unten hineinschauen) */ geo = mergeVertices(mesh.geometry); geo.computeVertexNormals(); mesh.geometry = geo; mesh.castShadow = true; mesh.receiveShadow = true; }
   return { hw, dk };
 }
 // Quader mit runden Kanten (Grundriss gerundet, oben gefast) fuer Aufbauten; Mitte unten bei (x, y, z)
