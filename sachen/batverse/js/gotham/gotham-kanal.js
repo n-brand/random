@@ -29,8 +29,8 @@ function* kanGen() {
   const G = new Map(), gk = (x, z) => Math.floor(x / 16) * 100000 + Math.floor(z / 16);
   KAN.sewers.forEach((S, si) => { if (S.hub) { const [hx, hz] = S.P[0], r = S.hw + 2; for (let x = hx - r; x <= hx + r + 16; x += 16) for (let z = hz - r; z <= hz + r + 16; z += 16) { const k = gk(Math.min(x, hx + r), Math.min(z, hz + r)); let c = G.get(k); if (!c) G.set(k, c = []); if (!c.some(e => e[0] === si)) c.push([si, 0]); } return; } S.P.forEach((p, i) => { const k = gk(p[0], p[1]); let c = G.get(k); if (!c) G.set(k, c = []); c.push([si, i]); }); });
   const inOther = (x, z, si, r0) => { const i0 = Math.floor(x / 16), k0 = Math.floor(z / 16);
-    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (const [sj, j] of G.get((i0 + a) * 100000 + k0 + b) || []) { if (sj === si) continue; const S = KAN.sewers[sj], P = S.P, q = P[j], n = P.length, q2 = P[S.ring ? (j + 1) % n : Math.min(n - 1, j + 1)], r = S.hub ? S.hw + (r0 !== undefined ? 1.5 : -0.15) : r0 ?? (S.hw || HW) - 0.15;
-      const dx = q2[0] - q[0], dz = q2[1] - q[1], L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - q[0]) * dx + (z - q[1]) * dz) / L2)); const dd = Math.hypot(x - q[0] - dx * t, z - q[1] - dz * t); if (dd < r) return S.side ? S.F[j] + 2 + Math.sqrt(Math.max(0, 1 - (dd / S.hw) ** 2)) - 0.05 : Infinity; }   // Nebensammler: Hoehe seines Gewoelbes an dieser Stelle (Sturz der Hauptwand)
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (const [sj, j] of G.get((i0 + a) * 100000 + k0 + b) || []) { if (sj === si) continue; const S = KAN.sewers[sj], P = S.P, q = P[j], n = P.length, q2 = P[S.ring ? (j + 1) % n : Math.min(n - 1, j + 1)], r = S.hub ? S.hw + (r0 !== undefined ? 1.5 : -0.15) : r0 ?? (S.side ? S.hw - 0.1 : HW - 0.15), j2 = S.ring ? (j + 1) % n : Math.min(n - 1, j + 1);
+      const dx = q2[0] - q[0], dz = q2[1] - q[1], L2 = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - q[0]) * dx + (z - q[1]) * dz) / L2)); const dd = Math.hypot(x - q[0] - dx * t, z - q[1] - dz * t); if (dd < r) return S.side ? S.F[j] + (S.F[j2] - S.F[j]) * t + 2 + Math.sqrt(Math.max(0, 1 - (dd / S.hw) ** 2)) - 0.08 : Infinity; }   // Nebensammler: Hoehe seines Gewoelbes an dieser Stelle (Sturz der Hauptwand)
     return false; };
   KAN.inOther = inOther;
   yield* kanSide(G, gk);
@@ -70,7 +70,7 @@ function* kanGen() {
       gbvQuad(B("steg"), V(p0, n0, -CW, Y - 0.3), V(p1, n1, -CW, Y - 0.3), V(p1, n1, CW, Y - 0.3), V(p0, n0, CW, Y - 0.3), [0, 1, 0], [[0, u0 / 2], [0, u1 / 2], [1, u1 / 2], [1, u0 / 2]]);
       gbvQuad(B("wasser"), V(p0, n0, -CW, Y - 0.12), V(p1, n1, -CW, Y - 0.12), V(p1, n1, CW, Y - 0.12), V(p0, n0, CW, Y - 0.12), [0, 1, 0], [[0, u0 / 6], [0, u1 / 6], [1, u1 / 6], [1, u0 / 6]]);
       // Waende und Gewoelbe (Seite weg, wenn im Innenraum eines anderen Sammlers)
-      for (const sd of [-1, 1]) { const Wt = t => V(kanL(P[i], P[j], t), kanL(S.N[i], S.N[j], t), sd * HW, 0), NS = [0, 0.25, 0.5, 0.75, 1].some(t => { const w = Wt(t); return inOther(w[0], w[2], si); }) ? 16 : 1;   // an Einmuendungen/Kreuzungen in 25-cm-Stuecken
+      for (const sd of [-1, 1]) { const Wt = t => V(kanL(P[i], P[j], t), kanL(S.N[i], S.N[j], t), sd * HW, 0), NS = [0, 0.25, 0.5, 0.75, 1].some(t => { const w = Wt(t); return inOther(w[0], w[2], si); }) ? 32 : 1;   // an Einmuendungen/Kreuzungen in 12,5-cm-Stuecken
        for (let q = 0; q < NS; q++) { const ta = q / NS, tb = (q + 1) / NS, wm = Wt((ta + tb) / 2), om = inOther(wm[0], wm[2], si); if (om === Infinity) continue;   // im anderen Hauptsammler: keine Wand; ueber einem Nebensammler: erst ab dessen Decke
         const p0 = kanL(P[i], P[j], ta), p1 = kanL(P[i], P[j], tb), n0 = kanL(S.N[i], S.N[j], ta), n1 = kanL(S.N[i], S.N[j], tb), c0 = kanL(S.C[i], S.C[j], ta), c1 = kanL(S.C[i], S.C[j], tb), u0 = kanL(uu - L, uu, ta), u1 = kanL(uu - L, uu, tb), wb = om || Y - 0.05;
         const wt0 = c0 - Math.min(2.2, (c0 - Y) * 0.4), wt1 = c1 - Math.min(2.2, (c1 - Y) * 0.4);
@@ -141,7 +141,9 @@ function* kanSide(G, gk) {
   for (let ci = 0; ci < cand.length; ci += 2) { const { r, Q, m } = cand[ci];
     // Anfang bis in den Hauptsammler verlaengern (HW - 0.8 von dessen Mitte), dann alle 4 m die Strasse entlang
     const dir0 = [Q[0][0] - Q[1][0], Q[0][1] - Q[1][1]], l0 = Math.hypot(dir0[0], dir0[1]) || 1, e = Q[0].slice();
-    for (let k = 0; k < 40; k++) { const nm = nearMain(e[0], e[1], 30); if (!nm || nm.d <= KAN.HW - 0.8) break; e[0] += dir0[0] / l0 * 0.5; e[1] += dir0[1] / l0 * 0.5; }
+    const nx0 = -dir0[1] / l0, nz0 = dir0[0] / l0, inside = (x, z, r) => { const nm = nearMain(x, z, 30); return nm && nm.d <= r; };
+    let fit = false; for (let k = 0; k < 60; k++) { if (inside(e[0], e[1], KAN.HW - 0.8) && inside(e[0] + nx0 * KAN.SHW, e[1] + nz0 * KAN.SHW, KAN.HW - 0.3) && inside(e[0] - nx0 * KAN.SHW, e[1] - nz0 * KAN.SHW, KAN.HW - 0.3)) { fit = true; break; } e[0] += dir0[0] / l0 * 0.5; e[1] += dir0[1] / l0 * 0.5; }
+    if (!fit) { (KAN.rej || (KAN.rej = {})).schraeg = (KAN.rej.schraeg || 0) + 1; continue; }   // fast parallel zum Hauptsammler: Kanten kommen nicht hinein   // bis Mitte UND beide Kanten im Hauptsammler liegen (schraege Einmuendung)
     const P = [e]; let acc = 0, ok = true;
     for (let i = 1; i < Q.length && acc < Ls; i++) { acc += Math.hypot(Q[i][0] - Q[i - 1][0], Q[i][1] - Q[i - 1][1]); P.push(Q[i].slice()); }   // Strassenpunkte liegen schon alle 4 m
     const rej = KAN.rej || (KAN.rej = { kurz: 0, kai: 0, haupt: 0, raum: 0 }); if (acc < Ls - 4) { rej.kurz++; continue; }
@@ -165,9 +167,13 @@ function kanSideBuild(S, si, out, B, V, inOther) {
   for (let i = 0; i < n - 1; i++) { const p0 = P[i], p1 = P[i + 1], n0 = S.N[i], n1 = S.N[i + 1], f0 = F[i], f1 = F[i + 1], L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) || 1, u0 = uu, u1 = uu + L; uu = u1;
     const fx = (p1[0] - p0[0]) / L, fz = (p1[1] - p0[1]) / L;
     { const cc = kanClip((x, z) => inOther(x, z, si) === Infinity, P[i], P[i + 1]) || [0, 0], p0 = kanL(P[i], P[i + 1], cc[0]), p1 = kanL(P[i], P[i + 1], cc[1]), f0 = kanL(F[i], F[i + 1], cc[0]), f1 = kanL(F[i], F[i + 1], cc[1]);   // Boden nur bis zur Hauptsammler-Grenze (sonst flimmert er auf dessen Steg)
-    gbvQuad(B("steg"), V(p0, n0, -hw, f0), V(p1, n1, -hw, f1), V(p1, n1, hw, f1), V(p0, n0, hw, f0), [0, 1, 0], [[-hw / 2, u0 / 2], [-hw / 2, u1 / 2], [hw / 2, u1 / 2], [hw / 2, u0 / 2]]);
+    { const inM = (x, z) => inOther(x, z, si, KAN.HW) === Infinity, Pt = (d, t) => V(kanL(P[i], P[i + 1], t), kanL(S.N[i], S.N[i + 1], t), d, kanL(F[i], F[i + 1], t));   // Boden: Vieleck an der Hauptwand abschneiden (Sutherland-Hodgman, Schnittpunkte per Halbierung), schraege Einmuendung ohne Keil
+      const poly = [Pt(-hw, 0), Pt(-hw, 1), Pt(hw, 1), Pt(hw, 0)], res = [];
+      for (let k = 0; k < 4; k++) { const A = poly[k], Bp = poly[(k + 1) % 4], ia = inM(A[0], A[2]), ib = inM(Bp[0], Bp[2]); if (!ia) res.push(A);
+        if (ia !== ib) { let lo = 0, hi = 1; for (let q = 0; q < 12; q++) { const m = (lo + hi) / 2, X = kanL(A, Bp, m); if (inM(X[0], X[2]) === ia) lo = m; else hi = m; } res.push(kanL(A, Bp, (lo + hi) / 2)); } }
+      if (res.length >= 3) { const o = B("steg"); for (let k = 1; k < res.length - 1; k++) gbvTri(o, res[0], res[k], res[k + 1], [0, 1, 0], [res[0][0] / 2, res[0][2] / 2], [res[k][0] / 2, res[k][2] / 2], [res[k + 1][0] / 2, res[k + 1][2] / 2]); } }
     gbvQuad(B("wasser"), V(p0, n0, -0.35, f0 + 0.02), V(p1, n1, -0.35, f1 + 0.02), V(p1, n1, 0.35, f1 + 0.02), V(p0, n0, 0.35, f0 + 0.02), [0, 1, 0], [[0, u0 / 6], [0, u1 / 6], [0.3, u1 / 6], [0.3, u0 / 6]]); }
-    for (const sd of [-1, 1]) { const W0 = V(P[i], S.N[i], sd * hw, 0), W1 = V(P[i + 1], S.N[i + 1], sd * hw, 0), cl = kanClip((x, z) => !!inOther(x, z, si), [W0[0], W0[2]], [W1[0], W1[2]]); if (!cl) continue;
+    for (const sd of [-1, 1]) { const W0 = V(P[i], S.N[i], sd * hw, 0), W1 = V(P[i + 1], S.N[i + 1], sd * hw, 0), cl = kanClip((x, z) => !!inOther(x, z, si, KAN.HW - 0.1), [W0[0], W0[2]], [W1[0], W1[2]]); if (!cl) continue;   // Wand endet 10 cm hinter der Flaeche der Hauptwand (schraege Einmuendung: kantengenau)
       const p0 = kanL(P[i], P[i + 1], cl[0]), p1 = kanL(P[i], P[i + 1], cl[1]), n0 = kanL(S.N[i], S.N[i + 1], cl[0]), n1 = kanL(S.N[i], S.N[i + 1], cl[1]), f0 = kanL(F[i], F[i + 1], cl[0]), f1 = kanL(F[i], F[i + 1], cl[1]), u0 = kanL(uu - L, uu, cl[0]), u1 = kanL(uu - L, uu, cl[1]);
       const wt0 = f0 + 2, wt1 = f1 + 2, c0 = f0 + KAN.SH, c1 = f1 + KAN.SH;
       gbvQuad(B("ziegel"), V(p0, n0, sd * hw, f0 - 0.05), V(p1, n1, sd * hw, f1 - 0.05), V(p1, n1, sd * hw, wt1), V(p0, n0, sd * hw, wt0), [-n0[0] * sd, 0, -n0[1] * sd], [[u0 / 2, 0], [u1 / 2, 0], [u1 / 2, 1], [u0 / 2, 1]]);
