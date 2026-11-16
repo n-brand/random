@@ -67,6 +67,7 @@ function frame() {
   const pc = caveAt(player.pos.x, player.pos.z), inCave = pc === 1 || pc === 2 || pc === 4 || caveUpAt(player.pos.x, player.pos.z);
   const ut = (!walking && belowView) ? 0.6 : walking && ((player.pos.y < terrainH(player.pos.x, player.pos.z) - 2 && wfInTunnel(player.pos.x, player.pos.z)) || inHfTun(player.pos.x, player.pos.z, player.pos.y) || (player.pos.y < HILL - 2 && inRect(CSH_OUT, player.pos.x, player.pos.z)) || (player.pos.y < GY + HILL + 2 && inPoly(GARAGE, player.pos.x, player.pos.z)) || (player.pos.y < terrainH(player.pos.x, player.pos.z) - 2 && dkInRoom(player.pos.x, player.pos.y + 0.5, player.pos.z)) || (player.pos.y < -8 && inCave)) ? 1 : 0;
   if (!BOAT.on) { boatReturn(); boatPose(); }
+  if (typeof shipIdle === "function") shipIdle(dt);                                          // Schiffe schaukeln (gotham-schiffe.js)
   // Drehende Tiefgarage: langsam (eine Runde in ca. 2 Minuten), wer darauf steht, dreht mit
   {
     const tt = world.userData.turntable, w = dt * 0.05;
@@ -86,7 +87,7 @@ function frame() {
   sunFollow(focus, 90);                                                      // in ganzen Schatten-Texeln (basis.js, gegen Flimmern)
   tilesUpdate();                                                             // K3: Kacheln in der Ladeweite nachladen (Zeitbudget)
   // Schatten (Leistung 2026-11-13: 108 Aufrufe, ca. 0,7 ms): nur jedes zweite Bild neu, in Fahrzeugen, Boot und Fluggeraeten jedes Bild (sonst hinkt der Schatten nach)
-  renderer.shadowMap.autoUpdate = false; if ((++shadowTick & 1) === 0 || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on) renderer.shadowMap.needsUpdate = true;
+  renderer.shadowMap.autoUpdate = false; if ((++shadowTick & 1) === 0 || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on || (typeof shipOn === "function" && shipOn())) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
   perfFrame(performance.now() - tF);
   requestAnimationFrame(frame);

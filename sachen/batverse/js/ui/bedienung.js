@@ -125,6 +125,7 @@ addEventListener("keydown", e => {
     if (e.code === "KeyR" && !e.repeat) return jetReset();                     // R: zurueck an den Standplatz
     keys.add(e.code); return;
   }
+  if (typeof shipOn === "function" && shipOn()) { if (e.code === "KeyV" && !e.repeat) { SHIP.view = SHIP.view === 1 ? 0 : 1; player.pitch = SHIP.view ? 0 : -0.2; return toast(SHIP.view ? "Brücke" : "Kamera hinter dem Schiff"); } keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }   // Schiffe (gotham-schiffe.js)
   if (BOAT.on && e.code === "KeyV" && !e.repeat) { BOAT.view = BOAT.view === 1 ? 0 : 1; player.pitch = BOAT.view ? 0 : -0.12; return toast(BOAT.view ? "Fahrersicht" : "Kamera hinter dem Boot"); }
   if (BOAT.on) { keys.add(e.code); if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); return; }
   if (CAR.on) {
@@ -158,7 +159,7 @@ addEventListener("keydown", e => {
 let shiftTap = false;
 addEventListener("keydown", e => { shiftTap = (e.code === "ShiftLeft" || e.code === "ShiftRight") && !e.repeat ? !(e.metaKey || e.altKey || e.ctrlKey) : e.repeat && shiftTap && e.code.startsWith("Shift"); }, true);
 addEventListener("blur", () => { shiftTap = false; });
-addEventListener("keyup", e => { keys.delete(e.code); if (!e.code.startsWith("Shift") || !shiftTap || !walking || ghost || (window.skBigIsOpen && skBigIsOpen())) return; shiftTap = false; if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); });
+addEventListener("keyup", e => { keys.delete(e.code); if (!e.code.startsWith("Shift") || !shiftTap || !walking || ghost || (window.skBigIsOpen && skBigIsOpen())) return; shiftTap = false; if (typeof shipOn === "function" && shipOn()) useShip(); else if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); });
 addEventListener("blur", () => keys.clear());
 function joystick(el) {
   const knob = el.querySelector("span"), state = { x: 0, y: 0, id: null };
@@ -181,14 +182,14 @@ $("btn-jump").addEventListener("pointerdown", e => { e.preventDefault(); player.
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-jump").addEventListener(type, () => { jumpHeld = false; });
 // Handy und Maus (Nicolas 2026-11-09): Knoepfe loesen dieselben Tasten aus wie die Tastatur (E, T, V, R, L, M)
 const pressKey = code => { window.dispatchEvent(new KeyboardEvent("keydown", { code })); window.dispatchEvent(new KeyboardEvent("keyup", { code })); };
-$("btn-act").addEventListener("click", e => { e.currentTarget.blur(); if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); else if (!aimedGate && !useBoat() && !useFly() && !useJet() && !useCar()) pressKey("KeyE"); });   // Handy: Aktion = ein-/aussteigen oder Tor
+$("btn-act").addEventListener("click", e => { e.currentTarget.blur(); if (typeof shipOn === "function" && shipOn()) useShip(); else if (BOAT.on) useBoat(); else if (FLY.on) useFly(); else if (JET.on) useJet(); else if (CAR && CAR.on) useCar(); else if (!aimedGate && !useBoat() && !useFly() && !useJet() && !useCar()) pressKey("KeyE"); });   // Handy: Aktion = ein-/aussteigen oder Tor
 $("btn-tp").addEventListener("click", e => { e.currentTarget.blur(); toggleTp(); });
 for (const b of document.querySelectorAll("#veh-btns button")) b.addEventListener("click", () => { b.blur(); pressKey(b.dataset.key); });
 // Modus als Klasse am body (fuer die Handy-Knoepfe): car, boat, fly, drive; Sprung-Knopf heisst beim Fliegen "Hoch"
 let modeNow = "";
 function syncModeClasses() {
   document.body.classList.toggle("paused", walking && !touch && !dragging && !(window.tpMenuOpen && tpMenuOpen()) && !(window.skBigIsOpen && skBigIsOpen()) && !(window.settingsOpen && settingsOpen()));   // Maus frei: Hinweis zeigen
-  const m = !walking ? "" : FLY.on || JET.on ? "fly" : BOAT.on ? "boat" : CAR && CAR.on ? "car" : "";
+  const m = !walking ? "" : FLY.on || JET.on ? "fly" : BOAT.on || (typeof shipOn === "function" && shipOn()) ? "boat" : CAR && CAR.on ? "car" : "";
   const tank = m === "car" && !!CAR.turret;                                  // Panzer: Zielvisier (Nicolas 2026-11-11)
   const key = m + JET.on + tank + (m === "car" ? CAR.spec.name : "");          // Fahrzeugname: Knopftext (Nitro/Haken) wechselt auch von Auto zu Auto
   if (key === modeNow) return; modeNow = key; document.body.classList.toggle("tank", tank);
@@ -199,6 +200,7 @@ $("btn-down").addEventListener("pointerdown", e => { e.preventDefault(); downHel
 for (const type of ["pointerup", "pointercancel", "pointerleave"]) $("btn-down").addEventListener(type, () => { downHeld = false; });
 function walkStep(dt) {
   if (ghost) return ghostStep(dt);
+  if (typeof shipOn === "function" && shipOn()) return shipStep(dt);
   if (BOAT.on) return boatStep(dt);
   if (FLY.on) return flyStep(dt);
   if (JET.on) return jetStep(dt);

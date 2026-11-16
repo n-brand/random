@@ -1,3 +1,13 @@
+- **Schiffe fahrbar, Kranfundament** (Nicolas 2026-11-16: "Schiffe sollen fahrbar sein beim Hafen", "am Hafen hier darf nicht schneiden"): `js/gotham/gotham-schiffe.js` (FILES vor gotham-hafen.js), `SHIP` { list, cur, view }.
+  - `shipAdd(o)`: Gruppe mit Drehpunkt, h/h0 (vorne = (-sin h, -cos h)), L/W, deckY, maxV, acc, turn, tall, cam, bridge.
+  - Wasserprüfung `shipScore` über 12 Rumpfpunkte. Gesperrt (99) bei `GOT.dw` > 4 (Festland), `GOT.edgeSD` < 0,5 (Inselkante genau) oder bei `tall` über einer Brücke (`gothamBridgeAt`). Ein Zug ist erlaubt, wenn der Wert unter -1 liegt oder höchstens 0,2 schlechter wird (vom Liegeplatz weg).
+  - Steuerung: Rechtsklick aufs Schiff steigt ein (tore.js: Zielliste, `enterVehicle`, `vehName`). W/S Gas und Rückwärts, A/D Ruder (träge), V Brücke oder Kamera hinten, Shift aussteigen. Ausgestiegen wird an den Kai (Strassenhöhe, bis L/2 + 40 m), sonst aufs Deck.
+  - Geparkt ist das Deck begehbar (dkAdd, beim Fahren entfernt). Ton "Boot".
+  - Eingebunden in bedienung.js (Tasten, Shift, Knopf, Modus "boat", walkStep), schleife.js (`shipIdle` schaukelt, Schatten) und `world.userData.car.leave`.
+  - Containerschiff (gotham-hafen.js): eigene Gruppe um die Schiffsmitte (Rumpf aus `sOut`, Container als eigenes InstancedMesh). 7 m/s, träge, `tall` (kommt nicht unter den Brücken durch). Ist es mehr als 3 m vom Liegeplatz weg, warten die Kranbrücken am Kai.
+  - Hafenschlepper `buildTug()` (eigener Entwurf, 26 x 9 m, roter Rumpf, Steuerhaus, Fender) neben dem Schiff, 11 m/s, passt unter die Brücken.
+  - Kranbrücken: das wasserseitige Bein steht jetzt bei t = TA = innerster Uferpunkt + 3 m + Brüstung (gemessen 5,5 m), das Fundament ragt nicht mehr über die Kaikante. Lager ab TB + 6.
+  - Geprüft: Schlepper 167 m und Containerschiff 116 m gefahren, mit Ruder gedreht. Schlepper 60 s Vollgas gegen den Kai: kein Rumpfpunkt näher als 0,5 m an der Kante. Aussteigen am Kai und aufs Deck.
 - **P3b Gebäude mit Bedeutung** (Nicolas 2026-11-16 "Ja, P3b"): `js/gotham/gotham-orte.js` (FILES nach gotham-hafen.js), `GORT`, `gortStep()` in schleife.js. Baut 67 Orte aus `GOTHAM.orte`. Ausgelassen: Orte mit eigenem Bau oder späterem Schritt (`GORT_SKIP`, dazu Parkhäuser, geheime Orte, Baustellen).
   - Grundriss und Höhe aus der Karte; Front ist die Seite mit der nächsten Fahrbahn (bis 30 m).
   - Hüllen über `gbvShell`. `gortKind` wählt die Bauart: Turm (Kratzer, Glas), Laden, Miet, Fabrik, Halle (Glas), Krippe (bunt).

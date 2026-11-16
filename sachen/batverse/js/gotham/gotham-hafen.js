@@ -18,7 +18,7 @@ function* ghafGen() {
   const th = 0.5 * Math.atan2(2 * sxz, sxx - szz); let dx = Math.cos(th), dz = Math.sin(th);
   if (dx * ax + dz * az < 0) { dx = -dx; dz = -dz; }
   let nx = -dz, nz = dx; if (nx * bx + nz * bz > 0) { nx = -nx; nz = -nz; }   // n: landeinwaerts (gegen +b)
-  let s0 = 1e9, s1 = -1e9, tmin = 1e9; for (const [x, z] of C) { const s = (x - mx) * dx + (z - mz) * dz, t = (x - mx) * nx + (z - mz) * nz; s0 = Math.min(s0, s); s1 = Math.max(s1, s); tmin = Math.min(tmin, t); }
+  let s0 = 1e9, s1 = -1e9, tmin = 1e9, tmax = -1e9; for (const [x, z] of C) { const s = (x - mx) * dx + (z - mz) * dz, t = (x - mx) * nx + (z - mz) * nz; s0 = Math.min(s0, s); s1 = Math.max(s1, s); tmin = Math.min(tmin, t); tmax = Math.max(tmax, t); }
   const L = s1 - s0, P0 = [mx + dx * s0 + nx * tmin, mz + dz * s0 + nz * tmin];   // t = 0: aeusserster Uferpunkt (Kante liegt dort ueber dem Wasser)
   const f = gbvFrame({ P0, e1: [dx, dz], e2: [nx, nz], L1: L, L2: 120 }), Y = GOT.STR, WY = GOT.WY;
   const Wp = (s, t) => { const p = f.W(s, t, 0); return [p[0], p[2]]; };
@@ -26,6 +26,8 @@ function* ghafGen() {
   const rectFree = (sa, sb, ta, tb, st = 4) => { for (let s = sa; s <= sb + 0.01; s += st) for (let t = ta; t <= tb + 0.01; t += st) if (!free(Math.min(s, sb), Math.min(t, tb))) return false; return true; };
   const out = new Map(), col = h => { const c = new THREE.Color(h); return [c.r, c.g, c.b]; };
   // Betonflaeche: 6-m-Zellen hinter dem Kai, wo frei
+  // Nicolas 2026-11-16: Kranschiene/Fundament darf nicht ueber die Kaikante ragen -> wasserseitiges Bein 3 m hinter dem innersten Uferpunkt (+ Bruestung)
+  const TA = Math.max(4, tmax - tmin + 3 + KAI.dicke), TB = TA + 26, TM = TA + 13;
   const CS = 6, cells = []; let tMax = 0;
   for (let s = -10; s < L + 10; s += CS) for (let t = KAI.breite; t < 115; t += CS) if (free(s + CS / 2, t + CS / 2) || t < KAI.breite + CS) { cells.push([s, t]); tMax = Math.max(tMax, t + CS); }
   { const o = gbvBucket(out, "beton"); for (const [s, t] of cells) gbvQuad(o, f.W(s, t, Y + 0.04), f.W(s + CS, t, Y + 0.04), f.W(s + CS, t + CS, Y + 0.04), f.W(s, t + CS, Y + 0.04), [0, 1, 0], [[s / 3, t / 3], [(s + CS) / 3, t / 3], [(s + CS) / 3, (t + CS) / 3], [s / 3, (t + CS) / 3]]); }
@@ -36,7 +38,7 @@ function* ghafGen() {
   let seed = 9173; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
   const cont = [], coll = [];
   // Lager: Bloecke zu 5 Stellplaetzen laengs und 6 Reihen quer, Fahrgassen 8 m (laengs) bzw. 10 m (quer); erst ab t 34 (hinter dem landseitigen Kranbein)
-  for (let tb = 36; tb + 6 * (CW + 0.3) < tMax; tb += 6 * (CW + 0.3) + 10) for (let sb = 6; sb + CL < L - 4; sb += 5 * (CL + 0.6) + 8)
+  for (let tb = Math.max(36, TB + 6); tb + 6 * (CW + 0.3) < tMax; tb += 6 * (CW + 0.3) + 10) for (let sb = 6; sb + CL < L - 4; sb += 5 * (CL + 0.6) + 8)
     for (let i = 0; i < 5; i++) { const sc = sb + i * (CL + 0.6) + CL / 2; if (sc + CL / 2 > L - 4) break;
       for (let r = 0; r < 6; r++) { const tc = tb + r * (CW + 0.3) + CW / 2; if (!rectFree(sc - CL / 2, sc + CL / 2, tc - CW / 2, tc + CW / 2, 3) || !onPlate(sc, tc)) continue;
         const n = 1 + Math.floor(rnd() * rnd() * 4.99); for (let k = 0; k < n; k++) cont.push([sc, tc, Y + 0.04 + k * CHt, PAL[Math.floor(rnd() * PAL.length)]]); coll.push([sc, tc, n]); } }
@@ -51,30 +53,31 @@ function* ghafGen() {
     halls++; sb += 64; }
   yield;
   // Schiff am Kai (Wasserseite, t < 0): Rumpf dunkelblau mit rotem Unterwasserschiff, Aufbau weiss am Heck, Container an Deck
+  const sOut = new Map(), scont = [];
   const SL = Math.min(200, L - 6), SW = 32, sm = L / 2, tS = -2 - SW / 2, deck = WY + 17, hull = col(0x1d2836), red = col(0x8c2a22), wht = col(0xe8e6df), dark = col(0x23272c);
-  gbvBox(out, "farbe", f, sm, tS, SL - 24, SW, WY - 6, WY + 1, red, false); gbvBox(out, "farbe", f, sm, tS, SL - 24, SW, WY + 1, deck, hull);
-  for (let k = 0; k < 4; k++) { const w = SW * (1 - (k + 1) / 5.5), l = 6; gbvBox(out, "farbe", f, sm + (SL - 24) / 2 + l * (k + 0.5), tS, l, w, WY - 4 + k, deck, hull); gbvBox(out, "farbe", f, sm - (SL - 24) / 2 - l * (k + 0.5), tS, l, SW * (1 - k / 6), WY - 2 + k * 0.5, deck + 1, hull); }   // Bug (+s) spitz, Heck rund
+  gbvBox(sOut, "farbe", f, sm, tS, SL - 24, SW, WY - 6, WY + 1, red, false); gbvBox(sOut, "farbe", f, sm, tS, SL - 24, SW, WY + 1, deck, hull);
+  for (let k = 0; k < 4; k++) { const w = SW * (1 - (k + 1) / 5.5), l = 6; gbvBox(sOut, "farbe", f, sm + (SL - 24) / 2 + l * (k + 0.5), tS, l, w, WY - 4 + k, deck, hull); gbvBox(sOut, "farbe", f, sm - (SL - 24) / 2 - l * (k + 0.5), tS, l, SW * (1 - k / 6), WY - 2 + k * 0.5, deck + 1, hull); }   // Bug (+s) spitz, Heck rund
   const sx0 = sm - (SL - 24) / 2 + 4;   // Aufbau am Heck
-  gbvBox(out, "farbe", f, sx0 + 7, tS, 14, SW - 6, deck, deck + 26, wht); gbvBox(out, "farbe", f, sx0 + 7, tS, 15, SW + 4, deck + 26, deck + 28, wht);
-  for (let k = 0; k < 7; k++) gbvBox(out, "farbe", f, sx0 + 7, tS, 14.1, SW - 5.9, deck + 2.6 + k * 3.5, deck + 3.6 + k * 3.5, dark);   // Fensterbaender
-  gbvBox(out, "farbe", f, sx0 + 18, tS, 5, 6, deck, deck + 32, col(0x2b2e33)); gbvBox(out, "farbe", f, sx0 + 18, tS, 5.2, 6.2, deck + 30, deck + 32, red);   // Schornstein
+  gbvBox(sOut, "farbe", f, sx0 + 7, tS, 14, SW - 6, deck, deck + 26, wht); gbvBox(sOut, "farbe", f, sx0 + 7, tS, 15, SW + 4, deck + 26, deck + 28, wht);
+  for (let k = 0; k < 7; k++) gbvBox(sOut, "farbe", f, sx0 + 7, tS, 14.1, SW - 5.9, deck + 2.6 + k * 3.5, deck + 3.6 + k * 3.5, dark);   // Fensterbaender
+  gbvBox(sOut, "farbe", f, sx0 + 18, tS, 5, 6, deck, deck + 32, col(0x2b2e33)); gbvBox(sOut, "farbe", f, sx0 + 18, tS, 5.2, 6.2, deck + 30, deck + 32, red);   // Schornstein
   for (let b = 0; sx0 + 26 + (b + 1) * (CL + 0.8) < sm + (SL - 24) / 2 - 2; b++) { const sc = sx0 + 26 + b * (CL + 0.8) + CL / 2, n = 2 + Math.floor(rnd() * 4);
-    for (let r = 0; r < 12; r++) { const tc = tS - 6 * (CW + 0.1) + r * (CW + 0.1) + CW / 2, hh = Math.max(1, n - (r === 0 || r === 11 ? 1 : 0)); for (let k = 0; k < hh; k++) cont.push([sc, tc, deck + k * CHt, PAL[Math.floor(rnd() * PAL.length)]]); } }
-  { const [cx, cz] = Wp(sm, tS); dkAdd({ cx, cy: (WY - 6 + deck) / 2, cz, ux: dx, uz: dz, hl: (SL - 24) / 2 + 12, hw: SW / 2 - 0.3, hh: (deck - WY + 6) / 2, m: 0.3 }); }
+    for (let r = 0; r < 12; r++) { const tc = tS - 6 * (CW + 0.1) + r * (CW + 0.1) + CW / 2, hh = Math.max(1, n - (r === 0 || r === 11 ? 1 : 0)); for (let k = 0; k < hh; k++) scont.push([sc, tc, deck + k * CHt, PAL[Math.floor(rnd() * PAL.length)]]); } }
+  // Nicolas 2026-11-16: Schiffe fahrbar -> eigenes Netz um den Drehpunkt (Schiffsmitte), angemeldet in gotham-schiffe.js (shipAdd)
   yield;
-  // Containerbruecken: Beine auf t 2 (Wasserseite) und 28, Portal 18 m frei, Hauptträger auf 40 m von t -48 (Ausleger) bis +40, A-Bock bis 62 m
+  // Containerbruecken: Beine auf t TA (Wasserseite, hinter der Kaikante) und TA + 26, Portal 18 m frei, Hauptträger auf 40 m von t -48 (Ausleger) bis +40, A-Bock bis 62 m
   const KR = col(0xc0392b), KW = col(0xeeeeea), cranes = [];
   const nC = Math.max(2, Math.min(4, Math.floor(L / 45)));
   for (let c = 0; c < nC; c++) { const s = 22 + c * (L - 44) / (nC - 1);
-    for (const ds of [-8, 8]) { for (const t of [2, 28]) gbvBox(out, "farbe", f, s + ds, t, 1.4, 1.4, Y, Y + 40, KR); gbvBox(out, "farbe", f, s + ds, 15, 1.2, 27.4, Y + 18, Y + 19.4, KR); gbvBox(out, "farbe", f, s + ds, 15, 2.2, 28, Y, Y + 1.2, col(0x333333)); }
-    for (const t of [2, 28]) gbvBox(out, "farbe", f, s, t, 17.4, 1.2, Y + 38, Y + 40, KR);
+    for (const ds of [-8, 8]) { for (const t of [TA, TB]) gbvBox(out, "farbe", f, s + ds, t, 1.4, 1.4, Y, Y + 40, KR); gbvBox(out, "farbe", f, s + ds, TM, 1.2, 27.4, Y + 18, Y + 19.4, KR); gbvBox(out, "farbe", f, s + ds, TM, 2.2, 28, Y, Y + 1.2, col(0x333333)); }
+    for (const t of [TA, TB]) gbvBox(out, "farbe", f, s, t, 17.4, 1.2, Y + 38, Y + 40, KR);
     for (const ds of [-3.5, 3.5]) gbvBox(out, "farbe", f, s + ds, -4, 1.1, 88, Y + 40, Y + 42.2, KW);   // Haupttraeger t -48..40
     gbvBox(out, "farbe", f, s, 32, 9, 10, Y + 42.2, Y + 47, KW);   // Maschinenhaus
     for (const ds of [-3.5, 3.5]) { gbvBox(out, "farbe", f, s + ds, 8, 1, 1, Y + 42.2, Y + 62, KR); gbvBox(out, "farbe", f, s + ds, 20, 1, 1, Y + 42.2, Y + 58, KR); }
     gbvBox(out, "farbe", f, s, 8, 8, 1.2, Y + 61, Y + 63, KR);
     for (const ds of [-3.5, 3.5]) { ghafBeam(out, f, s + ds, 8, Y + 62, -46, Y + 42.2, 0.45, KR); ghafBeam(out, f, s + ds, 8, Y + 62, 38, Y + 42.2, 0.45, KR); ghafBeam(out, f, s + ds, 20, Y + 58, 8, Y + 42.2, 0.5, KR); }   // Abspannung zu Ausleger und Rueckarm, Strebe
     cranes.push(s);
-    const [cx, cz] = Wp(s, 15); for (const ds of [-8, 8]) for (const t of [2, 28]) { const [x, z] = Wp(s + ds, t); dkAdd({ cx: x, cy: Y + 9, cz: z, ux: dx, uz: dz, hl: 0.7, hw: 0.7, hh: 9, m: 0.3 }); }
+    const [cx, cz] = Wp(s, TM); for (const ds of [-8, 8]) for (const t of [TA, TB]) { const [x, z] = Wp(s + ds, t); dkAdd({ cx: x, cy: Y + 9, cz: z, ux: dx, uz: dz, hl: 0.7, hw: 0.7, hh: 9, m: 0.3 }); }
     void cx; void cz; }
   // Lichtmasten: alle ca. 45 m auf t 32 und am hinteren Rand
   const lampM = new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffe2a8, emissiveIntensity: 0.1 }), heads = [];
@@ -96,12 +99,23 @@ function* ghafGen() {
     const rope = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1, 0.12), ropeM); g.add(rope); const spr = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.6, 12.4), new THREE.MeshStandardMaterial({ color: 0xd9b52b, roughness: 0.6 })); g.add(spr);
     g.quaternion.copy(qd); scene.add(g); trol.push({ g, rope, spr, s, ph: i * 1.9, col: PAL[(i * 3) % PAL.length] }); cim.setColorAt(cont.length + i, cc.set(PAL[(i * 3) % PAL.length])); });
   cim.instanceColor.needsUpdate = true;
+  // Containerschiff als eigene Gruppe (Drehpunkt = Schiffsmitte), fahrbar ueber gotham-schiffe.js; dazu ein Hafenschlepper
+  const h0 = Math.atan2(-dx, -dz);
+  { const [px, pz] = Wp(sm, tS), sg = new THREE.Group(); sg.name = "Containerschiff"; sg.userData.keep = true; sg.userData.noLift = true;
+    const hm = gbvMesh(sOut); for (const m of hm.children) m.geometry.translate(-px, 0, -pz); sg.add(hm);
+    const sim = new THREE.InstancedMesh(cGeo, cMat, scont.length); scont.forEach(([s, t, y, h], i) => { const p = f.W(s, t, y); sim.setMatrixAt(i, M4.compose(new THREE.Vector3(p[0] - px, p[1], p[2] - pz), qd, one)); sim.setColorAt(i, cc.set(h)); });
+    sim.castShadow = true; sim.name = "Schiff Container"; sg.add(sim); sg.position.set(px, 0, pz); scene.add(sg);
+    if (typeof shipAdd === "function") GHAF.ship = shipAdd({ g: sg, h: h0, h0, L: SL, W: SW, deckY: deck, label: "Containerschiff", maxV: 7, acc: 0.45, turn: 0.09, tall: true, cam: [200, 70], bridge: [0, sm - (sx0 + 7), deck + 28 - WY] }); }
+  if (typeof buildTug === "function") { const T = { L: 26, W: 9 }; T.pts = shipPts(T);
+    for (const [s, t] of [[sm + SL / 2 + 30, -12], [sm - SL / 2 - 30, -12], [sm + SL / 2 + 30, -40], [sm, -60]]) { const [x, z] = Wp(s, t); if (shipScore(T, x, z, h0) >= -1) continue;
+      const tg = new THREE.Group(), inner = buildTug(); inner.position.y = WY; tg.add(inner); tg.name = "Hafenschlepper"; tg.userData.keep = true; tg.userData.noLift = true; tg.position.set(x, 0, z); scene.add(tg);
+      GHAF.tug = shipAdd({ g: tg, h: h0, h0: 0, L: 26, W: 9, deckY: WY + 2.5, label: "Hafenschlepper", maxV: 11, acc: 2.2, turn: 0.45, cam: [32, 12], bridge: [0, -2.6, 7.4] }); shipPose(GHAF.tug); break; } }
   yield;
   // Kollision: Containerstapel (Oberseite begehbar)
   for (const [s, t, n] of coll) { const [x, z] = Wp(s, t); dkAdd({ cx: x, cy: Y + n * CHt / 2, cz: z, ux: dx, uz: dz, hl: CL / 2 - 0.3, hw: CW / 2 - 0.3, hh: n * CHt / 2, m: 0.3 }); }
   bautAdd({ id: "GO-HAFEN", name: "Hafen / Containerterminal", art: "Hafen", poly: [Wp(0, 0), Wp(L, 0), Wp(L, tMax), Wp(0, tMax)], y0: WY - 6, y1: Y + 63, info: nC + " Containerbrücken · " + cont.length + " Container · " + halls + " Lagerhallen" });
-  GHAF.anim = { f, trol, cim, base: cont.length, lampM, qd, M4, one, deck, Y, cx: mx, cz: mz };
-  GHAF.info = { L, tMax, cranes: nC, cont: cont.length, stacks: coll.length, halls, cells: cells.length };
+  GHAF.anim = { TA, f, trol, cim, base: cont.length, lampM, qd, M4, one, deck, Y, cx: mx, cz: mz };
+  GHAF.info = { TA, L, tMax, cranes: nC, cont: cont.length, stacks: coll.length, halls, cells: cells.length };
 }
 // schraeger Balken in der Ebene s = const: von (t0, y0) nach (t1, y1), Querschnitt w x w (Vertexfarbe col)
 function ghafBeam(out, f, s, t0, y0, t1, y1, w, col) {
@@ -119,13 +133,14 @@ function ghafStep() {
   const A = GHAF.anim; if (!A) return; const p = camera.position; A.lampM.emissiveIntensity = 0.1 + 2 * (typeof night === "number" ? night : 0);
   if (Math.abs(p.x - A.cx) > 1200 || Math.abs(p.z - A.cz) > 1200) return;
   const T = performance.now() / 1000;
-  A.trol.forEach((c, i) => { const u = ((T / 40 + c.ph / 6.28) % 1);   // 40 s je Spiel: 0-.25 hin (beladen), .25-.4 senken/heben, .4-.65 zurueck, .65-1 senken/heben am Schiff
-    const mv = x => x * x * (3 - 2 * x), tt = u < 0.25 ? -30 + 38 * mv(u / 0.25) : u < 0.4 ? 8 : u < 0.65 ? 8 - 38 * mv((u - 0.4) / 0.25) : -30;
-    const dip = u >= 0.25 && u < 0.4 ? Math.sin((u - 0.25) / 0.15 * Math.PI) : u >= 0.65 ? Math.sin((u - 0.65) / 0.35 * Math.PI) : 0;
+  const away = GHAF.ship && Math.hypot(GHAF.ship.x - GHAF.ship.home.x, GHAF.ship.z - GHAF.ship.home.z) > 3;   // Schiff weggefahren: Katzen warten am Kai
+  A.trol.forEach((c, i) => { const u = away ? 0.3 : ((T / 40 + c.ph / 6.28) % 1);   // 40 s je Spiel: 0-.25 hin (beladen), .25-.4 senken/heben, .4-.65 zurueck, .65-1 senken/heben am Schiff
+    const mv = x => x * x * (3 - 2 * x), K = A.TA + 6, tt = u < 0.25 ? -30 + (K + 30) * mv(u / 0.25) : u < 0.4 ? K : u < 0.65 ? K - (K + 30) * mv((u - 0.4) / 0.25) : -30;
+    const dip = away ? 0 : u >= 0.25 && u < 0.4 ? Math.sin((u - 0.25) / 0.15 * Math.PI) : u >= 0.65 ? Math.sin((u - 0.65) / 0.35 * Math.PI) : 0;
     const yTop = A.Y + 39.6, low = tt > 0 ? A.Y + 3.4 : A.deck + 14, ySpr = yTop - 6 - dip * (yTop - 6 - low);
     const [x, , z] = A.f.W(c.s, tt, 0); c.g.position.set(x, yTop - 2, z);
     c.spr.position.y = ySpr - (yTop - 2); c.rope.scale.y = Math.max(0.1, yTop - 2 - ySpr); c.rope.position.y = (c.spr.position.y) / 2;
-    const loaded = u < 0.25 || (u >= 0.25 && u < 0.32) || u >= 0.82;   // beladen von der Aufnahme am Schiff bis zum Absetzen am Kai
+    const loaded = !away && (u < 0.25 || (u >= 0.25 && u < 0.32) || u >= 0.82);   // beladen von der Aufnahme am Schiff bis zum Absetzen am Kai
     A.M4.compose(new THREE.Vector3(x, loaded ? ySpr - 0.3 - 2.59 : -999, z), A.qd, A.one); A.cim.setMatrixAt(A.base + i, A.M4); });
   A.cim.instanceMatrix.needsUpdate = true;
 }

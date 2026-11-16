@@ -50,8 +50,8 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 
 ## Hafen (P3a)
 
-18. **Schiff:** Das Containerschiff liegt fest am Kai, die Kräne laden nur zum Schein um. Soll es an- und ablegen und aufs Meer hinausfahren, oder sollen die Kräne steuerbar sein?
-   - *Bis dahin:* liegt fest.
+18. **Schiff:** ~~Liegt fest?~~ Beantwortet (2026-11-16: "Schiffe sollen fahrbar sein"): Das Containerschiff und ein Hafenschlepper sind fahrbar. Offen dazu: Die Kräne laden nur zum Schein um; sie warten am Kai, wenn das Schiff weg ist. Sollen sie steuerbar sein?
+   - *Bis dahin:* nur Schein.
 19. **Umfang:** Laut Karte ist der Hafen 420 m lang. Gebaut ist ein gerader Kai von 190 m an der Inselspitze, denn danach knickt die Küste ab. Soll ein zweiter Kai um die Spitze herum dazukommen?
    - *Bis dahin:* ein Kai.
 
