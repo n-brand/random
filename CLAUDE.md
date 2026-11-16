@@ -1,3 +1,14 @@
+- **U1 Teil B: Auslässe und Nebensammler** (Nicolas 2026-11-16 "Ja, Teil B"), alles in gotham-kanal.js.
+  - **Auslässe** (`kanOutlet`): Wo ein Hauptsammler an der Kaikante endet (`outA`/`outB`, 6 Stück), gibt es innen ein Geländer am Sammlerende. Dahinter liegt ein Absturzschacht 8 x 8 m mit Becken auf Wasserhöhe; das Rinnenwasser fällt als Wasserfall hinein.
+  - Ein Rohr (6 m, innen sichtbar) läuft senkrecht zur Kaikante (Gradient von `GOT.edgeSD`) bis zur Mauer. Die Mauer hat keine Rückseite, man sieht hinaus.
+  - Aussen (`KAN.outGrp`, über der Erde): Rohrmund 1,5 m vor der Mauer mit dunkler Scheibe, Betonstirnwand 14 m, rostiges quadratisches Gitter mit Stahlrahmen (dkAdd), Flügelwände aus Pflaster 0,8 m stark von +-7 m an der Wand bis +-18 m bei 24 m (Oberkante fällt zum Wasser, dkAdd mit `g`), Betontreppe an der rechten Flügelwand, gepflasterte Sohle ins Wasser.
+  - Gebaut vor der Mauer, nicht als Nische (OFFENE-FRAGEN 22).
+  - **Nebensammler** (`kanSide`, `kanSideBuild`): Kandidaten sind Nebenstrassen (`kind` "neben"), deren Ende bis 14 m an einem Hauptsammler liegt; jede zweite davon. Der Pfad wird bis 0,8 m in den Hauptsammler verlängert und folgt dann den Strassenpunkten zurück, bis die Sohle -16,2 erreicht (Decke 1,2 m unter der Strasse, ca. 125 m).
+  - Sohle gleichmässig (ca. 11 %, je 5 m flach an den Enden), 3,2 m breit und 3 m hoch (Ziegel, Gewölbe), schmales Wasser, Lampen. Kollision: dkRoom und geneigter dkAdd-Boden (`g`).
+  - Verworfen werden Läufe durch andere Räume, an der Kaikante, an anderen Hauptsammlern oder nah an einem anderen Nebensammler. Ergebnis: 71 Nebensammler. Oben je ein Gulli mit Leiter.
+  - **Einmündungen und Kreuzungen ohne Lücken**: `kanClip` (Halbierung) schneidet Wandstücke genau an der Grenze des anderen Sammlers. Die Hauptwand wird an Einmündungen in 25-cm-Stücken gebaut. Über einem Nebensammler beginnt sie erst an dessen Gewölbe (`inOther` liefert dort die Gewölbehöhe, sonst `Infinity` für Hauptsammler).
+  - Gemessen: zusammen 23,4 km, ca. 218 000 Dreiecke (nur unten sichtbar), 258 Gullis.
+  - Geprüft: Nebensammler vom Gulli (-16,2) bis in den Hauptsammler (-29) gelaufen (grösster Höhensprung 1,7 cm, nirgends hängen geblieben). Bilder Einmündung von beiden Seiten (übrig: ein winziger Lichtpunkt), Auslass aussen und Schacht innen.
 - **U1 Teil A: Hauptsammler** (Nicolas 2026-11-16 "Ja, U1 Teil A"): `js/gotham/gotham-kanal.js` (FILES nach gotham-orte.js), `KAN`, `kanStep(dt)` in schleife.js (Wasser fliesst). Baut die 9 Strassen aus `GOTHAM.kanal.hauptsammler` (`GSTR.roads` mit dieser id), zusammen 13,9 km.
   - Linien alle 4 m. Sie enden 16 m vor der Kaikante; die Auslässe kommen mit Teil B. Ringe schliessen sich.
   - Höhen: Sohle `KAN.Y` = Strasse - 17 (-29), Gewölbe bis 6 m. Liegt ein U-Bahn-Raum darüber (`dkInRoom` auf -24), sinkt die Decke weich auf -24,9.

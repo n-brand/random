@@ -62,6 +62,11 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 21. **Höhe unter der U-Bahn:** Der Kanal ist 6 m hoch (Sohle 17 m unter der Strasse). Wo ein U-Bahn-Tunnel darüber liegt, wäre er im Weg; dort sinkt die Decke weich auf etwa 4 m. Ist das so in Ordnung, oder soll der Kanal dort tiefer liegen?
     - *Bis dahin:* Decke dort tiefer.
 
+22. **Auslass: Nische oder vor der Mauer?** Der Plan nennt eine Nische, 24 m tief. Der Kai ist aber nur 12 m breit, eine Nische 24 m in die Mauer hinein ginge unter die Strasse. Gebaut ist der Auslass deshalb vor der Mauer: Stirnwand mit Rohr und Gitter an der Mauer, die Flügelwände stehen auf dem Kiesstreifen und weiten sich zum Wasser hin.
+    - *Bis dahin:* vor der Mauer. Eine echte Nische müsste Kai, Gehsteig und Strasse dort ausschneiden.
+23. **Nebensammler:** Gebaut sind 71, je rund 125 m mit gleichmässig 11 % Gefälle. Verworfen wurden: zu kurze Strassen; Läufe durch U-Bahn, untere Strasse oder Tiefgarage; Läufe zu nah an einem anderen Nebensammler. Reicht das?
+    - *Bis dahin:* so.
+
 ## Ältere offene Punkte (aus CLAUDE.md)
 
 10. **Batcave, Uferkante:** Das Hochklettern aus dem Wasser mit gehaltener Leertaste (B1) bleibt vorerst. Soll es bleiben?
