@@ -68,7 +68,9 @@ function* gortGen() {
     const shell = (type, glas, N, Hh, ins = 0) => { const P = ins ? (() => { const p = f.W(ins, ins, 0); return [p[0], p[2]]; })() : P0;
       gbvShell({ P0: P, e1: [ax, az], e2, L1: L1 - 2 * ins, L2: L2 - 2 * ins, front, type, N, H: Hh, glas, seed, fire: [0, 0, 0, 0], y: Y }, out); return ins; };
     if (kind !== "atm" && kind !== "stadion") gbvBox(out, "beton", f, L1 / 2, L2 / 2, L1, L2, Y, Y + 0.05);
-    if (kind === "atm") { gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1, col(0x23415e)); gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.4, 1.0, Y + 2.1, Y + 2.3, col(0xd9dde2)); sign(front, sideLen(front) / 2, Y + 1.75, 1.1, 0.12, L1 / 2 - 0.45 - (front % 2 ? L1 / 2 - 0.45 : 0)); box(L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1); }
+    if (kind === "atm") { gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1, col(0x23415e)); gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.4, 1.0, Y + 2.1, Y + 2.3, col(0xd9dde2)); sign(front, sideLen(front) / 2, Y + 1.75, 1.1, 0.12, L1 / 2 - 0.45 - (front % 2 ? L1 / 2 - 0.45 : 0)); box(L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1);
+      if (typeof kontoOpen === "function") { const hm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 1.6), new THREE.MeshBasicMaterial({ visible: false })), hp = Wp(L1 / 2, L2 / 2); hm.position.set(hp[0], Y + 1.2, hp[1]); scene.add(hm);   // S3: Rechtsklick/E oeffnet den Bankautomaten
+        gates.push({ name: "Bankautomat", g: hm, call: () => kontoOpen(), verbs: ["benutzen", "benutzen"], a: hp, b: hp, near: 4 }); } }
     else if (kind === "stadion") gortStadion(out, f, o, front, Y, box, sign, M);
     else if (kind === "kirche") gortKirche(out, f, o, front, Y, box, sign, M, col);
     else {

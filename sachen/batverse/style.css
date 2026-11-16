@@ -224,3 +224,22 @@ body.touch .inv-grid, body.touch .inv-bar { grid-template-columns: repeat(9, 38p
 #time-slider { width: 120px; }
 #time-label { font: 600 13px system-ui, sans-serif; min-width: 3.2em; text-align: center; }
 #btn-time-run { padding: 4px 8px; font-size: 12px; }
+
+/* S3 Kontostand und Bankautomat (Nicolas 2026-11-16) */
+#konto { display: none; position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 112px); transform: translateX(-50%); padding: 3px 10px; background: rgba(12,14,18,.72); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; color: #e8c56a; font: 600 14px system-ui, sans-serif; z-index: 5; white-space: nowrap; }
+body.walk:not(.ghost) #konto { display: block; }
+body.touch #konto { bottom: calc(env(safe-area-inset-bottom, 0px) + 58px); }
+#konto .k-delta { position: absolute; left: 100%; margin-left: 8px; top: 3px; opacity: 0; transition: opacity .3s; }
+#konto .k-delta.show { opacity: 1; }
+.pos { color: #7fd38a; } .neg { color: #ff7a6a; }
+#bank { position: fixed; inset: 0; z-index: 41; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.45); }
+#bank[hidden] { display: none; }
+.bank-box { width: min(420px, 92vw); max-height: 90vh; overflow: auto; background: #10161f; color: #e9edf2; border: 1px solid #2c3b52; border-radius: 12px; padding: 12px 16px; font: 14px system-ui, sans-serif; }
+.bank-lbl { margin-top: 10px; font-size: 12px; opacity: .7; text-transform: uppercase; letter-spacing: .05em; }
+.bank-stand { font-size: 28px; font-weight: 700; color: #e8c56a; }
+.bank-cash { margin-top: 4px; opacity: .85; }
+.bank-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.bank-btns button { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #3d5577; background: #1d3a5f; color: #fff; font: 600 14px system-ui, sans-serif; cursor: pointer; }
+.bank-btns button:disabled { opacity: .4; cursor: default; }
+.bank-log { list-style: none; margin: 4px 0 0; padding: 0; }
+.bank-log li { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }

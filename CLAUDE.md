@@ -1,3 +1,10 @@
+- **S3 Kontostand** (Nicolas 2026-11-16 "mach weiter nächster Schritt"): `js/ui/konto.js` (FILES nach ui/inventar.js), `KONTO`.
+  - Geld in ganzen Dollar mit Verlauf (letzte 50 Buchungen). Startguthaben `KONTO_START` 100 000 $, ein Bargeld-Bündel ist `KONTO_BUENDEL` 10 000 $ wert (OFFENE-FRAGEN 26).
+  - Schnittstelle: `kontoStand()`, `kontoKann(n)`, `kontoEin(n, grund)`, `kontoAus(n, grund)` (false ohne Deckung), `kontoFmt(n)`, `kontoOn(fn)`.
+  - Speicher austauschbar für später Supabase: `KONTO.backend` = { name, load() -> Promise<{ stand, log } | null>, save(d) -> Promise }, jetzt `KONTO_LOCAL` (localStorage `wm-konto`), wechseln mit `kontoSetBackend(b)`. Gebucht wird immer sofort lokal, gespeichert danach.
+  - Anzeige über der Hotbar (zu Fuss, auch im Auto), kurz +/- bei jeder Buchung.
+  - Bankautomaten: die 24 ATM-Säulen (gotham-orte.js) sind `gates` "Bankautomat" (Rechtsklick/E): Fenster `#bank` mit Kontostand, Bargeld im Inventar, "Bargeld einzahlen" (alle Bündel), "1 Bündel abheben", letzte 8 Buchungen; Esc schliesst, Maus frei wie beim Inventar.
+  - Geprüft: Ein- und Auszahlung, zu hohe Abbuchung abgelehnt, gespeichert; Zielen auf den Automaten zeigt den Hinweis, Bild des Fensters.
 - **Tageszeit: Sonne, Mond, Sterne** (Nicolas 2026-11-16: "Tag-Nacht-Zyklus 10 min Tag, 10 min Nacht, im Orbit-Menü umstellbar"): `js/kern/tageszeit.js` (FILES nach kern/tag-nacht.js), `DAY` { t, run, len 1200 }, `dayStep(dt)` in schleife.js.
   - DAY.t = Anteil am Zyklus (0 = 06:00 Sonnenaufgang, 0,25 Mittag, 0,5 18:00, 0,75 Mitternacht), ein Zyklus 20 min. Die Sonne läuft von Osten über Süden nach Westen; nachts ist das gerichtete Licht der Mond (gegenüber). `night`/`nightTarget` folgen der Sonnenhöhe weich (`applyNight` wie bisher), Morgen- und Abendrot färben Himmel, Nebel und Sonnenlicht.
   - Sonne und Mond als Sprites am Himmel (folgen der Kamera, kein Nebel), 900 Sterne als Punkte, nur über der Erde.

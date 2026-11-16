@@ -80,3 +80,5 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 11. **Training Area** der oberen Höhle: ausgeblendet, weil sie unklar war. Wie soll sie aussehen?
 12. **Strassen zum Westtor** der Manor: Laut deiner Notiz kommen sie später. Wann?
 13. **Nord- und West-Süd-Zufahrt** enden etwa 450 m vor der Weltgrenze, weil die Karte dort endet. Verlängern oder so lassen?
+
+26. **Kontostand:** Startguthaben 100 000 $, ein Bargeld-Bündel (Tresor der Geheimbasis, Bankautomat) ist 10 000 $ wert. Bruce Wayne hätte eigentlich Milliarden; für den Fahrzeug-Shop (S4) braucht es aber einen Rahmen. Passen die Beträge?

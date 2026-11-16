@@ -70,6 +70,8 @@
   <div id="ghost-tag">Geist</div>
   <div id="pause"><b>Klicken zum Weiterspielen</b><span>Esc: Begehen beenden</span></div>
   <div id="hotbar" aria-label="Hotbar"></div>
+  <div id="konto" title="Kontostand (Bankautomaten in Gotham)"><span class="k-stand">0 $</span><span class="k-delta"></span></div>
+  <div id="bank" hidden><div class="bank-box"><div class="inv-head"><b>Bankautomat · Gotham City Bank</b><button type="button" class="bank-close" aria-label="Schliessen">&times;</button></div><div class="bank-lbl">Kontostand</div><div class="bank-stand">0 $</div><div class="bank-cash"></div><div class="bank-btns"><button type="button" data-a="ein">Bargeld einzahlen</button><button type="button" data-a="ab">1 Bündel abheben</button></div><div class="bank-lbl">Letzte Buchungen</div><ul class="bank-log"></ul><div class="inv-hint">Esc schliesst</div></div></div>
   <div id="inventar" hidden><div class="inv-box"><div class="inv-head"><b>Inventar</b><button type="button" class="inv-close" aria-label="Schliessen">&times;</button></div><div class="inv-grid"></div><div class="inv-sep">Hotbar (1–9)</div><div class="inv-bar"></div><div class="inv-info"></div><div class="inv-hint">I oder Esc schliesst</div></div></div>
   <div id="hint">WASD gehen &middot; Esc Maus frei &middot; Leertaste springen &middot; Shift rennen &middot; 1–9 Hotbar &middot; I Inventar &middot; G Geist &middot; Esc beenden</div>
   <div id="toast"></div>
@@ -145,6 +147,7 @@
       "ui/karten-overlay.js",
       "ui/stadtkarte.js",
       "ui/inventar.js",
+      "ui/konto.js",
       "aussen/aussenanlage.js",
       "hoehle/hoehle-unten.js",
       "hoehle/batcave-ausbau.js",
