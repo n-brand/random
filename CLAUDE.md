@@ -1,3 +1,12 @@
+- **P3b Gebäude mit Bedeutung** (Nicolas 2026-11-16 "Ja, P3b"): `js/gotham/gotham-orte.js` (FILES nach gotham-hafen.js), `GORT`, `gortStep()` in schleife.js. Baut 67 Orte aus `GOTHAM.orte`. Ausgelassen: Orte mit eigenem Bau oder späterem Schritt (`GORT_SKIP`, dazu Parkhäuser, geheime Orte, Baustellen).
+  - Grundriss und Höhe aus der Karte; Front ist die Seite mit der nächsten Fahrbahn (bis 30 m).
+  - Hüllen über `gbvShell`. `gortKind` wählt die Bauart: Turm (Kratzer, Glas), Laden, Miet, Fabrik, Halle (Glas), Krippe (bunt).
+  - Schilder: ein Atlas für alle, Texte in `GORT_SIGN` (fiktive Namen), Farben in `GORT_COL`, leuchten nachts.
+  - Sonderformen: `gortPortal` für Gericht und Museen (Podest mit Stufen, Säulen, Gebälk mit Schild, gestufter Giebel). `gortKirche` (Schiff, Seitenschiffe, Querhaus, gestufte Satteldächer, zwei Türme mit Helm, Rosette, leuchtet nachts). `gortStadion` (Tribünen in Stufen 0,8 x 1,6 m in Blau, Spielfeld mit Linien und Endzonen, Flutlichtmasten, Aussenmauer). Krankenhaus mit rotem Kreuz und Notaufnahme-Vordach, Luxushotel und Grossbank mit goldenem Vordach. Bankautomaten als kleine Säulen mit ATM-Schild.
+  - Kollision: je Baukörper dkAdd, Dächer begehbar; Stadion nur Mauer und Tribünen-Stufen (kein Eingang).
+  - Register `GO-<ID>`.
+  - Gemessen: 67 Orte, 15 Netze, ca. 8 200 Dreiecke, Aufbau zusammen ca. 50 ms (im Spiel je Ort ein Schritt).
+  - Geprüft: Bilder Kathedrale, Stadion, Krankenhaus.
 - **Hafen / Containerterminal** (Nicolas 2026-11-16 "Ja, Hafen"; PLAN-GOTHAM P3a, damit fertig): `js/gotham/gotham-hafen.js` (FILES nach gotham-polizei.js), `GHAF`, `ghafStep()` in schleife.js. Liegt am Ort "hafen" aus daten.js an der Inselspitze.
   - Kaikante: Ausgleichsgerade durch die Uferpunkte (erste Wasserstelle in +b, a -225 bis -35), 190 m lang. Rahmen `gbvFrame`: s entlang, t landeinwärts, t = 0 am äussersten Uferpunkt.
   - Fläche: Beton in 6-m-Zellen hinter dem Kai, nur wo frei (keine Fahrbahn, kein Gehsteig, kein Gebäude). Die Bauteile sind `gbvBox` mit der Vertexfarbe "farbe", Balken `ghafBeam`.

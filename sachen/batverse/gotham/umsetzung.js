@@ -60,7 +60,7 @@ const UMSETZUNG = [
   { phase: "gebaeude", nr: "P3a", titel: "Wayne Tower, Polizei, Hafen", status: "fertig", stand: "Wayne Tower (Hülle, Vorplatz, Tiefgaragen, geheimer Stock) steht. Polizeipräsidium mit Säulenportal, Uhrturm, Streifenwagen und Batsignal (nachts Lichtkegel und Zeichen am Himmel, schaltbar). Hafen an der Inselspitze: 4 Containerbrücken mit fahrender Katze, Containerschiff am Kai, Containerlager, 2 Lagerhallen, Lichtmasten.", braucht: ["G3/G4"],
     inhalt: "Wayne Tower mit Tiefgarage und geheimem Stock, Polizeipräsidium mit Batsignal, Hafen mit Containerterminal an der Inselspitze.",
     warum: "Die wichtigsten Wahrzeichen zuerst, sie geben der Stadt Orientierung." },
-  { phase: "gebaeude", nr: "P3b", titel: "Weitere Gebäude mit Bedeutung", status: "offen", braucht: ["P3a"],
+  { phase: "gebaeude", nr: "P3b", titel: "Weitere Gebäude mit Bedeutung", status: "laeuft", stand: "67 Orte aus der Karte als Hüllen mit eigenem Schild: Gericht und Museen mit Säulenportal, Kathedrale mit Türmen und Rosette, Stadion mit Tribünen und Spielfeld, Krankenhäuser mit rotem Kreuz, Banken und Luxushotels als Türme, Kinderheime, Krippen, Läden, Bars, Fast Food, Autohäuser, Fabriken, 12 Bankautomaten. Offen: Innenräume (Tresorkeller, Club des Pinguins unten).", braucht: ["P3a"],
     inhalt: "Gericht, Kathedrale, Eventgebäude, Museen, Krankenhäuser, Heime, Krippen, Stadion, Banken, Hotels, Läden, Restaurants, Club des Pinguins.",
     warum: "Alle als leere Hülle mit Schild, Innenräume nur wo genannt.",
     // Ausklappbar in umsetzung.html (Nicolas 2026-11-12): feste Bau-Reihenfolge in Gruppen, nicht veraenderbar (Nicolas: logisch sortiert).
