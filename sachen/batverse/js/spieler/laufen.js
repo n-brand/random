@@ -160,7 +160,7 @@ function startWalk(x = WALK_START.x, z = WALK_START.z, yaw = WALK_START.yaw) {
   walking = true; ghost = false;
   document.body.classList.add("walk"); document.body.classList.remove("ghost"); hintEl.innerHTML = HINT_WALK;
   controls.enabled = false;
-  if (world.userData.boat) world.userData.boat.on = false;
+  if (typeof BOATS !== "undefined") for (const b of BOATS) b.on = false; else if (world.userData.boat) world.userData.boat.on = false;
   if (world.userData.car) world.userData.car.leave();
   player.pos.set(x, terrainH(x, z), z); player.pos.y = supportAt(player.pos, player.pos.y + 1); player.yaw = yaw; player.pitch = 0.05; player.vy = 0;
   camera.fov = 70; camera.near = 0.15; camera.updateProjectionMatrix();
