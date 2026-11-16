@@ -57,7 +57,7 @@ const UMSETZUNG = [
   { phase: "verkehr", nr: "V2", titel: "Bus", status: "fertig", stand: "4 Linien aus daten.js (Zentrum, West-Ost, Manor-Express, Hafen) mit 46 Haltestellen (Wartehäuschen, Mast in Linienfarbe), je Linie ein fahrender Bus hin und zurück, Busbahnhof mit Dach, Steigen, Wartehalle und zwei abgestellten Bussen.", braucht: ["G2"],
     inhalt: "Haltestellen zwischen den U-Bahn-Stationen, Linien, fahrender Bus, Busbahnhof.",
     warum: "Folgt den Hauptstrassen." },
-  { phase: "gebaeude", nr: "P3a", titel: "Wayne Tower, Polizei, Hafen", status: "offen", braucht: ["G3/G4"],
+  { phase: "gebaeude", nr: "P3a", titel: "Wayne Tower, Polizei, Hafen", status: "laeuft", stand: "Wayne Tower (Hülle, Vorplatz, Tiefgaragen, geheimer Stock) steht. Polizeipräsidium mit Säulenportal, Uhrturm, Streifenwagen und Batsignal (nachts Lichtkegel und Zeichen am Himmel, schaltbar). Offen: Hafen.", braucht: ["G3/G4"],
     inhalt: "Wayne Tower mit Tiefgarage und geheimem Stock, Polizeipräsidium mit Batsignal, Hafen mit Containerterminal an der Inselspitze.",
     warum: "Die wichtigsten Wahrzeichen zuerst, sie geben der Stadt Orientierung." },
   { phase: "gebaeude", nr: "P3b", titel: "Weitere Gebäude mit Bedeutung", status: "offen", braucht: ["P3a"],

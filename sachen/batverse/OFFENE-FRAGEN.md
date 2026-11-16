@@ -41,6 +41,13 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 15. **Standort:** Uptown, BS-02 bei etwa -2170 / -47 (Spielkoordinaten), weil Uptown der reichste Bezirk ist. Soll es woanders stehen?
    - *Bis dahin:* dort.
 
+## Polizeipräsidium (P3a)
+
+16. **Zufahrt:** Laut Karte liegt das Präsidium mitten in einem Block. Die nächste Strasse ist etwa 35 m entfernt, dazwischen stehen Häuser. Die Streifenwagen stehen auf dem Vorplatz, kommen aber nicht auf eine Strasse. Soll ich eine Zufahrt bauen (zwei Häuser würden wegfallen) oder das Präsidium an eine Strasse verschieben?
+   - *Bis dahin:* Vorplatz ohne Zufahrt, zu Fuss über die Wiese erreichbar.
+17. **Batsignal:** Es leuchtet nachts automatisch; Rechtsklick oder E am Scheinwerfer schaltet es aus und wieder an. Soll es nur auf Knopfdruck leuchten, zum Beispiel später für Einsätze?
+   - *Bis dahin:* nachts an.
+
 ## Ältere offene Punkte (aus CLAUDE.md)
 
 10. **Batcave, Uferkante:** Das Hochklettern aus dem Wasser mit gehaltener Leertaste (B1) bleibt vorerst. Soll es bleiben?

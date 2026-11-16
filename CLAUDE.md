@@ -1,3 +1,11 @@
+- **Polizeipräsidium mit Batsignal** (Nicolas 2026-11-16 "mach weiter nächster Schritt"; PLAN-GOTHAM P3a): `js/gotham/gotham-polizei.js` (FILES nach gotham-casino.js), `GCPD`, `gcpdStep()` in schleife.js. Liegt auf dem Ort "gcpd" aus daten.js (80 x 60 m, gedreht wie die Karte), Front nach Norden. Gebaut mit den Gebäude-Vorlagen (`gbvWall`/`gbvBox`, Fassade "stein", leuchtet nachts mit `GBV.night`):
+  - Bau: Hauptblock 6 Geschosse, Obergeschoss 2 Geschosse zurückgesetzt, Mittelturm 45 m mit Uhr (zeigt die echte Uhrzeit) und Fahnenmast, Gesimse.
+  - Eingang: Säulenportal mit 6 Säulen, Podest und 4 Stufen, Schriftband GOTHAM CITY POLICE DEPARTMENT, zwei grüne Polizeilaternen.
+  - Vorplatz aus Granit mit 4 Streifenwagen (`addVehicle`, spät gebaut).
+  - **Batsignal** auf dem Dach: Scheinwerfer auf Drehgestell, Linse mit Fledermaus (`batShape`, eigene Form). Nachts (night > 0,25, bis 3 km Kamera-Abstand) ein additiver Lichtkegel zu einem Punkt 330 m hoch und 180 m nördlich, dort das Zeichen als Sprite (110 m). `gates`-Eintrag "Batsignal" (Rechtsklick/E, 10 m) schaltet `GCPD.on`.
+  - Kollision: dkAdd-Quader für Blöcke, Turm, Säulen, Stufen und Scheinwerfer; die Dächer sind begehbar. Register `GO-GCPD`.
+  - Geprüft: Bilder Portal am Tag und Signal bei Nacht; zu Fuss gegen die Front (hält bei 0,3 m), Boden auf dem Dach, Schalter.
+  - Keine Zufahrt: das Grundstück liegt laut Karte mitten im Block (OFFENE-FRAGEN 16). Umsetzung P3a läuft, der Hafen fehlt noch.
 - **Casino** (Nicolas 2026-11-16: "ein Casino mit der Aufschrift Casino - überleg dir was und überrasch mich"): `js/gotham/gotham-casino.js` (FILES nach gotham-bus.js), `CAS`, `casinoStep()` in schleife.js. Steht auf der Baustelle BS-02 (Uptown, 60 x 50 m). Die Baustelle entfällt über `GBST.skip` (gotham-baustellen.js); ggebGaps prüft weiterhin alle BS (`gbstList()`), damit keine Lücken-Baustelle auf das Grundstück kommt. Art déco in Schwarz und Gold, 46 x 32 x 22 m, 10 m hinter der Strasse:
   - Bau: Granit-Vorplatz, goldene Lisenen und Gesimse, Fensterbänder, Stufenkrone mit Sonnenstrahlen.
   - Vorne und an der Ecke: senkrechtes Neonschild C-A-S-I-N-O (Buchstaben gehen nacheinander an, blinken, dann alle an; 6-s-Takt). Vordach mit Lauflicht-Glühbirnen und Schriftzug CASINO. Drei Drehtüren (nur Optik), roter Teppich mit Messingpfosten. Zwei goldene Würfel auf Säulen drehen sich.
