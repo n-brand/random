@@ -15,7 +15,8 @@ const UNDERGROUND = [];
 const UG_PORTALS = [[-107, -186], [HF_XP, HF_CZ], [SILO.x, SILO.z], ...SEA_TUNNEL.slice(-2)];   // Meerestunnel nur am Ausgang zur Bucht   // Garagenrampe nur, solange ihre Klappe offen ist (GRAMP.f)
 let ugVis = true;
 scene.onBeforeRender = (r, sc, cam) => { const p = cam.position; gHideStep(cam);   // Gotham-Zellen weit weg aus (gotham-gelaende.js)
-  const want = belowView || p.y < terrainH(p.x, p.z) - 0.5 || (p.y < terrainH(p.x, p.z) + 20 && (GRAMP.f > 0.01 && (p.x - 15.5) ** 2 + (p.z - 30) ** 2 < 3600 || UG_PORTALS.some(([x, z]) => (p.x - x) ** 2 + (p.z - z) ** 2 < 3600)));   // nur nah (60 m) und tief (bis 20 m ueber dem Boden)
+  const want = belowView || p.y < terrainH(p.x, p.z) - 0.5 || (typeof inGothamG === "function" && p.y < GOT.STR - 2 && inGothamG(p.x, p.z) && !!dkInRoom(p.x, p.y, p.z)) ||   // Gotham: Raum unter Strassenhoehe zaehlt auch, wo das Gelaende ausgeschnitten ist (Geheimbasis unter dem Strassengraben)
+    (p.y < terrainH(p.x, p.z) + 20 && (GRAMP.f > 0.01 && (p.x - 15.5) ** 2 + (p.z - 30) ** 2 < 3600 || UG_PORTALS.some(([x, z]) => (p.x - x) ** 2 + (p.z - z) ** 2 < 3600)));   // nur nah (60 m) und tief (bis 20 m ueber dem Boden)
   if (want !== ugVis) { ugVis = want; for (const m of UNDERGROUND) m.visible = want; } };
 // Ladebildschirm bis die Gotham-Baustellen stehen (Nicolas 2026-11-15: sie laden als Letztes; Strassen und Baustellen bauen sich als Kachel-Aufgabe
 // in den ersten Bildern auf, die Schleife laeuft darunter weiter). Hoechstens 30 s, dann geht er trotzdem weg.

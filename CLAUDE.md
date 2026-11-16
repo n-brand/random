@@ -1,3 +1,12 @@
+- **P5 Geheimbasis im Container** (Nicolas 2026-11-16 "weiter"): `js/gotham/gotham-bunker.js` (FILES nach gotham-kanal.js), `GCB`, `gcbStep(dt)` in schleife.js.
+  - Container (Ort "container-base"): blau, Wellblech-Textur, Eckbeschläge, zwei Türflügel mit Verriegelungsstangen (öffnen, wenn er steht).
+  - Er ist ein Aufzug: `gcbToggle` fährt in 7 s 5,5 m hinunter. Die Bodenplatte ist ein dk-Teil, dessen Höhe mitwandert (Spieler und Auto fahren mit). Oben schliesst unten-stehend eine Stahlplatte (dk-Teil `hatch`).
+  - Bedienung: Rechtsklick auf das Bedienfeld innen oder die Rufsäulen oben bzw. unten; im Auto Taste L (bedienung.js, `gcbNear`). Der Raum im Container reicht bis über die Strasse (dort zählt das Gelände nicht).
+  - Halle: **Lage geändert** (OFFENE-FRAGEN 24). Am Kartenort liegt die untere Uferstrasse Nord auf -17,5. Die Halle liegt jetzt längs im freien Streifen zwischen Strassengraben und Kaimauer (Achse aus dem Gradienten von `GOT.edgeSD`, Seite mit den meisten freien Punkten), 90 x 38 m, Boden Strasse - 5,5, 4,7 m hoch, Container an der Stirnseite +a. Prüfung: 0 von 403 Punkten im Graben.
+  - Ausstattung: Sichtbeton, ganze Decke aus Lichtpaneelen, glatter Boden. Tumbler in der Mitte (`addVehicle`), Anzug fährt aus dem Boden, Motorrad und Batpod in Wandnischen hinter Toren, die hochfahren. Computer mit drei Bildschirmen. Waffenwand klappt auf (Greifhaken, Batarangs, Gewehre). Geheimwand fährt zur Seite, dahinter ein Tresorraum mit Goldbarren und Bargeld. Reifenstapel und Werkbank. Alles als `gates` mit `anim`.
+  - Keine Gelände-Schürzen über Halle und Schacht (`GR_NOSKIRT`, Blöcke neu).
+  - **Untergrund-Erkennung erweitert** (start.js `want`, schleife.js `ut`): In Gotham gilt auch ein dk-Raum mehr als 2 m unter Strassenhöhe als unten, auch wo das Gelände ausgeschnitten ist (`!!dkInRoom`, sonst schaltete die Sichtbarkeit jedes Bild).
+  - Geprüft: Aufzug oben -11,85 -> unten -17,35, 48 m in die Halle gelaufen, alle 5 Mechanismen auf (Sperren aus), 3 Fahrzeuge da, Bild der Halle. Seitenwände des Containers ohne Kollision (OFFENE-FRAGEN 25).
 - **Mega-Orbit: alle Strassen, Karte auf M, Orientierungspunkte weg** (Nicolas 2026-11-16):
   - `gHideStep` (gotham-gelaende.js) zeigt bei aktiver Übersicht (`OVERVIEW.on`) alle GHIDE-Zellen, also alle Strassen und Gehsteige.
   - M öffnet und schliesst die grosse Karte wie K (bedienung.js). Ton an/aus in Fahrzeugen, The Bat und Jet liegt deshalb jetzt auf N (Handy-Knopf `data-key` KeyN, Meldungen, README); die Werkstatt behält M.

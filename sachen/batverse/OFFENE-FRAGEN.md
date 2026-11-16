@@ -67,6 +67,13 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 23. **Nebensammler:** Gebaut sind 71, je rund 125 m mit gleichmässig 11 % Gefälle. Verworfen wurden: zu kurze Strassen; Läufe durch U-Bahn, untere Strasse oder Tiefgarage; Läufe zu nah an einem anderen Nebensammler. Reicht das?
     - *Bis dahin:* so.
 
+## Geheimbasis (P5)
+
+24. **Lage und Grösse der Halle:** Am Kartenort der Halle verläuft die untere Etage der zweistöckigen Uferstrasse Nord auf derselben Höhe, darunter liegt der Kanal. Die Halle liegt deshalb längs im freien Streifen zwischen Strassengraben und Kaimauer (parallel zum Ufer) und misst 90 x 38 m statt 90 x 50 m. Der Container sitzt direkt an ihrer Stirnseite. Passt das, oder soll der Container samt Halle woanders hin?
+    - *Bis dahin:* so.
+25. **Container mit Auto:** Der Container ist innen 2,35 m breit, breite Autos wie der Tumbler passen eigentlich nicht hinein. Die Seitenwände haben deshalb keine Kollision, man fährt hindurch. Soll der Container breiter werden (kein echtes Mass mehr) oder bleibt es so?
+    - *Bis dahin:* Wände ohne Kollision.
+
 ## Ältere offene Punkte (aus CLAUDE.md)
 
 10. **Batcave, Uferkante:** Das Hochklettern aus dem Wasser mit gehaltener Leertaste (B1) bleibt vorerst. Soll es bleiben?
