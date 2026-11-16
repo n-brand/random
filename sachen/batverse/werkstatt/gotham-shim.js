@@ -24,7 +24,8 @@ const GGEB = { done: true, list: [] };
 const TILES = { tasks: [], startup: false, loading: () => false, slice: () => 50, frame: 999 };
 const gates = [];
 let night = 0;
-function dkAdd(o) { return { ...o, on: true, y0: o.cy - o.hh, y1: o.cy + o.hh, top: o.cy + o.hh }; }
+const WG_DK_ALL = [];   // alle gedrehten Quader: Treffer und Daecher fuer die Gegenstaende (item-shim.js)
+function dkAdd(o) { const r = { ...o, on: true, y0: o.cy - o.hh, y1: o.cy + o.hh, top: o.cy + o.hh }; WG_DK_ALL.push(r); return r; }
 function dkRoom() { return {}; }
 function bautAdd() {}
 function bautAt() { return null; }

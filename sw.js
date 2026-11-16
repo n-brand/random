@@ -1,6 +1,6 @@
 // Bei jeder Aenderung an ASSETS oder Inhalten hochzaehlen
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-v397";
+const CACHE = "random-v398";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 // Google Fonts der Retro-Game-Hub-Praesentationen (CSS und Schriftdateien werden mitgespeichert)
@@ -14,7 +14,7 @@ const ASSETS = [
   "sachen/villa/", "sachen/villa/vorschau.webp",
   "sachen/camper/", "sachen/camper/vorschau.webp",
   "sachen/wayne-berg/",
-  "sachen/batverse/gotham/", "sachen/batverse/gotham/daten.js", "sachen/batverse/gotham/schnitt.html", "sachen/batverse/gotham/umsetzung.html", "sachen/batverse/gotham/umsetzung.js", "sachen/batverse/werkstatt/", "sachen/batverse/werkstatt/werkstatt.js", "sachen/batverse/werkstatt/zeichnen.js", "sachen/batverse/werkstatt/person.js", "sachen/batverse/werkstatt/gotham-shim.js", "sachen/batverse/werkstatt/gebaeude.js", "sachen/batverse/js/gotham/gotham-baustellen.js", "sachen/batverse/js/gotham/gotham-casino.js", "sachen/batverse/js/gotham/gotham-polizei.js", "sachen/batverse/js/gotham/gotham-orte.js", "sachen/batverse/js/gotham/gotham-parken.js", "sachen/batverse/werkstatt/person.css", "sachen/batverse/js/ui/inventar.js", "sachen/batverse/js/ui/konto.js", "sachen/batverse/js/gotham/fuellbau.js", "sachen/batverse/js/gotham/bankautomat.js", "sachen/batverse/js/gotham/gebaeude-vorlagen.js", "sachen/batverse/werkstatt/flug-shim.js", "sachen/batverse/vorschau.webp", "sachen/batverse/js/kern/basis.js", "sachen/batverse/js/fahrzeuge/motorton.js", "sachen/batverse/js/fahrzeuge/modelle.js", "sachen/batverse/js/fahrzeuge/the-bat.js", "sachen/batverse/js/fahrzeuge/jet.js", "blockbench/cowboyhut/", "blockbench/cowboyhut/cowboy_hat.json", "blockbench/cowboyhut/cowboy_hat.png",
+  "sachen/batverse/gotham/", "sachen/batverse/gotham/daten.js", "sachen/batverse/gotham/schnitt.html", "sachen/batverse/gotham/umsetzung.html", "sachen/batverse/gotham/umsetzung.js", "sachen/batverse/werkstatt/", "sachen/batverse/werkstatt/werkstatt.js", "sachen/batverse/werkstatt/zeichnen.js", "sachen/batverse/werkstatt/person.js", "sachen/batverse/werkstatt/gotham-shim.js", "sachen/batverse/werkstatt/gebaeude.js", "sachen/batverse/werkstatt/item-shim.js", "sachen/batverse/js/spieler/waffen.js", "sachen/batverse/js/gotham/gotham-baustellen.js", "sachen/batverse/js/gotham/gotham-casino.js", "sachen/batverse/js/gotham/gotham-polizei.js", "sachen/batverse/js/gotham/gotham-orte.js", "sachen/batverse/js/gotham/gotham-parken.js", "sachen/batverse/werkstatt/person.css", "sachen/batverse/js/ui/inventar.js", "sachen/batverse/js/ui/konto.js", "sachen/batverse/js/gotham/fuellbau.js", "sachen/batverse/js/gotham/bankautomat.js", "sachen/batverse/js/gotham/gebaeude-vorlagen.js", "sachen/batverse/werkstatt/flug-shim.js", "sachen/batverse/vorschau.webp", "sachen/batverse/js/kern/basis.js", "sachen/batverse/js/fahrzeuge/motorton.js", "sachen/batverse/js/fahrzeuge/modelle.js", "sachen/batverse/js/fahrzeuge/the-bat.js", "sachen/batverse/js/fahrzeuge/jet.js", "blockbench/cowboyhut/", "blockbench/cowboyhut/cowboy_hat.json", "blockbench/cowboyhut/cowboy_hat.png",
   "blockbench/cowboyhut/skin.png", "blockbench/cowboyhut/vorschau.webp",
   "pruefung/ui-design/", "pruefung/ui-design/inhalt.js",
   "blockbench/viewer/", JSZIP,
@@ -52,7 +52,7 @@ self.addEventListener("activate", event => {
 
 // Network first, bei Offline aus dem Cache. Eigene Dateien und die fest versionierte three.js-Bibliothek.
 // Batverse-Welt (alles unter sachen/batverse/ ausser Planung, Werkstatt, deren Skripte und Vorschaubild) nie speichern: nur vom Server
-const BV_KEEP = ["gotham/", "werkstatt/", "vorschau.webp", "js/kern/basis.js", "js/fahrzeuge/modelle.js", "js/fahrzeuge/motorton.js", "js/fahrzeuge/the-bat.js", "js/fahrzeuge/jet.js", "js/gotham/fuellbau.js", "js/gotham/gebaeude-vorlagen.js", "js/gotham/bankautomat.js", "js/ui/inventar.js", "js/ui/konto.js", "js/gotham/gotham-baustellen.js", "js/gotham/gotham-casino.js", "js/gotham/gotham-polizei.js", "js/gotham/gotham-orte.js", "js/gotham/gotham-parken.js"];
+const BV_KEEP = ["gotham/", "werkstatt/", "vorschau.webp", "js/kern/basis.js", "js/fahrzeuge/modelle.js", "js/fahrzeuge/motorton.js", "js/fahrzeuge/the-bat.js", "js/fahrzeuge/jet.js", "js/gotham/fuellbau.js", "js/gotham/gebaeude-vorlagen.js", "js/gotham/bankautomat.js", "js/ui/inventar.js", "js/ui/konto.js", "js/gotham/gotham-baustellen.js", "js/gotham/gotham-casino.js", "js/gotham/gotham-polizei.js", "js/gotham/gotham-orte.js", "js/gotham/gotham-parken.js", "js/spieler/waffen.js"];
 const isWorld = url => { const p = new URL(url).pathname, i = p.indexOf("/sachen/batverse/"); if (i < 0) return false; const r = p.slice(i + 17); return !BV_KEEP.some(k => r === k || (k.endsWith("/") && r.startsWith(k))) || r === "gotham/stadt.js"; };
 self.addEventListener("fetch", event => {
   const url = event.request.url;

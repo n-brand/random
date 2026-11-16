@@ -31,6 +31,11 @@ Allen Bildschirmen gemeinsam ist die Kopfzeile: "ATM", **Einzahl-Limit pro Woche
 7. **Neues 3D-Gerät** für alle 24 Standorte (gotham-orte.js): freistehende Säule ca. 0,9 x 0,75 x 2,1 m, blauer Rahmen, leuchtendes ATM-Schild oben (nachts hell), Gehäuse grau mit Bildschirm (zeigt den blauen Startbildschirm als Textur), je vier Seitentasten, Kartenschlitz, Tastenfeld mit Farbtasten, Ausgabeschacht, untere Klappe. Kollision wie jetzt.
 8. **Bank-App im Handy** (S4) zeigt zusätzlich Bargeld und das Wochenlimit.
 
+## Stand (2026-11-16)
+
+- **Gebaut:** A1 Bargeld als Betrag (Bündel werden beim Öffnen gezählt), A2 Wochenlimit 10 000 $ je 140 min (Wert aus dem Vorbild, Frage 2 bleibt offen), A3 Bildschirme Start, Betrag, Erfolg mit Kopfzeile als HTML-Fenster im Gerätedesign (Nicolas: "genau das Design vergrössert, mit einem HTML-div"), Seitentasten bedienen die Knöpfe daneben. A4 3D-Gerät nur in der Werkstatt (Umbauprojekt), im Spiel noch die alten Säulen.
+- **Offen:** A4 im Spiel, A5 Nahansicht (Kamera fährt vor den Bildschirm), A6 Klänge, Tastatur (Ziffern), Handy-Bank mit Bargeld/Limit.
+
 ## Umsetzung in Schritten
 
 | Nr | Schritt | Dateien |
