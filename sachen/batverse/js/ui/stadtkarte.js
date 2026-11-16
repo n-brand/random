@@ -71,7 +71,7 @@ function skWater() { if (!SK.water) for (const _ of skWaterGen()); return SK.wat
 const skDir = new THREE.Vector3();
 function skPos() {
   let p = controls.target, mode = "orbit";                                    // Orbit: der angeschaute Punkt (Review M3), nicht die Kamera
-  if (walking && !ghost) { p = player.pos; mode = "walk"; } else if (ghost) mode = "ghost";
+  if (walking && !ghost) { p = player.pos; mode = "walk"; } else if (ghost) { p = camera.position; mode = "ghost"; }   // Geist: Karte folgt der Kamera (Nicolas 2026-11-16)
   for (const [o, m] of [[typeof CAR !== "undefined" && CAR, "car"], [typeof BOAT !== "undefined" && BOAT, "boat"], [typeof FLY !== "undefined" && FLY, "fly"], [typeof JET !== "undefined" && JET, "fly"]])
     if (o && o.on && o.x !== undefined) { p = { x: o.x, y: o.y ?? (o.g ? o.g.position.y : 0), z: o.z }; mode = m; break; }   // Boot hat kein y (M2)
   camera.getWorldDirection(skDir);
