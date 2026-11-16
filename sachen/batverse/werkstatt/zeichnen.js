@@ -22,7 +22,7 @@
   const fit = () => { const r = devicePixelRatio || 1, w = Math.round(innerWidth * r), h = Math.round(innerHeight * r); if (cv.width === w && cv.height === h) return;
     const old = cv.width && cv.height ? cx.getImageData(0, 0, cv.width, cv.height) : null; cv.width = w; cv.height = h; if (old) cx.putImageData(old, 0, 0); };
   const pt = e => { const r = devicePixelRatio || 1; return [e.clientX * r, e.clientY * r]; };
-  const set = v => { on = v; last = null; document.body.classList.toggle("w-drawing", on); btn.setAttribute("aria-pressed", String(on)); btn.textContent = on ? "Zeichnung löschen" : "Zeichnen"; if (!on) cx.clearRect(0, 0, cv.width, cv.height); if (typeof controls !== "undefined") controls.enabled = !on && (typeof modus === "undefined" || modus !== "drive"); };
+  const set = v => { on = v; last = null; document.body.classList.toggle("w-drawing", on); btn.setAttribute("aria-pressed", String(on)); btn.textContent = on ? "Zeichnung löschen" : "Zeichnen"; if (!on) cx.clearRect(0, 0, cv.width, cv.height); if (typeof controls !== "undefined") controls.enabled = !on && (typeof modus === "undefined" || (modus !== "drive" && modus !== "person")); };
   btn.addEventListener("click", e => { e.currentTarget.blur(); fit(); set(!on); });
   addEventListener("keydown", e => { if (e.code === "KeyZ" && !e.repeat && !e.ctrlKey && !(e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName))) { fit(); set(!on); } });
   addEventListener("resize", fit);

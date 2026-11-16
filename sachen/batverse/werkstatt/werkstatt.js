@@ -233,17 +233,19 @@ MODELLE.forEach((m, i) => { const o = document.createElement("option"); o.value 
 pick.onchange = () => pick.value === "projekt" ? projektZeigen() : laden(+pick.value);
 let modus = "orbit";
 const setModus = m => { const war = modus; modus = m;
-  if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"]]) $(id).setAttribute("aria-pressed", String(m === k));
-  document.body.classList.toggle("drive", m === "drive"); if (m !== "drive") $nitro.hidden = true; controls.enabled = m !== "drive"; $speed.hidden = m !== "drive";
-  if (m !== "drive" && document.pointerLockElement) document.exitPointerLock();
+  if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"], ["m-person", "person"]]) $(id)?.setAttribute("aria-pressed", String(m === k));
+  if (war === "person" && m !== "person" && typeof personEnd === "function") personEnd(); walking = m === "drive" || m === "person";   // Person-Modus (person.js)
+  document.body.classList.toggle("drive", m === "drive"); if (m !== "drive") $nitro.hidden = true; controls.enabled = m !== "drive" && m !== "person"; $speed.hidden = m !== "drive";
+  if (m !== "drive" && m !== "person" && document.pointerLockElement) document.exitPointerLock();
   if (m === "drive" && AKT && !AKT.flug) { kYaw = AKT.h; kPitch = -0.12; A_view = 0; }
   if (m === "drive" && AKT && AKT.flug && war !== "drive") flugStart();
   if (m !== "drive") { ZOOM.z = ZOOM.t = 1; ZOOM.un = 0; }
-  camera.fov = m === "drive" ? 70 : 45; camera.updateProjectionMatrix();
-  if (m !== "drive" && AKT) { if (AKT.flug) controls.target.set(AKT.F.x, AKT.F.y + 1, AKT.F.z); else controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z); }
+  camera.fov = m === "drive" || m === "person" ? 70 : 45; camera.updateProjectionMatrix();
+  if (m === "person" && typeof personStart === "function") personStart();
+  if (m !== "drive" && m !== "person" && AKT) { if (AKT.flug) controls.target.set(AKT.F.x, AKT.F.y + 1, AKT.F.z); else controls.target.set(AKT.x, AKT.size.y * 0.45, AKT.z); }
   sicht(); tonAn(); };
-const MODI = ["orbit", "drive", "spin"];
-$("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin");
+const MODI = ["orbit", "drive", "spin", "person"];
+$("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin"); if ($("m-person")) $("m-person").onclick = () => setModus("person");
 // Visier (nur Fahren mit Turm) und Hinweis zur Maus
 function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier").hidden = !z; if (!z) $("rohr").hidden = true;
   if (!(modus === "drive" && AKT && AKT.monitor)) { $("wsicht").hidden = true; WZOOM.t = WZOOM.z = 1; } document.body.classList.toggle("waffe", !!z); maushinweis(); }
@@ -267,6 +269,7 @@ if (matchMedia("(pointer: coarse)").matches) document.body.classList.add("touch"
 // ---------- Tasten ----------
 const keys = new Set();
 addEventListener("keydown", e => { if (e.target.tagName === "SELECT") return; keys.add(e.code);
+  if (modus === "person" && typeof personKey === "function" && personKey(e)) { if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault(); return; }   // Person-Modus: Inventar, Hotbar, Esc (person.js)
   if (AKT && AKT.flug) { if (modus === "drive" && !e.repeat) { const F = AKT.F;   // Fluggeraete: V Kamera, R zurueck (wie bedienung.js)
       if (e.code === "KeyV") { F.view = F.view === 1 ? 0 : 1; if (F === JET) player.yaw = F.h; else player.pitch = F.view ? 0 : -0.2; }
       if (e.code === "KeyR") flugReset(F);
@@ -275,7 +278,7 @@ addEventListener("keydown", e => { if (e.target.tagName === "SELECT") return; ke
   if (e.code === "KeyV" && !e.repeat && !(AKT && AKT.flug)) A_view = A_view ? 0 : 1;
   if (e.code === "KeyM" && !e.repeat) { ENGINE.muted = !ENGINE.muted; if (ENGINE.muted) engineStop(true); else tonAn(); toast(ENGINE.muted ? "Ton aus (M)" : "Ton an (M)"); }
   if (e.code === "KeyF" || (e.code === "KeyE" && modus !== "drive")) setModus(modus === "drive" ? "orbit" : "drive");
-  const n = /^(Digit|Numpad)([1-3])$/.exec(e.code); if (n) setModus(MODI[+n[2] - 1]);   // 1 Ansehen, 2 Fahren, 3 Drehteller
+  const n = /^(Digit|Numpad)([1-4])$/.exec(e.code); if (n) setModus(MODI[+n[2] - 1]);   // 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person
   if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault(); });
 addEventListener("keyup", e => keys.delete(e.code));
 addEventListener("blur", () => keys.clear());
@@ -465,7 +468,8 @@ addEventListener("resize", groesse);
 let last = performance.now();
 function loop(t) {
   const dt = Math.min(0.05, (t - last) / 1000); last = t;
-  if (AKT) {
+  if (modus === "person" && typeof personStep === "function") personStep(dt);   // Person-Modus (person.js)
+  else if (AKT) {
     const F = AKT.F;
     if (AKT.flug) {   // Jet / The Bat: Schritt, Kamera und Ton aus dem Spiel; Anzeige aus dessen Tempo-Text
       if (modus === "drive" && F.on) { if (F === JET) jetStep(dt); else flyStep(dt); $speed.textContent = speedEl.textContent; }

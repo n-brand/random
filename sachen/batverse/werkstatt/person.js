@@ -1,0 +1,50 @@
+// Werkstatt – Person-Modus (Nicolas 2026-11-16: "in der Werkstatt als Person sein mit Konto, Inventar etc. zum Testen, direkt beim Geldautomaten spawnen").
+// Klassisches Skript nach werkstatt.js und zeichnen.js, VOR ../js/ui/inventar.js und ../js/ui/konto.js (die brauchen die Elemente unten).
+// Modus "person" (Knopf "4 Person", Taste 4): Ich-Sicht, Linksklick faengt die Maus, WASD, Shift rennen, Leertaste springen, Esc Maus frei bzw. zurueck.
+// Start vor dem aktuellen Umbauprojekt (PROJEKT), Blick darauf. Hotbar 1-9 / Mausrad, E oder I Inventar, Rechtsklick auf den Bankautomaten = Bankfenster.
+// Konto und Inventar sind dieselben Dateien wie im Spiel und teilen den Speicher im Browser (wm-konto, wm-inv).
+"use strict";
+let ghost = false, dragging = false;                                         // im Spiel aus bedienung.js/laufen.js (inventar.js, konto.js, jet.js fragen sie ab)
+{ const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "person.css"; document.head.appendChild(css);
+  const d = document.createElement("div"); d.innerHTML = "<div id=\"hotbar\" aria-label=\"Hotbar\"></div><div id=\"konto\" title=\"Kontostand (Bankautomaten in Gotham)\"><span class=\"k-stand\">0 $</span><span class=\"k-delta\"></span></div><div id=\"bank\" hidden><div class=\"bank-box\"><div class=\"inv-head\"><b>Bankautomat · Gotham City Bank</b><button type=\"button\" class=\"bank-close\" aria-label=\"Schliessen\">&times;</button></div><div class=\"bank-lbl\">Kontostand</div><div class=\"bank-stand\">0 $</div><div class=\"bank-cash\"></div><div class=\"bank-btns\"><button type=\"button\" data-a=\"ein\">Bargeld einzahlen</button><button type=\"button\" data-a=\"ab\">1 Bündel abheben</button></div><div class=\"bank-lbl\">Letzte Buchungen</div><ul class=\"bank-log\"></ul><div class=\"inv-hint\">Esc schliesst</div></div></div><div id=\"inventar\" hidden><div class=\"inv-box\"><div class=\"inv-head\"><b>Inventar</b><button type=\"button\" class=\"inv-close\" aria-label=\"Schliessen\">&times;</button></div><div class=\"inv-sws\"><button type=\"button\" class=\"inv-sw\" data-sw=\"batsignal\" aria-pressed=\"false\"><span class=\"sw-knob\"></span>Batsignal</button></div><div class=\"inv-grid\"></div><div class=\"inv-sep\">Hotbar (1–9)</div><div class=\"inv-bar\"></div><div class=\"inv-info\"></div><div class=\"inv-hint\">E, I oder Esc schliesst</div></div></div>" + '<div id="w-cross"></div><div id="w-hint" hidden></div>'; while (d.firstChild) document.body.appendChild(d.firstChild); }
+const PERSON = { pos: new THREE.Vector3(), vy: 0, yaw: 0, pitch: -0.08, ground: true, aim: null, EYE: 1.65, R: 0.3 };
+function grabMouse() { if (modus === "person" && !document.pointerLockElement && !(typeof invIsOpen === "function" && invIsOpen()) && !(typeof kontoIsOpen === "function" && kontoIsOpen())) { dragging = true; renderer.domElement.requestPointerLock?.(); } }
+// Hindernis: Bounding-Box des Projekts (Modell steht auf der 8 x 8 m Platte, 0,15 hoch)
+function personBox() { const b = new THREE.Box3().setFromObject(projektG); b.expandByScalar(PERSON.R); return b; }
+function personStart() { walking = true; ghost = false; const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h), b = new THREE.Box3().setFromObject(projektG), c = b.getCenter(new THREE.Vector3());
+  PERSON.pos.set(c.x + fx * 1.6, 0.15, c.z + fz * 1.6); PERSON.yaw = Math.atan2(fx, fz); PERSON.pitch = -0.12; PERSON.vy = 0;
+  document.body.classList.add("person", "walk"); camera.fov = 70; camera.near = 0.1; camera.updateProjectionMatrix(); invRender?.(); kontoRender?.();
+  toast("Person: Linksklick fängt die Maus, WASD gehen, E Inventar, Rechtsklick auf den Automaten"); }
+function personEnd() { walking = false; dragging = false; document.body.classList.remove("person", "walk"); camera.near = 0.1; if (document.pointerLockElement) document.exitPointerLock(); $("w-hint").hidden = true; invClose?.(); kontoClose?.(); }
+function personStep(dt) {
+  const P = PERSON, busy = (typeof invIsOpen === "function" && invIsOpen()) || (typeof kontoIsOpen === "function" && kontoIsOpen());
+  let mx = 0, mz = 0; if (!busy) { if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1; if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1; if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1; if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1; }
+  const sp = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 7.5 : 4.6, l = Math.hypot(mx, mz) || 1, s = Math.sin(P.yaw), c = Math.cos(P.yaw);
+  P.pos.x += (-s * mz + c * mx) / l * sp * dt; P.pos.z += (-c * mz - s * mx) / l * sp * dt;
+  const b = personBox(); if (P.pos.y < b.max.y && b.containsPoint(new THREE.Vector3(P.pos.x, Math.max(b.min.y, P.pos.y + 0.5), P.pos.z))) {   // aus dem Modell hinausschieben (kuerzeste Richtung)
+    const d = [[P.pos.x - b.min.x, -1, 0], [b.max.x - P.pos.x, 1, 0], [P.pos.z - b.min.z, 0, -1], [b.max.z - P.pos.z, 0, 1]].sort((u, v) => u[0] - v[0])[0]; P.pos.x += d[1] * (d[0] + 0.001); P.pos.z += d[2] * (d[0] + 0.001); }
+  const pl = Math.abs(P.pos.x - PROJEKT.x) < 4 && Math.abs(P.pos.z - PROJEKT.z) < 4 ? 0.15 : 0;   // Platte
+  if (keys.has("Space") && P.ground && !busy) { P.vy = 5; P.ground = false; }
+  P.vy -= 18 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= pl) { P.pos.y = pl; P.vy = 0; P.ground = true; }
+  camera.position.set(P.pos.x, P.pos.y + P.EYE, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ");
+  sunFollow(P.pos, 100);
+  // Zielen auf den Automaten (Bildmitte, bis 3 m): Hinweis
+  const rc = new THREE.Raycaster(); rc.setFromCamera({ x: 0, y: 0 }, camera); rc.far = 3; P.aim = rc.intersectObject(projektG, true).length ? "atm" : null;
+  const h = $("w-hint"), show = !!P.aim && !busy; if (h.hidden === show) { h.hidden = !show; h.textContent = "Rechtsklick: Bankautomat benutzen"; }
+}
+// Tasten im Person-Modus (aus dem keydown der Werkstatt aufgerufen; true = erledigt)
+function personKey(e) {
+  if (typeof kontoIsOpen === "function" && kontoIsOpen()) { if (e.code === "Escape") kontoClose(); return true; }
+  if (typeof invIsOpen === "function" && invIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyI" || e.code === "KeyE") && !e.repeat)) invClose(); return true; }
+  if ((e.code === "KeyE" || e.code === "KeyI") && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); invOpen(); return true; }
+  const n = /^Digit([1-9])$/.exec(e.code); if (n && !e.repeat) { invSelect(+n[1] - 1); return true; }
+  if (e.code === "Escape" && !document.pointerLockElement) { setModus("orbit"); return true; }
+  return false;
+}
+renderer.domElement.addEventListener("mousedown", e => { if (modus !== "person") return; e.preventDefault();
+  if (e.button === 0 && !document.pointerLockElement) grabMouse();
+  if (e.button === 2 && PERSON.aim === "atm") { if (document.pointerLockElement) document.exitPointerLock(); kontoOpen(); } });
+renderer.domElement.addEventListener("contextmenu", e => { if (modus === "person") e.preventDefault(); });
+addEventListener("mousemove", e => { if (modus !== "person" || document.pointerLockElement !== renderer.domElement) return; const k = 0.0025 * 0.5; PERSON.yaw -= e.movementX * k; PERSON.pitch = Math.max(-1.5, Math.min(1.5, PERSON.pitch - e.movementY * k)); });
+document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement) dragging = false; });
+walking = modus === "drive" || modus === "person";   // beim Laden: Orbit, kein Mausrad-Wechsel in der Hotbar
