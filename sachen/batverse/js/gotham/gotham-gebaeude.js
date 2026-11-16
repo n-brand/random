@@ -3,6 +3,8 @@
 // Huellen aller 1657 Gebaeude als Kachel-Aufgabe (Zwischenspeicher IndexedDB "GGEB"), zusammengefasst je Material in 768-m-Zellen (gsplit, Option far:
 // sichtbar bis zur Kamera-Fernebene, Skyline auch von der Manor), ohne Schattenwurf (Schatten nur nah, Task 3). Register: Art "Füllbau".
 "use strict";
+// Nicolas 2026-11-16: FB-0563 verdeckte das Polizeipraesidium (dort jetzt Vorplatz, gotham-polizei.js)
+const GGEB_SKIP = new Set(["FB-0563"]);
 const GGEB = { list: [], done: false, Y: GOT.STR, CC: 128, cells: null, tris: 0, meshes: [], fromCache: false, _n: -1 };
 const ggebCKey = (i, k) => i * 100000 + k;
 async function ggebCacheLoad(ck) {
@@ -38,7 +40,7 @@ function ggebFire(b) {
 }
 function* ggebGen(useCache = true) {
   const ck = { state: 0, data: null, key: null }; if (useCache) ggebCacheLoad(ck); else ck.state = 1;
-  GGEB.list = gbstList().filter(b => b.id.startsWith("FB"));
+  GGEB.list = gbstList().filter(b => b.id.startsWith("FB") && !GGEB_SKIP.has(b.id));   // GGEB_SKIP: entfernte Fuellbauten (Platz fuer Orte)
   while (!ck.state) yield "wait";
   const CACHED = GGEB.fromCache = !!ck.data, Y = GGEB.Y;
   if (!CACHED) { while (!GSTR.done) yield "wait"; let n = 0; for (const b of GGEB.list) { b.ins = ggebInset(b); if (++n % 100 === 0) yield; } }
@@ -135,9 +137,11 @@ function ggebCollStep() {
 // Ergebnis: Liste { id: "BL-0001" .., poly (Spiel), wohl, bezirk } in Strassen-Reihenfolge (fest, solange Strassen und Gebaeude gleich bleiben).
 function* ggebGaps() {
   const G = GOTHAM, bz = G.bezirke, out = [], taken = [];
-  const orte = G.orte.filter(o => o.typ !== "baustelle").map(o => { const W = Math.max(o.w, 18) / 2 + 4, D = Math.max(o.d, 18) / 2 + 4, a = (o.dreh || 0) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  const orte = G.orte.filter(o => o.typ !== "baustelle").map(o => { const big = o.id === "gcpd", W = big ? 52 : Math.max(o.w, 18) / 2 + 4, D = big ? 60 : Math.max(o.d, 18) / 2 + 4,   // gcpd: mit Vorplatz, Zufahrt und Verwahrstelle (gotham-polizei.js)
+    a = (o.dreh || 0) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
     return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => GOT.toGame(o.x + u * W * c - v * D * s, o.z + u * W * s + v * D * c)); });
   const inB = (x, z) => { const i = Math.floor(x / GGEB.CC), k = Math.floor(z / GGEB.CC); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (const q of GGEB.cells.get(ggebCKey(i + a, k + b)) || []) if (ggebIn(x, z, q.poly)) return true; return false; };
+  for (const b of gbstList()) if (GGEB_SKIP.has(b.id)) orte.push(b.poly);   // entfernte Fuellbauten: dort keine Luecken-Baustelle
   const bs = gbstList().filter(b => b.id[0] === "B" && b.id[1] === "S");   // alle BS, auch belegte (GBST.skip, Casino)
   const busy = (x, z) => GSTR.onRoad(x, z, 0.5) || GSTR.walkAt(x, z) || GOT.edgeSD(x, z) > -8 || inB(x, z) || orte.some(P => ggebIn(x, z, P)) || bs.some(b => ggebIn(x, z, b.poly)) || taken.some(P => ggebIn(x, z, P));
   const inP = (x, z, P) => ggebIn(x, z, P);

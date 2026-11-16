@@ -8,7 +8,7 @@ const GCPD = { done: false, on: true, sig: null };
 function* gcpdGen() {
   while (!GSTR.done || !GBV) yield "wait";
   const O = GOTHAM.orte.find(o => o.id === "gcpd"); if (!O) return;
-  const [cx, cz] = GOT.toGame(O.x, O.z), t = GOTHAM.manorLage.dreh * Math.PI / 180, ux = Math.cos(t), uz = -Math.sin(t), e2 = [-uz, ux];
+  const t = GOTHAM.manorLage.dreh * Math.PI / 180, ux = Math.cos(t), uz = -Math.sin(t), e2 = [-uz, ux], SH = -8, [cx0, cz0] = GOT.toGame(O.x, O.z), cx = cx0 + e2[0] * SH, cz = cz0 + e2[1] * SH;   // Nicolas 2026-11-16: 8 m nach vorne (mehr passt zwischen den Nachbarhaeusern nicht)
   const L1 = O.w, L2 = O.d, Y = GOT.STR, P0 = [cx - ux * L1 / 2 - e2[0] * L2 / 2, cz - uz * L1 / 2 - e2[1] * L2 / 2];
   const f = gbvFrame({ P0, e1: [ux, uz], e2, L1, L2 }), out = new Map(), GH = GBV.GH, sm = L1 / 2;   // s 0..80 entlang der Front, t 0..60 nach hinten (Front t = 0, zur Strasse im Norden)
   const wall4 = (key, s0, s1, t0, t1, y0, y1) => { const W = s1 - s0, D = t1 - t0, o = gbvFrame({ P0: f.W(s0, t0, 0).filter((_, i) => i !== 1), e1: [ux, uz], e2, L1: W, L2: D });
@@ -30,6 +30,34 @@ function* gcpdGen() {
   for (let i = 0; i < 5; i++) gbvBox(out, "kante", f, ...step(i));
   for (let i = 0; i < 6; i++) { gbvCyl(out, "kante", f, sm - 10 + i * 4, 3, 0.7, Y + 1.2, Y + 11, 14); gbvBox(out, "kante", f, sm - 10 + i * 4, 3, 1.8, 1.8, Y + 11, Y + 11.5); }
   gbvBox(out, "kante", f, sm, 3.9, 24, 4.4, Y + 11.5, Y + 13.5); gbvBox(out, "kante", f, sm, 4, 20, 4, Y + 13.5, Y + 15.5); gbvBox(out, "eisen", f, sm, 5.9, 6, 0.2, Y + 1.2, Y + 6.5);   // Gebaelk, Attika, Tuer
+  // Nicolas 2026-11-16: Vorplatz bis an die Strasse (wo FB-0563 stand), Zufahrt mit Schranke an der Ostseite, Verwahrplatz fuer beschlagnahmte Fahrzeuge hinten
+  gbvBox(out, "beton", f, 30, -14.5, 42, 29, Y, Y + 0.05);   // s 9..51, t -29..0
+  for (const ss of [22, 30, 38]) { gbvBox(out, "eisen", f, ss, -22, 0.25, 0.25, Y, Y + 12); gbvBox(out, "farbe", f, ss + 1.1, -22, 2, 0.05, Y + 10.4, Y + 11.6, [0.12, 0.25, 0.6]); }   // Fahnenmasten
+  const col = h => { const c = new THREE.Color(h); return [c.r, c.g, c.b]; }, asph = col(0x34363a);
+  gbvBox(out, "farbe", f, 84, 37, 8, 78, Y, Y + 0.06, asph); for (let tt = 4; tt < 74; tt += 6) gbvBox(out, "farbe", f, 84, tt, 0.15, 3, Y + 0.06, Y + 0.075, col(0xe8e8e0));   // Zufahrt mit Mittellinie
+  gbvBox(out, "farbe", f, 43, 68.5, 90, 15, Y, Y + 0.06, asph); for (let ss = 2; ss < 80; ss += 4) for (const [t0, t1] of [[61.5, 66.5], [70.5, 75.5]]) gbvBox(out, "farbe", f, ss, (t0 + t1) / 2, 0.12, t1 - t0, Y + 0.06, Y + 0.075, col(0xe8e8e0));
+  const fenceM = new THREE.MeshStandardMaterial({ map: (() => { const tx = canvasTex(64, 64, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = "#9aa0a6"; c.lineWidth = 3; for (let k = -64; k < 128; k += 16) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k + 64, 64); c.stroke(); c.beginPath(); c.moveTo(k + 64, 0); c.lineTo(k, 64); c.stroke(); } }); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; return tx; })(), alphaTest: 0.5, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.5 });
+  const fenceG = new THREE.Group(); fenceG.userData.keep = true; fenceG.userData.noLift = true;
+  const fence = (s0, t0, s1, t1) => { const a = f.W(s0, t0, Y), b = f.W(s1, t1, Y), L = Math.hypot(b[0] - a[0], b[2] - a[2]), g = new THREE.PlaneGeometry(L, 2.6); g.translate(0, 1.3, 0); const m = new THREE.Mesh(g, fenceM); m.position.set((a[0] + b[0]) / 2, Y, (a[2] + b[2]) / 2); m.rotation.y = Math.atan2(-(b[2] - a[2]), b[0] - a[0]);
+    m.material.map.repeat; const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * L / 1.3, uv.getY(i) * 2); fenceG.add(m); for (let k = 0; k <= L; k += 3) { const q = f.W(s0 + (s1 - s0) * k / L, t0 + (t1 - t0) * k / L, 0); gbvBox(out, "eisen", gbvFrame({ P0: [q[0], q[2]], e1: [ux, uz], e2, L1: 1, L2: 1 }), 0, 0, 0.1, 0.1, Y, Y + 2.7); }
+    const c = f.W((s0 + s1) / 2, (t0 + t1) / 2, 0); dkAdd({ cx: c[0], cy: Y + 1.3, cz: c[2], ux: (b[0] - a[0]) / L, uz: (b[2] - a[2]) / L, hl: L / 2, hw: 0.1, hh: 1.3, floor: 0, m: 0.1 }); };
+  fence(-2, 61, 80, 61); fence(-2, 61, -2, 76); fence(-2, 76, 88.5, 76); fence(88.5, 76, 88.5, 61); scene.add(fenceG);
+  { const sg = canvasTex(512, 128, (c, w, h) => { c.fillStyle = "#1d2a4a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 52px Arial, sans-serif"; c.textAlign = "center"; c.fillText("GCPD · VERWAHRSTELLE", w / 2, 60); c.font = "30px Arial, sans-serif"; c.fillText("Zufahrt nur für Berechtigte", w / 2, 104); });
+    const p = f.W(89.5, -1, Y + 2.6), m = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.8), new THREE.MeshStandardMaterial({ map: sg, emissive: 0xffffff, emissiveMap: sg, emissiveIntensity: 0.3 })); m.position.set(p[0], p[1], p[2]); m.rotation.y = Math.atan2(-e2[0], -e2[1]); m.userData.keep = true; scene.add(m);
+    gbvBox(out, "eisen", f, 89.5, -0.9, 0.12, 0.12, Y, Y + 2.2); }
+  // Schranke (rot-weiss), Drehpunkt am Pfosten West, oeffnet nach oben
+  { gbvBox(out, "farbe", f, 80.6, 1, 0.5, 0.5, Y, Y + 1.1, col(0xd8d8d0)); const piv = new THREE.Group(), pp = f.W(80.6, 1, Y + 1.0); piv.position.set(pp[0], pp[1], pp[2]); const th = Math.atan2(-uz, ux);
+    for (let k = 0; k < 7; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 0.12, 0.12), new THREE.MeshStandardMaterial({ color: k % 2 ? 0xf0f0f0 : 0xc8202a, roughness: 0.6 })); m.position.x = 0.5 + k; piv.add(m); }
+    piv.rotation.set(0, th, 0); piv.userData.keep = true; scene.add(piv); const hit = piv.children[3];
+    const c = f.W(84.3, 1, 0), solid = dkAdd({ cx: c[0], cy: Y + 0.6, cz: c[2], ux, uz, hl: 3.6, hw: 0.15, hh: 0.6, floor: 0, m: 0.1 });
+    gates.push({ name: "Schranke", g: hit, open: 0, target: 0, dur: 2.5, verbs: ["öffnen", "schliessen"], a: (([x, , z]) => [x, z])(f.W(80.6, 1, 0)), b: (([x, , z]) => [x, z])(f.W(87.6, 1, 0)), near: 12, solid, anim: k => { piv.rotation.set(0, th, k * 1.45); solid.on = k < 0.6; } }); }
+  // beschlagnahmte Fahrzeuge (fahrbar, spaet gebaut)
+  if (typeof addVehicle === "function") { const fwd = [e2[0], e2[1]], hIn = Math.atan2(fwd[0], fwd[1]), hOut = Math.atan2(-fwd[0], -fwd[1]);
+    const V = [[SPEC_ROLLS, () => buildRolls(0x6b1f2a), 6, 64, "Rolls-Royce"], [SPEC_AVENTADOR, () => buildAventador(0x2a7a3a), 14, 64, "Aventador"], [SPEC_GCLASS, () => buildGClass(0x30343a), 22, 64, "G-Klasse"], [SPEC_TAXI, () => buildTaxi(), 30, 64, "Taxi"],
+      [SPEC_NACHTFALKE, () => buildNachtfalke(0x5a1010), 42, 64, "Muscle-Car"], [SPEC_BIKE, () => buildBike(0x1f4f9a), 50, 64, "Motorrad"], [SPEC_SPECTRE, () => buildSpectre(0x8a8f96), 10, 73, "Spectre"], [SPEC_DELOREAN, () => buildDelorean(), 26, 73, "DeLorean"],
+      [SPEC_STREETFIGHTER, () => buildStreetfighter(), 38, 73, "Streetfighter"], [SPEC_ROLLS, () => buildRolls(0x1a1a1a), 58, 73, "Rolls-Royce"]];
+    for (const [spec, build, ss, tt, lbl] of V) { if (!spec) continue; const p = f.W(ss, tt, 0); addVehicle(spec, build, p[0], p[2], Y, tt < 68 ? hIn : hOut, lbl + " (beschlagnahmt)", 0x6b6f76); } }
+  bautAdd({ id: "GO-GCPD-VERWAHR", name: "Verwahrstelle GCPD", art: "Platz", poly: [f.W(-2, 61, 0), f.W(88.5, 61, 0), f.W(88.5, 76, 0), f.W(-2, 76, 0)].map(p => [p[0], p[2]]), y0: Y - 1, y1: Y + 3, info: "beschlagnahmte Fahrzeuge · Zufahrt mit Schranke an der Ostseite" });
   const grp = gbvMesh(out); grp.name = "Gotham Polizeipräsidium"; grp.userData.keep = true; grp.userData.noLift = true;
   const gm = new THREE.Group(); gm.add(grp); scene.add(gm); yield;
   // Schriftband, Uhr, Laternen (eigene Netze in Turm-Ausrichtung)

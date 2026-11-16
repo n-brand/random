@@ -1,3 +1,9 @@
+- **Polizeipräsidium: freie Sicht, Zufahrt, Verwahrstelle** (Nicolas 2026-11-16, Orbit-Punkt FB-0563: "verdeckt praktisch das Polizeigebäude"):
+  - FB-0563 ist entfernt (`GGEB_SKIP` in gotham-gebaeude.js; seine Fläche ist für Lückenbaustellen gesperrt, die Sperrfläche um "gcpd" für `ggebGaps` ist 104 x 120 m).
+  - Präsidium 8 m nach vorne (`SH` in gotham-polizei.js; mehr passt zwischen den Nachbarhäusern nicht, das Grundstück ist 80 m breit). Vorplatz bis an den Gehsteig mit drei Fahnenmasten.
+  - Ostseite: asphaltierte Zufahrt mit rot-weisser Schranke (`gates` "Schranke", Rechtsklick/E, klappt hoch, Sperre per dkAdd) und Schild GCPD · VERWAHRSTELLE.
+  - Hinter dem Präsidium die Verwahrstelle (90 x 15 m, Maschendrahtzaun mit Kollision, Parklinien) mit 10 beschlagnahmten, fahrbaren Fahrzeugen (Rolls-Royce, Aventador, G-Klasse, Taxi, Muscle-Car, Motorrad, Spectre, DeLorean, Streetfighter).
+  - Geprüft: FB-0563 weg, keine Baustelle auf der Fläche, Schranke auf, 10 Fahrzeuge, Bild von der Strasse.
 - **Geheimer Wayne-Stock: 2 Tiefgaragen hoch, neues Design** (Nicolas 2026-11-16: "so hoch wie 2 mal eine Tiefgarage", "Design besser, noch zu einfarbig"):
   - Höhe: `WTO.lv.geheim` und `WTO.halle.y0` -8 -> -11 (2 x 5,5 m, Halle 10,7 m licht). Der Gang zur unteren Ringstrasse steigt jetzt von -11 auf -5,5 (Stufen max. 11 cm). Bis zur Decke des Kanal-Hubs (-24,3 Welt) bleiben 0,8 m.
   - Seitenansicht (gotham/daten.js): Stock -11..0, Kanal-Hub -25..-12,3 wie im Spiel, Beschriftung der Kanalsohle angepasst.
