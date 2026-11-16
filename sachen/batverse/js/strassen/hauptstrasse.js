@@ -64,7 +64,7 @@ function genH0(x, z) {
   // Steilkueste: oben leicht erhoehte Felskante, dann ca. 32 m senkrecht hinab, am Fuss ein flacher Felssockel, weiter draussen tiefer
   // Klippe mindestens so breit wie ca. 1,6 Rasterzellen (draussen ist das Raster grob, sonst springt die Kante zackig von Zelle zu Zelle)
   const cw = Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
-  h = h * lerp(1 - sst(-25, -3, sd), 1 - sst(-0.62 * cw, 0.38 * cw, sd), ch) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 38 * sst(-0.62 * cw, 0.38 * cw, sd) - 9 * sst(14, 60, sd);   // B1: Klippe 38 m
+  h = h * lerp(1 - sst(-25, -3, sd), 1 - sst(-0.62 * cw, 0.38 * cw, sd), ch) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 46 * sst(-0.62 * cw, 0.38 * cw, sd) - 4 * sst(14, 60, sd);   // Klippe bis Grund -46 (12 m Wasser wie in Gotham, Nicolas 2026-11-16), draussen -50
   for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
   // (A4: der alte Nordhang mit Felskante beim alten Wasserfall ist weg; die Plateau-Erweiterung mit Felswand uebernimmt, Wasserfall neu in A7)
   for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));

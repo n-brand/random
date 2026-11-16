@@ -5,7 +5,7 @@
 // ===================== Hoehle unten (Schritt 6, Karte "Lower Level") =====================
 // Alles in Pixeln der Hoehlenkarte (caveMp). Raster aus 0,6-m-Zellen: 0 = Fels, 1 = Boden, 2 = Wasser.
 // Boden y LY, Wasser WL, Kanalgrund BED, Decke LY + LH (unregelmaessig). Tunnel Sued (Gotham Exit) <-> Nord (Waterfall Exit).
-const WL = SEA_Y, BED = SEA_Y - 3.5;                                      // B1: Hoehlenwasser = Meer, Grund 3,5 m tiefer
+const WL = SEA_Y, BED = SEA_Y - 12;                                       // Hoehlenwasser = Meer; Grund 12 m tiefer wie die Gotham-Fluesse (Nicolas 2026-11-16, Phase 7 "wie bei Gotham"; vorher 3,5 m)
 const toCave = (x, z) => [CAVE_LIFT[0] - (z - SHAFT.cz) / CAVE_SC, CAVE_LIFT[1] + (x - SHAFT.cx) / CAVE_SC];
 const LOW_FLOOR = [[0, 435], [212, 435], [220, 370], [250, 340], [280, 325], [295, 300], [300, 275], [320, 245], [380, 250], [395, 290], [410, 310], [450, 312], [500, 320],
   [550, 325], [580, 365], [583, 395], [610, 435], [622, 460], [736, 460], [736, 505], [470, 505], [440, 472], [0, 472]];

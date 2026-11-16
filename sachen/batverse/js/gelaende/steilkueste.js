@@ -69,7 +69,7 @@ function* coastGen() {
     for (let i = 0; i < line.length; i++) { if (i % 250 === 249) yield;
       const [x, z, nx, nz] = line[i];
       if (i) along += Math.hypot(x - line[i - 1][0], z - line[i - 1][1]);
-      const a = along + A0, cw = cwAt(x, z), top = terrainH(x - nx * 0.9 * cw, z - nz * 0.9 * cw), bot = SEA_Y - 4;
+      const a = along + A0, cw = cwAt(x, z), top = terrainH(x - nx * 0.9 * cw, z - nz * 0.9 * cw), bot = SEA_Y - 13;   // Felshaut bis unter den Grund -46 (Phase 7)
       const topJ = top + 0.15 + 0.7 * (vnoise(a / 3.1, 2) - 0.4), lipH = 1.4 + 2.2 * vnoise(a / 9, 5);   // gezackte Kante
       const butt = 2.4 * (ridged(a / 16 + 3, 1) - 0.55) + 1.0 * (ridged(a / 6 + 1, 4) - 0.5);           // Pfeiler
       const ohMask = sst(0.6, 0.78, vnoise(a / 34 + 7, 4));                                             // grosse Ueberhaenge unter der Kante
@@ -208,9 +208,9 @@ function* coastGen() {
   // ---- Felsnadeln und Brocken am Fuss (Felsgenerator, in Klippenfarbe) ----
   const geos = [], sr = rng(919), rockK = rng(4246);                        // rockK: eigener Felsen-Zufall (makeRock)
   for (const st of SEA_STACKS) {
-    const H = st.h + 8, g2 = makeRock(st.r, H / 2, st.r * 0.9, sr(), 4, rockK), P = g2.attributes.position;
+    const H = st.h + 17, g2 = makeRock(st.r, H / 2, st.r * 0.9, sr(), 4, rockK), P = g2.attributes.position;
     for (let q = 0; q < P.count; q++) { const f = clamp01((P.getY(q) + H / 2) / H), k = lerp(1.15, 0.45, f); P.setX(q, P.getX(q) * k); P.setZ(q, P.getZ(q) * k); }
-    g2.computeVertexNormals(); g2.rotateY(sr() * 6); g2.translate(st.x, SEA_Y - 8 + H / 2, st.z); geos.push(g2);
+    g2.computeVertexNormals(); g2.rotateY(sr() * 6); g2.translate(st.x, SEA_Y - 17 + H / 2, st.z); geos.push(g2);   // Fuss bis unter den Grund -50 (Phase 7)
     circles.push([st.x, st.z, st.r * 1.05, SEA_Y + st.h]);
   }
   for (const h of holes) if (h.w >= 6) for (const s of [-1, 1]) for (let k = 0; k < 2; k++) {
