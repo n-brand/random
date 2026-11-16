@@ -127,3 +127,39 @@ function ggebCollStep() {
   for (const k of want) if (!GGEB.coll.has(k)) { GGEB.coll.set(k, GGEB.cells.get(k).flatMap(ggebColl)); return; }
   for (const [k, parts] of GGEB.coll) if (!want.has(k)) { for (const o of parts) dkRemove(o); GGEB.coll.delete(k); return; }
 }
+
+// ---- G6: Baustellen in den Luecken zwischen den Gebaeuden (Nicolas 2026-11-12 "Baustellen fuellen die Luecken zwischen den Fuellbauten") ----
+// Entlang jeder Strasse beidseits (1 m hinter dem Gehsteig, alle 2 m) freie Laeufe suchen: frei = keine Fahrbahn/Gehsteig, kein Gebaeude, kein Ort aus
+// daten.js (Gebaeude mit Bedeutung kommen spaeter), keine BS-Baustelle, nicht am Kai, auch 8 m tiefer frei. Nur Laeufe ab 12 m, die an mind. einem Ende an
+// ein Gebaeude grenzen (echte Luecken, keine Parks/Wiesen); lange Laeufe in Grundstuecke bis 30 m geteilt, Tiefe bis zum naechsten Hindernis (8-25 m).
+// Ergebnis: Liste { id: "BL-0001" .., poly (Spiel), wohl, bezirk } in Strassen-Reihenfolge (fest, solange Strassen und Gebaeude gleich bleiben).
+function* ggebGaps() {
+  const G = GOTHAM, bz = G.bezirke, out = [], taken = [];
+  const orte = G.orte.filter(o => o.typ !== "baustelle").map(o => { const W = Math.max(o.w, 18) / 2 + 4, D = Math.max(o.d, 18) / 2 + 4, a = (o.dreh || 0) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => GOT.toGame(o.x + u * W * c - v * D * s, o.z + u * W * s + v * D * c)); });
+  const inB = (x, z) => { const i = Math.floor(x / GGEB.CC), k = Math.floor(z / GGEB.CC); for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (const q of GGEB.cells.get(ggebCKey(i + a, k + b)) || []) if (ggebIn(x, z, q.poly)) return true; return false; };
+  const bs = GBST.list.filter(b => b.id[0] === "B" && b.id[1] === "S");
+  const busy = (x, z) => GSTR.onRoad(x, z, 0.5) || GSTR.walkAt(x, z) || GOT.edgeSD(x, z) > -8 || inB(x, z) || orte.some(P => ggebIn(x, z, P)) || bs.some(b => ggebIn(x, z, b.poly)) || taken.some(P => ggebIn(x, z, P));
+  const inP = (x, z, P) => ggebIn(x, z, P);
+  for (const r of GSTR.roads) { const P = r.pts; if (!P || P.length < 2) continue;
+    for (const side of [-1, 1]) { const off = r.w / 2 + r.walk + 1; let run = [], startB = false, prevB = false;
+      const flush = endB => { const len = run.length * 2;
+        if (len >= 12 && (startB || endB)) { const n = Math.ceil(len / 30), per = Math.floor(run.length / n);
+          for (let q = 0; q < n; q++) { const a = run[q * per + 1], b = run[Math.min(run.length - 2, (q + 1) * per - 1)]; if (!a || !b) continue;
+            const fl = Math.hypot(b[0] - a[0], b[1] - a[1]); if (fl < 8) continue;
+            const nx = (a[2] + b[2]) / 2, nz = (a[3] + b[3]) / 2, nl = Math.hypot(nx, nz) || 1, ux = nx / nl, uz = nz / nl;
+            let d = 25; for (const f of [0, 0.5, 1]) { const x0 = a[0] + (b[0] - a[0]) * f, z0 = a[1] + (b[1] - a[1]) * f; for (let t = 1; t <= 25; t++) if (busy(x0 + ux * t, z0 + uz * t)) { d = Math.min(d, t - 1.5); break; } }
+            if (d < 8) continue;
+            const poly = [[a[0], a[1]], [b[0], b[1]], [b[0] + ux * d, b[1] + uz * d], [a[0] + ux * d, a[1] + uz * d]], cx = poly.reduce((s, p) => s + p[0], 0) / 4, cz = poly.reduce((s, p) => s + p[1], 0) / 4;
+            if (poly.some(([x, z]) => busy(x, z)) || busy(cx, cz)) continue;
+            const [mx, mz] = GOT.toMap(cx, cz), bzk = bz.find(q => inP(mx, mz, q.poly));
+            taken.push(poly); out.push({ id: "BL-" + String(out.length + 1).padStart(4, "0"), poly, h: 0, wohl: bzk ? bzk.wohlstand : 0.5, bezirk: bzk ? bzk.name.split(" (")[0] : "Gotham", cx, cz, cell: Math.floor(cx / GCELL) * 100000 + Math.floor(cz / GCELL), gate: 0, ins: [0, 0, 0, 0] }); } }
+        run = []; };
+      for (let i = 0; i < P.length - 1; i++) { const [ax, az] = P[i], [bx, bz2] = P[i + 1], L = Math.hypot(bx - ax, bz2 - az); if (!L) continue; const ux = (bx - ax) / L, uz = (bz2 - az) / L, nx = -uz * side, nz = ux * side;
+        for (let s = 0; s < L; s += 2) { const x = ax + ux * s + nx * off, z = az + uz * s + nz * off, hitB = inB(x, z) || inB(x + nx * 4, z + nz * 4);
+          if (!busy(x, z) && !busy(x + nx * 8, z + nz * 8)) { if (!run.length) startB = prevB; run.push([x, z, nx, nz]); } else flush(hitB);
+          prevB = hitB; } }
+      flush(false); }
+    yield; }
+  return out;
+}

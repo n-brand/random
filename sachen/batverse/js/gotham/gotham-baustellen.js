@@ -12,10 +12,10 @@ async function gbstCacheLoad(ck) {
   try { if (!window.TH_DB || !window.TH_HASH) throw 0;
     const hash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619); return (h >>> 0).toString(36); };
     const src = f => fetch(document.querySelector('script[src$="' + f + '"]').src).then(r => r.text());
-    const [a, b, c] = await Promise.all([src("gotham/gotham-baustellen.js"), src("gotham/stadt.js"), src("gotham/gotham-strassen.js")]);   // Strassen: Einzug und Tor haengen an GSTR
-    ck.key = TH_HASH + "-" + hash(a) + "-" + hash(b) + "-" + hash(c);
+    const [a, b, c, d] = await Promise.all([src("gotham/gotham-baustellen.js"), src("gotham/stadt.js"), src("gotham/gotham-strassen.js"), src("gotham/gotham-gebaeude.js")]);   // Gebaeude: Luecken (BL-…) haengen an den Grundrissen   // Strassen: Einzug und Tor haengen an GSTR
+    ck.key = TH_HASH + "-" + hash(a) + "-" + hash(b) + "-" + hash(c) + "-" + hash(d);
     const rec = await new Promise(ok => { const rq = TH_DB.transaction("cache").objectStore("cache").get("GBST"); rq.onsuccess = () => ok(rq.result); rq.onerror = () => ok(null); });
-    if (rec && rec.key === ck.key && Array.isArray(rec.meshes) && Array.isArray(rec.gates) && Array.isArray(rec.ins) && Array.isArray(rec.fences)) ck.data = rec;
+    if (rec && rec.key === ck.key && Array.isArray(rec.meshes) && Array.isArray(rec.gates) && Array.isArray(rec.ins) && Array.isArray(rec.fences) && Array.isArray(rec.gaps)) ck.data = rec;
   } catch (e) {} ck.state = 1;
 }
 // Liste aller Baustellen (schnell, immer gerechnet: IDs und Register sind mit und ohne Zwischenspeicher gleich)
@@ -64,8 +64,9 @@ function* gbstGen(useCache = true) {
   const CACHED = !!ck.data, Y = GBST.Y;
   // Grundriss auf freie Flaeche zuschneiden (Karten-Grundrisse reichen teils auf Gehsteige):
   // je Seite nach innen, bis die Kante frei ist (0,5-m-Schritte, hoechstens 8 m); Ergebnis mit im Zwischenspeicher
-  if (!CACHED) { while (!GSTR.done) yield "wait"; GBST.list.forEach(b => { b.ins = gbstInset(b); }); yield; }
-  else GBST.list.forEach((b, i) => { b.ins = ck.data.ins[i]; });
+  // G6: dazu die Baustellen in den Luecken zwischen den Gebaeuden (BL-…, ggebGaps in gotham-gebaeude.js; brauchen Strassen und Gebaeude-Grundrisse)
+  if (!CACHED) { while (!GSTR.done || !GGEB.cells) yield "wait"; GBST.list.forEach(b => { b.ins = gbstInset(b); }); GBST.list.push(...(yield* ggebGaps())); yield; }
+  else { GBST.list.push(...ck.data.gaps.map(g => ({ ...g, gate: 0 }))); GBST.list.forEach((b, i) => { b.ins = ck.data.ins[i]; }); }
   for (const b of GBST.list) { const F = gbstFrame(b), [i0, i1, i2, i3] = b.ins; b.poly = [F.at(i3, i0), F.at(F.L1 - i1, i0), F.at(F.L1 - i1, F.L2 - i2), F.at(i3, F.L2 - i2)];
     bautAdd({ id: b.id, name: "Baustelle", art: "Baustelle", poly: b.poly, y0: Y - 1, y1: Y + 8, info: b.bezirk + (b.h ? " · geplant ca. " + Math.round(b.h) + " m" : "") }); }
   yield;
@@ -141,7 +142,7 @@ function* gbstGen(useCache = true) {
       if (++n % 40 === 0) yield;
     }
     D = Object.keys(NAMES).map(k => ({ k, p: new Float32Array(A[k].p), n: new Float32Array(A[k].n), uv: new Float32Array(A[k].uv), c: A[k].c.length ? new Float32Array(A[k].c) : null }));
-    if (ck.key && window.TH_DB) setTimeout(() => { try { TH_DB.transaction("cache", "readwrite").objectStore("cache").put({ key: ck.key, meshes: D, gates: GBST.list.map(b => b.gate), ins: GBST.list.map(b => b.ins), conts: GBST.list.map(b => b.cont), fences: GBST.list.map(b => b.fence) }, "GBST"); } catch (e) {} }, 2500);
+    if (ck.key && window.TH_DB) setTimeout(() => { try { TH_DB.transaction("cache", "readwrite").objectStore("cache").put({ key: ck.key, meshes: D, gates: GBST.list.map(b => b.gate), ins: GBST.list.map(b => b.ins), conts: GBST.list.map(b => b.cont), gaps: GBST.list.filter(b => b.id.startsWith("BL")).map(b => ({ id: b.id, poly: b.poly, h: 0, wohl: b.wohl, bezirk: b.bezirk, cx: b.cx, cz: b.cz, cell: b.cell, ins: [0, 0, 0, 0] })), fences: GBST.list.map(b => b.fence) }, "GBST"); } catch (e) {} }, 2500);
   }
   if (CACHED) GBST.list.forEach((b, i) => { b.cont = ck.data.conts[i] || []; b.fence = ck.data.fences[i] || []; });
   // Zellen fuer die Kollision (GBST.CC, Mitte der Baustelle)
