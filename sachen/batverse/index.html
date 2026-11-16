@@ -97,6 +97,9 @@
     <label class="set-row set-check"><span class="set-l">Automatisch anpassen (unter 30 FPS)</span><input id="set-auto" type="checkbox"></label>
     <label class="set-row tp-vol"><span class="set-l">Lautstärke</span><input id="tp-vol" type="range" min="0" max="100" step="5" value="25" aria-label="Lautstärke"><span id="tp-vol-v">25 %</span></label>
     <label class="set-row set-check"><span class="set-l">Messanzeige (F3)</span><input id="set-perf" type="checkbox"></label>
+    <div class="set-row"><span class="set-l">Position</span><div class="set-seg"><button type="button" id="set-stand-save">Jetzt speichern</button><button type="button" id="set-stand-load">Laden</button></div></div>
+    <label class="set-row set-check"><span class="set-l">Beim Start weitermachen, wo ich war</span><input id="set-stand-auto" type="checkbox"></label>
+    <p class="set-note" id="set-stand-info"></p>
     <button type="button" id="set-reset" class="set-reset">Auf Vorgaben zurücksetzen</button>
   </div>
   <div class="stick" id="stick-move"><span></span></div>
@@ -184,6 +187,7 @@
       "aussen/bauten-anwesen.js",
       "ui/einstellungen.js",
       "ui/bauten-hover.js",
+      "ui/spielstand.js",
       "kern/start.js"
     ];
     // K7: Skripte parallel holen, in fester Reihenfolge ausfuehren (async = false); nach jedem Skript Balken und Schritt weiterstellen
