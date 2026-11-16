@@ -48,7 +48,7 @@ const UMSETZUNG = [
   { phase: "grund", nr: "G3/G4", titel: "Gebäude-Vorlagen und Wohlstand", status: "fertig", stand: "1657 Gebäude aus 6 Vorlagen (Wolkenkratzer, Büro, Laden mit Wohnung, Mietshaus, Fabrik, Lagerhalle) nach Wohlstand und Höhe; fern schlichte Hüllen (Skyline bis ca. 3,6 km), nah Anbauten, Schatten und Kollision; Werkstatt zeigt alle Vorlagen.", braucht: ["G2", "T5"],
     inhalt: "Wenige Vorlagen (Wolkenkratzer, Bürohaus, Mietshaus, Laden mit Wohnung, Fabrik, Lagerhalle), Geschosse mindestens 4,7 m. Wohlstand je Bezirk steuert Höhe und Art der Füllbauten.",
     warum: "Die Stadt füllt sich automatisch entlang der Strassen." },
-  { phase: "grund", nr: "G5/G6", titel: "Seitengassen und Baustellen", status: "offen", braucht: ["G3/G4"],
+  { phase: "grund", nr: "G5/G6", titel: "Seitengassen und Baustellen", status: "fertig", stand: "69 Gassen der Narrows mit Müllcontainern, Säcken, Kartons, Pfützen, Wäscheleinen und dampfenden Gullys; 966 Baustellen BL-… in den Lücken zwischen den Gebäuden (dazu BS-01 bis BS-08).", braucht: ["G3/G4"],
     inhalt: "Gassen im armen Viertel mit Müll, Wäscheleinen, Feuertreppen, Dampf. Baustellen als Lückenfüller zwischen den Füllbauten (Erde, Material, Metallstangen, Bauzaun; Vorlage buildBaustelle, Beispiel in der Werkstatt) und an 8 Plätzen.",
     warum: "Details nach den Vorlagen." },
   { phase: "verkehr", nr: "V1", titel: "U-Bahn: 4 Ringlinien", status: "offen", braucht: ["G2"],
