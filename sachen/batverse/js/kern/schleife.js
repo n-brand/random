@@ -56,6 +56,7 @@ function frame() {
   if (typeof ubTrainStep === "function") ubTrainStep();                                      // U-Bahn: Zuege (gotham-ubahn.js)
   if (typeof casinoStep === "function") casinoStep();                                      // Casino: Neon, Roulette, Scheinwerfer (gotham-casino.js)
   if (typeof gcpdStep === "function") gcpdStep();                                          // Polizeipraesidium: Batsignal, Uhr, Laternen (gotham-polizei.js)
+  if (typeof ghafStep === "function") ghafStep();                                          // Hafen: Containerbruecken, Lampen (gotham-hafen.js)
   if (typeof ggasStep === "function") ggasStep();                                            // Gassen: Dampf aus den Gullys (gotham-gassen.js)
   if (typeof ggebStep === "function") ggebStep();                                            // Gebaeude: Fenster nachts (gotham-gebaeude.js)
   if (typeof wtStep === "function") wtStep();                                                  // Wayne Tower: Nachtlicht (gotham-wayne-turm.js)

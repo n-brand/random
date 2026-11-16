@@ -1,3 +1,12 @@
+- **Hafen / Containerterminal** (Nicolas 2026-11-16 "Ja, Hafen"; PLAN-GOTHAM P3a, damit fertig): `js/gotham/gotham-hafen.js` (FILES nach gotham-polizei.js), `GHAF`, `ghafStep()` in schleife.js. Liegt am Ort "hafen" aus daten.js an der Inselspitze.
+  - Kaikante: Ausgleichsgerade durch die Uferpunkte (erste Wasserstelle in +b, a -225 bis -35), 190 m lang. Rahmen `gbvFrame`: s entlang, t landeinwärts, t = 0 am äussersten Uferpunkt.
+  - Fläche: Beton in 6-m-Zellen hinter dem Kai, nur wo frei (keine Fahrbahn, kein Gehsteig, kein Gebäude). Die Bauteile sind `gbvBox` mit der Vertexfarbe "farbe", Balken `ghafBeam`.
+  - 4 Containerbrücken: rot-weiss, Beine auf t 2 und 28, Hauptträger auf 40 m von t -48 bis 40, A-Bock 62 m mit Abspannung. Je Kran eine Katze mit Spreader fährt in 40 s zwischen Schiff und Kai und trägt einen Container (letzte Instanzen im Container-Netz).
+  - Containerschiff: 200 x 32 m am Kai, Deck WY + 17, Aufbau mit Schornstein am Heck, Container an Deck. dkAdd, das Deck ist begehbar.
+  - Containerlager in Blöcken (5 Stellplätze x 6 Reihen, Gassen 8/10 m) ab t 36, 1 bis 4 hoch; Stapel per dkAdd begehbar. Alle Container (ca. 560) in einem InstancedMesh mit Wellblech-Textur und Farbe je Instanz.
+  - 2 Lagerhallen (Vorlage "lager", 60 x 24 m) hinten, wo frei. Lichtmasten 30 m, leuchten nachts. Register `GO-HAFEN` und die Hallen.
+  - Geprüft: Bilder, Boden auf Stapeln, Schiffsdeck und Kai.
+  - Fragen 18/19 in OFFENE-FRAGEN.md.
 - **Polizeipräsidium mit Batsignal** (Nicolas 2026-11-16 "mach weiter nächster Schritt"; PLAN-GOTHAM P3a): `js/gotham/gotham-polizei.js` (FILES nach gotham-casino.js), `GCPD`, `gcpdStep()` in schleife.js. Liegt auf dem Ort "gcpd" aus daten.js (80 x 60 m, gedreht wie die Karte), Front nach Norden. Gebaut mit den Gebäude-Vorlagen (`gbvWall`/`gbvBox`, Fassade "stein", leuchtet nachts mit `GBV.night`):
   - Bau: Hauptblock 6 Geschosse, Obergeschoss 2 Geschosse zurückgesetzt, Mittelturm 45 m mit Uhr (zeigt die echte Uhrzeit) und Fahnenmast, Gesimse.
   - Eingang: Säulenportal mit 6 Säulen, Podest und 4 Stufen, Schriftband GOTHAM CITY POLICE DEPARTMENT, zwei grüne Polizeilaternen.

@@ -48,6 +48,13 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 17. **Batsignal:** Es leuchtet nachts automatisch; Rechtsklick oder E am Scheinwerfer schaltet es aus und wieder an. Soll es nur auf Knopfdruck leuchten, zum Beispiel später für Einsätze?
    - *Bis dahin:* nachts an.
 
+## Hafen (P3a)
+
+18. **Schiff:** Das Containerschiff liegt fest am Kai, die Kräne laden nur zum Schein um. Soll es an- und ablegen und aufs Meer hinausfahren, oder sollen die Kräne steuerbar sein?
+   - *Bis dahin:* liegt fest.
+19. **Umfang:** Laut Karte ist der Hafen 420 m lang. Gebaut ist ein gerader Kai von 190 m an der Inselspitze, denn danach knickt die Küste ab. Soll ein zweiter Kai um die Spitze herum dazukommen?
+   - *Bis dahin:* ein Kai.
+
 ## Ältere offene Punkte (aus CLAUDE.md)
 
 10. **Batcave, Uferkante:** Das Hochklettern aus dem Wasser mit gehaltener Leertaste (B1) bleibt vorerst. Soll es bleiben?
