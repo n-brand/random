@@ -38,8 +38,19 @@ const atmLimTxt = () => atmFmt(KONTO_LIMIT - kontoLimitRest()) + " / " + atmFmt(
 const atmOk = () => ATM.amt > 0 && ATM.amt <= atmMax();
 const atmErr = () => atmOk() ? "" : ATM.amt <= 0 ? "Betrag wählen" : ATM.mode === "ein" ? (ATM.amt > KONTO.bar ? "So viel Bargeld hast du nicht" : "Über dem Einzahl-Limit dieser Woche (noch " + atmFmt(kontoLimitRest()) + ")") : "Nicht genug Guthaben";
 const atmMax = () => ATM.mode === "ein" ? Math.min(KONTO.bar, kontoLimitRest()) : KONTO.stand;
+// Bargeld und Kredit (Kontostand) als zwei Felder rechts neben der Hotbar (Nicolas 2026-11-16, Bild: gruener Schein, blaue Karte)
+const KONTO_GELD_SVG = { bar: '<rect x="2" y="7" width="22" height="12" rx="1.5" fill="#cfe8c4" stroke="#3d6b34"/><circle cx="13" cy="13" r="3.2" fill="none" stroke="#3d6b34"/><path d="M5 10h2M19 16h2" stroke="#3d6b34"/>',
+  karte: '<rect x="2" y="6" width="22" height="14" rx="2" fill="#fff"/><rect x="2" y="9" width="22" height="2.6" fill="#1b6fa8"/><rect x="5" y="14" width="7" height="2" rx="1" fill="#9db7c9"/>' };
+function kontoGeldRender() {
+  let el = document.getElementById("hb-geld");
+  if (!el) { el = document.createElement("div"); el.id = "hb-geld"; el.innerHTML = '<div class="hg hg-bar" title="Bargeld"><svg viewBox="0 0 26 26" aria-hidden="true">' + KONTO_GELD_SVG.bar + '</svg><b></b></div><div class="hg hg-karte" title="Kredit (Kontostand)"><svg viewBox="0 0 26 26" aria-hidden="true">' + KONTO_GELD_SVG.karte + '</svg><b></b></div>'; document.body.appendChild(el);
+    el.addEventListener("click", e => { const h = e.target.closest(".hg"); if (h && typeof invSelect === "function") invSelect(h.classList.contains("hg-bar") ? INV_SEL_BAR : INV_SEL_KARTE); }); }
+  el.querySelector(".hg-bar b").textContent = kontoFmt(KONTO.bar); el.querySelector(".hg-karte b").textContent = kontoFmt(KONTO.stand);
+  if (typeof INV !== "undefined") { el.querySelector(".hg-bar").classList.toggle("sel", INV.sel === INV_SEL_BAR); el.querySelector(".hg-karte").classList.toggle("sel", INV.sel === INV_SEL_KARTE); }
+}
 function kontoRender() {
   const el = document.getElementById("konto"); if (el) el.querySelector(".k-stand").textContent = kontoFmt(KONTO.stand);
+  kontoGeldRender();
   if (typeof atmScreensUpdate === "function") atmScreensUpdate();   // 3D-Bildschirme der Automaten (bankautomat.js) zeigen dieselben Werte
   const p = document.getElementById("bank"); if (!p || p.hidden) return;
   atmFit();

@@ -83,6 +83,26 @@ body.aiming #btn-aim { background: #c8202a; }
 .inv-sw .sw-knob::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .2s; }
 .inv-sw[aria-pressed="true"] .sw-knob { background: #e8c547; }
 .inv-sw[aria-pressed="true"] .sw-knob::after { left: 16px; }
+#hb-geld { display: none; position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 62px); left: calc(50% + (9 * var(--slot) + 42px) / 2 + 10px); gap: 6px; z-index: 6; }   /* Bargeld und Kredit neben der Hotbar (konto.js) */
+body.person #hb-geld { display: flex; }
+#hb-geld .hg { min-width: calc(var(--slot) * 1.25); height: calc(var(--slot) + 10px); padding: 0 6px; box-sizing: border-box; border-radius: 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: 700 calc(var(--slot) * .24) system-ui, sans-serif; }
+#hb-geld svg { width: calc(var(--slot) * .55); height: calc(var(--slot) * .55); }
+#hb-geld .hg-bar { background: rgba(46,110,42,.72); border: 2px solid rgba(120,200,110,.45); color: #6dff7a; }
+#hb-geld .hg-karte { background: rgba(18,96,150,.78); border: 2px solid rgba(110,190,240,.55); color: #6fd8ff; }
+body.touch #hb-geld { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
+@media (max-width: 760px) { #hb-geld { left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 74px + var(--slot)); } body.touch #hb-geld { bottom: calc(env(safe-area-inset-bottom, 0px) + 20px + var(--slot)); } }
+#hb-geld .hg { cursor: pointer; } #hb-geld .hg.sel { border-color: #e8c547; box-shadow: 0 0 0 2px #e8c547; }
+#hand { display: none; position: fixed; right: 4%; bottom: 2vh; width: min(18vw, 26vh); height: min(18vw, 26vh); z-index: 4; pointer-events: none; transform: rotate(-16deg); filter: drop-shadow(0 8px 12px rgba(0,0,0,.45)); }   /* gehaltener Gegenstand (inventar.js) */
+body.person #hand { display: block; }
+#hand[hidden] { display: none !important; }
+#hand svg { width: 100%; height: 100%; }
+#hand.neu { animation: hand-hoch .25s ease-out; }
+@keyframes hand-hoch { from { transform: translateY(45%) rotate(-16deg); } to { transform: rotate(-16deg); } }
+body.touch #hand { width: min(18vw, 22vh); height: min(18vw, 22vh); right: 22%; }
+#inv-cursor { position: fixed; z-index: 62; width: var(--slot); height: var(--slot); margin: calc(var(--slot) * -.5) 0 0 calc(var(--slot) * -.5); display: grid; place-items: center; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,.6)); }   /* Stapel an der Maus (inventar.js) */
+#inv-cursor[hidden] { display: none; }
+#inv-cursor svg { width: calc(var(--slot) * .8); height: calc(var(--slot) * .8); }
+#inventar .inv-slot { touch-action: none; user-select: none; }
 #inv-tip { position: fixed; z-index: 60; max-width: 260px; padding: 8px 10px; background: rgba(14,16,22,.96); border: 1px solid #3a4556; border-radius: 8px; color: #e9edf2; font: 13px system-ui, sans-serif; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
 #inv-tip[hidden] { display: none; }
 #inv-tip b { display: block; font-size: 14px; color: #ffe08a; }
