@@ -102,8 +102,19 @@ function carCircles(on) {
 // Schaufel schiebt Fahrzeuge (Nicolas 2026-11-12): Punkte entlang der Schaufelkante (spec.push: z, halbe Breite w), jedes andere Bodenfahrzeug als
 // Kapsel (Laengsachse, circR). Beruehrt die Kante die Kapsel, wird es um die Eindringtiefe weggeschoben, in Richtung der Beruehrnormalen (von jeder
 // Seite); an einem Ende getroffen dreht es sich mit. Steht dahinter eine Wand oder ein anderes Fahrzeug, bleibt es stehen (dann blockiert es wie bisher).
-function vehPushStep(C, nx, nz) {
-  const P = C.spec.push, s = Math.sin(C.h), c = Math.cos(C.h); let pushed = false;
+// Nicolas 2026-11-16 ("Haeuser, Busse und andere Fahrzeuge: nicht durchfahren, aber beim Aufprall wird z. B. der Bus kurz abgeschoben"): jedes Fahrzeug
+// schiebt mit seiner Front (rueckwaerts mit dem Heck). Verteilt nach Masse (vehMass: Laenge x Breite x Hoehe): der Gestossene weicht um k = mA / (mA + mB)
+// der Eindringtiefe, den Rest halten seine Kollisionskreise (der Stossende bleibt davor stehen) und der Stossende wird je nach (1 - k) gebremst.
+// Busse (gotham-bus.js) werden ebenso seitlich versetzt (gbusPush), halten kurz und kehren dann in ihre Spur zurueck. Schaufel (spec.push) wie bisher voll.
+const vehMass = sp => sp.mass || (2 * Math.max(...sp.pts.map(Math.abs)) + 2 * sp.R) * 2 * sp.R * (sp.bodyH || 1.4);
+function vehPushStep(C, nx, nz, dt = 1 / 60) {
+  const sp = C.spec, fwd = C.v >= 0, P = sp.push || { z: fwd ? Math.min(...sp.pts) - sp.R - 0.15 : Math.max(...sp.pts) + sp.R + 0.15, w: sp.R * 0.9 }   /* Kante knapp vor dem vordersten Kollisionskreis, sonst stoppen die Kreise vor der Beruehrung */, full = !!sp.push, mA = vehMass(sp);
+  const s = Math.sin(C.h), c = Math.cos(C.h); let pushed = false, brake = 0;
+  if (typeof GBUS !== "undefined" && Math.abs(C.v) > 0.3) for (const b of GBUS.buses) { if (!b.g.visible || Math.abs(b.y - C.y) > 2.5 || Math.hypot(b.g.position.x - nx, b.g.position.z - nz) > 16) continue;
+    const ax = -Math.sin(b.g.rotation.y), az = -Math.cos(b.g.rotation.y), L = 4.3, r = 1.45; let mx = 0, mz = 0, pmax = 0;
+    for (let k = -2; k <= 2; k++) { const lx = P.w * k / 2, bx = nx + lx * c + P.z * s, bz = nz - lx * s + P.z * c, t = Math.max(-L, Math.min(L, (bx - b.g.position.x) * ax + (bz - b.g.position.z) * az)), qx = b.g.position.x + ax * t, qz = b.g.position.z + az * t, d = Math.hypot(qx - bx, qz - bz);
+      if (d < r) { const pen = r - d; mx += (d > 1e-4 ? (qx - bx) / d : -s) * pen; mz += (d > 1e-4 ? (qz - bz) / d : -c) * pen; pmax = Math.max(pmax, pen); } }
+    if (pmax <= 0) continue; const k = full ? 1 : mA / (mA + 40), ml = Math.hypot(mx, mz) || 1; gbusPush(b, mx / ml, mz / ml, pmax * k, Math.abs(C.v), k); brake = Math.max(brake, 1 - k); pushed = true; }
   for (const v of VEH) {
     if (v === C || v.on || v.dead || !v.g.visible || Math.abs(v.y - C.y) > 2.5) continue;
     const L = Math.max(...v.spec.pts.map(Math.abs)), r = v.spec.circR + 0.1, ax = Math.sin(v.h), az = Math.cos(v.h);
@@ -117,14 +128,16 @@ function vehPushStep(C, nx, nz) {
       mx += nnx * pen; mz += nnz * pen; pmax = Math.max(pmax, pen); tq += (nnx * -az + nnz * ax) * pen * t;
     }
     if (pmax <= 0) continue;
+    const kk = full ? 1 : mA / (mA + vehMass(v.spec)); brake = Math.max(brake, 1 - kk);
     const ml = Math.hypot(mx, mz) || 1, saved = { x: v.x, z: v.z, h: v.h };
-    v.x += mx / ml * pmax; v.z += mz / ml * pmax; v.h = wrapA(v.h + tq / (L * L + 1) * 0.35);
+    v.x += mx / ml * pmax * kk; v.z += mz / ml * pmax * kk; v.h = wrapA(v.h + tq / (L * L + 1) * 0.35 * kk);
     const prev = CAR; CAR = v; carNear(); let ok = true;
     const vs = Math.sin(v.h), vc = Math.cos(v.h);
     for (const lz of v.spec.pts) { const q = { x: v.x + lz * vs, z: v.z + lz * vc }, qx0 = q.x, qz0 = q.z; carPush(q, v.y, v.spec.R); if (Math.hypot(q.x - qx0, q.z - qz0) > 0.05) { ok = false; break; } }
     if (ok) { v.settled = false; carCircles(true); carPose(0); pushed = true; } else Object.assign(v, saved);
     CAR = prev; carNear();
   }
+  if (pushed && !full) C.v *= Math.max(0, 1 - brake * Math.min(1, dt * 8));   // schwerer Gegner bremst staerker
   return pushed;
 }
 // Abschleppen (modelle.js TOW/towFind/towFollow): das gezogene Auto hat keine Kollisionskreise (sonst blockiert es den Abschleppwagen), seine
@@ -319,7 +332,7 @@ function carStep(dt) {
   // Bewegen mit Kollision (Kreise entlang der Karosserie)
   const fx = -Math.sin(C.h), fz = -Math.cos(C.h), x0 = C.x, z0 = C.z;
   let nx = C.x + fx * C.v * dt, nz = C.z + fz * C.v * dt;
-  if (sp.push && vehPushStep(C, nx, nz)) C.v *= Math.max(0, 1 - dt * 1.2);                 // Schaufel schiebt Fahrzeuge (etwas Widerstand)
+  if (vehPushStep(C, nx, nz, dt) && sp.push) C.v *= Math.max(0, 1 - dt * 1.2);           // jedes Fahrzeug schiebt nach Masse; Schaufel mit etwas Widerstand
   for (let it = 0; it < 2; it++) {
     let sx = 0, sz = 0;
     for (const lz of sp.pts) {
