@@ -49,6 +49,7 @@ function frame() {
   }
   carFrame(dt);
   shotsStep(dt); wasserFrame(dt);                                                             // Panzer: Schiessen, Granaten, Explosionen, Wracks (schiessen.js)
+  if (typeof ggebCollStep === "function") ggebCollStep();   // Gebaeude: Kollision nur in der Naehe (gotham-gebaeude.js)
   if (typeof gbstCollStep === "function") gbstCollStep();                                      // Baustellen: Kollision nur in der Naehe (gotham-baustellen.js)
   if (typeof ggebNearStep === "function") ggebNearStep();                                    // Gebaeude: Anbauten und Schatten in der Naehe
   if (typeof ggebStep === "function") ggebStep();                                            // Gebaeude: Fenster nachts (gotham-gebaeude.js)

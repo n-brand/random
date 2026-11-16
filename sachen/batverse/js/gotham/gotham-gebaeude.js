@@ -105,3 +105,21 @@ function ggebNearStep() {
   const c = GGEB.nearCur; if (!c) return; const t0 = performance.now();
   while (performance.now() - t0 < 3) { const a = performance.now(), r = c.gen.next(); GGEB.nearMax = Math.max(GGEB.nearMax, performance.now() - a); if (r.done) { GGEB.nearCur = null; break; } }
 }
+
+// ---- Kollision nur in der Naehe (Task 4) ----
+// Je Gebaeude ein gedrehter Quader (dkAdd, kern/drehkoll.js): wirksam 0,3 m innerhalb der Fassade (hl = L/2 - 0,6 plus Rand m 0,3; Regel Barrieren weiter innen),
+// Oberseite = Dach (begehbar, The Bat kann landen). Wolkenkratzer mit Ruecksprung: zwei Teile. Anbauten ohne Kollision (nur Optik).
+// Wie die Baustellen: 128-m-Zellen um Spieler bzw. aktives Fahrzeug und die 8 Nachbarn, je Bild hoechstens eine Zelle anlegen oder entfernen (Anlegen zuerst).
+GGEB.coll = new Map();
+function ggebColl(b) {
+  const F = b.F, Y = GGEB.Y, [cx, cz] = F.at(F.L1 / 2, F.L2 / 2), part = (ins, y0, y1) => dkAdd({ cx, cy: (y0 + y1) / 2, cz, ux: F.e1[0], uz: F.e1[1], hl: F.L1 / 2 - ins - 0.6, hw: F.L2 / 2 - ins - 0.6, hh: (y1 - y0) / 2, m: 0.3 });
+  if (b.type === "kratzer" && F.L1 >= 30 && F.L2 >= 30) { const yk = Y + Math.round(b.H * 0.4 / GBV.GH) * GBV.GH; return [part(0, Y - 0.2, yk), part(4, yk, Y + b.H)]; }
+  return [part(0, Y - 0.2, Y + b.H)];
+}
+function ggebCollStep() {
+  if (!GGEB.done || !GGEB.cells) return;
+  const px = CAR && CAR.on ? CAR.x : player.pos.x, pz = CAR && CAR.on ? CAR.z : player.pos.z, ci = Math.floor(px / GGEB.CC), ck = Math.floor(pz / GGEB.CC), want = new Set();
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const k = ggebCKey(ci + a, ck + b); if (GGEB.cells.has(k)) want.add(k); }
+  for (const k of want) if (!GGEB.coll.has(k)) { GGEB.coll.set(k, GGEB.cells.get(k).flatMap(ggebColl)); return; }
+  for (const [k, parts] of GGEB.coll) if (!want.has(k)) { for (const o of parts) dkRemove(o); GGEB.coll.delete(k); return; }
+}
