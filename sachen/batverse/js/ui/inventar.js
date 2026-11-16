@@ -38,6 +38,7 @@ const invSlotHTML = (s, i) => '<button type="button" class="inv-slot' + (i === I
   (i < 9 ? '<span class="inv-k">' + (i + 1) + '</span>' : "") + (s ? '<svg viewBox="0 0 26 26" aria-hidden="true">' + INV_ITEMS[s.id].svg + '</svg>' + (s.n > 1 ? '<span class="inv-n">' + s.n + '</span>' : "") : "") + '</button>';
 function invRender() {
   const hb = document.getElementById("hotbar"), box = document.getElementById("inventar"); if (!hb) return;
+  const sw = box.querySelector('[data-sw="batsignal"]'); if (sw) { const on = typeof GCPD !== "undefined" && !!GCPD.on; sw.setAttribute("aria-pressed", String(on)); sw.title = on ? "Batsignal ist an (leuchtet nachts) – Klick schaltet aus" : "Batsignal ist aus – Klick schaltet an"; }
   hb.innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
   if (!box.hidden) { box.querySelector(".inv-grid").innerHTML = INV.slots.slice(9).map((s, k) => invSlotHTML(s, k + 9)).join(""); box.querySelector(".inv-bar").innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
     const s = INV.slots[INV.pick >= 0 ? INV.pick : INV.sel]; box.querySelector(".inv-info").textContent = s ? INV_ITEMS[s.id].name + " · " + INV_ITEMS[s.id].art + (s.n > 1 ? " · " + s.n + " Stück" : "") : "Klick auf einen Platz und dann auf einen zweiten: tauschen bzw. zusammenlegen"; }
@@ -48,7 +49,8 @@ function invClose() { const b = document.getElementById("inventar"); if (!b || b
 // Aufbau: Startausstattung beim ersten Mal, Klicks
 { if (!invLoad()) { INV.slots[0] = { id: "gullihaken", n: 1 }; INV.slots[1] = { id: "batarang", n: 6 }; invSave(); }
   document.getElementById("hotbar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (!b) return; e.currentTarget.blur?.(); invSelect(+b.dataset.i); });
-  document.getElementById("inventar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (b) return invClick(+b.dataset.i); if (e.target.closest(".inv-close")) invClose(); });
+  document.getElementById("inventar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (b) return invClick(+b.dataset.i); if (e.target.closest(".inv-close")) invClose();
+    if (e.target.closest('[data-sw="batsignal"]') && typeof GCPD !== "undefined") { GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts über Gotham)" : "Batsignal aus"); invRender(); } });   // Schalter im Inventar (Nicolas 2026-11-16)
   document.getElementById("btn-inv")?.addEventListener("click", e => { e.currentTarget.blur(); invIsOpen() ? invClose() : invOpen(); });
   // Mausrad zu Fuss: naechster/voriger Hotbar-Platz (Nicolas 2026-11-16); im Fahrzeug, auf Karte und Menues nicht
   let wAcc = 0; addEventListener("wheel", e => { if (!walking || ghost || document.body.classList.contains("drive") || invIsOpen() || e.target.closest?.("#stadtkarte, #handy, #bank, #tp-menu, #settings")) return;

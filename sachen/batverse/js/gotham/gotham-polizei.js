@@ -2,7 +2,7 @@
 // Klassisches Skript nach gotham-casino.js. Steinbau der 30er (Fassade "stein" aus den Gebaeude-Vorlagen, leuchtet nachts mit den anderen):
 // Hauptblock 6 Geschosse, zurueckgesetztes Obergeschoss, Mittelturm 45 m mit Uhr, Saeulenportal mit Freitreppe, gruenen Polizeilaternen und
 // Schriftband GOTHAM CITY POLICE DEPARTMENT, Granit-Vorplatz mit Streifenwagen. Auf dem Dach das Batsignal: Scheinwerfer auf Drehgestell,
-// nachts Lichtkegel in den Himmel und das Fledermaus-Zeichen in den Wolken; Rechtsklick/E am Scheinwerfer schaltet es (GCPD.on).
+// nachts Lichtkegel in den Himmel und das Fledermaus-Zeichen in den Wolken; geschaltet wird es mit dem Schalter im Inventar (GCPD.on).
 "use strict";
 const GCPD = { done: false, on: true, sig: null };
 function* gcpdGen() {
@@ -92,7 +92,7 @@ function* gcpdGen() {
     c.save(); c.translate(r, r); c.scale(1, 0.62); c.translate(-r, -r); c.fillStyle = g; c.fillRect(0, 0, w, w); c.restore(); batShape(c, r, r * 1.03, w * 0.62, "#000"); });
   const symM = new THREE.SpriteMaterial({ map: symTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }), sym = new THREE.Sprite(symM);
   sym.position.copy(tgt); sym.scale.set(110, 110, 1); scene.add(sym);
-  gates.push({ name: "Batsignal", g: head, call: () => { GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts)" : "Batsignal aus"); }, verbs: ["schalten", "schalten"], a: [bx, bz], b: [bx, bz], near: 10 });
+  // Geschaltet wird nur noch im Inventar (Schalter Batsignal, inventar.js; Nicolas 2026-11-16: kein Rechtsklick am Polizeigebaeude)
   GCPD.sig = { beamM, symM, sym, hands, clkM: clk.material, lampM, gm };
   yield;
   // Kollision: Bloecke als gedrehte Quader (Dach begehbar), Saeulen, Freitreppe als Boden

@@ -296,3 +296,11 @@ body.aiming #cross { display: none !important; }
 body.touch.armed #weapon-btns { display: flex; }
 #weapon-btns button { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: rgba(12,14,18,.7); color: #fff; font: 600 14px system-ui, sans-serif; }
 body.aiming #btn-aim { background: #c8202a; }
+
+/* Batsignal-Schalter im Inventar (Nicolas 2026-11-16) */
+.inv-sws { display: flex; gap: 8px; margin: 4px 0 8px; }
+.inv-sw { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: inherit; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+.inv-sw .sw-knob { position: relative; width: 30px; height: 16px; border-radius: 8px; background: #555b64; transition: background .2s; }
+.inv-sw .sw-knob::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .2s; }
+.inv-sw[aria-pressed="true"] .sw-knob { background: #e8c547; }
+.inv-sw[aria-pressed="true"] .sw-knob::after { left: 16px; }
