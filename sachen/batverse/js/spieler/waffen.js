@@ -39,7 +39,15 @@ function weaponUse() {
   } else if (id === "greifhaken") {
     AIM.cd = 0.6; const h = aimHit(70); if (!h) return toast("Greifhaken: nichts in Reichweite (70 m)");
     let to = h.p.clone(); const dir = d.clone().setY(0).normalize();
-    if (h.hit === "solid") { for (let k = 0.25; k <= 5; k += 0.25) { const q = h.p.clone().addScaledVector(dir, 0.5); q.y = h.p.y + k; if (!shotAt(q.x, q.y + 0.3, q.z)) { to = q.addScaledVector(dir, 0.6); to.y = h.p.y + k; break; } } }   // auf die Kante hinauf
+    // Decke von unten (Nicolas 2026-11-17: "mit dem Greifhaken komme ich durch die untere Decke auf die zweite Etage"): unter dem Treffer frei, darueber fest -> kein Halt
+    // Probe knapp vor dem Treffer: darueber fest und geradeaus frei = Unterseite einer Decke (Fassaden: geradeaus fest)
+    const pq = h.p.clone().addScaledVector(d, -0.3);
+    if (d.y > 0.15 && shotAt(pq.x, pq.y + 0.45, pq.z) && !shotAt(pq.x + dir.x * 0.45, pq.y, pq.z + dir.z * 0.45)) return toast("Greifhaken: an der Decke kein Halt");
+    const wand = h.hit === "solid" || shotAt(pq.x + dir.x * 0.45, pq.y, pq.z + dir.z * 0.45);   // senkrechte Flaeche voraus (auch Gebaeude-Quader, die als Boden zaehlen)
+    if (wand) { const out = h.p.clone().addScaledVector(dir, -0.45); let ok = false;   // Spalte vor der Wand: muss bis zur Kante frei sein (sonst Decke/Ueberhang dazwischen)
+      for (let k = 0.25; k <= 5; k += 0.25) { if (shotAt(out.x, h.p.y + k + 0.3, out.z)) break; const q = h.p.clone().addScaledVector(dir, 0.5); q.y = h.p.y + k;
+        if (!shotAt(q.x, q.y + 0.3, q.z) && !shotAt(q.x, q.y + 1.5, q.z)) { to = q.addScaledVector(dir, 0.6); to.y = h.p.y + k; ok = true; break; } }   // auf die Kante hinauf (oben Platz fuer den Koerper)
+      if (!ok) { to = out.clone(); to.y = Math.max(h.p.y - 1.4, player.pos.y); } }   // keine Kante: vor die Wand ziehen (danach faellt man)
     const from = player.pos.clone(), len = from.distanceTo(to); AIM.grap = { from, to, t: 0, dur: Math.max(0.35, len / 32), hit: h.p.clone() }; AIM_M.rope.visible = true; shotSound?.(0.15, 0.1);
   }
 }
