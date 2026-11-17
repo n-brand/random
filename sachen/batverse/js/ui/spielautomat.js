@@ -44,9 +44,12 @@ const SLOT_CSS = `
 #slot .sl-spin { flex: 2; padding: 12px 0; border-radius: 12px; border: 0; background: radial-gradient(circle at 50% 30%, #ff6a7a, #c8101e 60%, #7a0010); color: #fff; font: 900 20px "Arial Black", Arial; letter-spacing: .08em; cursor: pointer; box-shadow: 0 4px 0 #4a0008, 0 0 16px rgba(255,40,60,.5); }
 #slot .sl-spin:active { transform: translateY(3px); box-shadow: 0 1px 0 #4a0008; } #slot .sl-spin:disabled { filter: grayscale(.7) brightness(.7); cursor: default; }
 #slot .sl-btn { flex: 1; padding: 10px 0; border-radius: 12px; border: 1px solid #6a3a9a; background: #1a0a2a; color: #e8d8ff; font: 700 13px "Segoe UI", Arial; cursor: pointer; }
-#slot .sl-pay { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 14px; padding: 8px 10px; border-radius: 10px; background: #0c0414; border: 1px solid #6a3a9a; font-size: 12px; }
-#slot .sl-pay[hidden] { display: none; }
-#slot .sl-pay div { display: flex; align-items: center; justify-content: space-between; gap: 6px; } #slot .sl-pay canvas { width: 66px; height: 22px; } #slot .sl-pay b { color: #ffd23a; }
+/* Gewinnplan als feste Tafel links neben dem Automaten (Nicolas 2026-11-17: "links neben dem Automaten, ohne Ein- und Ausklappen") */
+#slot .sl-pay { align-self: center; width: 230px; margin-right: 14px; padding: 12px 14px 14px; border-radius: 16px; background: linear-gradient(160deg, #2a0a4a, #12051f); border: 3px solid #d4a640; box-shadow: 0 0 0 4px #1a0a24, 0 14px 40px rgba(0,0,0,.6); font-size: 13px; }
+#slot .sl-pay h3 { margin: 0 0 8px; text-align: center; font: 900 18px "Arial Black", Arial, sans-serif; letter-spacing: .08em; color: #ffd23a; text-shadow: 0 0 10px #ff2a55; }
+#slot .sl-pay div { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 3px 4px; border-bottom: 1px solid rgba(212,166,64,.18); } #slot .sl-pay div:last-of-type { border-bottom: 0; }
+#slot .sl-pay canvas { width: 84px; height: 28px; } #slot .sl-pay b { color: #ffd23a; font-size: 15px; white-space: nowrap; }
+#slot .sl-pay small { display: block; margin-top: 8px; font-size: 11px; color: #a88ad0; text-align: center; }
 #slot .sl-hist { margin-top: 8px; font-size: 11px; color: #a88ad0; text-align: center; min-height: 14px; }
 #slot .sl-arm { position: relative; width: 54px; height: 300px; margin-left: -6px; }
 #slot .sl-arm .hub { position: absolute; left: 0; top: 150px; width: 26px; height: 46px; border-radius: 0 12px 12px 0; background: linear-gradient(90deg, #8a8f96, #e8ecf0, #8a8f96); }
@@ -56,19 +59,19 @@ const SLOT_CSS = `
 function slotEnsure() {
   if (SLOT.el) return SLOT.el; const st = document.createElement("style"); st.textContent = SLOT_CSS; document.head.appendChild(st);
   const el = document.createElement("div"); el.id = "slot"; el.hidden = true; document.body.appendChild(el); SLOT.el = el;
-  el.innerHTML = '<div class="sl-wrap"><div class="sl-box"><div class="sl-top"><div class="sl-bulbs a"></div><b>GOTHAM FORTUNE</b><small>EINARMIGER BANDIT</small><div class="sl-bulbs b"></div></div>' +
+  el.innerHTML = '<div class="sl-wrap"><div class="sl-pay"><h3>GEWINNPLAN</h3></div><div class="sl-box"><div class="sl-top"><div class="sl-bulbs a"></div><b>GOTHAM FORTUNE</b><small>EINARMIGER BANDIT</small><div class="sl-bulbs b"></div></div>' +
     '<div class="sl-reels"><canvas width="912" height="456"></canvas><div class="sl-line"></div></div><div class="sl-msg"></div>' +
     '<div class="sl-info"><div class="j">Jetons<b data-v="jet"></b></div><div>Einsatz<b data-v="bet"></b></div><div class="w">Gewinn<b data-v="win"></b></div></div>' +
     '<div class="sl-bets">' + SLOT_BETS.map(v => '<button data-bet="' + v + '">' + (v >= 1000 ? v / 1000 + "K" : v) + "</button>").join("") + "</div>" +
-    '<div class="sl-acts"><button class="sl-btn" data-a="pay">Gewinnplan</button><button class="sl-spin" data-a="spin">DREHEN</button><button class="sl-btn" data-a="zu">Verlassen</button></div>' +
-    '<div class="sl-pay" hidden></div><div class="sl-hist"></div><div class="sl-foot">Hebel ziehen, DREHEN oder Leertaste · Esc schließt · Jetons am Jeton-Automaten oder an der Kasse</div></div>' +
+    '<div class="sl-acts"><button class="sl-spin" data-a="spin">DREHEN</button><button class="sl-btn" data-a="zu">Verlassen</button></div>' +
+    '<div class="sl-hist"></div><div class="sl-foot">Hebel ziehen, DREHEN oder Leertaste · Esc schließt · Jetons am Jeton-Automaten oder an der Kasse</div></div>' +
     '<div class="sl-arm"><div class="hub"></div><div class="rod" title="Hebel ziehen"></div></div></div>';
   // Gewinnplan mit gezeichneten Symbolen
   const pay = el.querySelector(".sl-pay"), row = (ids, k) => { const d = document.createElement("div"), cv = document.createElement("canvas"); cv.width = 132; cv.height = 44; const c = cv.getContext("2d"); ids.forEach((id, i) => id && slotSymDraw(c, id, 22 + i * 44, 22, 38)); d.append(cv); d.insertAdjacentHTML("beforeend", "<b>× " + k + "</b>"); pay.append(d); };
   for (const id of ["7", "D", "B", "G", "S", "L", "C"]) row([id, id, id], SLOT_PAY3[id]);
-  for (const id of ["7", "D", "B"]) row([id, id, ""], SLOT_PAY2[id]); row(["C", "C", ""], SLOT_CHERRY2 + " (2 Kirschen irgendwo)");
+  for (const id of ["7", "D", "B"]) row([id, id, ""], SLOT_PAY2[id]); row(["C", "C", ""], SLOT_CHERRY2); pay.insertAdjacentHTML("beforeend", "<small>Gewinn = Einsatz × Faktor, nur die rote Linie zählt. Zwei Kirschen zählen überall auf der Linie, die anderen Paare nur auf den ersten zwei Walzen.</small>");
   el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) { if (e.target === el && !SLOT.spin) slotClose(); return; } b.blur();
-    if (b.dataset.bet && !SLOT.spin) { SLOT.bet = +b.dataset.bet; slotRender(); } else if (b.dataset.a === "spin") slotSpin(); else if (b.dataset.a === "zu") slotClose(); else if (b.dataset.a === "pay") { pay.hidden = !pay.hidden; slotFit(); } });
+    if (b.dataset.bet && !SLOT.spin) { SLOT.bet = +b.dataset.bet; slotRender(); } else if (b.dataset.a === "spin") slotSpin(); else if (b.dataset.a === "zu") slotClose();  });
   // Hebel: nach unten ziehen (oder klicken) loest aus
   const rod = el.querySelector(".rod"); let drag = null;
   rod.addEventListener("pointerdown", e => { if (SLOT.spin) return; drag = { y: e.clientY }; try { rod.setPointerCapture(e.pointerId); } catch (_) {} e.preventDefault(); });
@@ -91,7 +94,7 @@ function slotRender() { const el = SLOT.el; if (!el) return; const f = n => (typ
   const m = el.querySelector(".sl-msg"); m.textContent = SLOT.msg; m.className = "sl-msg " + SLOT.cls;
   el.querySelector(".sl-hist").textContent = SLOT.hist.length ? "Letzte: " + SLOT.hist.join(" · ") : ""; }
 // Walzen zeichnen: je Walze 3 sichtbare Felder um die Position (Bruchteil = Verschiebung)
-function slotDraw() { const cv = SLOT.el && SLOT.el.querySelector("canvas"); if (!cv) return; const c = cv.getContext("2d"), W = cv.width, H = cv.height, S = slotStrips(), rw = W / 3, fh = H / 3;
+function slotDraw() { const cv = SLOT.el && SLOT.el.querySelector(".sl-reels canvas"); if (!cv) return; const c = cv.getContext("2d"), W = cv.width, H = cv.height, S = slotStrips(), rw = W / 3, fh = H / 3;
   c.clearRect(0, 0, W, H);
   for (let r = 0; r < 3; r++) { const x0 = r * rw; c.save(); c.beginPath(); c.rect(x0 + 6, 0, rw - 12, H); c.clip();
     const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#8a8a8a"); g.addColorStop(0.18, "#f4f4f4"); g.addColorStop(0.5, "#ffffff"); g.addColorStop(0.82, "#f4f4f4"); g.addColorStop(1, "#8a8a8a"); c.fillStyle = g; c.fillRect(x0 + 6, 0, rw - 12, H);
