@@ -118,6 +118,8 @@ const GUN_DESC = {
   gewehrmunition: "Patronen für das Scharfschützengewehr.",
   schrot: "Schrotpatronen für die Schrotflinte.",
 };
+// Langwaffen schraeg und groesser, damit sie das Feld fuellen wie die Pistole (Nicolas 2026-11-17)
+for (const id of ["mg", "sniper", "schrotflinte"]) GUN_SVG[id] = '<g transform="translate(13 13) rotate(-38) scale(1.1) translate(-13 -12.8)">' + GUN_SVG[id] + "</g>";
 for (const id in GUN_SPEC) INV_ITEMS[id] = { name: GUN_SPEC[id].name, art: "Waffe", stack: 1, svg: GUN_SVG[id] };
 Object.assign(INV_ITEMS, GUN_AMMO); Object.assign(INV_DESC, GUN_DESC);
 INV_DESC.munition = "9-mm-Patronen für Pistole und Maschinengewehr.";
