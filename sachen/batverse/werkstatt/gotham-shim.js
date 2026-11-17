@@ -32,7 +32,8 @@ const TILES = { tasks: [], startup: false, loading: () => false, slice: () => 50
 const gates = [];
 let night = 0;
 const WG_DK_ALL = [];   // alle gedrehten Quader: Treffer und Daecher fuer die Gegenstaende (item-shim.js)
-function dkAdd(o) { const r = { ...o, on: true, y0: o.cy - o.hh, y1: o.cy + o.hh, top: o.cy + o.hh }; WG_DK_ALL.push(r); return r; }
+// wie kern/drehkoll.js: Rand m (Standard 0,3) seitlich und in der Hoehe, Oberseite ohne Rand, g = Neigung, floor = 0 kein Boden (Nicolas 2026-11-17: in der Werkstatt lief man durch Gelaender)
+function dkAdd(o) { const m = o.m ?? 0.3, r = { ...o, on: true, hl: o.hl + m, hw: o.hw + m, y0: o.cy - o.hh - m, y1: o.cy + o.hh + m, top: o.cy + o.hh, g: o.g || 0, floor: o.floor ?? 1 }; WG_DK_ALL.push(r); return r; }
 function dkRoom() { return {}; }
 function bautAdd() {}
 function bautAt() { return null; }

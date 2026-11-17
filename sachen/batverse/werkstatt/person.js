@@ -25,6 +25,7 @@ function personStep(dt) {
   P.pos.x += (-s * mz + c * mx) / l * sp * dt; P.pos.z += (-c * mz - s * mx) / l * sp * dt;
   for (const b of personBoxes()) if (P.pos.y < b.max.y && b.containsPoint(new THREE.Vector3(P.pos.x, Math.max(b.min.y, P.pos.y + 0.5), P.pos.z))) {   // aus dem Modell hinausschieben (kuerzeste Richtung)
     const d = [[P.pos.x - b.min.x, -1, 0], [b.max.x - P.pos.x, 1, 0], [P.pos.z - b.min.z, 0, -1], [b.max.z - P.pos.z, 0, 1]].sort((u, v) => u[0] - v[0])[0]; P.pos.x += d[1] * (d[0] + 0.001); P.pos.z += d[2] * (d[0] + 0.001); }
+  if (typeof personPush === "function") personPush(P.pos);              // Gotham-Gebaeude seitlich (item-shim.js)
   const pl = Math.max(Math.abs(P.pos.x - PROJEKT.x) < 4 && Math.abs(P.pos.z - PROJEKT.z) < 4 ? 0.15 : 0, typeof personGround === "function" ? personGround(P.pos.x, P.pos.z, P.pos.y) : 0);   // Platte, Daecher der Gotham-Gebaeude
   if (keys.has("Space") && P.ground && !busy) { P.vy = 5; P.ground = false; }
   P.vy -= 18 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= pl) { P.pos.y = pl; P.vy = 0; P.ground = true; }
