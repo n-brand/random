@@ -1,8 +1,8 @@
 // Batverse – Gotham: Casino (Nicolas 2026-11-16 "ein Casino mit der Aufschrift Casino - ueberleg dir was und ueberrasch mich")
 // Klassisches Skript nach gotham-bus.js. Steht auf der frueheren Baustelle BS-02 (Uptown, 60 x 50 m; GBST.skip). Art-deco-Bau in Schwarz und Gold:
-// Stufenkrone mit Sonnenstrahlen, senkrechtes Neonschild C-A-S-I-N-O an der Ecke (Buchstaben leuchten nacheinander auf, dann blinkt alles),
+// Flachdach mit schlichter Bruestung, senkrechtes Neonschild C-A-S-I-N-O an der Ecke (Buchstaben leuchten nacheinander auf, dann blinkt alles),
 // Vordach mit Lauflicht-Gluehbirnen und Schriftzug CASINO, roter Teppich mit Messingpfosten, zwei goldene Wuerfel auf Saeulen,
-// auf dem Dach ein drehendes Riesen-Roulette mit springender Kugel, nachts zwei kreisende Suchscheinwerfer in den Himmel.
+// nachts zwei kreisende Suchscheinwerfer in den Himmel.
 "use strict";
 const CAS = { done: false, anim: null };
 function* casinoGen() {
@@ -38,10 +38,10 @@ function* casinoGen() {
   for (const y of [7, 12, 17]) box(BW + 0.4, 0.35, 0.4, gold, 0, y, Z0 - 0.1);
   for (let x = -BW / 2 + BW / 20; x < BW / 2; x += BW / 10) for (const y of [9.5, 14.5, 19.3]) box(BW / 10 - 1.4, 3.2, 0.1, glass, x, y, Z0 - 0.06);
   box(BW + 2, 0.8, BD + 2, gold, 0, H + 0.4, Z0 + BD / 2);
-  // Stufenkrone mit Sonnenstrahlen
-  box(BW * 0.6, 5, BD * 0.6, black, 0, H + 3.3, Z0 + BD / 2); box(BW * 0.6 + 1, 0.5, BD * 0.6 + 1, gold, 0, H + 5.8, Z0 + BD / 2);
-  box(BW * 0.32, 4, BD * 0.32, black, 0, H + 8, Z0 + BD / 2); box(BW * 0.32 + 0.8, 0.4, BD * 0.32 + 0.8, gold, 0, H + 10.2, Z0 + BD / 2);
-  for (let k = -6; k <= 6; k++) { const a = k / 7 * 1.1, ray = box(0.35, 7, 0.2, gold, Math.sin(a) * 3.5, H + 2.5 + Math.cos(a) * 3.5, Z0 + BD / 2 - BD * 0.3 - 0.15); ray.rotation.z = -a; }
+  // Flachdach mit schlichter Bruestung (Nicolas 2026-11-17: Stufenkrone und Riesen-Roulette "unnoetig, nicht professionell", "unauffaelligeres Dach")
+  const PH = 1, PT = 0.4, PY = H + 0.8, PW = BW + 2, PD = BD + 2, para = [[PW, PT, 0, Z0 - 1 + PT / 2], [PW, PT, 0, Z0 + BD + 1 - PT / 2], [PT, PD, -PW / 2 + PT / 2, Z0 + BD / 2], [PT, PD, PW / 2 - PT / 2, Z0 + BD / 2]];
+  for (const [sx, sz, x, z] of para) { box(sx, PH, sz, black, x, PY + PH / 2, z); box(sx + 0.08, 0.1, sz + 0.08, gold, x, PY + PH + 0.05, z); }
+  box(PW - 2 * PT, 0.05, PD - 2 * PT, stone, 0, PY + 0.025, Z0 + BD / 2);   // dunkle Dachflaeche, Gold nur noch als Gesims und Abdeckung
   // Eingang: Vordach mit Lauflicht und Schriftzug, Drehtueren, roter Teppich, Messingpfosten mit Kordel
   const bulbs = canvasTex(256, 16, (c, w, h) => { c.fillStyle = "#1a1206"; c.fillRect(0, 0, w, h); for (let i = 0; i < 16; i++) { const gr = c.createRadialGradient(i * 16 + 8, 8, 0, i * 16 + 8, 8, 7); gr.addColorStop(0, i % 4 === 0 ? "#fff6d0" : "#7a5a20"); gr.addColorStop(1, "#1a1206"); c.fillStyle = gr; c.fillRect(i * 16, 0, 16, 16); } });
   bulbs.repeat.set(4, 1); const bulbM = new THREE.MeshBasicMaterial({ map: bulbs });
@@ -60,21 +60,15 @@ function* casinoGen() {
   { const bb = new THREE.Mesh(new THREE.BoxGeometry(0.8, 15.5, 3.6), black); bb.position.y = 13.2; blade.add(bb); const fr = new THREE.Mesh(new THREE.BoxGeometry(0.9, 15.9, 3.9), gold); fr.position.y = 13.2; fr.scale.set(1, 1, 1); blade.add(fr); bb.renderOrder = 1; }
   "CASINO".split("").forEach((ch, i) => { const m = new THREE.MeshBasicMaterial({ map: word(ch, 160, 160, "#ff2a55"), color: 0x555555 }); letters.push(m);
     for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), m); p.position.set(s * 0.47, 19.4 - i * 2.45, 0); p.rotation.y = s * Math.PI / 2; blade.add(p); } });
-  // Dach: drehendes Riesen-Roulette (8 m) auf Sockel, Kugel springt ueber die Facher
+  // Roulette-Kessel-Textur (fuer die Tische im Spielsaal)
   const rouTex = canvasTex(512, 512, (c) => { const r = 256; c.fillStyle = "#3b2410"; c.fillRect(0, 0, 512, 512); for (let i = 0; i < 37; i++) { const a0 = i / 37 * Math.PI * 2, a1 = (i + 1) / 37 * Math.PI * 2; c.beginPath(); c.moveTo(r, r); c.arc(r, r, 240, a0, a1); c.closePath(); c.fillStyle = i === 0 ? "#127a2e" : i % 2 ? "#b0101c" : "#111"; c.fill();
     c.save(); c.translate(r, r); c.rotate((a0 + a1) / 2); c.fillStyle = "#fff"; c.font = "bold 18px Arial"; c.textAlign = "center"; c.fillText(String(i), 205, 6); c.restore(); }
     c.beginPath(); c.arc(r, r, 150, 0, Math.PI * 2); c.fillStyle = "#5a3818"; c.fill(); c.beginPath(); c.arc(r, r, 60, 0, Math.PI * 2); c.fillStyle = "#d4a640"; c.fill(); c.strokeStyle = "#d4a640"; c.lineWidth = 8; c.beginPath(); c.arc(r, r, 246, 0, Math.PI * 2); c.stroke(); });
-  const rou = new THREE.Group(); rou.position.set(...L(0, H + 10.4 + 1.2, Z0 + BD / 2)); g.add(rou);
-  { const disc = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 0.6, 48), [M({ color: 0x3b2410 }), M({ map: rouTex, emissive: 0x150808, emissiveIntensity: 1 }), M({ color: 0x3b2410 })]); rou.add(disc);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(4.15, 0.25, 8, 48), gold); rim.rotation.x = Math.PI / 2; rim.position.y = 0.35; rou.add(rim);
-    const spin = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.4, 4), gold); spin.position.y = 1; rou.add(spin); for (let k = 0; k < 4; k++) { const arm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.15, 0.15), gold); arm.position.y = 1.1; arm.rotation.y = k * Math.PI / 4; rou.add(arm); } }
-  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), M({ color: 0xffffff, roughness: 0.2, emissive: 0x444444, emissiveIntensity: 1 })); g.add(ball);
-  cyl(4.6, 5, 1.2, black, 0, H + 10.4 + 0.6 - 0.6 + 0.6, Z0 + BD / 2, 32);
   // Suchscheinwerfer: zwei Lichtkegel vom Dach, kreisen; nur nachts
   const beamM = new THREE.MeshBasicMaterial({ color: 0xfff2cc, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
   const beams = []; for (const sx of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(...L(sx * (BW / 2 - 3), H + 1.2, Z0 + BD / 2)); g.add(piv); cyl(0.9, 1.1, 1.6, gold, sx * (BW / 2 - 3), H + 1.6, Z0 + BD / 2, 16);
     const cone = new THREE.Mesh(new THREE.CylinderGeometry(9, 0.6, 260, 20, 1, true), beamM); cone.position.y = 130; const tilt = new THREE.Group(); tilt.rotation.z = 0.35; tilt.add(cone); piv.add(tilt); piv.userData.ph = sx > 0 ? 0 : Math.PI; beams.push(piv); }
-  casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T });
+  casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T, DW });
   // Vordach getragen (Nicolas 2026-11-17: "die Platte beim Eingang schwebt"; vorher standen die Wuerfelsaeulen darunter): zwei Saeulen an den vorderen Ecken, Zugstangen zur Fassade
   for (const sx of [-1, 1]) { cyl(0.22, 0.26, 4.9, gold, sx * 10.4, 2.45, Z0 - 7.4, 12); cyl(0.4, 0.4, 0.2, gold, sx * 10.4, 0.2, Z0 - 7.4, 12); CAS.innen.push([0.6, 4.9, 0.6, sx * 10.4, Z0 - 7.4]);
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, Math.hypot(7.6, 4.5), 6), gold); rod.position.set(sx * 10.4, 7.75, Z0 - 3.8); rod.rotation.x = Math.atan2(7.6, 4.5); g.add(rod); }
@@ -84,16 +78,17 @@ function* casinoGen() {
   dk(BW, H - HG, BD, 0, (H + HG) / 2, Z0 + BD / 2, 0.3); dk(BW, HG, T, 0, HG / 2, Z0 + BD - T / 2, 0.3);
   for (const sx of [-1, 1]) { dk(T, HG, BD, sx * (BW / 2 - T / 2), HG / 2, Z0 + BD / 2, 0.3); dk(fw, HG, T, sx * (DW + fw / 2), HG / 2, Z0 + T / 2, 0.3); }
   dk(2 * DW, HG - 4, T, 0, 4 + (HG - 4) / 2, Z0 + T / 2, 0.1);
+  for (const [sx, sz, x, z] of para) dk(sx, PH, sz, x, PY + PH / 2, z, 0.1);   // Dachbruestung
   for (const c of CAS.innen) dk(c[0], c[1], c[2], c[3], c[1] / 2, c[4], 0.1);
   // Roulette-Tische: Rechtsklick/E spielt (js/ui/roulette.js, Nicolas 2026-11-17)
   for (const t of CAS.rouT) { const p = t.getWorldPosition(new THREE.Vector3()); gates.push({ name: "Roulette", g: t, call: () => typeof rouletteOpen === "function" && rouletteOpen(), verbs: ["spielen", "spielen"], a: [p.x, p.z], b: [p.x, p.z], near: 3.5 }); }
-  { const poly = [P(-BW / 2, Z0), P(BW / 2, Z0), P(BW / 2, Z0 + BD), P(-BW / 2, Z0 + BD)]; bautAdd({ id: "GO-CASINO", name: "Casino", art: "Gebäude", poly, y0: Y - 1, y1: Y + H + 12, info: "Uptown · Art déco, Roulette auf dem Dach · früher Baustelle BS-02" }); }
-  CAS.anim = { glass, g, letters, bulbs, rou, ball, dice, beams, beamM, rouY: H + 10.4 + 1.2, rouZ: Z0 + BD / 2, t0: performance.now() };
+  { const poly = [P(-BW / 2, Z0), P(BW / 2, Z0), P(BW / 2, Z0 + BD), P(-BW / 2, Z0 + BD)]; bautAdd({ id: "GO-CASINO", name: "Casino", art: "Gebäude", poly, y0: Y - 1, y1: Y + H + 2, info: "Uptown · Art déco, Spielsaal im Erdgeschoss · früher Baustelle BS-02" }); }
+  CAS.anim = { glass, g, letters, bulbs, dice, beams, beamM, t0: performance.now() };
 }
 // Spielsaal (Nicolas 2026-11-17: "ich moechte in das Casino reingehen koennen"): Teppich, Kassettendecke, Holzpaneele, 6 Kronleuchter, 2 Roulette- und 2 Blackjack-Tische
 // mit Hockern, Spielautomaten an beiden Seitenwaenden, Bar mit beleuchtetem Flaschenregal, Kasse mit Gitter. Wiederholte Teile als InstancedMesh, Licht ueber
 // leuchtende Materialien (keine zusaetzlichen Lichter: die wuerden im Spiel alle Shader neu uebersetzen). Kollisionsquader in CAS.innen [sx, sy, sz, x, z] (lokal).
-function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T }) {
+function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T, DW }) {
   const IX = BW / 2 - T, IZ0 = Z0 + T, IZ1 = Z0 + BD - T, IL = IZ1 - IZ0, IC = (IZ0 + IZ1) / 2, C = CAS.innen = []; CAS.rouT = []; const O = new THREE.Object3D();
   const inst = (geo, m, list, shadow = false) => { const im = new THREE.InstancedMesh(geo, m, list.length); list.forEach((t, i) => { O.position.set(t[0], t[1], t[2]); O.rotation.set(t[4] || 0, t[3] || 0, 0); O.scale.setScalar(t[5] || 1); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
     im.castShadow = shadow; im.receiveShadow = true; g.add(im); return im; };
@@ -107,7 +102,11 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   const panT = tex(128, 256, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, "#3a2214"); gr.addColorStop(0.5, "#4e2e1a"); gr.addColorStop(1, "#3a2214"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = "#c9973a"; c.fillRect(0, h * 0.62, w, 4); c.fillRect(0, h - 6, w, 6); c.fillRect(0, 0, 3, h); }, 1, 1);
   const panM = M({ map: panT, emissive: 0xffffff, emissiveMap: panT, emissiveIntensity: 0.25 }); panT.wrapS = THREE.RepeatWrapping;
   { const back = new THREE.Mesh(new THREE.PlaneGeometry(2 * IX, HG), panM.clone()); back.material.map = back.material.emissiveMap = panT.clone(); back.material.map.repeat.set(2 * IX / 3, 1); back.material.map.wrapS = THREE.RepeatWrapping; back.material.map.needsUpdate = true; back.position.set(0, HG / 2, IZ1 - 0.01); back.rotation.y = Math.PI; g.add(back);
-    for (const sx of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(IL, HG), panM.clone()); p.material.map = p.material.emissiveMap = panT.clone(); p.material.map.repeat.set(IL / 3, 1); p.material.map.wrapS = THREE.RepeatWrapping; p.material.map.needsUpdate = true; p.position.set(sx * (IX - 0.01), HG / 2, IC); p.rotation.y = -sx * Math.PI / 2; g.add(p); } }
+    for (const sx of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(IL, HG), panM.clone()); p.material.map = p.material.emissiveMap = panT.clone(); p.material.map.repeat.set(IL / 3, 1); p.material.map.wrapS = THREE.RepeatWrapping; p.material.map.needsUpdate = true; p.position.set(sx * (IX - 0.01), HG / 2, IC); p.rotation.y = -sx * Math.PI / 2; g.add(p); }
+    // Innenseite der Frontwand (Nicolas 2026-11-17: "die eine Wand ist noch haesslich, soll nicht schwarz sein"): links/rechts der Tuer volle Hoehe, ueber der Tuer der obere Teil
+    const pan = (w, h, x, y, ry, oy) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), panM.clone()); p.material.map = p.material.emissiveMap = panT.clone(); p.material.map.repeat.set(w / 3, ry); p.material.map.offset.y = oy; p.material.map.wrapS = THREE.RepeatWrapping; p.material.map.needsUpdate = true; p.position.set(x, y, IZ0 + 0.01); g.add(p); };
+    const fw = IX - DW; for (const sx of [-1, 1]) pan(fw, HG, sx * (DW + fw / 2), HG / 2, 1, 0);
+    pan(2 * DW, HG - 4, 0, 4 + (HG - 4) / 2, (HG - 4) / HG, 4 / HG); }
   // Kronleuchter: Ring, Kette, Kristalle (alle leuchtend, instanziert)
   const lights = []; for (const x of [-12, 0, 12]) for (const z of [IC - 6, IC + 6]) lights.push([x, HG - 1.7, z]);
   inst(new THREE.TorusGeometry(1.3, 0.08, 6, 24), gold, lights.map(p => [p[0], p[1], p[2], 0, Math.PI / 2]));
@@ -148,15 +147,13 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
 }
 TILES.tasks.push({ gen: null, plan() {}, step() { if (CAS.done || TILES.startup) return false;
   if (!this.gen) this.gen = casinoGen(); const r = this.gen.next(); if (r.done) { CAS.done = true; this.gen = null; } return false; } });
-// je Bild (schleife.js): Neonbuchstaben, Lauflicht, Roulette und Kugel, Wuerfel, Suchscheinwerfer; nur wenn die Kamera naeher als 1,5 km ist
+// je Bild (schleife.js): Neonbuchstaben, Lauflicht, Wuerfel, Suchscheinwerfer; nur wenn die Kamera naeher als 1,5 km ist
 function casinoStep() {
   const A = CAS.anim; if (!A) return; const p = camera.position, gp = A.g.position; if (Math.abs(p.x - gp.x) > 1500 || Math.abs(p.z - gp.z) > 1500) return;
   const t = (performance.now() - A.t0) / 1000, n = typeof night === "number" ? night : 0;
   // Buchstaben: 0-3 s nacheinander an, 3-4,2 s blinken, dann alle an bis 6 s
   const ph = t % 6; A.letters.forEach((m, i) => { const on = ph < 3 ? ph > i * 0.45 : ph < 4.2 ? Math.floor(ph * 6) % 2 === 0 : true; m.color.setScalar(on ? 1 : 0.18); });
   A.bulbs.offset.x = -(t * 2) % 1;
-  A.rou.rotation.y = t * 0.6; const ba = -t * 1.7, br = 3.2 + 0.35 * Math.sin(t * 0.9), hop = Math.abs(Math.sin(t * 7)) * 0.25 * (0.5 + 0.5 * Math.sin(t * 0.5));
-  A.ball.position.set(Math.cos(ba) * br, A.rouY + 0.6 + hop, A.rouZ + Math.sin(ba) * br);
   A.dice.forEach((d, i) => { d.rotation.y = t * (0.5 + i * 0.2); d.rotation.x = 0.6 + Math.sin(t * 0.7 + i) * 0.2; });
   A.glass.emissiveIntensity = 0.8 * n;   // tagsueber 0 (sonst wirkt das Glas braun)
   A.beamM.opacity = 0.08 * n; A.beams.forEach(b => { b.visible = n > 0.05; b.rotation.y = t * 0.4 + b.userData.ph; });
