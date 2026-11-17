@@ -38,8 +38,8 @@ const SLOT_CSS = `
 #slot .sl-info b { display: block; font: 800 18px "Consolas", "Segoe UI", monospace; color: #ff5a6a; letter-spacing: 0; text-transform: none; text-shadow: 0 0 6px rgba(255,60,80,.6); }
 #slot .sl-info .w b { color: #3aff7a; text-shadow: 0 0 6px rgba(60,255,120,.5); } #slot .sl-info .j b { color: #ffd23a; text-shadow: 0 0 6px rgba(255,210,60,.5); }
 #slot .sl-bets { display: flex; gap: 6px; margin-top: 10px; }
-#slot .sl-bets button { flex: 1; padding: 8px 0; border-radius: 9px; border: 2px solid #3a1a5a; background: radial-gradient(circle at 50% 35%, #ffffff 0 18%, #c9ccd1 19% 100%); color: #1a0a24; font: 800 13px "Segoe UI", Arial; cursor: pointer; }
-#slot .sl-bets button.on { border-color: #ffd23a; background: radial-gradient(circle at 50% 35%, #fff6c0 0 18%, #ffd23a 19% 100%); box-shadow: 0 0 10px #ffd23a; }
+#slot .sl-bets button { flex: 1; padding: 8px 0; border-radius: 9px; border: 2px solid #3a1a5a; background: linear-gradient(#f2f3f5, #b9bec6); color: #1a0a24; font: 800 13px "Segoe UI", Arial; cursor: pointer; }
+#slot .sl-bets button.on { border-color: #ffd23a; background: linear-gradient(#ffe680, #f0b81a); box-shadow: 0 0 10px #ffd23a; }   /* ohne weissen Punkt (Nicolas 2026-11-17: "was sind das fuer Kreise auf den Knoepfen") */
 #slot .sl-acts { display: flex; gap: 8px; margin-top: 10px; }
 #slot .sl-spin { flex: 2; padding: 12px 0; border-radius: 12px; border: 0; background: radial-gradient(circle at 50% 30%, #ff6a7a, #c8101e 60%, #7a0010); color: #fff; font: 900 20px "Arial Black", Arial; letter-spacing: .08em; cursor: pointer; box-shadow: 0 4px 0 #4a0008, 0 0 16px rgba(255,40,60,.5); }
 #slot .sl-spin:active { transform: translateY(3px); box-shadow: 0 1px 0 #4a0008; } #slot .sl-spin:disabled { filter: grayscale(.7) brightness(.7); cursor: default; }
@@ -49,9 +49,9 @@ const SLOT_CSS = `
 #slot .sl-pay div { display: flex; align-items: center; justify-content: space-between; gap: 6px; } #slot .sl-pay canvas { width: 66px; height: 22px; } #slot .sl-pay b { color: #ffd23a; }
 #slot .sl-hist { margin-top: 8px; font-size: 11px; color: #a88ad0; text-align: center; min-height: 14px; }
 #slot .sl-arm { position: relative; width: 54px; height: 300px; margin-left: -6px; }
-#slot .sl-arm .hub { position: absolute; z-index: 1; left: 0; top: 150px; width: 26px; height: 46px; border-radius: 0 12px 12px 0; background: linear-gradient(90deg, #8a8f96, #e8ecf0, #8a8f96); }
-#slot .sl-arm .rod { position: absolute; left: 8px; bottom: 127px; width: 10px; height: 153px; margin-left: 0; border-radius: 5px; background: linear-gradient(90deg, #9aa0a6, #f4f6f8, #9aa0a6); transform-origin: 50% 100%; cursor: grab; }
-#slot .sl-arm .rod::before { content: ""; position: absolute; left: 50%; top: -30px; width: 40px; height: 40px; margin-left: -20px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff9aa4, #d0102a 55%, #6a0010); box-shadow: 0 3px 8px rgba(0,0,0,.6); }
+#slot .sl-arm .hub { position: absolute; left: 0; top: 150px; width: 26px; height: 46px; border-radius: 0 12px 12px 0; background: linear-gradient(90deg, #8a8f96, #e8ecf0, #8a8f96); }
+#slot .sl-arm .rod { position: absolute; z-index: 1; left: 8px; bottom: 148px; width: 10px; height: 132px; margin-left: 0; border-radius: 5px; background: linear-gradient(90deg, #9aa0a6, #f4f6f8, #9aa0a6); transform-origin: 50% 100%; cursor: grab; }
+#slot .sl-arm .rod::before { content: ""; position: absolute; left: 50%; top: -30px; width: 40px; height: 40px; margin-left: -20px; transform: scale(var(--k, 1)); transform-origin: 50% 75%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff9aa4, #d0102a 55%, #6a0010); box-shadow: 0 3px 8px rgba(0,0,0,.6); }
 #slot .sl-foot { margin-top: 6px; font-size: 11px; text-align: center; color: #8a6ab0; }`;
 function slotEnsure() {
   if (SLOT.el) return SLOT.el; const st = document.createElement("style"); st.textContent = SLOT_CSS; document.head.appendChild(st);
@@ -102,7 +102,9 @@ function slotDraw() { const cv = SLOT.el && SLOT.el.querySelector("canvas"); if 
     const sh = c.createLinearGradient(0, 0, 0, H); sh.addColorStop(0, "rgba(0,0,0,.45)"); sh.addColorStop(0.22, "rgba(0,0,0,0)"); sh.addColorStop(0.78, "rgba(0,0,0,0)"); sh.addColorStop(1, "rgba(0,0,0,.45)"); c.fillStyle = sh; c.fillRect(x0, 0, rw, H);
     c.restore(); c.fillStyle = "#2a2e34"; c.fillRect(x0 + rw - 6, 0, 12, H); }
   c.fillStyle = "#2a2e34"; c.fillRect(0, 0, 6, H); c.fillRect(W - 6, 0, 6, H); }
-function slotArm() { const r = SLOT.el && SLOT.el.querySelector(".rod"); if (r) r.style.transform = "scaleY(" + (1 - 1.9 * SLOT.pull).toFixed(3) + ")"; const h = SLOT.machine && SLOT.machine.userData.hebel; if (h) h.rotation.x = -SLOT.pull * 1.1; }
+// Hebel ziehen: die Stange wird kuerzer (kippt zum Betrachter, Nicolas 2026-11-17: "halb heruntergezogen sieht das sehr komisch aus" – vorher wurde mit scaleY auch die Kugel platt),
+// die Kugel bleibt rund, kommt naeher (etwas groesser) und sitzt immer oben auf der Stange
+function slotArm() { const r = SLOT.el && SLOT.el.querySelector(".rod"); if (r) { r.style.transform = ""; r.style.height = Math.round(132 * (1 - 0.92 * SLOT.pull)) + "px"; r.style.setProperty("--k", (1 + 0.35 * SLOT.pull).toFixed(3)); } const h = SLOT.machine && SLOT.machine.userData.hebel; if (h) h.rotation.x = -SLOT.pull * 1.1; }
 function slotArmBack() { const t0 = performance.now(), p0 = SLOT.pull, step = t => { const u = Math.min(1, (t - t0) / 350); SLOT.pull = p0 * (1 - u) * (1 - u); slotArm(); if (u < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
 function slotSpin() { if (SLOT.spin || !slotIsOpen()) return;
   if (typeof jetTake !== "function" || !jetTake(SLOT.bet)) { SLOT.msg = "Nicht genug Jetons für " + SLOT.bet + " – Jeton-Automat oder Kasse"; SLOT.cls = "err"; slotArmBack(); return slotRender(); }
