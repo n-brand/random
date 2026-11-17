@@ -10,7 +10,7 @@ const LAPTOP_DEF = {
   B: { name: "Nightfall X17", user: "Bruce Wayne", lock: "passwort", pw: "gotham", hint: "Die Stadt, klein geschrieben", apps: ["web", "mail", "karten"], hw: "schwarz", wp: 1 },
 };
 // lock: "offen" = entsperrt, "ohne" = kein Passwort (Anmelden per Klick), "passwort" = Passwort noetig
-const LT = { cur: null, el: null, locked: {}, app: null, web: "start", hist: [], mail: 0, call: null, err: "", tick: 0, map: null, screens: {} };
+const LT = { cur: null, el: null, locked: {}, off: {}, boot: null, pmenu: false, app: null, web: "start", hist: [], mail: 0, call: null, err: "", tick: 0, map: null, screens: {} };
 for (const id in LAPTOP_DEF) LT.locked[id] = LAPTOP_DEF[id].lock !== "offen";
 const LT_APPS = {
   web: ["Web", "#2f7de1", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'],
@@ -100,6 +100,7 @@ function ltWallpaper(c, w, h, wp) {
 }
 function ltScreenDraw(id) {
   const T = LT.screens[id]; if (!T) return; const cv = T.image, c = cv.getContext("2d"), w = cv.width, h = cv.height, D = LAPTOP_DEF[id];
+  if (LT.off[id] || (LT.boot && LT.cur === id)) { c.fillStyle = "#000"; c.fillRect(0, 0, w, h); if (!LT.off[id]) { c.fillStyle = D.hw === "silber" ? "#e9ecef" : "#ff2a36"; c.textAlign = "center"; c.font = "bold " + h * 0.16 + "px Georgia, serif"; c.fillText(D.hw === "silber" ? "W" : "NIGHTFALL", w / 2, h * 0.55); } T.needsUpdate = true; return; }   // aus bzw. startet
   ltWallpaper(c, w, h, D.wp); c.textAlign = "center"; c.fillStyle = "#fff";
   const now = ltTime();
   if (LT.locked[id]) { c.font = "300 " + h * 0.2 + "px Segoe UI, Arial"; c.fillText(now, w / 2, h * 0.36); c.beginPath(); c.fillStyle = "rgba(255,255,255,.2)"; c.arc(w / 2, h * 0.56, h * 0.08, 0, Math.PI * 2); c.fill();
@@ -173,6 +174,13 @@ const LT_CSS = `
 .lt-bar{position:absolute;left:0;right:0;bottom:0;height:44px;background:rgba(10,12,18,.78);display:flex;align-items:center;gap:4px;padding:0 10px}
 .lt-tb{width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:#fff;cursor:pointer;display:grid;place-items:center}.lt-tb:hover,.lt-tb.on{background:rgba(255,255,255,.16)}
 .lt-tb.on{box-shadow:inset 0 -2px 0 #6ab0ff}
+.lt-pmenu{position:absolute;right:8px;bottom:50px;background:rgba(22,24,30,.97);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;min-width:200px;z-index:3}
+.lt-pmenu button{display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;background:none;color:#fff;font:14px "Segoe UI",sans-serif;border-radius:6px;cursor:pointer;text-align:left}.lt-pmenu button:hover{background:rgba(255,255,255,.12)}
+.lt-boot{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;font-size:15px;color:#bbb}
+.lt-logo{font:700 64px Georgia,serif;color:#e9ecef;letter-spacing:.08em}
+.lt-spin{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:lt-spin 1s linear infinite}@keyframes lt-spin{to{transform:rotate(360deg)}}
+.lt-offbtn{width:72px;height:72px;border-radius:50%;border:2px solid #3a3d44;background:#0d0e10;color:#9aa0a8;display:grid;place-items:center;cursor:pointer}.lt-offbtn:hover{color:#fff;border-color:#6ab0ff;box-shadow:0 0 14px rgba(106,176,255,.5)}
+.lt-leave{position:absolute;top:14px;right:18px;display:flex;align-items:center;gap:8px;padding:8px 14px;border:0;border-radius:999px;background:rgba(20,22,28,.85);color:#fff;font:600 14px "Segoe UI",sans-serif;cursor:pointer;z-index:2}.lt-leave small{opacity:.6;font-weight:400}.lt-leave:hover{background:rgba(40,44,54,.95)}
 .lt-time{margin-left:auto;font-size:13px;text-align:right;line-height:1.2;padding-right:4px}
 .lt-win{position:absolute;left:30px;top:20px;right:30px;bottom:60px;background:#f4f5f7;color:#1c1f24;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
 .lt-wt{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 4px 0 14px;background:#e3e6ea;font-weight:600;font-size:13px}
@@ -210,7 +218,7 @@ function ltEnsure() {
   el.addEventListener("click", ltClick); el.addEventListener("contextmenu", e => e.preventDefault());
   el.addEventListener("input", e => { if (e.target.classList.contains("lt-search")) { LT.mapQ = e.target.value; ltMapResults(); } });
   addEventListener("keydown", e => { if (!laptopIsOpen()) return;                                   // solange offen: Tasten nicht ans Spiel (Tippen geht trotzdem ins Feld)
-    if (e.key === "Escape") { e.preventDefault(); if (LT.app) { LT.app = null; LT.call = null; ltRender(); } else laptopClose(); }
+    if (e.key === "Escape") { e.preventDefault(); if (LT.pmenu) { LT.pmenu = false; ltRender(); } else if (LT.app) { LT.app = null; LT.call = null; ltRender(); } else laptopClose(); }
     else if (e.key === "Enter" && e.target.classList?.contains("lt-pw")) ltLogin(e.target.value);
     e.stopImmediatePropagation(); }, true);
   addEventListener("keyup", e => { if (laptopIsOpen()) e.stopImmediatePropagation(); }, true);
@@ -221,14 +229,24 @@ function ltFit() { const d = LT.el.querySelector(".lt-dev"); if (!d) return; d.s
 const laptopIsOpen = () => !!(LT.el && !LT.el.hidden);
 function laptopOpen(id) { const D = LAPTOP_DEF[id]; if (!D) return; ltEnsure();
   if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); } if (document.pointerLockElement) document.exitPointerLock(); if (typeof keys !== "undefined" && keys.clear) keys.clear();
-  LT.cur = id; LT.app = null; LT.call = null; LT.err = ""; LT.web = "start"; LT.hist = []; LT.el.hidden = false; ltStockCatchUp(); ltRender();
+  LT.cur = id; LT.app = null; LT.call = null; LT.err = ""; LT.pmenu = false; LT.web = "start"; LT.hist = []; LT.el.hidden = false; ltStockCatchUp(); ltRender();
   clearInterval(LT.tick); LT.tick = setInterval(() => { ltStockStep(1); if (LT.app === "web" && LT.web === "boerse") ltRender(); else { const t = LT.el.querySelector(".lt-time b"); if (t) t.textContent = ltTime(); } }, 4000); }
 function laptopClose() { if (!laptopIsOpen()) return; LT.el.hidden = true; clearInterval(LT.tick); const id = LT.cur; LT.app = null; LT.call = null; LT.cur = null; ltScreenDraw(id); if (typeof grabMouse === "function") grabMouse(); }
+// Ein/Aus (Nicolas 2026-11-17: der Ein/Aus-Knopf soll nicht direkt ausschalten): Menue Sperren / Neu starten / Herunterfahren
+function ltBoot(id, text, then) { LT.boot = text; LT.pmenu = false; LT.app = null; LT.call = null; ltRender(); ltScreenDraw(id); setTimeout(() => { if (LT.boot !== text) return; LT.boot = null; then(); if (LT.cur === id) ltRender(); ltScreenDraw(id); }, 1800); }
+function ltPower(what) { const id = LT.cur, D = LAPTOP_DEF[id];
+  if (what === "lock") { LT.pmenu = false; LT.locked[id] = true; LT.app = null; LT.call = null; ltRender(); ltScreenDraw(id); }
+  else if (what === "neu") ltBoot(id, "Wird neu gestartet …", () => { LT.locked[id] = D.lock !== "offen"; });
+  else if (what === "aus") ltBoot(id, "Wird heruntergefahren …", () => { LT.off[id] = true; LT.locked[id] = D.lock !== "offen"; });
+  else if (what === "an") { LT.off[id] = false; ltBoot(id, "", () => { LT.locked[id] = D.lock !== "offen"; }); } }
 function ltLogin(pw) { const id = LT.cur, D = LAPTOP_DEF[id];
   if (D.lock === "passwort" && pw !== D.pw) { LT.err = pw ? "Falsches Passwort" : "Passwort eingeben"; ltRender(); const r = LT.el.querySelector(".lt-pwrow"); if (r) { r.classList.add("lt-shake"); } const f = LT.el.querySelector(".lt-pw"); if (f) f.focus(); return; }
   LT.locked[id] = false; LT.err = ""; ltRender(); ltScreenDraw(id); }
 function ltClick(e) {
-  const b = e.target.closest("[data-a]"); if (!b) return; const a = b.dataset.a, v = b.dataset.v; e.stopPropagation(); b.blur?.();
+  const b = e.target.closest("[data-a]"); if (!b) { if (LT.pmenu) { LT.pmenu = false; ltRender(); } return; } const a = b.dataset.a, v = b.dataset.v; e.stopPropagation(); b.blur?.();
+  if (a === "power") { LT.pmenu = !LT.pmenu; return ltRender(); }
+  if (a === "pw") return ltPower(v);
+  if (LT.pmenu) LT.pmenu = false;
   if (a === "login") return ltLogin((LT.el.querySelector(".lt-pw") || {}).value || "");
   if (a === "lock") { LT.locked[LT.cur] = true; LT.app = null; LT.call = null; ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "aus") return laptopClose();
@@ -304,15 +322,18 @@ function ltRender() {
   const el = LT.el, id = LT.cur, D = LAPTOP_DEF[id]; if (!el || !D) return;
   const sky = '<svg class="lt-sky" viewBox="0 0 960 230" preserveAspectRatio="none"><path fill="' + (D.wp ? "#0a0203" : "#0b0f1f") + '" d="M0 230V150h40v-30h30v50h40V90h25v-20h20v20h25v70h35V60h50v100h30v-40h40v-50h20V40h12v30h20v100h40v-60h50v110h30V80h45v30h25v60h40v-90h35v120h30v-50h40v30h50V100h30v130z"/></svg>';
   let s = "";
-  if (LT.locked[id]) { const pw = D.lock === "passwort";
+  const logo = D.hw === "silber" ? '<div class="lt-logo">W</div>' : '<div class="lt-logo" style="color:#ff2a36;text-shadow:0 0 12px #ff2a36">NIGHTFALL</div>';
+  if (LT.off[id]) s = '<div class="lt-scr"><div class="lt-boot"><button class="lt-offbtn" data-a="pw" data-v="an" title="Einschalten">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 30) + '</button><span>Ausgeschaltet – zum Einschalten klicken</span></div></div>';
+  else if (LT.boot !== null) s = '<div class="lt-scr"><div class="lt-boot">' + logo + '<div class="lt-spin"></div><span>' + ltEsc(LT.boot) + "</span></div></div>";
+  else if (LT.locked[id]) { const pw = D.lock === "passwort";
     s = '<div class="lt-scr lt-wp' + D.wp + '">' + sky + '<div class="lt-lock"><div class="lt-clock">' + ltTime() + '</div><div class="lt-date">' + new Date().toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "long" }) + '</div><div class="lt-ava">BW</div><div class="lt-user">' + D.user + "</div>" +
       (pw ? '<div class="lt-pwrow"><input class="lt-pw" type="password" placeholder="Passwort" autocomplete="off"><button class="lt-btn" data-a="login" title="Anmelden">' + ltSvg(LT_IC.go, 18) + '</button></div><div class="lt-err">' + ltEsc(LT.err) + '</div><div class="lt-hint">Hinweis: ' + ltEsc(D.hint || "") + "</div>" : '<button class="lt-btn" data-a="login">Anmelden</button><div class="lt-hint">Kein Passwort eingerichtet</div>') + "</div></div>"; }
   else { const apps = D.apps;
     s = '<div class="lt-scr lt-wp' + D.wp + '">' + sky + '<div class="lt-icons">' + apps.map(a => '<button class="lt-ic" data-a="app" data-v="' + a + '"><i style="background:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 28) + "</i>" + LT_APPS[a][0] + "</button>").join("") + "</div>" +
       (LT.app ? '<div class="lt-win"><div class="lt-wt">' + ltSvg(LT_APPS[LT.app][2], 16) + LT_APPS[LT.app][0] + '<button class="lt-x" data-a="zu" title="Schliessen">' + ltSvg(LT_IC.x, 16) + '</button></div><div class="lt-wc">' + ltAppBody(LT.app) + "</div></div>" : "") +
       '<div class="lt-bar"><button class="lt-tb" data-a="lock" title="Sperren">' + ltSvg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 18) + "</button>" + apps.map(a => '<button class="lt-tb' + (LT.app === a ? " on" : "") + '" data-a="app" data-v="' + a + '" title="' + LT_APPS[a][0] + '" style="color:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 20) + "</button>").join("") +
-      '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb" data-a="aus" title="Laptop schliessen (Esc)">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }
-  el.innerHTML = '<div class="lt-dev lt-' + D.hw + '"><div class="lt-lid"><div class="lt-cam"></div>' + s + '<div class="lt-brand">' + (D.hw === "silber" ? "WAYNE" : "NIGHTFALL") + '</div></div><div class="lt-base"></div></div>';
+      (LT.pmenu ? '<div class="lt-pmenu"><button data-a="pw" data-v="lock">' + ltSvg(LT_IC.lock, 18) + 'Sperren</button><button data-a="pw" data-v="neu">' + ltSvg('<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>', 18) + 'Neu starten</button><button data-a="pw" data-v="aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + 'Herunterfahren</button></div>' : "") + '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb' + (LT.pmenu ? " on" : "") + '" data-a="power" title="Ein/Aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }
+  el.innerHTML = '<button class="lt-leave" data-a="aus" title="Laptop verlassen (Esc)">' + ltSvg(LT_IC.x, 16) + 'Verlassen <small>Esc</small></button><div class="lt-dev lt-' + D.hw + '"><div class="lt-lid"><div class="lt-cam"></div>' + s + '<div class="lt-brand">' + (D.hw === "silber" ? "WAYNE" : "NIGHTFALL") + '</div></div><div class="lt-base"></div></div>';
   ltFit(); const pwf = el.querySelector(".lt-pw"); if (pwf) setTimeout(() => pwf.focus(), 0);
   if (LT.app === "karten") ltMapInit();
 }
