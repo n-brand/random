@@ -95,6 +95,7 @@ function frame() {
   renderer.shadowMap.autoUpdate = false; if ((++shadowTick & 1) === 0 || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on || (typeof shipOn === "function" && shipOn())) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
   if (typeof gunRender === "function") gunRender();
+  if (typeof batHandRender === "function") batHandRender();   // Batarang in der Hand (spieler/waffen.js)
   if (typeof jetRender === "function") jetRender();                        // Jetons in der Hand (ui/jetons.js)                        // Schusswaffe in der Hand (spieler/schusswaffen.js)
   perfFrame(performance.now() - tF);
   requestAnimationFrame(frame);

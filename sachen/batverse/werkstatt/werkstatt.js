@@ -507,6 +507,7 @@ function loop(t) {
     return false; });
   renderer.render(scene, camera);
   if (typeof gunRender === "function") gunRender();
+  if (typeof batHandRender === "function") batHandRender();   // Batarang in der Hand (../js/spieler/waffen.js)
   if (typeof jetRender === "function") jetRender();                        // Jetons in der Hand (../js/ui/jetons.js)                        // Schusswaffe in der Hand (../js/spieler/schusswaffen.js)
   requestAnimationFrame(loop);
 }

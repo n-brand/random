@@ -172,7 +172,16 @@ function buildBatarangEtui() {
   box(W, H, D, velvet, 0, H / 2, 0); box(W + 0.006, 0.006, D + 0.006, rim, 0, H, 0); box(W - 0.02, 0.004, D - 0.02, foam, 0, H + 0.002, 0);
   const lid = new THREE.Group(); lid.position.set(0, H, D / 2); lid.rotation.x = 1.75; g.add(lid);   // Deckel hinten, aufgeklappt
   { const l = new THREE.Mesh(new THREE.BoxGeometry(W, 0.03, D), velvet); l.position.set(0, 0.015, -D / 2); lid.add(l); const p = new THREE.Mesh(new THREE.BoxGeometry(W - 0.03, 0.006, D - 0.03), foam); p.position.set(0, -0.002, -D / 2); lid.add(p); }
-  for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(AIM_M.bat, AIM_M.batM); b.scale.setScalar(1.05); b.position.set(0, H + 0.002, -0.1 + k * 0.1); b.castShadow = true; g.add(b);
-    const cut = new THREE.Mesh(AIM_M.bat, new THREE.MeshBasicMaterial({ color: 0x030304 })); cut.scale.set(1.12, 0.3, 1.25); cut.position.set(0, H + 0.0035, -0.1 + k * 0.1); g.add(cut); }   // Ausschnitt in der Einlage
+  AIM_M.bat.computeBoundingBox(); const bc = (AIM_M.bat.boundingBox.min.z + AIM_M.bat.boundingBox.max.z) / 2 * 1.05;   // Mitte der Form (Drehpunkt liegt am Kopf), damit die Batarangs im Etui zentriert liegen
+  for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(AIM_M.bat, AIM_M.batM); b.scale.setScalar(1.05); b.position.set(0, H + 0.002, -0.1 + k * 0.1 + bc); b.rotation.y = Math.PI; b.castShadow = true; g.add(b);   // Spitze nach vorne zum Betrachter, Ohren zum Deckel (Nicolas 2026-11-17: "sie sollen zu mir zeigen")
+    const cut = new THREE.Mesh(AIM_M.bat, new THREE.MeshBasicMaterial({ color: 0x030304 })); cut.scale.set(1.12, 0.3, 1.25); cut.position.set(0, H + 0.0035, -0.1 + k * 0.1 + bc * 1.25 / 1.05); cut.rotation.y = Math.PI; g.add(cut); }   // Ausschnitt in der Einlage
   g.name = "Batarang-Etui"; return g;
+}// Batarang in der Hand als 3D-Modell rechts unten (Nicolas 2026-11-17: "3D soll auch in der Hand gezeigt werden, rechts"), eigene Szene wie Jetons und Schusswaffen
+function batHandRender() {
+  const id = typeof invHeld === "function" ? invHeld() : null, foot = typeof onFoot === "function" ? onFoot() : true;
+  if (id !== "batarang" || !foot || (typeof invIsOpen === "function" && invIsOpen()) || (AIM.cd > 0.05)) return;
+  let H = AIM.hand; if (!H) { const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.3)); const sun = new THREE.DirectionalLight(0xffffff, 2); sun.position.set(1, 2, 1.5); sc.add(sun);
+    const g = new THREE.Group(), m = new THREE.Mesh(AIM_M.bat, AIM_M.batM.map(q => { const c = q.clone(); c.metalness = 0.45; return c; })); m.rotation.set(1.2, 0, -0.35); g.add(m); const pl = new THREE.PointLight(0xffffff, 3, 0, 0); pl.position.set(-0.15, 0.25, 0.35); g.add(pl); sc.add(g); H = AIM.hand = { sc, g }; }   // schraeg in der Hand, Flaeche zum Betrachter; Licht faehrt mit der Kamera (sonst je nach Blickrichtung dunkel)
+  H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); H.g.scale.setScalar(1.05); { const zz = 0.45, th = Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV()) / 2); H.g.translateX(0.64 * th * camera.aspect * zz); H.g.translateY(-0.3 * th * zz); H.g.translateZ(-zz); }   // ganz rechts nach Bildschirmanteil wie das 2D-Handbild (Nicolas 2026-11-17: "Jetons und Batarang sollen auch ganz rechts sein")
+  const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(H.sc, camera); renderer.autoClear = ac;
 }
