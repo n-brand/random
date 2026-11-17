@@ -10,7 +10,7 @@ const LAPTOP_DEF = {
   B: { name: "Nightfall X17", user: "Bruce Wayne", lock: "passwort", pw: "gotham", hint: "Die Stadt, klein geschrieben", apps: ["web", "mail", "karten"], hw: "schwarz", wp: 1 },
 };
 // lock: "offen" = entsperrt, "ohne" = kein Passwort (Anmelden per Klick), "passwort" = Passwort noetig
-const LT = { cur: null, el: null, locked: {}, off: {}, boot: null, pmenu: false, app: null, web: "start", hist: [], mail: 0, call: null, err: "", tick: 0, map: null, screens: {} };
+const LT = { cur: null, el: null, locked: {}, off: {}, sleep: {}, boot: null, pmenu: false, app: null, web: "start", hist: [], mail: 0, call: null, err: "", tick: 0, map: null, screens: {} };
 for (const id in LAPTOP_DEF) LT.locked[id] = LAPTOP_DEF[id].lock !== "offen";
 const LT_APPS = {
   web: ["Web", "#2f7de1", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'],
@@ -20,7 +20,8 @@ const LT_APPS = {
 };
 // Symbole der Oberflaeche (Linien wie die App-Symbole; Nicolas 2026-11-17: "Icons muessen verschoenert werden")
 const LT_IC = { back: '<path d="M15 5l-7 7 7 7"/>', home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h4v-5h4v5h4v-9"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
-  x: '<path d="M6 6l12 12M18 6L6 18"/>', go: '<path d="M5 12h14M13 6l6 6-6 6"/>' };
+  x: '<path d="M6 6l12 12M18 6L6 18"/>', go: '<path d="M5 12h14M13 6l6 6-6 6"/>', power: '<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>',
+  mond: '<path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/>', neu: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/>' };
 const ltSvg = (p, s = 24) => '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + "</svg>";
 const ltEsc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const ltFmt = n => typeof kontoFmt === "function" ? kontoFmt(n) : Math.round(n).toLocaleString("de-CH") + " $";
@@ -100,7 +101,7 @@ function ltWallpaper(c, w, h, wp) {
 }
 function ltScreenDraw(id) {
   const T = LT.screens[id]; if (!T) return; const cv = T.image, c = cv.getContext("2d"), w = cv.width, h = cv.height, D = LAPTOP_DEF[id];
-  if (LT.off[id] || (LT.boot && LT.cur === id)) { c.fillStyle = "#000"; c.fillRect(0, 0, w, h); if (!LT.off[id]) { c.fillStyle = D.hw === "silber" ? "#e9ecef" : "#ff2a36"; c.textAlign = "center"; c.font = "bold " + h * 0.16 + "px Georgia, serif"; c.fillText(D.hw === "silber" ? "W" : "NIGHTFALL", w / 2, h * 0.55); } T.needsUpdate = true; return; }   // aus bzw. startet
+  if (LT.off[id] || LT.sleep[id] || (LT.boot && LT.cur === id)) { c.fillStyle = "#000"; c.fillRect(0, 0, w, h); if (!LT.off[id] && !LT.sleep[id]) { c.fillStyle = D.hw === "silber" ? "#e9ecef" : "#ff2a36"; c.textAlign = "center"; c.font = "bold " + h * 0.16 + "px Georgia, serif"; c.fillText(D.hw === "silber" ? "W" : "NIGHTFALL", w / 2, h * 0.55); } T.needsUpdate = true; return; }   // aus bzw. startet
   ltWallpaper(c, w, h, D.wp); c.textAlign = "center"; c.fillStyle = "#fff";
   const now = ltTime();
   if (LT.locked[id]) { c.font = "300 " + h * 0.2 + "px Segoe UI, Arial"; c.fillText(now, w / 2, h * 0.36); c.beginPath(); c.fillStyle = "rgba(255,255,255,.2)"; c.arc(w / 2, h * 0.56, h * 0.08, 0, Math.PI * 2); c.fill();
@@ -174,8 +175,9 @@ const LT_CSS = `
 .lt-bar{position:absolute;left:0;right:0;bottom:0;height:44px;background:rgba(10,12,18,.78);display:flex;align-items:center;gap:4px;padding:0 10px}
 .lt-tb{width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:#fff;cursor:pointer;display:grid;place-items:center}.lt-tb:hover,.lt-tb.on{background:rgba(255,255,255,.16)}
 .lt-tb.on{box-shadow:inset 0 -2px 0 #6ab0ff}
-.lt-pmenu{position:absolute;right:8px;bottom:50px;background:rgba(22,24,30,.97);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.5);display:flex;flex-direction:column;min-width:200px;z-index:3}
-.lt-pmenu button{display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;background:none;color:#fff;font:14px "Segoe UI",sans-serif;border-radius:6px;cursor:pointer;text-align:left}.lt-pmenu button:hover{background:rgba(255,255,255,.12)}
+.lt-pmenu{position:absolute;right:6px;bottom:52px;background:rgba(20,12,14,.42);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.45);display:flex;flex-direction:column;min-width:250px;z-index:3}   /* wie Nicolas' Bild (2026-11-17) */
+.lt-pmenu button{display:flex;align-items:center;gap:18px;padding:10px 16px;border:0;background:none;color:#fff;font:17px "Segoe UI",sans-serif;border-radius:6px;cursor:pointer;text-align:left}.lt-pmenu button svg{stroke-width:1.5}.lt-pmenu button:hover{background:rgba(255,255,255,.1)}
+.lt-sleep{cursor:pointer}
 .lt-boot{position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;font-size:15px;color:#bbb}
 .lt-logo{font:700 64px Georgia,serif;color:#e9ecef;letter-spacing:.08em}
 .lt-spin{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:lt-spin 1s linear infinite}@keyframes lt-spin{to{transform:rotate(360deg)}}
@@ -218,7 +220,8 @@ function ltEnsure() {
   el.addEventListener("click", ltClick); el.addEventListener("contextmenu", e => e.preventDefault());
   el.addEventListener("input", e => { if (e.target.classList.contains("lt-search")) { LT.mapQ = e.target.value; ltMapResults(); } });
   addEventListener("keydown", e => { if (!laptopIsOpen()) return;                                   // solange offen: Tasten nicht ans Spiel (Tippen geht trotzdem ins Feld)
-    if (e.key === "Escape") { e.preventDefault(); if (LT.pmenu) { LT.pmenu = false; ltRender(); } else if (LT.app) { LT.app = null; LT.call = null; ltRender(); } else laptopClose(); }
+    if (LT.cur && LT.sleep[LT.cur] && e.key !== "Escape") { ltPower("wach"); e.preventDefault(); }   // Taste weckt
+    else if (e.key === "Escape") { e.preventDefault(); if (LT.pmenu) { LT.pmenu = false; ltRender(); } else if (LT.app) { LT.app = null; LT.call = null; ltRender(); } else laptopClose(); }
     else if (e.key === "Enter" && e.target.classList?.contains("lt-pw")) ltLogin(e.target.value);
     e.stopImmediatePropagation(); }, true);
   addEventListener("keyup", e => { if (laptopIsOpen()) e.stopImmediatePropagation(); }, true);
@@ -236,6 +239,8 @@ function laptopClose() { if (!laptopIsOpen()) return; LT.el.hidden = true; clear
 function ltBoot(id, text, then) { LT.boot = text; LT.pmenu = false; LT.app = null; LT.call = null; ltRender(); ltScreenDraw(id); setTimeout(() => { if (LT.boot !== text) return; LT.boot = null; then(); if (LT.cur === id) ltRender(); ltScreenDraw(id); }, 1800); }
 function ltPower(what) { const id = LT.cur, D = LAPTOP_DEF[id];
   if (what === "lock") { LT.pmenu = false; LT.locked[id] = true; LT.app = null; LT.call = null; ltRender(); ltScreenDraw(id); }
+  else if (what === "schlaf") { LT.pmenu = false; LT.app = null; LT.call = null; LT.sleep[id] = true; ltRender(); ltScreenDraw(id); }
+  else if (what === "wach") { LT.sleep[id] = false; LT.locked[id] = D.lock !== "offen"; ltRender(); ltScreenDraw(id); }
   else if (what === "neu") ltBoot(id, "Wird neu gestartet …", () => { LT.locked[id] = D.lock !== "offen"; });
   else if (what === "aus") ltBoot(id, "Wird heruntergefahren …", () => { LT.off[id] = true; LT.locked[id] = D.lock !== "offen"; });
   else if (what === "an") { LT.off[id] = false; ltBoot(id, "", () => { LT.locked[id] = D.lock !== "offen"; }); } }
@@ -323,7 +328,8 @@ function ltRender() {
   const sky = '<svg class="lt-sky" viewBox="0 0 960 230" preserveAspectRatio="none"><path fill="' + (D.wp ? "#0a0203" : "#0b0f1f") + '" d="M0 230V150h40v-30h30v50h40V90h25v-20h20v20h25v70h35V60h50v100h30v-40h40v-50h20V40h12v30h20v100h40v-60h50v110h30V80h45v30h25v60h40v-90h35v120h30v-50h40v30h50V100h30v130z"/></svg>';
   let s = "";
   const logo = D.hw === "silber" ? '<div class="lt-logo">W</div>' : '<div class="lt-logo" style="color:#ff2a36;text-shadow:0 0 12px #ff2a36">NIGHTFALL</div>';
-  if (LT.off[id]) s = '<div class="lt-scr"><div class="lt-boot"><button class="lt-offbtn" data-a="pw" data-v="an" title="Einschalten">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 30) + '</button><span>Ausgeschaltet – zum Einschalten klicken</span></div></div>';
+  if (LT.sleep[id]) s = '<div class="lt-scr"><div class="lt-boot lt-sleep" data-a="pw" data-v="wach" title="Aufwecken"></div></div>';
+  else if (LT.off[id]) s = '<div class="lt-scr"><div class="lt-boot"><button class="lt-offbtn" data-a="pw" data-v="an" title="Einschalten">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 30) + '</button><span>Ausgeschaltet – zum Einschalten klicken</span></div></div>';
   else if (LT.boot !== null) s = '<div class="lt-scr"><div class="lt-boot">' + logo + '<div class="lt-spin"></div><span>' + ltEsc(LT.boot) + "</span></div></div>";
   else if (LT.locked[id]) { const pw = D.lock === "passwort";
     s = '<div class="lt-scr lt-wp' + D.wp + '">' + sky + '<div class="lt-lock"><div class="lt-clock">' + ltTime() + '</div><div class="lt-date">' + new Date().toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "long" }) + '</div><div class="lt-ava">BW</div><div class="lt-user">' + D.user + "</div>" +
@@ -332,7 +338,7 @@ function ltRender() {
     s = '<div class="lt-scr lt-wp' + D.wp + '">' + sky + '<div class="lt-icons">' + apps.map(a => '<button class="lt-ic" data-a="app" data-v="' + a + '"><i style="background:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 28) + "</i>" + LT_APPS[a][0] + "</button>").join("") + "</div>" +
       (LT.app ? '<div class="lt-win"><div class="lt-wt">' + ltSvg(LT_APPS[LT.app][2], 16) + LT_APPS[LT.app][0] + '<button class="lt-x" data-a="zu" title="Schliessen">' + ltSvg(LT_IC.x, 16) + '</button></div><div class="lt-wc">' + ltAppBody(LT.app) + "</div></div>" : "") +
       '<div class="lt-bar"><button class="lt-tb" data-a="lock" title="Sperren">' + ltSvg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 18) + "</button>" + apps.map(a => '<button class="lt-tb' + (LT.app === a ? " on" : "") + '" data-a="app" data-v="' + a + '" title="' + LT_APPS[a][0] + '" style="color:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 20) + "</button>").join("") +
-      (LT.pmenu ? '<div class="lt-pmenu"><button data-a="pw" data-v="lock">' + ltSvg(LT_IC.lock, 18) + 'Sperren</button><button data-a="pw" data-v="neu">' + ltSvg('<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>', 18) + 'Neu starten</button><button data-a="pw" data-v="aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + 'Herunterfahren</button></div>' : "") + '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb' + (LT.pmenu ? " on" : "") + '" data-a="power" title="Ein/Aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }
+      (LT.pmenu ? '<div class="lt-pmenu">' + [["lock", LT_IC.lock, "Sperren"], ["schlaf", LT_IC.mond, "Energie sparen"], ["aus", LT_IC.power, "Herunterfahren"], ["neu", LT_IC.neu, "Neu starten"]].map(([v, ic, t]) => '<button data-a="pw" data-v="' + v + '">' + ltSvg(ic, 22) + t + "</button>").join("") + "</div>" : "") + '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb' + (LT.pmenu ? " on" : "") + '" data-a="power" title="Ein/Aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }
   el.innerHTML = '<button class="lt-leave" data-a="aus" title="Laptop verlassen (Esc)">' + ltSvg(LT_IC.x, 16) + 'Verlassen <small>Esc</small></button><div class="lt-dev lt-' + D.hw + '"><div class="lt-lid"><div class="lt-cam"></div>' + s + '<div class="lt-brand">' + (D.hw === "silber" ? "WAYNE" : "NIGHTFALL") + '</div></div><div class="lt-base"></div></div>';
   ltFit(); const pwf = el.querySelector(".lt-pw"); if (pwf) setTimeout(() => pwf.focus(), 0);
   if (LT.app === "karten") ltMapInit();
