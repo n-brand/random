@@ -14,12 +14,13 @@ const AIM_M = (() => {
   // Batarang neu (Nicolas 2026-11-16 "ueberarbeiten"): 34 cm Spannweite, abgeschraegte Kanten,
   // dunkles Metall mit Kante in Stahl (zwei Materialien: Flaechen / Seiten). Halbe Kontur rechts (x >= 0, y nach vorne), gespiegelt.
   // Form genau wie die Fledermaus des Batsignals (BAT_SIGNAL_PTS, gotham-polizei.js; Nicolas 2026-11-16), Canvas-y nach unten -> Form-y nach vorne
-  const sh = new THREE.Shape(), P = BAT_SIGNAL_PTS, S = 0.17;
+  // Form und Farbe wie die Metall-Batarangs im Film (BATARANG_PTS, inventar.js; Nicolas 2026-11-17): gebuerstetes champagnerfarbenes Metall, hellere Fase
+  const sh = new THREE.Shape(), P = BATARANG_PTS, S = 0.17;
   P.forEach(([x, y], i) => sh[i ? "lineTo" : "moveTo"](x * S, -y * S)); for (let i = P.length - 2; i > 0; i--) sh.lineTo(-P[i][0] * S, -P[i][1] * S);
   const bat = new THREE.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.006, bevelSegments: 1 }); bat.rotateX(-Math.PI / 2); bat.translate(0, -0.004, 0);
   const smokeT = canvasTex(64, 64, (c, w) => { const g = c.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, "rgba(200,200,205,0.9)"); g.addColorStop(0.6, "rgba(170,172,178,0.45)"); g.addColorStop(1, "rgba(150,150,155,0)"); c.fillStyle = g; c.fillRect(0, 0, w, w); });
   const rope = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x222222 })); rope.visible = false; rope.frustumCulled = false; scene.add(rope);
-  return { bat, batM: [new THREE.MeshStandardMaterial({ color: 0x16181c, metalness: 0.75, roughness: 0.3 }), new THREE.MeshStandardMaterial({ color: 0x8a9099, metalness: 0.9, roughness: 0.25 })], bomb: new THREE.SphereGeometry(0.09, 10, 8), bombM: new THREE.MeshStandardMaterial({ color: 0x4a4e55, roughness: 0.6 }), smokeT, rope };
+  return { bat, batM: [new THREE.MeshStandardMaterial({ color: 0xbdb4a2, metalness: 0.85, roughness: 0.34 }), new THREE.MeshStandardMaterial({ color: 0xe6e0d2, metalness: 0.9, roughness: 0.2 })], bomb: new THREE.SphereGeometry(0.09, 10, 8), bombM: new THREE.MeshStandardMaterial({ color: 0x4a4e55, roughness: 0.6 }), smokeT, rope };
 })();
 // Blickstrahl aus der Bildmitte: erster Treffer bis max m -> { p, hit } oder null
 function aimHit(max) { AIM_ray.setFromCamera({ x: 0, y: 0 }, camera); const o = AIM_ray.ray.origin, d = AIM_ray.ray.direction, a = o.clone().addScaledVector(d, 0.6), b = new THREE.Vector3();
@@ -139,3 +140,15 @@ document.getElementById("btn-use")?.addEventListener("click", () => { if (typeof
 addEventListener("mouseup", e => { if (e.button === 2) AIM.on = false; });
 document.getElementById("btn-aim")?.addEventListener("click", e => { e.currentTarget.blur(); AIM.on = !AIM.on && onFoot() && !!weaponHeld(); });
 document.getElementById("btn-use")?.addEventListener("click", e => { e.currentTarget.blur(); weaponUse(); });
+// Samt-Etui mit drei Batarangs (Nicolas 2026-11-17, Filmbild: "eine Samtschachtel, wie bei dem Bild drei Stueck rein"): schwarzes Etui mit Schaumstoff-Einlage,
+// Deckel hinten offen, drei Batarangs in Reihen, halb in die Einlage gesenkt. Boden bei y 0, Front nach -z. Fuer die Werkstatt (Laptop-Tisch).
+function buildBatarangEtui() {
+  const g = new THREE.Group(), velvet = new THREE.MeshStandardMaterial({ color: 0x0b0b0e, roughness: 1 }), foam = new THREE.MeshStandardMaterial({ color: 0x111114, roughness: 0.95 }), rim = new THREE.MeshStandardMaterial({ color: 0x1c1c22, roughness: 0.6, metalness: 0.2 });
+  const W = 0.42, D = 0.34, H = 0.055, box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+  box(W, H, D, velvet, 0, H / 2, 0); box(W + 0.006, 0.006, D + 0.006, rim, 0, H, 0); box(W - 0.02, 0.004, D - 0.02, foam, 0, H + 0.002, 0);
+  const lid = new THREE.Group(); lid.position.set(0, H, D / 2); lid.rotation.x = 1.75; g.add(lid);   // Deckel hinten, aufgeklappt
+  { const l = new THREE.Mesh(new THREE.BoxGeometry(W, 0.03, D), velvet); l.position.set(0, 0.015, -D / 2); lid.add(l); const p = new THREE.Mesh(new THREE.BoxGeometry(W - 0.03, 0.006, D - 0.03), foam); p.position.set(0, -0.002, -D / 2); lid.add(p); }
+  for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(AIM_M.bat, AIM_M.batM); b.scale.setScalar(1.05); b.position.set(0, H + 0.002, -0.1 + k * 0.1); b.castShadow = true; g.add(b);
+    const cut = new THREE.Mesh(AIM_M.bat, new THREE.MeshBasicMaterial({ color: 0x030304 })); cut.scale.set(1.12, 0.3, 1.25); cut.position.set(0, H + 0.0035, -0.1 + k * 0.1); g.add(cut); }   // Ausschnitt in der Einlage
+  g.name = "Batarang-Etui"; return g;
+}

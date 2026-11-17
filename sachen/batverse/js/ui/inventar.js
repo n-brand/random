@@ -36,10 +36,14 @@ const INV_DESC = {
   mantel: "Ein langer Wollmantel für unauffällige Auftritte in der Stadt.",
 };
 // Gullihaken (Nicolas 2026-11-16, Foto): roter T-Griff, langer Schaft, kleiner Haken unten; ganz im 26er-Feld (vorher unten abgeschnitten)
-// Batarang-Symbol aus der Batsignal-Form (BAT_SIGNAL_PTS)
+// Batarang-Form wie die Metall-Batarangs im Film (Nicolas 2026-11-17, Bild: "genau die Farbe und Form"): breite Fluegel mit fast gerader Oberkante, kleine Ohren mit schmaler Kerbe,
+// unten je ein grosser Bogen zur Spitze in der Mitte. Halbe Kontur rechts von oben Mitte im Uhrzeigersinn bis unten Mitte, y nach unten, Spannweite 2. Auch fuer das 3D-Modell (waffen.js).
+const BATARANG_PTS = [[0, -0.13], [0.045, -0.13], [0.075, -0.33], [0.115, -0.16], [0.3, -0.16], [0.56, -0.19], [0.8, -0.25], [0.93, -0.3], [1, -0.36], [0.92, -0.2], [0.78, -0.05], [0.58, 0.07], [0.36, 0.12], [0.2, 0.16], [0.09, 0.25], [0, 0.36]];
+// Batarang-Symbol aus BATARANG_PTS (champagnerfarbenes Metall), Bat-Knopf weiter mit der Batsignal-Form (BAT_SIGNAL_PTS)
 // erst beim Zeichnen (Werkstatt laedt gotham-polizei.js nach inventar.js, Nicolas 2026-11-16: Redesign fehlte dort)
-function invBatIcon() { if (INV_ITEMS.batarang.sig || typeof BAT_SIGNAL_PTS === "undefined") return; INV_ITEMS.batarang.sig = true; const P = BAT_SIGNAL_PTS, q = ([x, y]) => (13 + x * 12).toFixed(1) + " " + (13 + y * 12).toFixed(1), d = "M" + P.map(q).join(" L") + " L" + P.slice(1, -1).reverse().map(([x, y]) => q([-x, y])).join(" L") + " Z";
-  INV_ITEMS.batarang.svg = '<path d="' + d + '" fill="#1d2025" stroke="#9aa0a6" stroke-width="0.9" stroke-linejoin="round"/>';
+function invBatIcon() { const q = ([x, y]) => (13 + x * 12).toFixed(1) + " " + (13 + y * 12).toFixed(1), path = P => "M" + P.map(q).join(" L") + " L" + P.slice(1, -1).reverse().map(([x, y]) => q([-x, y])).join(" L") + " Z";
+  if (!INV_ITEMS.batarang.bt) { INV_ITEMS.batarang.bt = true; INV_ITEMS.batarang.svg = '<path d="' + path(BATARANG_PTS) + '" fill="#cbc2b1" stroke="#6e6658" stroke-width="0.7" stroke-linejoin="round"/><path d="' + path(BATARANG_PTS.map(([x, y]) => [x * 0.86, y * 0.7 - 0.02])) + '" fill="#ded7c9"/>'; }   // innen heller (Fase)
+  if (INV_ITEMS.batarang.sig || typeof BAT_SIGNAL_PTS === "undefined") return; INV_ITEMS.batarang.sig = true; const d = path(BAT_SIGNAL_PTS);
   INV_ITEMS.batknopf.svg = '<circle cx="13" cy="13" r="11" fill="#1d2025" stroke="#e8c547" stroke-width="1.6"/><circle cx="13" cy="13" r="7.6" fill="#e8c547"/><path transform="translate(13 13.6) scale(.5) translate(-13 -13)" d="' + d + '" fill="#1d2025"/>'; }   // Bat-Knopf: Fledermaus auf gelbem Knopf
 invBatIcon(); addEventListener("load", () => { if (!INV_ITEMS.batarang.sig) invRender(); });   // Werkstatt: nach allen Skripten neu zeichnen
 const INV_TEST_ALLE = true;   // TEST: alle Gegenstaende besitzen (siehe Aufbau unten)
