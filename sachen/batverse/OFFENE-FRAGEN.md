@@ -88,3 +88,5 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 28. **Waffen zu Fuss:** Gebaut sind Batarang, Rauchbombe und Greifhaken. Batarangs machen noch keinen Schaden (es gibt noch keine Gegner) und lassen sich nicht wieder aufheben. Für die 9-mm-Munition gibt es noch keine Schusswaffe; die Gewehre an der Waffenwand sind nur Deko. Soll eine Schusswaffe dazukommen, oder bleibt Batman bei Gadgets?
 
 29. **Taste E:** Zu Fuss öffnet E jetzt das Inventar. Tore, Türen und die Hebebühne gehen zu Fuss nur noch per Rechtsklick (im Fahrzeug weiter mit E). Passt das?
+
+30. **Waffenpreise (2026-11-17):** Angenommen: Pistole 2 500 $, Schrotflinte 6 500 $, MG 18 000 $, Sniper 24 000 $, Munition 150-400 $ je Packung (Konto). Passt das, oder sollen Waffen nur mit Bargeld bezahlt werden?

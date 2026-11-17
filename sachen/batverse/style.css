@@ -358,6 +358,8 @@ body.walk:not(.drive):not(.ghost) #hand { display: block; }
 #hand.neu { animation: hand-hoch .25s ease-out; }
 @keyframes hand-hoch { from { transform: translateY(45%) rotate(-16deg); } to { transform: rotate(-16deg); } }
 body.touch #hand { width: min(18vw, 22vh); height: min(18vw, 22vh); right: 22%; }
+.h-shop .h-it-top > div { flex: 1; } .h-it-top { align-items: center; }
+.h-ware { width: 38px; height: 38px; flex: none; margin-right: 8px; background: rgba(0,0,0,.25); border-radius: 6px; }   /* Waffenladen im Handy */
 #inv-cursor { position: fixed; z-index: 62; width: var(--slot); height: var(--slot); margin: calc(var(--slot) * -.5) 0 0 calc(var(--slot) * -.5); display: grid; place-items: center; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,.6)); }   /* Stapel an der Maus (inventar.js) */
 #inv-cursor[hidden] { display: none; }
 #inv-cursor svg { width: calc(var(--slot) * .8); height: calc(var(--slot) * .8); }

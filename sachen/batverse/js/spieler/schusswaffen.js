@@ -5,10 +5,10 @@
 // Rechts halten = zielen (Kimme in die Mitte, Sniper: Zielfernrohr 6-fach). Magazin, R laedt nach (leer: automatisch), Stand im Browser (wm-guns).
 "use strict";
 const GUN_SPEC = {
-  pistole: { name: "Pistole", ammo: "munition", mag: 12, rate: 0.16, auto: false, pellets: 1, spread: 0.012, spreadAim: 0.003, range: 90, zoom: 1.5, kick: 0.018, reload: 1.3, snd: [0.55, 0.16, 2600], hip: [0.14, -0.14, -0.42], ads: [0, -0.127, -0.32] },
-  mg: { name: "Maschinengewehr", ammo: "munition", mag: 40, rate: 0.085, auto: true, pellets: 1, spread: 0.022, spreadAim: 0.007, range: 160, zoom: 1.8, kick: 0.01, reload: 2.2, snd: [0.6, 0.14, 1900], hip: [0.17, -0.2, -0.38], ads: [0, -0.113, -0.26] },
-  sniper: { name: "Scharfschützengewehr", ammo: "gewehrmunition", mag: 5, rate: 1.1, auto: false, pellets: 1, spread: 0.03, spreadAim: 0, range: 420, zoom: 6, kick: 0.05, reload: 2.6, snd: [0.95, 0.38, 1400], hip: [0.19, -0.25, -0.46], ads: [0, -0.15, -0.3], scope: true },
-  schrotflinte: { name: "Schrotflinte", ammo: "schrot", mag: 6, rate: 0.8, auto: false, pellets: 9, spread: 0.07, spreadAim: 0.05, range: 45, zoom: 1.4, kick: 0.045, reload: 2.4, snd: [1, 0.3, 1100], hip: [0.17, -0.2, -0.38], ads: [0, -0.104, -0.27] },
+  pistole: { name: "Pistole", dmg: 10, ammo: "munition", mag: 12, rate: 0.16, auto: false, pellets: 1, spread: 0.012, spreadAim: 0.003, range: 90, zoom: 1.5, kick: 0.018, reload: 1.3, snd: [0.55, 0.16, 2600], hip: [0.14, -0.14, -0.42], ads: [0, -0.127, -0.32] },
+  mg: { name: "Maschinengewehr", dmg: 7, ammo: "munition", mag: 40, rate: 0.085, auto: true, pellets: 1, spread: 0.022, spreadAim: 0.007, range: 160, zoom: 1.8, kick: 0.01, reload: 2.2, snd: [0.6, 0.14, 1900], hip: [0.17, -0.2, -0.38], ads: [0, -0.113, -0.26] },
+  sniper: { name: "Scharfschützengewehr", dmg: 70, ammo: "gewehrmunition", mag: 5, rate: 1.1, auto: false, pellets: 1, spread: 0.03, spreadAim: 0, range: 420, zoom: 6, kick: 0.05, reload: 2.6, snd: [0.95, 0.38, 1400], hip: [0.19, -0.25, -0.46], ads: [0, -0.15, -0.3], scope: true },
+  schrotflinte: { name: "Schrotflinte", dmg: 6, ammo: "schrot", mag: 6, rate: 0.8, auto: false, pellets: 9, spread: 0.07, spreadAim: 0.05, range: 45, zoom: 1.4, kick: 0.045, reload: 2.4, snd: [1, 0.3, 1100], hip: [0.17, -0.2, -0.38], ads: [0, -0.104, -0.27] },
 };
 const GUN = { scene: new THREE.Scene(), models: {}, cur: null, g: null, mag: {}, cd: 0, trig: false, rel: 0, kick: 0, flashT: 0, ads: 0, fx: [], audio: null,
   v: new THREE.Vector3(), d: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3(), q: new THREE.Quaternion() };
@@ -168,11 +168,14 @@ function gunFire(id) {
   for (let k = 0; k < S.pellets; k++) {
     const r = sp * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, dir = fwd.clone().addScaledVector(rt, Math.cos(a) * r).addScaledVector(up, Math.sin(a) * r).normalize();
     const st = o.clone().addScaledVector(dir, 0.35), end = o.clone().addScaledVector(dir, S.range), h = shotSeg(st, end, null, S.range > 200 ? 0.6 : 0.4), p = h ? h.p : end;
-    if (h) { gunFx("spark", p); gunFx("dust", p); if (h.hit && h.hit.veh && k === 0) toast((S.name) + " trifft " + (h.hit.veh.label || "das Fahrzeug")); }
+    if (h) { gunFx("spark", p); gunFx("dust", p); if (h.hit && h.hit.veh) gunDamage(h.hit.veh, p, S.dmg); }
     if (k === 0 && (id === "mg" || id === "sniper" || Math.random() < 0.3)) gunFx("tracer", mw, p); }
   const kp = S.kick * (AIM.on ? 0.6 : 1); player.pitch = Math.min(1.5, player.pitch + kp); player.yaw += (Math.random() - 0.5) * kp * 0.4;   // Rueckstoss
   if (GUN.mag[id] === 0 && invHas(S.ammo)) gunReload(id);
 }
+// Schaden an Fahrzeugen (Nicolas 2026-11-17 "weiter"): Treffer sammeln Punkte, je 100 Punkte kostet ein Panzerungs-Treffer (vehHit, schiessen.js: kleine Explosion,
+// bei 0 Wrack). Normales Auto (Panzerung 1) also ca. 10 Pistolen-, 15 MG-, 2 Sniper-Schuss.
+function gunDamage(v, p, dmg) { if (typeof vehHit !== "function" || v.dead) return; v.bdmg = (v.bdmg || 0) + dmg; if (v.bdmg >= 100) { v.bdmg -= 100; vehHit(v, p.clone()); } }
 // Lage der Hand-Waffe vor der Kamera (Hueftanschlag bzw. Zielen), Rueckstoss, Nachladen
 function gunPose() { const id = GUN.cur, g = GUN.g; if (!id || !g) return; const S = GUN_SPEC[id], a = GUN.ads, h = S.hip, d = S.ads;
   const x = h[0] + (d[0] - h[0]) * a, y = h[1] + (d[1] - h[1]) * a, z = h[2] + (d[2] - h[2]) * a + GUN.kick * 0.045, rl = GUN.rel > 0 ? Math.sin(Math.min(1, (S.reload - GUN.rel) / S.reload) * Math.PI) : 0;
