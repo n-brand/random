@@ -103,7 +103,7 @@ function jetRender() {
   const d = id && id.startsWith("jeton-") ? JET_DEN.find(q => q[0] === id) : null;
   if (!d || !foot || (typeof invIsOpen === "function" && invIsOpen()) || jetonIsOpen() || (typeof rouletteIsOpen === "function" && rouletteIsOpen())) return;
   let H = JTN.hand; if (!H) { const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.4)); const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(1, 2, 1); sc.add(sun); H = JTN.hand = { sc, g: new THREE.Group(), den: 0 }; sc.add(H.g); }
-  if (H.den !== d[1]) { H.den = d[1]; H.g.clear(); const n = Math.max(1, Math.min(6, invCount(id))); const st = jetStack(d[1], n, 1.6); st.position.set(-0.012, 0, 0); H.g.add(st); const one = jetStack(d[1], 1, 1.6); one.position.set(0.02, 0.008, 0.022); one.rotation.set(1.1, 0.3, 0.2); H.g.add(one); }
+  if (H.den !== d[1]) { H.den = d[1]; H.g.clear(); const one = jetStack(d[1], 1, 1.8); one.position.set(0, 0, 0); one.rotation.set(1.15, 0.2, 0.15); H.g.add(one); }   // ein einzelner Jeton (Nicolas 2026-11-17: "3D-Modell soll nur ein Coin sein")
   H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); H.g.translateX(0.2); H.g.translateY(-0.17); H.g.translateZ(-0.42); H.g.rotateX(0.55); H.g.rotateY(-0.4);
   const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(H.sc, camera); renderer.autoClear = ac;
 }
