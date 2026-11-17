@@ -15,9 +15,33 @@ const AIM_M = (() => {
   // dunkles Metall mit Kante in Stahl (zwei Materialien: Flaechen / Seiten). Halbe Kontur rechts (x >= 0, y nach vorne), gespiegelt.
   // Form genau wie die Fledermaus des Batsignals (BAT_SIGNAL_PTS, gotham-polizei.js; Nicolas 2026-11-16), Canvas-y nach unten -> Form-y nach vorne
   // Form und Farbe wie die Metall-Batarangs im Film (BATARANG_PTS, inventar.js; Nicolas 2026-11-17): gebuerstetes champagnerfarbenes Metall, hellere Fase
-  const sh = new THREE.Shape(), P = BATARANG_PTS, S = 0.17;
-  P.forEach(([x, y], i) => sh[i ? "lineTo" : "moveTo"](x * S, -y * S)); for (let i = P.length - 2; i > 0; i--) sh.lineTo(-P[i][0] * S, -P[i][1] * S);
-  const bat = new THREE.ExtrudeGeometry(sh, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.0035, bevelSize: 0.007, bevelSegments: 1 }); bat.rotateX(-Math.PI / 2); bat.translate(0, -0.002, 0);   // breite Fase wie die geschliffenen Kanten im Film
+  // Spitzen spitz und sauber (Nicolas 2026-11-17: "die Kanten an den Spitzen aussen sind nicht clean", "Spitzen sollen spitz sein", Bild: Oberkante und Fasenlinie parallel, Spitze schraeg nach oben):
+  // eigene Fase statt ExtrudeGeometry-bevel (der kappt die Gehrung an spitzen Ecken -> Zacken). Innenlinie der Fase mit voller Gehrung, darum laeuft die Fase genau in die Spitze.
+  // Haken und Unterkante als weiche Kurve (SplineCurve). Gruppe 0 = Flaechen oben/unten, Gruppe 1 = Fase und Rand.
+  const S = 0.17, P = (() => { const B = BATARANG_PTS, it = B.findIndex(p => p[0] >= 1), ic = B.findIndex((p, i) => i > it && p[1] >= 0.35), V = (x, y) => new THREE.Vector2(x, y);
+    const hook = new THREE.SplineCurve(B.slice(it, ic + 1).map(([x, y]) => V(x, y))).getPoints(28), low = new THREE.SplineCurve(B.slice(ic).map(([x, y]) => V(x, y))).getPoints(30);
+    return [...B.slice(0, it), ...hook.map(v => [v.x, v.y]), ...low.slice(1).map(v => [v.x, v.y])]; })();
+  const bat = (() => { const O = P.map(([x, y]) => [x * S, -y * S]); for (let i = P.length - 2; i > 0; i--) O.push([-P[i][0] * S, -P[i][1] * S]);
+    let ar = 0; O.forEach((p, i) => { const q = O[(i + 1) % O.length]; ar += p[0] * q[1] - q[0] * p[1]; }); if (ar < 0) O.reverse();   // gegen den Uhrzeigersinn
+    const n = O.length, d = 0.0045, nrm = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1; return [dy / l, -dx / l]; };   // Normale nach aussen
+    const segD = (q, A, Bq) => { const ex = Bq[0] - A[0], ey = Bq[1] - A[1], t = Math.max(0, Math.min(1, ((q[0] - A[0]) * ex + (q[1] - A[1]) * ey) / (ex * ex + ey * ey || 1))); return Math.hypot(q[0] - A[0] - ex * t, q[1] - A[1] - ey * t); };
+    // Innenlinie der Fase: Mittelpunkt des Kreises (Radius r <= d), der beide Nachbarkanten beruehrt und keine andere Kante schneidet. In schmalen Stellen (Spitzen) liegt sie damit
+    // genau auf der Mittellinie: die Fasen beider Seiten treffen sich als Grat und laufen sauber in die Spitze.
+    const I = O.map((p, i) => { const n1 = nrm(O[(i + n - 1) % n], p), n2 = nrm(p, O[(i + 1) % n]), sx = n1[0] + n2[0], sy = n1[1] + n2[1], l = Math.hypot(sx, sy); if (l < 1e-6) return p.slice();
+      const u = [-sx / l, -sy / l], c = Math.sqrt(Math.max((1 + n1[0] * n2[0] + n1[1] * n2[1]) / 2, 1e-6)), ctr = r => [p[0] + u[0] * r / c, p[1] + u[1] * r / c];
+      const ok = r => { const q = ctr(r); for (let e = 0; e < n; e++) { if (e === i || (e + 1) % n === i) continue; if (segD(q, O[e], O[(e + 1) % n]) < r * 0.999) return false; } return true; };
+      let lo = 0, hi = d; if (ok(d)) lo = d; else for (let k = 0; k < 22; k++) { const m = (lo + hi) / 2; if (ok(m)) lo = m; else hi = m; } return ctr(lo); });
+    const zB = -0.0035, z0 = -0.0005, z1 = 0.0035, zT = 0.0065, pos = [], tri = ShapeUtils_tri(I);
+    function ShapeUtils_tri(pts) { return THREE.ShapeUtils.triangulateShape(pts.map(([x, y]) => new THREE.Vector2(x, y)), []); }
+    const T = (A, Bp, C) => pos.push(...A, ...Bp, ...C);
+    for (const [i, j, k] of tri) { T([...I[i], zT], [...I[j], zT], [...I[k], zT]); T([...I[i], zB], [...I[k], zB], [...I[j], zB]); }   // oben, unten
+    const g0 = pos.length / 3;
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n, oi = O[i], oj = O[j], ii = I[i], ij = I[j];
+      T([...oi, z1], [...oj, z1], [...ij, zT]); T([...oi, z1], [...ij, zT], [...ii, zT]);   // Fase oben
+      T([...oi, z0], [...oj, z0], [...oj, z1]); T([...oi, z0], [...oj, z1], [...oi, z1]);   // Rand
+      T([...oi, z0], [...ii, zB], [...ij, zB]); T([...oi, z0], [...ij, zB], [...oj, z0]); }   // Fase unten
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); g.addGroup(0, g0, 0); g.addGroup(g0, pos.length / 3 - g0, 1);
+    g.rotateX(-Math.PI / 2); return g; })();
   const smokeT = canvasTex(64, 64, (c, w) => { const g = c.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, "rgba(200,200,205,0.9)"); g.addColorStop(0.6, "rgba(170,172,178,0.45)"); g.addColorStop(1, "rgba(150,150,155,0)"); c.fillStyle = g; c.fillRect(0, 0, w, w); });
   const rope = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x222222 })); rope.visible = false; rope.frustumCulled = false; scene.add(rope);
   return { bat, batM: [new THREE.MeshStandardMaterial({ color: 0xbdb4a2, metalness: 0.85, roughness: 0.34 }), new THREE.MeshStandardMaterial({ color: 0xe6e0d2, metalness: 0.9, roughness: 0.2 })], bomb: new THREE.SphereGeometry(0.09, 10, 8), bombM: new THREE.MeshStandardMaterial({ color: 0x4a4e55, roughness: 0.6 }), smokeT, rope };
