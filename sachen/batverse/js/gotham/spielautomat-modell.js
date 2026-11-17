@@ -10,13 +10,37 @@ const SLOT_SYM = [   // Symbole der Walzen (Reihenfolge = Index), auch fuer das 
 function slotSymDraw(c, id, x, y, s) {
   c.save(); c.translate(x, y); const k = s / 100; c.scale(k, k); c.lineJoin = "round"; c.lineCap = "round";
   if (id === "7") { c.font = "900 92px 'Arial Black', Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 10; c.strokeStyle = "#5a0008"; c.strokeText("7", 0, 4); c.fillStyle = "#e0102a"; c.fillText("7", 0, 4); c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(-18, -34, 26, 8); }
-  else if (id === "D") { c.beginPath(); c.moveTo(-38, -14); c.lineTo(-20, -36); c.lineTo(20, -36); c.lineTo(38, -14); c.lineTo(0, 40); c.closePath(); c.fillStyle = "#5fd3ff"; c.fill(); c.lineWidth = 5; c.strokeStyle = "#1a6a9a"; c.stroke();
-    c.beginPath(); c.moveTo(-38, -14); c.lineTo(38, -14); c.moveTo(-20, -36); c.lineTo(-10, -14); c.lineTo(0, 40); c.moveTo(20, -36); c.lineTo(10, -14); c.lineTo(0, 40); c.lineWidth = 3; c.stroke(); }
+  // Diamant (Nicolas 2026-11-17: "ueberarbeiten"): Brillantschliff mit Tafel, Krone und Pavillon, jede Facette eigener Blauton, weisse Kanten, Glanzstern
+  else if (id === "D") { const F = (pts, col) => { c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fillStyle = col; c.fill(); };
+    const T = [-20, -36], T2 = [20, -36], L = [-44, -14], R = [44, -14], B = [0, 42], m1 = [-26, -14], m2 = [0, -14], m3 = [26, -14];
+    F([T, T2, [12, -14], [-12, -14]], "#bff3ff"); F([L, T, [-12, -14]], "#7fdcff"); F([R, T2, [12, -14]], "#4fb8ea"); F([T, [-12, -14], m1], "#9fe8ff"); F([T2, [12, -14], m3], "#62c8f2");
+    F([L, m1, B], "#3aa6e0"); F([m1, m2, B], "#8ee4ff"); F([m2, m3, B], "#2f8fcc"); F([m3, R, B], "#1d6fa8"); F([L, [-12, -14], m1], "#5cc6f2"); F([R, [12, -14], m3], "#2f9ad6");
+    c.strokeStyle = "rgba(255,255,255,.75)"; c.lineWidth = 2; c.beginPath(); for (const [a, b] of [[T, T2], [L, R], [T, [-12, -14]], [T2, [12, -14]], [T, m1], [T2, m3], [m1, B], [m2, B], [m3, B]]) { c.moveTo(...a); c.lineTo(...b); } c.stroke();
+    c.beginPath(); c.moveTo(...T); c.lineTo(...T2); c.lineTo(...R); c.lineTo(...B); c.lineTo(...L); c.closePath(); c.lineWidth = 5; c.strokeStyle = "#0f4f80"; c.stroke();
+    c.fillStyle = "#fff"; c.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? 3 : 11, a = k * Math.PI / 4; c.lineTo(-22 + Math.cos(a) * r, -26 + Math.sin(a) * r); } c.closePath(); c.fill(); }
+  // Glocke: goldene Glocke mit Kuppel, geschwungener Flanke, breitem Rand, Kloeppel, Oese oben, Verlauf und Glanzstreifen
+  else if (id === "G") { const gr = c.createLinearGradient(-40, 0, 40, 0); gr.addColorStop(0, "#b8730a"); gr.addColorStop(0.28, "#ffe27a"); gr.addColorStop(0.55, "#f5b81c"); gr.addColorStop(1, "#9a5a04");
+    c.lineWidth = 4.5; c.strokeStyle = "#5a3200";
+    c.beginPath(); c.arc(0, -40, 7, 0, 7); c.fillStyle = "#e0a020"; c.fill(); c.stroke();                                            // Oese
+    c.beginPath(); c.moveTo(-6, -33); c.bezierCurveTo(-26, -32, -28, -12, -30, 6); c.bezierCurveTo(-31, 16, -38, 20, -40, 26); c.lineTo(40, 26); c.bezierCurveTo(38, 20, 31, 16, 30, 6); c.bezierCurveTo(28, -12, 26, -32, 6, -33); c.closePath(); c.fillStyle = gr; c.fill(); c.stroke();   // Koerper
+    const rim = c.createLinearGradient(-44, 0, 44, 0); rim.addColorStop(0, "#9a5a04"); rim.addColorStop(0.3, "#ffd65a"); rim.addColorStop(1, "#8a4e02");
+    c.beginPath(); c.moveTo(-44, 24); c.lineTo(44, 24); c.quadraticCurveTo(47, 32, 40, 34); c.lineTo(-40, 34); c.quadraticCurveTo(-47, 32, -44, 24); c.closePath(); c.fillStyle = rim; c.fill(); c.stroke();   // Rand
+    c.beginPath(); c.moveTo(-22, 10); c.lineTo(22, 10); c.lineWidth = 3; c.strokeStyle = "rgba(90,50,0,.55)"; c.stroke();                // Zierlinie
+    c.beginPath(); c.arc(0, 41, 7, 0, 7); c.fillStyle = "#c98a10"; c.fill(); c.lineWidth = 4; c.strokeStyle = "#5a3200"; c.stroke();     // Kloeppel
+    c.fillStyle = "rgba(255,255,255,.6)"; c.beginPath(); c.moveTo(-16, -22); c.bezierCurveTo(-21, -10, -22, 2, -22, 14); c.lineTo(-15, 14); c.bezierCurveTo(-15, 2, -13, -10, -10, -24); c.closePath(); c.fill(); }   // Glanz
+  // Zitrone: Ellipse mit Spitzen an beiden Enden, Verlauf mit Glanz, Poren, Blatt mit Mittelrippe und kurzer Stiel
+  else if (id === "L") { c.save(); c.rotate(-0.35);
+    const gr = c.createRadialGradient(-10, -12, 4, 0, 0, 46); gr.addColorStop(0, "#fffbc0"); gr.addColorStop(0.45, "#ffe63a"); gr.addColorStop(1, "#d9a800");
+    c.beginPath(); c.moveTo(-46, 0); c.quadraticCurveTo(-42, -4, -36, -12); c.bezierCurveTo(-24, -34, 24, -34, 36, -12); c.quadraticCurveTo(42, -4, 46, 0); c.quadraticCurveTo(42, 4, 36, 12); c.bezierCurveTo(24, 34, -24, 34, -36, 12); c.quadraticCurveTo(-42, 4, -46, 0); c.closePath();
+    c.fillStyle = gr; c.fill(); c.lineWidth = 4.5; c.strokeStyle = "#8a6a00"; c.stroke();
+    c.fillStyle = "rgba(160,120,0,.35)"; for (const [x, y] of [[-14, 10], [-4, 16], [8, 12], [18, 4], [-22, 0], [4, 2], [-8, -4], [14, -8], [24, 12]]) { c.beginPath(); c.arc(x, y, 1.6, 0, 7); c.fill(); }
+    c.fillStyle = "rgba(255,255,255,.75)"; c.beginPath(); c.ellipse(-12, -14, 12, 5, -0.25, 0, 7); c.fill();
+    c.restore();
+    c.fillStyle = "#5a3a10"; c.fillRect(30, -32, 4, 9);                                                                            // Stiel
+    c.beginPath(); c.moveTo(32, -30); c.bezierCurveTo(40, -46, 56, -44, 58, -36); c.bezierCurveTo(52, -26, 40, -24, 32, -30); c.closePath(); c.fillStyle = "#4caa36"; c.fill(); c.lineWidth = 3; c.strokeStyle = "#1f5a14"; c.stroke();   // Blatt
+    c.beginPath(); c.moveTo(33, -30); c.quadraticCurveTo(45, -36, 56, -36); c.lineWidth = 2; c.strokeStyle = "#1f5a14"; c.stroke(); }
   else if (id === "B") { c.fillStyle = "#111"; c.fillRect(-44, -24, 88, 48); c.strokeStyle = "#e8c547"; c.lineWidth = 5; c.strokeRect(-44, -24, 88, 48); c.fillStyle = "#e8c547"; c.font = "900 34px 'Arial Black', Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("BAR", 0, 2); }
-  else if (id === "G") { c.fillStyle = "#ffc93a"; c.strokeStyle = "#8a5a00"; c.lineWidth = 5; c.beginPath(); c.moveTo(-32, 22); c.quadraticCurveTo(-30, -36, 0, -38); c.quadraticCurveTo(30, -36, 32, 22); c.lineTo(38, 30); c.lineTo(-38, 30); c.closePath(); c.fill(); c.stroke();
-    c.beginPath(); c.arc(0, 36, 8, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.arc(0, -42, 6, 0, 7); c.fill(); c.stroke(); }
   else if (id === "S") { c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 18 : 42, a = -Math.PI / 2 + i * Math.PI / 5; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fillStyle = "#ffd23a"; c.fill(); c.lineWidth = 5; c.strokeStyle = "#9a6a00"; c.stroke(); }
-  else if (id === "L") { c.fillStyle = "#f4e04a"; c.strokeStyle = "#8a7a10"; c.lineWidth = 5; c.beginPath(); c.ellipse(0, 0, 40, 28, -0.3, 0, 7); c.fill(); c.stroke(); c.fillStyle = "#6ab03a"; c.beginPath(); c.ellipse(26, -30, 14, 7, -0.6, 0, 7); c.fill(); }
   else if (id === "C") { c.strokeStyle = "#3a7a2a"; c.lineWidth = 5; c.beginPath(); c.moveTo(-16, 8); c.quadraticCurveTo(-6, -30, 14, -40); c.moveTo(18, 12); c.quadraticCurveTo(14, -20, 14, -40); c.stroke();
     for (const [x, y] of [[-18, 18], [18, 20]]) { c.beginPath(); c.arc(x, y, 20, 0, 7); c.fillStyle = "#d0102a"; c.fill(); c.lineWidth = 4; c.strokeStyle = "#6a0010"; c.stroke(); c.fillStyle = "rgba(255,255,255,.5)"; c.beginPath(); c.arc(x - 6, y - 7, 5, 0, 7); c.fill(); } }
   c.restore(); }
