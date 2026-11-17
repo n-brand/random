@@ -90,10 +90,15 @@ const VORLAGEN = (() => { const g = new THREE.Group(); g.name = "Gebäude-Vorlag
 // ---------- Aktuelles Umbauprojekt (Nicolas 2026-11-16: "die Werkstatt ist nicht nur fuer Autos; man soll sich automatisch zum aktuellen Umbauprojekt teleportieren") ----------
 // Beim Oeffnen faehrt die Kamera hierhin; in der Auswahl oben "Aktuelles Projekt". Neues Projekt: nur PROJEKT aendern (Name, Bau, Platz, Plan).
 // Laptops (Nicolas 2026-11-17, PLAN-LAPTOP.md): Tisch mit zwei Laptops, daneben weiter der Bankautomat (vorheriges Projekt). Jedes Kind traegt userData.kind (atm, tisch) fuer Zielen, Kollision, Treffer.
-const PROJEKT = { name: "Laptops", plan: "PLAN-LAPTOP.md", x: 236, z: 40, h: -Math.PI / 2,
-  bau: () => { const g = new THREE.Group(), atm = buildBankautomat(), t = buildLaptopTisch(); atm.userData.kind = "atm"; atm.position.x = 1.9; t.position.x = -0.9; g.add(atm, t); g.userData.focus = t; return g; } };
+// Spielautomaten (Nicolas 2026-11-17: eigener Bauschritt fuer die einarmigen Banditen, Plan PLAN-SPIELAUTOMAT.md): drei Automaten in der Mitte (Rechtsklick spielt, Hebel und
+// Bildschirm laufen mit), daneben weiter Bankautomat und Laptop-Tisch (Laptops, PLAN-LAPTOP.md)
+const PROJEKT = { name: "Spielautomaten", plan: "PLAN-SPIELAUTOMAT.md", x: 236, z: 40, h: -Math.PI / 2,
+  bau: () => { const g = new THREE.Group(), atm = buildBankautomat(), t = buildLaptopTisch(), sl = new THREE.Group(); atm.userData.kind = "atm"; atm.position.x = 3.0; t.position.x = -2.7; g.add(atm, t, sl);
+    [0xb01028, 0x6a1ab0, 0x1a4ab0].forEach((c, i) => { const m = buildSpielautomat(c); m.position.x = (i - 1) * 1.05; m.userData.slot = true; m.userData.screen0 = m.userData.screen.material.map; sl.add(m); }); g.userData.focus = sl; return g; } };
 const projektG = (() => { const g = PROJEKT.bau(); g.position.set(PROJEKT.x, 0.15, PROJEKT.z); g.rotation.y = PROJEKT.h; g.userData.id = "PROJEKT"; g.userData.art = PROJEKT.name; scene.add(g);
   const pl = new THREE.Mesh(new THREE.BoxGeometry(8, 0.15, 8), new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 })); pl.position.set(PROJEKT.x, 0.075, PROJEKT.z); pl.receiveShadow = true; scene.add(pl); return g; })();
+// Spielautomaten im Projekt: Rechtsklick-Ziele (person.js nimmt Ziele aus gates)
+addEventListener("load", () => { projektG.updateMatrixWorld(true); projektG.traverse(m => { if (!m.userData.slot) return; const p = m.getWorldPosition(new THREE.Vector3()); gates.push({ name: "Spielautomat", g: m, call: () => typeof slotOpen === "function" && slotOpen(m), verbs: ["spielen", "spielen"], a: [p.x, p.z], b: [p.x, p.z], near: 3 }); }); });   // gates kommt erst mit gotham-shim.js
 function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = new THREE.Box3().setFromObject(projektG), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z);
   const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 1.9 + fz * r * 0.45, c.y + r * 0.25, c.z + fz * r * 1.9 - fx * r * 0.45); controls.update();
   $info.innerHTML = "<table><tr><td>Projekt</td><td>" + PROJEKT.name + "</td></tr><tr><td>Masse</td><td>" + fmt(s.x) + " x " + fmt(s.z) + " x " + fmt(s.y) + " m</td></tr></table><div class=\"note\">Aktuelles Umbauprojekt, Plan: " + PROJEKT.plan + "</div>"; }

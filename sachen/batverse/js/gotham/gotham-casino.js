@@ -84,7 +84,7 @@ function* casinoGen() {
   // Freitreppe: je Stufe ein geneigtes Stueck (g = Steigung entlang lokal +z), Oberseite in der Mitte; ohne Rand, damit man von Stufe zu Stufe kommt
   { const S = CAS.stair, gs = S.RS / S.TS; for (const [w, zc, yc] of CAS.ramp) { const [cx, cz] = P(0, zc); dkAdd({ cx, cy: Y + yc / 2, cz, ux: vx, uz: vz, hl: S.TS / 2, hw: w / 2, hh: yc / 2, m: 0, g: gs, ceil: 0 }); } }
   // Tresortuer: Sperre in der Oeffnung, nur geschlossen
-  if (CAS.vault) { const d = CAS.vault.door; CAS.vault.blk = dk(d[0], d[1], d[2], d[3], d[1] / 2, d[4], 0.05); }
+  if (CAS.vault && CAS.vault.door) { const d = CAS.vault.door; CAS.vault.blk = dk(d[0], d[1], d[2], d[3], d[1] / 2, d[4], 0.05); }
   // Rechtsklick-Ziele (Rechtsklick/E): Roulette-Tische (js/ui/roulette.js), Bankautomaten, Jeton-Automaten und Kasse (js/ui/jetons.js), Tresor
   for (const t of CAS.rouT) CAS.gates.push({ name: "Roulette", m: t, call: () => typeof rouletteOpen === "function" && rouletteOpen(), verbs: ["spielen", "spielen"], near: 3.5 });
   for (const q of CAS.gates) { const p = q.m.getWorldPosition(new THREE.Vector3()), o = { name: q.name, g: q.m, call: q.call, verbs: q.verbs || ["benutzen", "benutzen"], a: [p.x, p.z], b: [p.x, p.z], near: q.near || 3.5 }; gates.push(o); if (q.vault) CAS.vault.gate = o; }
@@ -152,11 +152,16 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   // Spielautomaten (Bildschirm mit 777, leuchtende Haube): unten links ganz, unten rechts bis vor die Kasse, oben beidseits
   const slotT = tex(128, 96, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#2a0a4a"); gr.addColorStop(1, "#0a0420"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.fillRect(8, 22, w - 16, 52); c.font = "bold 40px Arial Black, Arial"; c.textAlign = "center"; c.fillStyle = "#e0102a"; c.fillText("777", w / 2, 64); c.fillStyle = "#ffd23a"; c.font = "bold 14px Arial"; c.fillText("JACKPOT", w / 2, 16); });
   const KX0 = 6, KZ = 33, slots = [];
-  const slotRun = (sx, z0, z1, y) => { let z = z0; for (; z < z1; z += 1.15) slots.push([sx * (IX - 0.45), y + 0.85, z, sx < 0 ? -Math.PI / 2 : Math.PI / 2]); C.push([0.9, 1.8, z - z0 + 0.6, sx * (IX - 0.45), (z0 + z - 1.15) / 2, y]); };
+  const slotRun = (sx, z0, z1, y) => { let z = z0; for (; z < z1; z += 1.15) slots.push([sx * (IX - 0.45), y + 0.85, z, sx < 0 ? -Math.PI / 2 : Math.PI / 2]); C.push([0.9, 1.8, z - z0 + 0.6, sx * (IX - 0.45), (z0 + z - 1.15) / 2, y]);
+    // Rechtsklick-Ziel je Reihe (unsichtbarer Kasten ueber die ganze Reihe; tore.js misst den Abstand zum Kasten)
+    const hb = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2, z - z0 + 0.2), new THREE.MeshBasicMaterial({ visible: false })); hb.position.set(sx * (IX - 0.45), y + 1, (z0 + z - 1.15) / 2); g.add(hb);
+    CAS.gates.push({ name: "Spielautomat", m: hb, call: () => typeof slotOpen === "function" && slotOpen(null), verbs: ["spielen", "spielen"], near: 2.5 }); };
   slotRun(-1, IZ0 + 5, IZ1 - 6, 0); slotRun(1, IZ0 + 5, KZ - 1.5, 0); slotRun(-1, IZ0 + 7, IZ1 - 2, FL2); slotRun(1, IZ0 + 7, IZ1 - 4, FL2);
-  inst(new THREE.BoxGeometry(0.8, 1.7, 0.7), M({ color: 0x1b1d24, metalness: 0.5, roughness: 0.4 }), slots, true);
+  // Spielautomaten als 3D-Modelle (gotham/spielautomat-modell.js, Nicolas 2026-11-17: eigener Bauschritt) in vier Gehaeusefarben, als Instanzen; ohne Modell-Datei die alten Kaesten
+  if (typeof spielautomatInstanzen === "function") { const cols = [0x6a1ab0, 0xb01028, 0x1a4ab0, 0x0f7a4a]; spielautomatInstanzen(g, slots.map((t, i) => [t[0], t[1] - 0.85, t[2], t[3], cols[(i * 7) % 4]])); }
+  else { inst(new THREE.BoxGeometry(0.8, 1.7, 0.7), M({ color: 0x1b1d24, metalness: 0.5, roughness: 0.4 }), slots, true);
   inst(new THREE.PlaneGeometry(0.6, 0.45).rotateY(Math.PI).translate(0, 0.38, -0.36), M({ map: slotT, emissive: 0xffffff, emissiveMap: slotT, emissiveIntensity: 0.9 }), slots);
-  inst(new THREE.BoxGeometry(0.82, 0.22, 0.72).translate(0, 0.96, 0), new THREE.MeshBasicMaterial({ color: 0xffb02e }), slots);
+  inst(new THREE.BoxGeometry(0.82, 0.22, 0.72).translate(0, 0.96, 0), new THREE.MeshBasicMaterial({ color: 0xffb02e }), slots); }
   // Tische: Roulette (Rechtsklick spielt), Blackjack halbrund, Poker oval; Jeton-Stapel darauf
   const stools = [], chairs = [], chipL = [];
   const rouTable = (x, z, y, sx) => { CAS.rouT.push(box(3.4, 0.82, 1.7, wood, x, y + 0.41, z)); const top = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.5), felt); top.rotation.x = -Math.PI / 2; top.position.set(x, y + 0.83, z); g.add(top);
@@ -213,33 +218,33 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
     const bund = []; for (const y of [0.43, 1.08, 1.73]) for (let x = rx - rw / 2 + 0.3; x < rx + rw / 2 - 0.2; x += 0.24) if ((x * 7 + y * 3) % 1 > 0.25) bund.push([x, y + 0.06, rz, 0]);
     inst(new THREE.BoxGeometry(0.18, 0.1, 0.4), M({ color: 0x4f8a4a, roughness: 0.8 }), bund);
     const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.24), new THREE.MeshBasicMaterial({ map: canvasTex(160, 28, (c, w, h) => { c.fillStyle = "#1a1206"; c.fillRect(0, 0, w, h); c.fillStyle = "#e8c547"; c.font = "bold 18px Arial"; c.textAlign = "center"; c.fillText("TAGESKASSE", w / 2, 20); }) })); sg.position.set(rx, 2.55, IZ1 - 0.05); sg.rotation.y = Math.PI; g.add(sg); }
-  // ---- Tresor (Nicolas 2026-11-17: "es soll auch einen Tresor haben"): Raum aus Stahlbeton hinten rechts, runde Tresortuer (Rechtsklick oeffnet/schliesst), innen Gold und Geld ----
-  { const VX0 = 15.5, VZ0 = IZ1 - 5.1, VH = 3.2, dx0 = 18.0, dx1 = 20.0, dh = 2.5, vc = M({ color: 0x8a8f96, roughness: 0.7 });
-    box(dx0 - VX0, VH, 0.5, vc, (VX0 + dx0) / 2, VH / 2, VZ0); box(IX - dx1, VH, 0.5, vc, (dx1 + IX) / 2, VH / 2, VZ0); box(dx1 - dx0, VH - dh, 0.5, vc, (dx0 + dx1) / 2, dh + (VH - dh) / 2, VZ0);
-    box(0.5, VH, IZ1 - VZ0, vc, VX0, VH / 2, (VZ0 + IZ1) / 2); box(IX - VX0 + 0.25, 0.3, IZ1 - VZ0 + 0.25, vc, (VX0 + IX) / 2, VH + 0.15, (VZ0 + IZ1) / 2);
-    C.push([dx0 - VX0 + 0.25, VH, 0.5, (VX0 + dx0) / 2, VZ0]); C.push([IX - dx1, VH, 0.5, (dx1 + IX) / 2, VZ0]); C.push([0.5, VH, IZ1 - VZ0, VX0, (VZ0 + IZ1) / 2]);
-    { const fr = new THREE.Mesh(new THREE.TorusGeometry(1.42, 0.1, 10, 48), steel); fr.position.set(19, 1.35, VZ0 - 0.27); g.add(fr); }
-    const sg = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.3), new THREE.MeshBasicMaterial({ map: canvasTex(192, 36, (c, w, h) => { c.fillStyle = "#14161a"; c.fillRect(0, 0, w, h); c.fillStyle = "#c9ccd1"; c.font = "bold 24px Arial"; c.textAlign = "center"; c.fillText("TRESOR", w / 2, 26); }) }));
-    sg.position.set(19, 2.95, VZ0 - 0.26); sg.rotation.y = Math.PI; g.add(sg);
-    // Tuer: Drehpunkt links (x 17,6), dreht nach vorne (-z) auf
-    const piv = new THREE.Group(); piv.position.set(17.6, 0, VZ0 - 0.5); g.add(piv);
-    const dm = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.42, 48), steel); dm.rotation.x = Math.PI / 2; dm.position.set(1.4, 1.35, 0); dm.castShadow = true; piv.add(dm);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.07, 8, 48), gold); ring.position.set(1.4, 1.35, -0.22); piv.add(ring);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.3, 16), gold); hub.rotation.x = Math.PI / 2; hub.position.set(1.4, 1.35, -0.3); piv.add(hub);
-    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.04, 8, 32), gold); wheel.position.set(1.4, 1.35, -0.45); piv.add(wheel);
-    for (let k = 0; k < 5; k++) { const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.5, 6), gold); const a = k / 5 * Math.PI * 2; sp.position.set(1.4 + Math.cos(a) * 0.25, 1.35 + Math.sin(a) * 0.25, -0.45); sp.rotation.z = a - Math.PI / 2; piv.add(sp); }
-    for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2, b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 8), M({ color: 0xb8bcc2, metalness: 0.9, roughness: 0.2 })); b.rotation.x = Math.PI / 2; b.position.set(1.4 + Math.cos(a) * 1.08, 1.35 + Math.sin(a) * 1.08, -0.24); piv.add(b); }
-    const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.06, 20), M({ color: 0x1a1b1e })); dial.rotation.x = Math.PI / 2; dial.position.set(1.4, 2.0, -0.25); piv.add(dial);
-    CAS.vault = { piv, a: 0, open: false, door: [2.2, dh + 0.1, 0.5, 19, VZ0] };
-    CAS.gates.push({ name: "Tresor", m: dm, call: () => casinoVault(), verbs: ["öffnen", "öffnen"], near: 3.5, vault: true });
-    // innen: Regal mit Goldbarren und Geldbuendeln, Palette mit Gold in der Mitte, Jeton-Stapel
-    const bars = [], bund = [], x0 = VX0 + 0.6, x1 = IX - 0.2, z = IZ1 - 0.35;
-    box(x1 - x0, 0.05, 0.55, steel, (x0 + x1) / 2, 0.9, z); box(x1 - x0, 0.05, 0.55, steel, (x0 + x1) / 2, 1.7, z); C.push([x1 - x0, 2, 0.6, (x0 + x1) / 2, z]);
-    for (let x = x0 + 0.2; x < x1 - 0.15; x += 0.28) { bars.push([x, 0.97, z - 0.1]); bars.push([x, 0.97, z + 0.1]); bars.push([x + 0.14, 1.05, z]); bund.push([x, 1.78, z, 0]); }
-    for (let i = 0; i < 6; i++) for (let k = 0; k < 4; k++) for (let l = 0; l < 3 - (k > 1 ? 1 : 0); l++) bars.push([18.2 + i * 0.3, 0.2 + l * 0.08, IZ1 - 2.6 + k * 0.16 - l * 0.02]);
-    box(2.1, 0.12, 0.9, wood, 18.95, 0.06, IZ1 - 2.36); C.push([2.1, 0.5, 0.9, 18.95, IZ1 - 2.36]);
-    inst(new THREE.BoxGeometry(0.26, 0.08, 0.12), gold, bars); inst(new THREE.BoxGeometry(0.18, 0.12, 0.4), M({ color: 0x4f8a4a, roughness: 0.8 }), bund);
-    for (let i = 0; i < 3; i++) chipL.push([VX0 + 0.9 + i * 0.5, 0.925, IZ1 - 0.6, [[10000, 6, 0, 0], [10000, 5, 0.06, 0.05], [1000, 7, -0.06, 0.04]]]); }
+  // ---- Tresor (Nicolas 2026-11-17: "einen Tresor"; dann "viel zu gross, lieber einen kleinen, so gross wie ein Bankautomat"): Stahlschrank 0,95 x 1,85 x 0,85 m
+  // hinten rechts im Personalbereich, Tuer mit Drehrad, Zahlenschloss und Scharnieren (Rechtsklick oeffnet/schliesst, dreht in casinoStep), innen zwei Boeden mit Gold, Geld und Jetons
+  { const tw = 0.95, th = 1.85, td = 0.85, tx = IX - 1.2, tz = IZ1 - 0.3 - td / 2, t = 0.07, fz = tz - td / 2, vc = M({ color: 0x5d636b, metalness: 0.8, roughness: 0.35 });
+    box(tw + 0.08, 0.1, td + 0.04, M({ color: 0x1a1b1e }), tx, 0.05, tz);                                           // Sockel
+    box(tw, t, td, vc, tx, 0.1 + t / 2, tz); box(tw, t, td, vc, tx, 0.1 + th - t / 2, tz); box(tw, th, t, vc, tx, 0.1 + th / 2, tz + td / 2 - t / 2);
+    for (const s of [-1, 1]) box(t, th, td, vc, tx + s * (tw / 2 - t / 2), 0.1 + th / 2, tz);
+    C.push([tw + 0.1, th + 0.1, td, tx, tz]);
+    const bars = [], bund = [];
+    for (const y of [0.1 + t, 0.75, 1.35]) { if (y > 0.2) box(tw - 2 * t, 0.03, td - t - 0.04, steel, tx, y, tz + 0.02);
+      for (let i = 0; i < 4; i++) for (let k = 0; k < 2; k++) (y > 1.3 ? bund : bars).push([tx - 0.3 + i * 0.2, y + 0.05 + (y > 1.3 ? 0.02 : 0), tz - 0.1 + k * 0.22, 0]); }
+    for (let i = 0; i < 3; i++) bars.push([tx - 0.2 + i * 0.2, 0.25, tz + 0.06]);
+    inst(new THREE.BoxGeometry(0.17, 0.06, 0.08), gold, bars); inst(new THREE.BoxGeometry(0.16, 0.1, 0.18), M({ color: 0x4f8a4a, roughness: 0.8 }), bund);
+    chipL.push([tx + 0.25, 0.79, tz + 0.12, [[10000, 6, 0, 0], [1000, 8, 0.06, 0.04]]]);
+    // Tuer: Drehpunkt an der linken Kante (von vorne gesehen rechts = -x ... Scharnier bei +x), schwenkt nach vorne (-z) auf
+    const piv = new THREE.Group(); piv.position.set(tx + tw / 2, 0.1, fz - 0.02); g.add(piv);
+    const dm = new THREE.Mesh(new THREE.BoxGeometry(tw, th, 0.1), vc); dm.position.set(-tw / 2, th / 2, -0.05); dm.castShadow = true; piv.add(dm);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(tw - 0.12, th - 0.12, 0.02), M({ color: 0x7a8088, metalness: 0.85, roughness: 0.3 })); fr.position.set(-tw / 2, th / 2, -0.105); piv.add(fr);
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.022, 8, 28), gold); wheel.position.set(-tw / 2, th * 0.52, -0.16); piv.add(wheel);
+    for (let k = 0; k < 4; k++) { const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.34, 6), gold); sp.position.set(-tw / 2, th * 0.52, -0.16); sp.rotation.z = k * Math.PI / 4; piv.add(sp); }
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 16), gold); hub.rotation.x = Math.PI / 2; hub.position.set(-tw / 2, th * 0.52, -0.13); piv.add(hub);
+    const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.04, 24), M({ color: 0x1a1b1e, metalness: 0.4 })); dial.rotation.x = Math.PI / 2; dial.position.set(-tw / 2, th * 0.72, -0.13); piv.add(dial);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.01, 6, 24), gold); ring.position.set(-tw / 2, th * 0.72, -0.15); piv.add(ring);
+    for (const y of [0.25, th - 0.25]) { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.22, 10), M({ color: 0xb8bcc2, metalness: 0.9, roughness: 0.2 })); h.position.set(0.0, y, -0.05); piv.add(h); }
+    const lab = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.1), new THREE.MeshBasicMaterial({ map: canvasTex(128, 30, (c, w, h) => { c.fillStyle = "#14161a"; c.fillRect(0, 0, w, h); c.fillStyle = "#c9a640"; c.font = "bold 20px Arial"; c.textAlign = "center"; c.fillText("GOTHAM SAFE", w / 2, 22); }) }));
+    lab.position.set(-tw / 2, th * 0.3, -0.106); lab.rotation.y = Math.PI; piv.add(lab);
+    CAS.vault = { piv, a: 0, open: false, max: -1.9 };
+    CAS.gates.push({ name: "Tresor", m: dm, call: () => casinoVault(), verbs: ["öffnen", "öffnen"], near: 3, vault: true }); }
   // ---- Freitreppe in der Mitte hinten (Nicolas: "grosszuegige Treppe hoch"): Marmorstufen mit rotem Laeufer, Gelaender mit Goldstaeben, Pfosten mit Leuchtkugeln ----
   // Begehbar als Rampe (CAS.ramp, je Stufe ein geneigtes dk-Stueck wie die Parkhaus-Rampen, sonst ruckelt es): [Breite, z-Mitte, Hoehe in der Mitte]
   const bal = [];
@@ -286,7 +291,7 @@ function casinoStep() {
   // Buchstaben: 0-3 s nacheinander an, 3-4,2 s blinken, dann alle an bis 6 s
   const ph = t % 6; A.letters.forEach((m, i) => { const on = ph < 3 ? ph > i * 0.45 : ph < 4.2 ? Math.floor(ph * 6) % 2 === 0 : true; m.color.setScalar(on ? 1 : 0.18); });
   A.bulbs.offset.x = -(t * 2) % 1;
-  const V = CAS.vault; if (V) { V.a += ((V.open ? 1.75 : 0) - V.a) * 0.06; V.piv.rotation.y = V.a; }
+  const V = CAS.vault; if (V) { V.a += ((V.open ? V.max || 1.75 : 0) - V.a) * 0.06; V.piv.rotation.y = V.a; }
   A.dice.forEach((d, i) => { d.rotation.y = t * (0.5 + i * 0.2); d.rotation.x = 0.6 + Math.sin(t * 0.7 + i) * 0.2; });
   A.glass.emissiveIntensity = 0.8 * n;   // tagsueber 0 (sonst wirkt das Glas braun)
   A.beamM.opacity = 0.08 * n; A.beams.forEach(b => { b.visible = n > 0.05; b.rotation.y = t * 0.4 + b.userData.ph; });

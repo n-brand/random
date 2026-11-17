@@ -90,3 +90,7 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 29. **Taste E:** Zu Fuss öffnet E jetzt das Inventar. Tore, Türen und die Hebebühne gehen zu Fuss nur noch per Rechtsklick (im Fahrzeug weiter mit E). Passt das?
 
 30. **Waffenpreise (2026-11-17):** Angenommen: Pistole 2 500 $, Schrotflinte 6 500 $, MG 18 000 $, Sniper 24 000 $, Munition 150-400 $ je Packung (Konto). Passt das, oder sollen Waffen nur mit Bargeld bezahlt werden?
+
+31. **Bekanntes Problem Greifhaken (2026-11-17, Nicolas):** Schiesst man im Casino an die Decke des Erdgeschosses, zieht der Haken einen durch die Decke auf den 2. Stock. Ursache vermutlich: waffen.js sucht nach einem Treffer bis 5 m darüber eine Kante und setzt einen oben ab, ohne zu prüfen, ob der Weg dorthin frei ist (Decke von unten, Wand dazwischen). Kann überall passieren, wo über einer Decke oder Wand innerhalb von 5 m begehbarer Boden liegt: Casino, Polizeipräsidium, Parkhaus-Decks, Tiefgaragen, Geheimbasis, Wayne Tower, Kanal unter Strassen, U-Bahn unter Plätzen, Batcave. Noch nicht behoben; Idee: Treffer von unten (Normale nach unten) nie hochziehen, und den Weg zum Absetzpunkt mit shotSeg prüfen.
+
+32. **Casino-Werte (2026-11-17):** Angenommen: Jetons 1:1 gegen Bargeld ohne Gebühr; Spielautomat zahlt im Schnitt etwa 92 % des Einsatzes zurück (Gewinnplan im Spielfenster). Bitte bestätigen oder ändern.
