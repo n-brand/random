@@ -49,8 +49,8 @@ const SLOT_CSS = `
 #slot .sl-pay div { display: flex; align-items: center; justify-content: space-between; gap: 6px; } #slot .sl-pay canvas { width: 66px; height: 22px; } #slot .sl-pay b { color: #ffd23a; }
 #slot .sl-hist { margin-top: 8px; font-size: 11px; color: #a88ad0; text-align: center; min-height: 14px; }
 #slot .sl-arm { position: relative; width: 54px; height: 300px; margin-left: -6px; }
-#slot .sl-arm .hub { position: absolute; left: 0; top: 150px; width: 26px; height: 46px; border-radius: 0 12px 12px 0; background: linear-gradient(90deg, #8a8f96, #e8ecf0, #8a8f96); }
-#slot .sl-arm .rod { position: absolute; left: 22px; bottom: 150px; width: 10px; height: 130px; margin-left: 0; border-radius: 5px; background: linear-gradient(90deg, #9aa0a6, #f4f6f8, #9aa0a6); transform-origin: 50% 100%; cursor: grab; }
+#slot .sl-arm .hub { position: absolute; z-index: 1; left: 0; top: 150px; width: 26px; height: 46px; border-radius: 0 12px 12px 0; background: linear-gradient(90deg, #8a8f96, #e8ecf0, #8a8f96); }
+#slot .sl-arm .rod { position: absolute; left: 8px; bottom: 127px; width: 10px; height: 153px; margin-left: 0; border-radius: 5px; background: linear-gradient(90deg, #9aa0a6, #f4f6f8, #9aa0a6); transform-origin: 50% 100%; cursor: grab; }
 #slot .sl-arm .rod::before { content: ""; position: absolute; left: 50%; top: -30px; width: 40px; height: 40px; margin-left: -20px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ff9aa4, #d0102a 55%, #6a0010); box-shadow: 0 3px 8px rgba(0,0,0,.6); }
 #slot .sl-foot { margin-top: 6px; font-size: 11px; text-align: center; color: #8a6ab0; }`;
 function slotEnsure() {
