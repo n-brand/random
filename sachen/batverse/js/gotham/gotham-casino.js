@@ -75,6 +75,9 @@ function* casinoGen() {
   const beams = []; for (const sx of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(...L(sx * (BW / 2 - 3), H + 1.2, Z0 + BD / 2)); g.add(piv); cyl(0.9, 1.1, 1.6, gold, sx * (BW / 2 - 3), H + 1.6, Z0 + BD / 2, 16);
     const cone = new THREE.Mesh(new THREE.CylinderGeometry(9, 0.6, 260, 20, 1, true), beamM); cone.position.y = 130; const tilt = new THREE.Group(); tilt.rotation.z = 0.35; tilt.add(cone); piv.add(tilt); piv.userData.ph = sx > 0 ? 0 : Math.PI; beams.push(piv); }
   casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T });
+  // Vordach getragen (Nicolas 2026-11-17: "die Platte beim Eingang schwebt"; vorher standen die Wuerfelsaeulen darunter): zwei Saeulen an den vorderen Ecken, Zugstangen zur Fassade
+  for (const sx of [-1, 1]) { cyl(0.22, 0.26, 4.9, gold, sx * 10.4, 2.45, Z0 - 7.4, 12); cyl(0.4, 0.4, 0.2, gold, sx * 10.4, 0.2, Z0 - 7.4, 12); CAS.innen.push([0.6, 4.9, 0.6, sx * 10.4, Z0 - 7.4]);
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, Math.hypot(7.6, 4.5), 6), gold); rod.position.set(sx * 10.4, 7.75, Z0 - 3.8); rod.rotation.x = Math.atan2(7.6, 4.5); g.add(rod); }
   scene.add(g); g.updateMatrixWorld(true);
   // Kollision: Obergeschosse (Dach begehbar), Waende mit Tuer, Einrichtung (je Teil ein gedrehter Quader in lokalen Koordinaten)
   const dk = (sx, sy, sz, x, y, z, m = 0.15) => { const [cx, cz] = P(x, z); return dkAdd({ cx, cy: Y + y, cz, ux: lx, uz: lz, hl: sx / 2, hw: sz / 2, hh: sy / 2, m }); };
