@@ -17,7 +17,7 @@ const AIM_M = (() => {
   // Form und Farbe wie die Metall-Batarangs im Film (BATARANG_PTS, inventar.js; Nicolas 2026-11-17): gebuerstetes champagnerfarbenes Metall, hellere Fase
   const sh = new THREE.Shape(), P = BATARANG_PTS, S = 0.17;
   P.forEach(([x, y], i) => sh[i ? "lineTo" : "moveTo"](x * S, -y * S)); for (let i = P.length - 2; i > 0; i--) sh.lineTo(-P[i][0] * S, -P[i][1] * S);
-  const bat = new THREE.ExtrudeGeometry(sh, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.006, bevelSegments: 1 }); bat.rotateX(-Math.PI / 2); bat.translate(0, -0.004, 0);
+  const bat = new THREE.ExtrudeGeometry(sh, { depth: 0.004, bevelEnabled: true, bevelThickness: 0.0035, bevelSize: 0.007, bevelSegments: 1 }); bat.rotateX(-Math.PI / 2); bat.translate(0, -0.002, 0);   // breite Fase wie die geschliffenen Kanten im Film
   const smokeT = canvasTex(64, 64, (c, w) => { const g = c.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, "rgba(200,200,205,0.9)"); g.addColorStop(0.6, "rgba(170,172,178,0.45)"); g.addColorStop(1, "rgba(150,150,155,0)"); c.fillStyle = g; c.fillRect(0, 0, w, w); });
   const rope = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x222222 })); rope.visible = false; rope.frustumCulled = false; scene.add(rope);
   return { bat, batM: [new THREE.MeshStandardMaterial({ color: 0xbdb4a2, metalness: 0.85, roughness: 0.34 }), new THREE.MeshStandardMaterial({ color: 0xe6e0d2, metalness: 0.9, roughness: 0.2 })], bomb: new THREE.SphereGeometry(0.09, 10, 8), bombM: new THREE.MeshStandardMaterial({ color: 0x4a4e55, roughness: 0.6 }), smokeT, rope };
