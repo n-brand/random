@@ -281,6 +281,7 @@ function carStep(dt) {
   if (keys.has("KeyA") || keys.has("ArrowLeft")) st += 1;
   if (keys.has("KeyD") || keys.has("ArrowRight")) st -= 1;
   th -= moveStick.y; st -= moveStick.x;
+  if (C.empT && C.empT > performance.now()) { th = 0; carMsg("EMP: Motor gestört – noch " + Math.ceil((C.empT - performance.now()) / 1000) + " s"); }   // EMP-Gewehr (schusswaffen.js)
   C.throttle = th > 0.1 ? 1 : 0;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
   if (sp.hover && hoverStep(C, dt, th, st)) return;                         // DeLorean: einklappen / schweben

@@ -8,6 +8,9 @@ const GUN_SPEC = {
   pistole: { name: "Pistole", dmg: 10, ammo: "munition", mag: 12, rate: 0.16, auto: false, pellets: 1, spread: 0.012, spreadAim: 0.003, range: 90, zoom: 1.5, kick: 0.018, reload: 1.3, snd: [0.55, 0.16, 2600], hip: [0.14, -0.14, -0.42], ads: [0.1, -0.2, -0.44] },
   mg: { name: "Maschinengewehr", dmg: 7, ammo: "munition", mag: 40, rate: 0.085, auto: true, pellets: 1, spread: 0.022, spreadAim: 0.007, range: 160, zoom: 1.8, kick: 0.01, reload: 2.2, snd: [0.6, 0.14, 1900], hip: [0.17, -0.2, -0.38], ads: [0.12, -0.25, -0.42] },
   sniper: { name: "Scharfschützengewehr", dmg: 70, ammo: "gewehrmunition", mag: 5, rate: 1.1, auto: false, pellets: 1, spread: 0.03, spreadAim: 0, range: 420, zoom: 6, kick: 0.05, reload: 2.6, snd: [0.95, 0.38, 1400], hip: [0.19, -0.25, -0.46], ads: [0, -0.15, -0.3], scope: true },
+  // EMP-Gewehr (Nicolas 2026-11-17, Filmbild "wie nennt man diese Waffe" -> "bau es jetzt"): keine Munition, 3 Ladungen, je 5 s Aufladen; der Puls legt Fahrzeuge und Busse
+  // im Umkreis empR fuer empT Sekunden lahm (Motor aus). Wirkung in emp-Teil unten (empFire), Fahrzeuge pruefen v.empT (fahren.js carStep, Werkstatt fahren).
+  emp: { name: "EMP-Gewehr", dmg: 0, ammo: null, emp: true, mag: 3, recharge: 5, rate: 0.9, auto: false, pellets: 1, spread: 0, spreadAim: 0, range: 120, zoom: 1.6, kick: 0.03, reload: 0, snd: [0.7, 0.55, 500], hip: [0.18, -0.21, -0.42], ads: [0.12, -0.25, -0.46], empR: 9, empT: 15 },
   schrotflinte: { name: "Schrotflinte", dmg: 6, ammo: "schrot", mag: 6, rate: 0.8, auto: false, pellets: 9, spread: 0.07, spreadAim: 0.05, range: 45, zoom: 1.4, kick: 0.045, reload: 2.4, snd: [1, 0.3, 1100], hip: [0.17, -0.2, -0.38], ads: [0.12, -0.25, -0.42] },
 };
 const GUN = { scene: new THREE.Scene(), models: {}, cur: null, g: null, mag: {}, cd: 0, trig: false, rel: 0, kick: 0, flashT: 0, ads: 0, fx: [], audio: null,
@@ -27,6 +30,9 @@ const GUN_MAT = {
   oliv: new THREE.MeshStandardMaterial({ color: 0x4a5236, metalness: 0.15, roughness: 0.7 }),
   glas: new THREE.MeshStandardMaterial({ color: 0x1f3d5c, metalness: 0.9, roughness: 0.1, emissive: 0x0a1a2a }),
   messing: new THREE.MeshStandardMaterial({ color: 0xc9a14a, metalness: 0.4, roughness: 0.35 }),
+  schwarz: new THREE.MeshStandardMaterial({ color: 0x16181c, metalness: 0.3, roughness: 0.45 }),
+  empGlow: new THREE.MeshBasicMaterial({ color: 0x8ff0ff }),
+  empDim: new THREE.MeshBasicMaterial({ color: 0x1a5a70 }),
 };
 function gunBuild(id) {
   const g = new THREE.Group(), M = GUN_MAT;
@@ -34,7 +40,20 @@ function gunBuild(id) {
   const cyl = (m, r, l, x, y, z, r2 = r, seg = 14) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r2, l, seg), m); o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; };
   const guard = (x, y, z, r) => { const o = new THREE.Mesh(new THREE.TorusGeometry(r, 0.0035, 6, 14, Math.PI), M.metall); o.rotation.set(0, Math.PI / 2, Math.PI); o.position.set(x, y, z); g.add(o); };
   let muzzle;
-  if (id === "pistole") {
+  if (id === "emp") {   // EMP-Gewehr: kantiger schwarzer Koerper, Kuehlrippen oben, breites Emitter-Gehaeuse vorne mit leuchtendem Ring, Ladeanzeige seitlich
+    box(M.schwarz, 0.07, 0.1, 0.36, 0, 0.07, -0.14);                           // Gehaeuse
+    box(M.kunst, 0.075, 0.03, 0.3, 0, 0.13, -0.15);                            // Deckel
+    for (let k = 0; k < 4; k++) box(M.grau, 0.006, 0.06, 0.05, -0.024 + k * 0.016, 0.17, 0.0);   // senkrechte Rippen oben hinten
+    box(M.schwarz, 0.13, 0.15, 0.14, 0, 0.08, -0.4);                           // Emitter-Gehaeuse
+    box(M.kunst, 0.14, 0.16, 0.02, 0, 0.08, -0.33);                            // Kragen
+    for (let k = 0; k < 3; k++) box(M.empGlow, 0.132, 0.006, 0.01, 0, 0.03 + k * 0.05, -0.47);   // Leuchtstreifen
+    { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.011, 8, 32), M.empGlow); ring.scale.set(1, 1.22, 1); ring.position.set(0, 0.08, -0.475); g.add(ring);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(0.052, 24), M.empDim); disc.scale.set(1, 1.22, 1); disc.rotation.y = Math.PI; disc.position.set(0, 0.08, -0.474); g.add(disc); }
+    box(M.kunst, 0.032, 0.1, 0.045, 0, 0.0, 0.0, 0.3); guard(0, 0.03, -0.045, 0.02);   // Griff, Abzugsbuegel
+    box(M.kunst, 0.05, 0.08, 0.2, 0, 0.06, 0.13, -0.05);                      // Schulterstuetze
+    for (let k = 0; k < 3; k++) box(M.empGlow, 0.004, 0.012, 0.03, 0.037, 0.09, -0.1 - k * 0.04);   // Ladeanzeige
+    muzzle = [0, 0.08, -0.49];
+  } else if (id === "pistole") {
     box(M.metall, 0.03, 0.03, 0.19, 0, 0.105, -0.06);                      // Schlitten
     for (let k = 0; k < 6; k++) box(M.grau, 0.031, 0.022, 0.003, 0, 0.106, 0.012 + k * 0.006);   // Rillen hinten
     box(M.kunst, 0.028, 0.022, 0.165, 0, 0.081, -0.05);                     // Griffstueck
@@ -104,6 +123,7 @@ const GUN_SVG = {
   pistole: '<path d="M3 6.6H22.4Q23.2 6.6 23.2 7.4V10Q23.2 10.6 22.4 10.6H3Q2.4 10.6 2.4 10V7.2Q2.4 6.6 3 6.6Z" fill="#2a2d32" stroke="#8b9198" stroke-width=".5"/><path d="M4.4 7.4v2.4M5.5 7.4v2.4M6.6 7.4v2.4" stroke="#5a5f66" stroke-width=".5"/><rect x="9.6" y="10.6" width="12" height="1.3" fill="#22252a" stroke="#8b9198" stroke-width=".4"/><path d="M3.4 10.6H10.8L10.4 12.2L8.9 21.2Q8.7 22.2 7.7 22.2H3.6Q2.6 22.2 2.8 21.2L3.6 13.2Q3.7 11.6 3.4 10.6Z" fill="#22252a" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><path d="M4.6 14.4h3.6M4.4 16.2h3.6M4.2 18h3.6M4 19.8h3.6" stroke="#3c4046" stroke-width=".5"/><path d="M10.4 12.2H14.6Q15.3 12.2 15.1 13Q14.6 15.1 12.2 15.2H9.9" fill="none" stroke="#8b9198" stroke-width=".8" stroke-linecap="round"/><path d="M12.3 12.4Q12.9 13.6 12.2 14.4" fill="none" stroke="#8b9198" stroke-width=".7" stroke-linecap="round"/><rect x="2.6" y="21.6" width="6.4" height="1" rx=".4" fill="#4a4f56"/><rect x="21.2" y="5.8" width=".9" height=".9" fill="#8b9198"/><rect x="3.4" y="5.8" width="1.6" height=".9" fill="#8b9198"/><rect x="23.2" y="7.8" width=".5" height="1.2" fill="#111"/>',   // Pistole neu gezeichnet (Nicolas 2026-11-17: Griff sah falsch aus): Griff schraeg nach hinten, Abzugsbuegel, Magazinboden
   mg: '<path d="M1 11.5 L5.5 10.6 H14.5 V9.4 H16 V10.6 H19.6 V11.4 H25 V12.6 H19.6 V14 H13.6 L12.6 18.8 H10.6 L11 14 H9.4 L8.6 16.6 H6.8 L7.4 13.8 L5.5 13.6 L1 15 Z" fill="#26292d" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><rect x="14.2" y="11.2" width="4.6" height="2.2" fill="#3c4148"/>',
   sniper: '<path d="M1 12 L6 11 H15.5 V11.6 H25 V12.5 H15.5 V13.6 H10.6 L9.8 16.6 H8.2 L8.6 13.8 L6 13.8 L1 15.4 Z" fill="#4a5236" stroke="#9aa184" stroke-width=".5" stroke-linejoin="round"/><rect x="8.6" y="7.6" width="7.6" height="2" rx=".9" fill="#1c1e22" stroke="#8b9198" stroke-width=".4"/><path d="M10 9.6 V11 M14.6 9.6 V11" stroke="#8b9198" stroke-width=".6"/>',
+  emp: '<path d="M1 12 L4 10.4 H13 V9 H15 V8.4 H22.6 Q24.4 8.4 24.4 10.2 V15.6 Q24.4 17.4 22.6 17.4 H15 V15.2 H11.4 L10.4 19.2 H8.4 L8.8 15.2 H4 L1 14.4 Z" fill="#16181c" stroke="#7f8a96" stroke-width=".5" stroke-linejoin="round"/><path d="M5 9.6V8M6.2 9.6V8M7.4 9.6V8" stroke="#7f8a96" stroke-width=".6"/><rect x="22.4" y="9.2" width="1.6" height="7.4" rx=".8" fill="#8ff0ff"/><rect x="16.4" y="11.4" width="4.6" height=".8" fill="#8ff0ff"/><rect x="16.4" y="13.2" width="4.6" height=".8" fill="#8ff0ff"/><rect x="9.6" y="11.8" width=".8" height=".8" fill="#8ff0ff"/><rect x="11" y="11.8" width=".8" height=".8" fill="#8ff0ff"/>',
   schrotflinte: '<path d="M1 12.6 L7 11 H11.6 V11.4 H25 V12.4 H11.6 V13.6 L9.4 13.7 L8.4 16.4 H6.8 L7.2 13.8 L1 16 Z" fill="#6e4526" stroke="#b08a63" stroke-width=".5" stroke-linejoin="round"/><rect x="7" y="10.9" width="4.8" height="2.9" fill="#26292d"/><rect x="13" y="13.2" width="11" height="1.1" fill="#26292d"/><rect x="14.6" y="12.7" width="4.6" height="2.1" rx=".8" fill="#8a5a33"/>',
 };
 const GUN_AMMO = {
@@ -114,12 +134,13 @@ const GUN_DESC = {
   pistole: "Halbautomatische 9-mm-Pistole, 12 Schuss. Linksklick schiesst, rechts halten zielt über Kimme und Korn, R lädt nach (9-mm-Munition).",
   mg: "Maschinengewehr mit 40-Schuss-Magazin. Linksklick halten für Dauerfeuer, rechts halten zielt über das Rotpunktvisier. Braucht 9-mm-Munition, R lädt nach.",
   sniper: "Repetier-Scharfschützengewehr mit 6-fach-Zielfernrohr, 5 Schuss, Reichweite über 400 m. Rechts halten blickt durchs Zielfernrohr. Braucht Gewehrpatronen.",
+  emp: "EMP-Gewehr: schiesst einen elektromagnetischen Puls. Fahrzeuge und Busse im Umkreis von ca. 9 m am Einschlag bleiben 15 Sekunden stehen (Motor aus). 3 Ladungen, laedt sich selbst wieder auf (je 5 s), keine Munition.",
   schrotflinte: "Vorderschaft-Schrotflinte, 6 Patronen, je Schuss 9 Schrotkugeln. Stark auf kurze Entfernung. Braucht Schrotpatronen.",
   gewehrmunition: "Patronen für das Scharfschützengewehr.",
   schrot: "Schrotpatronen für die Schrotflinte.",
 };
 // Langwaffen schraeg und groesser, damit sie das Feld fuellen wie die Pistole (Nicolas 2026-11-17)
-for (const id of ["mg", "sniper", "schrotflinte"]) GUN_SVG[id] = '<g transform="translate(13 13) rotate(-38) scale(1.1) translate(-13 -12.8)">' + GUN_SVG[id] + "</g>";
+for (const id of ["mg", "sniper", "schrotflinte", "emp"]) GUN_SVG[id] = '<g transform="translate(13 13) rotate(-38) scale(1.1) translate(-13 -12.8)">' + GUN_SVG[id] + "</g>";
 for (const id in GUN_SPEC) INV_ITEMS[id] = { name: GUN_SPEC[id].name, art: "Waffe", stack: 1, svg: GUN_SVG[id] };
 Object.assign(INV_ITEMS, GUN_AMMO); Object.assign(INV_DESC, GUN_DESC);
 INV_DESC.munition = "9-mm-Patronen für Pistole und Maschinengewehr.";
@@ -136,7 +157,7 @@ const GUN_UI = (() => {
     '<div style="position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#e33"></div>';
   document.body.appendChild(sc); return { am, sc };
 })();
-function gunAmmoText() { const id = GUN.cur; if (!id) return ""; const S = GUN_SPEC[id]; return (GUN.rel > 0 ? "lädt …" : GUN.mag[id] + " / " + S.mag) + "  ·  " + invCount(S.ammo); }
+function gunAmmoText() { const id = GUN.cur; if (!id) return ""; const S = GUN_SPEC[id]; if (S.emp) return "EMP-Ladung " + GUN.mag[id] + " / " + S.mag + (GUN.mag[id] < S.mag ? "  ·  lädt " + Math.ceil(S.recharge - (GUN.empT || 0)) + " s" : ""); return (GUN.rel > 0 ? "lädt …" : GUN.mag[id] + " / " + S.mag) + "  ·  " + invCount(S.ammo); }
 
 // ---- Ton (eigener Audio-Kontext, entsteht beim ersten Schuss = Mausklick) ----
 function gunSound(id, empty) {
@@ -160,9 +181,9 @@ function gunFx(kind, a, b) { let o;
 
 // ---- Schiessen ----
 function gunTrigger(on) { const id = weaponHeld(); if (!GUN_SPEC[id]) return; if (on && (GUN.cd > 0 || GUN.rel > 0)) { GUN.trig = !touch && GUN_SPEC[id].auto; return; } GUN.trig = on && !touch && GUN_SPEC[id].auto; if (on) gunFire(id); }
-function gunReload(id) { const S = GUN_SPEC[id]; if (!S || GUN.rel > 0 || GUN.mag[id] >= S.mag) return; if (!invHas(S.ammo)) { toast("Keine " + INV_ITEMS[S.ammo].name + " mehr"); return; } GUN.rel = S.reload; GUN.relId = id; }
+function gunReload(id) { const S = GUN_SPEC[id]; if (!S || S.emp || GUN.rel > 0 || GUN.mag[id] >= S.mag) return; if (!invHas(S.ammo)) { toast("Keine " + INV_ITEMS[S.ammo].name + " mehr"); return; } GUN.rel = S.reload; GUN.relId = id; }
 function gunFire(id) {
-  const S = GUN_SPEC[id]; if (GUN.mag[id] <= 0) { gunSound(id, true); GUN.cd = 0.25; if (invHas(S.ammo)) gunReload(id); else toast("Keine " + INV_ITEMS[S.ammo].name + " – Magazin leer"); return; }
+  const S = GUN_SPEC[id]; if (S.emp) return empFire(id, S); if (GUN.mag[id] <= 0) { gunSound(id, true); GUN.cd = 0.25; if (invHas(S.ammo)) gunReload(id); else toast("Keine " + INV_ITEMS[S.ammo].name + " – Magazin leer"); return; }
   GUN.mag[id]--; gunSave(); GUN.cd = S.rate; GUN.kick = 1; GUN.flashT = 0.05; gunSound(id);
   if (id === "schrotflinte" || id === "sniper") GUN.cycle = 1;                         // Pumpe bzw. Kammer nachladen (Animation)
   camera.updateMatrixWorld(); const o = GUN.a.copy(camera.position), fwd = camera.getWorldDirection(GUN.d).clone(), up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion), rt = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
@@ -184,6 +205,7 @@ function gunPose() { const id = GUN.cur, g = GUN.g; if (!id || !g) return; const
   g.position.copy(camera.position); g.quaternion.copy(camera.quaternion); g.translateX(x); g.translateY(y - rl * 0.12); g.translateZ(z);
   g.rotateX(GUN.kick * 0.08 + rl * 0.6); g.rotateY((1 - a) * 0.06); g.rotateZ(rl * 0.3); }
 function gunStep(dt) {
+  empStep(dt);
   const id = weaponHeld(), on = !!GUN_SPEC[id] && onFoot();
   if (GUN.cur !== (on ? id : null)) { if (GUN.g) GUN.scene.remove(GUN.g); GUN.cur = on ? id : null; GUN.g = on ? gunModel(id) : null; if (GUN.g) GUN.scene.add(GUN.g); GUN.trig = false; GUN.rel = 0; GUN.ads = 0; }
   GUN.cd = Math.max(0, GUN.cd - dt); GUN.kick = Math.max(0, GUN.kick - dt * 9); GUN.cycle = Math.max(0, (GUN.cycle || 0) - dt * 2.2);
@@ -206,3 +228,35 @@ const gunZoom = () => { const id = weaponHeld(); return GUN_SPEC[id] ? GUN_SPEC[
 addEventListener("mouseup", e => { if (e.button === 0) GUN.trig = false; });
 addEventListener("blur", () => { GUN.trig = false; });
 addEventListener("keydown", e => { if (e.code === "KeyR" && !e.repeat && GUN.cur && onFoot()) gunReload(GUN.cur); });
+
+// ---- EMP-Gewehr: Puls, Wirkung, Aufladen (Nicolas 2026-11-17) ----
+// Strahl aus der Bildmitte bis 120 m (shotSeg); am Einschlag eine blaue Kugel, die auf empR waechst und verblasst, dazu ein Leuchtstrahl von der Muendung.
+// Getroffen werden: das direkt getroffene Fahrzeug und alle Fahrzeuge (VEH, Werkstatt auch AKT) und Busse (GBUS) im Umkreis: v.empT = Zeitpunkt, bis zu dem der Motor aus ist.
+const EMP = { fx: [], ringM: new THREE.MeshBasicMaterial({ color: 0x8ff0ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+  beamM: new THREE.LineBasicMaterial({ color: 0x8ff0ff, transparent: true, opacity: 0.9 }) };
+const empDead = v => !!(v && v.empT && v.empT > performance.now());
+function empFire(id, S) {
+  if (GUN.mag[id] <= 0) { GUN.cd = 0.3; if (typeof toast === "function") toast("EMP lädt noch …"); return; }
+  GUN.mag[id]--; gunSave(); GUN.cd = S.rate; GUN.kick = 1; GUN.flashT = 0.08; gunSound(id);
+  camera.updateMatrixWorld(); const o = camera.position.clone(), d = camera.getWorldDirection(new THREE.Vector3()), st = o.clone().addScaledVector(d, 0.35), end = o.clone().addScaledVector(d, S.range);
+  const h = shotSeg(st, end, null, 0.6), p = h ? h.p.clone() : end;
+  gunPose(); if (GUN.g) GUN.g.updateMatrixWorld(true); const mw = GUN.g ? GUN.g.localToWorld(gunModel(id).userData.muzzle.clone()) : o.clone();
+  const beam = new THREE.Line(new THREE.BufferGeometry().setFromPoints([mw, p]), EMP.beamM.clone()); beam.frustumCulled = false; scene.add(beam); EMP.fx.push({ o: beam, t: 0, life: 0.25, beam: true });
+  // flacher Ring waechst auf empR (zeigt den Wirkradius), kleiner Blitz bis 1,2 m (eine grosse Kugel faerbte das ganze Bild, wenn man nah stand)
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 6, 48), EMP.ringM.clone()); ring.rotation.x = Math.PI / 2; ring.position.copy(p); ring.position.y += 0.3; scene.add(ring); EMP.fx.push({ o: ring, t: 0, life: 0.7, R: S.empR });
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), EMP.ringM.clone()); ball.position.copy(p); scene.add(ball); EMP.fx.push({ o: ball, t: 0, life: 0.3, R: 1.2 });
+  const until = performance.now() + S.empT * 1000, hit = new Set(); let n = 0, nb = 0;
+  if (h && h.hit && h.hit.veh) hit.add(h.hit.veh);
+  if (typeof VEH !== "undefined") for (const v of VEH) { const q = v.g && v.g.position; if (q && Math.hypot(q.x - p.x, q.z - p.z) < S.empR && Math.abs(q.y - p.y) < S.empR) hit.add(v); }
+  if (typeof AKT !== "undefined" && AKT && AKT.x !== undefined && Math.hypot(AKT.x - p.x, AKT.z - p.z) < S.empR) hit.add(AKT);
+  for (const v of hit) { v.empT = until; n++; }
+  if (typeof GBUS !== "undefined" && GBUS.buses) for (const b of GBUS.buses) { const q = b.g && b.g.position; if (q && Math.hypot(q.x - p.x, q.z - p.z) < S.empR + 4) { b.hold = Math.max(b.hold || 0, S.empT); b.v = 0; nb++; } }
+  if (typeof toast === "function") toast(n + nb ? "EMP: " + (n ? n + " Fahrzeug" + (n > 1 ? "e" : "") : "") + (n && nb ? " und " : "") + (nb ? nb + " Bus" + (nb > 1 ? "se" : "") : "") + " lahmgelegt (" + S.empT + " s)" : "EMP: nichts Elektronisches getroffen");
+  EMP.last = { p, n, nb };
+}
+function empStep(dt) {
+  const S = GUN_SPEC.emp; if (GUN.mag.emp < S.mag) { GUN.empT = (GUN.empT || 0) + dt; if (GUN.empT >= S.recharge) { GUN.empT = 0; GUN.mag.emp++; gunSave(); } } else GUN.empT = 0;
+  for (let i = EMP.fx.length - 1; i >= 0; i--) { const F = EMP.fx[i]; F.t += dt; const k = Math.min(1, F.t / F.life);
+    if (F.beam) F.o.material.opacity = 0.9 * (1 - k); else { F.o.scale.setScalar(0.3 + (F.R - 0.3) * Math.sqrt(k)); F.o.material.opacity = 0.55 * (1 - k); }
+    if (k >= 1) { scene.remove(F.o); F.o.geometry.dispose(); F.o.material.dispose(); EMP.fx.splice(i, 1); } }
+}

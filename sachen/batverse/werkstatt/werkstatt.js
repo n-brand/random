@@ -320,7 +320,8 @@ function folgeKamera(A, s, dt) {
 function fahren(dt) {
   const A = AKT, s = A.spec, vmax = (s.maxF || s.maxN || 30) * (A.towed ? TOW.slow : 1), gas = down("KeyW", "ArrowUp"), brems = down("KeyS", "ArrowDown"), links = down("KeyA", "ArrowLeft"), rechts = down("KeyD", "ArrowRight");
   // wie im Spiel (fahren.js carStep): Gas/Bremse/Ausrollen, Lenken mit Anlaufzeit, Kurvenphysik (modelle.js); Gelaende ist hier eben
-  const th = gas ? 1 : brems ? -1 : 0, st = (links ? 1 : 0) - (rechts ? 1 : 0);
+  const emp = A.empT && A.empT > performance.now(), th = emp ? 0 : gas ? 1 : brems ? -1 : 0, st = (links ? 1 : 0) - (rechts ? 1 : 0);   // EMP-Gewehr: Motor aus
+  if (emp && (!A.empMsg || performance.now() - A.empMsg > 2500)) { A.empMsg = performance.now(); toast("EMP: Motor gestört – noch " + Math.ceil((A.empT - performance.now()) / 1000) + " s"); }
   lenkStep(A, s, st, dt);   // gemeinsam mit fahren.js (modelle.js)
   const KP = kurvenPhysik(s, A.v, A.steer, th, vmax); A.aLat = A.v * A.v * Math.abs(KP.k);
   A.h += A.v * KP.k * dt;
