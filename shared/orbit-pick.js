@@ -13,7 +13,9 @@ export const PICK_ICONS = {
   pin: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>',
 };
 
-export function installOrbitPick({ renderer, camera, controls, scene, title = document.title, actions = null, mode = null, idAt = null }) {
+export function installOrbitPick({ renderer, camera, controls, scene, title = document.title, actions = null, mode = null, idAt = null, active = null }) {
+  // active: optional () => true, wenn der Rechtsklick wirken soll (Standard: Orbit-Steuerung an; Batverse: auch im Geist-Modus, Nicolas 2026-11-17)
+  const isOn = () => active ? active() : controls.enabled;
   const el = renderer.domElement, ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   let down = null;
   // Kontextmenue (nur mit actions)
@@ -53,11 +55,11 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
   }
 
   el.addEventListener("pointerdown", e => { if (e.button === 2) down = [e.clientX, e.clientY]; }, true);
-  el.addEventListener("contextmenu", e => { if (controls.enabled) e.preventDefault(); });
+  el.addEventListener("contextmenu", e => { if (isOn()) e.preventDefault(); });
   // Handy: langer Druck (0,55 s, ohne Ziehen) wirkt wie der Rechtsklick (Nicolas 2026-11-09)
   let lp = null;
   el.addEventListener("pointerdown", e => {
-    if (e.pointerType !== "touch" || !controls.enabled) return;
+    if (e.pointerType !== "touch" || !isOn()) return;
     clearTimeout(lp?.t); const x = e.clientX, y = e.clientY;
     lp = { id: e.pointerId, x, y, t: setTimeout(() => { lp = null; pickAt(x, y); }, 550) };
   }, true);
@@ -67,7 +69,8 @@ export function installOrbitPick({ renderer, camera, controls, scene, title = do
     if (e.button !== 2 || !down) return;
     const moved = Math.hypot(e.clientX - down[0], e.clientY - down[1]);
     down = null;
-    if (moved > 5 || !controls.enabled) return;                      // gezogen = verschieben, im Laufmodus aus
+    if (moved > 5 || !isOn()) return;                                // gezogen = verschieben, im Laufmodus aus
+    if (document.pointerLockElement === el) { const r = el.getBoundingClientRect(); document.exitPointerLock(); pickAt(r.left + r.width / 2, r.top + r.height / 2); return; }   // Maus gefangen (Geist): Bildmitte, Maus frei fuers Menue
     pickAt(e.clientX, e.clientY);
   }, true);
   async function pickAt(cx, cy) {

@@ -225,7 +225,8 @@ function laden(i) {
 function tonAn() { if (modus === "drive" && AKT && !AKT.flug) engineStart(AKT.spec.name); else if (!(AKT && AKT.flug && modus === "drive")) engineStop(); }
 function flugStart() { const F = AKT.F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }
 function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? (A.roll || 0) : A.lean, "YXZ"); }
-window.werkstattTeleport = p => { if (!AKT || AKT.flug) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
+window.werkstattTeleport = p => { if (modus === "geist") { camera.position.set(p.x, p.y + 1.7, p.z); toast("Teleportiert"); return; }   // Geist: Kamera an den Punkt (Augenhoehe)
+  if (!AKT || AKT.flug) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
 
 // ---------- Auswahl und Ansicht ----------
 const pick = $("pick");

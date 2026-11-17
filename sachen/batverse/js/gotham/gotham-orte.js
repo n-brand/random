@@ -59,6 +59,7 @@ function* gortGen() {
   yield;
   const col = h => { const c = new THREE.Color(h); return [c.r, c.g, c.b]; };
   for (const o of list) {
+    const [ax, az] = gotAxis(o.x, o.z), e2 = [-az, ax];   // Achse je Ort (Werkstatt dreht einzeln)
     const [cx, cz] = GOT.toGame(o.x, o.z), L1 = o.w, L2 = o.d, P0 = [cx - ax * L1 / 2 - e2[0] * L2 / 2, cz - az * L1 / 2 - e2[1] * L2 / 2];
     const f = gbvFrame({ P0, e1: [ax, az], e2, L1, L2 }), kind = gortKind(o), H = Math.max(4.2, o.h || 6), seed = (o.id.length * 37 + o.x * 7 + o.z * 3) & 255;
     const Wp = (s, t) => { const p = f.W(s, t, 0); return [p[0], p[2]]; };

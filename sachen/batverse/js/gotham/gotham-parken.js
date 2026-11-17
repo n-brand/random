@@ -8,7 +8,7 @@ const GPK = { done: false };
 function* gpkGen() {
   while (!GSTR.done || !GGEB.done) yield "wait";
   gbvInit();
-  const rt = GOTHAM.manorLage.dreh * Math.PI / 180, ax = Math.cos(rt), az = -Math.sin(rt), e2 = [-az, ax], Y = GOT.STR, out = new Map(), col = h => { const c = new THREE.Color(h); return [c.r, c.g, c.b]; };
+  let ax, az, e2; const setAx = o => { [ax, az] = gotAxis(o.x, o.z); e2 = [-az, ax]; }, Y = GOT.STR, out = new Map(), col = h => { const c = new THREE.Color(h); return [c.r, c.g, c.b]; };   // Achse je Ort (Werkstatt dreht einzeln)
   const frameOf = o => { const [cx, cz] = GOT.toGame(o.x, o.z), P0 = [cx - ax * o.w / 2 - e2[0] * o.d / 2, cz - az * o.w / 2 - e2[1] * o.d / 2]; return gbvFrame({ P0, e1: [ax, az], e2, L1: o.w, L2: o.d }); };
   const frontOf = (f, L1, L2) => { const out4 = [[0, -1], [1, 0], [0, 1], [-1, 0]]; let front = 0, bd = 1e9;
     for (let k = 0; k < 4; k++) { const sd = f.side(k), ms = sd[0] + sd[2] * sd[6] / 2, mt = sd[1] + sd[3] * sd[6] / 2; for (let d = 1; d < 30; d += 1.5) { const p = f.W(ms + out4[k][0] * d, mt + out4[k][1] * d, 0); if (GSTR.onRoad(p[0], p[2], 0)) { if (d < bd) { bd = d; front = k; } break; } } } return front; };
@@ -22,7 +22,7 @@ function* gpkGen() {
   const quadKey = (key, a, b, c, d, n, uv) => gbvQuad(gbvBucket(out, key), a, b, c, d, n, uv || [[0, 0], [1, 0], [1, 1], [0, 1]]);
   // ---------- V3 Taxi-Depot ----------
   const OT = GOTHAM.orte.find(o => o.id === "taxi");
-  if (OT) { const f = frameOf(OT), L1 = OT.w, L2 = OT.d, k = frontOf(f, L1, L2), [As, At, ds, dt, os, ot] = f.side(k), at = (u, w) => [As + ds * u - os * w, At + dt * u - ot * w], P = (u, w, y) => { const [s, t] = at(u, w); return f.W(s, t, y); };
+  if (OT) { setAx(OT); const f = frameOf(OT), L1 = OT.w, L2 = OT.d, k = frontOf(f, L1, L2), [As, At, ds, dt, os, ot] = f.side(k), at = (u, w) => [As + ds * u - os * w, At + dt * u - ot * w], P = (u, w, y) => { const [s, t] = at(u, w); return f.W(s, t, y); };
     const D = k % 2 ? L1 : L2, Wd = k % 2 ? L2 : L1, nrm = (a, b) => { const U = f.dirW(ds, dt), V = f.dirW(-os, -ot); return [U[0] * a + V[0] * b, 0, U[2] * a + V[2] * b]; };   // u entlang der Front (0..Wd), w nach hinten (0..D)
     const bx = (key, u, w, lu, lw, y0, y1, c) => { const [s, t] = at(u, w); gbvBox(out, key, f, s, t, ds ? lu : lw, ds ? lw : lu, y0, y1, c); }, dk = (u, w, lu, lw, y0, y1, o) => { const [s, t] = at(u, w); dkB(f, s, t, ds ? lu : lw, ds ? lw : lu, y0, y1, o); };
     quadKey("asphalt", P(0, 0, Y + 0.05), P(Wd, 0, Y + 0.05), P(Wd, D, Y + 0.05), P(0, D, Y + 0.05), [0, 1, 0]);
@@ -49,6 +49,7 @@ function* gpkGen() {
   // ---------- V4 Parkhaeuser ----------
   const cars = [], PAL = [0x8c1c1c, 0x1c3f8c, 0xd0d0d0, 0x222222, 0x3d6b3d, 0x9a9a9a, 0xc7a83a, 0x5a2a6a];
   for (const OP of GOTHAM.orte.filter(o => /^parkhaus-/.test(o.id))) {
+    setAx(OP);
     const f = frameOf(OP), L1 = OP.w, L2 = OP.d, NL = 5, LH = 3.2, lane = 4.2, rA0 = 7, rA1 = rA0 + LH / 0.15;   // Rampen entlang s (L1) bei t 0.4..lane, s rA0..rA1
     for (let lv = 1; lv < NL; lv++) { const y = Y + lv * LH;
       // Deck ohne Rampenschlitz: Hauptflaeche (t > lane), Spur vor und hinter der Rampe

@@ -29,7 +29,7 @@ const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerH
 // Startansicht (Nicolas 2026-11-14): Orbit ueber Gotham, Blick vom Manor-Ufer auf den Wayne Circle (vorher ueber dem Anwesen: Kamera 95/100/60, Ziel -25/HILL/10)
 camera.position.set(-1560, 330, 1100);
 const controls = new OrbitControls(camera, renderer.domElement);
-const orbitPick = installOrbitPick({ renderer, camera, controls, scene, mode: () => ghost ? "Geist" : "Orbit-Ansicht", idAt: p => bautAt(p.x, p.y, p.z), actions: [{ icon: PICK_ICONS.pin, label: "Hierhin teleportieren", run: p => teleportToPoint(p) }] });   // Rechtsklick in der Orbit-Ansicht: Menue (Koordinaten kopieren, hierhin teleportieren)
+const orbitPick = installOrbitPick({ renderer, camera, controls, scene, mode: () => ghost ? "Geist" : "Orbit-Ansicht", active: () => controls.enabled || ghost, idAt: p => bautAt(p.x, p.y, p.z), actions: [{ icon: PICK_ICONS.pin, label: "Hierhin teleportieren", run: p => teleportToPoint(p) }] });   // Rechtsklick in der Orbit-Ansicht: Menue (Koordinaten kopieren, hierhin teleportieren)
 controls.target.set(-2060, -12, 860);
 controls.enableDamping = true;
 controls.minDistance = 4;

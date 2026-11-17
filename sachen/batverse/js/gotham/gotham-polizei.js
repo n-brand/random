@@ -4,11 +4,14 @@
 // Schriftband GOTHAM CITY POLICE DEPARTMENT, Granit-Vorplatz mit Streifenwagen. Auf dem Dach das Batsignal: Scheinwerfer auf Drehgestell,
 // nachts Lichtkegel in den Himmel und das Fledermaus-Zeichen in den Wolken; geschaltet wird es mit dem Schalter im Inventar (GCPD.on).
 "use strict";
+// Kartenachse "Osten" im Spiel an einem Ort (Einheitsvektor). Im Spiel ueberall dieselbe Drehung (manorLage.dreh); in der Werkstatt dreht gotham-shim.js jedes
+// Gebaeude zusaetzlich zur Strecke (Nicolas 2026-11-17), darum aus GOT.toGame statt aus dreh. Auch von gotham-orte.js und gotham-parken.js benutzt.
+function gotAxis(x, z) { const a = GOT.toGame(x, z), b = GOT.toGame(x + 1, z), dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; }
 const GCPD = { done: false, on: true, sig: null };
 function* gcpdGen() {
   while (!GSTR.done || !GBV) yield "wait";
   const O = GOTHAM.orte.find(o => o.id === "gcpd"); if (!O) return;
-  const t = GOTHAM.manorLage.dreh * Math.PI / 180, ux = Math.cos(t), uz = -Math.sin(t), e2 = [-uz, ux], SH = -8, [cx0, cz0] = GOT.toGame(O.x, O.z), cx = cx0 + e2[0] * SH, cz = cz0 + e2[1] * SH;   // Nicolas 2026-11-16: 8 m nach vorne (mehr passt zwischen den Nachbarhaeusern nicht)
+  const [ux, uz] = gotAxis(O.x, O.z), e2 = [-uz, ux], SH = -8, [cx0, cz0] = GOT.toGame(O.x, O.z), cx = cx0 + e2[0] * SH, cz = cz0 + e2[1] * SH;   // Nicolas 2026-11-16: 8 m nach vorne (mehr passt zwischen den Nachbarhaeusern nicht)
   const L1 = O.w, L2 = O.d, Y = GOT.STR, P0 = [cx - ux * L1 / 2 - e2[0] * L2 / 2, cz - uz * L1 / 2 - e2[1] * L2 / 2];
   const f = gbvFrame({ P0, e1: [ux, uz], e2, L1, L2 }), out = new Map(), GH = GBV.GH, sm = L1 / 2;   // s 0..80 entlang der Front, t 0..60 nach hinten (Front t = 0, zur Strasse im Norden)
   const wall4 = (key, s0, s1, t0, t1, y0, y1) => { const W = s1 - s0, D = t1 - t0, o = gbvFrame({ P0: f.W(s0, t0, 0).filter((_, i) => i !== 1), e1: [ux, uz], e2, L1: W, L2: D });
