@@ -49,8 +49,11 @@ function invTake(id, n = 1) { if (!invHas(id, n)) return false; let left = n; fo
 // Auswahl 0-8 = Hotbar, 9 = Bargeld, 10 = Karte (Felder neben der Hotbar, konto.js; Mausrad geht ueber alle 11, Nicolas 2026-11-16)
 const INV_SEL_BAR = 9, INV_SEL_KARTE = 10, INV_SEL_N = 11;
 const invHeld = () => INV.sel < 9 && INV.slots[INV.sel] ? INV.slots[INV.sel].id : null;
+// Name des gewaehlten Platzes kurz ueber der Hotbar (wie Minecraft; Nicolas 2026-11-17: "die Anzeige oben soll unten ueber der Hotbar sein")
+function invName(t) { let el = document.getElementById("hb-name"); if (!el) { el = document.createElement("div"); el.id = "hb-name"; document.body.appendChild(el); }
+  el.textContent = t; el.classList.remove("aus"); el.classList.add("an"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.add("aus"), 1600); }
 function invSelect(i) { INV.sel = i; invSave(); invRender(); const s = i < 9 ? INV.slots[i] : null, K = typeof KONTO !== "undefined" ? KONTO : null;
-  toast(i === INV_SEL_BAR ? "Bargeld" + (K ? ": " + kontoFmt(K.bar) : "") : i === INV_SEL_KARTE ? "Karte" + (K ? ": " + kontoFmt(K.stand) : "") : s ? INV_ITEMS[s.id].name + (s.n > 1 ? " (" + s.n + ")" : "") : "Leere Hand"); }
+  invName(i === INV_SEL_BAR ? "Bargeld" + (K ? ": " + kontoFmt(K.bar) : "") : i === INV_SEL_KARTE ? "Karte" + (K ? ": " + kontoFmt(K.stand) : "") : s ? INV_ITEMS[s.id].name + (s.n > 1 ? " (" + s.n + ")" : "") : "Leere Hand"); }
 // Gehaltener Gegenstand rechts unten im Bild (wie die Hand in Minecraft; Nicolas 2026-11-16 "wenn ich etwas in der Hand habe, soll es das rechts im Bildschirm zeigen")
 const INV_HAND = { el: null, key: "" };
 function invHandRender() {
