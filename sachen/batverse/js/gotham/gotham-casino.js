@@ -82,6 +82,8 @@ function* casinoGen() {
   for (const sx of [-1, 1]) { dk(T, HG, BD, sx * (BW / 2 - T / 2), HG / 2, Z0 + BD / 2, 0.3); dk(fw, HG, T, sx * (DW + fw / 2), HG / 2, Z0 + T / 2, 0.3); }
   dk(2 * DW, HG - 4, T, 0, 4 + (HG - 4) / 2, Z0 + T / 2, 0.1);
   for (const c of CAS.innen) dk(c[0], c[1], c[2], c[3], c[1] / 2, c[4], 0.1);
+  // Roulette-Tische: Rechtsklick/E spielt (js/ui/roulette.js, Nicolas 2026-11-17)
+  for (const t of CAS.rouT) { const p = t.getWorldPosition(new THREE.Vector3()); gates.push({ name: "Roulette", g: t, call: () => typeof rouletteOpen === "function" && rouletteOpen(), verbs: ["spielen", "spielen"], a: [p.x, p.z], b: [p.x, p.z], near: 3.5 }); }
   { const poly = [P(-BW / 2, Z0), P(BW / 2, Z0), P(BW / 2, Z0 + BD), P(-BW / 2, Z0 + BD)]; bautAdd({ id: "GO-CASINO", name: "Casino", art: "Gebäude", poly, y0: Y - 1, y1: Y + H + 12, info: "Uptown · Art déco, Roulette auf dem Dach · früher Baustelle BS-02" }); }
   CAS.anim = { glass, g, letters, bulbs, rou, ball, dice, beams, beamM, rouY: H + 10.4 + 1.2, rouZ: Z0 + BD / 2, t0: performance.now() };
 }
@@ -89,7 +91,7 @@ function* casinoGen() {
 // mit Hockern, Spielautomaten an beiden Seitenwaenden, Bar mit beleuchtetem Flaschenregal, Kasse mit Gitter. Wiederholte Teile als InstancedMesh, Licht ueber
 // leuchtende Materialien (keine zusaetzlichen Lichter: die wuerden im Spiel alle Shader neu uebersetzen). Kollisionsquader in CAS.innen [sx, sy, sz, x, z] (lokal).
 function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T }) {
-  const IX = BW / 2 - T, IZ0 = Z0 + T, IZ1 = Z0 + BD - T, IL = IZ1 - IZ0, IC = (IZ0 + IZ1) / 2, C = CAS.innen = [], O = new THREE.Object3D();
+  const IX = BW / 2 - T, IZ0 = Z0 + T, IZ1 = Z0 + BD - T, IL = IZ1 - IZ0, IC = (IZ0 + IZ1) / 2, C = CAS.innen = []; CAS.rouT = []; const O = new THREE.Object3D();
   const inst = (geo, m, list, shadow = false) => { const im = new THREE.InstancedMesh(geo, m, list.length); list.forEach((t, i) => { O.position.set(t[0], t[1], t[2]); O.rotation.set(t[4] || 0, t[3] || 0, 0); O.scale.setScalar(t[5] || 1); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
     im.castShadow = shadow; im.receiveShadow = true; g.add(im); return im; };
   const tex = (w, h, draw, rx, ry) => { const t = canvasTex(w, h, draw); if (rx) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); } return t; };
@@ -120,7 +122,7 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   const felt = M({ color: 0x0f5a32, roughness: 0.9, emissive: 0x06301a, emissiveIntensity: 0.6 }), wood = M({ color: 0x3e2414, roughness: 0.6 });
   const stools = [];
   for (const sx of [-1, 1]) { const x = sx * 8, z = IC - 4;
-    box(3.4, 0.82, 1.7, wood, x, 0.41, z); const top = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.5), felt); top.rotation.x = -Math.PI / 2; top.position.set(x, 0.83, z); g.add(top);
+    CAS.rouT.push(box(3.4, 0.82, 1.7, wood, x, 0.41, z)); const top = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.5), felt); top.rotation.x = -Math.PI / 2; top.position.set(x, 0.83, z); g.add(top);
     const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.16, 32), [wood, M({ map: rouTex, emissive: 0x150808, emissiveIntensity: 1 }), wood]); wheel.position.set(x - sx * 1.15, 0.92, z); g.add(wheel); C.push([3.4, 0.9, 1.7, x, z]);
     for (const dx of [-0.9, 0, 0.9]) stools.push([x + dx, 0.38, z + 1.35]);
     const bz = IC + 5, bj = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.82, 32, 1, false, Math.PI / 2, Math.PI), wood); bj.position.set(x, 0.41, bz); g.add(bj);
