@@ -9,7 +9,8 @@ function geistEnd() { ghost = false; const d = camera.getWorldDirection(new THRE
 function geistStep(dt) {
   let mx = 0, mz = 0, my = 0; if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1; if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1; if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1; if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
   if (keys.has("Space")) my += 1; if (keys.has("KeyC") || keys.has("ControlLeft") || keys.has("ControlRight")) my -= 1;
-  const sp = GEIST.v * (keys.has("ShiftLeft") || keys.has("ShiftRight") ? 3 : 1), l = Math.hypot(mx, mz) || 1, s = Math.sin(GEIST.yaw), c = Math.cos(GEIST.yaw);
+  const sp = GEIST.v * (keys.has("ShiftLeft") || keys.has("ShiftRight") ? 9 : 3),   // normal = frueheres Shift-Tempo, Shift nochmals dreifach (Nicolas 2026-11-17)
+    l = Math.hypot(mx, mz) || 1, s = Math.sin(GEIST.yaw), c = Math.cos(GEIST.yaw);
   camera.position.x += (-s * mz + c * mx) / l * sp * dt; camera.position.z += (-c * mz - s * mx) / l * sp * dt; camera.position.y = Math.max(0.3, camera.position.y + my * sp * dt);
   camera.rotation.set(GEIST.pitch, GEIST.yaw, 0, "YXZ"); sunFollow(camera.position, 100); }
 // Tasten im Geist-Modus (aus dem keydown der Werkstatt; true = erledigt). Ziffern laufen weiter (Moduswechsel).

@@ -38,13 +38,19 @@ function* gcpdGen() {
   for (const ss of [22, 30, 38]) { gbvBox(out, "eisen", f, ss, -22, 0.25, 0.25, Y, Y + 12); gbvBox(out, "farbe", f, ss + 1.1, -22, 2, 0.05, Y + 10.4, Y + 11.6, [0.12, 0.25, 0.6]); }   // Fahnenmasten
   const col = h => { const c = new THREE.Color(h); return [c.r, c.g, c.b]; }, asph = col(0x34363a);
   gbvBox(out, "farbe", f, 84, 37, 8, 78, Y, Y + 0.06, asph); for (let tt = 4; tt < 74; tt += 6) gbvBox(out, "farbe", f, 84, tt, 0.15, 3, Y + 0.06, Y + 0.075, col(0xe8e8e0));   // Zufahrt mit Mittellinie
-  gbvBox(out, "farbe", f, 43, 68.5, 90, 15, Y, Y + 0.06, asph); for (let ss = 2; ss < 80; ss += 4) for (const [t0, t1] of [[61.5, 66.5], [70.5, 75.5]]) gbvBox(out, "farbe", f, ss, (t0 + t1) / 2, 0.12, t1 - t0, Y + 0.06, Y + 0.075, col(0xe8e8e0));
+  // Verwahrstelle gross (Nicolas 2026-11-17: "der Platz hinter der Polizei soll groesser sein, eine einfache Ueberdachung, Fahrzeuge praeziser auf den Parkplaetzen"):
+  // L-Form (links steht ab t 79 ein Haus, rechts ab t 83 Strassen): s -2..88,5 x t 61..78/80 und hinten s 22..72 bis t 96. Felder 3 x 5,5 m, Reihen (s-Bereich, t0, t1, Front zur Gasse):
+  const VW = { rows: [[0, 78, 61.5, 67, -1], [0, 72, 72.5, 78, 1], [24, 72, 78, 83.5, -1], [24, 72, 90, 95.5, 1]] };
+  for (const [sa, sb, ta, tb] of [[-2, 22, 61, 78], [22, 88.5, 61, 80], [22, 72, 80, 96]]) gbvBox(out, "farbe", f, (sa + sb) / 2, (ta + tb) / 2, sb - sa, tb - ta, Y, Y + 0.06, asph);
+  for (const [s0, s1, t0, t1] of VW.rows) { for (let ss = s0; ss <= s1 + 0.01; ss += 3) gbvBox(out, "farbe", f, ss, (t0 + t1) / 2, 0.12, t1 - t0, Y + 0.06, Y + 0.075, col(0xe8e8e0));   // Trennstriche je 3 m
+  }
+  for (const [s0, s1, t0, t1, dir] of VW.rows) gbvBox(out, "farbe", f, (s0 + s1) / 2, dir < 0 ? t1 : t0, s1 - s0, 0.12, Y + 0.06, Y + 0.075, col(0xe8e8e0));   // Abschlusslinie zur Gasse
   const fenceM = new THREE.MeshStandardMaterial({ map: (() => { const tx = canvasTex(64, 64, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = "#9aa0a6"; c.lineWidth = 3; for (let k = -64; k < 128; k += 16) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k + 64, 64); c.stroke(); c.beginPath(); c.moveTo(k + 64, 0); c.lineTo(k, 64); c.stroke(); } }); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; return tx; })(), alphaTest: 0.5, side: THREE.DoubleSide, metalness: 0.5, roughness: 0.5 });
   const fenceG = new THREE.Group(); fenceG.userData.keep = true; fenceG.userData.noLift = true;
   const fence = (s0, t0, s1, t1) => { const a = f.W(s0, t0, Y), b = f.W(s1, t1, Y), L = Math.hypot(b[0] - a[0], b[2] - a[2]), g = new THREE.PlaneGeometry(L, 2.6); g.translate(0, 1.3, 0); const m = new THREE.Mesh(g, fenceM); m.position.set((a[0] + b[0]) / 2, Y, (a[2] + b[2]) / 2); m.rotation.y = Math.atan2(-(b[2] - a[2]), b[0] - a[0]);
     m.material.map.repeat; const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * L / 1.3, uv.getY(i) * 2); fenceG.add(m); for (let k = 0; k <= L; k += 3) { const q = f.W(s0 + (s1 - s0) * k / L, t0 + (t1 - t0) * k / L, 0); gbvBox(out, "eisen", gbvFrame({ P0: [q[0], q[2]], e1: [ux, uz], e2, L1: 1, L2: 1 }), 0, 0, 0.1, 0.1, Y, Y + 2.7); }
     const c = f.W((s0 + s1) / 2, (t0 + t1) / 2, 0); dkAdd({ cx: c[0], cy: Y + 1.3, cz: c[2], ux: (b[0] - a[0]) / L, uz: (b[2] - a[2]) / L, hl: L / 2, hw: 0.1, hh: 1.3, floor: 0, m: 0.1 }); };
-  fence(-2, 61, 80, 61); fence(-2, 61, -2, 76); fence(-2, 76, 88.5, 76); fence(88.5, 76, 88.5, 61); scene.add(fenceG);
+  fence(-2, 61, 80, 61); fence(88.5, 61, 88.5, 80); fence(88.5, 80, 72, 80); fence(72, 80, 72, 96); fence(72, 96, 22, 96); fence(22, 96, 22, 78); fence(22, 78, -2, 78); fence(-2, 78, -2, 61); scene.add(fenceG);
   { const sg = canvasTex(512, 128, (c, w, h) => { c.fillStyle = "#1d2a4a"; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.font = "bold 52px Arial, sans-serif"; c.textAlign = "center"; c.fillText("GCPD · VERWAHRSTELLE", w / 2, 60); c.font = "30px Arial, sans-serif"; c.fillText("Zufahrt nur für Berechtigte", w / 2, 104); });
     const p = f.W(89.5, -1, Y + 2.6), m = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 0.8), new THREE.MeshStandardMaterial({ map: sg, emissive: 0xffffff, emissiveMap: sg, emissiveIntensity: 0.3 })); m.position.set(p[0], p[1], p[2]); m.rotation.y = Math.atan2(-e2[0], -e2[1]); m.userData.keep = true; scene.add(m);
     gbvBox(out, "eisen", f, 89.5, -0.9, 0.12, 0.12, Y, Y + 2.2); }
@@ -56,11 +62,23 @@ function* gcpdGen() {
     gates.push({ name: "Schranke", g: hit, open: 0, target: 0, dur: 2.5, verbs: ["öffnen", "schliessen"], a: (([x, , z]) => [x, z])(f.W(80.6, 1, 0)), b: (([x, , z]) => [x, z])(f.W(87.6, 1, 0)), near: 12, solid, anim: k => { piv.rotation.set(0, th, k * 1.45); solid.on = k < 0.6; } }); }
   // beschlagnahmte Fahrzeuge (fahrbar, spaet gebaut)
   if (typeof addVehicle === "function") { const fwd = [e2[0], e2[1]], hIn = Math.atan2(fwd[0], fwd[1]), hOut = Math.atan2(-fwd[0], -fwd[1]);
-    const V = [[SPEC_ROLLS, () => buildRolls(0x6b1f2a), 6, 64, "Rolls-Royce"], [SPEC_AVENTADOR, () => buildAventador(0x2a7a3a), 14, 64, "Aventador"], [SPEC_GCLASS, () => buildGClass(0x30343a), 22, 64, "G-Klasse"], [SPEC_TAXI, () => buildTaxi(), 30, 64, "Taxi"],
-      [SPEC_NACHTFALKE, () => buildNachtfalke(0x5a1010), 42, 64, "Muscle-Car"], [SPEC_BIKE, () => buildBike(0x1f4f9a), 50, 64, "Motorrad"], [SPEC_SPECTRE, () => buildSpectre(0x8a8f96), 10, 73, "Spectre"], [SPEC_DELOREAN, () => buildDelorean(), 26, 73, "DeLorean"],
-      [SPEC_STREETFIGHTER, () => buildStreetfighter(), 38, 73, "Streetfighter"], [SPEC_ROLLS, () => buildRolls(0x1a1a1a), 58, 73, "Rolls-Royce"]];
-    for (const [spec, build, ss, tt, lbl] of V) { if (!spec) continue; const p = f.W(ss, tt, 0); addVehicle(spec, build, p[0], p[2], Y, tt < 68 ? hIn : hOut, lbl + " (beschlagnahmt)", 0x6b6f76); } }
-  bautAdd({ id: "GO-GCPD-VERWAHR", name: "Verwahrstelle GCPD", art: "Platz", poly: [f.W(-2, 61, 0), f.W(88.5, 61, 0), f.W(88.5, 76, 0), f.W(-2, 76, 0)].map(p => [p[0], p[2]]), y0: Y - 1, y1: Y + 3, info: "beschlagnahmte Fahrzeuge · Zufahrt mit Schranke an der Ostseite" });
+    // [Spezifikation, Bau, Reihe, Feld (0 = erstes), Name]; Feldmitte s = Reihenanfang + 3 * Feld + 1,5, t = Reihenmitte; Front zur Gasse = Heck zur Gasse, also Nase hinein
+    const V = [[SPEC_ROLLS, () => buildRolls(0x6b1f2a), 0, 2, "Rolls-Royce"], [SPEC_AVENTADOR, () => buildAventador(0x2a7a3a), 0, 5, "Aventador"], [SPEC_GCLASS, () => buildGClass(0x30343a), 0, 8, "G-Klasse"], [SPEC_TAXI, () => buildTaxi(), 0, 11, "Taxi"],
+      [SPEC_NACHTFALKE, () => buildNachtfalke(0x5a1010), 0, 15, "Muscle-Car"], [SPEC_BIKE, () => buildBike(0x1f4f9a), 0, 18, "Motorrad"], [SPEC_SPECTRE, () => buildSpectre(0x8a8f96), 1, 3, "Spectre"], [SPEC_DELOREAN, () => buildDelorean(), 1, 7, "DeLorean"],
+      [SPEC_STREETFIGHTER, () => buildStreetfighter(), 2, 4, "Streetfighter"], [SPEC_ROLLS, () => buildRolls(0x1a1a1a), 3, 6, "Rolls-Royce"]];
+    for (const [spec, build, r, k, lbl] of V) { if (!spec) continue; const [s0, , t0, t1, dir] = VW.rows[r], p = f.W(s0 + 3 * k + 1.5, (t0 + t1) / 2, 0); addVehicle(spec, build, p[0], p[2], Y, dir < 0 ? hIn : hOut, lbl + " (beschlagnahmt)", 0x6b6f76); } }
+  // Ueberdachung wie ein Solar-Carport: Paneele auf weissen Stuetzen, leicht geneigt; einzeln ueber Reihe 1 und 4, doppelt ueber Reihe 2 und 3 (Stuetzen in der Mitte)
+  { const solT = canvasTex(256, 128, (c, w, h) => { c.fillStyle = "#16233f"; c.fillRect(0, 0, w, h); c.strokeStyle = "#5a6f95"; c.lineWidth = 1; for (let x = 0; x <= w; x += 16) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = 0; y <= h; y += 21) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } c.fillStyle = "#c9d2e0"; c.fillRect(0, 0, w, 3); c.fillRect(0, h - 3, w, 3); });
+    solT.wrapS = THREE.RepeatWrapping; const th = Math.atan2(-uz, ux), solM = new THREE.MeshStandardMaterial({ map: solT, metalness: 0.45, roughness: 0.3 }), frameM = new THREE.MeshStandardMaterial({ color: 0xdcdcd6, roughness: 0.6 }), roofG = new THREE.Group(); roofG.userData.keep = true; roofG.userData.noLift = true;
+    const roof = (s0, s1, t0, t1, tPost, hLow, hHigh, tiltSign) => { const L = s1 - s0, D = t1 - t0, sl = Math.hypot(D, hHigh - hLow), tex = solT.clone(); tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(L / 6, 1); tex.needsUpdate = true;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(L, 0.12, sl), [frameM, frameM, new THREE.MeshStandardMaterial({ map: tex, metalness: 0.45, roughness: 0.3 }), frameM, frameM, frameM]), c = f.W((s0 + s1) / 2, (t0 + t1) / 2, Y + (hLow + hHigh) / 2);
+      m.position.set(c[0], c[1], c[2]); m.rotation.set(tiltSign * Math.atan2(hHigh - hLow, D), th, 0, "YXZ"); m.castShadow = true; m.receiveShadow = true; roofG.add(m);
+      for (let ss = s0; ss <= s1 + 0.01; ss += 9) {   // Stuetzen auf den Trennlinien, nicht mitten im Feld
+        gbvBox(out, "farbe", f, ss, tPost, 0.3, 0.3, Y, Y + (hLow + hHigh) / 2, col(0xdcdcd6)); gbvBox(out, "beton", f, ss, tPost, 0.7, 0.7, Y, Y + 0.45);
+        const q = f.W(ss, tPost, 0); dkAdd({ cx: q[0], cy: Y + 1.5, cz: q[2], ux, uz, hl: 0.35, hw: 0.35, hh: 1.5, m: 0.1 }); } };
+    roof(0, 78, 61.5, 67.5, 62.2, 3.1, 3.7, 1); roof(0, 72, 72, 78, 77.3, 3.1, 3.7, -1); roof(24, 72, 78, 84, 78.7, 3.1, 3.7, 1); roof(24, 72, 89.5, 95.5, 94.8, 3.1, 3.7, -1);
+    scene.add(roofG); }
+  bautAdd({ id: "GO-GCPD-VERWAHR", name: "Verwahrstelle GCPD", art: "Platz", poly: [f.W(-2, 61, 0), f.W(88.5, 61, 0), f.W(88.5, 80, 0), f.W(72, 80, 0), f.W(72, 96, 0), f.W(22, 96, 0), f.W(22, 78, 0), f.W(-2, 78, 0)].map(p => [p[0], p[2]]), y0: Y - 1, y1: Y + 3, info: "beschlagnahmte Fahrzeuge · Zufahrt mit Schranke an der Ostseite" });
   const grp = gbvMesh(out); grp.name = "Gotham Polizeipräsidium"; grp.userData.keep = true; grp.userData.noLift = true;
   const gm = new THREE.Group(); gm.add(grp); scene.add(gm); yield;
   // Schriftband, Uhr, Laternen (eigene Netze in Turm-Ausrichtung)

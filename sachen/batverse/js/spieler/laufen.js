@@ -229,7 +229,7 @@ function ghostStep(dt) {
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
   const len = Math.hypot(mx, mz);
   if (len > 1) { mx /= len; mz /= len; }
-  const fast = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 3 : 1;   // Shift: dreimal so schnell
+  const fast = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 9 : 3;   // normal = frueheres Shift-Tempo, Shift nochmals dreimal so schnell (Nicolas 2026-11-17)
   const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw), v = GHOST * fast * dt;
   const p = player.pos;
   p.x += (-sy * mz + cy * mx) * v;                                          // nur waagrecht (Blick nach oben/unten aendert die Hoehe nicht)
