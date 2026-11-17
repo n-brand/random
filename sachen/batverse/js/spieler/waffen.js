@@ -33,9 +33,9 @@ function weaponUse() {
     m.position.copy(o); if (bat) m.position.addScaledVector(new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw)), 0.25);   // aus der rechten Hand
     m.userData.dynamic = true; scene.add(m); const v = d.clone().multiplyScalar(bat ? 30 : 17); if (!bat) v.y += 3.5;
     // Batarang als Bumerang: fliegt hinaus (beim Zielen gerade bis zum Zielpunkt, sonst im Linksbogen ca. 22 m), kehrt dann in die Hand zurueck
-    const tgt = bat && AIM.on ? (aimHit(45)?.p || o.clone().addScaledVector(d, 45)) : null;
+    const ah = bat && AIM.on ? aimHit(45) : null, tgt = bat && AIM.on ? (ah?.p || o.clone().addScaledVector(d, 45)) : null;   // trifft das Ziel eine Flaeche: weiter bis zum Aufprall (prallt ab)
     if (bat && !tgt) { const a = 0.65, ca = Math.cos(a), sa = Math.sin(a), vx = v.x, vz = v.z; v.x = vx * ca - vz * sa; v.z = vx * sa + vz * ca; }   // ohne Zielen ca. 37 Grad rechts vom Ziel los (Nicolas 2026-11-16)
-    AIM.proj.push({ id, m, v, t: 0, stuck: 0, out: true, tgt, range: tgt ? o.distanceTo(tgt) : 22, o: o.clone() }); if (!invHas(id)) toast(INV_ITEMS[id].name + ": der letzte (kommt zurück)");
+    AIM.proj.push({ id, m, v, t: 0, stuck: 0, out: true, tgt, tgtHit: !!ah, range: tgt ? o.distanceTo(tgt) + (ah ? 3 : 0) : 22, o: o.clone() }); if (!invHas(id)) toast(INV_ITEMS[id].name + ": der letzte (kommt zurück)");
   } else if (id === "greifhaken") {
     AIM.cd = 0.6; const h = aimHit(70); if (!h) return toast("Greifhaken: nichts in Reichweite (70 m)");
     let to = h.p.clone(); const dir = d.clone().setY(0).normalize();
@@ -91,22 +91,31 @@ function weaponsStep(dt) {
 // Batarang-Flug: hinaus, Rueckkehr (zielt auf die Hand, wird schneller), Fang = wieder im Inventar. Trifft er etwas, faellt er zu Boden
 // und bleibt liegen, bis man darueber laeuft (1,6 m, aufheben). Fliegt er nach 8 s nicht heim (weit weg/verloren), faellt er herunter.
 const BAT_HAND = new THREE.Vector3();
+// Abprallen (Nicolas 2026-11-17: "beim Treffen eines Gebaeudes, Fahrzeugs oder Baums abprallen"): Flaechennormale durch Proben um den Treffer (frei = Richtung nach aussen),
+// Geschwindigkeit spiegeln und auf 45 % daempfen, danach faellt er (Schwerkraft) und bleibt liegen. Fahrzeuge nehmen Schaden wie von einer Pistolenkugel x 2.
+const BAT_DIRS = [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0], [0, -1, 0]].map(a => new THREE.Vector3(...a));
+function batBounce(P, h) { const m = P.m, vd = P.v.clone().normalize(), p = h.p.clone().addScaledVector(vd, -0.3); let n = null, best = -2;
+  for (const D of BAT_DIRS) { const q = p.clone().addScaledVector(D, 0.45); if (shotAt(q.x, q.y, q.z)) continue; const k = -vd.dot(D); if (k > best) { best = k; n = D; } }
+  if (!n) n = vd.clone().negate(); const vn = P.v.dot(n); if (vn < 0) P.v.addScaledVector(n, -2 * vn); P.v.multiplyScalar(0.45); m.position.copy(p).addScaledVector(n, 0.12);
+  if (h.hit && h.hit.veh && typeof gunDamage === "function") gunDamage(h.hit.veh, h.p, 20);
+  P.fall = true; P.out = false; if (typeof shotSound === "function") shotSound(0.05, 0.05); }
 const batTurnLeft = (v, a) => { const c = Math.cos(a), s = Math.sin(a), vx = v.x, vz = v.z; v.x = vx * c + vz * s; v.z = -vx * s + vz * c; };   // von oben gesehen gegen den Uhrzeiger
 function batarangStep(P, dt, i) {
   const m = P.m, hand = BAT_HAND.set(player.pos.x, player.pos.y + EYE - 0.35, player.pos.z);
   if (P.lie) { m.rotation.y += 0; if (onFoot() && Math.hypot(m.position.x - player.pos.x, m.position.z - player.pos.z) < 1.6 && Math.abs(m.position.y - player.pos.y) < 2.2) { invAdd("batarang", 1); toast("Batarang aufgehoben"); scene.remove(m); AIM.proj.splice(i, 1); } return; }
   if (P.fall) { P.v.y -= 9.8 * dt; const a = m.position.clone(), b = a.clone().addScaledVector(P.v, dt), h = shotSeg(a, b, null, 0.15);
+    if (h && !P.b2 && P.v.length() > 6 && h.hit !== "ground") { P.b2 = true; batBounce(P, h); return; }
     if (h || P.t > 12) { m.position.copy(h ? h.p : b); m.position.y += 0.02; m.rotation.set(0, m.rotation.y, 0); P.lie = true; return; } m.position.copy(b); m.rotation.y += dt * 8; return; }
   m.rotation.y += dt * 32; m.rotation.z = 0.25;                              // dreht flach, leicht gekippt
-  if (P.out) { if (P.tgt) P.v.copy(P.tgt).sub(m.position).normalize().multiplyScalar(30);
+  if (P.out) { if (P.tgt && m.position.distanceTo(P.tgt) > 0.5) P.v.copy(P.tgt).sub(m.position).normalize().multiplyScalar(30);
     else { batTurnLeft(P.v, dt * 1.65); P.v.y -= 1.2 * dt; }   // Linksbogen: rechts hinaus, kreuzt die Mitte bei ca. 22 m (Nicolas 2026-11-16: vorher Rechtskurve)
-    if (m.position.distanceTo(P.o) >= P.range - 0.5 || (P.tgt && m.position.distanceTo(P.tgt) < 0.8)) P.out = false; }
+    if (m.position.distanceTo(P.o) >= P.range - 0.5 || (P.tgt && !P.tgtHit && m.position.distanceTo(P.tgt) < 0.8)) P.out = false; }
   else { const want = hand.clone().sub(m.position), dist = want.length(), sp = Math.min(38, 22 + P.t * 6);
     if (!P.tgt && !P.home) { batTurnLeft(P.v, dt * 6); P.v.setLength(sp); const dv = Math.hypot(P.v.x, P.v.z), dw = Math.hypot(want.x, want.z); if ((P.v.x * want.x + P.v.z * want.z) / (dv * dw || 1) > 0.7 || P.t > 4) P.home = true; }   // weiter links herum, links zurueck
     else P.v.lerp(want.normalize().multiplyScalar(sp), Math.min(1, dt * 5));
     if (dist < 1.1 || (dist < 2.5 && P.t > 0.6)) { invAdd("batarang", 1); scene.remove(m); AIM.proj.splice(i, 1); return; } }
-  const a = m.position.clone(), b = a.clone().addScaledVector(P.v, dt), h = P.t > 0.05 ? shotSeg(a, b, null, 0.3) : null;
-  if (h) { m.position.copy(h.p).addScaledVector(P.v.clone().normalize(), -0.35); if (h.hit && h.hit.veh) toast("Batarang trifft " + (h.hit.veh.label || "das Fahrzeug")); P.fall = true; P.v.multiplyScalar(-0.15); return; }
+  const a = m.position.clone(), b = a.clone().addScaledVector(P.v, dt), h = shotSeg(a, b, null, 0.25);   // ab dem Abwurf pruefen (vorher erst nach 0,05 s: nah an Wand oder Automat flog er durch, Nicolas 2026-11-17)
+  if (h) { batBounce(P, h); return; }
   m.position.copy(b); if (P.t > 8) { P.fall = true; P.v.set(0, 0, 0); }
 }
 function aimSmoke(p) { const S = { t: 0, s: [] }; for (let k = 0; k < 26; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: AIM_M.smokeT, transparent: true, depthWrite: false, opacity: 0.75 }));
@@ -115,6 +124,10 @@ function aimSmoke(p) { const S = { t: 0, s: [] }; for (let k = 0; k < 26; k++) {
 // Maus: rechts halten = zielen, links (gefangen) = benutzen. Laeuft vor dem Rechtsklick in tore.js (dort wird bei Waffe abgebrochen).
 renderer.domElement.addEventListener("mousedown", e => { if (touch || !onFoot() || !weaponHeld()) return;
   if (e.button === 2) { e.preventDefault(); AIM.on = true; } else if (e.button === 0 && dragging) weaponUse(); });
+// Bat-Knopf (Nicolas 2026-11-17: "ein Item, vielleicht ein Bat-Knopf, mit dem man das Batsignal an- und ausschalten kann"): in der Hand Linksklick schaltet GCPD.on
+function batKnopf() { if (typeof GCPD === "undefined") return toast("Kein Batsignal in Reichweite"); GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts über Gotham)" : "Batsignal aus"); if (typeof invRender === "function") invRender(); }
+renderer.domElement.addEventListener("mousedown", e => { if (e.button === 0 && dragging && onFoot() && typeof invHeld === "function" && invHeld() === "batknopf") batKnopf(); });
+document.getElementById("btn-use")?.addEventListener("click", () => { if (typeof invHeld === "function" && invHeld() === "batknopf" && onFoot()) batKnopf(); });
 addEventListener("mouseup", e => { if (e.button === 2) AIM.on = false; });
 document.getElementById("btn-aim")?.addEventListener("click", e => { e.currentTarget.blur(); AIM.on = !AIM.on && onFoot() && !!weaponHeld(); });
 document.getElementById("btn-use")?.addEventListener("click", e => { e.currentTarget.blur(); weaponUse(); });

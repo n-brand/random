@@ -12,6 +12,7 @@ const INV_ITEMS = {
   munition: { name: "9-mm-Munition", art: "Munition", stack: 64, svg: '<g fill="#c99a3a" stroke="#7a5a1a"><rect x="5" y="9" width="4" height="12" rx="1"/><rect x="11" y="7" width="4" height="14" rx="1"/><rect x="17" y="9" width="4" height="12" rx="1"/></g><g fill="#a0a4aa"><rect x="5" y="6" width="4" height="4" rx="2"/><rect x="11" y="4" width="4" height="4" rx="2"/><rect x="17" y="6" width="4" height="4" rx="2"/></g>' },
   goldbarren: { name: "Goldbarren", art: "Wert", stack: 16, svg: '<path d="M3 19 L7 9 H19 L23 19 Z" fill="#e0b03a" stroke="#8a6a1a"/><path d="M7 9 L9 12 H17 L19 9" fill="none" stroke="#f6d77a"/>' },
   batsuit: { name: "Batsuit", art: "Kleidung", stack: 1, svg: '<path d="M9 4 L10 7 H16 L17 4 L18 8 L21 10 L20 22 H6 L5 10 L8 8 Z" fill="#1a1b1e" stroke="#555"/><path d="M10 13 L13 11 L16 13 L13 14 Z" fill="#e8c547"/>' },
+  batknopf: { name: "Bat-Knopf", art: "Gadget", stack: 1, svg: '<circle cx="13" cy="13" r="11" fill="#1d2025" stroke="#e8c547" stroke-width="1.6"/><circle cx="13" cy="13" r="7.5" fill="#e8c547"/>' },
   mantel: { name: "Mantel", art: "Kleidung", stack: 1, svg: '<path d="M8 4 H18 L22 9 L20 23 H6 L4 9 Z" fill="#5a4636" stroke="#2e231a"/><path d="M13 4 V23" stroke="#2e231a"/>' },
 };
 // Beschreibungen fuer den Tooltip (Nicolas 2026-11-16: Name beim Darueberfahren, lange Texte kuerzen, Shift halten zeigt alles)
@@ -23,13 +24,15 @@ const INV_DESC = {
   munition: "9-mm-Patronen. Noch ohne passende Waffe.",
   goldbarren: "Feingold aus dem Tresor der Geheimbasis. Wertanlage.",
   batsuit: "Der gepanzerte Anzug aus der Geheimbasis im Container. Leicht, kugelsicher, mit Umhang.",
+  batknopf: "Funkknopf für das Batsignal auf dem Polizeipräsidium. In der Hand: Linksklick schaltet das Signal an oder aus (leuchtet nachts über Gotham).",
   mantel: "Ein langer Wollmantel für unauffällige Auftritte in der Stadt.",
 };
 // Gullihaken (Nicolas 2026-11-16, Foto): roter T-Griff, langer Schaft, kleiner Haken unten; ganz im 26er-Feld (vorher unten abgeschnitten)
 // Batarang-Symbol aus der Batsignal-Form (BAT_SIGNAL_PTS)
 // erst beim Zeichnen (Werkstatt laedt gotham-polizei.js nach inventar.js, Nicolas 2026-11-16: Redesign fehlte dort)
 function invBatIcon() { if (INV_ITEMS.batarang.sig || typeof BAT_SIGNAL_PTS === "undefined") return; INV_ITEMS.batarang.sig = true; const P = BAT_SIGNAL_PTS, q = ([x, y]) => (13 + x * 12).toFixed(1) + " " + (13 + y * 12).toFixed(1), d = "M" + P.map(q).join(" L") + " L" + P.slice(1, -1).reverse().map(([x, y]) => q([-x, y])).join(" L") + " Z";
-  INV_ITEMS.batarang.svg = '<path d="' + d + '" fill="#1d2025" stroke="#9aa0a6" stroke-width="0.9" stroke-linejoin="round"/>'; }
+  INV_ITEMS.batarang.svg = '<path d="' + d + '" fill="#1d2025" stroke="#9aa0a6" stroke-width="0.9" stroke-linejoin="round"/>';
+  INV_ITEMS.batknopf.svg = '<circle cx="13" cy="13" r="11" fill="#1d2025" stroke="#e8c547" stroke-width="1.6"/><circle cx="13" cy="13" r="7.6" fill="#e8c547"/><path transform="translate(13 13.6) scale(.5) translate(-13 -13)" d="' + d + '" fill="#1d2025"/>'; }   // Bat-Knopf: Fledermaus auf gelbem Knopf
 invBatIcon(); addEventListener("load", () => { if (!INV_ITEMS.batarang.sig) invRender(); });   // Werkstatt: nach allen Skripten neu zeichnen
 const INV_TEST_ALLE = true;   // TEST: alle Gegenstaende besitzen (siehe Aufbau unten)
 const INV = { slots: new Array(36).fill(null), sel: 0, pick: -1, cursor: null, drag: null };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }

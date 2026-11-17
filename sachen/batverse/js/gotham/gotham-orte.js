@@ -31,6 +31,14 @@ function gortKind(o) {
 }
 // Farben der Schilder [Grund, Schrift]
 const GORT_COL = { portal: ["#d8d0bf", "#3a362f"], kh: ["#ffffff", "#c8102e"], turm: ["#101418", "#e8c56a"], laden: ["#1d2229", "#f4efe2"], miet: ["#2a1f1a", "#ff5a4a"], halle: ["#0e1a2a", "#9fd3ff"], krippe: ["#fff4c2", "#2d6fb5"], fabrik: ["#3b3b38", "#f0e6c8"], atm: ["#0b3d6e", "#ffffff"], stadion: ["#0b2d5a", "#ffffff"] };
+// Bankautomat direkt beim Wayne Tower (Nicolas 2026-11-17): neues Modell (bankautomat.js, wie in der Werkstatt) auf dem Vorplatz, 4 m vor und 6 m rechts vom Startpunkt
+// des Begehens, Front zur Strasse. Kollision (dkAdd), Rechtsklick/E oeffnet das Bankfenster; der Bildschirm zeigt die Seiten des Fensters (konto.js).
+function gortWayneAtm() { if (typeof buildBankautomat !== "function" || typeof WALK_START === "undefined" || GORT.wtAtm) return;
+  const yaw = WALK_START.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw), rx = Math.cos(yaw), rz = -Math.sin(yaw), x = WALK_START.x + fx * 4 + rx * 6, z = WALK_START.z + fz * 4 + rz * 6;
+  const y = groundAt(x, z, 50), h = yaw + Math.PI, g = buildBankautomat(); g.position.set(x, y, z); g.rotation.y = h; scene.add(g); GORT.wtAtm = g;
+  dkAdd({ cx: x, cy: y + 1.18, cz: z, ux: Math.cos(h), uz: -Math.sin(h), hl: 0.42, hw: 0.5, hh: 1.18, m: 0.05 });
+  const hm = new THREE.Mesh(new THREE.BoxGeometry(1, 2.4, 1.1), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(x, y + 1.2, z); scene.add(hm);
+  gates.push({ name: "Bankautomat (Wayne Tower)", g: hm, call: () => typeof kontoOpen === "function" && kontoOpen(), verbs: ["benutzen", "benutzen"], a: [x, z], b: [x, z], near: 4 }); }
 function* gortGen() {
   while (!GSTR.done || !GGEB.done || !GBST.done) yield "wait";
   gbvInit();
@@ -206,7 +214,7 @@ function gortStadion(out, f, o, k, Y, box, sign, M) {
 }
 TILES.tasks.push({ gen: null, plan() {}, step() { if (GORT.done || TILES.startup || TILES.loading()) return false;
   if (!this.gen) this.gen = gortGen(); const t0 = performance.now();
-  while (performance.now() - t0 < 3) { const r = this.gen.next(); if (r.done) { GORT.done = true; this.gen = null; return false; } if (r.value === "wait") return false; }
+  while (performance.now() - t0 < 3) { const r = this.gen.next(); if (r.done) { GORT.done = true; this.gen = null; gortWayneAtm(); return false; } if (r.value === "wait") return false; }
   return false; } });
 // je Bild (schleife.js): Schilder und Rosette leuchten nachts (nur bei Aenderung)
 function gortStep() { const M = GORT.mats; if (!M) return; const n = typeof night === "number" ? night : 0; if (GORT._n === n) return; GORT._n = n;

@@ -121,6 +121,28 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 | S5 | **Kameras** | **Später** (Nicolas 2026-11-12). Noch unklar: Überwachungskameras in der Stadt (auf dem Batcomputer ansehen) oder Kamera-Ansichten für den Spieler. |
 | S6 | **Eigene Figuren** | Später: personalisierbare Spielfigur, Kleider wirklich anziehen (braucht ein Figurenmodell mit Skelett; grosser eigener Schritt) |
 
+## Stand der alten Notizen (2026-11-17)
+
+Gebaut: Gotham mit Polizei und Batsignal, Hafen, Wayne Tower mit geheimem Stock, Container-Geheimbasis (Tumbler, Anzug aus dem Boden, Motorrad und Batpod aus der Wand, Lichtdecke, Computer, Waffenwand, Tresor), Kanalnetz mit Schurkenbasis unter dem Wayne Tower, U-Bahn mit Graffiti NBR und Abstellanlage, Bus und Busbahnhof, Taxi-Depot, Parkhäuser und Tiefgaragen, Baustellen-Vorlage, Seitengassen, Casino, Kirche, Gericht, Stadion, Krankenhäuser, Krippen, Bankautomaten; S1 Inventar mit Hotbar und Munition, S2 Zielen und Waffen, S3 Kontostand (Supabase später), S4 Handy-Browser mit Fahrzeug- und Waffenläden; Tag-Nacht; U-Boot, Schnellboot, Meer tiefer.
+Als Gebäude (innen leer) stehen auch: Club des Pinguins, Grand Ballroom (Events), 3 grosse und 4 kleine Banken, Hotels teuer und billig, Juweliere, Massschneider, Kleiderläden, Bars, Restaurants, Fast Food, Fabriken, Museen, Waffenläden, Autohäuser. Ladeweite und Lautstärke werden schon gespeichert (localStorage wm-range, wm-vol). Noch offen aus den alten Notizen: Tumbler 2.0 (drei Entwürfe), Corvette, Arkham-Insel mit Fähre, Militärstützpunkt und -insel, Klavier mit Geheimcode, Inneneinrichtung der Mansion, weitere geheime Dinge und grösserer Hangar in der Cave, Kameras (S5), eigene Figuren (S6), Obdachlosenlager unter der Brücke und Drogenverstecke (in der Karte, noch nicht gebaut), Tresorkeller in den grossen Banken und 3 Automaten in den kleinen, coolerer Ladebildschirm getrennt für Handy und PC, Bankautomaten-Modell an allen 24 Standorten (PLAN-BANKAUTOMAT A4). Nicht Batverse: "Rampe und Polytrack game", "VS Code mit Live Server, Vite, CodeSandbox/StackBlitz zum Testen von Bauteilen" (Werkzeuge).
+
+## Phase 10 – Notizen 17.11.2026
+
+| Nr | Was | Stand |
+|----|-----|-------|
+| N1 | **Börse**, Aktienhandel (Wayne Enterprises, Autohauskette usw.) | offen – braucht Kursmodell und Seite im Web |
+| N2 | **Geldwäsche**: bargeldintensive Betriebe, Immobilien, Kunst, Gold, Luxusgüter, Kryptowährungen | offen – Idee, Ablauf mit Nicolas klären |
+| N3 | **Geld- und Gefangenentransporte** (fahrende Transporter) | offen |
+| N4 | Casinos | ein Casino steht (BS-02); weitere offen |
+| N5 | **Laptops in der Werkstatt**: wie der Bankautomat, aber anderes UI. Zwei Laptops nebeneinander mit verschiedenem Gehäuse, gleiche Software; nicht jeder hat jede App. Benutzername schon eingetragen; manche entsperrt, manche ohne, manche mit Passwort. Apps: **Web** (Browser mit angehefteten Seiten wie GTA V: Autohändler, Waffen, Börse, Bank, Immobilien – überall schon angemeldet; eigene Immobilien mit Wert), **Kontakte** (Polizei, Taxi, Krankenwagen, Feuerwehr anrufen), **E-Mail**, **Karten**; weitere Apps später | offen – eigener Plan (wie PLAN-BANKAUTOMAT), Umbauprojekt in der Werkstatt |
+| N6 | **Granaten** als Werkzeug | offen |
+| N7 | **Autoschlüssel**: im Autohaus hinten in einem Schlüsseltresor | offen |
+| N8 | Jeder Gegenstand: **2D im Inventar, 3D in der Hand und ausserhalb** | Schusswaffen 3D in der Hand; übrige noch 2D-Symbol in der Hand, 3D-Modelle offen |
+| N9 | **Generalschlüssel/Hacktool** für Batman: jede Tür öffnen, jedes Fahrzeug stehlen | offen (hängt an N7) |
+| N10 | Batarang flog durch Gebäude, soll abprallen (Gebäude, Fahrzeug, Baum) | **gebaut 2026-11-17** |
+| N11 | Bankautomat direkt beim Wayne Tower | **gebaut 2026-11-17** (neues Modell auf dem Vorplatz) |
+| N12 | Item zum Ein-/Ausschalten des Batsignals (Bat-Knopf) | **gebaut 2026-11-17** |
+
 ## Nicht Teil von Wayne Manor
 
 - **„Rampe und Polytrack game“** – klingt nach einem eigenen Spiel (Strecke mit Rampen, Stil wie Polytrack). Vorschlag: eigenes Projekt unter `sachen/`, eigener Plan.
