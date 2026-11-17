@@ -28,9 +28,13 @@ const SLOT_CSS = `
 @keyframes sl-run { to { background-position: 14px 0; } }
 #slot .sl-reels { position: relative; padding: 10px; border-radius: 12px; background: linear-gradient(#c9ccd1, #8a8f96); box-shadow: inset 0 2px 8px rgba(0,0,0,.5); }
 #slot canvas { display: block; width: 456px; height: 228px; border-radius: 6px; }
-#slot .sl-line { position: absolute; left: 4px; right: 4px; top: 50%; height: 4px; margin-top: -2px; background: #e0102a; box-shadow: 0 0 8px #ff2a55; border-radius: 2px; opacity: .85; pointer-events: none; }
-#slot .sl-line.win { animation: sl-blink .25s steps(2) 8; background: #3aff7a; box-shadow: 0 0 14px #3aff7a; }
-@keyframes sl-blink { 50% { opacity: .1; } }
+/* Gewinnreihe (Nicolas 2026-11-17: "die rote Linie verdeckt die Symbole"): Rahmen ueber und unter der mittleren Reihe plus Pfeile links/rechts ausserhalb der Walzen, nichts liegt auf den Symbolen */
+#slot .sl-line { position: absolute; left: 10px; right: 10px; top: calc(10px + (100% - 20px) / 3); height: calc((100% - 20px) / 3); border-top: 3px solid #e0102a; border-bottom: 3px solid #e0102a; box-sizing: border-box; pointer-events: none; box-shadow: 0 -4px 8px -4px #ff2a55, 0 4px 8px -4px #ff2a55; }
+#slot .sl-line::before, #slot .sl-line::after { content: ""; position: absolute; top: 50%; margin-top: -9px; border: 9px solid transparent; }
+#slot .sl-line::before { left: -18px; border-left-color: #e0102a; } #slot .sl-line::after { right: -18px; border-right-color: #e0102a; }
+#slot .sl-line.win { animation: sl-blink .25s steps(2) 8; border-color: #3aff7a; background: rgba(58,255,122,.14); box-shadow: 0 0 16px #3aff7a; }
+#slot .sl-line.win::before { border-left-color: #3aff7a; } #slot .sl-line.win::after { border-right-color: #3aff7a; }
+@keyframes sl-blink { 50% { opacity: .35; } }
 #slot .sl-msg { min-height: 26px; margin: 10px 0 6px; text-align: center; font-size: 17px; font-weight: 800; color: #ffd23a; text-shadow: 0 1px 0 #000; }
 #slot .sl-msg.win { color: #3aff7a; } #slot .sl-msg.err { color: #ff8a8a; font-size: 14px; }
 #slot .sl-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
