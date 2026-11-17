@@ -125,6 +125,10 @@ function* gcpdGen() {
   bautAdd({ id: "GO-GCPD", name: "Polizeipräsidium", art: "Gebäude", poly: [f.W(4, 8, 0), f.W(L1 - 4, 8, 0), f.W(L1 - 4, L2 - 4, 0), f.W(4, L2 - 4, 0)].map(p => [p[0], p[2]]), y0: Y - 1, y1: H3 + 4, info: "GCPD · Batsignal auf dem Dach (Rechtsklick schaltet) · " + Math.round(O.h) + " m" });
   // Streifenwagen auf dem Vorplatz (spaet gebaut wie die anderen Fahrzeuge)
   if (typeof addVehicle === "function" && typeof SPEC_POLICE !== "undefined") for (const [s, tt] of [[10, -2], [16, -2], [L1 - 16, -2], [L1 - 10, -2]]) { const [x, , z] = f.W(s, tt, 0); addVehicle(SPEC_POLICE, () => buildPolice(), x, z, Y, Math.atan2(e2[0], e2[1]), "Gotham Police (Präsidium)", 0xeef0f2); }
+  // Polizei-Van und zwei Polizei-Motorraeder (Nicolas 2026-11-17) neben den Streifenwagen
+  if (typeof addVehicle === "function" && typeof SPEC_POLIZEIVAN !== "undefined") { const h = Math.atan2(e2[0], e2[1]);
+    { const [x, , z] = f.W(L1 - 19.5, -3, 0); addVehicle(SPEC_POLIZEIVAN, () => buildPolizeiVan(), x, z, Y, h, "Gotham Police Van (Präsidium)", 0x141c2e); }
+    for (const s of [19.2, 20.8]) { const [x, , z] = f.W(s, -2, 0); addVehicle(SPEC_POLIZEIMOTORRAD, () => buildPolizeiMotorrad(), x, z, Y, h, "Gotham Police Motorrad (Präsidium)", 0xeef0f2); } }
 }
 // Fledermaus-Umriss (eigene Form: Fluegel mit drei Zacken unten, Kopf mit zwei Ohren), Mitte cx/cy, Breite w
 // Fledermaus des Batsignals: halbe Kontur (rechts, x 0..1, y nach unten wie im Canvas), gespiegelt; auch Form des Batarangs und seines Symbols (Nicolas 2026-11-16)

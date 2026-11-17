@@ -1581,3 +1581,102 @@ const SPEC_TERZO = { name: "Lamborghini Terzo Millennio", wheels: [[-0.86, -1.45
   maxN: 40, maxF: 66.7, acc: 15, steer: 0.68, jump: false, grade: 35, camD: 8.2, camH: 0.95, seat: [-0.36, 0.8, 0.1], bodyH: 1.06, bike: false,
   exits: [[-1.9, -0.2], [1.9, -0.2], [-1.9, 1.3], [1.9, 1.3], [0, -3.9], [0, 3.9]],
   msg: "Lamborghini Terzo Millennio: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, L Autoaufzug, Shift aussteigen" };
+
+// ===================== Dienstfahrzeuge (Nicolas 2026-11-17: "ich will ausserdem Geldtransporter, Polizei-Van und Polizei-Motorrad"; eigene Entwuerfe, ohne Marken) =====================
+// Front nach -z, Ursprung = Mitte zwischen den Achsen, Boden y 0 (wie die anderen Modelle). Blaulicht/Warnlicht ueber beacon (blinkt beim Fahren, fahren.js).
+// Geldtransporter "Gotham Secure": gepanzerter Kastenwagen mit Haube, dunkles Stahlblau mit goldenem Band, kleine Fenster mit Gittern, Schiessscharten,
+// Doppeltuer hinten, Seitentuer, orange Warnleuchte, Rammschutz; schwer (langsam, kraeftig).
+function buildGeldtransporter() {
+  const g = new THREE.Group(), HW = 1.18, zF = -3.3, zR = 3.5;
+  const paint = M(0x22324a, { metalness: 0.55, roughness: 0.3 }), steel = M(0x3a4048, { metalness: 0.75, roughness: 0.35 }), black = M(0x111214, { roughness: 0.7 }), gold = M(0xd4a640, { metalness: 0.9, roughness: 0.3 });
+  const glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0x3a3e44, { metalness: 0.7, roughness: 0.35 });
+  boxIn(g, -0.55, 0.55, 0.45, 0.72, zF + 0.3, zR - 0.2, black);                                                               // Rahmen
+  boxIn(g, -HW + 0.08, HW - 0.08, 0.72, 1.5, zF, zF + 1.3, paint); boxIn(g, -HW + 0.1, HW - 0.1, 1.5, 1.56, zF + 0.05, zF + 1.3, paint);   // Haube
+  for (let y = 0.85; y < 1.42; y += 0.09) boxIn(g, -0.6, 0.6, y, y + 0.05, zF - 0.03, zF, steel);                               // Grill
+  boxIn(g, -HW - 0.02, HW + 0.02, 0.45, 0.78, zF - 0.32, zF - 0.05, black); for (const sd of [-1, 1]) boxIn(g, sd * 0.55 - 0.05, sd * 0.55 + 0.05, 0.6, 1.25, zF - 0.32, zF - 0.22, black);   // Rammschutz
+  boxIn(g, -HW, HW, 0.72, 2.55, zF + 1.3, zF + 2.9, paint); boxIn(g, -HW + 0.12, HW - 0.12, 1.65, 2.35, zF + 1.28, zF + 1.32, glass);   // Kabine, Frontscheibe
+  boxIn(g, -HW - 0.04, HW + 0.04, 0.72, 2.95, zF + 2.9, zR, paint);                                                             // gepanzerter Kasten
+  boxIn(g, -HW - 0.05, HW + 0.05, 2.95, 3.02, zF + 2.85, zR + 0.03, steel);                                                    // Dachkante
+  for (const sd of [-1, 1]) {
+    sideBox(g, sd * (HW - 0.01), sd * (HW + 0.02), 1.7, 2.3, zF + 1.55, zF + 2.75, glass);                                     // Seitenfenster Kabine
+    for (let z = zF + 1.6; z < zF + 2.7; z += 0.12) sideBox(g, sd * (HW + 0.02), sd * (HW + 0.04), 1.7, 2.3, z, z + 0.025, steel);   // Gitter
+    sideBox(g, sd * (HW + 0.045), sd * (HW + 0.07), 1.6, 1.74, zF + 2.95, zR - 0.02, gold); sideBox(g, sd * (HW + 0.005), sd * (HW + 0.025), 1.6, 1.74, zF + 1.3, zF + 2.9, gold);                                    // goldenes Band
+    fireSign(g, fireLabel("GOTHAM SECURE · Geldtransport", 72), 3.2, 0.36, sd * (HW + 0.065), 2.2, zF + 4.6, sd);
+    for (const z of [zF + 3.5, zF + 5.8]) sideBox(g, sd * (HW + 0.04), sd * (HW + 0.08), 1.25, 1.4, z, z + 0.16, black);     // Schiessscharten
+    sideBox(g, sd * (HW + 0.04), sd * (HW + 0.06), 0.85, 2.85, zF + 3.0, zF + 3.04, black); sideBox(g, sd * (HW + 0.04), sd * (HW + 0.06), 0.85, 2.85, zF + 4.1, zF + 4.14, black);   // Seitentuer (Fugen)
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.32), 1.95, 2.35, zF + 1.4, zF + 1.48, black);                                     // Spiegel
+    boxIn(g, sd * 0.78 - 0.17, sd * 0.78 + 0.17, 1.1, 1.3, zF - 0.03, zF, mat.glow);                                           // Scheinwerfer
+    boxIn(g, sd * (HW - 0.25) - 0.13, sd * (HW - 0.25) + 0.13, 1.0, 1.25, zR, zR + 0.02, mat.glowRed);                           // Rueckleuchten
+  }
+  boxIn(g, -0.03, 0.03, 0.8, 2.85, zR, zR + 0.03, black); for (const sd of [-1, 1]) boxIn(g, sd * 0.45 - 0.05, sd * 0.45 + 0.05, 1.6, 1.75, zR, zR + 0.06, chrome);   // Doppeltuer hinten, Griffe
+  boxIn(g, -0.25, 0.25, 2.1, 2.5, zR, zR + 0.02, glass); for (let x = -0.22; x < 0.24; x += 0.09) boxIn(g, x, x + 0.02, 2.1, 2.5, zR + 0.02, zR + 0.04, steel);   // Heckfenster mit Gitter
+  boxIn(g, -HW, HW, 0.5, 0.75, zR, zR + 0.2, black);                                                                            // Stossstange
+  { const t = meshIn(g, new THREE.PlaneGeometry(1.8, 0.3), fireLabel("GOTHAM SECURE", 90), 0, 2.72, zR + 0.035); }
+  for (const z of [-2.0, 1.9]) boxIn(g, -0.95, 0.95, 0.45, 1.15, z - 0.58, z + 0.58, black);                                    // Radhaeuser
+  const warn = lightBar(g, 2.55, zF + 2.2, 1.4, 0xff9a10, 0xff9a10);
+  mergeStatic(g);
+  const wheels = [];
+  for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 0.98, -2.0, 0.46, 0.3, true, tireM, rimM, 0, 24));
+  for (const sd of [-1, 1]) for (const x of [0.82, 1.1]) wheels.push(addWheel(g, sd * x, 1.9, 0.46, 0.27, false, tireM, rimM, 0, 24));
+  for (const w of wheels) sedanCap(w, 0.27, 0x3a3e44, 0x9aa0a6, 8);
+  return { g, wheels, beacon: warn };
+}
+const SPEC_GELDTRANSPORTER = { name: "Gotham Secure (Geldtransporter)", wheels: [[-0.98, -2.0], [0.98, -2.0], [-0.98, 1.9], [0.98, 1.9]], wb: 3.9, track: 1.96, pts: [-2.6, -0.8, 1.0, 2.8], R: 1.2, circR: 1.15, enter: 4.5,
+  maxN: 24, maxF: 30.6, acc: 6.5, steer: 0.58, jump: false, grade: 32, camD: 12, camH: 2.1, seat: [-0.55, 2.0, -1.0], bodyH: 3.0, bike: false, brake: 22, mass: 30,
+  exits: [[-2.1, -1.0], [2.1, -1.0], [-2.1, 1.0], [2.1, 1.0], [0, -4.6], [0, 4.8]],
+  msg: "Gotham Secure (Geldtransporter): W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Warnlicht blinkt beim Fahren)" };
+// Polizei-Van "GCPD": hoher Kastenwagen mit kurzer Schnauze, dunkles Marineblau mit weissem Band und POLICE, Lichtbalken rot/blau, Rammschutz, Schiebetuer, Heckfluegel mit Fenstern
+function buildPolizeiVan() {
+  const g = new THREE.Group(), HW = 1.03, zF = -2.95, zR = 2.95;
+  const paint = M(0x141c2e, { metalness: 0.45, roughness: 0.32 }), white = M(0xeef0f2, { roughness: 0.4 }), black = M(0x0c0d0e, { roughness: 0.7 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 });
+  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0x2a2c30, { metalness: 0.6, roughness: 0.4 });
+  boxIn(g, -HW, HW, 0.42, 1.1, zF + 0.05, zF + 0.95, paint); boxIn(g, -HW + 0.05, HW - 0.05, 1.1, 1.22, zF + 0.1, zF + 0.95, paint);   // Schnauze
+  boxIn(g, -HW, HW, 0.42, 1.3, zF + 0.95, zR, paint); boxIn(g, -HW, HW, 1.3, 2.55, zF + 1.38, zR, paint); boxIn(g, -HW + 0.02, HW - 0.02, 2.55, 2.6, zF + 1.4, zR - 0.05, paint);   // Aufbau unten, oben (hinter der Scheibe), Dach
+  { const ws = new THREE.Mesh(new THREE.BoxGeometry(2 * HW - 0.14, 1.32, 0.05), glass); ws.position.set(0, 1.92, zF + 1.16); ws.rotation.x = 0.31; g.add(ws);   // Frontscheibe schraeg (oben nach hinten)
+    for (const sd of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.32, 0.08), paint); p.position.set(sd * (HW - 0.04), 1.92, zF + 1.16); p.rotation.x = 0.31; g.add(p); } }   // A-Saeulen
+  boxIn(g, -HW, HW, 1.22, 1.32, zF + 0.85, zF + 1.0, paint);
+  for (let x = -0.55; x <= 0.56; x += 0.1) boxIn(g, x - 0.02, x + 0.02, 0.62, 0.98, zF + 0.02, zF + 0.05, chrome);            // Grill
+  boxIn(g, -HW - 0.02, HW + 0.02, 0.35, 0.6, zF - 0.25, zF + 0.05, black); for (const sd of [-1, 1]) boxIn(g, sd * 0.5 - 0.05, sd * 0.5 + 0.05, 0.5, 1.15, zF - 0.28, zF - 0.18, black);   // Rammschutz
+  for (const sd of [-1, 1]) {
+    sideBox(g, sd * (HW - 0.01), sd * (HW + 0.02), 1.5, 2.25, zF + 1.45, zF + 2.1, glass);                                     // Fahrer-/Beifahrerfenster
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.03), 0.95, 1.3, zF + 0.1, zR - 0.1, white);                                       // weisses Band
+    fireSign(g, fireLabel("POLICE · GCPD", 96), 2.6, 0.42, sd * (HW + 0.035), 1.72, zF + 3.6, sd);
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.04), 0.5, 2.4, zF + 2.15, zF + 2.19, black); sideBox(g, sd * (HW + 0.02), sd * (HW + 0.04), 0.5, 2.4, zF + 3.25, zF + 3.29, black);   // Schiebetuer
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.3), 1.85, 2.2, zF + 1.1, zF + 1.18, black);                                       // Spiegel
+    boxIn(g, sd * 0.72 - 0.2, sd * 0.72 + 0.2, 0.95, 1.1, zF - 0.01, zF + 0.02, mat.glow);                                     // Scheinwerfer
+    boxIn(g, sd * (HW - 0.12) - 0.08, sd * (HW - 0.12) + 0.08, 0.8, 1.5, zR, zR + 0.02, mat.glowRed);                           // Rueckleuchten
+    boxIn(g, sd * 0.45 - 0.32, sd * 0.45 + 0.32, 1.75, 2.3, zR, zR + 0.02, glass);                                              // Heckfenster
+  }
+  boxIn(g, -0.02, 0.02, 0.45, 2.5, zR, zR + 0.03, black); boxIn(g, -HW, HW, 0.35, 0.55, zR, zR + 0.18, black);                  // Heckfuge, Stossstange
+  { const t = meshIn(g, new THREE.PlaneGeometry(1.2, 0.28), fireLabel("POLICE", 110), 0, 1.25, zR + 0.035); }
+  for (const z of [-1.9, 1.9]) boxIn(g, -0.9, 0.9, 0.38, 0.95, z - 0.5, z + 0.5, black);
+  const bar = lightBar(g, 2.6, zF + 1.4, 1.6, 0xff2020, 0x2a5cff);
+  mergeStatic(g);
+  const wheels = [[-0.88, -1.9, true], [0.88, -1.9, true], [-0.88, 1.9, false], [0.88, 1.9, false]].map(([x, z, f]) => addWheel(g, x, z, 0.38, 0.26, f, tireM, rimM, 0, 24));
+  for (const w of wheels) sedanCap(w, 0.26, 0x2a2c30, 0xc8ccd0, 6);
+  return { g, wheels, beacon: bar };
+}
+const SPEC_POLIZEIVAN = { name: "Gotham Police Van", wheels: [[-0.88, -1.9], [0.88, -1.9], [-0.88, 1.9], [0.88, 1.9]], wb: 3.8, track: 1.76, pts: [-2.3, -0.8, 0.8, 2.3], R: 1.05, circR: 1.0, enter: 4.2,
+  maxN: 30, maxF: 36.1, acc: 9, steer: 0.62, jump: false, grade: 34, camD: 10, camH: 1.8, seat: [-0.45, 1.75, -1.45], bodyH: 2.7, bike: false, mass: 12,
+  exits: [[-1.9, -1.4], [1.9, -1.4], [-1.9, 1.2], [1.9, 1.2], [0, -4.0], [0, 4.0]],
+  msg: "Gotham Police Van: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blaulicht blinkt beim Fahren)" };
+// Polizei-Motorrad: Tourer in Weiss mit blauem Band, Verkleidung mit Windschild, Seitenkoffer mit POLICE, Blaulichter rot/blau vorne und am Heck, Sturzbuegel
+function buildPolizeiMotorrad() {
+  const b = buildBike(0xeef0f2), g = b.g, blue = M(0x1b2c4f, { metalness: 0.3, roughness: 0.4 }), black = M(0x141517, { roughness: 0.7 }), chrome = M(0xe8eaec, { metalness: 0.95, roughness: 0.12 });
+  const shield = new THREE.MeshStandardMaterial({ color: 0xbfd4e8, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.45 });
+  prismIn(g, [[0.78, 0.62], [0.74, 1.02], [0.5, 1.12], [0.36, 0.92], [0.42, 0.62]], 0.62, M(0xeef0f2, { metalness: 0.5, roughness: 0.32 }));   // Verkleidung vorne
+  prismIn(g, [[0.77, 0.7], [0.75, 0.8], [0.42, 0.8], [0.42, 0.7]], 0.64, blue);                                                // blaues Band an der Verkleidung
+  { const ws = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.42, 0.02), shield); ws.position.set(0, 1.28, -0.6); ws.rotation.x = 0.45; g.add(ws); }   // Windschild
+  for (const sd of [-1, 1]) {
+    boxIn(g, sd * 0.24 - 0.13, sd * 0.24 + 0.13, 0.55, 0.95, 0.55, 1.05, M(0xeef0f2, { metalness: 0.4, roughness: 0.35 }));   // Seitenkoffer
+    fireSign(g, (() => { const m = fireLabel("POLICE", 120); m.color = new THREE.Color(0x1b2c4f); return m; })(), 0.42, 0.12, sd * (0.24 + sd * 0.131), 0.82, 0.8, sd);
+    boxIn(g, sd * 0.24 - 0.135, sd * 0.24 + 0.135, 0.62, 0.66, 0.54, 1.06, blue);
+    meshIn(g, new THREE.TorusGeometry(0.22, 0.02, 6, 12, Math.PI), chrome, sd * 0.3, 0.45, -0.25).rotation.set(0, Math.PI / 2, Math.PI / 2);   // Sturzbuegel
+  }
+  const red = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2 }), blu = new THREE.MeshStandardMaterial({ color: 0x0a1a5a, emissive: 0x2a5cff, emissiveIntensity: 0.2 });
+  for (const sd of [-1, 1]) { meshIn(g, new THREE.SphereGeometry(0.045, 10, 8), sd < 0 ? red : blu, sd * 0.18, 0.98, -0.72); meshIn(g, new THREE.CylinderGeometry(0.04, 0.04, 0.12, 10), sd < 0 ? red : blu, sd * 0.2, 1.2, 1.0);
+    meshIn(g, new THREE.CylinderGeometry(0.01, 0.01, 0.3, 4), black, sd * 0.2, 1.0, 1.0); }
+  return { g, wheels: b.wheels, beacon: [red, blu] };
+}
+const SPEC_POLIZEIMOTORRAD = { ...SPEC_BIKE, name: "Gotham Police Motorrad", maxN: 36, maxF: 44.4, acc: 14,
+  msg: "Gotham Police Motorrad: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift absteigen (Blaulicht blinkt beim Fahren)" };
