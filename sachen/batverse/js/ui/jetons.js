@@ -103,7 +103,8 @@ function jetRender() {
   const d = id && id.startsWith("jeton-") ? JET_DEN.find(q => q[0] === id) : null;
   if (!d || !foot || (typeof invIsOpen === "function" && invIsOpen()) || jetonIsOpen() || (typeof rouletteIsOpen === "function" && rouletteIsOpen())) return;
   let H = JTN.hand; if (!H) { const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.4)); const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(1, 2, 1); sc.add(sun); H = JTN.hand = { sc, g: new THREE.Group(), den: 0 }; sc.add(H.g); }
-  if (H.den !== d[1]) { H.den = d[1]; H.g.clear(); const one = jetStack(d[1], 1, 1.8); one.position.set(0, 0, 0); one.rotation.set(1.15, 0.2, 0.15); H.g.add(one); }   // ein einzelner Jeton (Nicolas 2026-11-17: "3D-Modell soll nur ein Coin sein")
+  if (H.den !== d[1]) { H.den = d[1]; H.g.clear(); const one = jetStack(d[1], 1, 1.8); one.position.set(0, 0, 0); one.rotation.set(1.15, 0.2 + Math.PI / 2, 0.15);   // Zahl waagrecht zum Betrachter (Nicolas 2026-11-17)
+    H.g.add(one); }   // ein einzelner Jeton (Nicolas 2026-11-17: "3D-Modell soll nur ein Coin sein")
   H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); { const zz = 0.45, th = Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV()) / 2); H.g.translateX(0.76 * th * camera.aspect * zz); H.g.translateY(-0.5 * th * zz); H.g.translateZ(-zz); } H.g.rotateX(0.55); H.g.rotateY(-0.4);
   const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(H.sc, camera); renderer.autoClear = ac;
 }
