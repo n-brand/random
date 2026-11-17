@@ -131,7 +131,7 @@ function buildLaptop(id) {
   if (!sil) { const led = new THREE.Mesh(new THREE.BoxGeometry(W * 0.9, 0.004, 0.003), new THREE.MeshBasicMaterial({ color: 0xff2a36 })); led.position.set(0, t * 0.45, -Dp / 2 - 0.0015); g.add(led);
     for (let k = 0; k < 6; k++) { const v = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.012, 0.004), new THREE.MeshStandardMaterial({ color: 0x050505 })); v.position.set(-W * 0.3 + k * W * 0.12, t * 0.5, Dp / 2 + 0.001); g.add(v); } }
   // Deckel (Scharnier hinten), ca. 108 Grad offen
-  const lt = sil ? 0.006 : 0.011, piv = new THREE.Group(); piv.position.set(0, t, Dp / 2); piv.rotation.x = -0.32; g.add(piv);
+  const lt = sil ? 0.006 : 0.011, piv = new THREE.Group(); piv.position.set(0, t, Dp / 2); piv.rotation.x = 0.32; g.add(piv);   // nach hinten geneigt (vorher -0,32: Deckel kippte ueber die Tastatur, Nicolas 2026-11-17)
   const lid = new THREE.Mesh(new THREE.BoxGeometry(W, Dp, lt), body); lid.position.set(0, Dp / 2, 0); piv.add(lid);
   const scr = ltCanvas(512, 320, () => {}); LT.screens[id] = scr;
   const sm = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.92, Dp * 0.86), new THREE.MeshStandardMaterial({ map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.75, roughness: 0.3 }));
