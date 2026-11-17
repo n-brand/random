@@ -205,6 +205,7 @@ const LT_CSS = `
 .lt-err2{color:#d6343b;font-size:13px;min-height:18px;margin-top:6px}
 .lt-card{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:14px 16px;margin-bottom:12px;border:1px solid rgba(127,127,127,.3);border-radius:10px}.lt-card span{font-size:13px;opacity:.75}
 .lt-confirm{display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:600}.lt-confirm div{display:flex;gap:8px}
+.lt-chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0 2px;cursor:pointer}
 .lt-login{max-width:380px;display:flex;flex-direction:column;gap:6px}.lt-login h3{margin:0}.lt-login label{font-size:12px;opacity:.7;margin-top:6px}.lt-field{padding:9px 12px;border-radius:7px;border:1px solid rgba(127,127,127,.35);font-size:14px}.lt-field small{opacity:.6}.lt-login .lt-buy{margin-top:10px;align-self:flex-start}
 .lt-time{margin-left:auto;font-size:13px;text-align:right;line-height:1.2;padding-right:4px}
 .lt-win{position:absolute;left:30px;top:20px;right:30px;bottom:60px;background:#f4f5f7;color:#1c1f24;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
@@ -242,6 +243,7 @@ function ltEnsure() {
   const el = document.createElement("div"); el.id = "laptop"; el.hidden = true; document.body.appendChild(el); LT.el = el;
   el.addEventListener("click", ltClick); el.addEventListener("contextmenu", e => e.preventDefault());
   el.addEventListener("input", e => { if (e.target.classList.contains("lt-search")) { LT.mapQ = e.target.value; ltMapResults(); }
+    if (e.target.classList.contains("lt-mitEinst")) LT.mitEinst = e.target.checked;
     if (e.target.classList.contains("lt-hell")) { ltSet(LT.cur, "hell", +e.target.value); const sc = LT.el.querySelector(".lt-scr"); if (sc) sc.style.filter = "brightness(" + e.target.value + ")"; } });
   addEventListener("keydown", e => { if (!laptopIsOpen()) return;                                   // solange offen: Tasten nicht ans Spiel (Tippen geht trotzdem ins Feld)
     if (LT.cur && LT.sleep[LT.cur] && e.key !== "Escape") { ltPower("wach"); e.preventDefault(); }   // Taste weckt
@@ -282,13 +284,12 @@ function ltClick(e) {
   if (a === "app") { LT.app = v; LT.call = null; if (v === "web") { LT.web = "start"; LT.hist = []; } ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "zu") { LT.app = null; LT.call = null; ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "go") { if (LT.web !== v) LT.hist.push(LT.web); LT.web = v; const V = ltD(LT.cur).verlauf; V.unshift({ s: v, t: Date.now() }); V.length = Math.min(V.length, 40); ltSet(LT.cur, "verlauf", V); return ltRender(); }
-  if (a === "anmelden") { const C = ltD(LT.cur).cookies; if (!C.includes(v)) C.push(v); ltSet(LT.cur, "cookies", C); toast("Angemeldet bei " + ltSiteName(v)); return ltRender(); }
   if (a === "est") { LT.est = v; LT.confirm = null; LT.err2 = ""; return ltRender(); }
   if (a === "cfg") { const [k, x] = v.split(":"); if (k === "lock" && x === "passwort" && !ltD(LT.cur).pw) { LT.err2 = "Zuerst unten ein Passwort festlegen"; return ltRender(); } ltSet(LT.cur, k, k === "wp" ? +x : x); LT.err2 = ""; ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "setpw") { const p = (LT.el.querySelector(".lt-newpw") || {}).value || "", hn = (LT.el.querySelector(".lt-newhint") || {}).value || ""; if (p.length < 3) { LT.err2 = "Passwort mit mindestens 3 Zeichen"; return ltRender(); } ltSet(LT.cur, "pw", p); ltSet(LT.cur, "hint", hn); ltSet(LT.cur, "lock", "passwort"); LT.err2 = ""; toast("Passwort festgelegt"); return ltRender(); }
   if (a === "frage") { LT.confirm = v; return ltRender(); }
   if (a === "nein") { LT.confirm = null; return ltRender(); }
-  if (a === "loeschen") { if (v === "cookies") { ltSet(LT.cur, "cookies", []); toast("Cookies gelöscht – auf allen Websites abgemeldet"); } else { ltSet(LT.cur, "verlauf", []); toast("Verlauf gelöscht"); } LT.confirm = null; return ltRender(); }
+  if (a === "loeschen") { if (v === "cookies") return ltResetAll(!!LT.mitEinst); else { ltSet(LT.cur, "verlauf", []); toast("Verlauf gelöscht"); } LT.confirm = null; return ltRender(); }
   if (a === "back") { LT.web = LT.hist.pop() || "start"; return ltRender(); }
   if (a === "home") { LT.hist = []; LT.web = "start"; return ltRender(); }
   if (a === "car") return ltBuyCar(v);
@@ -327,9 +328,8 @@ const ltOrteAlle = () => typeof GOTHAM_ORTE_ALLE !== "undefined" ? GOTHAM_ORTE_A
 function ltWebPage() {
   const W = LT.web, S = LT_SITES.find(s => s[0] === W), url = S ? S[2] : "gotham.web/start";
   let h = '<div class="lt-addr"><button class="lt-nav" data-a="back" title="Zurück">' + ltSvg(LT_IC.back, 18) + '</button><button class="lt-nav" data-a="home" title="Startseite">' + ltSvg(LT_IC.home, 18) + '</button><div class="lt-url"><span class="lt-lockic">' + ltSvg(LT_IC.lock, 13) + '</span>https://' + url + '</div></div>';
-  if (W === "start") { const Dx = ltD(LT.cur), n = Dx.cookies.length; return h + '<div class="lt-page"><h2>Favoriten</h2><p class="lt-sub">' + (n ? "Angemeldet als Bruce Wayne auf " + n + " von " + LT_SITES.length + " Seiten" : "Nicht angemeldet (Cookies gelöscht)") + "</p></div>" + '<div class="lt-fav" style="padding-top:0">' + LT_SITES.map(([id, n, , c, d]) => '<button class="lt-tile" style="--c:' + c + '" data-a="go" data-v="' + id + '"><b>' + n + "</b><span>" + d + "</span></button>").join("") + "</div>" + (Dx.verlauf.length ? '<div class="lt-page" style="padding-top:0"><p class="lt-sub">Zuletzt besucht: ' + [...new Set(Dx.verlauf.map(q => q.s))].slice(0, 5).map(ltSiteName).join(" · ") + "</p></div>" : ""); }
+  if (W === "start") { const Dx = ltD(LT.cur); return h + '<div class="lt-page"><h2>Favoriten</h2><p class="lt-sub">' + "Angemeldet als Bruce Wayne" + "</p></div>" + '<div class="lt-fav" style="padding-top:0">' + LT_SITES.map(([id, n, , c, d]) => '<button class="lt-tile" style="--c:' + c + '" data-a="go" data-v="' + id + '"><b>' + n + "</b><span>" + d + "</span></button>").join("") + "</div>" + (Dx.verlauf.length ? '<div class="lt-page" style="padding-top:0"><p class="lt-sub">Zuletzt besucht: ' + [...new Set(Dx.verlauf.map(q => q.s))].slice(0, 5).map(ltSiteName).join(" · ") + "</p></div>" : ""); }
   const hero = '<div class="lt-hero" style="--c:' + S[3] + '"><h2>' + S[1] + "</h2><span>" + S[4] + " · angemeldet als Bruce Wayne · Konto " + ltFmt(KONTO.stand) + "</span></div>";
-  if (!ltD(LT.cur).cookies.includes(W)) return h + '<div class="lt-hero" style="--c:' + S[3] + '"><h2>' + S[1] + '</h2><span>' + S[4] + '</span></div><div class="lt-page"><div class="lt-login"><h3>Anmelden</h3><p class="lt-sub">Du bist nicht angemeldet (keine Cookies für ' + S[2] + ').</p><label>E-Mail</label><div class="lt-field">bruce.wayne@wayne-enterprises.gotham</div><label>Passwort</label><div class="lt-field">••••••••••  <small>(vom Browser gespeichert)</small></div><button class="lt-buy" style="--c:' + S[3] + '" data-a="anmelden" data-v="' + W + '">Anmelden</button></div></div>';   // Cookies geloescht
   if (LT_CARS[W]) return h + hero + '<div class="lt-page" style="--c:' + S[3] + '">' + ltCarList(W).map((it, i) => '<div class="lt-row"><b>' + ltEsc(it.name) + '</b><span class="lt-price">' + ltFmt(it.preis) + '</span><button class="lt-buy" data-a="car" data-v="' + W + ":" + i + '"' + (kontoKann(it.preis) ? "" : " disabled") + ">Kaufen</button></div>").join("") + "</div>";
   if (W === "guns" || W === "arms") return h + hero + '<div class="lt-page" style="--c:' + S[3] + '">' + ltWaren(W).map(([id, pr, n], i) => { const I = typeof INV_ITEMS !== "undefined" ? INV_ITEMS[id] : null; if (!I) return "";
     return '<div class="lt-row"><svg class="lt-ware" viewBox="0 0 26 26">' + I.svg + "</svg><b>" + I.name + (n > 1 ? " × " + n : "") + "<br><small>" + I.art + (invCount(id) ? " · " + invCount(id) + " im Inventar" : "") + '</small></b><span class="lt-price">' + ltFmt(pr) + '</span><button class="lt-buy" data-a="ware" data-v="' + W + ":" + i + '"' + (kontoKann(pr) ? "" : " disabled") + ">Kaufen</button></div>"; }).join("") + "</div>";
@@ -357,6 +357,18 @@ function ltAppBody(a) {
   return "";
 }
 const LT_EST = [["system", "System"], ["bild", "Personalisierung"], ["konto", "Anmeldung"], ["daten", "Datenschutz"], ["apps", "Apps"]];
+// Cookies loeschen = echte Spieldaten im Browser (Nicolas 2026-11-17: "die Cookies in echt loeschen, also dass das Inventar und das Konto zurueckgesetzt werden").
+// Spielstand-Schluessel immer, Einstellungen nur mit Haken. Danach wird nichts mehr gespeichert (sonst schriebe die laufende Seite beim Verlassen den alten Stand zurueck) und neu geladen.
+const LT_SPIELDATEN = [["wm-inv", "Inventar"], ["wm-konto", "Konto, Bargeld, Wochenlimit"], ["wm-guns", "Magazine der Waffen"], ["wm-gekauft", "gekaufte Fahrzeuge"], ["wm-stand", "Spielstand (Position, Modus)"], ["wm-boerse", "Börse und Depot"], ["wm-immo", "Immobilien"], ["wm-mail", "E-Mails"], ["wm-laptops", "Laptop-Einstellungen und Verlauf"]];
+const LT_EINSTDATEN = ["wm-res", "wm-shadow", "wm-range", "wm-detail", "wm-auto", "wm-perf", "wm-vol", "wm-time", "wm-time-run", "wm-stand-auto", "wm-minikarte"];
+const ltSpiel = () => typeof BV_NS !== "undefined" && BV_NS === "werkstatt" ? "der Werkstatt" : "von Gotham";   // Werkstatt hat eigenen Speicher (werkstatt/speicher.js)
+function ltResetAll(mitEinst) {
+  const keys = [...LT_SPIELDATEN.map(k => k[0]), ...(mitEinst ? LT_EINSTDATEN : [])];
+  try { const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).startsWith("wm-")) return; return orig.call(this, k, v); };   // ab jetzt nichts mehr zurueckschreiben
+    for (const k of keys) localStorage.removeItem(k); } catch (e) {}
+  try { walking = false; } catch (e) {}                                    // sonst fragt das Spiel beim Neuladen nach (beforeunload)
+  LT.el.innerHTML = '<div class="lt-dev"><div class="lt-lid" style="padding:40px 60px;color:#fff;background:#111;border-radius:14px;text-align:center;font:16px Segoe UI,sans-serif">Spieldaten ' + ltSpiel() + ' gelöscht – startet neu …</div></div>';
+  setTimeout(() => location.reload(), 900); }
 function ltEinst() {
   const id = LT.cur, D = ltD(id), sec = LT.est || "system", nav = '<div class="lt-enav">' + LT_EST.map(([k, n]) => '<button class="' + (k === sec ? "on" : "") + '" data-a="est" data-v="' + k + '">' + n + "</button>").join("") + "</div>";
   let b = "";
@@ -365,8 +377,11 @@ function ltEinst() {
   else if (sec === "konto") { const L = D.lock;
     b = "<h2>Anmeldung</h2><p class=\"lt-sub\">Wie der Laptop beim Sperren und Starten geschützt ist.</p>" + [["offen", "Entsperrt", "Kein Sperrbildschirm beim Start"], ["ohne", "Ohne Passwort", "Anmelden per Klick"], ["passwort", "Mit Passwort", D.pw ? "Passwort ist festgelegt" : "Noch kein Passwort"]].map(([k, n, t]) => '<button class="lt-opt' + (L === k ? " on" : "") + '" data-a="cfg" data-v="lock:' + k + '"><i></i><b>' + n + "</b><span>" + t + "</span></button>").join("") +
       '<p class="lt-sub" style="margin-top:18px">Neues Passwort</p><div class="lt-pwset"><input class="lt-newpw" type="password" placeholder="Neues Passwort" autocomplete="off"><input class="lt-newhint" placeholder="Hinweis (optional)" value="' + ltEsc(D.hint || "") + '"><button class="lt-buy" data-a="setpw">Festlegen</button></div><div class="lt-err2">' + ltEsc(LT.err2 || "") + "</div>"; }
-  else if (sec === "daten") { const q = (k, n, t, btn) => '<div class="lt-card"><b>' + n + "</b><span>" + t + "</span>" + (LT.confirm === k ? '<div class="lt-confirm">' + (k === "cookies" ? "Wirklich löschen? Du wirst auf allen Websites abgemeldet." : "Ganzen Verlauf löschen?") + '<div><button class="lt-buy" style="--c:#d6343b" data-a="loeschen" data-v="' + k + '">Löschen</button><button class="lt-buy sell" data-a="nein">Abbrechen</button></div></div>' : '<button class="lt-buy" style="--c:#d6343b" data-a="frage" data-v="' + k + '">' + btn + "</button>") + "</div>";
-    b = "<h2>Datenschutz</h2>" + q("cookies", "Cookies und Websitedaten", D.cookies.length + (D.cookies.length === 1 ? " Website" : " Websites") + " gespeichert (angemeldet: " + (D.cookies.map(ltSiteName).join(", ") || "keine") + ")", "Cookies löschen") + q("verlauf", "Browserverlauf", D.verlauf.length + (D.verlauf.length === 1 ? " Eintrag" : " Einträge"), "Verlauf löschen"); }
+  else if (sec === "daten") { const da = LT_SPIELDATEN.filter(([k]) => { try { return localStorage.getItem(k) !== null; } catch (e) { return false; } });
+    const ck = '<div class="lt-card"><b>Cookies und Spieldaten ' + ltSpiel() + '</b><span>Löscht die im Browser gespeicherten Daten ' + ltSpiel() + ' (das andere Spiel bleibt unverändert): ' + LT_SPIELDATEN.map(([k, n]) => n).join(", ") + '. Danach startet das Spiel neu mit Startguthaben und Startinventar. Gespeichert sind gerade ' + da.length + " von " + LT_SPIELDATEN.length + ' Bereichen.</span><label class="lt-chk"><input type="checkbox" class="lt-mitEinst"' + (LT.mitEinst ? " checked" : "") + '> Auch Einstellungen löschen (Grafik, Ladeweite, Lautstärke, Uhrzeit, Minikarte)</label>' +
+      (LT.confirm === "cookies" ? '<div class="lt-confirm">Wirklich alles löschen? Das kann nicht rückgängig gemacht werden.<div><button class="lt-buy" style="--c:#d6343b" data-a="loeschen" data-v="cookies">Alles löschen</button><button class="lt-buy sell" data-a="nein">Abbrechen</button></div></div>' : '<button class="lt-buy" style="--c:#d6343b" data-a="frage" data-v="cookies">Cookies löschen</button>') + "</div>";
+    const vl = '<div class="lt-card"><b>Browserverlauf</b><span>' + D.verlauf.length + (D.verlauf.length === 1 ? " Eintrag" : " Einträge") + "</span>" + (LT.confirm === "verlauf" ? '<div class="lt-confirm">Ganzen Verlauf löschen?<div><button class="lt-buy" style="--c:#d6343b" data-a="loeschen" data-v="verlauf">Löschen</button><button class="lt-buy sell" data-a="nein">Abbrechen</button></div></div>' : '<button class="lt-buy" style="--c:#d6343b" data-a="frage" data-v="verlauf">Verlauf löschen</button>') + "</div>";
+    b = "<h2>Datenschutz</h2>" + ck + vl; }
   else if (sec === "apps") b = "<h2>Apps</h2>" + D.apps.map(a => '<div class="lt-row"><i style="width:34px;height:34px;border-radius:8px;background:' + LT_APPS[a][1] + ';display:grid;place-items:center;color:#fff">' + ltSvg(LT_APPS[a][2], 18) + "</i><b>" + LT_APPS[a][0] + "</b><span>installiert</span></div>").join("") + (LAPTOP_DEF.A.apps.length !== D.apps.length ? '<p class="lt-sub" style="margin-top:12px">Nicht installiert: ' + LAPTOP_DEF.A.apps.filter(a => !D.apps.includes(a)).map(a => LT_APPS[a][0]).join(", ") + "</p>" : "");
   return '<div class="lt-einst">' + nav + '<div class="lt-ebody">' + b + "</div></div>";
 }
