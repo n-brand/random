@@ -1,10 +1,10 @@
 // Werkstatt – Geist-Modus (Nicolas 2026-11-17: "in der Werkstatt will ich auch in den Ghostmode gehen koennen"). Wie im Spiel (ui/bedienung.js ghostStep):
-// Knopf "5 Geist" / Taste 5, Start an der aktuellen Kamera mit gleicher Blickrichtung. Linksklick faengt die Maus, WASD nur waagrecht, Leertaste hoch,
+// Knopf "5 Geist" / Taste 5 oder G (an/aus), Start an der aktuellen Kamera mit gleicher Blickrichtung. Linksklick faengt die Maus, WASD nur waagrecht, Leertaste hoch,
 // C oder Strg runter, Shift dreimal so schnell, keine Kollision. Esc bei freier Maus: zurueck zum Ansehen (Ziel 25 m voraus). Nach werkstatt.js laden.
 "use strict";
 const GEIST = { yaw: 0, pitch: 0, v: 25 };
 function geistStart() { const d = camera.getWorldDirection(new THREE.Vector3()); GEIST.yaw = Math.atan2(-d.x, -d.z); GEIST.pitch = Math.asin(Math.max(-1, Math.min(1, d.y))); ghost = true;
-  toast("Geist: Linksklick fängt die Maus, WASD fliegen, Leertaste hoch, C runter, Shift schneller, Esc zurück"); }
+  toast("Geist: Linksklick fängt die Maus, WASD fliegen, Leertaste hoch, C runter, Shift schneller, G oder Esc zurück"); }
 function geistEnd() { ghost = false; const d = camera.getWorldDirection(new THREE.Vector3()); controls.target.copy(camera.position).addScaledVector(d, 25); controls.update(); }
 function geistStep(dt) {
   let mx = 0, mz = 0, my = 0; if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1; if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1; if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1; if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;

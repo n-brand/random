@@ -282,6 +282,7 @@ addEventListener("keydown", e => { if (e.target.tagName === "SELECT") return; ke
   if (e.code === "KeyV" && !e.repeat && !(AKT && AKT.flug)) A_view = A_view ? 0 : 1;
   if (e.code === "KeyM" && !e.repeat) { ENGINE.muted = !ENGINE.muted; if (ENGINE.muted) engineStop(true); else tonAn(); toast(ENGINE.muted ? "Ton aus (M)" : "Ton an (M)"); }
   if (e.code === "KeyF" || (e.code === "KeyE" && modus !== "drive")) setModus(modus === "drive" ? "orbit" : "drive");
+  if (e.code === "KeyG" && !e.repeat) { setModus(modus === "geist" ? "orbit" : "geist"); return; }   // G: Geist an/aus wie im Spiel (Nicolas 2026-11-17)
   const n = /^(Digit|Numpad)([1-5])$/.exec(e.code); if (n) setModus(MODI[+n[2] - 1]);   // 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person, 5 Geist
   if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault(); });
 addEventListener("keyup", e => keys.delete(e.code));
