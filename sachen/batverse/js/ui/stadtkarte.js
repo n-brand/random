@@ -30,9 +30,11 @@ function skEnsure() { if (SK.paths) return;
   // Bruecken
   for (const b of S.bruecken) { const p = line(b.pts); add({ p, stroke: "#15171a", w: b.w + 6, minPx: 2.2 }); add({ p, stroke: "#b9bfc7", w: b.w, minPx: 1.6 }); }
   // Baustellen (BS-01..08)
-  { const p = new Path2D(); for (const b of S.baustellen || []) p.rect(b.x - b.w / 2, b.z - b.d / 2, b.w, b.d); add({ p, fill: "#f5a623", stroke: "#000", w: 2 }); }
+  // Baustellen orange; BS-02 traegt das Casino (gotham-casino.js): als Gebaeude in Gold mit Namen (Nicolas 2026-11-17: "wo genau sieht man es auf der Karte?")
+  { const p = new Path2D(), pc = new Path2D(); for (const b of S.baustellen || []) (b.id === "BS-02" ? pc : p).rect(b.x - b.w / 2, b.z - b.d / 2, b.w, b.d); add({ p, fill: "#f5a623", stroke: "#000", w: 2 }); add({ p: pc, fill: "#1a1410", stroke: "#e8c547", w: 3 });
+    const c = (S.baustellen || []).find(b => b.id === "BS-02"); if (c) SK.casino = { x: c.x, z: c.z, d: c.d }; }
   // Orte (Rechteck in Typfarbe, gedreht; Punkt-Typen als Kreis)
-  for (const o of G.orte) { const T = TYPEN[o.typ] || { farbe: "#fff" }, p = new Path2D();
+  for (const o of G.orte) { if (o.id === "BS-02") continue; const T = TYPEN[o.typ] || { farbe: "#fff" }, p = new Path2D();   // BS-02 = Casino (oben)
     if (T.punkt) p.arc(o.x, o.z, 9, 0, Math.PI * 2);
     else { const W = Math.max(o.w, 18), D = Math.max(o.d, 18), a = (o.dreh || 0) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
       poly([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => [o.x + u * W / 2 * c - v * D / 2 * s, o.z + u * W / 2 * s + v * D / 2 * c]), p); }
@@ -41,6 +43,7 @@ function skEnsure() { if (SK.paths) return;
   // Bezirksnamen: Mitte der Eckpunkte auf der Insel
   for (const b of G.bezirke) { let x = 0, z = 0, n = 0; for (const q of b.poly) if (GOT.sdi(q[0], q[1]) < 0) { x += q[0]; z += q[1]; n++; }
     if (n) labels.push({ x: x / n, z: z / n, text: b.name, bezirk: true }); }
+  if (SK.casino) labels.push({ x: SK.casino.x, z: SK.casino.z - SK.casino.d / 2 - 10, text: "Casino", big: true });
   SK.paths = paths; SK.labels = labels;
 }
 
@@ -217,4 +220,70 @@ function skBigStep() {
   else { c.save(); c.translate(px, pz); c.rotate(P.ang); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2.5 * dpr;
   c.beginPath(); c.moveTo(0, -14 * dpr); c.lineTo(10 * dpr, 11 * dpr); c.lineTo(0, 5 * dpr); c.lineTo(-10 * dpr, 11 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore(); }
   SK.bigMs = performance.now() - t0;
+}
+
+// ===================== Suche und Wegpunkt (Nicolas 2026-11-17: "in der Map bei Gotham oben rechts eine Suche, und man soll einen Wegpunkt setzen koennen") =====================
+// Suche oben rechts (neben den Knoepfen): Orte, Bezirke und Hauptstrassen; Treffer anklicken (oder Enter) = Karte dorthin und Wegpunkt setzen.
+// Wegpunkt: Linksklick ohne Ziehen auf die grosse Karte setzt ihn, Klick auf den Wegpunkt entfernt ihn (auch Knopf "Wegpunkt x"). Gezeigt auf der grossen Karte
+// (Nadel, gestrichelte Linie von dir, Name und Abstand) und auf der Minikarte (Nadel bzw. Randpfeil, Abstand unten). Erreicht (unter 15 m) = entfernt. Gespeichert in wm-wegpunkt.
+SK.wp = (() => { try { return JSON.parse(localStorage.getItem("wm-wegpunkt") || "null"); } catch (e) { return null; } })();
+function skWpSet(mx, mz, name, quiet) {
+  SK.wp = mx == null ? null : { mx, mz, name: name || "Wegpunkt" }; try { localStorage.setItem("wm-wegpunkt", JSON.stringify(SK.wp)); } catch (e) {}
+  SK.mini.last = null; SK.big.dirty = true; const r = document.querySelector("#stadtkarte .sk-wpx"); if (r) r.hidden = !SK.wp;
+  if (!quiet && typeof toast === "function") toast(SK.wp ? "Wegpunkt: " + SK.wp.name : "Wegpunkt entfernt"); }
+const skDist = m => m >= 1000 ? (m / 1000).toFixed(1).replace(".", ",") + " km" : Math.round(m) + " m";
+function skIndex() { if (SK.idx) return SK.idx; skEnsure(); const L = [], typ = { wahrzeichen: "Wahrzeichen", oeffentlich: "Öffentlich", geschaeft: "Geschäft", wohnen: "Wohnen", industrie: "Industrie" };
+  for (const o of GOTHAM.orte) if (o.name && !o.geheim && o.id !== "BS-02") L.push({ t: o.name.replace(/ \(.*\)$/, ""), full: o.name, x: o.x, z: o.z, k: typ[o.typ] || "Ort" });
+  if (SK.casino) L.push({ t: "Casino", full: "Casino Gotham", x: SK.casino.x, z: SK.casino.z, k: "Freizeit" });
+  for (const l of SK.labels) if (l.bezirk) L.push({ t: l.text, full: l.text, x: l.x, z: l.z, k: "Bezirk" });
+  if (typeof GSTR !== "undefined" && GSTR.roads) { const seen = new Set(); for (const r of GSTR.roads) { if (!r.name || seen.has(r.name)) continue; seen.add(r.name); const p = r.pts[r.pts.length >> 1], [x, z] = GOT.toMap(p[0], p[1]); L.push({ t: r.name.replace(/ \(.*\)$/, ""), full: r.name, x, z, k: "Straße" }); } }
+  return SK.idx = L; }
+const skNorm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss");
+function skSearch(q) { q = skNorm(q.trim()); if (!q) return []; const W = q.split(/\s+/);
+  return skIndex().map(e => { const n = skNorm(e.full); if (!W.every(w => n.includes(w))) return null; return { e, s: (n.startsWith(q) ? 0 : skNorm(e.t).split(/\s+/).some(w => w.startsWith(W[0])) ? 1 : 2) + e.t.length / 200 }; })
+    .filter(Boolean).sort((a, b) => a.s - b.s).slice(0, 8).map(r => r.e); }
+{
+  const box = document.getElementById("stadtkarte"), cv = box.querySelector("canvas"), wrap = document.createElement("div"); wrap.className = "sk-such";
+  wrap.innerHTML = '<div class="sk-sbar"><span class="sk-lupe">⌕</span><input type="search" id="sk-such" placeholder="Ort, Straße, Bezirk suchen" autocomplete="off" spellcheck="false"><button type="button" class="sk-wpx" title="Wegpunkt entfernen" hidden>Wegpunkt ×</button></div><ul class="sk-res" hidden></ul>';
+  box.appendChild(wrap); const inp = wrap.querySelector("input"), ul = wrap.querySelector(".sk-res"), wpx = wrap.querySelector(".sk-wpx"); wpx.hidden = !SK.wp;
+  let res = [], sel = 0;
+  const show = () => { res = skSearch(inp.value); sel = 0; ul.hidden = !inp.value.trim(); ul.innerHTML = res.length ? res.map((e, i) => '<li data-i="' + i + '"' + (i === sel ? ' class="on"' : "") + "><b>" + e.t + "</b><span>" + e.k + "</span></li>").join("") : '<li class="leer">Nichts gefunden</li>'; };
+  const pick = i => { const e = res[i]; if (!e) return; const B = SK.big; B.cx = e.x; B.cz = e.z; B.scale = Math.max(B.scale, 1); B.dirty = true; skWpSet(e.x, e.z, e.t); ul.hidden = true; inp.blur(); };
+  inp.addEventListener("input", show); inp.addEventListener("focus", () => { if (inp.value.trim()) show(); });
+  inp.addEventListener("keydown", e => { e.stopPropagation(); if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (!res.length) return; sel = (sel + (e.key === "ArrowDown" ? 1 : res.length - 1)) % res.length; ul.querySelectorAll("li").forEach((li, i) => li.classList.toggle("on", i === sel)); }
+    else if (e.key === "Enter") { e.preventDefault(); pick(sel); } else if (e.key === "Escape") { e.preventDefault(); if (inp.value) { inp.value = ""; ul.hidden = true; } else inp.blur(); } });
+  inp.addEventListener("keyup", e => e.stopPropagation());
+  ul.addEventListener("pointerdown", e => { const li = e.target.closest("li[data-i]"); if (li) { e.preventDefault(); pick(+li.dataset.i); } });
+  wpx.addEventListener("click", () => skWpSet(null));
+  wrap.addEventListener("pointerdown", e => e.stopPropagation()); wrap.addEventListener("wheel", e => e.stopPropagation());
+  // Linksklick ohne Ziehen = Wegpunkt setzen bzw. auf dem Wegpunkt entfernen
+  let down = null; cv.addEventListener("pointerdown", e => { if (e.button === 0) down = { x: e.clientX, y: e.clientY }; inp.blur(); ul.hidden = true; });
+  cv.addEventListener("pointerup", e => { if (e.button !== 0 || !down) return; const d = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null; if (d > 5) return;
+    const B = SK.big, r = cv.getBoundingClientRect(), mx = B.cx + (e.clientX - r.left - r.width / 2) / B.scale, mz = B.cz + (e.clientY - r.top - r.height / 2) / B.scale;
+    if (SK.wp && Math.hypot(mx - SK.wp.mx, mz - SK.wp.mz) * B.scale < 16) return skWpSet(null);
+    let name = "Wegpunkt", best = 40 / B.scale; for (const q of skIndex()) { const dd = Math.hypot(q.x - mx, q.z - mz); if (q.k !== "Bezirk" && dd < best) { best = dd; name = q.t; } }   // nahe an einem Ort: dessen Name
+    skWpSet(mx, mz, name); });
+}
+// Nadel (Spitze bei x, y)
+function skPin(c, x, y, dpr, k = 1) { const r = 7 * dpr * k; c.save(); c.translate(x, y); c.fillStyle = "#e0337a"; c.strokeStyle = "#fff"; c.lineWidth = 2 * dpr;
+  c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(-r * 0.4, -r * 1.2, -r, -r * 1.6, -r, -r * 2.3); c.arc(0, -r * 2.3, r, Math.PI, 0); c.bezierCurveTo(r, -r * 1.6, r * 0.4, -r * 1.2, 0, 0); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = "#fff"; c.beginPath(); c.arc(0, -r * 2.3, r * 0.38, 0, 7); c.fill(); c.restore(); }
+// haengt sich an skMiniStep/skBigStep (je Bild aus schleife.js): Wegpunkt erreicht?, Zeichnen auf Mini- und grosser Karte (nur wenn diese neu gezeichnet wurden)
+{
+  const mini0 = skMiniStep, big0 = skBigStep;
+  skBigStep = function () { const L0 = SK.big.last; big0(); const W = SK.wp; if (!W || SK.big.last === L0) return;
+    const B = SK.big, cv = document.querySelector("#stadtkarte canvas"), c = cv.getContext("2d"), P = skPos(), dpr = Math.min(2, devicePixelRatio || 1), s = B.scale * dpr, w = cv.width, h = cv.height;
+    const X = mx => w / 2 + (mx - B.cx) * s, Z = mz => h / 2 + (mz - B.cz) * s, px = X(P.mx), pz = Z(P.mz), wx = X(W.mx), wz = Z(W.mz);
+    c.save(); c.setLineDash([8 * dpr, 6 * dpr]); c.lineWidth = 2.5 * dpr; c.strokeStyle = "rgba(224,51,122,.85)"; c.beginPath(); c.moveTo(px, pz); c.lineTo(wx, wz); c.stroke(); c.restore();
+    skPin(c, wx, wz, dpr, 1.3); const t = W.name + " · " + skDist(Math.hypot(W.mx - P.mx, W.mz - P.mz));
+    c.font = `700 ${12 * dpr}px system-ui, sans-serif`; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 4 * dpr; c.strokeStyle = "#000"; c.fillStyle = "#fff"; c.strokeText(t, wx, wz + 14 * dpr); c.fillText(t, wx, wz + 14 * dpr); };
+  skMiniStep = function () { const W = SK.wp, P = W ? skPos() : null;
+    if (W && Math.hypot(W.mx - P.mx, W.mz - P.mz) < 15 && !skBigIsOpen()) { const n = W.name; skWpSet(null, 0, 0, true); if (typeof toast === "function") toast("Ziel erreicht: " + n); }
+    const L0 = SK.mini.last; mini0(); const el = document.getElementById("minikarte"); if (!SK.wp || el.hidden || SK.mini.last === L0) return;
+    const M = SK.mini, c = el.getContext("2d"), dpr = Math.min(2, devicePixelRatio || 1), Wd = el.width, R = Wd / 2, k = Wd / M.D, dx = SK.wp.mx - P.mx, dz = SK.wp.mz - P.mz, a = -P.ang;
+    let x = (dx * Math.cos(a) - dz * Math.sin(a)) * k, y = (dx * Math.sin(a) + dz * Math.cos(a)) * k; const r = Math.hypot(x, y), lim = R - 16 * dpr;
+    if (r > lim) { const f = lim / r; x *= f; y *= f; c.save(); c.translate(R + x, R + y); c.rotate(Math.atan2(x, -y)); c.fillStyle = "#e0337a"; c.strokeStyle = "#fff"; c.lineWidth = 1.5 * dpr;
+      c.beginPath(); c.moveTo(0, -8 * dpr); c.lineTo(6 * dpr, 5 * dpr); c.lineTo(-6 * dpr, 5 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+    else skPin(c, R + x, R + y, dpr);
+    const t = skDist(Math.hypot(dx, dz)); c.font = `700 ${10 * dpr}px system-ui, sans-serif`; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3 * dpr; c.strokeStyle = "#000"; c.fillStyle = "#ff9cc5"; c.strokeText(t, R, Wd - 12 * dpr); c.fillText(t, R, Wd - 12 * dpr); };
 }

@@ -196,6 +196,19 @@ body.touch #minikarte { width: 120px; height: 120px; bottom: auto; top: calc(env
 #stadtkarte #sk-me { font-size: 13px; }
 #stadtkarte .sk-hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); background: rgba(0, 0, 0, .6); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
 body.touch #stadtkarte .sk-hint { display: none; }
+/* Suche und Wegpunkt auf der grossen Karte (stadtkarte.js, Nicolas 2026-11-17): oben rechts links neben den Knoepfen */
+#stadtkarte .sk-such { position: absolute; right: 76px; top: calc(env(safe-area-inset-top, 0px) + 12px); width: min(320px, calc(100vw - 100px)); font-family: system-ui, sans-serif; }
+#stadtkarte .sk-sbar { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 6px 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
+#stadtkarte .sk-lupe { font-size: 18px; opacity: .7; }
+#stadtkarte .sk-sbar input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--text); font-size: 14px; }
+#stadtkarte .sk-wpx { flex: none; height: 30px; padding: 0 9px; border-radius: 8px; border: 0; background: #e0337a; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; }
+#stadtkarte .sk-wpx[hidden] { display: none; }
+#stadtkarte .sk-res { list-style: none; margin: 6px 0 0; padding: 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); max-height: 60vh; overflow: auto; }
+#stadtkarte .sk-res[hidden] { display: none; }
+#stadtkarte .sk-res li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; font-size: 14px; }
+#stadtkarte .sk-res li span { font-size: 12px; opacity: .6; white-space: nowrap; }
+#stadtkarte .sk-res li.on, #stadtkarte .sk-res li[data-i]:hover { background: rgba(224, 51, 122, .25); }
+#stadtkarte .sk-res li.leer { cursor: default; opacity: .6; }
 
 /* S1 Inventar mit Hotbar (Nicolas 2026-11-16) */
 #hotbar { display: none; position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 62px); transform: translateX(-50%); gap: 4px; padding: 4px; background: rgba(12,14,18,.72); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; z-index: 5; }
@@ -361,7 +374,7 @@ body.touch #hand { width: min(18vw, 22vh); height: min(18vw, 22vh); right: 22%; 
 #hb-name { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 62px + var(--slot) + 22px); transform: translateX(-50%); z-index: 6; padding: 3px 12px; border-radius: 6px; background: rgba(12,14,18,.6); color: #fff; font: 600 15px system-ui, sans-serif; text-shadow: 0 1px 2px #000; pointer-events: none; opacity: 0; transition: opacity .4s; white-space: nowrap; }   /* Name des gewaehlten Platzes (inventar.js invName) */
 body.walk:not(.drive):not(.ghost) #hb-name.an { opacity: 1; } #hb-name.aus { opacity: 0; }
 body.touch #hb-name { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px + var(--slot) + 22px); }
-@media (max-width: 760px) { #hb-name { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px + 2 * var(--slot) + 22px); } body.touch #hb-name { bottom: calc(env(safe-area-inset-bottom, 0px) + 32px + 2 * var(--slot) + 22px); } }   /* Geld-Felder liegen dort ueber der Hotbar
+@media (max-width: 760px) { #hb-name { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px + 2 * var(--slot) + 22px); } body.touch #hb-name { bottom: calc(env(safe-area-inset-bottom, 0px) + 32px + 2 * var(--slot) + 22px); } }   /* Geld-Felder liegen dort ueber der Hotbar */
 #inv-cursor { position: fixed; z-index: 62; width: var(--slot); height: var(--slot); margin: calc(var(--slot) * -.5) 0 0 calc(var(--slot) * -.5); display: grid; place-items: center; pointer-events: none; filter: drop-shadow(0 3px 6px rgba(0,0,0,.6)); }   /* Stapel an der Maus (inventar.js) */
 #inv-cursor[hidden] { display: none; }
 #inv-cursor svg { width: calc(var(--slot) * .8); height: calc(var(--slot) * .8); }

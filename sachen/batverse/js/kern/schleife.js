@@ -94,7 +94,8 @@ function frame() {
   // Schatten (Leistung 2026-11-13: 108 Aufrufe, ca. 0,7 ms): nur jedes zweite Bild neu, in Fahrzeugen, Boot und Fluggeraeten jedes Bild (sonst hinkt der Schatten nach)
   renderer.shadowMap.autoUpdate = false; if ((++shadowTick & 1) === 0 || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on || (typeof shipOn === "function" && shipOn())) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
-  if (typeof gunRender === "function") gunRender();                        // Schusswaffe in der Hand (spieler/schusswaffen.js)
+  if (typeof gunRender === "function") gunRender();
+  if (typeof jetRender === "function") jetRender();                        // Jetons in der Hand (ui/jetons.js)                        // Schusswaffe in der Hand (spieler/schusswaffen.js)
   perfFrame(performance.now() - tF);
   requestAnimationFrame(frame);
 }

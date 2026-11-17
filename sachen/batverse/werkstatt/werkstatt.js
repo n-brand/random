@@ -225,7 +225,8 @@ function laden(i) {
 function tonAn() { if (modus === "drive" && AKT && !AKT.flug) engineStart(AKT.spec.name); else if (!(AKT && AKT.flug && modus === "drive")) engineStop(); }
 function flugStart() { const F = AKT.F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }
 function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? (A.roll || 0) : A.lean, "YXZ"); }
-window.werkstattTeleport = p => { if (modus === "geist" || modus === "person") { const yaw = modus === "geist" ? GEIST.yaw : PERSON.yaw; if (modus !== "person") setModus("person");   // wie im Spiel: Teleport im Geist = Begehen am Punkt (Nicolas 2026-11-17)
+// Nicolas 2026-11-17 (Bild Ansehen): Teleport ausser im Fahren immer als Person (4) an den Punkt, nicht das Fahrzeug
+window.werkstattTeleport = p => { if (modus !== "drive") { const d = camera.getWorldDirection(new THREE.Vector3()), yaw = modus === "geist" ? GEIST.yaw : modus === "person" ? PERSON.yaw : Math.atan2(-d.x, -d.z); if (modus !== "person") setModus("person");   // wie im Spiel: Teleport im Geist = Begehen am Punkt (Nicolas 2026-11-17)
     PERSON.pos.set(p.x, p.y + 0.05, p.z); PERSON.yaw = yaw; PERSON.pitch = -0.05; PERSON.vy = 0; toast("Teleportiert – Begehen"); return; }
   if (!AKT || AKT.flug) return; AKT.x = p.x; AKT.z = p.z; AKT.v = 0; setze(); };
 
@@ -495,7 +496,8 @@ function loop(t) {
     for (const v of ZIELAUTOS) if (v.dead && Math.hypot(p.x - v.x, p.z - v.z) < 3 && p.y < 4) { if (v.t < 14) { v.t = 14; toast(v.name + ": Feuer gelöscht"); } return true; }
     return false; });
   renderer.render(scene, camera);
-  if (typeof gunRender === "function") gunRender();                        // Schusswaffe in der Hand (../js/spieler/schusswaffen.js)
+  if (typeof gunRender === "function") gunRender();
+  if (typeof jetRender === "function") jetRender();                        // Jetons in der Hand (../js/ui/jetons.js)                        // Schusswaffe in der Hand (../js/spieler/schusswaffen.js)
   requestAnimationFrame(loop);
 }
 groesse();

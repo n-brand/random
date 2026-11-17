@@ -1,5 +1,5 @@
 // Batverse – Roulette im Casino (Nicolas 2026-11-17: "man soll im Casino Roulette spielen koennen"). Spiel und Werkstatt; nach ui/konto.js laden.
-// Europaeisches Roulette 0-36 (Kesselreihenfolge echt). Einsaetze aus dem Bargeld (KONTO.bar, kontoBar), Gewinne zurueck ins Bargeld.
+// Europaeisches Roulette 0-36 (Kesselreihenfolge echt). Einsaetze mit Jetons aus dem Inventar (jetons.js: jetWert/jetTake/jetGive; Nicolas 2026-11-17: Jeton-Automat), Gewinne als Jetons zurueck.
 // Wetten: Zahl 35:1, Kolonne und Dutzend 2:1, 1-18 / 19-36 / Gerade / Ungerade / Rot / Schwarz 1:1. Jetons 10 bis 5 000 $; Linksklick setzt, Rechtsklick nimmt weg.
 // Offen: rouletteOpen(), rouletteClose(), rouletteIsOpen(). Solange offen gehen keine Tasten ans Spiel; Esc schliesst (nicht waehrend der Kessel dreht).
 "use strict";
@@ -47,20 +47,20 @@ function rlEnsure() {
 function rlFit() { const b = RL.el.querySelector(".rl-box"); if (!b) return; b.style.transform = ""; const k = Math.min(1, (innerWidth - 30) / (b.offsetWidth + 30), (innerHeight - 30) / (b.offsetHeight + 30)); b.style.transform = k < 1 ? "scale(" + k.toFixed(3) + ")" : ""; }
 const rouletteIsOpen = () => !!(RL.el && !RL.el.hidden);
 function rouletteOpen() { rlEnsure(); if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); } if (document.pointerLockElement) document.exitPointerLock(); if (typeof keys !== "undefined" && keys.clear) keys.clear();
-  RL.el.hidden = false; RL.win = null; RL.msg = typeof KONTO !== "undefined" && KONTO.bar > 0 ? "Jetons setzen, dann DREHEN (Leertaste)" : "Kein Bargeld – am Bankautomaten abheben"; rlRender(); rlDraw(); }
-function rouletteClose() { if (!rouletteIsOpen() || RL.spin) return; if (rlSum()) { kontoBar(rlSum()); RL.bets = {}; } RL.el.hidden = true; if (typeof grabMouse === "function") grabMouse(); }   // offene Einsaetze zurueck ins Bargeld
-// Jeton setzen (dir 1) bzw. wegnehmen (dir -1); Einsatz wird sofort vom Bargeld genommen
+  RL.el.hidden = false; RL.win = null; RL.msg = jetWert() > 0 ? "Jetons setzen, dann DREHEN (Leertaste)" : "Keine Jetons – am Jeton-Automaten oder an der Kasse kaufen"; rlRender(); rlDraw(); }
+function rouletteClose() { if (!rouletteIsOpen() || RL.spin) return; if (rlSum()) { jetGive(rlSum()); RL.bets = {}; } RL.el.hidden = true; if (typeof grabMouse === "function") grabMouse(); }   // offene Einsaetze zurueck ins Bargeld
+// Jeton setzen (dir 1) bzw. wegnehmen (dir -1); Einsatz wird sofort von den Jetons im Inventar genommen
 function rlPlace(k, dir) { if (RL.spin) return; if (RL.win) { RL.win = null; }
-  if (dir > 0) { const v = RL.chip; if (KONTO.bar < v) { RL.msg = "Nicht genug Bargeld für " + rlFmt(v) + " (am Bankautomaten abheben)"; return rlRender(); } kontoBar(-v); RL.bets[k] = (RL.bets[k] || 0) + v; }
-  else { const have = RL.bets[k] || 0; if (!have) return; const v = Math.min(have, RL.chip); RL.bets[k] = have - v; if (!RL.bets[k]) delete RL.bets[k]; kontoBar(v); }
+  if (dir > 0) { const v = RL.chip; if (!jetTake(v)) { RL.msg = "Nicht genug Jetons für " + rlFmt(v) + " (Jeton-Automat oder Kasse)"; return rlRender(); } RL.bets[k] = (RL.bets[k] || 0) + v; }
+  else { const have = RL.bets[k] || 0; if (!have) return; const v = Math.min(have, RL.chip); RL.bets[k] = have - v; if (!RL.bets[k]) delete RL.bets[k]; jetGive(v); }
   RL.msg = "Einsatz " + rlFmt(rlSum()); rlRender(); }
 function rlClick(e) { const b = e.target.closest("button,[data-b]"); if (!b) return; b.blur?.();
   if (b.dataset.b) return rlPlace(b.dataset.b, 1);
   if (b.dataset.chip) { RL.chip = +b.dataset.chip; return rlRender(); }
   const a = b.dataset.a; if (a === "zu") return rouletteClose(); if (a === "drehen") return rlSpin();
-  if (a === "loeschen" && !RL.spin) { if (rlSum()) kontoBar(rlSum()); RL.bets = {}; RL.msg = "Einsätze zurückgenommen"; RL.win = null; return rlRender(); }
-  if (a === "nochmal" && !RL.spin) { const need = Object.values(RL.last).reduce((x, y) => x + y, 0); if (!need) return; if (KONTO.bar + rlSum() < need) { RL.msg = "Nicht genug Bargeld für den gleichen Einsatz (" + rlFmt(need) + ")"; return rlRender(); }
-    if (rlSum()) kontoBar(rlSum()); kontoBar(-need); RL.bets = { ...RL.last }; RL.win = null; RL.msg = "Gleicher Einsatz: " + rlFmt(need); return rlRender(); } }
+  if (a === "loeschen" && !RL.spin) { if (rlSum()) jetGive(rlSum()); RL.bets = {}; RL.msg = "Einsätze zurückgenommen"; RL.win = null; return rlRender(); }
+  if (a === "nochmal" && !RL.spin) { const need = Object.values(RL.last).reduce((x, y) => x + y, 0); if (!need) return; if (jetWert() + rlSum() < need) { RL.msg = "Nicht genug Jetons für den gleichen Einsatz (" + rlFmt(need) + ")"; return rlRender(); }
+    if (rlSum()) jetGive(rlSum()); jetTake(need); RL.bets = { ...RL.last }; RL.win = null; RL.msg = "Gleicher Einsatz: " + rlFmt(need); return rlRender(); } }
 // Drehen: Kessel 5 s, Kugel laeuft gegen, Ergebnis zufaellig
 function rlSpin() { if (RL.spin || !rlSum()) { if (!rlSum()) { RL.msg = "Zuerst Jetons setzen"; rlRender(); } return; }
   const n = Math.floor(Math.random() * 37), idx = RL_ORDER.indexOf(n), seg = Math.PI * 2 / 37;
@@ -72,7 +72,7 @@ function rlAnim(t) { const S = RL.spin; if (!S) return; const u = Math.min(1, (t
   if (u < 1) return requestAnimationFrame(rlAnim);
   const n = S.n, stake = rlSum(); let win = 0, back = 0; for (const [k, v] of Object.entries(RL.bets)) { const B = rlBet(k); if (B.nums.includes(n)) { win += v * B.pay; back += v; } }
   RL.last = { ...RL.bets }; RL.bets = {}; RL.spin = null; RL.hist.unshift(n); RL.hist.length = Math.min(RL.hist.length, 14);
-  if (win) kontoBar(win + back); RL.win = n;
+  if (win) jetGive(win + back); RL.win = n;
   RL.msg = (n === 0 ? "0 Grün" : n + (RL_RED.has(n) ? " Rot" : " Schwarz")) + (win ? " – Auszahlung " + rlFmt(win + back) + " (netto " + (win + back - stake >= 0 ? "+" : "") + rlFmt(win + back - stake) + ")" : " – leider verloren");
   RL.msgCls = win + back - stake > 0 ? "win" : "lose"; rlRender(); }
 // Kessel zeichnen (Canvas)
@@ -94,7 +94,7 @@ function rlRender() {
   [["tief", "1–18"], ["gerade", "GERADE"], ["rot", "ROT", "#c41e2a"], ["schwarz", "SCHWARZ", "#141414"], ["ungerade", "UNGERADE"], ["hoch", "19–36"]].forEach(([k, s, bg], i) => { t += cell(k, s, bg || "transparent", "grid-row:5;grid-column:" + (2 + i * 2) + " / span 2"); });
   const chipCol = { 10: "#2e6fd6", 50: "#c41e2a", 100: "#1b1b1b", 500: "#7b3fb8", 1000: "#d4a640", 5000: "#0f8a3c" }, last = Object.values(RL.last).reduce((a, b) => a + b, 0);
   el.innerHTML = '<div class="rl-box"><div class="rl-top"><canvas class="rl-wheel" width="600" height="600"></canvas><div class="rl-side"><div class="rl-head"><h2>ROULETTE</h2><button class="rl-x" data-a="zu" title="Verlassen (Esc)">&#10005;</button></div>' +
-    '<div class="rl-msg ' + (RL.win !== null ? RL.msgCls : "") + '">' + RL.msg + '</div><div class="rl-info"><span>Bargeld <b>' + rlFmt(typeof KONTO !== "undefined" ? KONTO.bar : 0) + "</b></span><span>Einsatz <b>" + rlFmt(rlSum()) + '</b></span></div>' +
+    '<div class="rl-msg ' + (RL.win !== null ? RL.msgCls : "") + '">' + RL.msg + '</div><div class="rl-info"><span>Jetons <b>' + rlFmt(jetWert()) + "</b></span><span>Einsatz <b>" + rlFmt(rlSum()) + '</b></span></div>' +
     '<div class="rl-hist">' + RL.hist.map(n => '<span style="background:' + rlCol(n) + '">' + n + "</span>").join("") + '</div>' +
     '<div class="rl-chips">' + RL_CHIPS.map(v => '<button class="rl-chip' + (RL.chip === v ? " on" : "") + '" data-chip="' + v + '" style="background:' + chipCol[v] + '">' + (v >= 1000 ? v / 1000 + "k" : v) + "</button>").join("") + "</div>" +
     '<div class="rl-acts"><button class="rl-btn go" data-a="drehen"' + (RL.spin ? " disabled" : "") + '>DREHEN</button><button class="rl-btn" data-a="loeschen"' + (RL.spin ? " disabled" : "") + '>Einsätze löschen</button><button class="rl-btn" data-a="nochmal"' + (RL.spin || !last ? " disabled" : "") + ">Gleicher Einsatz</button></div></div></div>" +

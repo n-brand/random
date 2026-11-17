@@ -115,8 +115,12 @@ function ggebNearStep() {
 GGEB.coll = new Map();
 function ggebColl(b) {
   const F = b.F, Y = GGEB.Y, [cx, cz] = F.at(F.L1 / 2, F.L2 / 2), part = (ins, y0, y1) => dkAdd({ cx, cy: (y0 + y1) / 2, cz, ux: F.e1[0], uz: F.e1[1], hl: F.L1 / 2 - ins - 0.15, hw: F.L2 / 2 - ins - 0.15, hh: (y1 - y0) / 2, m: 0.3 });   // Grenze 0,15 m vor der Fassade: Spieler-Mitte bleibt 0,45 m davor (Kamera near 0,15 sah vorher in die Wand, Nicolas 2026-11-16 FB-0544)
-  if (b.type === "kratzer" && F.L1 >= 30 && F.L2 >= 30) { const yk = Y + Math.round(b.H * 0.4 / GBV.GH) * GBV.GH; return [part(0, Y - 0.2, yk), part(4, yk, Y + b.H)]; }
-  return [part(0, Y - 0.2, Y + b.H)];
+  // Dachkante (Attika, gebaeude-vorlagen.js: 0,3 m stark, 0,8 m hoch, Hallen 0,5 m) fest (Nicolas 2026-11-17, Bild: "durch die Waende auf den Daechern kann man durchgehen"):
+  // vier schmale Teile mit Boden oben; man kommt nur mit einem Sprung darauf und kann von dort hinunterspringen
+  const ah = b.type === "fabrik" || b.type === "lager" ? 0.5 : 0.8, att = (ins, yt) => { const L1 = F.L1 - 2 * ins, L2 = F.L2 - 2 * ins, q = (s, t, hl, hw) => { const [x, z] = F.at(s, t); return dkAdd({ cx: x, cy: yt + ah / 2, cz: z, ux: F.e1[0], uz: F.e1[1], hl, hw, hh: ah / 2, m: 0.05 }); };
+    return [q(F.L1 / 2, ins + 0.15, L1 / 2, 0.15), q(F.L1 / 2, F.L2 - ins - 0.15, L1 / 2, 0.15), q(ins + 0.15, F.L2 / 2, 0.15, L2 / 2), q(F.L1 - ins - 0.15, F.L2 / 2, 0.15, L2 / 2)]; };
+  if (b.type === "kratzer" && F.L1 >= 30 && F.L2 >= 30) { const yk = Y + Math.round(b.H * 0.4 / GBV.GH) * GBV.GH; return [part(0, Y - 0.2, yk), part(4, yk, Y + b.H), ...att(0, yk), ...att(4, Y + b.H)]; }
+  return [part(0, Y - 0.2, Y + b.H), ...att(0, Y + b.H)];
 }
 const GGEB_NB = [[0, 0], [-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
 // sofort anlegen (Teleport: sonst steht man nach dem Teleport auf ein Dach auf der Strasse, Review)
