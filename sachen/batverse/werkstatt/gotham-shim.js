@@ -9,6 +9,7 @@ const WG_ZIEL = { "gcpd": [520, -190], "waffen-1": [520, -80], "auto-teuer": [52
 const WG_NAME = { "gcpd": "Polizeipräsidium mit Verwahrstelle", "waffen-1": "Waffenladen (GUNS & AMMO)", "auto-teuer": "Autohaus (Prestige Motors)", "BS-02": "Casino", "parkhaus-1": "Parkhaus" };
 const WG_MAP = { "BS-02": [-1300, -620, 60] };                                 // Kartenmitte und groesstes Mass; BS-02 aus gotham/stadt.js (Baustelle des Casinos)
 for (const o of GOTHAM.orte) if (WG_ZIEL[o.id]) WG_MAP[o.id] = [o.x, o.z, Math.max(o.w, o.d)];
+const GOTHAM_ORTE_ALLE = GOTHAM.orte.slice();                                // alle Orte (Karten-App der Laptops, js/ui/laptop.js)
 GOTHAM.orte = GOTHAM.orte.filter(o => WG_ZIEL[o.id]);                       // nur diese Orte bauen
 const GCELL = 768;
 const GOT = (() => {

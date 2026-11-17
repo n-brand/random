@@ -89,7 +89,9 @@ const VORLAGEN = (() => { const g = new THREE.Group(); g.name = "Gebäude-Vorlag
   scene.add(g); return g; })();
 // ---------- Aktuelles Umbauprojekt (Nicolas 2026-11-16: "die Werkstatt ist nicht nur fuer Autos; man soll sich automatisch zum aktuellen Umbauprojekt teleportieren") ----------
 // Beim Oeffnen faehrt die Kamera hierhin; in der Auswahl oben "Aktuelles Projekt". Neues Projekt: nur PROJEKT aendern (Name, Bau, Platz, Plan).
-const PROJEKT = { name: "Bankautomat", plan: "PLAN-BANKAUTOMAT.md", bau: () => buildBankautomat(), x: 236, z: 40, h: -Math.PI / 2 };
+// Laptops (Nicolas 2026-11-17, PLAN-LAPTOP.md): Tisch mit zwei Laptops, daneben weiter der Bankautomat (vorheriges Projekt). Jedes Kind traegt userData.kind (atm, tisch) fuer Zielen, Kollision, Treffer.
+const PROJEKT = { name: "Laptops", plan: "PLAN-LAPTOP.md", x: 236, z: 40, h: -Math.PI / 2,
+  bau: () => { const g = new THREE.Group(), atm = buildBankautomat(), t = buildLaptopTisch(); atm.userData.kind = "atm"; atm.position.x = 1.9; t.position.x = -0.9; g.add(atm, t); g.userData.focus = t; return g; } };
 const projektG = (() => { const g = PROJEKT.bau(); g.position.set(PROJEKT.x, 0.15, PROJEKT.z); g.rotation.y = PROJEKT.h; g.userData.id = "PROJEKT"; g.userData.art = PROJEKT.name; scene.add(g);
   const pl = new THREE.Mesh(new THREE.BoxGeometry(8, 0.15, 8), new THREE.MeshStandardMaterial({ color: 0x9a9893, roughness: 0.9 })); pl.position.set(PROJEKT.x, 0.075, PROJEKT.z); pl.receiveShadow = true; scene.add(pl); return g; })();
 function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = new THREE.Box3().setFromObject(projektG), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z);

@@ -11,7 +11,7 @@ function dkHit(x, y, z) { for (const o of WG_DK) { const dx = x - o.cx, dz = z -
 const WK_V = new THREE.Vector3();
 function shotAt(x, y, z) {
   if (y < 0) return "ground";
-  if (typeof projektG !== "undefined") { const b = WK_PB || (WK_PB = new THREE.Box3().setFromObject(projektG)); if (b.containsPoint(WK_V.set(x, y, z))) return "solid"; }
+  if (typeof projektG !== "undefined") { const L = WK_PB || (WK_PB = projektG.children.filter(o => o.userData.kind).map(o => new THREE.Box3().setFromObject(o))); WK_V.set(x, y, z); for (const b of L) if (b.containsPoint(WK_V)) return "solid"; }   // je Teil (Automat, Laptop-Tisch)
   return dkHit(x, y, z) ? "solid" : null;
 }
 let WK_PB = null;

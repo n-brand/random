@@ -143,6 +143,6 @@ addEventListener("keyup", e => { if (e.key === "Shift" && INV_TIP.shift) { INV_T
     if (e.target.closest('[data-sw="batsignal"]') && typeof GCPD !== "undefined") { GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts über Gotham)" : "Batsignal aus"); invRender(); } });   // Schalter im Inventar (Nicolas 2026-11-16)
   document.getElementById("btn-inv")?.addEventListener("click", e => { e.currentTarget.blur(); invIsOpen() ? invClose() : invOpen(); });
   // Mausrad zu Fuss: naechster/voriger Hotbar-Platz (Nicolas 2026-11-16); im Fahrzeug, auf Karte und Menues nicht
-  let wAcc = 0; addEventListener("wheel", e => { if (!walking || ghost || document.body.classList.contains("drive") || invIsOpen() || e.target.closest?.("#stadtkarte, #handy, #bank, #tp-menu, #settings")) return;
+  let wAcc = 0; addEventListener("wheel", e => { if (!walking || ghost || document.body.classList.contains("drive") || invIsOpen() || e.target.closest?.("#stadtkarte, #handy, #bank, #laptop, #tp-menu, #settings")) return;
     wAcc += e.deltaY; if (Math.abs(wAcc) < 40) return; const d = Math.sign(wAcc); wAcc = 0; invSelect((INV.sel + d + INV_SEL_N) % INV_SEL_N); }, { passive: true });
   invRender(); }
