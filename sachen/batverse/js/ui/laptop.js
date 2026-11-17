@@ -6,16 +6,17 @@
 // Gespeichert (localStorage): wm-boerse (Kurse, Verlauf, Depot), wm-immo (eigene Immobilien), wm-mail (Kaufbestaetigungen). Konto, Inventar: konto.js, inventar.js.
 "use strict";
 const LAPTOP_DEF = {
-  A: { name: "Wayne Book", user: "Bruce Wayne", lock: "offen", pw: "", apps: ["web", "kontakte", "mail", "karten"], hw: "silber", wp: 0 },
-  B: { name: "Nightfall X17", user: "Bruce Wayne", lock: "passwort", pw: "gotham", hint: "Die Stadt, klein geschrieben", apps: ["web", "mail", "karten"], hw: "schwarz", wp: 1 },
+  A: { name: "Wayne Book", user: "Bruce Wayne", lock: "offen", pw: "", apps: ["web", "kontakte", "mail", "karten", "einst"], hw: "silber", wp: 0 },
+  B: { name: "Nightfall X17", user: "Bruce Wayne", lock: "passwort", pw: "gotham", hint: "Die Stadt, klein geschrieben", apps: ["web", "mail", "karten", "einst"], hw: "schwarz", wp: 1 },
 };
 // lock: "offen" = entsperrt, "ohne" = kein Passwort (Anmelden per Klick), "passwort" = Passwort noetig
 const LT = { cur: null, el: null, locked: {}, off: {}, sleep: {}, boot: null, pmenu: false, app: null, web: "start", hist: [], mail: 0, call: null, err: "", tick: 0, map: null, screens: {} };
-for (const id in LAPTOP_DEF) LT.locked[id] = LAPTOP_DEF[id].lock !== "offen";
+
 const LT_APPS = {
   web: ["Web", "#2f7de1", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'],
   kontakte: ["Kontakte", "#2fa36b", '<circle cx="12" cy="9" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>'],
   mail: ["E-Mail", "#e0a32f", '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'],
+  einst: ["Einstellungen", "#6b7380", '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'],
   karten: ["Karten", "#d1453b", '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>'],
 };
 // Symbole der Oberflaeche (Linien wie die App-Symbole; Nicolas 2026-11-17: "Icons muessen verschoenert werden")
@@ -39,6 +40,14 @@ const LT_SITES = [
   ["bank", "Gotham City Bank", "gothamcitybank.gotham", "#2f6fd6", "Konto, Bargeld, Buchungen"],
   ["immo", "Gotham Estates", "gotham-estates.gotham", "#8a5bd6", "Immobilien kaufen, eigene Objekte"],
 ];
+// Einstellungen je Laptop (App "Einstellungen", Nicolas 2026-11-17): Hintergrund, Helligkeit, Sperre/Passwort, Cookies (Anmeldungen auf Websites), Verlauf. localStorage wm-laptops.
+const LTS = (() => { try { return JSON.parse(localStorage.getItem("wm-laptops") || "null") || {}; } catch (e) { return {}; } })();
+const ltSaveCfg = () => { try { localStorage.setItem("wm-laptops", JSON.stringify(LTS)); } catch (e) {} };
+function ltD(id) { const D = LAPTOP_DEF[id]; if (!D) return null; const S = LTS[id] || (LTS[id] = {});
+  if (!S.cookies) S.cookies = LT_SITES.map(x => x[0]); if (!S.verlauf) S.verlauf = []; if (S.hell === undefined) S.hell = 1;
+  return { ...D, ...S, apps: D.apps }; }
+const ltSet = (id, k, v) => { ltD(id); LTS[id][k] = v; ltSaveCfg(); };
+for (const id in LAPTOP_DEF) LT.locked[id] = ltD(id).lock !== "offen";
 // Kataloge: im Spiel aus handy.js (HANDY_SHOPS), sonst (Werkstatt) diese Kopie der Namen und Preise
 const LT_SHOPMAP = { budget: "billig", prestige: "teuer", defense: "militaer", guns: "waffen", arms: "arms" };
 const LT_CARS = { budget: [["Motorrad", 9000], ["Streetfighter", 14000], ["Gotham Taxi", 18000], ["Abschleppwagen", 45000], ["DeLorean", 65000], ["Nachtfalke", 120000]],
@@ -94,13 +103,14 @@ function ltCanvas(w, h, draw) { const c = document.createElement("canvas"); c.wi
 function ltWallpaper(c, w, h, wp) {
   const g = c.createLinearGradient(0, 0, w * 0.4, h);
   if (wp === 1) { g.addColorStop(0, "#2a0608"); g.addColorStop(0.55, "#120405"); g.addColorStop(1, "#050505"); }
+  else if (wp === 2) { g.addColorStop(0, "#0f2e2a"); g.addColorStop(0.6, "#2c6e63"); g.addColorStop(1, "#e8c07a"); }
   else { g.addColorStop(0, "#0d1b3d"); g.addColorStop(0.6, "#3b2a6b"); g.addColorStop(1, "#c76b4a"); }
   c.fillStyle = g; c.fillRect(0, 0, w, h);
   c.fillStyle = wp === 1 ? "rgba(255,40,50,.18)" : "rgba(255,230,190,.85)"; c.beginPath(); c.arc(w * 0.78, h * 0.22, h * 0.07, 0, Math.PI * 2); c.fill();
-  c.fillStyle = wp === 1 ? "#0a0203" : "#0b0f1f"; let x = 0, r = 7; while (x < w) { r = (r * 9301 + 49297) % 233280; const bw = w * (0.03 + r / 233280 * 0.05), bh = h * (0.12 + ((r * 7) % 100) / 100 * 0.3); c.fillRect(x, h - bh, bw, bh); x += bw + w * 0.004; }
+  c.fillStyle = wp === 1 ? "#0a0203" : wp === 2 ? "#08201c" : "#0b0f1f"; let x = 0, r = 7; while (x < w) { r = (r * 9301 + 49297) % 233280; const bw = w * (0.03 + r / 233280 * 0.05), bh = h * (0.12 + ((r * 7) % 100) / 100 * 0.3); c.fillRect(x, h - bh, bw, bh); x += bw + w * 0.004; }
 }
 function ltScreenDraw(id) {
-  const T = LT.screens[id]; if (!T) return; const cv = T.image, c = cv.getContext("2d"), w = cv.width, h = cv.height, D = LAPTOP_DEF[id];
+  const T = LT.screens[id]; if (!T) return; const cv = T.image, c = cv.getContext("2d"), w = cv.width, h = cv.height, D = ltD(id);
   if (LT.off[id] || LT.sleep[id] || (LT.boot && LT.cur === id)) { c.fillStyle = "#000"; c.fillRect(0, 0, w, h); if (!LT.off[id] && !LT.sleep[id]) { c.fillStyle = D.hw === "silber" ? "#e9ecef" : "#ff2a36"; c.textAlign = "center"; c.font = "bold " + h * 0.16 + "px Georgia, serif"; c.fillText(D.hw === "silber" ? "W" : "NIGHTFALL", w / 2, h * 0.55); } T.needsUpdate = true; return; }   // aus bzw. startet
   ltWallpaper(c, w, h, D.wp); c.textAlign = "center"; c.fillStyle = "#fff";
   const now = ltTime();
@@ -111,7 +121,7 @@ function ltScreenDraw(id) {
   T.needsUpdate = true;
 }
 function buildLaptop(id) {
-  const D = LAPTOP_DEF[id], sil = D.hw === "silber", g = new THREE.Group(), W = sil ? 0.31 : 0.37, Dp = sil ? 0.215 : 0.26, t = sil ? 0.014 : 0.028;
+  const D = ltD(id), sil = D.hw === "silber", g = new THREE.Group(), W = sil ? 0.31 : 0.37, Dp = sil ? 0.215 : 0.26, t = sil ? 0.014 : 0.028;
   const body = new THREE.MeshStandardMaterial({ color: sil ? 0xc5cad1 : 0x17191c, metalness: sil ? 0.6 : 0.2, roughness: sil ? 0.35 : 0.6 });
   const base = new THREE.Mesh(new THREE.BoxGeometry(W, t, Dp), body); base.position.y = t / 2; g.add(base);
   const keyT = ltCanvas(256, 128, (c, w, h) => { c.fillStyle = sil ? "#aeb3ba" : "#0d0e10"; c.fillRect(0, 0, w, h); for (let r = 0; r < 5; r++) for (let k = 0; k < 14; k++) { const kw = w / 14.6, kh = h / 6.2; c.fillStyle = sil ? "#22252a" : "#1b1d21"; c.fillRect(6 + k * (kw + 1.4), 6 + r * (kh + 3), kw - 2, kh - 2); if (!sil) { c.fillStyle = "rgba(230,40,50,.55)"; c.fillRect(8 + k * (kw + 1.4), 4 + r * (kh + 3) + kh - 4, kw - 6, 1.5); } } c.fillStyle = sil ? "#22252a" : "#1b1d21"; c.fillRect(w * 0.28, 6 + 5 * (h / 6.2 + 3), w * 0.44, h / 6.2 - 2); });
@@ -159,6 +169,7 @@ const LT_CSS = `
 .lt-silber .lt-base{background:linear-gradient(#cfd3d9,#979ca3)}.lt-schwarz .lt-base{background:linear-gradient(#202226,#0b0c0e);border-bottom:3px solid #ff2a36;box-shadow:0 3px 12px rgba(255,42,54,.5)}
 .lt-scr{position:relative;width:960px;height:600px;overflow:hidden;color:#fff;border-radius:3px;background:#000}
 .lt-wp0{background:linear-gradient(160deg,#0d1b3d,#3b2a6b 60%,#c76b4a)}
+.lt-wp2{background:linear-gradient(160deg,#0f2e2a,#2c6e63 60%,#e8c07a)}
 .lt-wp1{background:radial-gradient(circle at 75% 25%,#5a0d12,#120607 55%,#050505)}
 .lt-sky{position:absolute;left:0;right:0;bottom:0;height:38%;pointer-events:none;opacity:.95}
 .lt-lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
@@ -183,6 +194,18 @@ const LT_CSS = `
 .lt-spin{width:34px;height:34px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:lt-spin 1s linear infinite}@keyframes lt-spin{to{transform:rotate(360deg)}}
 .lt-offbtn{width:72px;height:72px;border-radius:50%;border:2px solid #3a3d44;background:#0d0e10;color:#9aa0a8;display:grid;place-items:center;cursor:pointer}.lt-offbtn:hover{color:#fff;border-color:#6ab0ff;box-shadow:0 0 14px rgba(106,176,255,.5)}
 .lt-leave{position:absolute;top:14px;right:18px;display:flex;align-items:center;gap:8px;padding:8px 14px;border:0;border-radius:999px;background:rgba(20,22,28,.85);color:#fff;font:600 14px "Segoe UI",sans-serif;cursor:pointer;z-index:2}.lt-leave small{opacity:.6;font-weight:400}.lt-leave:hover{background:rgba(40,44,54,.95)}
+.lt-einst{display:grid;grid-template-columns:200px 1fr;height:100%}.lt-enav{padding:12px 8px;background:rgba(127,127,127,.08);display:flex;flex-direction:column;gap:2px}
+.lt-enav button{text-align:left;padding:9px 14px;border:0;border-radius:6px;background:none;color:inherit;font:14px "Segoe UI",sans-serif;cursor:pointer}.lt-enav button:hover{background:rgba(127,127,127,.15)}.lt-enav button.on{background:rgba(47,125,225,.18);box-shadow:inset 3px 0 0 #2f7de1;font-weight:600}
+.lt-ebody{padding:18px 24px;overflow:auto}.lt-ebody h2{margin:0 0 10px}.lt-ebody .lt-row span{opacity:.75}
+.lt-wps{display:flex;gap:12px}.lt-wps button{width:140px;height:88px;border-radius:8px;border:3px solid transparent;cursor:pointer}.lt-wps button.on{border-color:#2f7de1}
+.lt-hell{width:280px}
+.lt-opt{display:grid;grid-template-columns:22px 1fr;column-gap:10px;align-items:center;width:100%;max-width:420px;text-align:left;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(127,127,127,.3);border-radius:8px;background:none;color:inherit;cursor:pointer;font:14px "Segoe UI",sans-serif}
+.lt-opt i{grid-row:span 2;width:16px;height:16px;border-radius:50%;border:2px solid #8a9099}.lt-opt.on{border-color:#2f7de1}.lt-opt.on i{border:5px solid #2f7de1}.lt-opt span{font-size:12px;opacity:.7}
+.lt-pwset{display:flex;gap:8px;flex-wrap:wrap}.lt-pwset input{padding:8px 10px;border-radius:7px;border:1px solid rgba(127,127,127,.4);background:transparent;color:inherit;font-size:14px}
+.lt-err2{color:#d6343b;font-size:13px;min-height:18px;margin-top:6px}
+.lt-card{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:14px 16px;margin-bottom:12px;border:1px solid rgba(127,127,127,.3);border-radius:10px}.lt-card span{font-size:13px;opacity:.75}
+.lt-confirm{display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:600}.lt-confirm div{display:flex;gap:8px}
+.lt-login{max-width:380px;display:flex;flex-direction:column;gap:6px}.lt-login h3{margin:0}.lt-login label{font-size:12px;opacity:.7;margin-top:6px}.lt-field{padding:9px 12px;border-radius:7px;border:1px solid rgba(127,127,127,.35);font-size:14px}.lt-field small{opacity:.6}.lt-login .lt-buy{margin-top:10px;align-self:flex-start}
 .lt-time{margin-left:auto;font-size:13px;text-align:right;line-height:1.2;padding-right:4px}
 .lt-win{position:absolute;left:30px;top:20px;right:30px;bottom:60px;background:#f4f5f7;color:#1c1f24;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}
 .lt-wt{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 4px 0 14px;background:#e3e6ea;font-weight:600;font-size:13px}
@@ -218,7 +241,8 @@ function ltEnsure() {
   if (LT.el) return LT.el; const st = document.createElement("style"); st.textContent = LT_CSS; document.head.appendChild(st);
   const el = document.createElement("div"); el.id = "laptop"; el.hidden = true; document.body.appendChild(el); LT.el = el;
   el.addEventListener("click", ltClick); el.addEventListener("contextmenu", e => e.preventDefault());
-  el.addEventListener("input", e => { if (e.target.classList.contains("lt-search")) { LT.mapQ = e.target.value; ltMapResults(); } });
+  el.addEventListener("input", e => { if (e.target.classList.contains("lt-search")) { LT.mapQ = e.target.value; ltMapResults(); }
+    if (e.target.classList.contains("lt-hell")) { ltSet(LT.cur, "hell", +e.target.value); const sc = LT.el.querySelector(".lt-scr"); if (sc) sc.style.filter = "brightness(" + e.target.value + ")"; } });
   addEventListener("keydown", e => { if (!laptopIsOpen()) return;                                   // solange offen: Tasten nicht ans Spiel (Tippen geht trotzdem ins Feld)
     if (LT.cur && LT.sleep[LT.cur] && e.key !== "Escape") { ltPower("wach"); e.preventDefault(); }   // Taste weckt
     else if (e.key === "Escape") { e.preventDefault(); if (LT.pmenu) { LT.pmenu = false; ltRender(); } else if (LT.app) { LT.app = null; LT.call = null; ltRender(); } else laptopClose(); }
@@ -237,14 +261,14 @@ function laptopOpen(id) { const D = LAPTOP_DEF[id]; if (!D) return; ltEnsure();
 function laptopClose() { if (!laptopIsOpen()) return; LT.el.hidden = true; clearInterval(LT.tick); const id = LT.cur; LT.app = null; LT.call = null; LT.cur = null; ltScreenDraw(id); if (typeof grabMouse === "function") grabMouse(); }
 // Ein/Aus (Nicolas 2026-11-17: der Ein/Aus-Knopf soll nicht direkt ausschalten): Menue Sperren / Neu starten / Herunterfahren
 function ltBoot(id, text, then) { LT.boot = text; LT.pmenu = false; LT.app = null; LT.call = null; ltRender(); ltScreenDraw(id); setTimeout(() => { if (LT.boot !== text) return; LT.boot = null; then(); if (LT.cur === id) ltRender(); ltScreenDraw(id); }, 1800); }
-function ltPower(what) { const id = LT.cur, D = LAPTOP_DEF[id];
+function ltPower(what) { const id = LT.cur, D = ltD(id);
   if (what === "lock") { LT.pmenu = false; LT.locked[id] = true; LT.app = null; LT.call = null; ltRender(); ltScreenDraw(id); }
   else if (what === "schlaf") { LT.pmenu = false; LT.app = null; LT.call = null; LT.sleep[id] = true; ltRender(); ltScreenDraw(id); }
   else if (what === "wach") { LT.sleep[id] = false; LT.locked[id] = D.lock !== "offen"; ltRender(); ltScreenDraw(id); }
   else if (what === "neu") ltBoot(id, "Wird neu gestartet …", () => { LT.locked[id] = D.lock !== "offen"; });
   else if (what === "aus") ltBoot(id, "Wird heruntergefahren …", () => { LT.off[id] = true; LT.locked[id] = D.lock !== "offen"; });
   else if (what === "an") { LT.off[id] = false; ltBoot(id, "", () => { LT.locked[id] = D.lock !== "offen"; }); } }
-function ltLogin(pw) { const id = LT.cur, D = LAPTOP_DEF[id];
+function ltLogin(pw) { const id = LT.cur, D = ltD(id);
   if (D.lock === "passwort" && pw !== D.pw) { LT.err = pw ? "Falsches Passwort" : "Passwort eingeben"; ltRender(); const r = LT.el.querySelector(".lt-pwrow"); if (r) { r.classList.add("lt-shake"); } const f = LT.el.querySelector(".lt-pw"); if (f) f.focus(); return; }
   LT.locked[id] = false; LT.err = ""; ltRender(); ltScreenDraw(id); }
 function ltClick(e) {
@@ -257,7 +281,14 @@ function ltClick(e) {
   if (a === "aus") return laptopClose();
   if (a === "app") { LT.app = v; LT.call = null; if (v === "web") { LT.web = "start"; LT.hist = []; } ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "zu") { LT.app = null; LT.call = null; ltRender(); ltScreenDraw(LT.cur); return; }
-  if (a === "go") { if (LT.web !== v) LT.hist.push(LT.web); LT.web = v; return ltRender(); }
+  if (a === "go") { if (LT.web !== v) LT.hist.push(LT.web); LT.web = v; const V = ltD(LT.cur).verlauf; V.unshift({ s: v, t: Date.now() }); V.length = Math.min(V.length, 40); ltSet(LT.cur, "verlauf", V); return ltRender(); }
+  if (a === "anmelden") { const C = ltD(LT.cur).cookies; if (!C.includes(v)) C.push(v); ltSet(LT.cur, "cookies", C); toast("Angemeldet bei " + ltSiteName(v)); return ltRender(); }
+  if (a === "est") { LT.est = v; LT.confirm = null; LT.err2 = ""; return ltRender(); }
+  if (a === "cfg") { const [k, x] = v.split(":"); if (k === "lock" && x === "passwort" && !ltD(LT.cur).pw) { LT.err2 = "Zuerst unten ein Passwort festlegen"; return ltRender(); } ltSet(LT.cur, k, k === "wp" ? +x : x); LT.err2 = ""; ltRender(); ltScreenDraw(LT.cur); return; }
+  if (a === "setpw") { const p = (LT.el.querySelector(".lt-newpw") || {}).value || "", hn = (LT.el.querySelector(".lt-newhint") || {}).value || ""; if (p.length < 3) { LT.err2 = "Passwort mit mindestens 3 Zeichen"; return ltRender(); } ltSet(LT.cur, "pw", p); ltSet(LT.cur, "hint", hn); ltSet(LT.cur, "lock", "passwort"); LT.err2 = ""; toast("Passwort festgelegt"); return ltRender(); }
+  if (a === "frage") { LT.confirm = v; return ltRender(); }
+  if (a === "nein") { LT.confirm = null; return ltRender(); }
+  if (a === "loeschen") { if (v === "cookies") { ltSet(LT.cur, "cookies", []); toast("Cookies gelöscht – auf allen Websites abgemeldet"); } else { ltSet(LT.cur, "verlauf", []); toast("Verlauf gelöscht"); } LT.confirm = null; return ltRender(); }
   if (a === "back") { LT.web = LT.hist.pop() || "start"; return ltRender(); }
   if (a === "home") { LT.hist = []; LT.web = "start"; return ltRender(); }
   if (a === "car") return ltBuyCar(v);
@@ -296,8 +327,9 @@ const ltOrteAlle = () => typeof GOTHAM_ORTE_ALLE !== "undefined" ? GOTHAM_ORTE_A
 function ltWebPage() {
   const W = LT.web, S = LT_SITES.find(s => s[0] === W), url = S ? S[2] : "gotham.web/start";
   let h = '<div class="lt-addr"><button class="lt-nav" data-a="back" title="Zurück">' + ltSvg(LT_IC.back, 18) + '</button><button class="lt-nav" data-a="home" title="Startseite">' + ltSvg(LT_IC.home, 18) + '</button><div class="lt-url"><span class="lt-lockic">' + ltSvg(LT_IC.lock, 13) + '</span>https://' + url + '</div></div>';
-  if (W === "start") return h + '<div class="lt-page"><h2>Favoriten</h2><p class="lt-sub">Angemeldet als Bruce Wayne</p></div><div class="lt-fav" style="padding-top:0">' + LT_SITES.map(([id, n, , c, d]) => '<button class="lt-tile" style="--c:' + c + '" data-a="go" data-v="' + id + '"><b>' + n + "</b><span>" + d + "</span></button>").join("") + "</div>";
+  if (W === "start") { const Dx = ltD(LT.cur), n = Dx.cookies.length; return h + '<div class="lt-page"><h2>Favoriten</h2><p class="lt-sub">' + (n ? "Angemeldet als Bruce Wayne auf " + n + " von " + LT_SITES.length + " Seiten" : "Nicht angemeldet (Cookies gelöscht)") + "</p></div>" + '<div class="lt-fav" style="padding-top:0">' + LT_SITES.map(([id, n, , c, d]) => '<button class="lt-tile" style="--c:' + c + '" data-a="go" data-v="' + id + '"><b>' + n + "</b><span>" + d + "</span></button>").join("") + "</div>" + (Dx.verlauf.length ? '<div class="lt-page" style="padding-top:0"><p class="lt-sub">Zuletzt besucht: ' + [...new Set(Dx.verlauf.map(q => q.s))].slice(0, 5).map(ltSiteName).join(" · ") + "</p></div>" : ""); }
   const hero = '<div class="lt-hero" style="--c:' + S[3] + '"><h2>' + S[1] + "</h2><span>" + S[4] + " · angemeldet als Bruce Wayne · Konto " + ltFmt(KONTO.stand) + "</span></div>";
+  if (!ltD(LT.cur).cookies.includes(W)) return h + '<div class="lt-hero" style="--c:' + S[3] + '"><h2>' + S[1] + '</h2><span>' + S[4] + '</span></div><div class="lt-page"><div class="lt-login"><h3>Anmelden</h3><p class="lt-sub">Du bist nicht angemeldet (keine Cookies für ' + S[2] + ').</p><label>E-Mail</label><div class="lt-field">bruce.wayne@wayne-enterprises.gotham</div><label>Passwort</label><div class="lt-field">••••••••••  <small>(vom Browser gespeichert)</small></div><button class="lt-buy" style="--c:' + S[3] + '" data-a="anmelden" data-v="' + W + '">Anmelden</button></div></div>';   // Cookies geloescht
   if (LT_CARS[W]) return h + hero + '<div class="lt-page" style="--c:' + S[3] + '">' + ltCarList(W).map((it, i) => '<div class="lt-row"><b>' + ltEsc(it.name) + '</b><span class="lt-price">' + ltFmt(it.preis) + '</span><button class="lt-buy" data-a="car" data-v="' + W + ":" + i + '"' + (kontoKann(it.preis) ? "" : " disabled") + ">Kaufen</button></div>").join("") + "</div>";
   if (W === "guns" || W === "arms") return h + hero + '<div class="lt-page" style="--c:' + S[3] + '">' + ltWaren(W).map(([id, pr, n], i) => { const I = typeof INV_ITEMS !== "undefined" ? INV_ITEMS[id] : null; if (!I) return "";
     return '<div class="lt-row"><svg class="lt-ware" viewBox="0 0 26 26">' + I.svg + "</svg><b>" + I.name + (n > 1 ? " × " + n : "") + "<br><small>" + I.art + (invCount(id) ? " · " + invCount(id) + " im Inventar" : "") + '</small></b><span class="lt-price">' + ltFmt(pr) + '</span><button class="lt-buy" data-a="ware" data-v="' + W + ":" + i + '"' + (kontoKann(pr) ? "" : " disabled") + ">Kaufen</button></div>"; }).join("") + "</div>";
@@ -320,22 +352,37 @@ function ltAppBody(a) {
     return '<div class="lt-page"><h2>Kontakte</h2><p class="lt-sub">Notdienste und Taxi</p>' + LT_KONTAKTE.map(([id, n, nr, col]) => '<div class="lt-row"><i style="width:36px;height:36px;border-radius:50%;background:' + col + ';display:grid;place-items:center;color:#fff">' + ltSvg('<circle cx="12" cy="9" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>', 18) + "</i><b>" + n + "<br><small>" + nr + '</small></b><button class="lt-buy" style="--c:#2fa36b" data-a="call" data-v="' + id + '">Anrufen</button></div>').join("") + "</div>"; }
   if (a === "mail") { const L = ltMails(), m = L[Math.min(LT.mail, L.length - 1)];
     return '<div class="lt-mail"><div class="lt-mlist">' + L.map((q, i) => '<div class="lt-mi' + (i === LT.mail ? " sel" : "") + '" data-a="mail" data-v="' + i + '"><b>' + ltEsc(q.von) + "</b><span>" + ltEsc(q.betreff) + "</span></div>").join("") + '</div><div class="lt-mread">' + (m ? "<h3>" + ltEsc(m.betreff) + '</h3><p class="lt-sub">Von ' + ltEsc(m.von) + (m.t ? " · " + new Date(m.t).toLocaleString("de-CH") : "") + "</p>" + ltEsc(m.text) : "") + "</div></div>"; }
+  if (a === "einst") return ltEinst();
   if (a === "karten") return '<canvas class="lt-map"></canvas><div class="lt-mapui"><input class="lt-search" placeholder="Ort suchen …" value="' + ltEsc(LT.mapQ || "") + '"><div class="lt-mapres"></div></div><div class="lt-zoom"><button data-a="mapz" data-v="+">+</button><button data-a="mapz" data-v="-">−</button></div>';
   return "";
 }
+const LT_EST = [["system", "System"], ["bild", "Personalisierung"], ["konto", "Anmeldung"], ["daten", "Datenschutz"], ["apps", "Apps"]];
+function ltEinst() {
+  const id = LT.cur, D = ltD(id), sec = LT.est || "system", nav = '<div class="lt-enav">' + LT_EST.map(([k, n]) => '<button class="' + (k === sec ? "on" : "") + '" data-a="est" data-v="' + k + '">' + n + "</button>").join("") + "</div>";
+  let b = "";
+  if (sec === "system") b = "<h2>System</h2>" + [["Gerätename", D.name], ["Modell", D.hw === "silber" ? "Wayne Book 14 (Aluminium)" : "Nightfall X17 Gaming"], ["Benutzer", D.user], ["Betriebssystem", "WayneOS 3.2"], ["Speicher", D.hw === "silber" ? "412 GB frei von 1 TB" : "1,3 TB frei von 2 TB"], ["Akku", D.hw === "silber" ? "87 %" : "54 % (Netzteil)"]].map(([k, v]) => '<div class="lt-row"><b>' + k + "</b><span>" + v + "</span></div>").join("");
+  else if (sec === "bild") b = "<h2>Personalisierung</h2><p class=\"lt-sub\">Hintergrund</p><div class=\"lt-wps\">" + [0, 1, 2].map(w => '<button class="lt-wp' + w + (D.wp === w ? " on" : "") + '" data-a="cfg" data-v="wp:' + w + '" title="Hintergrund ' + (w + 1) + '"></button>').join("") + '</div><p class="lt-sub" style="margin-top:18px">Helligkeit</p><input class="lt-hell" type="range" min="0.4" max="1" step="0.05" value="' + D.hell + '">';
+  else if (sec === "konto") { const L = D.lock;
+    b = "<h2>Anmeldung</h2><p class=\"lt-sub\">Wie der Laptop beim Sperren und Starten geschützt ist.</p>" + [["offen", "Entsperrt", "Kein Sperrbildschirm beim Start"], ["ohne", "Ohne Passwort", "Anmelden per Klick"], ["passwort", "Mit Passwort", D.pw ? "Passwort ist festgelegt" : "Noch kein Passwort"]].map(([k, n, t]) => '<button class="lt-opt' + (L === k ? " on" : "") + '" data-a="cfg" data-v="lock:' + k + '"><i></i><b>' + n + "</b><span>" + t + "</span></button>").join("") +
+      '<p class="lt-sub" style="margin-top:18px">Neues Passwort</p><div class="lt-pwset"><input class="lt-newpw" type="password" placeholder="Neues Passwort" autocomplete="off"><input class="lt-newhint" placeholder="Hinweis (optional)" value="' + ltEsc(D.hint || "") + '"><button class="lt-buy" data-a="setpw">Festlegen</button></div><div class="lt-err2">' + ltEsc(LT.err2 || "") + "</div>"; }
+  else if (sec === "daten") { const q = (k, n, t, btn) => '<div class="lt-card"><b>' + n + "</b><span>" + t + "</span>" + (LT.confirm === k ? '<div class="lt-confirm">' + (k === "cookies" ? "Wirklich löschen? Du wirst auf allen Websites abgemeldet." : "Ganzen Verlauf löschen?") + '<div><button class="lt-buy" style="--c:#d6343b" data-a="loeschen" data-v="' + k + '">Löschen</button><button class="lt-buy sell" data-a="nein">Abbrechen</button></div></div>' : '<button class="lt-buy" style="--c:#d6343b" data-a="frage" data-v="' + k + '">' + btn + "</button>") + "</div>";
+    b = "<h2>Datenschutz</h2>" + q("cookies", "Cookies und Websitedaten", D.cookies.length + (D.cookies.length === 1 ? " Website" : " Websites") + " gespeichert (angemeldet: " + (D.cookies.map(ltSiteName).join(", ") || "keine") + ")", "Cookies löschen") + q("verlauf", "Browserverlauf", D.verlauf.length + (D.verlauf.length === 1 ? " Eintrag" : " Einträge"), "Verlauf löschen"); }
+  else if (sec === "apps") b = "<h2>Apps</h2>" + D.apps.map(a => '<div class="lt-row"><i style="width:34px;height:34px;border-radius:8px;background:' + LT_APPS[a][1] + ';display:grid;place-items:center;color:#fff">' + ltSvg(LT_APPS[a][2], 18) + "</i><b>" + LT_APPS[a][0] + "</b><span>installiert</span></div>").join("") + (LAPTOP_DEF.A.apps.length !== D.apps.length ? '<p class="lt-sub" style="margin-top:12px">Nicht installiert: ' + LAPTOP_DEF.A.apps.filter(a => !D.apps.includes(a)).map(a => LT_APPS[a][0]).join(", ") + "</p>" : "");
+  return '<div class="lt-einst">' + nav + '<div class="lt-ebody">' + b + "</div></div>";
+}
 function ltRender() {
-  const el = LT.el, id = LT.cur, D = LAPTOP_DEF[id]; if (!el || !D) return;
-  const sky = '<svg class="lt-sky" viewBox="0 0 960 230" preserveAspectRatio="none"><path fill="' + (D.wp ? "#0a0203" : "#0b0f1f") + '" d="M0 230V150h40v-30h30v50h40V90h25v-20h20v20h25v70h35V60h50v100h30v-40h40v-50h20V40h12v30h20v100h40v-60h50v110h30V80h45v30h25v60h40v-90h35v120h30v-50h40v30h50V100h30v130z"/></svg>';
+  const el = LT.el, id = LT.cur, D = ltD(id); if (!el || !D) return;
+  const sky = '<svg class="lt-sky" viewBox="0 0 960 230" preserveAspectRatio="none"><path fill="' + (D.wp === 1 ? "#0a0203" : D.wp === 2 ? "#08201c" : "#0b0f1f") + '" d="M0 230V150h40v-30h30v50h40V90h25v-20h20v20h25v70h35V60h50v100h30v-40h40v-50h20V40h12v30h20v100h40v-60h50v110h30V80h45v30h25v60h40v-90h35v120h30v-50h40v30h50V100h30v130z"/></svg>';
   let s = "";
   const logo = D.hw === "silber" ? '<div class="lt-logo">W</div>' : '<div class="lt-logo" style="color:#ff2a36;text-shadow:0 0 12px #ff2a36">NIGHTFALL</div>';
   if (LT.sleep[id]) s = '<div class="lt-scr"><div class="lt-boot lt-sleep" data-a="pw" data-v="wach" title="Aufwecken"></div></div>';
   else if (LT.off[id]) s = '<div class="lt-scr"><div class="lt-boot"><button class="lt-offbtn" data-a="pw" data-v="an" title="Einschalten">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 30) + '</button><span>Ausgeschaltet – zum Einschalten klicken</span></div></div>';
   else if (LT.boot !== null) s = '<div class="lt-scr"><div class="lt-boot">' + logo + '<div class="lt-spin"></div><span>' + ltEsc(LT.boot) + "</span></div></div>";
   else if (LT.locked[id]) { const pw = D.lock === "passwort";
-    s = '<div class="lt-scr lt-wp' + D.wp + '">' + sky + '<div class="lt-lock"><div class="lt-clock">' + ltTime() + '</div><div class="lt-date">' + new Date().toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "long" }) + '</div><div class="lt-ava">BW</div><div class="lt-user">' + D.user + "</div>" +
+    s = '<div class="lt-scr lt-wp' + D.wp + '" style="filter:brightness(' + D.hell + ')">' + sky + '<div class="lt-lock"><div class="lt-clock">' + ltTime() + '</div><div class="lt-date">' + new Date().toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "long" }) + '</div><div class="lt-ava">BW</div><div class="lt-user">' + D.user + "</div>" +
       (pw ? '<div class="lt-pwrow"><input class="lt-pw" type="password" placeholder="Passwort" autocomplete="off"><button class="lt-btn" data-a="login" title="Anmelden">' + ltSvg(LT_IC.go, 18) + '</button></div><div class="lt-err">' + ltEsc(LT.err) + '</div><div class="lt-hint">Hinweis: ' + ltEsc(D.hint || "") + "</div>" : '<button class="lt-btn" data-a="login">Anmelden</button><div class="lt-hint">Kein Passwort eingerichtet</div>') + "</div></div>"; }
   else { const apps = D.apps;
-    s = '<div class="lt-scr lt-wp' + D.wp + '">' + sky + '<div class="lt-icons">' + apps.map(a => '<button class="lt-ic" data-a="app" data-v="' + a + '"><i style="background:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 28) + "</i>" + LT_APPS[a][0] + "</button>").join("") + "</div>" +
+    s = '<div class="lt-scr lt-wp' + D.wp + '" style="filter:brightness(' + D.hell + ')">' + sky + '<div class="lt-icons">' + apps.map(a => '<button class="lt-ic" data-a="app" data-v="' + a + '"><i style="background:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 28) + "</i>" + LT_APPS[a][0] + "</button>").join("") + "</div>" +
       (LT.app ? '<div class="lt-win"><div class="lt-wt">' + ltSvg(LT_APPS[LT.app][2], 16) + LT_APPS[LT.app][0] + '<button class="lt-x" data-a="zu" title="Schliessen">' + ltSvg(LT_IC.x, 16) + '</button></div><div class="lt-wc">' + ltAppBody(LT.app) + "</div></div>" : "") +
       '<div class="lt-bar"><button class="lt-tb" data-a="lock" title="Sperren">' + ltSvg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 18) + "</button>" + apps.map(a => '<button class="lt-tb' + (LT.app === a ? " on" : "") + '" data-a="app" data-v="' + a + '" title="' + LT_APPS[a][0] + '" style="color:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 20) + "</button>").join("") +
       (LT.pmenu ? '<div class="lt-pmenu">' + [["lock", LT_IC.lock, "Sperren"], ["schlaf", LT_IC.mond, "Energie sparen"], ["aus", LT_IC.power, "Herunterfahren"], ["neu", LT_IC.neu, "Neu starten"]].map(([v, ic, t]) => '<button data-a="pw" data-v="' + v + '">' + ltSvg(ic, 22) + t + "</button>").join("") + "</div>" : "") + '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb' + (LT.pmenu ? " on" : "") + '" data-a="power" title="Ein/Aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }

@@ -23,4 +23,4 @@ Wunsch von Nicolas (2026-11-17, Notizen N5): In der Werkstatt einen Laptop platz
 | L2 | Oberfläche: Sperrbildschirm (entsperrt/ohne/Passwort), Desktop, Taskleiste, App-Fenster | gebaut |
 | L3 | Apps Web (mit Seiten), Kontakte, E-Mail, Karten | gebaut |
 | L4 | Laptops im Spiel aufstellen (Ort mit Nicolas klären) | offen |
-| L5 | Weitere Apps (Ideen sammeln), Wirkung der Anrufe im Spiel | offen |
+| L5 | Weitere Apps (Ideen sammeln), Wirkung der Anrufe im Spiel | Einstellungen gebaut (2026-11-17: Hintergrund, Helligkeit, Sperre/Passwort, Cookies und Verlauf löschen); Rest offen |
