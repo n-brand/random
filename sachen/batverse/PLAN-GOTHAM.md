@@ -142,6 +142,8 @@ Als Gebäude (innen leer) stehen auch: Club des Pinguins, Grand Ballroom (Events
 | N10 | Batarang flog durch Gebäude, soll abprallen (Gebäude, Fahrzeug, Baum) | **gebaut 2026-11-17** |
 | N11 | Bankautomat direkt beim Wayne Tower | **gebaut 2026-11-17** (neues Modell auf dem Vorplatz) |
 | N12 | Item zum Ein-/Ausschalten des Batsignals (Bat-Knopf) | **gebaut 2026-11-17** |
+| N13 | **Keilsperren** (hydraulische Strassensperren, engl. *wedge barrier* / Road Blocker; Nicolas 2026-11-17, Filmbild Wall Street, Vorlage `karten/planung/keilsperre-vorbild.webp`): Stahlkeile im Boden quer über die Fahrbahn, fahren hoch (z. B. vor Börse, Grossbank, Gericht, Polizei). Schräge Vorderseite = Rampe: mit Motorrad/Batpod springt man darüber, Autos prallen an der steilen Kante ab (Stoss, Schaden, stehen bleiben), schwere Fahrzeuge (Tumbler, Panzer) kommen evtl. drüber. Dazu Absperrböcke und Pylonen. Idee: ein-/ausfahrbar (Rechtsklick, Alarm, Polizeieinsatz) | offen |
+| N14 | **Abfahrt in eine untere Strasse unter einer Hochstrasse** (Nicolas 2026-11-17, Filmbild, Vorlage `karten/planung/unterstrasse-abfahrt-vorbild.webp`): breite Strasse unter einem Hochstrassen-Deck auf Betonpfeilern; die Decke ist dunkel mit Reihen von Leuchtstoffröhren (grünlich-weiss), an der Kreuzung Ampeln und Fussgängersignale; der linke Fahrstreifen taucht als Rampe nach links in eine untere Ebene ab, rechts geht es ebenerdig weiter ins Helle. Abgleich mit dem Bestand: zweistöckige Strassen und Rampen gibt es schon (gotham-unterstrasse.js, Wayne Circle, Park Row); fehlt: Leuchtröhren unter dem Deck, Ampeln/Fussgängersignale, Kreuzung unter der Hochstrasse, die Rampe seitlich als Abzweig statt mittig | offen |
 
 ## Nicht Teil von Wayne Manor
 
