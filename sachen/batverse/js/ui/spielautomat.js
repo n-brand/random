@@ -30,8 +30,8 @@ const SLOT_CSS = `
 #slot canvas { display: block; width: 456px; height: 228px; border-radius: 6px; }
 /* Gewinnreihe (Nicolas 2026-11-17: "die rote Linie verdeckt die Symbole"): Rahmen ueber und unter der mittleren Reihe plus Pfeile links/rechts ausserhalb der Walzen, nichts liegt auf den Symbolen */
 #slot .sl-line { position: absolute; left: 10px; right: 10px; top: calc(10px + (100% - 20px) / 3); height: calc((100% - 20px) / 3); border-top: 3px solid #e0102a; border-bottom: 3px solid #e0102a; box-sizing: border-box; pointer-events: none; box-shadow: 0 -4px 8px -4px #ff2a55, 0 4px 8px -4px #ff2a55; }
-#slot .sl-line::before, #slot .sl-line::after { content: ""; position: absolute; top: 50%; margin-top: -9px; border: 9px solid transparent; }
-#slot .sl-line::before { left: -18px; border-left-color: #e0102a; } #slot .sl-line::after { right: -18px; border-right-color: #e0102a; }
+#slot .sl-line::before, #slot .sl-line::after { content: ""; position: absolute; top: 50%; margin-top: -24px; border: 24px solid transparent; filter: drop-shadow(0 0 4px rgba(255,42,85,.7)); }   /* gross (Nicolas: "die Dreiecke aussen sollen groesser sein") */
+#slot .sl-line::before { left: -34px; border-left-color: #e0102a; } #slot .sl-line::after { right: -34px; border-right-color: #e0102a; }
 #slot .sl-line.win { animation: sl-blink .25s steps(2) 8; border-color: #3aff7a; background: rgba(58,255,122,.14); box-shadow: 0 0 16px #3aff7a; }
 #slot .sl-line.win::before { border-left-color: #3aff7a; } #slot .sl-line.win::after { border-right-color: #3aff7a; }
 @keyframes sl-blink { 50% { opacity: .35; } }

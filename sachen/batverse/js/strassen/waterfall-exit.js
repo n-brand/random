@@ -17,7 +17,8 @@ const WFT = (() => {
   let sP = 0, best = 1e9; for (const [x, z, s] of samples) { const q = Math.hypot(x + 107.8, z + 186); if (q < best) { best = q; sP = s; } }   // Portal
   let sG0 = 0, sG1 = 0; for (const [x, , s] of samples) { if (s > sP && !sG0 && x < -110.4) sG0 = s; if (s > sP && !sG1 && x < -129.2) sG1 = s; }   // Luecke ueber dem Teich
   let yEnd = null;                                                          // erst bei Bedarf (das Gelaende-Raster gibt es hier noch nicht)
-  const y = s => s <= sP ? lerp(LY, WFX_Y, s / sP) : s <= sG1 + 4 ? WFX_Y : lerp(WFX_Y, yEnd ??= genH0(-170, -189), sst(sG1 + 4, len, s));
+  const sF = sP - 30;   // Grotte (Nicolas 2026-11-17): die letzten 30 m vor dem Portal flach, davor steigt die Strasse etwas steiler (ca. 19 %)
+  const y = s => s <= sF ? lerp(LY, WFX_Y, s / sF) : s <= sP ? WFX_Y : s <= sG1 + 4 ? WFX_Y : lerp(WFX_Y, yEnd ??= genH0(-170, -189), sst(sG1 + 4, len, s));
   const box = samples.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
   return { curve, len, samples, sP, sG0, sG1, y, box, inGap: s => s > sG0 && s < sG1, end: samples[samples.length - 1] };
 })();
@@ -28,7 +29,13 @@ function wfNear(x, z, max) {
   for (let i = 0; i < S.length; i++) { const q = (x - S[i][0]) ** 2 + (z - S[i][1]) ** 2; if (q < bq) { bq = q; bi = i; } }
   return bi < 0 ? null : { d: Math.sqrt(bq), s: S[bi][2], y: WFT.y(S[bi][2]), get yf() { return WFT.y(sampleS(S, bi, x, z)); } };   // yf glatt zwischen den Proben (sampleS, serpentine.js)
 }
-const wfInTunnel = (x, z) => { const w = wfNear(x, z, WF_HW); return w && w.s < WFT.sP + 0.5 ? w : null; };
+// Grotte hinter dem Wasserfall (Nicolas 2026-11-17, Filmbild: "hinter dem Wasserfall erst eine groessere Hoehlenpfuetze, dann erst die Strasse"):
+// zwischen gA und gB weitet sich die Roehre zur Hoehle (halbe Breite hw bis ca. 8,5 m, Hoehe hf-fach), Boden flach mit Pfuetze; die Kiesstrasse beginnt erst bei gA.
+WFT.gA = WFT.sP - 30; WFT.gB = WFT.sP - 5;
+WFT.bulge = s => { if (s <= WFT.gA || s >= WFT.gB) return 0; const u = (s - WFT.gA) / (WFT.gB - WFT.gA); return Math.pow(Math.sin(Math.PI * u), 0.7) * (1 + 0.1 * Math.sin(u * 17)); };
+WFT.hw = s => WF_HW + 4.2 * WFT.bulge(s);
+WFT.hf = s => 1 + 0.32 * WFT.bulge(s);
+const wfInTunnel = (x, z) => { const w = wfNear(x, z, WF_HW + 4.6); return w && w.s < WFT.sP + 0.5 && w.d < WFT.hw(w.s) ? w : null; };
 // Gelaende draussen an die Fahrbahn angleichen (Damm durch den Teich, Rampe aufs Ufer)
 function wfBlend(x, z) {
   const e = WFT.end, de = Math.hypot(x - e[0], z - e[1]);
