@@ -2,13 +2,13 @@
 // Klassisches Skript nach spieler/waffen.js (Spiel und Werkstatt). Vier Waffen als Gegenstaende (Art "Waffe", inventar.js): pistole, mg, sniper, schrotflinte, dazu Munition.
 // In der Hand: 3D-Modell in eigener Szene (GUN.scene), nach dem Hauptbild ueber alles gezeichnet (gunRender aus schleife.js / werkstatt.js, Tiefe geloescht: keine Waende im Gewehr).
 // Schiessen: Linksklick (MG haelt Dauerfeuer), Treffer per shotSeg vom Auge aus (Streuung, Schrot 8 Kugeln), Funken/Staub am Treffer, Leuchtspur, Muendungsfeuer, Rueckstoss.
-// Rechts halten = zielen (Kimme in die Mitte, Sniper: Zielfernrohr 6-fach). Magazin, R laedt nach (leer: automatisch), Stand im Browser (wm-guns).
+// Rechts halten = zielen (Waffe leicht zur Mitte und tiefer, die Bildmitte bleibt frei – Nicolas 2026-11-17; Sniper: Zielfernrohr 6-fach). Magazin, R laedt nach (leer: automatisch), Stand im Browser (wm-guns).
 "use strict";
 const GUN_SPEC = {
-  pistole: { name: "Pistole", dmg: 10, ammo: "munition", mag: 12, rate: 0.16, auto: false, pellets: 1, spread: 0.012, spreadAim: 0.003, range: 90, zoom: 1.5, kick: 0.018, reload: 1.3, snd: [0.55, 0.16, 2600], hip: [0.14, -0.14, -0.42], ads: [0, -0.127, -0.32] },
-  mg: { name: "Maschinengewehr", dmg: 7, ammo: "munition", mag: 40, rate: 0.085, auto: true, pellets: 1, spread: 0.022, spreadAim: 0.007, range: 160, zoom: 1.8, kick: 0.01, reload: 2.2, snd: [0.6, 0.14, 1900], hip: [0.17, -0.2, -0.38], ads: [0, -0.113, -0.26] },
+  pistole: { name: "Pistole", dmg: 10, ammo: "munition", mag: 12, rate: 0.16, auto: false, pellets: 1, spread: 0.012, spreadAim: 0.003, range: 90, zoom: 1.5, kick: 0.018, reload: 1.3, snd: [0.55, 0.16, 2600], hip: [0.14, -0.14, -0.42], ads: [0.1, -0.2, -0.44] },
+  mg: { name: "Maschinengewehr", dmg: 7, ammo: "munition", mag: 40, rate: 0.085, auto: true, pellets: 1, spread: 0.022, spreadAim: 0.007, range: 160, zoom: 1.8, kick: 0.01, reload: 2.2, snd: [0.6, 0.14, 1900], hip: [0.17, -0.2, -0.38], ads: [0.12, -0.25, -0.42] },
   sniper: { name: "Scharfschützengewehr", dmg: 70, ammo: "gewehrmunition", mag: 5, rate: 1.1, auto: false, pellets: 1, spread: 0.03, spreadAim: 0, range: 420, zoom: 6, kick: 0.05, reload: 2.6, snd: [0.95, 0.38, 1400], hip: [0.19, -0.25, -0.46], ads: [0, -0.15, -0.3], scope: true },
-  schrotflinte: { name: "Schrotflinte", dmg: 6, ammo: "schrot", mag: 6, rate: 0.8, auto: false, pellets: 9, spread: 0.07, spreadAim: 0.05, range: 45, zoom: 1.4, kick: 0.045, reload: 2.4, snd: [1, 0.3, 1100], hip: [0.17, -0.2, -0.38], ads: [0, -0.104, -0.27] },
+  schrotflinte: { name: "Schrotflinte", dmg: 6, ammo: "schrot", mag: 6, rate: 0.8, auto: false, pellets: 9, spread: 0.07, spreadAim: 0.05, range: 45, zoom: 1.4, kick: 0.045, reload: 2.4, snd: [1, 0.3, 1100], hip: [0.17, -0.2, -0.38], ads: [0.12, -0.25, -0.42] },
 };
 const GUN = { scene: new THREE.Scene(), models: {}, cur: null, g: null, mag: {}, cd: 0, trig: false, rel: 0, kick: 0, flashT: 0, ads: 0, fx: [], audio: null,
   v: new THREE.Vector3(), d: new THREE.Vector3(), a: new THREE.Vector3(), b: new THREE.Vector3(), q: new THREE.Quaternion() };

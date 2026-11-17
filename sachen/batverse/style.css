@@ -322,10 +322,8 @@ body.touch .bank-close { display: block; }
 @media (max-width: 600px) { #handy { justify-content: center; } }
 
 /* S2 Zielen (Nicolas 2026-11-16) */
-#aim-ring { display: none; position: fixed; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px; border: 2px solid rgba(255, 255, 255, .85); border-radius: 50%; pointer-events: none; z-index: 4; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
-#aim-ring::before, #aim-ring::after { content: ""; position: absolute; background: rgba(255,255,255,.85); }
-#aim-ring::before { left: 50%; top: -8px; bottom: -8px; width: 2px; margin-left: -1px; clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%, 0 70%, 100% 70%, 100% 100%, 0 100%); }
-#aim-ring::after { top: 50%; left: -8px; right: -8px; height: 2px; margin-top: -1px; clip-path: polygon(0 0, 30% 0, 30% 100%, 0 100%, 0 0, 70% 0, 100% 0, 100% 100%, 70% 100%); }
+#aim-ring { display: none; position: fixed; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px; pointer-events: none; z-index: 4; filter: drop-shadow(0 0 1px rgba(0,0,0,.9));   /* Fadenkreuz aus 4 Strichen (Nicolas 2026-11-17) */
+  background: linear-gradient(#fff, #fff) 50% 0 / 2px 10px no-repeat, linear-gradient(#fff, #fff) 50% 100% / 2px 10px no-repeat, linear-gradient(#fff, #fff) 0 50% / 10px 2px no-repeat, linear-gradient(#fff, #fff) 100% 50% / 10px 2px no-repeat; }
 body.aiming #aim-ring { display: block; }
 body.aiming #cross { display: none !important; }
 #weapon-btns { display: none; position: fixed; right: calc(env(safe-area-inset-right, 0px) + 150px); bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); gap: 8px; z-index: 6; }
