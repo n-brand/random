@@ -198,7 +198,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 |----|-----|-------|
 | N44 | **Greifhaken**: cooleres 2D-Symbol, neuer Name (`OFFENE-FRAGEN.md` 39), 3D-Modell, nur Batman (in keinem Laden; ist es auch heute nicht). Zielhilfe wie bei der Rauchbombe (wie weit er reicht), schiesst ein Seil mit 3D-Haken und zieht es wieder ein | gebaut 2026-11-18 (Symbol, 3D, Zielhilfe, Seil mit Haken); Name offen (Frage 39) |
 | N45 | **Löschfahrzeug**: Zielhilfe wie bei der Rauchbombe (wie weit der Strahl reicht) | gebaut 2026-11-18 |
-| N46 | **Polizei-Helikopter** und **Polizei-Jeep** (Pickup mit offener Ladefläche) | offen |
+| N46 | **Polizei-Helikopter** und **Polizei-Jeep** (Pickup mit offener Ladefläche) | gebaut 2026-11-18 |
 | N47 | **Drift** für Landfahrzeuge (Taste in `CLAUDE.md` eintragen) | offen |
 | N48 | **Gleitumhang**: Batman gleitet nach einem Sprung in die Tiefe in einem bestimmten Winkel | offen |
 | N50 | **Batarang-Flugbahn**: in der Mitte steigt er plötzlich viel höher, dann kommt er zurück – korrigieren | **behoben 2026-11-18** |

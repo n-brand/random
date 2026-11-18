@@ -107,19 +107,22 @@ function buildTheBat() {
 const BAT_PTS = [[0, 1.3, 0], [0, 1.15, -3.9], [-1.8, 0.8, -5.1], [1.8, 0.8, -5.1], [-1.8, 0.15, -5.6], [1.8, 0.15, -5.6], [-1.08, 0.8, -6.25], [1.08, 0.8, -6.25], [-2.5, 0.8, -4.5], [2.5, 0.8, -4.5],
   [-2.6, 2.1, -0.6], [2.6, 2.1, -0.6], [-2.2, 2.3, 2.0], [2.2, 2.3, 2.0], [0, 3.35, 1.0], [-1.6, 2.3, 4.6], [1.6, 2.3, 4.6], [-2.5, 2.3, 4.0], [2.5, 2.3, 4.0], [-2.05, 2.2, 5.9], [2.05, 2.2, 5.9], [0, 2.4, 7.9], [-2.4, 2.1, 7.6], [2.4, 2.1, 7.6], [-1.1, 2.2, 7.8], [1.1, 2.2, 7.8]].map(([x, y, z]) => [x * BAT_KX, y, (z - BAT_ZC) * BAT_KZ]);   // Pruefpunkte (lokal): Kopf, Gondeln, Kanonen, Panzer, Heck, Beine
 const BAT_FEET = [[-1.1, -2.7], [1.1, -2.7], [-1.1, 4.1], [1.1, 4.1], [0, 0.6]].map(([x, z]) => [x * BAT_KX, (z - BAT_ZC) * BAT_KZ]);                                         // Kufen
-const FLY = (() => {
+// Mehrere Fluggeraete (Nicolas 2026-11-18, N46 Polizei-Helikopter): FLYS = alle, FLY = das aktive bzw. zuletzt benutzte (wie BOATS/BOAT). Je Geraet: name, pts/feet
+// (Kollisionspunkte), spec { max, acc, up, tilt, turn }, camD/camDmin, cockpit [lz, y], circPts, exitPts, snd. Ohne Angabe gelten die Werte von The Bat.
+let FLY = (() => {
   const b = buildTheBat();
   // Standplatz: untere Batcave auf der freien Flaeche vor dem Batcomputer, Nase nach Osten zur Halle und zum See (der Hangar oben ist fuer
   // 8,5 x 5,8 m zu eng und nur 8,5 m hoch). Hinaus geht es ueber den See und durch den Wassertunnel aufs Meer.
-  const F = { g: b.g, rotors: b.rotors, fans: b.fans, legs: b.legs, gear: b.gear, gearT: 0, thrustM: b.thrustM, st: 0, x: -47 - BAT_ZC * BAT_KZ, y: LY, z: -3, h: -Math.PI / 2, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [] };
+  const F = { name: "The Bat", g: b.g, rotors: b.rotors, fans: b.fans, legs: b.legs, gear: b.gear, gearT: 0, thrustM: b.thrustM, st: 0, x: -47 - BAT_ZC * BAT_KZ, y: LY, z: -3, h: -Math.PI / 2, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [] };
   F.home = { x: F.x, y: F.y, z: F.z, h: F.h };
   b.g.userData.dynamic = true; b.g.userData.noLift = true; scene.add(b.g);
   for (let k = 0; k < 4; k++) { const c = [0, 0, 2.2, 0]; c.dyn = true; circles.push(c); F.circ.push(c); }                             // Kollision fuer Fussgaenger entlang des Rumpfs
   return F;
 })();
+const BAT_FLY = FLY, FLYS = [FLY];
 // Welt-Punkt aus lokalem Punkt (vorne = -z)
 function batW(B, lx, lz, x = B.x, z = B.z, h = B.h) { const s = Math.sin(h), c = Math.cos(h); return [x + lx * c + lz * s, z - lx * s + lz * c]; }
-function batNear(B) { const R = 18; const [a, b] = collNear(B.x - R - 2, B.x + R + 2, B.z - R - 2, B.z + R + 2); nearS = a.filter(s => s.x1 > B.x - R && s.x0 < B.x + R && s.z1 > B.z - R && s.z0 < B.z + R); nearC = b.filter(c => !FLY.circ.includes(c) && Math.abs(c[0] - B.x) < R + c[2] && Math.abs(c[1] - B.z) < R + c[2]); }
+function batNear(B) { const R = 18; const [a, b] = collNear(B.x - R - 2, B.x + R + 2, B.z - R - 2, B.z + R + 2); nearS = a.filter(s => s.x1 > B.x - R && s.x0 < B.x + R && s.z1 > B.z - R && s.z0 < B.z + R); nearC = b.filter(c => !FLYS.some(F => F.circ.includes(c)) && Math.abs(c[0] - B.x) < R + c[2] && Math.abs(c[1] - B.z) < R + c[2]); }
 // Punkt im freien Luftraum? Wie die Fahrzeugkamera (camBlocked), in der unteren Hoehle aber mit den echten Deckenhoehen:
 // Halle ab LY+LH-3,8, Seegewoelbe ab SEA_Y+11,2 (jeweils mit Rand nach innen, Nicolas: Barrieren lieber weiter innen), auch ueber dem Wasser
 function batAir(x, y, z) {
@@ -134,28 +137,29 @@ function batAir(x, y, z) {
 // The Bat mindestens BAT_WATER m darueber und gilt dort nicht als gelandet (batOverWater), Aussteigen geht dann nicht.
 const BAT_WATER = 3;
 function batOverWater(B, x, y, z, h) {
-  for (const [lx, lz] of BAT_FEET) { const [px, pz] = batW(B, lx, lz, x, z, h), w = waterAt(px, pz); if (w !== null && supportAt(new THREE.Vector3(px, y + 0.6, pz), y + 0.6) < w + 0.3) return true; }
+  for (const [lx, lz] of B.feet || BAT_FEET) { const [px, pz] = batW(B, lx, lz, x, z, h), w = waterAt(px, pz); if (w !== null && supportAt(new THREE.Vector3(px, y + 0.6, pz), y + 0.6) < w + 0.3) return true; }
   return false;
 }
 function batFree(B, x, y, z, h) {
-  for (const [lx, ly, lz] of BAT_PTS) { const [px, pz] = batW(B, lx, lz, x, z, h); if (!batAir(px, y + ly, pz)) return false; }
-  for (const [lx, lz] of BAT_FEET) { const [px, pz] = batW(B, lx, lz, x, z, h), w = waterAt(px, pz); if (y < supportAt(new THREE.Vector3(px, y + 0.6, pz), y + 0.6) - 0.02 || (w !== null && y < w + BAT_WATER)) return false; }
+  for (const [lx, ly, lz] of B.pts || BAT_PTS) { const [px, pz] = batW(B, lx, lz, x, z, h); if (!batAir(px, y + ly, pz)) return false; }
+  for (const [lx, lz] of B.feet || BAT_FEET) { const [px, pz] = batW(B, lx, lz, x, z, h), w = waterAt(px, pz); if (y < supportAt(new THREE.Vector3(px, y + 0.6, pz), y + 0.6) - 0.02 || (w !== null && y < w + BAT_WATER)) return false; }
   return Math.hypot(x, z) < LIMIT && y < 400;
 }
 function batPose(B, dt) {
   B.g.position.set(B.x, B.y, B.z); B.g.rotation.set(B.pitch, B.h, B.roll, "YXZ");
   B.spin += dt * (6 + B.thrust * 30); for (const r of B.rotors) r.rotation.y = B.spin; for (const f of B.fans) f.rotation.z = B.spin * 1.4;
-  B.gear.position.y = B.gearT * 0.9; B.gear.visible = B.gearT < 0.97;                                                    // Kufen ein-/ausgefahren
-  for (const lg of B.legs) { lg.rotation.y = 0; lg.rotation.z = -lg.userData.sd * 0.45 + B.st * 0.45; }                // Flossen klappen beim Lenken wie Querruder gegenlaeufig hoch/runter, kein Schwenken zur Seite (Nicolas)                                       // Beine schwenken beim Lenken mit (wie Ruder) B.thrustM.emissiveIntensity = B.thrust * 2.2;
-  const pts = [[0, -2.6], [0, 0], [0, 2.6], [0, 5.6]].map(([x, z]) => [x, z - BAT_ZC * BAT_KZ]); B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on || B.landing ? 0 : 2.0; c[3] = B.y + 2.6; });
+  if (B.gear) { B.gear.position.y = B.gearT * 0.9; B.gear.visible = B.gearT < 0.97; }                                                    // Kufen ein-/ausgefahren
+  for (const lg of B.legs || []) { lg.rotation.y = 0; lg.rotation.z = -lg.userData.sd * 0.45 + B.st * 0.45; }                // Flossen klappen beim Lenken wie Querruder gegenlaeufig hoch/runter, kein Schwenken zur Seite (Nicolas)                                       // Beine schwenken beim Lenken mit (wie Ruder) B.thrustM.emissiveIntensity = B.thrust * 2.2;
+  const pts = B.circPts || [[0, -2.6], [0, 0], [0, 2.6], [0, 5.6]].map(([x, z]) => [x, z - BAT_ZC * BAT_KZ]); B.circ.forEach((c, i) => { const [x, z] = batW(B, pts[i][0], pts[i][1]); c[0] = x; c[1] = z; c[2] = B.on || B.landing ? 0 : B.circR || 2.0; c[3] = B.y + (B.circH || 2.6); });
+  if (B.pose) B.pose(B, dt);
 }
 function batCamera(B) {
   player.pos.set(B.x, B.y + 0.6, B.z);
-  if (B.view === 1) { const [x, z] = batW(B, 0, -2.3 - BAT_ZC * BAT_KZ); camera.position.set(x, B.y + 1.45, z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); return; }
+  if (B.view === 1) { const ck = B.cockpit || [-2.3 - BAT_ZC * BAT_KZ, 1.45], [x, z] = batW(B, 0, ck[0]); camera.position.set(x, B.y + ck[1], z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); return; }
   // Rundum-Ansicht (Nicolas 2026-11-09): Kamera auf einer Kugel um The Bat, Maus hoch/runter bis ueber und unter das Fluggeraet
   // (Hoehenwinkel e aus player.pitch: Standard -0,2 -> e 0,4 = leicht von oben)
   // Nicolas 2026-11-10: weiter weg (gross), Mittelpunkt Rumpfmitte; nie naeher als DMIN (sonst Ansicht im Rumpf), statt naeher ruecken wird die Kamera angehoben
-  const D = 21, DMIN = 10.5, tx = B.x, ty = B.y + 1.8, tz = B.z;
+  const D = B.camD || 21, DMIN = B.camDmin || 10.5, tx = B.x, ty = B.y + 1.8, tz = B.z;
   for (let e = Math.max(-1.4, Math.min(1.45, 0.2 - player.pitch)); ; e = Math.min(1.45, e + 0.1)) {
     const dx = Math.sin(player.yaw) * Math.cos(e) * D, H = Math.sin(e) * D, dz = Math.cos(player.yaw) * Math.cos(e) * D;
     let k = 1; for (let t = 0.12; t <= 1.0001; t += 0.04) if (!batAir(tx + dx * t, ty + H * t, tz + dz * t)) { k = t - 0.05; break; }
@@ -167,9 +171,9 @@ function useFly() {
   const B = FLY, p = player.pos;
   if (B.on) {
     batNear(B);
-    if (batOverWater(B, B.x, B.y, B.z, B.h)) { toast("Über dem Wasser kann The Bat nicht landen – zum Ufer fliegen"); return true; }
+    if (batOverWater(B, B.x, B.y, B.z, B.h)) { toast("Über dem Wasser kann " + B.name + " nicht landen – zum Ufer fliegen"); return true; }
     if (batFree(B, B.x, B.y - 0.15, B.z, B.h)) { toast("Zum Aussteigen landen (C sinken)"); return true; }
-    for (const [lx, lz] of [[3.4, 0.5], [-3.4, 0.5], [0, 5.2], [3.4, -2.5], [-3.4, -2.5]].map(([x, z]) => [x, z - BAT_ZC * BAT_KZ])) {
+    for (const [lx, lz] of B.exitPts || [[3.4, 0.5], [-3.4, 0.5], [0, 5.2], [3.4, -2.5], [-3.4, -2.5]].map(([x, z]) => [x, z - BAT_ZC * BAT_KZ])) {
       const [x, z] = batW(B, lx, lz), q = new THREE.Vector3(x, B.y + 1.5, z), top = supportAt(q, B.y + 1.5);
       if (Math.abs(top - B.y) > 1.2) continue;
       B.on = false; B.vx = B.vz = B.vy = 0; B.thrust = 0; B.gearT = 0; engineStop(); batPose(B, 0);
@@ -180,8 +184,8 @@ function useFly() {
   if (Math.hypot(p.x - B.x, p.z - B.z) > 5.5 || Math.abs(p.y - B.y) > 3) return false;
   if (world.userData.car) world.userData.car.leave();
   B.on = true; B.landing = null; B.view = 0; keys.clear(); player.yaw = B.h; player.pitch = -0.2;
-  toast("The Bat: W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera, Shift aussteigen (gelandet)");
-  engineStart("The Bat"); speedEl.hidden = false; return true;
+  toast(B.name + ": W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera, Shift aussteigen (gelandet)");
+  engineStart(B.snd || "The Bat"); speedEl.hidden = false; return true;
 }
 function flyStep(dt) {
   const B = FLY; batNear(B);
@@ -194,14 +198,14 @@ function flyStep(dt) {
   if (keys.has("KeyC") || downHeld) up -= 1;                                                             // nur C (Nicolas: kein Strg, Strg loest Browser-Kuerzel aus)
   th -= moveStick.y; st -= moveStick.x;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-  const fast = true, max = 70, acc = 24;                                                                  // nur W, kein Shift (Nicolas 2026-11-09)
+  const S = B.spec || {}, fast = true, max = S.max || 70, acc = S.acc || 24;                                                                  // nur W, kein Shift (Nicolas 2026-11-09)
   B.st += (st - B.st) * Math.min(1, dt * 5);
-  const dh = st * 1.15 * dt; B.h = wrapA(B.h + dh); player.yaw += dh;
+  const dh = st * (S.turn || 1.15) * dt; B.h = wrapA(B.h + dh); player.yaw += dh;
   const fx = -Math.sin(B.h), fz = -Math.cos(B.h);
   B.vx += fx * th * acc * dt; B.vz += fz * th * acc * dt;
   const damp = Math.exp(-(th ? 0.35 : 0.9) * dt); B.vx *= damp; B.vz *= damp;                                              // ohne Gas bremst die Luft
   const sp = Math.hypot(B.vx, B.vz); if (sp > max) { B.vx *= max / sp; B.vz *= max / sp; }
-  B.vy += ((fast ? 12 : 7) * up - B.vy) * Math.min(1, dt * 3);                                                          // Senkrechtstarter: Hoehe halten, steigen, sinken
+  B.vy += ((S.up || (fast ? 12 : 7)) * up - B.vy) * Math.min(1, dt * 3);                                                          // Senkrechtstarter: Hoehe halten, steigen, sinken
   // Bewegen mit Kollision: erst alles, sonst je Achse (gleitet an Waenden entlang)
   const nx = B.x + B.vx * dt, ny = B.y + B.vy * dt, nz = B.z + B.vz * dt;
   if (batFree(B, nx, ny, nz, B.h)) { B.x = nx; B.y = ny; B.z = nz; }
@@ -217,7 +221,7 @@ function flyStep(dt) {
   B.thrust += ((landed && !up && !th ? 0.05 : 0.35 + 0.65 * Math.max(Math.abs(th), Math.max(0, up))) - B.thrust) * Math.min(1, dt * 3);
   // Lage: beim Beschleunigen Nase etwas runter, in Kurven schraeg, im Schweben leichtes Wiegen
   const along = B.vx * fx + B.vz * fz, t = performance.now() / 1000;
-  B.pitch += ((landed ? 0 : -0.12 * th - along * 0.002 + 0.015 * Math.sin(t * 1.3)) - B.pitch) * Math.min(1, dt * 3);
+  B.pitch += ((landed ? 0 : -(S.tilt || 0.12) * th - along * (S.tiltV || 0.002) + 0.015 * Math.sin(t * 1.3)) - B.pitch) * Math.min(1, dt * 3);
   B.roll += ((landed ? 0 : st * Math.min(0.35, 0.1 + sp / 80) + 0.012 * Math.sin(t * 1.7)) - B.roll) * Math.min(1, dt * 3);
   // Beim Vorwaertsfliegen gleitet die Ansicht langsam zurueck hinter The Bat in die Standardhoehe (Nicolas 2026-11-09)
   if (B.view === 0 && along > 3 && th > 0) { const k = Math.min(1, dt * 0.9); player.yaw += Math.atan2(Math.sin(B.h - player.yaw), Math.cos(B.h - player.yaw)) * k; player.pitch += (-0.2 - player.pitch) * k; }
@@ -228,6 +232,7 @@ function flyStep(dt) {
 // T-Menue: The Bat zum Spieler holen (schwebt neben ihm ein, falls dort Platz ist)
 function summonBat() {
   if (!walking || ghost) { toast("Zuerst „Begehen“ starten, dann The Bat holen"); return false; }
+  if (FLY.on && FLY !== BAT_FLY) return toast("Du fliegst gerade " + FLY.name), false; FLY = BAT_FLY;   // T-Menue holt immer The Bat
   const B = FLY, p = player.pos; if (B.on) return toast("Du sitzt schon in The Bat"), false;
   batNear({ x: p.x, z: p.z });
   // Nicolas 2026-11-09: wenn ueber dir genug Platz ist, erscheint The Bat hoch ueber dir und landet langsam auf dir (danach direkt drin)
@@ -254,4 +259,4 @@ function batLandStep(dt) {
 }
 batPose(FLY, 0);
 // Verlassen (Esc, Geist, anderes Fahrzeug) setzt auch The Bat ab: bleibt, wo sie ist
-{ const prev = world.userData.car.leave; world.userData.car.leave = () => { prev(); if (BOAT.on) { BOAT.on = false; BOAT.v = 0; engineStop(); } if (FLY.on) { FLY.on = false; FLY.vx = FLY.vy = FLY.vz = 0; FLY.thrust = 0; engineStop(); speedEl.hidden = true; batPose(FLY, 0); } }; }
+{ const prev = world.userData.car.leave; world.userData.car.leave = () => { prev(); if (BOAT.on) { BOAT.on = false; BOAT.v = 0; engineStop(); } for (const F of FLYS) if (F.on) { F.on = false; F.vx = F.vy = F.vz = 0; F.thrust = 0; engineStop(); speedEl.hidden = true; batPose(F, 0); } }; }

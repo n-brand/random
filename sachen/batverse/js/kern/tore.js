@@ -29,7 +29,7 @@ gates.push({ name: "Aufzug", g: doorG, call: () => useLift(), verbs: ["holen / f
 function findAimedVehicle() {
   if (!walking || ghost || (CAR && CAR.on) || BOAT.on || FLY.on || JET.on || (typeof shipOn === "function" && shipOn())) return null;
   gateRay.setFromCamera(gateCenter, camera); gateRay.far = 14;
-  const list = [...VEH.filter(v => !v.dead).map(v => [v.g, v]), ...BOATS.map(b => [b.g, b]), [FLY.g, FLY], ...(JET.dead ? [] : [[JET.g, JET]]), ...(typeof SHIP !== "undefined" ? SHIP.list.map(S => [S.g, S]) : [])], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
+  const list = [...VEH.filter(v => !v.dead).map(v => [v.g, v]), ...BOATS.map(b => [b.g, b]), ...FLYS.map(F => [F.g, F]), ...(JET.dead ? [] : [[JET.g, JET]]), ...(typeof SHIP !== "undefined" ? SHIP.list.map(S => [S.g, S]) : [])], hit = gateRay.intersectObjects(list.map(l => l[0]), true)[0];
   if (!hit) return null; const e = list.find(([g]) => { for (let o = hit.object; o; o = o.parent) if (o === g) return true; return false; }); return e ? e[1] : null;
 }
 // Einparken (Nicolas 2026-11-10): im Fahrzeug in der Tiefgarage auf einen freien Stellplatz zielen (Fadenkreuz, bei freier Maus der Zeiger) -> blaues P-Schild
@@ -56,8 +56,8 @@ function parkInBay(b) {
   player.yaw = C.h; player.pitch = -0.12; carPose(0); baySign.visible = false; aimedBay = null;
   toast("Eingeparkt auf Platz " + b.n);
 }
-function enterVehicle(v) { if (v && v.lazy) vehReal(v); const ok = v && v.isShip ? useShip(v) : BOATS.includes(v) ? useBoat(v) : v === FLY ? useFly() : v === JET ? useJet() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
-const vehName = v => v.isShip ? v.label : BOATS.includes(v) ? v.name : v === FLY ? "The Bat" : v === JET ? "Kampfjet" : v.label.replace(/ \(.*\)$/, "");
+function enterVehicle(v) { if (v && v.lazy) vehReal(v); const ok = v && v.isShip ? useShip(v) : BOATS.includes(v) ? useBoat(v) : FLYS.includes(v) ? ((FLY = v), useFly()) : v === JET ? useJet() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
+const vehName = v => v.isShip ? v.label : BOATS.includes(v) ? v.name : FLYS.includes(v) ? v.name : v === JET ? "Kampfjet" : v.label.replace(/ \(.*\)$/, "");
 let aimedVeh = null;
 function toggleGate(t) {
   if (!t) return;

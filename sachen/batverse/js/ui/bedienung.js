@@ -124,7 +124,7 @@ addEventListener("keydown", e => {
   }
   if (FLY.on) {                                                             // The Bat: V Kamera, N Ton, sonst Flugtasten
     if (e.code.startsWith("Arrow") || e.code === "Space" || e.ctrlKey) e.preventDefault();
-    if (e.code === "KeyV" && !e.repeat) { FLY.view = FLY.view === 1 ? 0 : 1; player.pitch = FLY.view ? 0 : -0.2; return toast(FLY.view ? "Cockpit" : "Kamera hinter The Bat"); }
+    if (e.code === "KeyV" && !e.repeat) { FLY.view = FLY.view === 1 ? 0 : 1; player.pitch = FLY.view ? 0 : -0.2; return toast(FLY.view ? "Cockpit" : "Kamera hinter " + FLY.name); }
     if (e.code === "KeyN" && !e.repeat) { engineMute(); if (!ENGINE.muted) engineStart("The Bat"); return; }
     keys.add(e.code); return;
   }

@@ -1690,3 +1690,42 @@ function buildPolizeiMotorrad() {
 }
 const SPEC_POLIZEIMOTORRAD = { ...SPEC_BIKE, name: "Gotham Police Motorrad", maxN: 36, maxF: 44.4, acc: 14,
   msg: "Gotham Police Motorrad: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift absteigen (Blaulicht blinkt beim Fahren)" };
+// Polizei-Jeep (Nicolas 2026-11-18, N46: "Polizei-Jeep, Pickup mit offener Ladeflaeche"): gelaendegaengiger Pickup, Doppelkabine dunkelblau mit weissen Tueren und POLICE · GCPD,
+// offene Ladeflaeche mit Bordwaenden und Ueberrollbuegel (Lichtbalken darauf), Rammschutz, Trittbretter, grosse Gelaendereifen. Eigener Entwurf ohne Marke. Vorne = -z.
+function buildPolizeiPickup() {
+  const g = new THREE.Group(), HW = 1.0, zF = -2.75, zR = 2.75;
+  const paint = M(0x16233f, { metalness: 0.45, roughness: 0.32 }), white = M(0xeef0f2, { roughness: 0.4 }), black = M(0x0c0d0e, { roughness: 0.7 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 });
+  const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), tireM = M(0x111111, { roughness: 0.95 }), rimM = M(0x2a2c30, { metalness: 0.6, roughness: 0.4 }), bed = M(0x1d1f23, { roughness: 0.85 });
+  boxIn(g, -HW, HW, 0.55, 1.25, zF + 0.1, zF + 1.3, paint); boxIn(g, -HW + 0.06, HW - 0.06, 1.25, 1.32, zF + 0.15, zF + 1.25, paint);      // Motorhaube
+  boxIn(g, -HW, HW, 0.55, 1.3, zF + 1.3, 0.55, paint); boxIn(g, -HW + 0.04, HW - 0.04, 1.3, 2.05, zF + 1.75, 0.5, paint); boxIn(g, -HW + 0.06, HW - 0.06, 2.05, 2.1, zF + 1.8, 0.45, paint);   // Kabine, Dach
+  { const ws = new THREE.Mesh(new THREE.BoxGeometry(2 * HW - 0.16, 0.86, 0.05), glass); ws.position.set(0, 1.7, zF + 1.55); ws.rotation.x = 0.45; g.add(ws); }   // Frontscheibe
+  boxIn(g, -HW + 0.12, HW - 0.12, 1.45, 1.95, 0.5, 0.53, glass);                                                                 // Heckscheibe der Kabine
+  for (let x = -0.6; x <= 0.61; x += 0.15) boxIn(g, x - 0.04, x + 0.04, 0.7, 1.15, zF + 0.07, zF + 0.1, chrome);                 // Grill
+  boxIn(g, -HW - 0.05, HW + 0.05, 0.45, 0.7, zF - 0.3, zF + 0.1, black); for (const sd of [-1, 1]) boxIn(g, sd * 0.45 - 0.05, sd * 0.45 + 0.05, 0.55, 1.2, zF - 0.33, zF - 0.23, black);   // Rammschutz
+  // Ladeflaeche: Boden, Bordwaende, Heckklappe, Ueberrollbuegel
+  boxIn(g, -HW, HW, 0.55, 0.85, 0.55, zR, paint); boxIn(g, -HW + 0.08, HW - 0.08, 0.85, 0.88, 0.6, zR - 0.08, bed);
+  for (const sd of [-1, 1]) boxIn(g, sd * (HW - 0.08), sd * HW, 0.85, 1.35, 0.55, zR, paint);
+  boxIn(g, -HW, HW, 0.85, 1.35, zR - 0.08, zR, paint); boxIn(g, -0.4, 0.4, 1.05, 1.2, zR, zR + 0.01, white);
+  for (const sd of [-1, 1]) { boxIn(g, sd * (HW - 0.12) - 0.05, sd * (HW - 0.12) + 0.05, 1.35, 2.25, 0.65, 0.75, black); }
+  boxIn(g, -HW + 0.07, HW - 0.07, 2.2, 2.28, 0.65, 0.75, black);                                                                  // Buegel
+  for (const sd of [-1, 1]) {
+    sideBox(g, sd * (HW - 0.02), sd * (HW + 0.02), 1.42, 1.95, zF + 1.85, -0.75, glass); sideBox(g, sd * (HW - 0.02), sd * (HW + 0.02), 1.42, 1.95, -0.65, 0.4, glass);   // Fenster vorne, hinten
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.03), 0.65, 1.3, zF + 1.8, 0.45, white);                                            // weisse Tueren
+    fireSign(g, fireLabel("POLICE · GCPD", 96), 2.0, 0.34, sd * (HW + 0.035), 1.0, -0.85, sd);
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.04), 0.65, 1.3, -0.72, -0.68, black);                                              // Tuerfuge
+    sideBox(g, sd * HW, sd * (HW + 0.18), 0.42, 0.48, zF + 1.6, 0.4, black);                                                     // Trittbrett
+    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.25), 1.75, 2.0, zF + 1.6, zF + 1.68, black);                                       // Spiegel
+    boxIn(g, sd * 0.7 - 0.2, sd * 0.7 + 0.2, 0.98, 1.12, zF + 0.06, zF + 0.09, mat.glow);                                        // Scheinwerfer
+    boxIn(g, sd * (HW - 0.1) - 0.07, sd * (HW - 0.1) + 0.07, 0.9, 1.3, zR, zR + 0.02, mat.glowRed);                              // Rueckleuchten
+  }
+  for (const z of [-1.75, 1.75]) for (const sd of [-1, 1]) boxIn(g, sd * HW - 0.12, sd * HW + 0.12, 0.85, 1.0, z - 0.6, z + 0.6, black);   // Radlaeufe
+  const bar = lightBar(g, 2.28, 0.7, 1.7, 0xff2020, 0x2a5cff);
+  mergeStatic(g);
+  const wheels = [[-0.92, -1.75, true], [0.92, -1.75, true], [-0.92, 1.75, false], [0.92, 1.75, false]].map(([x, z, f]) => addWheel(g, x, z, 0.44, 0.3, f, tireM, rimM, 0, 24));
+  for (const w of wheels) sedanCap(w, 0.3, 0x2a2c30, 0xc8ccd0, 5);
+  return { g, wheels, beacon: bar };
+}
+const SPEC_POLIZEIPICKUP = { name: "Gotham Police Pickup", wheels: [[-0.92, -1.75], [0.92, -1.75], [-0.92, 1.75], [0.92, 1.75]], wb: 3.5, track: 1.84, pts: [-2.2, -0.7, 0.7, 2.2], R: 1.05, circR: 1.0, enter: 4.0,
+  maxN: 34, maxF: 44.4, acc: 11, steer: 0.62, jump: false, grade: 42, camD: 9.5, camH: 1.7, seat: [-0.45, 1.6, -0.9], bodyH: 2.3, bike: false, mass: 8,
+  exits: [[-1.9, -0.9], [1.9, -0.9], [-1.9, 1.2], [1.9, 1.2], [0, -3.8], [0, 3.8]],
+  msg: "Gotham Police Pickup: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blaulicht blinkt beim Fahren)" };

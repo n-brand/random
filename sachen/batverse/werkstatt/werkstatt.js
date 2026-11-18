@@ -15,6 +15,7 @@ const MODELLE = [
   { name: "Gotham Taxi", spec: SPEC_TAXI, bau: () => buildTaxi() },
   { name: "Gotham Police Van", spec: SPEC_POLIZEIVAN, bau: () => buildPolizeiVan() },
   { name: "Gotham Police Motorrad", spec: SPEC_POLIZEIMOTORRAD, bau: () => buildPolizeiMotorrad() },
+  { name: "Gotham Police Pickup", spec: SPEC_POLIZEIPICKUP, bau: () => buildPolizeiPickup() },
   { name: "Gotham Secure (Geldtransporter)", spec: SPEC_GELDTRANSPORTER, bau: () => buildGeldtransporter() },
   { name: "Gotham Fire Engine", spec: SPEC_FIRE_ENGINE, bau: () => buildFireTruck("engine") },
   { name: "Gotham Fire Ladder", spec: SPEC_FIRE_LADDER, bau: () => buildFireTruck("ladder") },
@@ -35,6 +36,7 @@ const MODELLE = [
   // Fluggeraete (Nicolas 2026-11-12): Modell, Flugphysik, Kamera und Ton direkt aus jet.js / the-bat.js des Spiels (flache Welt aus flug-shim.js)
   { name: "Kampfjet", flug: "jet" },
   { name: "The Bat (Batwing)", flug: "bat" },
+  { name: "Polizei-Helikopter", flug: "heli" },
 ];
 
 // ---------- Szene: Licht, Boden, Rundkurs, Slalom ----------
@@ -121,7 +123,7 @@ function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = n
   const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 1.9 + fz * r * 0.45, c.y + r * 0.25, c.z + fz * r * 1.9 - fx * r * 0.45); controls.update();
   $info.innerHTML = "<table><tr><td>Projekt</td><td>" + PROJEKT.name + "</td></tr><tr><td>Masse</td><td>" + fmt(s.x) + " x " + fmt(s.z) + " x " + fmt(s.y) + " m</td></tr></table><div class=\"note\">Aktuelles Umbauprojekt, Plan: " + PROJEKT.plan + "</div>"; }
 // ---------- Fluggeraete ----------
-const FLUG = { jet: () => JET, bat: () => FLY };
+const FLUG = { jet: () => JET, bat: () => BAT_FLY, heli: () => HELI };
 // Startbahn (Kampfjet) und Landeplatz (The Bat) am Nordrand der Flaeche
 const PAD = { x: -100, z: -200 };
 { const asph = new THREE.MeshStandardMaterial({ color: 0x2c2f33, roughness: 0.9 }), weiss = new THREE.MeshStandardMaterial({ color: 0xeeeeea, roughness: 0.6 });
@@ -134,7 +136,7 @@ const PAD = { x: -100, z: -200 };
 }
 Object.assign(FLY, { x: PAD.x, y: 0, z: PAD.z, h: -Math.PI / 2 }); FLY.home = { x: FLY.x, y: FLY.y, z: FLY.z, h: FLY.h }; batPose(FLY, 0);
 for (const F of [JET, FLY]) F.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-function flugReset(F) { if (F === JET) return jetReset(); Object.assign(F, { ...F.home, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0, gearT: 0 }); player.yaw = F.h; batPose(F, 0); toast("The Bat zurück auf dem Landeplatz"); }
+function flugReset(F) { if (F === JET) return jetReset(); Object.assign(F, { ...F.home, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0, gearT: 0 }); player.yaw = F.h; batPose(F, 0); toast(F.name + " zurück auf dem Landeplatz"); }
 
 // ---------- Zielfahrzeuge (Nicolas 2026-11-12): geparkt suedlich der Startgeraden, Front zur Strecke; Schutzstufen wie im Spiel (ARMOR in
 // modelle.js), Treffer als Kapsel wie vehCapsule in schiessen.js; zerstoert = verkohltes Wrack (springt hoch, raucht), nach 15 s wieder heil ----------
@@ -246,7 +248,7 @@ function laden(i) {
 // Ton wie im Spiel (Nicolas 2026-11-12: in der Werkstatt sollen alle Sounds gehen): Motorton aus motorton.js (Profil nach spec.name), an beim Fahren,
 // aus beim Ansehen/Drehteller und beim Modellwechsel; Jet und The Bat starten ihren Ton selbst (jet.js / the-bat.js). M = Ton an/aus, Lautstaerke wie im Spiel.
 function tonAn() { if (modus === "drive" && AKT && !AKT.flug) engineStart(AKT.spec.name); else if (!(AKT && AKT.flug && modus === "drive")) engineStop(); }
-function flugStart() { const F = AKT.F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }
+function flugStart() { const F = AKT.F; if (F !== JET) FLY = F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }   // aktives Fluggeraet (The Bat oder Helikopter)
 function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? (A.roll || 0) : A.lean, "YXZ"); }
 // Nicolas 2026-11-17 (Bild Ansehen): Teleport ausser im Fahren immer als Person (4) an den Punkt, nicht das Fahrzeug
 window.werkstattTeleport = p => { if (modus !== "drive") { const d = camera.getWorldDirection(new THREE.Vector3()), yaw = modus === "geist" ? GEIST.yaw : modus === "person" ? PERSON.yaw : Math.atan2(-d.x, -d.z); if (modus !== "person") setModus("person");   // wie im Spiel: Teleport im Geist = Begehen am Punkt (Nicolas 2026-11-17)

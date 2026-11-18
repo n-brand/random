@@ -41,6 +41,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Tore, Türen, Automaten, Tische | Rechtsklick (zu Fuss), im Fahrzeug auch E |
 | Ton an/aus im Fahrzeug | N |
 | Container-Aufzug im Auto | L |
+| Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
 | Tumbler-Sprung | im Tumbler, 10 s Abklingzeit |
 | Behälter (Waffenwand, später Tresore, Koffer, Mülleimer) | Rechtsklick davor (nur von vorne, aus der Nähe); im Fenster ziehen, Shift+Klick = Behälter ↔ Inventar |
 | Tresor | Rechtsklick davor: zu = Tastenfeld (Ziffern, Enter, Rücktaste; Standard-Code **0000**, 3 x falsch = 10 s gesperrt), offen = Inhalt mit "Schliessen und verriegeln" und "Code ändern" |
@@ -62,6 +63,13 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Polizei-Helikopter und Polizei-Pickup** (Nicolas 2026-11-18, N46: "Polizei-Helikopter und Polizei-Jeep (Pickup mit offener Ladefläche)"):
+  - Flugsystem für mehrere Fluggeräte (the-bat.js): `FLYS` = alle, `let FLY` = aktives (wie BOATS/BOAT), `BAT_FLY` = The Bat (T-Menü holt immer sie). Je Gerät optional `name`, `pts`/`feet` (Kollision), `spec` { max, acc, up, tilt, tiltV, turn }, `camD`/`camDmin`, `cockpit`, `circPts`/`circR`/`circH`, `exitPts`, `snd`, `pose()`. tore.js zielt auf alle FLYS und setzt beim Einsteigen `FLY`; Texte mit dem Gerätenamen.
+  - Neu `js/fahrzeuge/heli.js` (Spiel-FILES und Werkstatt nach the-bat.js, ASSETS, BV_KEEP): eigener Entwurf, dunkelblaue Kabine mit weisser Unterseite und POLICE · GCPD, Glaskanzel, Heckausleger mit Leitwerken, Heckrotor, Kufen, Rotor 10 m (vier Blätter), Suchscheinwerfer, Blaulichter (blinken im Flug). Fliegt wie The Bat, langsamer (55 m/s) und neigt sich stärker. `heliPolizei(x, y, z, h)` stellt ihn mit Landeplatz (gelber Ring, H) auf das Dach des oberen Blocks des Präsidiums (gotham-polizei.js; auch in der Werkstatt). Werkstatt-Auswahl "Polizei-Helikopter".
+  - modelle.js `buildPolizeiPickup` / `SPEC_POLIZEIPICKUP` "Gotham Police Pickup": Doppelkabine dunkelblau, weisse Türen mit POLICE · GCPD, offene Ladefläche mit Bordwänden, Überrollbügel mit Lichtbalken, Rammschutz, Trittbretter, Geländereifen. Vor dem Präsidium neben dem Van, Werkstatt-Auswahl.
+  - Werkstatt-Fehler behoben: `dkIn` fehlte in werkstatt/flug-shim.js (seit der gedrehten Kollision), dadurch flog auch The Bat in der Werkstatt nicht; jetzt mit den Gebäudequadern der Werkstatt.
+  - Geprüft: Werkstatt – Helikopter auf dem Dach (Bild), Start: 22 m steigen, 83 km/h vorwärts mit Nase unten (Bild), The Bat steigt wieder (14 m), Pickup (Bild); Spiel – FLYS mit beiden, Helikopter auf dem Dach 25,6 m, frei nach oben, gilt als gelandet, ein Pickup; keine neuen Fehler. Einsteigen mit echtem Rechtsklick im Spiel nicht getestet.
 
 - **Löschfahrzeug: Zielhilfe in 3D** (Nicolas 2026-11-18, N45: "Löschfahrzeug: Zielhilfe wie bei der Rauchbombe (wie weit der Strahl reicht)"): modelle.js `wasserZiel` merkt sich die Bahnpunkte (alle 0,08 s, gleiche Rechnung mit Luftwiderstand wie die Tropfen), `wasserBogen(ws)` zeichnet sie als blaue Punkte und einen gelben Ring am Auftreffpunkt auf dem Boden, sichtbar wie der Bildschirm-Ring (#water-sight im Spiel, #wsicht in der Werkstatt: nur bei ausgefahrenem Arm, also beim Spritzen). Aufgerufen in schiessen.js `wasserFrame` und werkstatt.js. Geprüft in der Werkstatt mit der Gotham Fire Engine: 29 Bahnpunkte, Ring 75 m vorne am Boden, Bild.
 

@@ -128,7 +128,9 @@ function* gcpdGen() {
   // Polizei-Van und zwei Polizei-Motorraeder (Nicolas 2026-11-17) neben den Streifenwagen
   if (typeof addVehicle === "function" && typeof SPEC_POLIZEIVAN !== "undefined") { const h = Math.atan2(e2[0], e2[1]);
     { const [x, , z] = f.W(L1 - 19.5, -3, 0); addVehicle(SPEC_POLIZEIVAN, () => buildPolizeiVan(), x, z, Y, h, "Gotham Police Van (Präsidium)", 0x141c2e); }
-    for (const s of [19.2, 20.8]) { const [x, , z] = f.W(s, -2, 0); addVehicle(SPEC_POLIZEIMOTORRAD, () => buildPolizeiMotorrad(), x, z, Y, h, "Gotham Police Motorrad (Präsidium)", 0xeef0f2); } }
+    for (const s of [19.2, 20.8]) { const [x, , z] = f.W(s, -2, 0); addVehicle(SPEC_POLIZEIMOTORRAD, () => buildPolizeiMotorrad(), x, z, Y, h, "Gotham Police Motorrad (Präsidium)", 0xeef0f2); }
+    if (typeof SPEC_POLIZEIPICKUP !== "undefined") { const [x, , z] = f.W(24.5, -3, 0); addVehicle(SPEC_POLIZEIPICKUP, () => buildPolizeiPickup(), x, z, Y, h, "Gotham Police Pickup (Präsidium)", 0x16233f); } }   // Polizei-Jeep (N46)
+  if (typeof heliPolizei === "function") { const [x, , z] = f.W(sm, 36, 0); heliPolizei(x, H2, z, Math.atan2(e2[0], e2[1])); }   // Polizei-Helikopter auf dem Dach des oberen Blocks (N46, fahrzeuge/heli.js)
 }
 // Fledermaus-Umriss (eigene Form: Fluegel mit drei Zacken unten, Kopf mit zwei Ohren), Mitte cx/cy, Breite w
 // Fledermaus des Batsignals: halbe Kontur (rechts, x 0..1, y nach unten wie im Canvas), gespiegelt; auch Form des Batarangs und seines Symbols (Nicolas 2026-11-16)
