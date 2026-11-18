@@ -222,29 +222,9 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   // hinten rechts im Personalbereich, Tuer mit Drehrad, Zahlenschloss und Scharnieren (Rechtsklick oeffnet/schliesst, dreht in casinoStep), innen zwei Boeden mit Gold, Geld und Jetons
   { const tw = 0.95, th = 1.85, td = 0.85, tx = IX - 1.2, tz = IZ1 - 0.3 - td / 2, t = 0.07, fz = tz - td / 2, vc = M({ color: 0x5d636b, metalness: 0.8, roughness: 0.35 });
     box(tw + 0.08, 0.1, td + 0.04, M({ color: 0x1a1b1e }), tx, 0.05, tz);                                           // Sockel
-    box(tw, t, td, vc, tx, 0.1 + t / 2, tz); box(tw, t, td, vc, tx, 0.1 + th - t / 2, tz); box(tw, th, t, vc, tx, 0.1 + th / 2, tz + td / 2 - t / 2);
-    for (const s of [-1, 1]) box(t, th, td, vc, tx + s * (tw / 2 - t / 2), 0.1 + th / 2, tz);
     C.push([tw + 0.1, th + 0.1, td, tx, tz]);
-    const bars = [], bund = [];
-    for (const y of [0.1 + t, 0.75, 1.35]) { if (y > 0.2) box(tw - 2 * t, 0.03, td - t - 0.04, steel, tx, y, tz + 0.02);
-      for (let i = 0; i < 4; i++) for (let k = 0; k < 2; k++) (y > 1.3 ? bund : bars).push([tx - 0.3 + i * 0.2, y + 0.05 + (y > 1.3 ? 0.02 : 0), tz - 0.1 + k * 0.22, 0]); }
-    for (let i = 0; i < 3; i++) bars.push([tx - 0.2 + i * 0.2, 0.25, tz + 0.06]);
-    inst(new THREE.BoxGeometry(0.17, 0.06, 0.08), gold, bars); inst(new THREE.BoxGeometry(0.16, 0.1, 0.18), M({ color: 0x4f8a4a, roughness: 0.8 }), bund);
-    chipL.push([tx + 0.25, 0.79, tz + 0.12, [[10000, 6, 0, 0], [1000, 8, 0.06, 0.04]]]);
-    // Tuer: Drehpunkt an der linken Kante (von vorne gesehen rechts = -x ... Scharnier bei +x), schwenkt nach vorne (-z) auf
-    const piv = new THREE.Group(); piv.position.set(tx + tw / 2, 0.1, fz - 0.02); g.add(piv);
-    const dm = new THREE.Mesh(new THREE.BoxGeometry(tw, th, 0.1), vc); dm.position.set(-tw / 2, th / 2, -0.05); dm.castShadow = true; piv.add(dm);
-    const fr = new THREE.Mesh(new THREE.BoxGeometry(tw - 0.12, th - 0.12, 0.02), M({ color: 0x7a8088, metalness: 0.85, roughness: 0.3 })); fr.position.set(-tw / 2, th / 2, -0.105); piv.add(fr);
-    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.022, 8, 28), gold); wheel.position.set(-tw / 2, th * 0.52, -0.16); piv.add(wheel);
-    for (let k = 0; k < 4; k++) { const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.34, 6), gold); sp.position.set(-tw / 2, th * 0.52, -0.16); sp.rotation.z = k * Math.PI / 4; piv.add(sp); }
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 16), gold); hub.rotation.x = Math.PI / 2; hub.position.set(-tw / 2, th * 0.52, -0.13); piv.add(hub);
-    const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.04, 24), M({ color: 0x1a1b1e, metalness: 0.4 })); dial.rotation.x = Math.PI / 2; dial.position.set(-tw / 2, th * 0.72, -0.13); piv.add(dial);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.01, 6, 24), gold); ring.position.set(-tw / 2, th * 0.72, -0.15); piv.add(ring);
-    for (const y of [0.25, th - 0.25]) { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.22, 10), M({ color: 0xb8bcc2, metalness: 0.9, roughness: 0.2 })); h.position.set(0.0, y, -0.05); piv.add(h); }
-    const lab = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.1), new THREE.MeshBasicMaterial({ map: canvasTex(128, 30, (c, w, h) => { c.fillStyle = "#14161a"; c.fillRect(0, 0, w, h); c.fillStyle = "#c9a640"; c.font = "bold 20px Arial"; c.textAlign = "center"; c.fillText("GOTHAM SAFE", w / 2, 22); }) }));
-    lab.position.set(-tw / 2, th * 0.3, -0.106); lab.rotation.y = Math.PI; piv.add(lab);
-    CAS.vault = { piv, a: 0, open: false, max: -1.9 };
-    CAS.gates.push({ name: "Tresor", m: dm, call: () => casinoVault(), verbs: ["öffnen", "öffnen"], near: 3, vault: true }); }
+    // seit 2026-11-18 ein echter Tresor der Stufe 3 (gotham/tresor.js, N23): Code 0000 oder aufsprengen, Inhalt im Behaelter-Fenster
+    if (typeof tresorAdd === "function") { const T = tresorAdd(g, 3, "casino", new THREE.Vector3(tx, 0.1, tz), 0, [["goldbarren", 6], ["jeton-1000", 20], ["jeton-10000", 5]], true); CAS.gates.push({ name: "Tresor", m: T.g, call: () => tresorUse(T), verbs: ["benutzen", "benutzen"], near: 3 }); } }
   // ---- Freitreppe in der Mitte hinten (Nicolas: "grosszuegige Treppe hoch"): Marmorstufen mit rotem Laeufer, Gelaender mit Goldstaeben, Pfosten mit Leuchtkugeln ----
   // Begehbar als Rampe (CAS.ramp, je Stufe ein geneigtes dk-Stueck wie die Parkhaus-Rampen, sonst ruckelt es): [Breite, z-Mitte, Hoehe in der Mitte]
   const bal = [];

@@ -49,14 +49,14 @@ function tresorFill(T) { const S = TRESOR_STUFEN[T.stufe], I = T.g.userData.insi
   let x = -iw / 2 + 0.05; for (const q of B.slots) { if (!q || !q.id.startsWith("jeton-") || typeof jetStack !== "function" || x > iw / 2 - 0.05) continue; const st = jetStack(+q.id.slice(6), Math.min(8, q.n), 1); st.position.set(x, y + (gold ? 0.08 : 0), S.d * 0.15); I.add(st); x += 0.07; }
   const other = B.slots.filter(q => q && q.id !== "goldbarren" && !q.id.startsWith("jeton-")).length; for (let k = 0; k < Math.min(other, 4); k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.06), M.inner); b.position.set(iw / 2 - 0.05 - k * 0.09, y + 0.025, 0); I.add(b); } }
 function tresorSave(T) { try { localStorage.setItem("wm-tresor-" + T.id, JSON.stringify({ locked: T.locked, open: T.open, broken: T.broken, how: T.how, code: T.code })); } catch (e) {} }
-function tresorAdd(parent, stufe, id, pos, rotY = 0, init = []) {
+function tresorAdd(parent, stufe, id, pos, rotY = 0, init = [], noGate = false) {   // noGate: Rechtsklick-Ziel legt der Aufrufer selbst an (z. B. Casino ueber CAS.gates)
   const S = TRESOR_STUFEN[stufe], g = buildTresor(stufe); g.position.copy(pos); g.rotation.y = rotY; g.userData.kind = "tresor"; parent.add(g);
   const T = { id, stufe, g, box: invBox("tresor-" + id, S.name, S.slots, init), locked: true, open: false, broken: false, code: "0000", charges: [], fuse: 0, ang: 0, wrong: 0, lockT: 0 };
   try { const d = JSON.parse(localStorage.getItem("wm-tresor-" + id) || "null"); if (d) Object.assign(T, { locked: !!d.locked, open: !!d.open, broken: !!d.broken, how: d.how || "brech", code: d.code || "0000" }); } catch (e) {}
-  if (T.broken) tresorBreakLook(T, T.how || "brech"); T.ang = T.open ? 1.75 : 0;
+  if (T.broken) tresorBreakLook(T, T.how || "brech"); T.ang = T.broken ? 1.95 : T.open ? 1.75 : 0; g.userData.hinge.rotation.y = T.ang;
   T.box.onChange = () => tresorFill(T); tresorFill(T); TRESOR.list.push(T);
   g.updateMatrixWorld(true); const p = g.getWorldPosition(new THREE.Vector3());
-  if (typeof gates !== "undefined") gates.push({ name: S.name, g, call: () => tresorUse(T), verbs: ["benutzen", "benutzen"], a: [p.x, p.z], b: [p.x, p.z], near: 3.5 });
+  if (!noGate && typeof gates !== "undefined") gates.push({ name: S.name, g, call: () => tresorUse(T), verbs: ["benutzen", "benutzen"], a: [p.x, p.z], b: [p.x, p.z], near: 3.5 });
   return T;
 }
 const tresorNear = S => Math.max(2.2, S.w / 2 + 1.8);
@@ -101,6 +101,7 @@ function tresorPadOpen(T, mode) {
   if (!TRESOR.pad) { const el = document.createElement("div"); el.id = "tresor-pad"; el.hidden = true; el.innerHTML = '<div class="tp-box"><div class="tp-head"><b></b><button type="button" data-k="x" aria-label="Schliessen">&times;</button></div><div class="tp-disp"></div><div class="tp-msg"></div><div class="tp-keys">' +
       ["1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "0", "OK"].map(k => '<button type="button" data-k="' + k + '">' + k + '</button>').join("") + '</div></div>'; document.body.appendChild(el);
     el.addEventListener("click", e => { const k = e.target.closest("[data-k]")?.dataset.k; if (k) tresorPadKey(k); });
+    el.addEventListener("contextmenu", e => e.preventDefault()); el.addEventListener("mousedown", e => { if (e.button === 2) e.preventDefault(); });   // kein Browser-Kontextmenue (Nicolas 2026-11-18: "beim Rechtsklicken geht jedes Mal das auf")
     TRESOR.pad = { el, T: null, mode: "open", v: "" }; }
   const P = TRESOR.pad; P.T = T; P.mode = mode; P.v = ""; P.el.hidden = false; if (document.pointerLockElement) document.exitPointerLock(); if (typeof keys !== "undefined") keys.clear?.();
   P.el.querySelector(".tp-head b").textContent = TRESOR_STUFEN[T.stufe].name + (mode === "set" ? " – neuer Code" : " – Code eingeben");
@@ -118,12 +119,12 @@ function tresorPadKey(k) { const P = TRESOR.pad, T = P.T, box = P.el.querySelect
 addEventListener("keydown", e => { if (!tresorPadIsOpen()) return; e.stopImmediatePropagation(); if (e.key === "Escape") { e.preventDefault(); tresorPadClose(); } else if (/^\d$/.test(e.key)) tresorPadKey(e.key); else if (e.key === "Backspace") tresorPadKey("C"); else if (e.key === "Enter") tresorPadKey("OK"); }, true);
 // je Bild: Tueren bewegen, Zuendung, Blitz, Fortschrittskreis (eigene Zeitmessung, Spiel und Werkstatt)
 function tresorStep() { const now = performance.now(), dt = Math.min(0.1, (now - (TRESOR.last || now)) / 1000); TRESOR.last = now;
-  for (const T of TRESOR.list) { const U = T.g.userData, want = T.open && !T.broken ? 1.75 : T.broken ? 1.95 : 0; if (U.door.parent === U.hinge && Math.abs(T.ang - want) > 0.001) { T.ang += Math.sign(want - T.ang) * Math.min(Math.abs(want - T.ang), dt * 1.6); U.hinge.rotation.y = -T.ang; }
+  for (const T of TRESOR.list) { const U = T.g.userData, want = T.open && !T.broken ? 1.75 : T.broken ? 1.95 : 0; if (U.door.parent === U.hinge && Math.abs(T.ang - want) > 0.001) { T.ang += Math.sign(want - T.ang) * Math.min(Math.abs(want - T.ang), dt * 1.6); U.hinge.rotation.y = T.ang; }   // nach vorne (-z) auf (Nicolas 2026-11-18: "die Türen öffnen in die falsche Richtung")
     U.led.material = T.broken ? TRESOR_M.russ : T.open ? TRESOR_M.led : TRESOR_M.ledR;
     if (T.fuse > 0) { T.fuse -= dt; for (const c of T.charges) c.material = (Math.floor(T.fuse * 6) % 2) ? TRESOR_M.gas : TRESOR_M.gelb; if (T.fuse <= 0) tresorExplode(T); } }
   const F = TRESOR.flash; if (F) { F.t -= dt; F.L.intensity = Math.max(0, F.t / 0.35) * 60; if (F.t <= 0) { scene.remove(F.L); TRESOR.flash = null; } }
   tresorHoldStep(dt); }
-{ const st = document.createElement("style"); st.textContent = "#tresor-pad{position:fixed;inset:0;z-index:45;display:grid;place-items:center;background:rgba(0,0,0,.45)}#tresor-pad[hidden]{display:none}" +
+{ const st = document.createElement("style"); st.textContent = "#tresor-pad{position:fixed;inset:0;z-index:45;display:grid;place-items:center;background:rgba(0,0,0,.45);user-select:none;-webkit-user-select:none}#tresor-pad[hidden]{display:none}" +
     ".tp-box{background:#16181c;border:1px solid #3a3d42;border-radius:12px;padding:14px;width:230px;color:#e8e8e8;font:14px system-ui,sans-serif}.tp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.tp-head button{background:none;border:0;color:#aaa;font-size:20px;cursor:pointer}" +
     ".tp-disp{background:#0b1a10;color:#4dff8a;font:700 28px ui-monospace,monospace;letter-spacing:10px;text-align:center;padding:8px;border-radius:6px}.tp-msg{min-height:18px;font-size:12px;color:#aab;margin:6px 0}" +
     ".tp-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tp-keys button{padding:12px 0;font:600 16px system-ui;background:#2a2d33;color:#fff;border:1px solid #444;border-radius:8px;cursor:pointer}.tp-keys button:hover{background:#353941}" +
