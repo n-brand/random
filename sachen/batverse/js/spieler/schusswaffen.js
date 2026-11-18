@@ -259,4 +259,29 @@ function empStep(dt) {
   for (let i = EMP.fx.length - 1; i >= 0; i--) { const F = EMP.fx[i]; F.t += dt; const k = Math.min(1, F.t / F.life);
     if (F.beam) F.o.material.opacity = 0.9 * (1 - k); else { F.o.scale.setScalar(0.3 + (F.R - 0.3) * Math.sqrt(k)); F.o.material.opacity = 0.55 * (1 - k); }
     if (k >= 1) { scene.remove(F.o); F.o.geometry.dispose(); F.o.material.dispose(); EMP.fx.splice(i, 1); } }
+}// Waffenwand (Nicolas 2026-11-18, N27: "hinter den Tisch eine Waffenwand, wo alle bisherigen Waffen hängen, mit Rechtsklick das Inventar der Wand"): Lochwand mit Rahmen,
+// die Waffen hängen seitlich (Lauf nach links). Front -z, Boden y 0, Breite 3 m. Inhalt = Behälter "waffenwand" (inventar.js invBox); was nicht mehr drin ist, verschwindet von der Wand (waffenwandSync).
+const WAFFENWAND_INHALT = [["sniper", 1], ["mg", 1], ["schrotflinte", 1], ["emp", 1], ["pistole", 1], ["greifhaken", 1], ["batarang", 6], ["rauchbombe", 4], ["munition", 64], ["gewehrmunition", 40], ["schrot", 32]];
+function buildWaffenwand() {
+  const g = new THREE.Group(), W = 3.0, H = 2.25, frame = new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.5, metalness: 0.4 });
+  const peg = canvasTex(256, 192, (c, w, h) => { c.fillStyle = "#3a3d42"; c.fillRect(0, 0, w, h); c.fillStyle = "#1b1d20"; for (let y = 8; y < h; y += 16) for (let x = 8; x < w; x += 16) { c.beginPath(); c.arc(x, y, 2.6, 0, 7); c.fill(); } }, 3, 3);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(W, H, 0.05), [frame, frame, frame, frame, frame, new THREE.MeshStandardMaterial({ map: peg, roughness: 0.8 })]); board.position.set(0, 0.25 + H / 2, 0); g.add(board);   // Seite -z = Lochwand
+  for (const [w, h, x, y] of [[W + 0.1, 0.08, 0, 0.25], [W + 0.1, 0.08, 0, 0.25 + H], [0.08, H, -W / 2, 0.25 + H / 2], [0.08, H, W / 2, 0.25 + H / 2]]) { const f = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.1), frame); f.position.set(x, y, -0.01); g.add(f); }
+  for (const x of [-W / 2 + 0.1, W / 2 - 0.1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.3), frame); l.position.set(x, 0.125, 0.05); g.add(l); }   // Fuesse
+  const items = {}, hook = new THREE.MeshStandardMaterial({ color: 0x8a8f96, metalness: 0.8, roughness: 0.3 }), put = (id, o) => { (items[id] = items[id] || []).push(o); g.add(o); };
+  const one = id => { if (GUN_SPEC[id]) { const o = new THREE.Group(), m = gunBuild(id); m.rotation.y = -Math.PI / 2; o.add(m); return o; }
+    if (id === "batarang") { const o = new THREE.Group(), m = new THREE.Mesh(AIM_M.bat, AIM_M.batM); m.rotation.set(-Math.PI / 2, 0, Math.PI); o.add(m); return o; }
+    if (id === "rauchbombe") { const o = new THREE.Group(), m = new THREE.Mesh(AIM_M.bomb, AIM_M.bombM); o.add(m); const c = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.05, 10), hook); c.position.y = 0.1; o.add(c); return o; }
+    if (id === "greifhaken") { const o = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.07, 0.06), GUN_MAT.schwarz); o.add(body); const grip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.05), GUN_MAT.schwarz); grip.position.set(0.06, -0.08, 0); grip.rotation.z = -0.25; o.add(grip);
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 4), hook); tip.rotation.z = Math.PI / 2; tip.position.x = -0.17; o.add(tip); return o; }   // einfacher Platzhalter bis zum neuen 3D-Modell (N44)
+    const it = INV_ITEMS[id]; if (!it) return null;   // Munition: kleine Schachtel
+    const o = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.08), new THREE.MeshStandardMaterial({ color: id === "schrot" ? 0x8a1e22 : id === "gewehrmunition" ? 0x5a5a2a : 0x2a3a5a, roughness: 0.7 })); return o; };
+  // Reihen von oben: lange Waffen, mittlere, kurze Dinge mit Ablage; je Reihe gleichmaessig verteilt nach Breite
+  const rows = [[["sniper"], ["mg"]], [["schrotflinte"], ["emp"]], [["pistole"], ["greifhaken"], ["batarang", 3], ["rauchbombe", 2]], [["munition"], ["gewehrmunition"], ["schrot"]]], ys = [2.15, 1.65, 1.1, 0.55];
+  rows.forEach((row, r) => { const objs = []; for (const [id, n = 1] of row) for (let k = 0; k < n; k++) { const o = one(id); if (o) objs.push([id, o]); }
+    const ws = objs.map(([, o]) => { const b = new THREE.Box3().setFromObject(o); return Math.max(0.12, b.max.x - b.min.x); }), gap = (W - 0.3 - ws.reduce((a, b) => a + b, 0)) / Math.max(1, objs.length - 1);
+    const gp = Math.min(gap, 0.45), tot = ws.reduce((a, b) => a + b, 0) + gp * (objs.length - 1); let x = -tot / 2; objs.forEach(([id, o], i) => { const b = new THREE.Box3().setFromObject(o); o.position.set(x - b.min.x, ys[r] - (b.max.y + b.min.y) / 2, -0.03 - b.max.z); put(id, o); x += ws[i] + gp; });   // Reihe mittig
+    if (r === 3) { const sh = new THREE.Mesh(new THREE.BoxGeometry(W - 0.2, 0.03, 0.2), frame); sh.position.set(0, ys[r] - 0.07, -0.12); g.add(sh); } });   // Ablage fuer die Munition
+  g.userData.items = items; g.name = "Waffenwand"; g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); return g;
 }
+function waffenwandSync(wall, B) { for (const id in wall.userData.items) { const n = invBoxCount(B, id); wall.userData.items[id].forEach((o, k) => o.visible = k < n); } }   // so viele Stueck sichtbar wie im Behaelter (hoechstens die gebauten)

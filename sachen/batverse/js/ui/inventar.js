@@ -47,7 +47,8 @@ function invBatIcon() { const q = ([x, y]) => (13 + x * 12).toFixed(1) + " " + (
   INV_ITEMS.batknopf.svg = '<circle cx="13" cy="13" r="11" fill="#1d2025" stroke="#e8c547" stroke-width="1.6"/><circle cx="13" cy="13" r="7.6" fill="#e8c547"/><path transform="translate(13 13.6) scale(.5) translate(-13 -13)" d="' + d + '" fill="#1d2025"/>'; }   // Bat-Knopf: Fledermaus auf gelbem Knopf
 invBatIcon(); addEventListener("load", () => { if (!INV_ITEMS.batarang.sig) invRender(); });   // Werkstatt: nach allen Skripten neu zeichnen
 const INV_TEST_ALLE = true;   // TEST: alle Gegenstaende besitzen (siehe Aufbau unten)
-const INV = { slots: new Array(36).fill(null), sel: 0, pick: -1, cursor: null, drag: null };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }
+const INV = { slots: new Array(36).fill(null), sel: 0, pick: -1, cursor: null, drag: null, box: null };   // box = offener Behaelter (Plaetze ab Index 100)
+const INV_BOX0 = 100, invGet = i => i >= INV_BOX0 ? (INV.box ? INV.box.slots[i - INV_BOX0] : null) : INV.slots[i], invSet = (i, v) => { if (i >= INV_BOX0) { if (INV.box) INV.box.slots[i - INV_BOX0] = v; } else INV.slots[i] = v; };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }
 function invSave() { try { localStorage.setItem("wm-inv", JSON.stringify({ s: INV.slots, sel: INV.sel, c: INV.cursor })); } catch (e) {} }
 function invLoad() { try { const d = JSON.parse(localStorage.getItem("wm-inv") || "null"); if (d && Array.isArray(d.s) && d.s.length === 36) { INV.slots = d.s.map(q => q && INV_ITEMS[q.id] ? q : null); INV.sel = Math.min(INV_SEL_N - 1, d.sel | 0); INV.cursor = d.c && INV_ITEMS[d.c.id] && d.c.n > 0 ? d.c : null; return true; } } catch (e) {} return false; }
 // Gegenstand hinzufuegen: zuerst auf vorhandene Stapel, dann in freie Plaetze (Hotbar zuerst). Rueckgabe: Anzahl, die Platz hatte
@@ -78,39 +79,57 @@ function invHandRender() {
 // ---- Verschieben wie in Minecraft (INV.cursor = Stapel an der Maus) ----
 const invRoom = (S, id) => !S ? INV_ITEMS[id].stack : S.id === id ? INV_ITEMS[id].stack - S.n : 0;
 // Linksklick mit Stapel an der Maus: ablegen, auffuellen oder tauschen
-function invPlace(j) { const S = INV.slots[j], C = INV.cursor; if (!C) return;
-  if (!S) { INV.slots[j] = C; INV.cursor = null; }
+function invPlace(j) { const S = invGet(j), C = INV.cursor; if (!C) return;
+  if (!S) { invSet(j, C); INV.cursor = null; }
   else if (S.id === C.id) { const k = Math.min(C.n, invRoom(S, C.id)); S.n += k; C.n -= k; if (!C.n) INV.cursor = null; }
-  else { INV.slots[j] = C; INV.cursor = S; } }
+  else { invSet(j, C); INV.cursor = S; } }
 // Rechtsklick mit Stapel an der Maus: einen ablegen
-function invPlaceOne(j) { const S = INV.slots[j], C = INV.cursor; if (!C || invRoom(S, C.id) < 1) return false;
-  if (S) S.n++; else INV.slots[j] = { id: C.id, n: 1 }; if (!--C.n) INV.cursor = null; return true; }
-// Shift+Klick: Hotbar -> Inventar bzw. umgekehrt (erst auf gleiche Stapel, dann freie Plaetze)
-function invQuick(i) { const S = INV.slots[i]; if (!S) return; const [a, b] = i < 9 ? [9, 36] : [0, 9];
-  for (let pass = 0; pass < 2 && S.n; pass++) for (let j = a; j < b && S.n; j++) { const T = INV.slots[j]; if (pass === 0 ? !(T && T.id === S.id) : T) continue;
-    const k = Math.min(S.n, invRoom(T, S.id)); if (!k) continue; if (T) T.n += k; else INV.slots[j] = { id: S.id, n: k }; S.n -= k; }
-  if (!S.n) INV.slots[i] = null; }
+function invPlaceOne(j) { const S = invGet(j), C = INV.cursor; if (!C || invRoom(S, C.id) < 1) return false;
+  if (S) S.n++; else invSet(j, { id: C.id, n: 1 }); if (!--C.n) INV.cursor = null; return true; }
+// Shift+Klick: Hotbar -> Inventar bzw. umgekehrt (erst auf gleiche Stapel, dann freie Plaetze); bei offenem Behaelter zwischen Behaelter und Spieler
+function invQuick(i) { const S = invGet(i); if (!S) return; const nb = INV.box ? INV.box.slots.length : 0;
+  const ranges = i >= INV_BOX0 ? [[9, 36], [0, 9]] : INV.box ? [[INV_BOX0, INV_BOX0 + nb]] : [i < 9 ? [9, 36] : [0, 9]];
+  for (let pass = 0; pass < 2 && S.n; pass++) for (const [a, b] of ranges) for (let j = a; j < b && S.n; j++) { const T = invGet(j); if (pass === 0 ? !(T && T.id === S.id) : T) continue;
+    const k = Math.min(S.n, invRoom(T, S.id)); if (!k) continue; if (T) T.n += k; else invSet(j, { id: S.id, n: k }); S.n -= k; }
+  if (!S.n) invSet(i, null); }
 // Stapel an der Maus zurueck ins Inventar (beim Schliessen, beim Laden); ohne Platz bleibt der Rest an der Maus gespeichert
 function invReturnCursor() { const C = INV.cursor; if (!C) return; INV.cursor = null; const put = invAdd(C.id, C.n);
   if (put < C.n) { INV.cursor = { id: C.id, n: C.n - put }; invSave(); toast("Kein Platz im Inventar für " + INV_ITEMS[C.id].name); } }
 // Ziehen ueber mehrere Plaetze mit Stapel an der Maus: links gleichmaessig verteilen (Vorschau live), rechts je einen
-function invSpread(D) { INV.slots = D.snap.map(q => q && { ...q }); INV.cursor = { ...D.snapC }; const C = INV.cursor, L = D.list.filter(j => invRoom(INV.slots[j], C.id) > 0), per = Math.floor(C.n / L.length);
-  if (per < 1) return; for (const j of L) { const S = INV.slots[j], k = Math.min(per, invRoom(S, C.id)); if (S) S.n += k; else INV.slots[j] = { id: C.id, n: k }; C.n -= k; } if (!C.n) INV.cursor = null; }
+const invSnap = () => ({ a: INV.slots.map(q => q && { ...q }), b: INV.box ? INV.box.slots.map(q => q && { ...q }) : null }), invSnapGet = (sn, j) => j >= INV_BOX0 ? sn.b && sn.b[j - INV_BOX0] : sn.a[j];
+function invSpread(D) { INV.slots = D.snap.a.map(q => q && { ...q }); if (INV.box && D.snap.b) INV.box.slots = D.snap.b.map(q => q && { ...q }); INV.cursor = { ...D.snapC }; const C = INV.cursor, L = D.list.filter(j => invRoom(invGet(j), C.id) > 0), per = Math.floor(C.n / L.length);
+  if (per < 1) return; for (const j of L) { const S = invGet(j), k = Math.min(per, invRoom(S, C.id)); if (S) S.n += k; else invSet(j, { id: C.id, n: k }); C.n -= k; } if (!C.n) INV.cursor = null; }
 const invSlotAt = (x, y) => { const el = document.elementFromPoint(x, y)?.closest?.("#inventar .inv-slot"); return el ? +el.dataset.i : -1; };
-function invDown(e) { const b = e.target.closest(".inv-slot"); if (!b || (e.button !== 0 && e.button !== 2)) return; e.preventDefault(); const i = +b.dataset.i, S = INV.slots[i], C = INV.cursor;
-  if (e.button === 0 && e.shiftKey && !C) { invQuick(i); invSave(); return invRender(); }
-  if (e.button === 0) { if (!C) { if (!S) return; INV.cursor = S; INV.slots[i] = null; INV.drag = { mode: "carry", from: i }; }
-    else INV.drag = { mode: "spread", list: [i], snap: INV.slots.map(q => q && { ...q }), snapC: { ...C } }; }
-  else { if (!C) { if (!S) return; const k = Math.ceil(S.n / 2); INV.cursor = { id: S.id, n: k }; S.n -= k; if (!S.n) INV.slots[i] = null; INV.drag = null; }
+function invDown(e) { const b = e.target.closest(".inv-slot"); if (!b || (e.button !== 0 && e.button !== 2)) return; e.preventDefault(); const i = +b.dataset.i, S = invGet(i), C = INV.cursor;
+  if (e.button === 0 && e.shiftKey && !C) { invQuick(i); invSave(); if (INV.box) INV.box.save(); return invRender(); }
+  if (e.button === 0) { if (!C) { if (!S) return; INV.cursor = S; invSet(i, null); INV.drag = { mode: "carry", from: i }; }
+    else INV.drag = { mode: "spread", list: [i], snap: invSnap(), snapC: { ...C } }; }
+  else { if (!C) { if (!S) return; const k = Math.ceil(S.n / 2); INV.cursor = { id: S.id, n: k }; S.n -= k; if (!S.n) invSet(i, null); INV.drag = null; }
     else { invPlaceOne(i); INV.drag = { mode: "one", list: [i] }; } }
   INV_TIP.i = -1; invTip(); invRender(); invCursorMove(e); }
 function invMove(e) { invCursorMove(e); const D = INV.drag; if (!D || D.mode === "carry") return; const j = invSlotAt(e.clientX, e.clientY); if (j < 0 || D.list.includes(j)) return;
   if (D.mode === "one") { if (invPlaceOne(j)) { D.list.push(j); invRender(); } return; }
-  const id = D.snapC.id; if (invRoom(D.snap[j], id) < 1 || D.list.length >= D.snapC.n) return; D.list.push(j); invSpread(D); invRender(); }
+  const id = D.snapC.id; if (invRoom(invSnapGet(D.snap, j), id) < 1 || D.list.length >= D.snapC.n) return; D.list.push(j); invSpread(D); invRender(); }
 function invUp(e) { const D = INV.drag; if (!D) return; INV.drag = null; const j = invSlotAt(e.clientX, e.clientY);
   if (D.mode === "carry") { if (j >= 0 && j !== D.from) invPlace(j); }                    // ziehen und loslassen; auf demselben Platz: bleibt an der Maus (klicken-klicken)
   else if (D.mode === "spread" && D.list.length === 1) invPlace(D.list[0]);
-  invSave(); invRender(); }
+  invSave(); if (INV.box) INV.box.save(); invRender(); }
+// ---- Behaelter (Nicolas 2026-11-18, N22: Tresore, Koffer, Waffenwand, Muelleimer): Rechtsklick oeffnet oben den Behaelter, unten das eigene Inventar; verschieben wie im Inventar ----
+// invBox(id, name, n, init, cols): Behaelter mit n Plaetzen, gespeichert in localStorage "wm-box-<id>" (in der Werkstatt automatisch "wm-werkstatt-box-…"), beim ersten Mal mit init = [[id, n], …] gefuellt.
+// invBoxOpen(box): oeffnen. box.onChange(box) wird nach jeder Aenderung gerufen (z. B. 3D-Waffen an der Wand ein-/ausblenden). invBoxCount(box, id): Anzahl im Behaelter.
+// invBoxFront(obj, d, near): steht der Spieler vor der Front des Objekts (lokal -z, wie bei allen Modellen) und hoechstens near m entfernt? Sonst Meldung, false.
+const INV_BOXES = {};
+function invBox(id, name, n, init = [], cols = 9) { if (INV_BOXES[id]) return INV_BOXES[id]; const B = INV_BOXES[id] = { id, name, cols, slots: new Array(n).fill(null), onChange: null,
+    save() { try { localStorage.setItem("wm-box-" + id, JSON.stringify(B.slots)); } catch (e) {} if (B.onChange) B.onChange(B); } };
+  let d = null; try { d = JSON.parse(localStorage.getItem("wm-box-" + id) || "null"); } catch (e) {}
+  if (Array.isArray(d)) d.slice(0, n).forEach((q, k) => { if (q && INV_ITEMS[q.id] && q.n > 0) B.slots[k] = q; });
+  else { let k = 0; for (const [iid, c] of init) { let left = c; while (left > 0 && k < n && INV_ITEMS[iid]) { const m = Math.min(left, INV_ITEMS[iid].stack); B.slots[k++] = { id: iid, n: m }; left -= m; } } }
+  return B; }
+const invBoxCount = (B, id) => B.slots.reduce((c, q) => c + (q && q.id === id ? q.n : 0), 0);
+function invBoxOpen(B) { if (invIsOpen()) invClose(); INV.box = B; invOpen(); }
+function invBoxFront(obj, near = 2.6) { const p = obj.getWorldPosition(new THREE.Vector3()), q = obj.getWorldQuaternion(new THREE.Quaternion()), f = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+  const pl = typeof player !== "undefined" ? player.pos : camera.position, dx = pl.x - p.x, dz = pl.z - p.z;
+  if (dx * f.x + dz * f.z < 0.2) { toast("Von hier kommst du nicht heran – nur von vorne"); return false; } if (Math.hypot(dx, dz) > near) { toast("Zu weit weg"); return false; } return true; }
 // Stapel an der Maus anzeigen
 const INV_CUR = { el: null };
 function invCursorMove(e) { const el = INV_CUR.el; if (el && e) { el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px"; } }
@@ -123,19 +142,21 @@ function invRender() {
   const hb = document.getElementById("hotbar"), box = document.getElementById("inventar"); if (!hb) return;
   const sw = box.querySelector('[data-sw="batsignal"]'); if (sw) { const on = typeof GCPD !== "undefined" && !!GCPD.on; sw.setAttribute("aria-pressed", String(on)); sw.title = on ? "Batsignal ist an (leuchtet nachts) – Klick schaltet aus" : "Batsignal ist aus – Klick schaltet an"; }
   hb.innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
-  if (!box.hidden) { box.querySelector(".inv-grid").innerHTML = INV.slots.slice(9).map((s, k) => invSlotHTML(s, k + 9)).join(""); box.querySelector(".inv-bar").innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
+  if (!box.hidden) { const B = INV.box, ct = box.querySelector(".inv-cont") || (() => { const d = document.createElement("div"); d.className = "inv-cont"; box.querySelector(".inv-head").after(d); return d; })();
+    ct.hidden = !B; box.classList.toggle("with-box", !!B); if (B) ct.innerHTML = '<div class="inv-cont-name">' + B.name + '</div><div class="inv-cont-grid" style="grid-template-columns: repeat(' + B.cols + ', var(--slot))">' + B.slots.map((s, k) => invSlotHTML(s, INV_BOX0 + k)).join("") + '</div><div class="inv-sep">Inventar</div>';
+    box.querySelector(".inv-grid").innerHTML = INV.slots.slice(9).map((s, k) => invSlotHTML(s, k + 9)).join(""); box.querySelector(".inv-bar").innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
     const s = INV.cursor || (INV.sel < 9 ? INV.slots[INV.sel] : null); box.querySelector(".inv-info").textContent = s ? (INV.cursor ? "An der Maus: " : "") + INV_ITEMS[s.id].name + " · " + INV_ITEMS[s.id].art + (s.n > 1 ? " · " + s.n + " Stück" : "") : "";
-    const h = box.querySelector(".inv-hint"); if (h) h.textContent = "Ziehen oder klicken: verschieben · Rechtsklick: halber Stapel bzw. einzeln ablegen · Shift+Klick: Hotbar ↔ Inventar · E, I oder Esc schliesst"; }
+    const h = box.querySelector(".inv-hint"); if (h) h.textContent = "Ziehen oder klicken: verschieben · Rechtsklick: halber Stapel bzw. einzeln ablegen · Shift+Klick: " + (B ? B.name + " ↔ Inventar" : "Hotbar ↔ Inventar") + " · E, I oder Esc schliesst"; }
   invCursorRender(); invHandRender(); if (typeof kontoGeldRender === "function" && typeof KONTO !== "undefined") kontoGeldRender();
 }
 const invIsOpen = () => { const b = document.getElementById("inventar"); return b && !b.hidden; };
 function invOpen() { const b = document.getElementById("inventar"); if (!b || !b.hidden) return; if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear(); b.hidden = false; INV.pick = -1; invRender(); }
-function invClose() { const b = document.getElementById("inventar"); if (!b || b.hidden) return; b.hidden = true; INV_TIP.i = -1; invTip(); INV.pick = -1; INV.drag = null; invReturnCursor(); invRender(); if (typeof grabMouse === "function") grabMouse(); }
+function invClose() { const b = document.getElementById("inventar"); if (!b || b.hidden) return; b.hidden = true; INV_TIP.i = -1; invTip(); INV.pick = -1; INV.drag = null; invReturnCursor(); if (INV.box) { INV.box.save(); INV.box = null; } invRender(); if (typeof grabMouse === "function") grabMouse(); }
 // Tooltip: beim Darueberfahren Name, Art, Anzahl und Beschreibung; ueber 110 Zeichen gekuerzt mit "Shift halten für mehr"
 const INV_TIP = { el: null, i: -1, shift: false, x: 0, y: 0 };
 function invTip() {
   const el = INV_TIP.el || (INV_TIP.el = Object.assign(document.createElement("div"), { id: "inv-tip" })); if (!el.parentNode) document.body.appendChild(el);
-  const s = INV_TIP.i >= 0 && !INV.cursor ? INV.slots[INV_TIP.i] : null; if (!s) { el.hidden = true; return; }
+  const s = INV_TIP.i >= 0 && !INV.cursor ? invGet(INV_TIP.i) : null; if (!s) { el.hidden = true; return; }
   const it = INV_ITEMS[s.id], d = INV_DESC[s.id] || "", long = d.length > 110, txt = long && !INV_TIP.shift ? d.slice(0, d.lastIndexOf(" ", 100)) + " …" : d;
   el.innerHTML = "<b>" + it.name + "</b><span class=\"tip-art\">" + it.art + (s.n > 1 ? " · " + s.n + " Stück" : "") + "</span>" + (d ? "<p>" + txt + "</p>" : "") + (long && !INV_TIP.shift ? "<i>Shift halten für mehr</i>" : "");
   el.hidden = false; const W = el.offsetWidth, H = el.offsetHeight; el.style.left = Math.min(innerWidth - W - 8, INV_TIP.x + 14) + "px"; el.style.top = Math.max(8, Math.min(innerHeight - H - 8, INV_TIP.y + 16)) + "px";
@@ -145,6 +166,7 @@ for (const id of ["inventar", "hotbar"]) { const box = document.getElementById(i
   box.addEventListener("mouseleave", () => { INV_TIP.i = -1; invTip(); }); }
 addEventListener("keydown", e => { if (e.key === "Shift" && INV_TIP.i >= 0 && !INV_TIP.shift) { INV_TIP.shift = true; invTip(); } });
 addEventListener("keyup", e => { if (e.key === "Shift" && INV_TIP.shift) { INV_TIP.shift = false; invTip(); } });
+{ const st = document.createElement("style"); st.textContent = ".inv-cont[hidden]{display:none}.inv-cont-name{font-weight:700;margin:2px 0 6px}.inv-cont-grid{display:grid;gap:4px;margin-bottom:6px}#inventar.with-box .inv-sws{display:none}#inventar.with-box .inv-box{max-height:96vh;overflow:auto}"; document.head.appendChild(st); }   // Behaelter-Teil (Spiel und Werkstatt)
 // Aufbau: Startausstattung beim ersten Mal, Klicks
 { if (!invLoad()) { INV.slots[0] = { id: "gullihaken", n: 1 }; INV.slots[1] = { id: "batarang", n: 6 }; invSave(); }
   // TEST (Nicolas 2026-11-16: "jedes Item zum Testen besitzen"): fehlende Gegenstaende beim Start auffuellen (je ein voller Stapel). Spaeter auf false.

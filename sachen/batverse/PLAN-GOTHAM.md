@@ -157,12 +157,12 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 |----|-----|-------|
 | N16 | **Bat-Knopf in 3D** in der Hand, eher wie ein Funkgerät oder eine Fernbedienung mit einem Knopf | offen |
 | N21 | **Aufnehmen mit Kreis**: linke Maus auf einem Gegenstand halten, ein Kreis um den Zielpunkt füllt sich, voll = aufgenommen (Geld, Goldbarren, Koffer). Für Behälter ersetzt durch N22 | offen |
-| N22 | **Behälter-Inventar per Rechtsklick** (Tresore, Koffer, Waffenwand): öffnet ein Fenster mit den 2D-Plätzen des Behälters, Gegenstände einfach hinein- und herausziehen wie im Inventar. Nur von vorne, nur aus der Nähe, nur wenn offen (zu = kein Zugriff) | offen – Grundlage für N23, N25, N26, N27 |
+| N22 | **Behälter-Inventar per Rechtsklick** (Tresore, Koffer, Waffenwand): öffnet ein Fenster mit den 2D-Plätzen des Behälters, Gegenstände einfach hinein- und herausziehen wie im Inventar. Nur von vorne, nur aus der Nähe, nur wenn offen (zu = kein Zugriff) | **gebaut 2026-11-18** (inventar.js `invBox`); Tresore, Koffer, Mülleimer folgen |
 | N23 | **Tresore**: verschliessbar, mehrere Sicherheitsstufen und Varianten (verschieden gross, sehr sichere mit grösserer Tür, aber nicht riesig), aufbrechen oder aufsprengen je nach Stufe. Werkzeuge als Gegenstände 2D/3D: Brechstange, explosives Gas, Feuerzeug. In der Werkstatt einen Tresor beim Tisch mit den Laptops. Vorschlag der Stufen siehe `OFFENE-FRAGEN.md` 34 | offen |
 | N24 | **Goldbarren und Geldstapel in 3D** überarbeiten (eigener Schritt) | offen |
 | N25 | **Batarang-Etui wird ein Koffer**: schwarzer Akten-/Geldkoffer, aufnehmbar (Kreis), zweite Variante mit Geld. Als Gegenstand in der Hand zu; im Inventar zeigt der Tooltip keinen Inhalt. 2D und 3D | offen |
 | N26 | **Mülleimer** in der Werkstatt: öffentlicher Mülleimer, Papierkorb, evtl. eine dritte Variante (z. B. Container). Wie man Gegenstände loswird und ob man sie bis zur Leerung wieder herausnehmen kann: brainstormen (`OFFENE-FRAGEN.md` 35) | offen |
-| N27 | **Waffenwand in der Werkstatt** (hinter dem Tisch) mit allen bisherigen Waffen, Rechtsklick = Behälter-Inventar (N22) | offen |
+| N27 | **Waffenwand in der Werkstatt** (hinter dem Tisch) mit allen bisherigen Waffen, Rechtsklick = Behälter-Inventar (N22) | **gebaut 2026-11-18** |
 | N28 | **Nachtsichtbrille** (Militär) als Gegenstand 2D/3D; anziehen (Ausrüstungsplatz wie in Minecraft?) -> grüne Sicht mit Rauschen. Ersetzt die Brille aus der Idee N15 | offen |
 | N33 | **Zigaretten** als Gegenstand | offen |
 | N34 | **Skateboard** wie in Schedule I: Rechtsklick halten, bis der Kreis um die Maus voll ist, dann Wechsel in die Ansicht von hinten auf dem Board; W beschleunigt, deutlich schneller als zu Fuss | offen |
