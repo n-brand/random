@@ -208,7 +208,7 @@ const LT_CSS = `
 .lt-einst{display:grid;grid-template-columns:200px 1fr;height:100%}.lt-enav{padding:12px 8px;background:rgba(127,127,127,.08);display:flex;flex-direction:column;gap:2px}
 .lt-enav button{text-align:left;padding:9px 14px;border:0;border-radius:6px;background:none;color:inherit;font:14px "Segoe UI",sans-serif;cursor:pointer}.lt-enav button:hover{background:rgba(127,127,127,.15)}.lt-enav button.on{background:rgba(47,125,225,.18);box-shadow:inset 3px 0 0 #2f7de1;font-weight:600}
 .lt-ebody{padding:18px 24px;overflow:auto}.lt-ebody h2{margin:0 0 10px}.lt-ebody .lt-row span{opacity:.75}
-.lt-upl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}.lt-upl label{cursor:pointer}.lt-upl span{flex-basis:100%;font-size:12px;opacity:.65}.lt-wps{display:flex;gap:12px}.lt-wps button{width:140px;height:88px;border-radius:8px;border:3px solid transparent;cursor:pointer}.lt-wps button.on{border-color:#2f7de1}
+.lt-upl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}.lt-upl label{cursor:pointer}.lt-upl span{flex-basis:100%;font-size:12px;opacity:.65}.lt-usbmenu{right:auto;left:120px}.lt-wps{display:flex;gap:12px}.lt-wps button{width:140px;height:88px;border-radius:8px;border:3px solid transparent;cursor:pointer}.lt-wps button.on{border-color:#2f7de1}
 .lt-hell{width:280px}
 .lt-opt{display:grid;grid-template-columns:22px 1fr;column-gap:10px;align-items:center;width:100%;max-width:420px;text-align:left;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(127,127,127,.3);border-radius:8px;background:none;color:inherit;cursor:pointer;font:14px "Segoe UI",sans-serif}
 .lt-opt i{grid-row:span 2;width:16px;height:16px;border-radius:50%;border:2px solid #8a9099}.lt-opt.on{border-color:#2f7de1}.lt-opt.on i{border:5px solid #2f7de1}.lt-opt span{font-size:12px;opacity:.7}
@@ -289,6 +289,7 @@ function ltLogin(pw) { const id = LT.cur, D = ltD(id);
 function ltClick(e) {
   const b = e.target.closest("[data-a]"); if (!b) { if (LT.pmenu) { LT.pmenu = false; ltRender(); } return; } const a = b.dataset.a, v = b.dataset.v; e.stopPropagation(); b.blur?.();
   if (a === "power") { LT.pmenu = !LT.pmenu; return ltRender(); }
+  if (a.startsWith("usb") && typeof usbClick === "function" && usbClick(a, v)) { ltRender(); ltScreenDraw(LT.cur); return; }   // USB-Sticks (ui/usb.js)
   if (a === "pw") return ltPower(v);
   if (LT.pmenu) LT.pmenu = false;
   if (a === "login") return ltLogin((LT.el.querySelector(".lt-pw") || {}).value || "");
@@ -360,6 +361,7 @@ function ltWebPage() {
   return h;
 }
 function ltAppBody(a) {
+  if (a === "usb" && typeof usbBody === "function") return usbBody();
   if (a === "web") return ltWebPage();
   if (a === "kontakte") { const C = LT.call;
     if (C) { const [, n, nr, col, txt] = C.k; return '<div class="lt-call"><i style="background:' + col + '">' + ltSvg('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>', 40) + "</i><h2 style=\"margin:0\">" + n + "</h2><div>" + nr + "</div><p>" + (C.t ? "Verbunden<br><br><i style=\"display:block;width:auto;height:auto;background:none;color:inherit;font-style:italic\">«" + txt + "»</i>" : "Wählt …") + '</p><button class="lt-buy lt-hang" data-a="hang">Auflegen</button></div>'; }
@@ -409,12 +411,12 @@ function ltRender() {
   else if (LT.boot !== null) s = '<div class="lt-scr"><div class="lt-boot">' + logo + '<div class="lt-spin"></div><span>' + ltEsc(LT.boot) + "</span></div></div>";
   else if (LT.locked[id]) { const pw = D.lock === "passwort";
     s = '<div class="lt-scr lt-wp' + D.wp + '" style="' + ltWpStyle(D) + 'filter:brightness(' + D.hell + ')">' + (D.wp === 3 && D.bild ? "" : sky) + '<div class="lt-lock"><div class="lt-clock">' + ltTime() + '</div><div class="lt-date">' + new Date().toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "long" }) + '</div><div class="lt-ava">BW</div><div class="lt-user">' + D.user + "</div>" +
-      (pw ? '<div class="lt-pwrow"><input class="lt-pw" type="password" placeholder="Passwort" autocomplete="off"><button class="lt-btn" data-a="login" title="Anmelden">' + ltSvg(LT_IC.go, 18) + '</button></div><div class="lt-err">' + ltEsc(LT.err) + '</div><div class="lt-hint">Hinweis: ' + ltEsc(D.hint || "") + "</div>" : '<button class="lt-btn" data-a="login">Anmelden</button><div class="lt-hint">Kein Passwort eingerichtet</div>') + "</div></div>"; }
-  else { const apps = D.apps;
+      (pw ? '<div class="lt-pwrow"><input class="lt-pw" type="password" placeholder="Passwort" autocomplete="off"><button class="lt-btn" data-a="login" title="Anmelden">' + ltSvg(LT_IC.go, 18) + '</button></div><div class="lt-err">' + ltEsc(LT.err) + '</div><div class="lt-hint">Hinweis: ' + ltEsc(D.hint || "") + "</div>" : '<button class="lt-btn" data-a="login">Anmelden</button><div class="lt-hint">Kein Passwort eingerichtet</div>') + (typeof usbLock === "function" ? usbLock() : "") + "</div></div>"; }
+  else { const apps = D.apps.concat(LT.usb ? ["usb"] : []);   // USB-Laufwerk, solange ein Stick steckt (ui/usb.js, N39)
     s = '<div class="lt-scr lt-wp' + D.wp + '" style="' + ltWpStyle(D) + 'filter:brightness(' + D.hell + ')">' + (D.wp === 3 && D.bild ? "" : sky) + '<div class="lt-icons">' + apps.map(a => '<button class="lt-ic" data-a="app" data-v="' + a + '"><i style="background:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 28) + "</i>" + LT_APPS[a][0] + "</button>").join("") + "</div>" +
       (LT.app ? '<div class="lt-win"><div class="lt-wt">' + ltSvg(LT_APPS[LT.app][2], 16) + LT_APPS[LT.app][0] + '<button class="lt-x" data-a="zu" title="Schliessen">' + ltSvg(LT_IC.x, 16) + '</button></div><div class="lt-wc">' + ltAppBody(LT.app) + "</div></div>" : "") +
       '<div class="lt-bar"><button class="lt-tb" data-a="lock" title="Sperren">' + ltSvg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 18) + "</button>" + apps.map(a => '<button class="lt-tb' + (LT.app === a ? " on" : "") + '" data-a="app" data-v="' + a + '" title="' + LT_APPS[a][0] + '" style="color:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 20) + "</button>").join("") +
-      (LT.pmenu ? '<div class="lt-pmenu">' + [["lock", LT_IC.lock, "Sperren"], ["schlaf", LT_IC.mond, "Energie sparen"], ["aus", LT_IC.power, "Herunterfahren"], ["neu", LT_IC.neu, "Neu starten"]].map(([v, ic, t]) => '<button data-a="pw" data-v="' + v + '">' + ltSvg(ic, 22) + t + "</button>").join("") + "</div>" : "") + '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb' + (LT.pmenu ? " on" : "") + '" data-a="power" title="Ein/Aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }
+      (typeof usbTaskbar === "function" ? usbTaskbar() : "") + (LT.pmenu ? '<div class="lt-pmenu">' + [["lock", LT_IC.lock, "Sperren"], ["schlaf", LT_IC.mond, "Energie sparen"], ["aus", LT_IC.power, "Herunterfahren"], ["neu", LT_IC.neu, "Neu starten"]].map(([v, ic, t]) => '<button data-a="pw" data-v="' + v + '">' + ltSvg(ic, 22) + t + "</button>").join("") + "</div>" : "") + '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb' + (LT.pmenu ? " on" : "") + '" data-a="power" title="Ein/Aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }
   el.innerHTML = '<button class="lt-leave" data-a="aus" title="Laptop verlassen (Esc)">' + ltSvg(LT_IC.x, 16) + 'Verlassen <small>Esc</small></button><div class="lt-dev lt-' + D.hw + '"><div class="lt-lid"><div class="lt-cam"></div>' + s + '<div class="lt-brand">' + (D.hw === "silber" ? "WAYNE" : "NIGHTFALL") + '</div></div><div class="lt-base"></div></div>';
   ltFit(); const pwf = el.querySelector(".lt-pw"); if (pwf) setTimeout(() => pwf.focus(), 0);
   if (LT.app === "karten") ltMapInit();
