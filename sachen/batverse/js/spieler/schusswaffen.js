@@ -11,6 +11,13 @@ const GUN_SPEC = {
   // EMP-Gewehr (Nicolas 2026-11-17, Filmbild "wie nennt man diese Waffe" -> "bau es jetzt"): keine Munition, 3 Ladungen, je 5 s Aufladen; der Puls legt Fahrzeuge und Busse
   // im Umkreis empR fuer empT Sekunden lahm (Motor aus). Wirkung in emp-Teil unten (empFire), Fahrzeuge pruefen v.empT (fahren.js carStep, Werkstatt fahren).
   emp: { name: "EMP-Gewehr", dmg: 0, ammo: null, emp: true, mag: 3, recharge: 5, rate: 0.9, auto: false, pellets: 1, spread: 0, spreadAim: 0, range: 120, zoom: 1.6, kick: 0.03, reload: 0, snd: [0.7, 0.55, 500], hip: [0.18, -0.21, -0.42], ads: [0.12, -0.25, -0.46], empR: 9, empT: 15 },
+  // Weitere Waffen (Nicolas 2026-11-18, N51: "G36, G36C (Karabiner), AKM, MP7, MG34, weitere Maschinengewehre und Maschinenpistolen"); vereinfachte eigene Modelle
+  g36: { name: "Sturmgewehr G36", dmg: 12, ammo: "sturmmunition", mag: 30, rate: 0.08, auto: true, pellets: 1, spread: 0.016, spreadAim: 0.003, range: 300, zoom: 3, kick: 0.012, reload: 2.4, snd: [0.7, 0.16, 1700], hip: [0.17, -0.2, -0.38], ads: [0.1, -0.27, -0.44] },
+  g36c: { name: "Karabiner G36C", dmg: 11, ammo: "sturmmunition", mag: 30, rate: 0.075, auto: true, pellets: 1, spread: 0.018, spreadAim: 0.005, range: 200, zoom: 1.8, kick: 0.012, reload: 2.2, snd: [0.68, 0.15, 1800], hip: [0.16, -0.19, -0.36], ads: [0.11, -0.25, -0.4] },
+  akm: { name: "Sturmgewehr AKM", dmg: 14, ammo: "sturmmunition", mag: 30, rate: 0.1, auto: true, pellets: 1, spread: 0.022, spreadAim: 0.006, range: 250, zoom: 1.8, kick: 0.016, reload: 2.5, snd: [0.8, 0.17, 1450], hip: [0.17, -0.2, -0.38], ads: [0.12, -0.26, -0.42] },
+  mp7: { name: "Maschinenpistole MP7", dmg: 6, ammo: "munition", mag: 40, rate: 0.06, auto: true, pellets: 1, spread: 0.02, spreadAim: 0.007, range: 120, zoom: 1.6, kick: 0.007, reload: 1.8, snd: [0.5, 0.12, 2300], hip: [0.15, -0.17, -0.36], ads: [0.1, -0.22, -0.38] },
+  mp5: { name: "Maschinenpistole MP5", dmg: 7, ammo: "munition", mag: 30, rate: 0.075, auto: true, pellets: 1, spread: 0.02, spreadAim: 0.006, range: 130, zoom: 1.6, kick: 0.008, reload: 2.0, snd: [0.55, 0.13, 2100], hip: [0.16, -0.18, -0.37], ads: [0.11, -0.24, -0.4] },
+  mg34: { name: "Maschinengewehr MG34", dmg: 14, ammo: "gewehrmunition", mag: 50, rate: 0.067, auto: true, pellets: 1, spread: 0.03, spreadAim: 0.01, range: 350, zoom: 1.6, kick: 0.016, reload: 4.0, snd: [0.95, 0.15, 1300], hip: [0.2, -0.24, -0.46], ads: [0.14, -0.28, -0.5] },
   schrotflinte: { name: "Schrotflinte", dmg: 6, ammo: "schrot", mag: 6, rate: 0.8, auto: false, pellets: 9, spread: 0.07, spreadAim: 0.05, range: 45, zoom: 1.4, kick: 0.045, reload: 2.4, snd: [1, 0.3, 1100], hip: [0.17, -0.2, -0.38], ads: [0.12, -0.25, -0.42] },
 };
 const GUN = { scene: new THREE.Scene(), models: {}, cur: null, g: null, mag: {}, cd: 0, trig: false, rel: 0, kick: 0, flashT: 0, ads: 0, fx: [], audio: null,
@@ -98,7 +105,7 @@ function gunBuild(id) {
     const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), M.metall); bolt.position.set(0.055, 0.07, 0.0); g.add(bolt); box(M.metall, 0.04, 0.008, 0.008, 0.035, 0.075, 0.0);   // Kammerstengel
     box(M.metall, 0.01, 0.012, 0.22, 0.02, 0.025, -0.52, 0.04); box(M.metall, 0.01, 0.012, 0.22, -0.02, 0.025, -0.52, 0.04);   // Zweibein
     muzzle = [0, 0.08, -0.93];
-  } else {                                                                   // schrotflinte (Vorderschaftrepetierer)
+  } else if (id === "schrotflinte") {                                       // schrotflinte (Vorderschaftrepetierer)
     // neu (Nicolas 2026-11-18: "schau dann nochmal die Shotgun an"): Gehaeuse laenger mit Auswurf, Lauf mit Laufschiene, Magazinrohr mit Kappe und Laufschelle,
     // Pumpe mit Rillen, Abzugsbuegel mit Abzug, Holzschaft aus Hals und Kolben, nach hinten abfallend, mit Schaftkappe (vorher flache schraege Platte)
     box(M.metall, 0.044, 0.072, 0.25, 0, 0.076, -0.075);                      // Gehaeuse
@@ -118,12 +125,55 @@ function gunBuild(id) {
     box(M.messing, 0.012, 0.016, 0.03, 0.026, 0.075, -0.08);                 // Patrone im Auswurf
     cyl(M.metall, 0.0125, 0.02, 0, 0.062, -0.62);
     muzzle = [0, 0.095, -0.73];
+  } else if (id === "g36" || id === "g36c") {   // G36: Kunststoff schwarz, Tragegriff mit Optik (G36) bzw. Schiene (G36C), durchscheinendes Magazin, Skelettschaft
+    const c = id === "g36c", L = c ? 0.17 : 0.27;
+    box(M.schwarz, 0.046, 0.06, 0.3, 0, 0.095, -0.08); box(M.kunst, 0.044, 0.05, L, 0, 0.09, -0.23 - L / 2 + 0.02);   // Gehaeuse, Handschutz
+    for (let k = 0; k < (c ? 3 : 5); k++) for (const sx of [-1, 1]) box(M.grau, 0.004, 0.02, 0.02, sx * 0.023, 0.09, -0.25 - k * 0.045);   // Kuehlschlitze
+    cyl(M.metall, 0.01, c ? 0.12 : 0.18, 0, 0.095, -0.23 - L - (c ? 0.05 : 0.08)); cyl(M.grau, 0.015, 0.05, 0, 0.095, -0.23 - L - (c ? 0.13 : 0.19), 0.015, 8);   // Lauf, Muendungsfeuerdaempfer
+    if (c) { box(M.grau, 0.024, 0.012, 0.22, 0, 0.132, -0.08); for (let k = 0; k < 10; k++) box(M.grau, 0.028, 0.006, 0.01, 0, 0.14, 0.02 - k * 0.021); box(M.metall, 0.012, 0.02, 0.012, 0, 0.12, -0.36); }   // Schiene, Korn
+    else { box(M.schwarz, 0.03, 0.035, 0.2, 0, 0.16, -0.07); box(M.schwarz, 0.03, 0.04, 0.02, 0, 0.14, 0.02); cyl(M.schwarz, 0.017, 0.07, 0, 0.18, -0.11); { const l = new THREE.Mesh(new THREE.CircleGeometry(0.014, 14), M.glas); l.position.set(0, 0.18, -0.146); l.rotation.y = Math.PI; g.add(l); } }   // Tragegriff mit Optik
+    { const pts = []; for (let k = 0; k <= 6; k++) { const t = k / 6; pts.push([-0.14 - 0.03 * t, 0.06 - 0.16 * t]); } for (let k = 6; k >= 0; k--) { const t = k / 6; pts.push([-0.085 - 0.02 * t, 0.06 - 0.16 * t]); } const mg = prof(new THREE.MeshStandardMaterial({ color: 0x2a3138, transparent: true, opacity: 0.75, roughness: 0.3 }), pts, 0.026); }   // Magazin (durchscheinend)
+    box(M.kunst, 0.032, 0.1, 0.042, 0, 0.0, 0.03, 0.3); guard(0, 0.036, -0.03, 0.022); box(M.metall, 0.005, 0.02, 0.005, 0, 0.026, -0.035, 0.3);   // Griff, Abzug
+    prof(M.schwarz, [[0.07, 0.115], [0.3, 0.1], [0.31, 0.02], [0.27, 0.0], [0.07, 0.06], [0.07, 0.08], [0.25, 0.06], [0.27, 0.08], [0.25, 0.095], [0.07, 0.1]], 0.03);   // Skelettschaft (angedeutet)
+    muzzle = [0, 0.095, -0.23 - L - (c ? 0.16 : 0.22)];
+  } else if (id === "akm") {   // AKM: Holzschaft und Handschutz, Gasrohr ueber dem Lauf, gebogenes Magazin, schraege Muendungsbremse
+    box(M.metall, 0.042, 0.055, 0.3, 0, 0.09, -0.08); box(M.grau, 0.044, 0.012, 0.28, 0, 0.123, -0.08);   // Gehaeuse, Deckel
+    box(M.holz, 0.046, 0.05, 0.16, 0, 0.085, -0.3); box(M.holz, 0.04, 0.03, 0.15, 0, 0.13, -0.3);       // Handschutz unten, oben
+    cyl(M.metall, 0.011, 0.24, 0, 0.09, -0.48); cyl(M.metall, 0.008, 0.16, 0, 0.128, -0.4);              // Lauf, Gasrohr
+    { const mb = cyl(M.grau, 0.014, 0.05, 0, 0.09, -0.62); mb.rotation.z = 0.25; } box(M.metall, 0.008, 0.03, 0.012, 0, 0.115, -0.58);   // Muendungsbremse, Korn
+    { const pts = []; for (let k = 0; k <= 8; k++) { const t = k / 8; pts.push([-0.15 - 0.09 * t * t, 0.05 - 0.17 * t]); } for (let k = 8; k >= 0; k--) { const t = k / 8; pts.push([-0.09 - 0.075 * t * t, 0.05 - 0.165 * t]); } prof(M.metall, pts, 0.03); }   // gebogenes Magazin
+    box(M.holz, 0.032, 0.1, 0.042, 0, 0.0, 0.02, 0.38); guard(0, 0.035, -0.04, 0.022); box(M.metall, 0.005, 0.02, 0.005, 0, 0.025, -0.045, 0.3);   // Griff, Abzug
+    prof(M.holz, [[0.07, 0.11], [0.32, 0.075], [0.33, -0.01], [0.3, -0.02], [0.07, 0.055]], 0.04);       // Holzschaft
+    muzzle = [0, 0.09, -0.65];
+  } else if (id === "mp7") {   // MP7: kantig, kurzer Lauf, Magazin im Griff, Klappgriff vorne, Teleskopschaft, Schiene oben
+    box(M.schwarz, 0.044, 0.07, 0.24, 0, 0.09, -0.07); box(M.grau, 0.024, 0.01, 0.2, 0, 0.13, -0.07); for (let k = 0; k < 9; k++) box(M.grau, 0.028, 0.006, 0.01, 0, 0.137, 0.02 - k * 0.021);   // Gehaeuse, Schiene
+    cyl(M.metall, 0.01, 0.08, 0, 0.09, -0.22); box(M.kunst, 0.028, 0.07, 0.03, 0, 0.03, -0.15, -0.15);   // Lauf, Klappgriff
+    box(M.kunst, 0.032, 0.14, 0.045, 0, -0.01, 0.0, 0.2); box(M.grau, 0.03, 0.012, 0.045, 0, -0.085, 0.015, 0.2);   // Griff mit Magazin, Magazinboden
+    guard(0, 0.04, -0.055, 0.022); cyl(M.metall, 0.006, 0.16, -0.015, 0.075, 0.1); cyl(M.metall, 0.006, 0.16, 0.015, 0.075, 0.1); box(M.kunst, 0.044, 0.05, 0.02, 0, 0.075, 0.18);   // Abzugsbuegel, Teleskopschaft
+    muzzle = [0, 0.09, -0.27];
+  } else if (id === "mp5") {   // MP5: schlankes Gehaeuse mit Spannhebelrohr, gebogenes Magazin, Handschutz, fester Schaft
+    box(M.metall, 0.04, 0.055, 0.28, 0, 0.09, -0.08); cyl(M.metall, 0.012, 0.18, 0, 0.125, -0.22); box(M.kunst, 0.046, 0.045, 0.12, 0, 0.085, -0.27);   // Gehaeuse, Spannhebelrohr, Handschutz
+    cyl(M.metall, 0.01, 0.09, 0, 0.09, -0.37); box(M.metall, 0.03, 0.03, 0.02, 0, 0.13, -0.32);            // Lauf, Korntunnel
+    { const pts = []; for (let k = 0; k <= 8; k++) { const t = k / 8; pts.push([-0.13 - 0.05 * t * t, 0.05 - 0.15 * t]); } for (let k = 8; k >= 0; k--) { const t = k / 8; pts.push([-0.09 - 0.04 * t * t, 0.05 - 0.145 * t]); } prof(M.metall, pts, 0.024); }   // gebogenes Magazin
+    box(M.kunst, 0.032, 0.1, 0.042, 0, 0.0, 0.03, 0.3); guard(0, 0.036, -0.03, 0.02);                      // Griff
+    prof(M.kunst, [[0.07, 0.11], [0.27, 0.095], [0.28, 0.02], [0.25, 0.01], [0.07, 0.06]], 0.036);       // Schaft
+    muzzle = [0, 0.09, -0.42];
+  } else if (id === "mg34") {   // MG34: langer Lochmantel um den Lauf, Gurttrommel seitlich, Zweibein, Schaft schwarz, Korn vorne
+    box(M.metall, 0.05, 0.07, 0.3, 0, 0.095, -0.06);                                                       // Gehaeuse
+    cyl(M.metall, 0.024, 0.46, 0, 0.1, -0.43); for (let k = 0; k < 8; k++) for (const sx of [-1, 1]) box(M.schwarz, 0.004, 0.016, 0.03, sx * 0.024, 0.1, -0.26 - k * 0.05);   // Lochmantel
+    cyl(M.metall, 0.01, 0.12, 0, 0.1, -0.71); { const k = cyl(M.grau, 0.02, 0.04, 0, 0.1, -0.78); }        // Lauf, Muendung
+    box(M.metall, 0.006, 0.05, 0.01, 0, 0.14, -0.62);                                                      // Korn
+    { const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 20), M.grau); tr.rotation.z = Math.PI / 2; tr.position.set(-0.05, 0.06, -0.08); g.add(tr); }   // Gurttrommel seitlich
+    for (const sx of [-1, 1]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.22, 8), M.metall); b.position.set(sx * 0.04, 0.0, -0.55); b.rotation.set(0.5, 0, sx * 0.25); g.add(b); }   // Zweibein
+    box(M.schwarz, 0.032, 0.1, 0.042, 0, 0.0, 0.04, 0.35); guard(0, 0.037, -0.02, 0.022);                 // Griff
+    prof(M.schwarz, [[0.09, 0.12], [0.35, 0.09], [0.36, -0.01], [0.33, -0.02], [0.09, 0.06]], 0.042);    // Schaft
+    muzzle = [0, 0.1, -0.81];
   }
   g.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
   g.userData.muzzle = new THREE.Vector3(...muzzle);
   // Muendungsfeuer
   const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: GUN_FLASH_TEX, color: 0xffd27a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); fl.position.copy(g.userData.muzzle); fl.position.z -= 0.03;
-  fl.scale.setScalar(id === "pistole" ? 0.12 : id === "schrotflinte" ? 0.22 : 0.18); fl.visible = false; g.add(fl); g.userData.flash = fl;
+  fl.scale.setScalar(id === "pistole" || id === "mp7" ? 0.12 : id === "schrotflinte" || id === "mg34" ? 0.22 : 0.18); fl.visible = false; g.add(fl); g.userData.flash = fl;
   return g;
 }
 const GUN_FLASH_TEX = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -141,6 +191,7 @@ const GUN_SVG = {
   schrotflinte: '<path d="M1 12.6 L7 11 H11.6 V11.4 H25 V12.4 H11.6 V13.6 L9.4 13.7 L8.4 16.4 H6.8 L7.2 13.8 L1 16 Z" fill="#6e4526" stroke="#b08a63" stroke-width=".5" stroke-linejoin="round"/><rect x="7" y="10.9" width="4.8" height="2.9" fill="#26292d"/><rect x="13" y="13.2" width="11" height="1.1" fill="#26292d"/><rect x="14.6" y="12.7" width="4.6" height="2.1" rx=".8" fill="#8a5a33"/>',
 };
 const GUN_AMMO = {
+  sturmmunition: { name: "Sturmgewehr-Munition", art: "Munition", stack: 60, svg: '<g fill="#b98b3a" stroke="#5e461a" stroke-width=".4"><path d="M6 21 V10 L7.3 6.5 L8.6 10 V21 Z"/><path d="M10.4 21 V10 L11.7 6.5 L13 10 V21 Z"/><path d="M14.8 21 V10 L16.1 6.5 L17.4 10 V21 Z"/><path d="M19.2 21 V10 L20.5 6.5 L21.8 10 V21 Z"/></g><rect x="5" y="17" width="17.8" height="4.6" rx=".6" fill="#3a4a2a"/><text x="13.9" y="20.6" font-size="3" font-family="Arial" font-weight="bold" text-anchor="middle" fill="#d8d0a0">5,56</text>' },
   gewehrmunition: { name: "Gewehrpatronen", art: "Munition", stack: 40, svg: '<g fill="#c9a14a" stroke="#6b5422" stroke-width=".4"><path d="M7 21 V9 L8.5 5 L10 9 V21 Z"/><path d="M12 21 V9 L13.5 5 L15 9 V21 Z"/><path d="M17 21 V9 L18.5 5 L20 9 V21 Z"/></g><path d="M7 9 H10 M12 9 H15 M17 9 H20" stroke="#8a6b2c"/>' },
   schrot: { name: "Schrotpatronen", art: "Munition", stack: 32, svg: '<g stroke="#5a1414" stroke-width=".4"><rect x="6" y="6" width="4.4" height="13" rx="1" fill="#b3262b"/><rect x="11" y="6" width="4.4" height="13" rx="1" fill="#b3262b"/><rect x="16" y="6" width="4.4" height="13" rx="1" fill="#b3262b"/></g><g fill="#c9a14a"><rect x="6" y="17" width="4.4" height="3.2"/><rect x="11" y="17" width="4.4" height="3.2"/><rect x="16" y="17" width="4.4" height="3.2"/></g>' },
 };
@@ -151,10 +202,25 @@ const GUN_DESC = {
   emp: "EMP-Gewehr: schiesst einen elektromagnetischen Puls. Fahrzeuge und Busse im Umkreis von ca. 9 m am Einschlag bleiben 15 Sekunden stehen (Motor aus). 3 Ladungen, laedt sich selbst wieder auf (je 5 s), keine Munition.",
   schrotflinte: "Vorderschaft-Schrotflinte, 6 Patronen, je Schuss 9 Schrotkugeln. Stark auf kurze Entfernung. Braucht Schrotpatronen.",
   gewehrmunition: "Patronen für das Scharfschützengewehr.",
+  g36: "Sturmgewehr G36: 30 Schuss, Dauerfeuer, 3-fach-Optik im Tragegriff (rechts halten). Braucht Sturmgewehr-Munition.",
+  g36c: "Karabiner G36C: kurze Version des G36, 30 Schuss, Dauerfeuer, Schiene statt Tragegriff. Braucht Sturmgewehr-Munition.",
+  akm: "Sturmgewehr AKM mit Holzschaft: 30 Schuss, Dauerfeuer, kräftig, etwas ungenauer. Braucht Sturmgewehr-Munition.",
+  mp7: "Maschinenpistole MP7: kompakt, 40 Schuss, sehr schnelles Dauerfeuer, kurze Reichweite. Braucht 9-mm-Munition.",
+  mp5: "Maschinenpistole MP5: 30 Schuss, Dauerfeuer, ruhig zu schiessen. Braucht 9-mm-Munition.",
+  mg34: "Maschinengewehr MG34 mit Gurttrommel (50 Schuss) und Zweibein: sehr schnelles Dauerfeuer, Nachladen dauert 4 s. Braucht Gewehrpatronen.",
+  sturmmunition: "Sturmgewehr-Munition für G36, G36C und AKM (30er-Packung).",
   schrot: "Schrotpatronen für die Schrotflinte.",
 };
 // Langwaffen schraeg und groesser, damit sie das Feld fuellen wie die Pistole (Nicolas 2026-11-17)
-for (const id of ["mg", "sniper", "schrotflinte", "emp"]) GUN_SVG[id] = '<g transform="translate(13 13) rotate(-38) scale(1.1) translate(-13 -12.8)">' + GUN_SVG[id] + "</g>";
+Object.assign(GUN_SVG, {
+  g36: '<path d="M1 11.8 L3 10.6 H6.4 V11 H12 V9 H16.4 V10.4 H20.6 V11.2 H24.6 V12.2 H20.6 V13.4 H12 L11 17 H9.4 L9.8 13.4 H7 L1 14.6 Z" fill="#1b1d21" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><path d="M12.6 13.4 L12.2 18 H14.4 L14.6 13.4" fill="#2a3138" fill-opacity=".85" stroke="#8b9198" stroke-width=".4"/><circle cx="16.4" cy="9.6" r=".6" fill="#3a7fc0"/>',
+  g36c: '<path d="M3 11.8 L5 10.8 H8.4 V11 H12 V9.8 H17 V10.4 H19.6 V11.2 H22.6 V12.2 H19.6 V13.4 H12 L11 17 H9.4 L9.8 13.4 H8.6 L3 14.6 Z" fill="#1b1d21" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><path d="M12.6 13.4 L12.2 18 H14.4 L14.6 13.4" fill="#2a3138" fill-opacity=".85" stroke="#8b9198" stroke-width=".4"/>',
+  akm: '<path d="M1 12.6 L7.6 11 H12 V10.2 H19 V11 H23.6 V12 H19 V13.4 H12 L11 16.6 H9.4 L9.8 13.4 H7.6 L1 15.8 Z" fill="#30343a" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><path d="M1 12.6 L7.6 11 V13.4 L1 15.8 Z" fill="#6e4526"/><rect x="14" y="10.6" width="5" height="2.8" fill="#6e4526"/><path d="M12.4 13.4 Q12.6 16.6 14.6 18.4 L16 17.6 Q14.4 16 14.4 13.4 Z" fill="#30343a" stroke="#8b9198" stroke-width=".4"/>',
+  mp7: '<path d="M4 12 H7 V10 H18 V11.4 H21 V12.4 H18 V14 H16.4 L16.6 15.6 H15 L14.8 14 H12.4 L11.6 19.4 H9.6 L10.4 14 H7 V13.2 H4 Z" fill="#1b1d21" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><rect x="7.4" y="9.2" width="10" height=".8" fill="#5a6068"/>',
+  mp5: '<path d="M2 12 L7 11 H10 V10 H19.6 V10.8 H22.4 V11.8 H19.6 V13.2 H11.4 L10.6 16.4 H9 L9.4 13.2 H7 L2 14.4 Z" fill="#26292d" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><path d="M12.4 13.2 Q12.4 15.6 13.8 17.6 L15.2 17 Q14 15.2 14.2 13.2 Z" fill="#26292d" stroke="#8b9198" stroke-width=".4"/>',
+  mg34: '<path d="M1 12.4 L6 11 H10.6 V10.6 H25 V11.8 H10.6 V13.4 H9.8 L9 16 H7.6 L8 13.4 H6 L1 15.4 Z" fill="#26292d" stroke="#8b9198" stroke-width=".5" stroke-linejoin="round"/><g fill="#0e0f12"><circle cx="13" cy="11.2" r=".35"/><circle cx="15" cy="11.2" r=".35"/><circle cx="17" cy="11.2" r=".35"/><circle cx="19" cy="11.2" r=".35"/><circle cx="21" cy="11.2" r=".35"/></g><circle cx="9.6" cy="14.6" r="2" fill="#5a6068" stroke="#8b9198" stroke-width=".4"/><path d="M20 11.8 L18.6 15.6 M20 11.8 L21.4 15.6" stroke="#8b9198" stroke-width=".6"/>',
+});   // Symbole der neuen Waffen (N51)
+for (const id of ["mg", "sniper", "schrotflinte", "emp", "g36", "g36c", "akm", "mp5", "mg34"]) GUN_SVG[id] = '<g transform="translate(13 13) rotate(-38) scale(1.1) translate(-13 -12.8)">' + GUN_SVG[id] + "</g>";
 for (const id in GUN_SPEC) INV_ITEMS[id] = { name: GUN_SPEC[id].name, art: "Waffe", stack: 1, svg: GUN_SVG[id] };
 Object.assign(INV_ITEMS, GUN_AMMO); Object.assign(INV_DESC, GUN_DESC);
 INV_DESC.munition = "9-mm-Patronen für Pistole und Maschinengewehr.";

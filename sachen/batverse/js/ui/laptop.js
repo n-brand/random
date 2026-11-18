@@ -53,7 +53,7 @@ const LT_SHOPMAP = { budget: "billig", prestige: "teuer", defense: "militaer", g
 const LT_CARS = { budget: [["Motorrad", 9000], ["Streetfighter", 14000], ["Gotham Taxi", 18000], ["Abschleppwagen", 45000], ["DeLorean", 65000], ["Nachtfalke", 120000]],
   prestige: [["G-Klasse", 180000], ["Aventador", 420000], ["Spectre", 430000], ["Rolls-Royce", 460000], ["Terzo Millennio", 2500000]],
   defense: [["Muldenkipper", 900000], ["Panzer", 3500000], ["Tumbler", 5000000]] };
-const LT_WAREN = { guns: [["pistole", 2500, 1], ["schrotflinte", 6500, 1], ["munition", 150, 32], ["schrot", 180, 16]], arms: [["mg", 18000, 1], ["sniper", 24000, 1], ["munition", 150, 32], ["gewehrmunition", 400, 20]] };
+const LT_WAREN = { guns: [["pistole", 2500, 1], ["schrotflinte", 6500, 1], ["munition", 150, 32], ["schrot", 180, 16]], arms: [["mg", 18000, 1], ["sniper", 24000, 1], ["g36", 22000, 1], ["g36c", 19000, 1], ["akm", 15000, 1], ["mp7", 16000, 1], ["mp5", 14000, 1], ["mg34", 30000, 1], ["sturmmunition", 450, 30], ["munition", 150, 32], ["gewehrmunition", 400, 20]] };
 
 // ---- Boerse: Kurse laufen zufaellig weiter (je 4 s ein Schritt, verpasste Zeit beim Oeffnen bis 60 Schritte) ----
 const LT_STOCKS = [["WYNE", "Wayne Enterprises", 412], ["PMG", "Prestige Motors Group", 88], ["BGC", "Budget Cars", 14.5], ["ACE", "Ace Chemicals", 37], ["KANE", "Kane Textiles", 22], ["GARM", "Gotham Arms", 64], ["GCB", "Gotham City Bank", 129], ["GTRN", "Gotham Transit", 9.8]];

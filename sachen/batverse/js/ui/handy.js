@@ -12,7 +12,7 @@ const HANDY_SHOPS = {
   waffen: { name: "Guns & Ammo", url: "gunsandammo.gotham", ort: "waffen-1", farbe: "#d8443a", slogan: "Pistolen, Flinten, Munition. Seit 1952.",
     waren: [["pistole", 2500, 1], ["schrotflinte", 6500, 1], ["munition", 150, 32], ["schrot", 180, 16]] },
   arms: { name: "Gotham Arms", url: "gotham-arms.gotham", ort: "waffen-2", farbe: "#8a9a5b", slogan: "Schweres Gerät für Profis.",
-    waren: [["mg", 18000, 1], ["sniper", 24000, 1], ["munition", 150, 32], ["gewehrmunition", 400, 20]] },
+    waren: [["mg", 18000, 1], ["sniper", 24000, 1], ["g36", 22000, 1], ["g36c", 19000, 1], ["akm", 15000, 1], ["mp7", 16000, 1], ["mp5", 14000, 1], ["mg34", 30000, 1], ["sturmmunition", 450, 30], ["munition", 150, 32], ["gewehrmunition", 400, 20]] },
   militaer: { name: "Gotham Defense Supply", url: "defense-supply.gotham", ort: null, farbe: "#7f9a4e", slogan: "Ausgemustertes Militärgerät. Lieferung frei Haus.",
     items: [["haul", 900000], ["tank", 3500000], ["tumbler", 5000000]] },
 };
