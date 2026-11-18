@@ -60,6 +60,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Fidget Spinner wie das Vorbild** (Nicolas 2026-11-18, Bild der Google-Suche "fidgetspinner"): fidget.js – Umriss aus der glatten Vereinigung von vier Kreisen (`fidgetSdf`, Mitte r 1,7 cm, drei Lappen r 1,6 cm bei 30/150/270 Grad, 2,7 cm von der Mitte, weich eingezogen; `fidgetUmriss` sucht je Winkel den Rand), dunkles Petrol mit Fase, in jedem Lappen ein hellblaues Lager mit dunklem Ring vorne und hinten, gelbe Mittelkappe (steht still). Das 2D-Symbol wird aus derselben Form erzeugt (`INV_ITEMS.fidget.svg` beim Laden). Bild geprüft (gross, in der Hand, Symbol).
+
 - **Spielautomaten grösser** (Nicolas 2026-11-18, N20: "Spielautomaten grösser, wirken zu klein"): spielautomat-modell.js `SLOT_SCALE` 1,25 – der ganze Automat (auch Crash und Mines, auch die Casino-Instanzen über die Vorlage) misst jetzt ca. 0,95 x 0,9 x 2,5 m statt 0,76 x 0,72 x 2,05. Casino: Abstand in den Reihen 1,3 m statt 1,15, 0,55 m von der Wand, Kollision und Rechtsklick-Kasten 1,1 x 2,6 m; Crash und Mines 10 cm weiter von der Wand. Geprüft in der Werkstatt: Bild der drei Automaten, Bild einer Casino-Reihe (Werkstatt-Casino aus den Spieldateien).
 
 - **Jeton-Automat einzeln in der Werkstatt, Zoom im Zielfernrohr** (Nicolas 2026-11-18, N19: "Jeton-Automat einzeln in der Werkstatt (Bargeld gegen Jetons)"; "beim Zielen mit dem Scharfschützengewehr soll man mit dem Mausrad noch auf den roten Punkt reinzoomen können, ähnlich wie beim Panzer"):
