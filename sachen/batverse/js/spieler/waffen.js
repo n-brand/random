@@ -103,8 +103,8 @@ function aimArc() {
   if (AIM.on && onFoot() && weaponHeld() === "greifhaken" && !AIM.grap) return grapAim();
   const show = AIM.on && onFoot() && weaponHeld() === "rauchbombe" && !AIM.grap;
   if (!show) { if (ARC.dots) ARC.dots.visible = ARC.ring.visible = false; return; }
+  if (!ARC.dots) aimArcInit();   // zuerst anlegen (Nicolas 2026-11-18: "Rechtsklick mit Rauchbombe stuerzt das Spiel ab" – die Farben wurden vor dem ersten Anlegen gesetzt)
   ARC.dots.material.color.setHex(0xffffff); ARC.ring.material.color.setHex(0xffe08a); ARC.ring.rotation.set(-Math.PI / 2, 0, 0); ARC.ring.scale.setScalar(1);
-  if (!ARC.dots) aimArcInit();
   AIM_ray.setFromCamera({ x: 0, y: 0 }, camera); const d = AIM_ray.ray.direction, p = ARC.p.copy(camera.position).addScaledVector(d, 0.5), v = ARC.v.copy(d).multiplyScalar(17), b = ARC.b; p.y -= 0.15; v.y += 3.5;
   const dt = 0.03; let n = 0, hit = null;
   for (let i = 0; i < 134; i++) { v.y -= 9.8 * dt; b.copy(p).addScaledVector(v, dt); const h = shotSeg(p, b, null, 0.3); if (h) { hit = h.p; break; } p.copy(b);
