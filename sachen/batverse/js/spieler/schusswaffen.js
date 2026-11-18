@@ -355,6 +355,7 @@ function buildWaffenwand() {
   const items = {}, hook = new THREE.MeshStandardMaterial({ color: 0x8a8f96, metalness: 0.8, roughness: 0.3 }), put = (id, o) => { (items[id] = items[id] || []).push(o); g.add(o); };
   const one = id => { if (GUN_SPEC[id]) { const o = new THREE.Group(), m = gunBuild(id); m.rotation.y = -Math.PI / 2; o.add(m); return o; }
     if (id === "batarang") { const o = new THREE.Group(), m = new THREE.Mesh(AIM_M.bat, AIM_M.batM); m.rotation.set(Math.PI / 2, 0, 0); o.add(m); return o; }   // Ohren oben
+    if (id === "rauchbombe" && typeof buildRauchbombe === "function") { const o = new THREE.Group(), b = buildRauchbombe(); b.scale.setScalar(2); o.add(b); return o; }   // gleiches Modell wie in der Hand (waffen.js)
     if (id === "rauchbombe") { const o = new THREE.Group(), m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 20, 14), AIM_M.bombM); o.add(m); const c = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.028, 0.05, 14), hook); c.position.y = 0.1; o.add(c);
       const lv = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.1, 0.006), hook); lv.position.set(0.03, 0.08, -0.02); lv.rotation.z = -0.35; o.add(lv); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.004, 6, 16), hook); ring.position.set(-0.035, 0.12, -0.02); o.add(ring);
       const band = new THREE.Mesh(new THREE.CylinderGeometry(0.091, 0.091, 0.02, 20), new THREE.MeshStandardMaterial({ color: 0xd9c23a, roughness: 0.6 })); o.add(band); return o; }   // Kugel mit Zuender, Buegel, Sicherungsring, gelbem Band
