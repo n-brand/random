@@ -182,6 +182,16 @@ renderer.domElement.addEventListener("mousedown", e => { if (touch || !onFoot() 
 function batKnopf() { batKnopfDruck(); if (typeof GCPD === "undefined") return toast("Kein Batsignal in Reichweite"); GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts über Gotham)" : "Batsignal aus"); if (typeof invRender === "function") invRender(); }
 renderer.domElement.addEventListener("mousedown", e => { if (e.button === 0 && dragging && onFoot() && typeof invHeld === "function" && invHeld() === "batknopf") batKnopf(); });
 document.getElementById("btn-use")?.addEventListener("click", () => { if (typeof invHeld === "function" && invHeld() === "batknopf" && onFoot()) batKnopf(); });
+// Rauchbombe in 3D in der Hand (Nicolas 2026-11-18: "Rauchbomben sollen in der Hand auch 3D sein"): dunkle Kugel mit gerilltem Band, Zuenderkappe oben mit Sicherungsring und Buegel
+function buildRauchbombe() { const g = new THREE.Group(), dunkel = new THREE.MeshStandardMaterial({ color: 0x3a3e45, roughness: 0.5, metalness: 0.3 }), band = new THREE.MeshStandardMaterial({ color: 0x8a8f99, roughness: 0.4, metalness: 0.5 }), gelb = new THREE.MeshStandardMaterial({ color: 0xe8c547, roughness: 0.5 });
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(0.045, 20, 14), dunkel));
+  for (const y of [-0.014, 0.014]) { const r = new THREE.Mesh(new THREE.TorusGeometry(Math.sqrt(0.045 ** 2 - y * y) + 0.0008, 0.0025, 6, 28), band); r.rotation.x = Math.PI / 2; r.position.y = y; g.add(r); }
+  const st = new THREE.Mesh(new THREE.TorusGeometry(0.0458, 0.0035, 6, 28), gelb); st.rotation.x = Math.PI / 2; g.add(st);   // gelber Streifen
+  const k = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.016, 0.022, 14), band); k.position.y = 0.05; g.add(k);   // Zuenderkappe
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.011, 0.0018, 6, 18), band); ring.position.set(0.018, 0.058, 0); g.add(ring);   // Sicherungsring
+  const bg = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.05, 0.004), band); bg.position.set(-0.016, 0.035, 0); bg.rotation.z = -0.25; g.add(bg);   // Buegel
+  return g; }
+if (typeof HAND3D !== "undefined") HAND3D.rauchbombe = () => { const g = new THREE.Group(), b = buildRauchbombe(); b.scale.setScalar(1.7); b.rotation.set(0.3, 0.5, -0.2); g.add(b); return g; };
 // Bat-Knopf in 3D (Nicolas 2026-11-18, N16: "eher wie ein Funkgeraet oder eine Fernbedienung mit einem Knopf"): schwarzes Gehaeuse mit Griffrillen, kurze Antenne,
 // grosser gelber Knopf mit Fledermaus (BAT_SIGNAL_PTS), rote LED (leuchtet, solange das Signal an ist). Front +z (zum Spieler). Der Knopf geht beim Druecken kurz hinein.
 function buildBatKnopf() { const g = new THREE.Group(), schwarz = new THREE.MeshStandardMaterial({ color: 0x1b1d22, roughness: 0.55, metalness: 0.2 }), gummi = new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.9 }),
