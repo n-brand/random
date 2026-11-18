@@ -249,7 +249,7 @@ function laden(i) {
 // aus beim Ansehen/Drehteller und beim Modellwechsel; Jet und The Bat starten ihren Ton selbst (jet.js / the-bat.js). M = Ton an/aus, Lautstaerke wie im Spiel.
 function tonAn() { if (modus === "drive" && AKT && !AKT.flug) engineStart(AKT.spec.name); else if (!(AKT && AKT.flug && modus === "drive")) engineStop(); }
 function flugStart() { const F = AKT.F; if (F !== JET) FLY = F; player.pos.set(F.x, AKT.flug === "jet" ? F.y - JET_Y : F.y, F.z); if (!(AKT.flug === "jet" ? useJet() : useFly())) toast("Einsteigen ging nicht"); }   // aktives Fluggeraet (The Bat oder Helikopter)
-function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h, A.spec.track ? (A.roll || 0) : A.lean, "YXZ"); }
+function setze() { const A = AKT; if (A.flug) return; A.g.position.set(A.x, A.y || 0, A.z); A.g.rotation.set(A.pitch || 0, A.h + (A.slip || 0), A.spec.track ? (A.roll || 0) : A.lean, "YXZ"); }
 // Nicolas 2026-11-17 (Bild Ansehen): Teleport ausser im Fahren immer als Person (4) an den Punkt, nicht das Fahrzeug
 window.werkstattTeleport = p => { if (modus !== "drive") { const d = camera.getWorldDirection(new THREE.Vector3()), yaw = modus === "geist" ? GEIST.yaw : modus === "person" ? PERSON.yaw : Math.atan2(-d.x, -d.z); if (modus !== "person") setModus("person");   // wie im Spiel: Teleport im Geist = Begehen am Punkt (Nicolas 2026-11-17)
     PERSON.pos.set(p.x, p.y + 0.05, p.z); PERSON.yaw = yaw; PERSON.pitch = -0.05; PERSON.vy = 0; toast("Teleportiert – Begehen"); return; }
@@ -344,7 +344,7 @@ function fahren(dt) {
   if (emp && (!A.empMsg || performance.now() - A.empMsg > 2500)) { A.empMsg = performance.now(); toast("EMP: Motor gestört – noch " + Math.ceil((A.empT - performance.now()) / 1000) + " s"); }
   lenkStep(A, s, st, dt);   // gemeinsam mit fahren.js (modelle.js)
   const KP = kurvenPhysik(s, A.v, A.steer, th, vmax); A.aLat = A.v * A.v * Math.abs(KP.k);
-  A.h += A.v * KP.k * dt;
+  A.h += A.v * KP.k * dt * driftStep(A, s, st, down("KeyQ"), dt, A.y || 0);   // Drift mit Q (modelle.js)
   antriebStep(A, s, th, vmax, KP, 1, dt);   // Gas, Bremse, Ausrollen, Kurvenwiderstand: gemeinsam mit fahren.js (modelle.js)
   if (A.monitor) { const el = Math.max(-0.9, Math.min(0.9, kPitch + 0.32)), M0 = monitorPose(A.g, A.monitor, wrapW(kYaw - A.h), el, dt, down("Space"));   // Arm-Wasserwerfer (wie schiessen.js wasserFrame)
     if (down("Space") && M0.ready) wasserSpritzen(dt, M0.tip, kYaw, el - 0.32);

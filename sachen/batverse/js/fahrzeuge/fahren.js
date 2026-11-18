@@ -71,7 +71,7 @@ const tankDir = new THREE.Vector3(), tankQ = new THREE.Quaternion();
 function carPose(dt) {
   const C = CAR;
   C.g.position.set(C.x, C.y, C.z);
-  C.g.rotation.set(C.pitch, C.h, C.spec.bike ? C.lean : C.roll, "YXZ"); C.g.updateMatrix();
+  C.g.rotation.set(C.pitch, C.h + (C.slip || 0), C.spec.bike ? C.lean : C.roll, "YXZ"); C.g.updateMatrix();   // C.slip: Drift
   for (const w of C.wheels) { w.spin.rotation.x -= C.v * dt / w.r * (1 - (C.fold || 0)); if (w.front) w.piv.rotation.y = C.steer; }
   if (C.wheelGlow) C.wheelGlow.emissiveIntensity = 0.35 + 1.4 * Math.min(1, Math.abs(C.v) / 20);   // Terzo: Felgen leuchten mit dem Tempo
   if (C.folds) { const f = C.fold || 0, e = f * f * (3 - 2 * f); for (const q of C.folds) q.g.rotation.z = -q.sd * Math.PI / 2 * e;   // DeLorean: Raeder flach geklappt, Aussenseite unten
@@ -303,7 +303,7 @@ function carStep(dt) {
   if (!C.air) {
     const KP = C.wet ? { k: Math.tan(C.steer) / sp.wb, dec: 0, thF: 1 } : kurvenPhysik(sp, C.v, C.steer, th, max);   // Haftgrenze, Kurvenwiderstand (modelle.js)
     C.aLat = C.v * C.v * Math.abs(KP.k);
-    const dh = C.v * KP.k * dt;
+    const dh = C.v * KP.k * dt * driftStep(C, sp, st, keys.has("KeyQ"), dt);   // Drift mit Q (modelle.js)
     C.h = wrapA(C.h + dh); if (!C.turret) player.yaw += dh;   // Panzer: Lenken dreht nur die Wanne, Blick und Turm bleiben
     // Hang (Nicolas 2026-11-08): Hangabtrieb statt harter Sperre. Steigung aus dem Gelaende vor/hinter dem Fahrzeug (nur auf freiem
     // Gelaende; Tunnel, Hallen, Hoehle liefern -100 bzw. liegen weit weg). Bergauf bremst die Schwerkraft, bergab wird man schneller;

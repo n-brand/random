@@ -42,6 +42,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Ton an/aus im Fahrzeug | N |
 | Container-Aufzug im Auto | L |
 | Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
+| Drift | im Auto **Q** halten und lenken (ab ca. 25 km/h): Heck bricht aus, Reifenspuren und Qualm; nicht bei Motorrädern und Panzern |
 | Tumbler-Sprung | im Tumbler, 10 s Abklingzeit |
 | Behälter (Waffenwand, später Tresore, Koffer, Mülleimer) | Rechtsklick davor (nur von vorne, aus der Nähe); im Fenster ziehen, Shift+Klick = Behälter ↔ Inventar |
 | Tresor | Rechtsklick davor: zu = Tastenfeld (Ziffern, Enter, Rücktaste; Standard-Code **0000**, 3 x falsch = 10 s gesperrt), offen = Inhalt mit "Schliessen und verriegeln" und "Code ändern" |
@@ -63,6 +64,8 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Drift für Landfahrzeuge** (Nicolas 2026-11-18, N47: "Drift für Landfahrzeuge, Taste in CLAUDE.md eintragen"): modelle.js `driftStep(C, sp, st, held, dt, y)` (gemeinsam für fahren.js und werkstatt.js): Taste **Q** gehalten, über 7 m/s, nicht in der Luft oder im Wasser, nicht bei Motorrad, Kette, Schwebe-DeLorean -> die Karosserie dreht bis 0,6 rad (ca. 35 Grad) in die Kurve (`C.slip`, nur Optik in carPose/setze), die Kurve wird 1,6-fach enger, das Auto verliert 2-5 m/s². Reifenspuren der Hinterräder als InstancedMesh (600, die ältesten verschwinden, je Bild so lang wie die gefahrene Strecke, entlang der Fahrtrichtung) und Qualm-Sprites (1,5 s). Loslassen: Heck fängt sich in ca. 0,3 s. Geprüft in der Werkstatt (Gotham Police, ca. 100 km/h, A + Q): Slip 0,59, 138 Spuren, 34 Qualmwolken, nach Loslassen 0,02; Bilder. Im Spiel nicht gefahren (gleicher Code).
 
 - **Polizei-Helikopter und Polizei-Pickup** (Nicolas 2026-11-18, N46: "Polizei-Helikopter und Polizei-Jeep (Pickup mit offener Ladefläche)"):
   - Flugsystem für mehrere Fluggeräte (the-bat.js): `FLYS` = alle, `let FLY` = aktives (wie BOATS/BOAT), `BAT_FLY` = The Bat (T-Menü holt immer sie). Je Gerät optional `name`, `pts`/`feet` (Kollision), `spec` { max, acc, up, tilt, tiltV, turn }, `camD`/`camDmin`, `cockpit`, `circPts`/`circR`/`circH`, `exitPts`, `snd`, `pose()`. tore.js zielt auf alle FLYS und setzt beim Einsteigen `FLY`; Texte mit dem Gerätenamen.

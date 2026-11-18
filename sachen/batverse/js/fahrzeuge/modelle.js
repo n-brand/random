@@ -1323,6 +1323,27 @@ const KURVEN_PHYSIK = false;
 // Gemeinsame Fahrbausteine (Leistung/Pflege 2026-11-13): Spiel (fahren.js carStep) und Werkstatt (werkstatt.js fahren) rufen dieselben Funktionen auf,
 // vorher stand der Code doppelt da. Die Welt (Hang, Kollision, Wasser) bleibt in fahren.js, die Werkstatt hat ebenen Boden.
 // Lenken mit Anlaufzeit (Nicolas 2026-11-11): kurz tippen lenkt nur leicht, erst gehalten voller Einschlag (25 % -> 100 % in 0,45 s, weich); bei Tempo weniger Einschlag
+// Drift (Nicolas 2026-11-18, N47: "Drift fuer Landfahrzeuge"): Q halten bei mehr als 25 km/h und Lenken -> das Heck bricht aus (Karosserie dreht bis ca. 35 Grad in die Kurve,
+// C.slip, nur Optik und engere Kurve: Kurvenradius ca. 1,6-fach enger), das Auto verliert Tempo; Reifenspuren auf dem Boden (bis 600, die aeltesten verschwinden) und Qualm an den
+// Hinterraedern. Loslassen: Heck faengt sich in ca. 0,3 s. Nicht fuer Motorraeder und Kettenfahrzeuge. Gemeinsam fuer Spiel (fahren.js) und Werkstatt (werkstatt.js).
+const DRIFT = { marks: null, i: 0, smoke: [], tex: null, M: new THREE.Matrix4(), Q: new THREE.Quaternion(), E: new THREE.Euler(), S: new THREE.Vector3(1, 1, 1), P: new THREE.Vector3() };
+function driftStep(C, sp, st, held, dt, y = C.y || 0) {
+  const av = Math.abs(C.v), ok = held && !sp.bike && !sp.tracks && !sp.hover && av > 7 && !C.air && !C.wet;
+  const want = ok ? st * 0.6 * Math.min(1, (av - 7) / 8) : 0; C.slip = C.slip || 0; C.slip += (want - C.slip) * Math.min(1, dt * (ok ? 3 : 5));
+  if (ok) C.v -= Math.sign(C.v) * (2 + Math.abs(st) * 3) * dt;                                         // Reibung beim Rutschen
+  if (Math.abs(C.slip) > 0.1 && av > 3) driftSpur(C, sp, y, dt);
+  driftRauch(dt); return ok && st ? 1.6 : 1; }
+function driftSpur(C, sp, y, dt) { const D = DRIFT;
+  if (!D.marks) { D.marks = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.28, 0.5).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), 600);
+    D.marks.count = 0; D.marks.frustumCulled = false; D.marks.userData.dynamic = true; scene.add(D.marks); }
+  const h = C.h + C.slip, s = Math.sin(h), c = Math.cos(h);
+  for (const [wx, wz] of (sp.wheels || []).filter(w => w[1] > 0)) { const px = C.x + wx * c + wz * s, pz = C.z - wx * s + wz * c; const len = Math.max(0.5, Math.abs(C.v) * dt * 1.15), tx = -Math.sin(C.h), tz = -Math.cos(C.h); D.E.set(0, C.h, 0); D.Q.setFromEuler(D.E); D.P.set(px - tx * len / 2, y + 0.03, pz - tz * len / 2); D.S.set(1, 1, len / 0.5);   // Spur entlang der Fahrtrichtung, so lang wie die Strecke seit dem letzten Bild
+    D.marks.setMatrixAt(D.i % 600, D.M.compose(D.P, D.Q, D.S)); D.i++; D.marks.count = Math.min(600, D.i);
+    if (Math.random() < dt * 14) { if (!D.tex) { const cv = document.createElement("canvas"); cv.width = cv.height = 64; const x = cv.getContext("2d"), gr = x.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, "rgba(230,230,232,.7)"); gr.addColorStop(1, "rgba(230,230,232,0)"); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); D.tex = new THREE.CanvasTexture(cv); }
+      const sm = new THREE.Sprite(new THREE.SpriteMaterial({ map: D.tex, transparent: true, depthWrite: false, opacity: 0.6 })); sm.position.set(px, y + 0.4, pz); sm.scale.setScalar(0.8); sm.userData.t = 0; scene.add(sm); D.smoke.push(sm); } }
+  D.marks.instanceMatrix.needsUpdate = true; }
+function driftRauch(dt) { const L = DRIFT.smoke; for (let i = L.length - 1; i >= 0; i--) { const s = L[i]; s.userData.t += dt; s.position.y += dt * 0.8; s.scale.multiplyScalar(1 + dt * 1.4); s.material.opacity = Math.max(0, 0.6 - s.userData.t * 0.4);
+  if (s.userData.t > 1.5) { scene.remove(s); s.material.dispose(); L.splice(i, 1); } } }
 function lenkStep(C, sp, st, dt) {
   if (st && Math.sign(st) === C.stDir) C.stHold = (C.stHold || 0) + dt; else { C.stHold = 0; C.stDir = Math.sign(st); }
   const hk = Math.min(1, C.stHold / 0.45), stF = st ? 0.25 + 0.75 * hk * hk * (3 - 2 * hk) : 0;
