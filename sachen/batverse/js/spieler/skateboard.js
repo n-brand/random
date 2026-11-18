@@ -15,6 +15,9 @@ function buildSkateboard() {
   for (const sx of [-1, 1]) { const tr = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.15), metall); tr.position.set(sx * 0.24, 0.058, 0); g.add(tr); const ax = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.2, 8), metall); ax.rotation.x = Math.PI / 2; ax.position.set(sx * 0.24, 0.032, 0); g.add(ax);
     for (const sz of [-1, 1]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.032, 16), rad); w.rotation.x = Math.PI / 2; w.position.set(sx * 0.24, 0.028, sz * 0.09); g.add(w); } }   // Achsen und Rollen
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.name = "Skateboard"; return g; }   // Laengsachse x, Boden y 0
+// Spielfigur auf dem Brett (figur.js, N35 F1): seitlich, Beine gegraetscht, Knie gebeugt, Arme zur Balance (sonst die alte Ersatzfigur)
+function skaterAusFigur() { const w = new THREE.Group(), f = buildFigur({ oberteil: 0x1c1f26, hose: 0x2d3440, schuhe: 0xeeeeee, frisur: 0 }), U = f.userData; w.add(f);
+  U.beinL.rotation.z = -0.28; U.beinR.rotation.z = 0.28; U.knieL.rotation.x = 0.35; U.knieR.rotation.x = 0.35; U.armL.rotation.z = -1.15; U.armR.rotation.z = 1.15; U.rumpf.position.y = 0.9; return w; }
 // Ersatzfigur (bis es Spielfiguren gibt): seitlich auf dem Brett, Knie leicht gebeugt, Arme zur Balance
 function buildSkaterFigur() {
   const g = new THREE.Group(), stoff = new THREE.MeshStandardMaterial({ color: 0x1c1f26, roughness: 0.9 }), hose = new THREE.MeshStandardMaterial({ color: 0x2d3440, roughness: 0.9 }), haut = new THREE.MeshStandardMaterial({ color: 0xd9b08c, roughness: 0.8 }), schuh = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.7 });
@@ -24,7 +27,7 @@ function buildSkaterFigur() {
   const haube = new THREE.Mesh(new THREE.SphereGeometry(0.118, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), stoff); haube.position.copy(kopf.position); haube.position.y += 0.01; g.add(haube);   // Kapuze
   for (const sx of [-1, 1]) cap(stoff, 0.055, 0.42, sx * 0.36, 1.18, 0, sx * 1.05);   // Arme seitlich ausgestreckt
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return g; }   // Gesicht nach -z, Brett liegt quer (x)
-function skateEnsure() { if (SKATE.g) return; const g = new THREE.Group(), b = buildSkateboard(), f = buildSkaterFigur(); f.position.y = 0.09; f.rotation.y = 0; g.add(b, f); g.userData.f = f; g.visible = false; g.userData.dynamic = true; scene.add(g); SKATE.g = g; }
+function skateEnsure() { if (SKATE.g) return; const g = new THREE.Group(), b = buildSkateboard(), f = typeof buildFigur === "function" ? skaterAusFigur() : buildSkaterFigur(); f.position.y = 0.09; f.rotation.y = 0; g.add(b, f); g.userData.f = f; g.visible = false; g.userData.dynamic = true; scene.add(g); SKATE.g = g; }
 function skateOn() { skateEnsure(); SKATE.on = true; SKATE.v = 0; SKATE.g.visible = true; const p = typeof player !== "undefined" ? player : null; if (p) SKATE.cam.set(p.pos.x, p.pos.y + 1.7, p.pos.z); toast("Auf dem Skateboard – W anschieben, S bremsen, Leertaste Ollie, Linksklick absteigen"); }
 function skateOff() { SKATE.on = false; SKATE.v = 0; if (SKATE.g) SKATE.g.visible = false; if (typeof player !== "undefined") { camera.position.set(player.pos.x, player.pos.y + (typeof EYE !== "undefined" ? EYE : player.EYE || 1.62), player.pos.z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); } toast("Abgestiegen"); }
 // Geschwindigkeit aus den Tasten (gemeinsam fuer Spiel und Werkstatt)

@@ -209,7 +209,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 
 | Nr | Was | Stand |
 |----|-----|-------|
-| N35 | **Spielfiguren** anfangen, einfach gebaut wie in Schedule I. Grosse Aufgabe: Fahrzeuge und Gebäude müssen evtl. an die Figurengrösse angepasst werden | offen – eigener Plan nötig |
+| N35 | **Spielfiguren** anfangen, einfach gebaut wie in Schedule I. Grosse Aufgabe: Fahrzeuge und Gebäude müssen evtl. an die Figurengrösse angepasst werden | Plan `PLAN-FIGUREN.md`, F1 (Modell, Animation) gebaut 2026-11-18 |
 | N38 | **Personalakte** des Spielers: Waffenlizenzen in Stufen, Strafregister, Fahrausweis usw. Online-Datenbank-Software nur auf Computern der Polizei und bei Batman; die eigene Akte jederzeit ohne Gegenstand ansehen. Später Personen mit Akten (auch Joker, Bane, Pinguin). Ideen: `IDEEN-AKTE.md` | eigene Akte gebaut 2026-11-18 (Taste J); Datenbank-Software und Personen offen |
 | N42 | Idee: **Innenräume erst beim Betreten laden**, Module (z. B. gleiche Hotelzimmer), hinter geschlossenen Türen weniger laden | Idee |
 | N43 | Idee: **eigene Geräusche in Gebäuden** (z. B. im Casino Spielgeräusche und Klingeln) | Idee |
