@@ -203,7 +203,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | N48 | **Gleitumhang**: Batman gleitet nach einem Sprung in die Tiefe in einem bestimmten Winkel | gebaut 2026-11-18 |
 | N50 | **Batarang-Flugbahn**: in der Mitte steigt er plötzlich viel höher, dann kommt er zurück – korrigieren | **behoben 2026-11-18** |
 | N51 | **Weitere Waffen**: G36, G36C (Karabiner), AKM, MP7, MG34, weitere Maschinengewehre und Maschinenpistolen | gebaut 2026-11-18 (G36, G36C, AKM, MP7, MP5, MG34) |
-| N52 | **Militärfahrzeuge** (zu Phase 6): Kampfpanzer Leopard (gibt es), Transporthelikopter Cougar, leichter Transport- und Schulungshelikopter, Kommandofahrzeug Piranha I, Sanitätsfahrzeug Piranha I, geschütztes Mannschaftstransportfahrzeug Duro IIIP, Panzerjäger 90 (Piranha I), offensiver Drohnen-Panzer (Nicolas: "Minotaurus"), Aufklärungsdrohne Northrop Grumman RQ-4 | offen |
+| N52 | **Militärfahrzeuge** (zu Phase 6): Kampfpanzer Leopard (gibt es), Transporthelikopter Cougar, leichter Transport- und Schulungshelikopter, Kommandofahrzeug Piranha I, Sanitätsfahrzeug Piranha I, geschütztes Mannschaftstransportfahrzeug Duro IIIP, Panzerjäger 90 (Piranha I), offensiver Drohnen-Panzer (Nicolas: "Minotaurus"), Aufklärungsdrohne Northrop Grumman RQ-4 | teilweise 2026-11-18: Piranha I (Kommando, Sanität, Panzerjäger 90), Duro IIIP, Cougar, Schulungshelikopter gebaut; Minotaurus und RQ-4 offen |
 
 **Figuren, Akten, Ideen**
 

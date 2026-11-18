@@ -33,16 +33,18 @@ function buildPolizeiHeli() {
   for (let k = 0; k < 2; k++) { const b = add(new THREE.BoxGeometry(0.12, 1.25, 0.02), dunkel, 0, 0, 0, 0, 0, k * Math.PI / 2, heck); }
   g.name = "Polizei-Helikopter"; return { g, rotor, heck, lichter, blauL, rotL };
 }
-const HELI = (() => { const b = buildPolizeiHeli();
-  const H = { name: "Polizei-Helikopter", g: b.g, rotors: [b.rotor], fans: [b.heck], legs: [], gear: null, gearT: 0, st: 0, x: 0, y: -9999, z: 0, h: 0, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [],
-    pts: [[0, 0.9, -2.2], [0, 0.9, 1.5], [-0.8, 1.4, -0.8], [0.8, 1.4, -0.8], [-0.8, 1.4, 0.8], [0.8, 1.4, 0.8], [0, 2.9, 0], [-4.6, 2.85, -0.1], [4.6, 2.85, -0.1], [0, 2.85, -4.7], [0, 2.85, 4.5], [0, 1.8, 6.2], [0, 2.6, 5.9]],
+// Hubschrauber anlegen (auch militaer.js, N52): b = Ergebnis von buildPolizeiHeli (g, rotor, heck, lichter), k = Massstab (Kollision, Kamera, Ausstieg mitskaliert), o = Abweichungen
+function flyAdd(name, b, k = 1, o = {}) { const S = (a) => a.map(p => p.map(v => v * k));
+  const H = Object.assign({ name, g: b.g, rotors: [b.rotor], fans: [b.heck], legs: [], gear: null, gearT: 0, st: 0, x: 0, y: -9999, z: 0, h: 0, vx: 0, vy: 0, vz: 0, on: false, view: 0, pitch: 0, roll: 0, spin: 0, thrust: 0, circ: [],
     // tiefste Punkte 0,9 m: auf einem Dach (gedrehter Quader, Rand 0,3 + 0,5 m in batAir) waere sonst schon der Stand blockiert; Boden halten die Kufen (feet)
-    feet: [[-0.95, -1.8], [0.95, -1.8], [-0.95, 1.4], [0.95, 1.4]], spec: { max: 55, acc: 16, up: 9, tilt: 0.24, tiltV: 0.004, turn: 1.0 }, camD: 19, camDmin: 9.5, cockpit: [-1.4, 1.75],
-    circPts: [[0, -1.3], [0, 0.6], [0, 3.2], [0, 5.4]], circR: 1.1, circH: 2.9, exitPts: [[2.3, -0.6], [-2.3, -0.6], [2.3, 1.0], [-2.3, 1.0], [0, -3.4]], snd: "The Bat", lichter: b.lichter,
-    pose(B) { const an = B.on || B.thrust > 0.1, t = performance.now() / 1000; B.lichter[0].visible = B.lichter[2].visible = !an || Math.sin(t * 9) > 0; B.lichter[1].visible = !an || Math.sin(t * 9) <= 0; } };   // Blaulichter blinken im Flug
+    pts: S([[0, 0.9, -2.2], [0, 0.9, 1.5], [-0.8, 1.4, -0.8], [0.8, 1.4, -0.8], [-0.8, 1.4, 0.8], [0.8, 1.4, 0.8], [0, 2.9, 0], [-4.6, 2.85, -0.1], [4.6, 2.85, -0.1], [0, 2.85, -4.7], [0, 2.85, 4.5], [0, 1.8, 6.2], [0, 2.6, 5.9]]).map(p => [p[0], Math.max(0.9, p[1]), p[2]]),
+    feet: S([[-0.95, -1.8], [0.95, -1.8], [-0.95, 1.4], [0.95, 1.4]]), spec: { max: 55, acc: 16, up: 9, tilt: 0.24, tiltV: 0.004, turn: 1.0 }, camD: 19 * k, camDmin: 9.5 * k, cockpit: [-1.4 * k, 1.75 * k],
+    circPts: S([[0, -1.3], [0, 0.6], [0, 3.2], [0, 5.4]]), circR: 1.1 * k, circH: 2.9 * k, exitPts: S([[2.3, -0.6], [-2.3, -0.6], [2.3, 1.0], [-2.3, 1.0], [0, -3.4]]), snd: "The Bat", lichter: b.lichter,
+    pose(B) { if (!B.lichter) return; const an = B.on || B.thrust > 0.1, t = performance.now() / 1000; B.lichter[0].visible = B.lichter[2].visible = !an || Math.sin(t * 9) > 0; B.lichter[1].visible = !an || Math.sin(t * 9) <= 0; } }, o);   // Blaulichter blinken im Flug
   b.g.userData.dynamic = true; b.g.userData.noLift = true; b.g.visible = false; scene.add(b.g);
-  for (let k = 0; k < 4; k++) { const c = [0, 0, 0, 0]; c.dyn = true; circles.push(c); H.circ.push(c); }
-  FLYS.push(H); return H; })();
+  for (let i = 0; i < 4; i++) { const c = [0, 0, 0, 0]; c.dyn = true; circles.push(c); H.circ.push(c); }
+  FLYS.push(H); return H; }
+const HELI = flyAdd("Polizei-Helikopter", buildPolizeiHeli());
 // Standplatz setzen (Dach des Praesidiums), mit Landeplatz-Markierung (Kreis, H)
 function heliPolizei(x, y, z, h, parent = scene) { Object.assign(HELI, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0 }); HELI.home = { x, y: y + 0.02, z, h }; HELI.g.visible = true; batPose(HELI, 0);
   const pad = new THREE.Group(), gelb = new THREE.MeshBasicMaterial({ color: 0xffd43b }), weiss = new THREE.MeshBasicMaterial({ color: 0xf2f2ee });
