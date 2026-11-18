@@ -1,0 +1,17 @@
+{
+  "name": "batverse-desktop",
+  "version": "0.1.0",
+  "description": "Batverse als eigene Desktop-App (Electron): eigenes Fenster ohne Browser-Menue, Rechtsklick und F-Tasten gehen ans Spiel.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "werkstatt": "electron . --werkstatt"
+  },
+  "dependencies": {
+    "three": "0.160.0"
+  },
+  "devDependencies": {
+    "electron": "33.2.1"
+  }
+}

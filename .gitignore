@@ -1,2 +1,6 @@
 # Fremde Packs nur lokal (nicht ins Repo), siehe CLAUDE.md
 blockbench/lokal/
+
+# Desktop-App (Electron): Abhaengigkeiten und Builds nicht ins Repo
+desktop/node_modules/
+desktop/dist/
