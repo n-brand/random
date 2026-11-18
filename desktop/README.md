@@ -5,8 +5,10 @@ Die App lädt die Dateien direkt aus dem Repo (`..`), Änderungen am Spiel sind 
 
 ## Einmalig installieren
 
+`npm.cmd` statt `npm`: PowerShell blockiert auf diesem PC das Skript `npm.ps1` (Ausführungsrichtlinie). `npm.cmd` ist dasselbe Programm ohne PowerShell-Skript, die Richtlinie bleibt unverändert.
+
 ```powershell
-npm --prefix C:\Source\random\desktop install
+npm.cmd --prefix C:\Source\random\desktop install
 ```
 
 Lädt Electron 33.2.1 (ca. 100 MB) und three.js 0.160.0 aus der npm-Registry nach `desktop/node_modules/` (nicht im Repo).
@@ -14,10 +16,10 @@ Lädt Electron 33.2.1 (ca. 100 MB) und three.js 0.160.0 aus der npm-Registry nac
 ## Starten
 
 ```powershell
-npm --prefix C:\Source\random\desktop start
+npm.cmd --prefix C:\Source\random\desktop start
 ```
 
-Werkstatt direkt: `npm --prefix C:\Source\random\desktop run werkstatt`
+Werkstatt direkt: `npm.cmd --prefix C:\Source\random\desktop run werkstatt`
 
 ## Tasten der App
 
@@ -32,6 +34,7 @@ Alle anderen Tasten und der Rechtsklick gehen ans Spiel. Links nach aussen öffn
 
 ## Hinweise
 
+- Die Website (Browser, GitHub Pages) bleibt unverändert und funktioniert weiter; die App öffnet nur dieselben Dateien in einem eigenen Fenster.
 - Eigene Herkunft `batverse://app/`: Spielstand, Inventar und Konto sind getrennt von der Browser-Version (beginnen in der App neu).
 - Der Service Worker läuft in der App nicht (nicht nötig, die Dateien liegen lokal).
 - Später möglich: eine `.exe` zum Doppelklicken mit electron-builder.
