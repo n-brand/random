@@ -88,7 +88,7 @@ function invHandRender() {
 // ---- Verschieben wie in Minecraft (INV.cursor = Stapel an der Maus) ----
 const invRoom = (S, id) => !S ? INV_ITEMS[id].stack : S.id === id ? INV_ITEMS[id].stack - S.n : 0;
 // Linksklick mit Stapel an der Maus: ablegen, auffuellen oder tauschen
-const invSelf = (j, C) => j >= INV_BOX0 && INV.box && INV.box.self && C && C.k === INV.box.self && (toast("Der Koffer passt nicht in sich selbst"), true);   // Koffer (koffer.js)
+const invSelf = (j, C) => j >= INV_BOX0 && INV.box && C && ((INV.box.self && C.k === INV.box.self && (toast("Der Koffer passt nicht in sich selbst"), true)) || (INV.box.accept && !INV.box.accept(C.id) && (toast(INV_ITEMS[C.id].name + " passt nicht in den " + INV.box.name), true)));   // Koffer (koffer.js), Papierkorb nur kleine Dinge (muell.js)   // Koffer (koffer.js)
 function invPlace(j) { const S = invGet(j), C = INV.cursor; if (!C || invSelf(j, C)) return;
   if (!S) { invSet(j, C); INV.cursor = null; }
   else if (S.id === C.id) { const k = Math.min(C.n, invRoom(S, C.id)); S.n += k; C.n -= k; if (!C.n) INV.cursor = null; }
@@ -107,7 +107,7 @@ function invReturnCursor() { const C = INV.cursor; if (!C) return; INV.cursor = 
   if (put < C.n) { INV.cursor = { id: C.id, n: C.n - put }; invSave(); toast("Kein Platz im Inventar für " + INV_ITEMS[C.id].name); } }
 // Ziehen ueber mehrere Plaetze mit Stapel an der Maus: links gleichmaessig verteilen (Vorschau live), rechts je einen
 const invSnap = () => ({ a: INV.slots.map(q => q && { ...q }), b: INV.box ? INV.box.slots.map(q => q && { ...q }) : null }), invSnapGet = (sn, j) => j >= INV_BOX0 ? sn.b && sn.b[j - INV_BOX0] : sn.a[j];
-function invSpread(D) { INV.slots = D.snap.a.map(q => q && { ...q }); if (INV.box && D.snap.b) INV.box.slots = D.snap.b.map(q => q && { ...q }); INV.cursor = { ...D.snapC }; const C = INV.cursor, L = D.list.filter(j => invRoom(invGet(j), C.id) > 0), per = Math.floor(C.n / L.length);
+function invSpread(D) { INV.slots = D.snap.a.map(q => q && { ...q }); if (INV.box && D.snap.b) INV.box.slots = D.snap.b.map(q => q && { ...q }); INV.cursor = { ...D.snapC }; const C = INV.cursor, L = D.list.filter(j => invRoom(invGet(j), C.id) > 0 && !(j >= INV_BOX0 && INV.box && INV.box.accept && !INV.box.accept(C.id))), per = Math.floor(C.n / L.length);
   if (per < 1) return; for (const j of L) { const S = invGet(j), k = Math.min(per, invRoom(S, C.id)); if (S) S.n += k; else invSet(j, { id: C.id, n: k }); C.n -= k; } if (!C.n) INV.cursor = null; }
 const invSlotAt = (x, y) => { const el = document.elementFromPoint(x, y)?.closest?.("#inventar .inv-slot"); return el ? +el.dataset.i : -1; };
 function invDown(e) { const b = e.target.closest(".inv-slot"); if (!b || (e.button !== 0 && e.button !== 2)) return; e.preventDefault(); const i = +b.dataset.i, S = invGet(i), C = INV.cursor;
