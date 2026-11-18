@@ -277,7 +277,7 @@ const MODI = ["orbit", "drive", "spin", "person", "geist"];
 $("m-orbit").onclick = () => setModus("orbit"); $("m-drive").onclick = () => setModus("drive"); $("m-spin").onclick = () => setModus("spin"); if ($("m-person")) $("m-person").onclick = () => setModus("person"); if ($("m-geist")) $("m-geist").onclick = () => setModus("geist");
 // Visier (nur Fahren mit Turm) und Hinweis zur Maus
 function sicht() { const z = modus === "drive" && AKT && AKT.turret; $("visier").hidden = !z; if (!z) $("rohr").hidden = true;
-  if (!(modus === "drive" && AKT && AKT.monitor)) { $("wsicht").hidden = true; WZOOM.t = WZOOM.z = 1; } document.body.classList.toggle("waffe", !!z); maushinweis(); }
+  if (!(modus === "drive" && AKT && AKT.monitor)) { $("wsicht").hidden = true; WZOOM.t = WZOOM.z = 1; if (typeof wasserBogen === "function") wasserBogen(null); } document.body.classList.toggle("waffe", !!z); maushinweis(); }
 function maushinweis() { $("maus").hidden = modus !== "drive" || !!document.pointerLockElement || document.body.classList.contains("touch"); }
 
 // ---------- Maus einfangen (Fahren): Linksklick faengt die Maus, erneuter Linksklick oder Esc gibt sie frei ----------
@@ -399,7 +399,7 @@ function fahren(dt) {
   folgeKamera(A, s, dt);
   if (A.turret) waffe(dt);
   if (A.monitor && A.wz) { wasserZoomStep(dt); const ws = $("wsicht");   // Wasserwerfer-Ziel und Zoom wie schiessen.js
-    const imp = wasserZiel(A.wz.tip, kYaw, A.wz.el, () => 0); if (A_view !== 1) monitorCamera(A.monitor, imp, dt); wasserZielZeigen(ws, imp); if (!A.wz.ready) ws.hidden = true;   // Ring nur bei ausgefahrenem Arm   // Kamera oben auf dem Arm
+    const imp = wasserZiel(A.wz.tip, kYaw, A.wz.el, () => 0); if (A_view !== 1) monitorCamera(A.monitor, imp, dt); wasserZielZeigen(ws, imp); if (!A.wz.ready) ws.hidden = true; if (typeof wasserBogen === "function") wasserBogen(ws);   // Ring nur bei ausgefahrenem Arm   // Kamera oben auf dem Arm
     ws.lastChild.textContent = (down("Space") ? (A.wz.ready ? "Wasser" : "Arm fährt aus …") : "Leertaste: Wasser") + (WZOOM.t > 1 ? " · " + WZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom"); }
 }
 const wrapW = a => Math.atan2(Math.sin(a), Math.cos(a));

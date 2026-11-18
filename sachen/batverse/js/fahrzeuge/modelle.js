@@ -1410,10 +1410,20 @@ SPEC_FIRE_ENGINE.msg = "Gotham Fire Engine: W/S Gas/Bremse, A/D lenken, Leertast
 // (gleiche Werte wie wasserSpritzen: WASSER.V, Luftwiderstand WASSER.K, Schwerkraft), auf den Bildschirm legen; Zoom per Mausrad 1x bis 4x (Sichtwinkel 70 / Zoom).
 const WZOOM = { z: 1, t: 1 };
 function wasserZiel(from, yaw, el, ground) {
-  const ce = Math.cos(el), V = WASSER.V, v = new THREE.Vector3(-Math.sin(yaw) * ce * V, Math.sin(el) * V, -Math.cos(yaw) * ce * V), p = from.clone(), h = 0.02;
-  for (let t = 0; t < 6; t += h) { v.multiplyScalar(Math.max(0, 1 - WASSER.K * v.length() * h)); v.y -= 9.81 * h; p.addScaledVector(v, h); if (p.y <= ground(p.x, p.z, p.y + 0.5)) return p; }   // gleiche Rechnung wie wasserStep (mit Luftwiderstand)
+  const ce = Math.cos(el), V = WASSER.V, v = new THREE.Vector3(-Math.sin(yaw) * ce * V, Math.sin(el) * V, -Math.cos(yaw) * ce * V), p = from.clone(), h = 0.02, bahn = WASSER_BOGEN.path; bahn.length = 0; let k = 0;
+  for (let t = 0; t < 6; t += h) { v.multiplyScalar(Math.max(0, 1 - WASSER.K * v.length() * h)); v.y -= 9.81 * h; p.addScaledVector(v, h); if (++k % 4 === 0) bahn.push(p.clone()); if (p.y <= ground(p.x, p.z, p.y + 0.5)) { bahn.push(p.clone()); return p; } }   // gleiche Rechnung wie wasserStep (mit Luftwiderstand); Bahnpunkte fuer die Zielhilfe
   return p;
 }
+// Zielhilfe des Loeschfahrzeugs in 3D (Nicolas 2026-11-18, N45: "Zielhilfe wie bei der Rauchbombe, wie weit der Strahl reicht"): Bahn des Strahls als blaue Punkte
+// (alle 0,08 s, aus wasserZiel), am Auftreffpunkt ein gelber Ring auf dem Boden (wie bei der Rauchbombe); sichtbar, solange der Bildschirm-Ring (#water-sight) sichtbar ist (wasserBogen(ws) nach dem Ring).
+const WASSER_BOGEN = { path: [], dots: null, ring: null, M: new THREE.Matrix4() };
+function wasserBogen(ws) { const W = WASSER_BOGEN, show = !!ws && !ws.hidden && W.path.length > 1;
+  if (!W.dots) { if (!show) return; W.dots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1f8fff, transparent: true, opacity: 0.85, depthWrite: false }), 80);
+    W.ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.3, 36), new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false })); W.ring.rotation.x = -Math.PI / 2;
+    for (const o of [W.dots, W.ring]) { o.frustumCulled = false; o.userData.dynamic = true; o.renderOrder = 5; scene.add(o); } }
+  W.dots.visible = W.ring.visible = show; if (!show) return;
+  const n = Math.min(80, W.path.length - 1); for (let i = 0; i < n; i++) W.dots.setMatrixAt(i, W.M.makeTranslation(W.path[i].x, W.path[i].y, W.path[i].z)); W.dots.count = n; W.dots.instanceMatrix.needsUpdate = true;
+  const e = W.path[W.path.length - 1]; W.ring.position.set(e.x, e.y + 0.06, e.z); }
 // Ring auf den Bildschirm (el = Element mit position fixed), versteckt hinter der Kamera
 function wasserZielZeigen(el, p) { if (!el) return; camera.updateMatrixWorld(); const q = p.clone().project(camera);
   el.hidden = q.z > 1; el.style.left = (q.x + 1) / 2 * innerWidth + "px"; el.style.top = (1 - q.y) / 2 * innerHeight + "px"; }
