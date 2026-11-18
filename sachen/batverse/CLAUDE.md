@@ -45,6 +45,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
 | Gleitumhang | zu Fuss im Fall (mehr als 3 m über dem Boden) **Leertaste** = Umhang auf, Maus lenkt, nach unten schauen = Sturzflug; Leertaste nochmal oder Landen = zu |
 | Drift | im Auto **Q** halten und lenken (ab ca. 25 km/h): Heck bricht aus, Reifenspuren und Qualm; nicht bei Motorrädern und Panzern |
+| Panzer schiessen | **Linksklick** (bei gefangener Maus) oder Leertaste; Mausrad Zoom; Maus frei mit Esc |
 | Tumbler-Sprung | im Tumbler, 10 s Abklingzeit |
 | Behälter (Waffenwand, später Tresore, Koffer, Mülleimer) | Rechtsklick davor (nur von vorne, aus der Nähe); im Fenster ziehen, Shift+Klick = Behälter ↔ Inventar |
 | Tresor | Rechtsklick davor: zu = Tastenfeld (Ziffern, Enter, Rücktaste; Standard-Code **0000**, 3 x falsch = 10 s gesperrt), offen = Inhalt mit "Schliessen und verriegeln" und "Code ändern" |
@@ -66,6 +67,8 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Panzer schiesst mit Linksklick** (Nicolas 2026-11-18: "beim Panzer schiessen soll mit Linksklick gehen"): schiessen.js `SHOT.maus` (linke Maus gedrückt bei gefangener Maus im Fahrzeug mit Turm) schiesst wie die Leertaste; Werkstatt `SCHUSS.maus`, dort gibt Linksklick im Panzer die Maus nicht mehr frei (Esc gibt sie frei). Anzeige im Visier "Linksklick oder Leertaste: schießen". Nicht mit echtem Klick getestet (Maus fangen geht im Vorschaufenster nicht).
 
 - **Spielfiguren, Schritt F1** (Nicolas 2026-11-18, N35: "Spielfiguren anfangen, einfach gebaut wie in Schedule I"): neuer Plan `PLAN-FIGUREN.md` (F1-F7: Modell, dritte Person, Batman-Figur, Figuren in der Welt, Figuren in Fahrzeugen, Gebäude prüfen, Fotos für Akte und Dating). Neu `js/spieler/figur.js` (Spiel-FILES und Werkstatt vor spieler/skateboard.js, ASSETS, BV_KEEP): `buildFigur(o)` eigener Entwurf im verspielten Stil – runder, etwas grosser Kopf mit gezeichnetem Gesicht (Augen mit Glanzpunkt, Brauen, Mund, Wangen, optional Bart), Ohren, vier Frisuren (kurz, lang mit Zopf, Locken, Glatze), Kapsel-Arme und -Beine, Schuhe; Farben je Figur; Gelenke (Kopf, Rumpf, Schultern, Ellbogen, Hüften, Knie). 1,78 m, Augen auf 1,62 m wie die Ich-Sicht. `figurPose(F, dt, tempo, sprung)`: Atmen im Stand, Gehen und Rennen mit gegenläufig schwingenden Armen und Beinen, Kniebeuge, Wippen, Vorneigen beim Rennen, Sprunghaltung; `FIGUREN`/`figurStep` aus tresorStep. Werkstatt: Auswahl "Spielfiguren (Entwurf)" zeigt vier Figuren (stehen, gehen, rennen, springen). Das Skateboard nutzt jetzt diese Figur (gegrätscht, Arme zur Balance). Geprüft: Bild der vier Figuren. Fragen in OFFENE-FRAGEN 53.
 

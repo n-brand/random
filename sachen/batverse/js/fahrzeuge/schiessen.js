@@ -130,6 +130,8 @@ const zoomK = () => ZOOM_SENS_GLEICH ? 1 : SHOT.zoom;
 // TEST (Nicolas 2026-11-11, "nur zum Testen"): nach einem Schuss nach 0,35 s automatisch auf 1x rauszoomen. Gefaellt es nicht: AUTO_UNZOOM = false
 // bzw. die zwei markierten Stellen entfernen (siehe CLAUDE.md).
 const AUTO_UNZOOM = true;
+renderer.domElement.addEventListener("mousedown", e => { if (e.button === 0 && CAR && CAR.on && CAR.turret && document.pointerLockElement) SHOT.maus = true; });
+addEventListener("mouseup", e => { if (e.button === 0) SHOT.maus = false; });
 addEventListener("wheel", e => { if (!(CAR && CAR.on && CAR.turret)) return; e.preventDefault(); SHOT.zoomT = Math.max(1, Math.min(6, SHOT.zoomT * (e.deltaY < 0 ? 1.25 : 0.8))); if (SHOT.zoomT < 1.05) SHOT.zoomT = 1; }, { passive: false });
 // ---- jedes Bild (nach carFrame) ----
 function shotsStep(dt) {
@@ -155,8 +157,8 @@ function shotsStep(dt) {
     if (SHOT.zoom > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9));
       const o = shotRay.ray.origin, d = shotRay.ray.direction, t = Math.max(0, shotB.sub(o).dot(d)); camera.position.copy(o).addScaledVector(d, t);
       camera.up.set(0, 1, 0); camera.lookAt(shotB.copy(camera.position).add(d)); camera.rotateX(-Math.atan(sny * Math.tan(fov * Math.PI / 360))); }
-    if (label) label.textContent = (SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Leertaste: schießen") + (SHOT.zoomT > 1 ? " · " + SHOT.zoomT.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
-    if ((keys.has("Space") || jumpHeld) && SHOT.cd === 0 && SHOT.aim) {
+    if (label) label.textContent = (SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Linksklick oder Leertaste: schießen") + (SHOT.zoomT > 1 ? " · " + SHOT.zoomT.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
+    if ((keys.has("Space") || jumpHeld || SHOT.maus) && SHOT.cd === 0 && SHOT.aim) {   // Leertaste oder linke Maus (Nicolas 2026-11-18: "beim Panzer schiessen soll mit Linksklick gehen")
       C.gun.updateWorldMatrix(true, false); C.gun.getWorldPosition(shotA);
       SHOT.cd = SHOT.RELOAD; const mz = C.gun.localToWorld(new THREE.Vector3(0, 0, -SHOT.MUZZLE)), dir = mz.clone().sub(shotA).normalize();   // entlang des Rohrs
       const shell = fxAddMesh(fxGeo, fxAdd(0xffe2a0), mz, 0.14); shell.scale.set(0.12, 0.12, 0.5); shell.lookAt(mz.clone().add(dir));

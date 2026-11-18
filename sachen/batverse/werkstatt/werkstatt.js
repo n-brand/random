@@ -300,7 +300,8 @@ function maushinweis() { $("maus").hidden = modus !== "drive" || !!document.poin
 let kYaw = 0, kPitch = -0.12, A_view = 0;   // A_view 1 = Fahrersicht (V)
 const MOUSE_SENS = 0.0025 * 0.5, ZOOM = { z: 1, t: 1, un: 0 };
 const ZOOM_SENS_GLEICH = true;   // TEST wie schiessen.js (Nicolas 2026-11-12): Maus im Zoom gleich schnell; false = durch den Zoom geteilt
-renderer.domElement.addEventListener("mousedown", e => { if (e.button !== 0 || modus !== "drive") return; if (document.pointerLockElement) document.exitPointerLock(); else renderer.domElement.requestPointerLock(); });
+renderer.domElement.addEventListener("mousedown", e => { if (e.button !== 0 || modus !== "drive") return; if (document.pointerLockElement) { if (AKT && AKT.turret) { SCHUSS.maus = true; return; } document.exitPointerLock(); } else renderer.domElement.requestPointerLock(); });   // Panzer: Linksklick schiesst (Nicolas 2026-11-18), Maus frei mit Esc
+addEventListener("mouseup", e => { if (e.button === 0) SCHUSS.maus = false; });
 document.addEventListener("pointerlockchange", maushinweis);
 addEventListener("mousemove", e => { if (document.pointerLockElement !== renderer.domElement) return;
   if (AKT && AKT.flug) return look(e.movementX * MOUSE_SENS, e.movementY * MOUSE_SENS);   // Fluggeraete: Blick wie im Spiel (player.yaw/pitch)
@@ -453,7 +454,7 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
     const o = rc.ray.origin, d = rc.ray.direction, t = Math.max(0, vA.sub(o).dot(d)); camera.position.copy(o).addScaledVector(d, t);
     camera.up.set(0, 1, 0); camera.lookAt(camera.position.clone().add(d)); camera.rotateX(-Math.atan(0.28 * Math.tan(fov * Math.PI / 360))); }
   SCHUSS.cd = Math.max(0, SCHUSS.cd - dt);
-  if (down("Space") && SCHUSS.cd === 0) {
+  if ((down("Space") || SCHUSS.maus) && SCHUSS.cd === 0) {
     SCHUSS.cd = SCHUSS.RELOAD; SCHUSS.schuesse++; SCHUSS.rueck = 1;
     A.gun.updateWorldMatrix(true, false); A.gun.getWorldPosition(vB); const mz = A.gun.localToWorld(new THREE.Vector3(0, 0, -(A.spec.muzzle || SCHUSS.MUZZLE))), dir = mz.clone().sub(vB).normalize();   // entlang des Rohrs
     const o = new THREE.Mesh(fxGeo, fxMat(0xffe2a0)); o.scale.set(0.12, 0.12, 0.5); o.position.copy(mz); o.lookAt(mz.clone().add(dir)); scene.add(o);
@@ -462,7 +463,7 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
   }
   rohrMarke(A, aim);
   SCHUSS.rueck = Math.max(0, SCHUSS.rueck - dt * 2.5); A.gun.position.z = A.gun.userData.z0 + Math.sin(Math.min(1, SCHUSS.rueck) * Math.PI / 2) * 0.45;
-  $("visier-t").textContent = (SCHUSS.cd > 0 ? "lädt … " + SCHUSS.cd.toFixed(1).replace(".", ",") + " s" : "Leertaste: schießen") + ` · Treffer ${SCHUSS.treffer} / ${SCHUSS.schuesse}` + (ZOOM.t > 1 ? " · " + ZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
+  $("visier-t").textContent = (SCHUSS.cd > 0 ? "lädt … " + SCHUSS.cd.toFixed(1).replace(".", ",") + " s" : "Linksklick oder Leertaste: schießen") + ` · Treffer ${SCHUSS.treffer} / ${SCHUSS.schuesse}` + (ZOOM.t > 1 ? " · " + ZOOM.t.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
 }
 // Rohr-Markierung (wie gunMark in schiessen.js): Punkt entlang des Rohrs in Zielentfernung, sichtbar ab 10 px neben der Visiermitte
 function rohrMarke(A, aim) {
