@@ -90,8 +90,8 @@ function tresorExplode(T) { const p = T.g.localToWorld(new THREE.Vector3(TRESOR_
   if (typeof aimSmoke === "function") aimSmoke(p); if (typeof shotSound === "function") shotSound(1, 0.9);
   tresorBreak(T, "spreng"); const pl = typeof player !== "undefined" ? player.pos : camera.position; if (Math.hypot(pl.x - p.x, pl.z - p.z) < 3) toast("Aufgesprengt – viel zu nah an der Explosion!"); }
 // Fortschrittskreis (N21-Grundlage): laeuft, solange man in der Naehe bleibt und sich kaum bewegt; Rechtsklick nochmal oder Weggehen bricht ab
-function tresorHold(T, sec, label, done) { const pl = typeof player !== "undefined" ? player.pos : camera.position;
-  let el = document.getElementById("hold-ring"); if (!el) { el = document.createElement("div"); el.id = "hold-ring"; el.innerHTML = '<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" class="hr-bg"/><circle cx="30" cy="30" r="24" class="hr-fg" pathLength="100"/></svg><span></span>'; document.body.appendChild(el); }
+function holdRingEl() { let el = document.getElementById("hold-ring"); if (!el) { el = document.createElement("div"); el.id = "hold-ring"; el.hidden = true; el.innerHTML = '<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" class="hr-bg"/><circle cx="30" cy="30" r="24" class="hr-fg" pathLength="100"/></svg><span></span>'; document.body.appendChild(el); } return el; }   // auch fuer Koffer (koffer.js)
+function tresorHold(T, sec, label, done) { const pl = typeof player !== "undefined" ? player.pos : camera.position, el = holdRingEl();
   TRESOR.hold = { T, sec, t: 0, done, x: pl.x, z: pl.z, el }; el.querySelector("span").textContent = label + " …"; el.hidden = false; }
 function tresorHoldStep(dt) { const H = TRESOR.hold; if (!H) return; const pl = typeof player !== "undefined" ? player.pos : camera.position;
   if (Math.hypot(pl.x - H.x, pl.z - H.z) > 0.6 || (typeof invHeld === "function" && invHeld() !== "brechstange")) { H.el.hidden = true; TRESOR.hold = null; return toast("Abgebrochen"); }
@@ -124,7 +124,7 @@ function tresorStep() { const now = performance.now(), dt = Math.min(0.1, (now -
     U.led.material = T.broken ? TRESOR_M.russ : T.open ? TRESOR_M.led : TRESOR_M.ledR;
     if (T.fuse > 0) { T.fuse -= dt; for (const c of T.charges) c.material = (Math.floor(T.fuse * 6) % 2) ? TRESOR_M.gas : TRESOR_M.gelb; if (T.fuse <= 0) tresorExplode(T); } }
   const F = TRESOR.flash; if (F) { F.t -= dt; F.L.intensity = Math.max(0, F.t / 0.35) * 60; if (F.t <= 0) { scene.remove(F.L); TRESOR.flash = null; } }
-  tresorHoldStep(dt); }
+  tresorHoldStep(dt); if (typeof kofferStep === "function") kofferStep(dt); }
 { const st = document.createElement("style"); st.textContent = "#tresor-pad{position:fixed;inset:0;z-index:45;display:grid;place-items:center;background:rgba(0,0,0,.45);user-select:none;-webkit-user-select:none}#tresor-pad[hidden]{display:none}" +
     ".tp-box{background:#16181c;border:1px solid #3a3d42;border-radius:12px;padding:14px;width:230px;color:#e8e8e8;font:14px system-ui,sans-serif}.tp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.tp-head button{background:none;border:0;color:#aaa;font-size:20px;cursor:pointer}" +
     ".tp-disp{background:#0b1a10;color:#4dff8a;font:700 28px ui-monospace,monospace;letter-spacing:10px;text-align:center;padding:8px;border-radius:6px}.tp-msg{min-height:18px;font-size:12px;color:#aab;margin:6px 0}" +

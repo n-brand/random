@@ -11,6 +11,7 @@ const INV_ITEMS = {
   rauchbombe: { name: "Rauchbombe", art: "Waffe", stack: 8, svg: '<circle cx="13" cy="15" r="7" fill="#4a4e55"/><rect x="11" y="5" width="4" height="4" fill="#9aa0a6"/><path d="M15 5c3-3 6 0 8-2" stroke="#ccc" stroke-width="1.5" fill="none"/>' },
   munition: { name: "9-mm-Munition", art: "Munition", stack: 64, svg: '<g fill="#c99a3a" stroke="#7a5a1a"><rect x="5" y="9" width="4" height="12" rx="1"/><rect x="11" y="7" width="4" height="14" rx="1"/><rect x="17" y="9" width="4" height="12" rx="1"/></g><g fill="#a0a4aa"><rect x="5" y="6" width="4" height="4" rx="2"/><rect x="11" y="4" width="4" height="4" rx="2"/><rect x="17" y="6" width="4" height="4" rx="2"/></g>' },
   goldbarren: { name: "Goldbarren", art: "Wert", stack: 16, svg: '<path d="M3 19 L7 9 H19 L23 19 Z" fill="#e0b03a" stroke="#8a6a1a"/><path d="M7 9 L9 12 H17 L19 9" fill="none" stroke="#f6d77a"/>' },
+  koffer: { name: "Koffer", art: "Behälter", stack: 1, svg: '<path d="M10 9 V6.6 Q10 5.4 11.2 5.4 H14.8 Q16 5.4 16 6.6 V9" fill="none" stroke="#5a5d63" stroke-width="1.6"/><rect x="2.5" y="9" width="21" height="13.5" rx="2" fill="#16171a" stroke="#4a4d52" stroke-width=".8"/><path d="M2.5 15 H23.5" stroke="#2e3035" stroke-width=".8"/><rect x="6" y="12.6" width="2.8" height="1.8" rx=".4" fill="#cfd2d6"/><rect x="17.2" y="12.6" width="2.8" height="1.8" rx=".4" fill="#cfd2d6"/><path d="M3.6 10.2 H6" stroke="#9aa0a6" stroke-width=".6"/>' },   // Koffer (koffer.js), Inhalt je Koffer, im Tooltip nicht sichtbar
   // Werkzeuge zum Aufbrechen und Aufsprengen von Tresoren (Nicolas 2026-11-18, N23; 3D in der Hand: gotham/tresor.js HAND3D)
   brechstange: { name: "Brechstange", art: "Werkzeug", stack: 1, svg: '<path d="M6.5 21.5 L19 6.2 Q21 3.8 23.2 5.4" fill="none" stroke="#7a1418" stroke-width="3.4" stroke-linecap="round"/><path d="M6.5 21.5 L19 6.2 Q21 3.8 23.2 5.4" fill="none" stroke="#c62f35" stroke-width="2.2" stroke-linecap="round"/><path d="M6.5 21.5 L3.6 20.2" stroke="#c62f35" stroke-width="2.2" stroke-linecap="round"/><path d="M10 16 L17 7.6" stroke="#ff8a8e" stroke-width=".6"/>' },
   sprenggas: { name: "Sprenggas", art: "Werkzeug", stack: 8, svg: '<rect x="11" y="3.4" width="4" height="3.6" fill="#9aa0a6"/><path d="M15 4.4 h3.4" stroke="#9aa0a6" stroke-width="1.4"/><rect x="7.5" y="6.8" width="11" height="16" rx="3" fill="#c8331f" stroke="#5a1408" stroke-width=".6"/><path d="M9 8.5 V20" stroke="#ff7a5c" stroke-width=".8"/><path d="M13 11.4 L16.4 17.4 H9.6 Z" fill="#ffd23a" stroke="#1a1a1a" stroke-width=".5"/><path d="M13 13.6 V15.4" stroke="#1a1a1a" stroke-width=".8"/>' },
@@ -31,6 +32,7 @@ const INV_DESC = {
   rauchbombe: "Im Bogen werfen (Linksklick). Beim Aufprall entsteht eine dichte Rauchwolke, die etwa 12 Sekunden hält.",
   munition: "9-mm-Patronen. Noch ohne passende Waffe.",
   goldbarren: "Feingold aus dem Tresor der Geheimbasis. Wertanlage.",
+  koffer: "Schwarzer Aktenkoffer mit zwei Schlössern. In der Hand: Rechtsklick öffnet ihn.",
   brechstange: "Zum Aufbrechen einfacher Tresore (Geldkassette, Wandtresor): in die Hand nehmen, vor dem Tresor Rechtsklick und stehen bleiben, bis der Kreis voll ist.",
   sprenggas: "Explosives Gas für stabile Tresore: in der Hand vor dem Tresor Rechtsklick bringt eine Ladung an (Stahlschrank 1, Banktresor 2). Danach mit dem Feuerzeug zünden und Abstand halten.",
   feuerzeug: "Zündet angebrachte Gasladungen an einem Tresor (Rechtsklick vor dem Tresor). Nach 4 Sekunden knallt es.",
@@ -86,18 +88,19 @@ function invHandRender() {
 // ---- Verschieben wie in Minecraft (INV.cursor = Stapel an der Maus) ----
 const invRoom = (S, id) => !S ? INV_ITEMS[id].stack : S.id === id ? INV_ITEMS[id].stack - S.n : 0;
 // Linksklick mit Stapel an der Maus: ablegen, auffuellen oder tauschen
-function invPlace(j) { const S = invGet(j), C = INV.cursor; if (!C) return;
+const invSelf = (j, C) => j >= INV_BOX0 && INV.box && INV.box.self && C && C.k === INV.box.self && (toast("Der Koffer passt nicht in sich selbst"), true);   // Koffer (koffer.js)
+function invPlace(j) { const S = invGet(j), C = INV.cursor; if (!C || invSelf(j, C)) return;
   if (!S) { invSet(j, C); INV.cursor = null; }
   else if (S.id === C.id) { const k = Math.min(C.n, invRoom(S, C.id)); S.n += k; C.n -= k; if (!C.n) INV.cursor = null; }
   else { invSet(j, C); INV.cursor = S; } }
 // Rechtsklick mit Stapel an der Maus: einen ablegen
-function invPlaceOne(j) { const S = invGet(j), C = INV.cursor; if (!C || invRoom(S, C.id) < 1) return false;
-  if (S) S.n++; else invSet(j, { id: C.id, n: 1 }); if (!--C.n) INV.cursor = null; return true; }
+function invPlaceOne(j) { const S = invGet(j), C = INV.cursor; if (!C || invRoom(S, C.id) < 1 || invSelf(j, C)) return false;
+  if (!S && C.n === 1) { invSet(j, C); INV.cursor = null; return true; } if (S) S.n++; else invSet(j, { id: C.id, n: 1 }); if (!--C.n) INV.cursor = null; return true; }   // einzelnes Stueck: Objekt behalten (Zusatzfelder wie k)
 // Shift+Klick: Hotbar -> Inventar bzw. umgekehrt (erst auf gleiche Stapel, dann freie Plaetze); bei offenem Behaelter zwischen Behaelter und Spieler
 function invQuick(i) { const S = invGet(i); if (!S) return; const nb = INV.box ? INV.box.slots.length : 0;
   const ranges = i >= INV_BOX0 ? [[9, 36], [0, 9]] : INV.box ? [[INV_BOX0, INV_BOX0 + nb]] : [i < 9 ? [9, 36] : [0, 9]];
-  for (let pass = 0; pass < 2 && S.n; pass++) for (const [a, b] of ranges) for (let j = a; j < b && S.n; j++) { const T = invGet(j); if (pass === 0 ? !(T && T.id === S.id) : T) continue;
-    const k = Math.min(S.n, invRoom(T, S.id)); if (!k) continue; if (T) T.n += k; else invSet(j, { id: S.id, n: k }); S.n -= k; }
+  for (let pass = 0; pass < 2 && S.n; pass++) for (const [a, b] of ranges) for (let j = a; j < b && S.n; j++) { const T = invGet(j); if (pass === 0 ? !(T && T.id === S.id) : T) continue; if (invSelf(j, S)) return;
+    const k = Math.min(S.n, invRoom(T, S.id)); if (!k) continue; if (!T && k === S.n) { invSet(j, S); invSet(i, null); return; } if (T) T.n += k; else invSet(j, { id: S.id, n: k }); S.n -= k; }   // ganzer Stapel: Objekt umziehen
   if (!S.n) invSet(i, null); }
 // Stapel an der Maus zurueck ins Inventar (beim Schliessen, beim Laden); ohne Platz bleibt der Rest an der Maus gespeichert
 function invReturnCursor() { const C = INV.cursor; if (!C) return; INV.cursor = null; const put = invAdd(C.id, C.n);
@@ -111,7 +114,7 @@ function invDown(e) { const b = e.target.closest(".inv-slot"); if (!b || (e.butt
   if (e.button === 0 && e.shiftKey && !C) { invQuick(i); invSave(); if (INV.box) INV.box.save(); return invRender(); }
   if (e.button === 0) { if (!C) { if (!S) return; INV.cursor = S; invSet(i, null); INV.drag = { mode: "carry", from: i }; }
     else INV.drag = { mode: "spread", list: [i], snap: invSnap(), snapC: { ...C } }; }
-  else { if (!C) { if (!S) return; const k = Math.ceil(S.n / 2); INV.cursor = { id: S.id, n: k }; S.n -= k; if (!S.n) invSet(i, null); INV.drag = null; }
+  else { if (!C) { if (!S) return; const k = Math.ceil(S.n / 2); if (k === S.n) { INV.cursor = S; invSet(i, null); } else { INV.cursor = { id: S.id, n: k }; S.n -= k; } INV.drag = null; }
     else { invPlaceOne(i); INV.drag = { mode: "one", list: [i] }; } }
   INV_TIP.i = -1; invTip(); invRender(); invCursorMove(e); }
 function invMove(e) { invCursorMove(e); const D = INV.drag; if (!D || D.mode === "carry") return; const j = invSlotAt(e.clientX, e.clientY); if (j < 0 || D.list.includes(j)) return;
@@ -127,8 +130,9 @@ function invUp(e) { const D = INV.drag; if (!D) return; INV.drag = null; const j
 // invBoxFront(obj, d, near): steht der Spieler vor der Front des Objekts (lokal -z, wie bei allen Modellen) und hoechstens near m entfernt? Sonst Meldung, false.
 const INV_BOXES = {};
 function invBox(id, name, n, init = [], cols = 9) { if (INV_BOXES[id]) return INV_BOXES[id]; const B = INV_BOXES[id] = { id, name, cols, slots: new Array(n).fill(null), onChange: null,
-    save() { try { localStorage.setItem("wm-box-" + id, JSON.stringify(B.slots)); } catch (e) {} if (B.onChange) B.onChange(B); } };
+    save() { try { localStorage.setItem("wm-box-" + id, JSON.stringify(B.cash !== undefined ? { s: B.slots, c: B.cash } : B.slots)); } catch (e) {} if (B.onChange) B.onChange(B); } };   // mit Bargeld (Koffer) als { s, c }
   let d = null; try { d = JSON.parse(localStorage.getItem("wm-box-" + id) || "null"); } catch (e) {}
+  if (d && Array.isArray(d.s)) { B.cash = d.c || 0; d = d.s; }
   if (Array.isArray(d)) d.slice(0, n).forEach((q, k) => { if (q && INV_ITEMS[q.id] && q.n > 0) B.slots[k] = q; });
   else { let k = 0; for (const [iid, c] of init) { let left = c; while (left > 0 && k < n && INV_ITEMS[iid]) { const m = Math.min(left, INV_ITEMS[iid].stack); B.slots[k++] = { id: iid, n: m }; left -= m; } } }
   return B; }
@@ -178,7 +182,7 @@ addEventListener("keyup", e => { if (e.key === "Shift" && INV_TIP.shift) { INV_T
 { if (!invLoad()) { INV.slots[0] = { id: "gullihaken", n: 1 }; INV.slots[1] = { id: "batarang", n: 6 }; invSave(); }
   // TEST (Nicolas 2026-11-16: "jedes Item zum Testen besitzen"): fehlende Gegenstaende beim Start auffuellen (je ein voller Stapel). Spaeter auf false.
   invReturnCursor();                                                         // beim letzten Mal an der Maus geblieben
-  if (INV_TEST_ALLE) { for (const id in INV_ITEMS) if (!invHas(id) && !(INV.cursor && INV.cursor.id === id)) invAdd(id, INV_ITEMS[id].stack); }
+  if (INV_TEST_ALLE) { for (const id in INV_ITEMS) if (id !== "koffer" && !invHas(id) && !(INV.cursor && INV.cursor.id === id)) invAdd(id, INV_ITEMS[id].stack); }   // Koffer nur echt (mit Kennung, koffer.js)
   document.getElementById("hotbar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (!b) return; e.currentTarget.blur?.(); invSelect(+b.dataset.i); });
   const ib = document.getElementById("inventar");
   ib.addEventListener("pointerdown", invDown); ib.addEventListener("contextmenu", e => e.preventDefault());
