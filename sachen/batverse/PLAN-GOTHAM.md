@@ -155,7 +155,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 
 | Nr | Was | Stand |
 |----|-----|-------|
-| N16 | **Bat-Knopf in 3D** in der Hand, eher wie ein Funkgerät oder eine Fernbedienung mit einem Knopf | offen |
+| N16 | **Bat-Knopf in 3D** in der Hand, eher wie ein Funkgerät oder eine Fernbedienung mit einem Knopf | gebaut 2026-11-18 |
 | N21 | **Aufnehmen mit Kreis**: linke Maus auf einem Gegenstand halten, ein Kreis um den Zielpunkt füllt sich, voll = aufgenommen (Geld, Goldbarren, Koffer). Für Behälter ersetzt durch N22 | teilweise – Koffer aufnehmen mit Kreis (2026-11-18); Geld, Goldbarren am Boden noch nicht |
 | N22 | **Behälter-Inventar per Rechtsklick** (Tresore, Koffer, Waffenwand): öffnet ein Fenster mit den 2D-Plätzen des Behälters, Gegenstände einfach hinein- und herausziehen wie im Inventar. Nur von vorne, nur aus der Nähe, nur wenn offen (zu = kein Zugriff) | **gebaut 2026-11-18** (inventar.js `invBox`); Tresore, Koffer, Mülleimer folgen |
 | N23 | **Tresore**: verschliessbar, mehrere Sicherheitsstufen und Varianten (verschieden gross, sehr sichere mit grösserer Tür, aber nicht riesig), aufbrechen oder aufsprengen je nach Stufe. Werkzeuge als Gegenstände 2D/3D: Brechstange, explosives Gas, Feuerzeug. In der Werkstatt einen Tresor beim Tisch mit den Laptops. Vorschlag der Stufen siehe `OFFENE-FRAGEN.md` 34 | **gebaut 2026-11-18** in der Werkstatt (5 Stufen, `gotham/tresor.js`); im Spiel: Casino (Stufe 3) und Geheimbasis (Stufe 5) **2026-11-18**; Banken offen (innen leer, Tresorkeller eigener Schritt) |
@@ -189,7 +189,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 |----|-----|-------|
 | N32 | **Zwei Handys** (Gaming-Handy von Wayne Enterprises, Büro-Handy einer anderen Firma), als Gegenstand 2D/3D. In der Hand Rechtsklick = Handy unten rechts (wie GTA V, Fenster wie beim Laptop), Pfeiltasten und Enter wählen Apps. Browser: Handy dreht quer und füllt den Bildschirm; andere Apps (Kontakte usw.) bleiben hochkant unten rechts | **gebaut 2026-11-18** (handy.js, Spiel und Werkstatt) |
 | N40 | **Dating-App** auf dem Handy (Aufbau echter Apps recherchieren, eigene bauen) | offen |
-| N41 | **Eigenes Hintergrundbild** für Handy und Laptop hochladen, stark verpixelt gespeichert (Speicher sparen) | offen |
+| N41 | **Eigenes Hintergrundbild** für Handy und Laptop hochladen, stark verpixelt gespeichert (Speicher sparen) | gebaut 2026-11-18 |
 | N49 | **Musik-App** wie Spotify (ohne Werbung) mit eigenen Songs von Nicolas; Handy weg = kleine Anzeige mit vor, zurück, Pause, schliessen | offen – wartet auf die Dateien (`OFFENE-FRAGEN.md` 40) |
 
 **Waffen, Fahrzeuge, Bewegung**

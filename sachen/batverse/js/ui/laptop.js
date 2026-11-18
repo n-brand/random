@@ -100,7 +100,17 @@ const LT_KONTAKTE = [
 
 // ---- 3D-Modelle ----
 function ltCanvas(w, h, draw) { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
-function ltWallpaper(c, w, h, wp) {
+// Eigenes Hintergrundbild (Nicolas 2026-11-18, N41: "eigenes Hintergrundbild fuer Handy und Laptop hochladen, stark verpixelt gespeichert, um Speicher zu sparen"):
+// Bild auf w x h Pixel verkleinern (Ausschnitt wie cover), als JPEG-dataURL (ca. 1-3 KB); angezeigt mit image-rendering: pixelated.
+function ltPixel(file, w, h) { return new Promise((ok, no) => { if (!file || !String(file.type).startsWith("image/")) return no(new Error("kein Bild")); const u = URL.createObjectURL(file), im = new Image();
+  im.onload = () => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d"), k = Math.max(w / im.width, h / im.height); x.imageSmoothingQuality = "high";
+    x.drawImage(im, (w - im.width * k) / 2, (h - im.height * k) / 2, im.width * k, im.height * k); URL.revokeObjectURL(u); ok(c.toDataURL("image/jpeg", 0.85)); };
+  im.onerror = () => { URL.revokeObjectURL(u); no(new Error("Bild nicht lesbar")); }; im.src = u; }); }
+const LT_IMG = {};   // geladene eigene Bilder fuer den 3D-Bildschirm
+function ltWpStyle(D) { return D.wp === 3 && D.bild ? "background:#000 url(" + D.bild + ") center/cover;image-rendering:pixelated;" : ""; }
+function ltWallpaper(c, w, h, wp, bild) {
+  if (wp === 3 && bild) { let im = LT_IMG[bild]; if (!im) { im = LT_IMG[bild] = new Image(); im.onload = () => { for (const id in LT.screens) ltScreenDraw(id); }; im.src = bild; }
+    c.fillStyle = "#000"; c.fillRect(0, 0, w, h); if (im.complete && im.naturalWidth) { c.imageSmoothingEnabled = false; c.drawImage(im, 0, 0, w, h); c.imageSmoothingEnabled = true; } return; }
   const g = c.createLinearGradient(0, 0, w * 0.4, h);
   if (wp === 1) { g.addColorStop(0, "#2a0608"); g.addColorStop(0.55, "#120405"); g.addColorStop(1, "#050505"); }
   else if (wp === 2) { g.addColorStop(0, "#0f2e2a"); g.addColorStop(0.6, "#2c6e63"); g.addColorStop(1, "#e8c07a"); }
@@ -112,7 +122,7 @@ function ltWallpaper(c, w, h, wp) {
 function ltScreenDraw(id) {
   const T = LT.screens[id]; if (!T) return; const cv = T.image, c = cv.getContext("2d"), w = cv.width, h = cv.height, D = ltD(id);
   if (LT.off[id] || LT.sleep[id] || (LT.boot && LT.cur === id)) { c.fillStyle = "#000"; c.fillRect(0, 0, w, h); if (!LT.off[id] && !LT.sleep[id]) { c.fillStyle = D.hw === "silber" ? "#e9ecef" : "#ff2a36"; c.textAlign = "center"; c.font = "bold " + h * 0.16 + "px Georgia, serif"; c.fillText(D.hw === "silber" ? "W" : "NIGHTFALL", w / 2, h * 0.55); } T.needsUpdate = true; return; }   // aus bzw. startet
-  ltWallpaper(c, w, h, D.wp); c.textAlign = "center"; c.fillStyle = "#fff";
+  ltWallpaper(c, w, h, D.wp, D.bild); c.textAlign = "center"; c.fillStyle = "#fff";
   const now = ltTime();
   if (LT.locked[id]) { c.font = "300 " + h * 0.2 + "px Segoe UI, Arial"; c.fillText(now, w / 2, h * 0.36); c.beginPath(); c.fillStyle = "rgba(255,255,255,.2)"; c.arc(w / 2, h * 0.56, h * 0.08, 0, Math.PI * 2); c.fill();
     c.fillStyle = "#fff"; c.font = "600 " + h * 0.06 + "px Segoe UI, Arial"; c.fillText(D.user, w / 2, h * 0.76); }
@@ -198,7 +208,7 @@ const LT_CSS = `
 .lt-einst{display:grid;grid-template-columns:200px 1fr;height:100%}.lt-enav{padding:12px 8px;background:rgba(127,127,127,.08);display:flex;flex-direction:column;gap:2px}
 .lt-enav button{text-align:left;padding:9px 14px;border:0;border-radius:6px;background:none;color:inherit;font:14px "Segoe UI",sans-serif;cursor:pointer}.lt-enav button:hover{background:rgba(127,127,127,.15)}.lt-enav button.on{background:rgba(47,125,225,.18);box-shadow:inset 3px 0 0 #2f7de1;font-weight:600}
 .lt-ebody{padding:18px 24px;overflow:auto}.lt-ebody h2{margin:0 0 10px}.lt-ebody .lt-row span{opacity:.75}
-.lt-wps{display:flex;gap:12px}.lt-wps button{width:140px;height:88px;border-radius:8px;border:3px solid transparent;cursor:pointer}.lt-wps button.on{border-color:#2f7de1}
+.lt-upl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}.lt-upl label{cursor:pointer}.lt-upl span{flex-basis:100%;font-size:12px;opacity:.65}.lt-wps{display:flex;gap:12px}.lt-wps button{width:140px;height:88px;border-radius:8px;border:3px solid transparent;cursor:pointer}.lt-wps button.on{border-color:#2f7de1}
 .lt-hell{width:280px}
 .lt-opt{display:grid;grid-template-columns:22px 1fr;column-gap:10px;align-items:center;width:100%;max-width:420px;text-align:left;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(127,127,127,.3);border-radius:8px;background:none;color:inherit;cursor:pointer;font:14px "Segoe UI",sans-serif}
 .lt-opt i{grid-row:span 2;width:16px;height:16px;border-radius:50%;border:2px solid #8a9099}.lt-opt.on{border-color:#2f7de1}.lt-opt.on i{border:5px solid #2f7de1}.lt-opt span{font-size:12px;opacity:.7}
@@ -243,6 +253,8 @@ function ltEnsure() {
   if (LT.el) return LT.el; const st = document.createElement("style"); st.textContent = LT_CSS; document.head.appendChild(st);
   const el = document.createElement("div"); el.id = "laptop"; el.hidden = true; document.body.appendChild(el); LT.el = el;
   el.addEventListener("click", ltClick); el.addEventListener("contextmenu", e => e.preventDefault());
+  el.addEventListener("change", e => { if (!e.target.classList.contains("lt-file")) return; const id = LT.cur;
+    ltPixel(e.target.files[0], 96, 60).then(u => { ltSet(id, "bild", u); ltSet(id, "wp", 3); ltRender(); ltScreenDraw(id); toast("Hintergrundbild gesetzt"); }).catch(er => toast("Bild: " + er.message)); });
   el.addEventListener("input", e => { if (e.target.classList.contains("lt-search")) { LT.mapQ = e.target.value; ltMapResults(); }
     if (e.target.classList.contains("lt-mitEinst")) LT.mitEinst = e.target.checked;
     if (e.target.classList.contains("lt-hell")) { ltSet(LT.cur, "hell", +e.target.value); const sc = LT.el.querySelector(".lt-scr"); if (sc) sc.style.filter = "brightness(" + e.target.value + ")"; } });
@@ -286,6 +298,7 @@ function ltClick(e) {
   if (a === "zu") { LT.app = null; LT.call = null; ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "go") { if (LT.web !== v) LT.hist.push(LT.web); LT.web = v; const V = ltD(LT.cur).verlauf; V.unshift({ s: v, t: Date.now() }); V.length = Math.min(V.length, 40); ltSet(LT.cur, "verlauf", V); return ltRender(); }
   if (a === "est") { LT.est = v; LT.confirm = null; LT.err2 = ""; return ltRender(); }
+  if (a === "bildweg") { const D = ltD(LT.cur); ltSet(LT.cur, "bild", null); if (D.wp === 3) ltSet(LT.cur, "wp", 0); ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "cfg") { const [k, x] = v.split(":"); if (k === "lock" && x === "passwort" && !ltD(LT.cur).pw) { LT.err2 = "Zuerst unten ein Passwort festlegen"; return ltRender(); } ltSet(LT.cur, k, k === "wp" ? +x : x); LT.err2 = ""; ltRender(); ltScreenDraw(LT.cur); return; }
   if (a === "setpw") { const p = (LT.el.querySelector(".lt-newpw") || {}).value || "", hn = (LT.el.querySelector(".lt-newhint") || {}).value || ""; if (p.length < 3) { LT.err2 = "Passwort mit mindestens 3 Zeichen"; return ltRender(); } ltSet(LT.cur, "pw", p); ltSet(LT.cur, "hint", hn); ltSet(LT.cur, "lock", "passwort"); LT.err2 = ""; toast("Passwort festgelegt"); return ltRender(); }
   if (a === "frage") { LT.confirm = v; return ltRender(); }
@@ -374,7 +387,7 @@ function ltEinst() {
   const id = LT.cur, D = ltD(id), sec = LT.est || "system", nav = '<div class="lt-enav">' + LT_EST.map(([k, n]) => '<button class="' + (k === sec ? "on" : "") + '" data-a="est" data-v="' + k + '">' + n + "</button>").join("") + "</div>";
   let b = "";
   if (sec === "system") b = "<h2>System</h2>" + [["Gerätename", D.name], ["Modell", D.hw === "silber" ? "Wayne Book 14 (Aluminium)" : "Nightfall X17 Gaming"], ["Benutzer", D.user], ["Betriebssystem", "WayneOS 3.2"], ["Speicher", D.hw === "silber" ? "412 GB frei von 1 TB" : "1,3 TB frei von 2 TB"], ["Akku", D.hw === "silber" ? "87 %" : "54 % (Netzteil)"]].map(([k, v]) => '<div class="lt-row"><b>' + k + "</b><span>" + v + "</span></div>").join("");
-  else if (sec === "bild") b = "<h2>Personalisierung</h2><p class=\"lt-sub\">Hintergrund</p><div class=\"lt-wps\">" + [0, 1, 2].map(w => '<button class="lt-wp' + w + (D.wp === w ? " on" : "") + '" data-a="cfg" data-v="wp:' + w + '" title="Hintergrund ' + (w + 1) + '"></button>').join("") + '</div><p class="lt-sub" style="margin-top:18px">Helligkeit</p><input class="lt-hell" type="range" min="0.4" max="1" step="0.05" value="' + D.hell + '">';
+  else if (sec === "bild") b = "<h2>Personalisierung</h2><p class=\"lt-sub\">Hintergrund</p><div class=\"lt-wps\">" + [0, 1, 2].map(w => '<button class="lt-wp' + w + (D.wp === w ? " on" : "") + '" data-a="cfg" data-v="wp:' + w + '" title="Hintergrund ' + (w + 1) + '"></button>').join("") + (D.bild ? '<button class="lt-wp3' + (D.wp === 3 ? " on" : "") + '" data-a="cfg" data-v="wp:3" title="Eigenes Bild" style="background:#000 url(' + D.bild + ') center/cover;image-rendering:pixelated"></button>' : "") + '</div><div class="lt-upl"><label class="lt-buy">Eigenes Bild hochladen<input type="file" accept="image/*" class="lt-file" hidden></label>' + (D.bild ? '<button class="lt-buy sell" data-a="bildweg">Eigenes Bild entfernen</button>' : "") + '<span>Wird stark verpixelt gespeichert (96 x 60 Pixel), damit es wenig Speicher braucht.</span></div><p class="lt-sub" style="margin-top:18px">Helligkeit</p><input class="lt-hell" type="range" min="0.4" max="1" step="0.05" value="' + D.hell + '">';
   else if (sec === "konto") { const L = D.lock;
     b = "<h2>Anmeldung</h2><p class=\"lt-sub\">Wie der Laptop beim Sperren und Starten geschützt ist.</p>" + [["offen", "Entsperrt", "Kein Sperrbildschirm beim Start"], ["ohne", "Ohne Passwort", "Anmelden per Klick"], ["passwort", "Mit Passwort", D.pw ? "Passwort ist festgelegt" : "Noch kein Passwort"]].map(([k, n, t]) => '<button class="lt-opt' + (L === k ? " on" : "") + '" data-a="cfg" data-v="lock:' + k + '"><i></i><b>' + n + "</b><span>" + t + "</span></button>").join("") +
       '<p class="lt-sub" style="margin-top:18px">Neues Passwort</p><div class="lt-pwset"><input class="lt-newpw" type="password" placeholder="Neues Passwort" autocomplete="off"><input class="lt-newhint" placeholder="Hinweis (optional)" value="' + ltEsc(D.hint || "") + '"><button class="lt-buy" data-a="setpw">Festlegen</button></div><div class="lt-err2">' + ltEsc(LT.err2 || "") + "</div>"; }
@@ -395,10 +408,10 @@ function ltRender() {
   else if (LT.off[id]) s = '<div class="lt-scr"><div class="lt-boot"><button class="lt-offbtn" data-a="pw" data-v="an" title="Einschalten">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 30) + '</button><span>Ausgeschaltet – zum Einschalten klicken</span></div></div>';
   else if (LT.boot !== null) s = '<div class="lt-scr"><div class="lt-boot">' + logo + '<div class="lt-spin"></div><span>' + ltEsc(LT.boot) + "</span></div></div>";
   else if (LT.locked[id]) { const pw = D.lock === "passwort";
-    s = '<div class="lt-scr lt-wp' + D.wp + '" style="filter:brightness(' + D.hell + ')">' + sky + '<div class="lt-lock"><div class="lt-clock">' + ltTime() + '</div><div class="lt-date">' + new Date().toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "long" }) + '</div><div class="lt-ava">BW</div><div class="lt-user">' + D.user + "</div>" +
+    s = '<div class="lt-scr lt-wp' + D.wp + '" style="' + ltWpStyle(D) + 'filter:brightness(' + D.hell + ')">' + (D.wp === 3 && D.bild ? "" : sky) + '<div class="lt-lock"><div class="lt-clock">' + ltTime() + '</div><div class="lt-date">' + new Date().toLocaleDateString("de-CH", { weekday: "long", day: "numeric", month: "long" }) + '</div><div class="lt-ava">BW</div><div class="lt-user">' + D.user + "</div>" +
       (pw ? '<div class="lt-pwrow"><input class="lt-pw" type="password" placeholder="Passwort" autocomplete="off"><button class="lt-btn" data-a="login" title="Anmelden">' + ltSvg(LT_IC.go, 18) + '</button></div><div class="lt-err">' + ltEsc(LT.err) + '</div><div class="lt-hint">Hinweis: ' + ltEsc(D.hint || "") + "</div>" : '<button class="lt-btn" data-a="login">Anmelden</button><div class="lt-hint">Kein Passwort eingerichtet</div>') + "</div></div>"; }
   else { const apps = D.apps;
-    s = '<div class="lt-scr lt-wp' + D.wp + '" style="filter:brightness(' + D.hell + ')">' + sky + '<div class="lt-icons">' + apps.map(a => '<button class="lt-ic" data-a="app" data-v="' + a + '"><i style="background:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 28) + "</i>" + LT_APPS[a][0] + "</button>").join("") + "</div>" +
+    s = '<div class="lt-scr lt-wp' + D.wp + '" style="' + ltWpStyle(D) + 'filter:brightness(' + D.hell + ')">' + (D.wp === 3 && D.bild ? "" : sky) + '<div class="lt-icons">' + apps.map(a => '<button class="lt-ic" data-a="app" data-v="' + a + '"><i style="background:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 28) + "</i>" + LT_APPS[a][0] + "</button>").join("") + "</div>" +
       (LT.app ? '<div class="lt-win"><div class="lt-wt">' + ltSvg(LT_APPS[LT.app][2], 16) + LT_APPS[LT.app][0] + '<button class="lt-x" data-a="zu" title="Schliessen">' + ltSvg(LT_IC.x, 16) + '</button></div><div class="lt-wc">' + ltAppBody(LT.app) + "</div></div>" : "") +
       '<div class="lt-bar"><button class="lt-tb" data-a="lock" title="Sperren">' + ltSvg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', 18) + "</button>" + apps.map(a => '<button class="lt-tb' + (LT.app === a ? " on" : "") + '" data-a="app" data-v="' + a + '" title="' + LT_APPS[a][0] + '" style="color:' + LT_APPS[a][1] + '">' + ltSvg(LT_APPS[a][2], 20) + "</button>").join("") +
       (LT.pmenu ? '<div class="lt-pmenu">' + [["lock", LT_IC.lock, "Sperren"], ["schlaf", LT_IC.mond, "Energie sparen"], ["aus", LT_IC.power, "Herunterfahren"], ["neu", LT_IC.neu, "Neu starten"]].map(([v, ic, t]) => '<button data-a="pw" data-v="' + v + '">' + ltSvg(ic, 22) + t + "</button>").join("") + "</div>" : "") + '<div class="lt-time"><b>' + ltTime() + "</b><br>" + D.user + '</div><button class="lt-tb' + (LT.pmenu ? " on" : "") + '" data-a="power" title="Ein/Aus">' + ltSvg('<path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/>', 18) + "</button></div></div>"; }

@@ -402,3 +402,8 @@ body.touch #hb-name { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px + var(
 .h-av { width: 84px; height: 84px; margin: 10px auto; border-radius: 50%; background: #2c5d9a; display: grid; place-items: center; font: 700 36px system-ui; color: #fff; }
 .h-sprech { margin: 18px 6px; font-style: italic; line-height: 1.4; }
 .h-auflegen { background: #c9302c; color: #fff; margin-top: 18px; }
+
+/* Handy: eigenes Hintergrundbild (handy.js, N41) */
+.h-bgprev { width: 96px; height: 192px; margin: 4px auto 14px; border-radius: 12px; background: #1b2230 center/cover; image-rendering: pixelated; display: grid; place-items: center; color: #8a96a8; font-size: 12px; border: 1px solid #ffffff22; }
+.h-upl { cursor: pointer; display: block; }
+.h-screen.h-bgimg .h-app span { text-shadow: 0 1px 3px #000, 0 0 6px #000; }

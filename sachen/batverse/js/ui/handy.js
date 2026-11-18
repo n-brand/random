@@ -36,7 +36,7 @@ const HANDY_CAT = {
 const HANDY = { page: "home", hist: [], owned: [], col: {}, modell: "handy-wayne", sel: 0, call: null };
 // Zwei Handys als Gegenstand (Nicolas 2026-11-18, N32: "krasse Gaming-Performance Wayne Enterprises und normales Buero-Zeugs einer anderen Firma; Handy als Item, in der Hand Rechtsklick -> Handy unten rechts wie GTA V,
 // Pfeiltasten und Enter; der Browser geht im Querformat vor den ganzen Bildschirm, andere Apps bleiben hochkant unten rechts"). Nicht jedes Handy hat jede App (wie die Laptops).
-const HANDY_MODELLE = { "handy-wayne": { name: "Wayne Phone X", cls: "m-wayne", apps: ["web", "bank", "garage", "kontakte"] }, "handy-office": { name: "Ardent Office 12", cls: "m-office", apps: ["web", "bank", "kontakte"] } };
+const HANDY_MODELLE = { "handy-wayne": { name: "Wayne Phone X", cls: "m-wayne", apps: ["web", "bank", "garage", "kontakte", "einst"] }, "handy-office": { name: "Ardent Office 12", cls: "m-office", apps: ["web", "bank", "kontakte", "einst"] } };
 const HANDY_KONTAKTE = [["Polizei (GCPD)", "911", "Gotham City Police Department. Was ist passiert, und wo sind Sie?"], ["Taxi", "555-0199", "Gotham Cab, guten Tag! Wir schicken Ihnen einen Wagen – etwa fünf Minuten."], ["Krankenwagen", "911", "Notruf Rettungsdienst. Ist jemand verletzt? Bleiben Sie bitte am Telefon."], ["Feuerwehr", "911", "Gotham Fire Department. Wo brennt es?"], ["Alfred", "Privat", "Ja, Master Wayne? Soll ich den Wagen vorbereiten?", "handy-wayne"]];
 const handyQuer = p => p === "web" || p === "bank" || p.startsWith("shop:");   // Browser-Seiten im Querformat
 const handyApps = () => HANDY_APPS.filter(a => (HANDY_MODELLE[HANDY.modell] || HANDY_MODELLE["handy-wayne"]).apps.includes(a[0]));
@@ -63,15 +63,24 @@ function handyBuy(shopId, key) {
   if (!here) { if (typeof areaEnsure === "function") areaEnsure(lot.x, lot.z); toast(handyName(key) + " gekauft – steht " + (shop.ort ? "beim Autohaus " + shop.name : "vor dem Wayne Tower") + " (App Garage: holen)"); }
   handySave(); if (here) handyClose(); else handyRender();
 }
+// Eigenes Hintergrundbild (Nicolas 2026-11-18, N41: "eigenes Hintergrundbild fuer Handy und Laptop hochladen, stark verpixelt gespeichert, um Speicher zu sparen"):
+// Bild auf w x h Pixel verkleinern (Ausschnitt wie cover), als JPEG-dataURL (ca. 1-3 KB); angezeigt mit image-rendering: pixelated.
+function handyPixel(file, w, h) { return new Promise((ok, no) => { if (!file || !String(file.type).startsWith("image/")) return no(new Error("kein Bild")); const u = URL.createObjectURL(file), im = new Image();
+  im.onload = () => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d"), k = Math.max(w / im.width, h / im.height); x.imageSmoothingQuality = "high";
+    x.drawImage(im, (w - im.width * k) / 2, (h - im.height * k) / 2, im.width * k, im.height * k); URL.revokeObjectURL(u); ok(c.toDataURL("image/jpeg", 0.85)); };
+  im.onerror = () => { URL.revokeObjectURL(u); no(new Error("Bild nicht lesbar")); }; im.src = u; }); }
+const HANDY_BG = (() => { try { return JSON.parse(localStorage.getItem("wm-handy-bg") || "{}") || {}; } catch (e) { return {}; } })();   // je Modell: dataURL
+const handyBgSave = () => { try { localStorage.setItem("wm-handy-bg", JSON.stringify(HANDY_BG)); } catch (e) { toast("Bild konnte nicht gespeichert werden"); } };
 // Darstellung
-const HANDY_APPS = [["kontakte", "Kontakte", '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'], ["web", "Internet", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'], ["bank", "Bank", '<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>'], ["garage", "Garage", '<path d="M3 20V9l9-5 9 5v11M7 20v-6h10v6M7 17h10"/>']];
+const HANDY_APPS = [["kontakte", "Kontakte", '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'], ["web", "Internet", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'], ["bank", "Bank", '<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>'], ["garage", "Garage", '<path d="M3 20V9l9-5 9 5v11M7 20v-6h10v6M7 17h10"/>'], ["einst", "Einstellungen", '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>']];
 function handyGo(p, push = true) { if (push && HANDY.page !== p) HANDY.hist.push(HANDY.page); HANDY.page = p; handyRender(); const sc = document.querySelector("#handy .h-screen"); if (sc) sc.scrollTop = 0; }
 function handyRender() {
   const box = document.getElementById("handy"); if (!box || box.hidden) return; const p = HANDY.page, sc = box.querySelector(".h-screen"), url = box.querySelector(".h-url");
   const shop = HANDY_SHOPS[p.split(":")[1]];
-  url.textContent = p === "home" ? "" : p === "web" ? "gotham.web" : p === "bank" ? "gothamcitybank.gotham" : p === "garage" ? "Garage" : p === "kontakte" ? "Kontakte" : shop ? shop.url : "";
+  url.textContent = p === "home" ? "" : p === "web" ? "gotham.web" : p === "bank" ? "gothamcitybank.gotham" : p === "garage" ? "Garage" : p === "kontakte" ? "Kontakte" : p === "einst" ? "Einstellungen" : shop ? shop.url : "";
   const M = HANDY_MODELLE[HANDY.modell] || HANDY_MODELLE["handy-wayne"], ph = box.querySelector(".h-phone"), quer = handyQuer(p); ph.className = "h-phone " + M.cls + (quer ? " quer" : ""); box.classList.toggle("quer", quer);
   box.querySelector(".h-modell") || box.querySelector(".h-top").insertAdjacentHTML("afterbegin", '<span class="h-modell"></span>'); box.querySelector(".h-modell").textContent = M.name;
+  { const bg = p === "home" && HANDY_BG[HANDY.modell]; sc.style.background = bg ? "#000 url(" + bg + ") center/cover" : ""; sc.style.imageRendering = bg ? "pixelated" : ""; sc.classList.toggle("h-bgimg", !!bg); }   // eigenes Hintergrundbild auf dem Startbildschirm
   box.querySelector(".h-bar").hidden = p === "home"; box.querySelector(".h-money").textContent = kontoFmt(kontoStand());
   if (p === "home") sc.innerHTML = '<div class="h-apps">' + handyApps().map(([id, n, svg], i) => '<button type="button" class="h-app' + (i === HANDY.sel ? " foc" : "") + '" data-go="' + id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + svg + "</svg><span>" + n + "</span></button>").join("") + "</div>";
   else if (p === "web") sc.innerHTML = '<div class="h-page"><h2>Gotham Web</h2><p class="h-sub">Läden</p>' + Object.entries(HANDY_SHOPS).map(([id, s]) => '<button type="button" class="h-link" data-go="shop:' + id + '" style="--c:' + s.farbe + '"><b>' + s.name + "</b><span>" + s.slogan + "</span></button>").join("") +
@@ -80,6 +89,8 @@ function handyRender() {
     (KONTO.log.slice(0, 12).map(b => "<li><span>" + b.grund.replace(/[<&]/g, "") + '</span><b class="' + (b.n < 0 ? "neg" : "pos") + '">' + (b.n > 0 ? "+" : "") + kontoFmt(b.n) + "</b></li>").join("") || "<li><span>Noch keine Buchungen</span></li>") + "</ul></div>";
   else if (p === "kontakte") { const C = HANDY.call; sc.innerHTML = C ? '<div class="h-page h-anruf"><div class="h-av">' + C.k[0][0] + '</div><h2>' + C.k[0] + '</h2><p class="h-sub">' + (C.st === "waehlt" ? "Wählt " + C.k[1] + " …" : "Verbunden") + '</p>' + (C.st === "verbunden" ? '<p class="h-sprech">„' + C.k[2] + '“</p>' : "") + '<button type="button" class="h-buy h-auflegen" data-auflegen="1">Auflegen</button></div>'
       : '<div class="h-page"><h2>Kontakte</h2>' + HANDY_KONTAKTE.filter(k => !k[3] || k[3] === HANDY.modell).map((k, i) => '<div class="h-car"><i style="background:#2c5d9a"></i><div><b>' + k[0] + '</b><span>' + k[1] + '</span></div><button type="button" data-anruf="' + HANDY_KONTAKTE.indexOf(k) + '">Anrufen</button></div>').join("") + '</div>'; }
+  else if (p === "einst") { const bg = HANDY_BG[HANDY.modell]; sc.innerHTML = '<div class="h-page"><h2>Einstellungen</h2><p class="h-sub">Hintergrundbild</p><div class="h-bgprev"' + (bg ? ' style="background-image:url(' + bg + ')"' : "") + '>' + (bg ? "" : "Standard") + '</div>' +
+    '<label class="h-link h-upl" style="--c:#4a8fd6"><b>Eigenes Bild hochladen</b><span>Wird stark verpixelt gespeichert (48 x 96 Pixel), damit es wenig Speicher braucht.</span><input type="file" accept="image/*" class="h-file" hidden></label>' + (bg ? '<button type="button" class="h-link" data-bgweg="1" style="--c:#d6343b"><b>Standard-Hintergrund</b><span>Eigenes Bild entfernen</span></button>' : "") + "</div>"; }
   else if (p === "garage") sc.innerHTML = '<div class="h-page"><h2>Meine Fahrzeuge</h2>' + (HANDY.owned.map((o, i) => '<div class="h-car"><i style="background:' + handyHex(o.c ?? 0x16181b) + '"></i><div><b>' + handyName(o.key) + "</b><span>" + HANDY_CAT[o.key].art + '</span></div><button type="button" data-holen="' + i + '">Holen</button></div>').join("") || '<p class="h-sub">Noch nichts gekauft. Im Internet findest du drei Händler.</p>') + "</div>";
   else if (shop && shop.waren) { const sid = p.split(":")[1];
     sc.innerHTML = '<div class="h-page h-shop" style="--c:' + shop.farbe + '"><div class="h-hero"><h2>' + shop.name + "</h2><span>" + shop.slogan + "</span></div>" + shop.waren.map(([k, pr, n]) => { const I = INV_ITEMS[k]; if (!I) return ""; const has = invCount(k);
@@ -106,8 +117,11 @@ const handyShop = id => handyOpen("shop:" + id);
     if (d.buy) { const [s, k] = d.buy.split(":"); return handyBuy(s, k); }
     if (d.ware) { const [s, k] = d.ware.split(":"); return handyBuyWare(s, k); }
     if (d.anruf) { const k = HANDY_KONTAKTE[+d.anruf]; HANDY.call = { k, st: "waehlt" }; handyRender(); clearTimeout(HANDY.callT); HANDY.callT = setTimeout(() => { if (HANDY.call && HANDY.call.k === k) { HANDY.call.st = "verbunden"; handyRender(); } }, 1600); return; }
+    if (d.bgweg) { delete HANDY_BG[HANDY.modell]; handyBgSave(); return handyRender(); }
     if (d.auflegen) { HANDY.call = null; return handyRender(); }
     if (d.holen) { const o = HANDY.owned[+d.holen]; if (o && o.C && summonVehicle(o.C)) { handySave(); handyClose(); } } });
+  document.getElementById("handy")?.addEventListener("change", e => { if (!e.target.classList.contains("h-file")) return; const m = HANDY.modell;
+    handyPixel(e.target.files[0], 48, 96).then(u => { HANDY_BG[m] = u; handyBgSave(); handyRender(); toast("Hintergrundbild gesetzt"); }).catch(er => toast("Bild: " + er.message)); });
   document.getElementById("btn-handy")?.addEventListener("click", e => { e.currentTarget.blur(); handyIsOpen() ? handyClose() : handyOpen(); }); }
 // Tastatur, solange das Handy offen ist: Pfeiltasten waehlen Apps, Enter oeffnet, Ruecktaste zurueck, Pfeil hoch/runter blaettert auf Seiten, Esc oder P legt es weg
 addEventListener("keydown", e => { if (!handyIsOpen() || e.target.closest?.("input, textarea")) return; const k = e.key, home = HANDY.page === "home", n = handyApps().length;

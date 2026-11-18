@@ -48,12 +48,19 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Nachtsichtbrille | aufsetzen: im Inventar auf den Platz "Kopf" ziehen oder Shift+Klick, oder in der Hand Linksklick; **B** = an/aus |
 | Casino-Spiele (Crash, Mines, Glücksrad) | Rechtsklick auf Automat bzw. Rad; Einsatz mit den Jeton-Knöpfen, Leertaste = Starten/Auszahlen, Esc schliesst (nicht während einer Runde) |
 | Skateboard | in der Hand rechte Maus halten (0,6 s, Kreis) = aufsteigen; W anschieben (Shift schneller), S bremsen, A/D und Maus lenken, Leertaste Ollie, Rechtsklick absteigen |
+| Bat-Knopf | in der Hand Linksklick = Batsignal an/aus (rote LED am Gerät leuchtet, solange es an ist) |
+| Eigenes Hintergrundbild | Handy: App Einstellungen > Eigenes Bild hochladen; Laptop: Einstellungen > Personalisierung > Eigenes Bild hochladen |
 | Fidget Spinner | in der Hand Rechtsklick = Schwung (mehrmals = schneller, bis ca. 6 U/s), läuft ca. 20 s aus |
 | Werkstatt-Modi | 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person, 5 Geist, Z Zeichnen |
 
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Eigenes Hintergrundbild für Handy und Laptop, Bat-Knopf als 3D-Funkgerät** (Nicolas 2026-11-18, N41: "eigenes Hintergrundbild für Handy und Laptop hochladen, stark verpixelt gespeichert (Speicher sparen)"; N16: "Bat-Knopf in 3D in der Hand, eher wie ein Funkgerät oder eine Fernbedienung mit einem Knopf"):
+  - Hintergrund: Bild wird im Browser auf wenige Pixel verkleinert (Ausschnitt wie cover) und als JPEG-dataURL gespeichert (ca. 2 KB), angezeigt mit `image-rendering: pixelated`. Laptop (laptop.js `ltPixel`, 96 x 60): Einstellungen > Personalisierung > "Eigenes Bild hochladen" bzw. "entfernen", eigenes Bild = Hintergrund 4 (`wp` 3, `bild` in wm-laptops je Laptop), auch auf dem 3D-Bildschirm (ohne Stadt-Silhouette). Handy (handy.js `handyPixel`, 48 x 96): neue App "Einstellungen" auf beiden Modellen mit Vorschau, Hochladen, Standard; Bild je Modell in `wm-handy-bg`, auf dem Startbildschirm (App-Namen mit Schatten). Stile in style.css und person.css. Das Bild bleibt im Browser (localStorage), nichts wird hochgeladen.
+  - Bat-Knopf (waffen.js `buildBatKnopf`, `HAND3D.batknopf`): schwarzes Funkgerät mit Griffleisten und Antenne, grosser gelber Knopf mit der Batsignal-Fledermaus im Metallring, rote LED (an = Signal an), Typenschild. Beim Linksklick geht der Knopf kurz hinein (`batKnopfDruck`). Das 2D-Handbild ist dafür aus.
+  - Geprüft in der Werkstatt: Testbild über das Datei-Feld gesetzt – Laptop 1,9 KB, Bild als Hintergrund 4 und auf dem Desktop (Bild), Handy 2,1 KB, verpixelt auf dem Startbildschirm (Bild), danach wieder entfernt; Bat-Knopf in der Hand, Signal an -> aus -> an, Knopf gedrückt; Bild des Modells. Echte Dateiauswahl (Dialog) nicht testbar, 3D-Handy in der Hand zeigt das eigene Bild noch nicht.
 
 - **Fidget Spinner, Waffenläden in der Werkstatt grösser** (Nicolas 2026-11-18, N36: "ein Fidget Spinner als Item wäre auch cool, mit Rechtsklick kann man ihn spinnen"; N37: "bau den Waffenshop in der Werkstatt aus, er ist noch sehr klein, mach ihn etwas grösser und platziere direkt daneben noch einen viel grösseren"):
   - Neu `js/spieler/fidget.js` (Spiel-FILES nach spieler/skateboard.js, Werkstatt, ASSETS, BV_KEEP): Gegenstand `fidget` (Art Spielzeug, 2D-Symbol, 3D in der Hand: blauer Dreiflügler mit drei Kugellagern und schwarzer Mittelkappe). Rechtsklick in der Hand gibt Schwung (+14 rad/s, höchstens 38 ≈ 6 U/s, Anzeige über der Hotbar), er bremst langsam ab (Reibung + Luft, aus 4,5 U/s nach ca. 22 s still). `fidgetStep` aus tresorStep. Material wenig metallisch (ohne Umgebungsbild sonst grau).

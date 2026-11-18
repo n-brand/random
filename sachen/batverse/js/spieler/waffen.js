@@ -158,9 +158,29 @@ function aimSmoke(p) { const S = { t: 0, s: [] }; for (let k = 0; k < 26; k++) {
 renderer.domElement.addEventListener("mousedown", e => { if (touch || !onFoot() || !weaponHeld()) return;
   if (e.button === 2) { e.preventDefault(); AIM.on = true; } else if (e.button === 0 && dragging) weaponUse(); });
 // Bat-Knopf (Nicolas 2026-11-17: "ein Item, vielleicht ein Bat-Knopf, mit dem man das Batsignal an- und ausschalten kann"): in der Hand Linksklick schaltet GCPD.on
-function batKnopf() { if (typeof GCPD === "undefined") return toast("Kein Batsignal in Reichweite"); GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts über Gotham)" : "Batsignal aus"); if (typeof invRender === "function") invRender(); }
+function batKnopf() { batKnopfDruck(); if (typeof GCPD === "undefined") return toast("Kein Batsignal in Reichweite"); GCPD.on = !GCPD.on; toast(GCPD.on ? "Batsignal an (leuchtet nachts über Gotham)" : "Batsignal aus"); if (typeof invRender === "function") invRender(); }
 renderer.domElement.addEventListener("mousedown", e => { if (e.button === 0 && dragging && onFoot() && typeof invHeld === "function" && invHeld() === "batknopf") batKnopf(); });
 document.getElementById("btn-use")?.addEventListener("click", () => { if (typeof invHeld === "function" && invHeld() === "batknopf" && onFoot()) batKnopf(); });
+// Bat-Knopf in 3D (Nicolas 2026-11-18, N16: "eher wie ein Funkgeraet oder eine Fernbedienung mit einem Knopf"): schwarzes Gehaeuse mit Griffrillen, kurze Antenne,
+// grosser gelber Knopf mit Fledermaus (BAT_SIGNAL_PTS), rote LED (leuchtet, solange das Signal an ist). Front +z (zum Spieler). Der Knopf geht beim Druecken kurz hinein.
+function buildBatKnopf() { const g = new THREE.Group(), schwarz = new THREE.MeshStandardMaterial({ color: 0x1b1d22, roughness: 0.55, metalness: 0.2 }), gummi = new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.9 }),
+    gelb = new THREE.MeshStandardMaterial({ color: 0xf2c21b, roughness: 0.35, emissive: 0x3a2a00 }), led = new THREE.MeshStandardMaterial({ color: 0x441010, emissive: 0x000000 });
+  const W = 0.026, H = 0.06, r = 0.012, sh = new THREE.Shape(); sh.moveTo(-W + r, -H); sh.lineTo(W - r, -H); sh.quadraticCurveTo(W, -H, W, -H + r); sh.lineTo(W, H - r); sh.quadraticCurveTo(W, H, W - r, H); sh.lineTo(-W + r, H); sh.quadraticCurveTo(-W, H, -W, H - r); sh.lineTo(-W, -H + r); sh.quadraticCurveTo(-W, -H, -W + r, -H);
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.018, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 3, curveSegments: 8 }); geo.translate(0, 0, -0.009); g.add(new THREE.Mesh(geo, schwarz));
+  for (const sx of [-1, 1]) { const rl = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.05, 0.016), gummi); rl.position.set(sx * (W + 0.002), -0.025, 0); g.add(rl); }   // Griffleisten links und rechts
+  const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.005, 0.045, 10), gummi); ant.position.set(W * 0.55, H + 0.024, 0); g.add(ant); const kp = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 10, 8), gummi); kp.position.set(W * 0.55, H + 0.047, 0); g.add(kp);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.0195, 0.0025, 8, 32), new THREE.MeshStandardMaterial({ color: 0x8a8f99, metalness: 0.7, roughness: 0.3 })); ring.position.set(0, 0.012, 0.013); g.add(ring);
+  const btn = new THREE.Group(), kn = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.018, 0.008, 32), gelb); kn.rotation.x = Math.PI / 2; btn.add(kn);
+  if (typeof BAT_SIGNAL_PTS !== "undefined") { const P = BAT_SIGNAL_PTS, s = 0.0145, bs = new THREE.Shape(); P.forEach(([x, y], i) => bs[i ? "lineTo" : "moveTo"](x * s, -y * s)); for (let i = P.length - 2; i >= 0; i--) bs.lineTo(-P[i][0] * s, -P[i][1] * s);
+    const bat = new THREE.Mesh(new THREE.ShapeGeometry(bs), new THREE.MeshBasicMaterial({ color: 0x111111 })); bat.position.z = 0.0042; btn.add(bat); }
+  btn.position.set(0, 0.012, 0.014); g.add(btn);
+  const l = new THREE.Mesh(new THREE.SphereGeometry(0.0032, 10, 8), led); l.position.set(-W * 0.55, H - 0.012, 0.0125); g.add(l);
+  const txt = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.006), new THREE.MeshBasicMaterial({ color: 0x5a5e66 })); txt.position.set(0, -0.03, 0.0125); g.add(txt);   // Typenschild
+  g.userData.btn = btn; g.userData.led = led; return g; }
+function batKnopfDruck() { const H = typeof HAND3D_S !== "undefined" ? HAND3D_S : null; if (!H || !H.g || H.id !== "batknopf") return; H.g.traverse(o => { if (o.userData.btn) { o.userData.btn.position.z = 0.0105; setTimeout(() => { o.userData.btn.position.z = 0.014; }, 160); } }); }
+if (typeof HAND3D !== "undefined") HAND3D.batknopf = () => { const g = new THREE.Group(), k = buildBatKnopf(), led = k.userData.led; k.scale.setScalar(1.25); k.rotation.set(-0.25, -0.35, -0.12); g.add(k); g.position.set(0, 0.01, 0);
+  const upd = () => { const on = typeof GCPD !== "undefined" && GCPD.on; led.emissive.setHex(on ? 0xff2020 : 0x000000); }; upd(); k.children[0].onBeforeRender = upd; return g; };   // LED folgt dem Signal
+
 addEventListener("mouseup", e => { if (e.button === 2) AIM.on = false; });
 document.getElementById("btn-aim")?.addEventListener("click", e => { e.currentTarget.blur(); AIM.on = !AIM.on && onFoot() && !!weaponHeld(); });
 document.getElementById("btn-use")?.addEventListener("click", e => { e.currentTarget.blur(); weaponUse(); });
