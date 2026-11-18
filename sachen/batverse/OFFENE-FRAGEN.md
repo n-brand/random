@@ -94,3 +94,26 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 31. **Bekanntes Problem Greifhaken (2026-11-17, Nicolas):** Schiesst man im Casino an die Decke des Erdgeschosses, zieht der Haken einen durch die Decke auf den 2. Stock. Ursache vermutlich: waffen.js sucht nach einem Treffer bis 5 m darüber eine Kante und setzt einen oben ab, ohne zu prüfen, ob der Weg dorthin frei ist (Decke von unten, Wand dazwischen). Kann überall passieren, wo über einer Decke oder Wand innerhalb von 5 m begehbarer Boden liegt: Casino, Polizeipräsidium, Parkhaus-Decks, Tiefgaragen, Geheimbasis, Wayne Tower, Kanal unter Strassen, U-Bahn unter Plätzen, Batcave. **Behoben 2026-11-17** (waffen.js): Treffer an der Unterseite einer Decke halten nicht (Meldung "an der Decke kein Halt"); hochziehen auf eine Kante nur, wenn die Spalte vor der Wand bis zur Kante frei ist und oben Platz für den Körper ist, sonst nur vor die Wand. Geprüft im Casino (9 Stellen) und an 6 Hausfassaden; andere Orte (Parkhaus, Tiefgarage, Kanal, U-Bahn, Batcave) nicht einzeln getestet, gleiche Regel.
 
 32. **Casino-Werte (2026-11-17):** Angenommen: Jetons 1:1 gegen Bargeld ohne Gebühr; Spielautomat zahlt im Schnitt etwa 92 % des Einsatzes zurück (Gewinnplan im Spielfenster). Bitte bestätigen oder ändern.
+
+## Notizen 18.11.2026 (Phase 11)
+
+33. **Alte Änderungsliste:** Die Geschichte des Batverse steht bis 2026-11-17 in `C:\Source\random\CLAUDE.md`, Neues ab jetzt in `sachen/batverse/CLAUDE.md`. Soll ich die alten Batverse-Einträge auch dorthin verschieben?
+    - *Bis dahin:* alte Einträge bleiben, Neues in der Batverse-Datei.
+34. **Tresor-Stufen (N23):** Vorschlag: 1 Kassette (Brechstange), 2 Wandtresor mit Zahlenschloss (Brechstange länger oder Code), 3 Stahlschrank wie im Casino (nur aufsprengen mit Gas + Feuerzeug), 4 Banktresor mit Rundtür (grösser, mehrere Ladungen oder Hacktool), 5 Batman-Tresor (nur Generalschlüssel/Hacktool). Passt das?
+    - *Bis dahin:* diese 5 Stufen.
+35. **Mülleimer (N26):** Gegenstand per Rechtsklick-Fenster hineinlegen; bis zur Leerung (z. B. jeden Spieltag oder beim Neuladen) wieder herausnehmen möglich? Papierkorb nur kleine Dinge (Zigaretten, Papier, USB-Stick)?
+    - *Bis dahin:* herausnehmen bis zur Leerung möglich, Leerung beim Neuladen.
+36. **Börse (N30):** Im Laptop gibt es schon "Gotham Stock Exchange" mit 8 Aktien, Depot und Kauf/Verkauf. Was fehlt dir noch (mehr Firmen, Kurse durch Ereignisse im Spiel, zwei Börsen wie in GTA V, auch auf dem Handy)?
+    - *Bis dahin:* bleibt wie gebaut.
+37. **Akte ansehen (N38):** Welche Variante aus `IDEEN-AKTE.md` (Taste, Pausenmenü, Handy-App, Brieftasche an der Hotbar)?
+    - *Bis dahin:* Empfehlung Taste + Brieftasche.
+38. **Spielfiguren (N35):** Grösse der Figur? Heute rechnet das Spiel mit Augenhöhe ca. 1,7 m; Fahrzeuge und Türen passen dazu. Soll die Figur dazu passen (ca. 1,85 m)?
+    - *Bis dahin:* passend zur heutigen Augenhöhe.
+39. **Neuer Name für den Greifhaken (N44):** Vorschläge: Grapnel Gun, Enterhaken-Pistole, Bat-Grapple, Seilwerfer, Grapple Launcher.
+    - *Bis dahin:* "Grapnel Gun".
+40. **Musik (N49):** Schickst du die Songs als Dateien? Für den Browser sind .mp3 oder .m4a besser als .mp4 (kleiner). Das Repo ist öffentlich: dürfen die Songs dort liegen, oder sollen sie nur lokal bleiben?
+    - *Bis dahin:* App ohne Songs, nur lokal.
+41. **Nachtsichtbrille anziehen (N28):** Eigene Ausrüstungsplätze im Inventar (Kopf, Körper …) wie in Minecraft, oder einfach in der Hand benutzen (an/aus)?
+    - *Bis dahin:* Ausrüstungsplatz "Kopf" im Inventar.
+42. **"Minotaurus"-Drohnenpanzer (N52):** Den Namen kenne ich nicht sicher. Meinst du einen bestimmten Kettenroboter (z. B. ein unbemanntes Bodenfahrzeug) oder soll ich einen eigenen Entwurf machen?
+    - *Bis dahin:* eigener Entwurf.

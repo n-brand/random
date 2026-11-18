@@ -89,6 +89,7 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 
 - **Militärstützpunkt ausserhalb der Stadt** (nördlich, über eine Zufahrt erreichbar): Kaserne, Hangars, Fahrzeughalle, Militär-Autohaus.
 - Zufahrt über die Nordkanal-Brücke (Verlängerung der Uptown Avenue).
+- Militärfahrzeuge und weitere Waffen aus den Notizen 18.11.2026: siehe Phase 11, N51 und N52.
 
 ## Später (vorgemerkt, noch nicht in der Karte)
 
@@ -145,6 +146,73 @@ Als Gebäude (innen leer) stehen auch: Club des Pinguins, Grand Ballroom (Events
 | N13 | **Keilsperren** (hydraulische Strassensperren, engl. *wedge barrier* / Road Blocker; Nicolas 2026-11-17, Filmbild Wall Street, Vorlage `karten/planung/keilsperre-vorbild.webp`): Stahlkeile im Boden quer über die Fahrbahn, fahren hoch (z. B. vor Börse, Grossbank, Gericht, Polizei). Schräge Vorderseite = Rampe: mit Motorrad/Batpod springt man darüber, Autos prallen an der steilen Kante ab (Stoss, Schaden, stehen bleiben), schwere Fahrzeuge (Tumbler, Panzer) kommen evtl. drüber. Dazu Absperrböcke und Pylonen. Idee: ein-/ausfahrbar (Rechtsklick, Alarm, Polizeieinsatz) | offen |
 | N14 | **Abfahrt in eine untere Strasse unter einer Hochstrasse** (Nicolas 2026-11-17, Filmbild, Vorlage `karten/planung/unterstrasse-abfahrt-vorbild.webp`): breite Strasse unter einem Hochstrassen-Deck auf Betonpfeilern; die Decke ist dunkel mit Reihen von Leuchtstoffröhren (grünlich-weiss), an der Kreuzung Ampeln und Fussgängersignale; der linke Fahrstreifen taucht als Rampe nach links in eine untere Ebene ab, rechts geht es ebenerdig weiter ins Helle. Abgleich mit dem Bestand: zweistöckige Strassen und Rampen gibt es schon (gotham-unterstrasse.js, Wayne Circle, Park Row); fehlt: Leuchtröhren unter dem Deck, Ampeln/Fussgängersignale, Kreuzung unter der Hochstrasse, die Rampe seitlich als Abzweig statt mittig | offen |
 | N15 | **Lichter aus und Nachtsichtbrille** (Nicolas 2026-11-17, nur als Idee): Batman kann in Tunneln, Kanälen, U-Bahn, Tiefgaragen und Gebäuden alle Lampen eines Bereichs ausschalten (z. B. Gadget im Inventar oder Rechtsklick an einem Sicherungskasten; Lampen-Materialien und Lichter dunkel, nach einer Zeit wieder an). Dazu eine Nachtsichtbrille als Gegenstand (Taste oder Hotbar): grünliches, helleres Bild mit Rauschen und Vignette (Nachbearbeitung oder Nebel/Belichtung anpassen), Wärmequellen/Personen heben sich ab. Zusammen: Gegner sehen im Dunkeln nichts, Batman schon | Idee |
+
+## Phase 11 – Notizen 18.11.2026
+
+Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Phase 10 abgeglichen: neu sind nur die Punkte unten. Rückfragen dazu: `OFFENE-FRAGEN.md` 33–42.
+
+**Gegenstände und Behälter**
+
+| Nr | Was | Stand |
+|----|-----|-------|
+| N16 | **Bat-Knopf in 3D** in der Hand, eher wie ein Funkgerät oder eine Fernbedienung mit einem Knopf | offen |
+| N21 | **Aufnehmen mit Kreis**: linke Maus auf einem Gegenstand halten, ein Kreis um den Zielpunkt füllt sich, voll = aufgenommen (Geld, Goldbarren, Koffer). Für Behälter ersetzt durch N22 | offen |
+| N22 | **Behälter-Inventar per Rechtsklick** (Tresore, Koffer, Waffenwand): öffnet ein Fenster mit den 2D-Plätzen des Behälters, Gegenstände einfach hinein- und herausziehen wie im Inventar. Nur von vorne, nur aus der Nähe, nur wenn offen (zu = kein Zugriff) | offen – Grundlage für N23, N25, N26, N27 |
+| N23 | **Tresore**: verschliessbar, mehrere Sicherheitsstufen und Varianten (verschieden gross, sehr sichere mit grösserer Tür, aber nicht riesig), aufbrechen oder aufsprengen je nach Stufe. Werkzeuge als Gegenstände 2D/3D: Brechstange, explosives Gas, Feuerzeug. In der Werkstatt einen Tresor beim Tisch mit den Laptops. Vorschlag der Stufen siehe `OFFENE-FRAGEN.md` 34 | offen |
+| N24 | **Goldbarren und Geldstapel in 3D** überarbeiten (eigener Schritt) | offen |
+| N25 | **Batarang-Etui wird ein Koffer**: schwarzer Akten-/Geldkoffer, aufnehmbar (Kreis), zweite Variante mit Geld. Als Gegenstand in der Hand zu; im Inventar zeigt der Tooltip keinen Inhalt. 2D und 3D | offen |
+| N26 | **Mülleimer** in der Werkstatt: öffentlicher Mülleimer, Papierkorb, evtl. eine dritte Variante (z. B. Container). Wie man Gegenstände loswird und ob man sie bis zur Leerung wieder herausnehmen kann: brainstormen (`OFFENE-FRAGEN.md` 35) | offen |
+| N27 | **Waffenwand in der Werkstatt** (hinter dem Tisch) mit allen bisherigen Waffen, Rechtsklick = Behälter-Inventar (N22) | offen |
+| N28 | **Nachtsichtbrille** (Militär) als Gegenstand 2D/3D; anziehen (Ausrüstungsplatz wie in Minecraft?) -> grüne Sicht mit Rauschen. Ersetzt die Brille aus der Idee N15 | offen |
+| N33 | **Zigaretten** als Gegenstand | offen |
+| N34 | **Skateboard** wie in Schedule I: Rechtsklick halten, bis der Kreis um die Maus voll ist, dann Wechsel in die Ansicht von hinten auf dem Board; W beschleunigt, deutlich schneller als zu Fuss | offen |
+| N36 | **Fidget Spinner** als Gegenstand, Rechtsklick dreht ihn | offen |
+| N39 | **USB-Sticks**, zuerst 3 verschieden aussehende, mit eigener Software/Daten; in Computer, Laptop oder Server einstecken | offen |
+
+**Bankautomat, Casino, Werkstatt**
+
+| Nr | Was | Stand |
+|----|-----|-------|
+| N17 | **Bankautomat 3D**: die zwei schwarzen Striche links neben dem Bildschirm sind falsch, gemeint sind Kartenschlitz und Geldausgabe. Bildschirm grösser, die Schlitze darunter | offen |
+| N18 | **Bankautomat aufbrechen**: beim Beschuss mit einer Waffe ca. 20 s ununterbrochen Geldscheine aus dem Schlitz (Animation), dazu eine zerstörte 3D-Variante. Später aufbrechen, zerstören, manipulieren | offen |
+| N19 | **Jeton-Automat einzeln in der Werkstatt** (Bargeld gegen Jetons) | offen |
+| N20 | **Spielautomaten grösser** (wirken zu klein) | offen |
+| N29 | **Neue Casino-Automaten**, alle mit Jetons, Knöpfe im Jeton-Design: **Crash** (Flugzeug steigt, Faktor wächst, rechtzeitig auszahlen, sonst Absturz = Einsatz weg), **Mines** (ca. 30 verdeckte Felder mit Diamanten und Bomben, Einsatz und Anzahl Bomben selbst wählen, jeder Diamant erhöht den Gewinn, mehr Bomben = mehr Wert je Diamant, Bombe = verloren), **Daily Spin Wheel** (Glücksrad einmal am Tag, wie GTA V). Roulette bleibt. Weitere Ideen: `IDEEN-CASINO.md` | offen |
+| N30 | **Börse auf dem Laptop** wie in GTA V | teilweise – "Gotham Stock Exchange" mit 8 Aktien, Depot, Kauf/Verkauf ist im Laptop gebaut (2026-11-17); Ausbau offen (`OFFENE-FRAGEN.md` 36) |
+| N31 | **Neues, realistisches Casino in der Werkstatt** nach Recherche echter Casinos (Grösse, Aufteilung, Aussehen) | offen |
+| N37 | **Waffenshop in der Werkstatt** grösser, direkt daneben ein viel grösserer | offen |
+| – | Regel: alles, was neu einzeln gebaut wird, beim Tisch in der Werkstatt aufstellen, wo jetzt die Laptops stehen | Regel |
+
+**Handy und Apps**
+
+| Nr | Was | Stand |
+|----|-----|-------|
+| N32 | **Zwei Handys** (Gaming-Handy von Wayne Enterprises, Büro-Handy einer anderen Firma), als Gegenstand 2D/3D. In der Hand Rechtsklick = Handy unten rechts (wie GTA V, Fenster wie beim Laptop), Pfeiltasten und Enter wählen Apps. Browser: Handy dreht quer und füllt den Bildschirm; andere Apps (Kontakte usw.) bleiben hochkant unten rechts | offen |
+| N40 | **Dating-App** auf dem Handy (Aufbau echter Apps recherchieren, eigene bauen) | offen |
+| N41 | **Eigenes Hintergrundbild** für Handy und Laptop hochladen, stark verpixelt gespeichert (Speicher sparen) | offen |
+| N49 | **Musik-App** wie Spotify (ohne Werbung) mit eigenen Songs von Nicolas; Handy weg = kleine Anzeige mit vor, zurück, Pause, schliessen | offen – wartet auf die Dateien (`OFFENE-FRAGEN.md` 40) |
+
+**Waffen, Fahrzeuge, Bewegung**
+
+| Nr | Was | Stand |
+|----|-----|-------|
+| N44 | **Greifhaken**: cooleres 2D-Symbol, neuer Name (`OFFENE-FRAGEN.md` 39), 3D-Modell, nur Batman (in keinem Laden; ist es auch heute nicht). Zielhilfe wie bei der Rauchbombe (wie weit er reicht), schiesst ein Seil mit 3D-Haken und zieht es wieder ein | offen |
+| N45 | **Löschfahrzeug**: Zielhilfe wie bei der Rauchbombe (wie weit der Strahl reicht) | offen |
+| N46 | **Polizei-Helikopter** und **Polizei-Jeep** (Pickup mit offener Ladefläche) | offen |
+| N47 | **Drift** für Landfahrzeuge (Taste in `CLAUDE.md` eintragen) | offen |
+| N48 | **Gleitumhang**: Batman gleitet nach einem Sprung in die Tiefe in einem bestimmten Winkel | offen |
+| N50 | **Batarang-Flugbahn**: in der Mitte steigt er plötzlich viel höher, dann kommt er zurück – korrigieren | offen (Fehler) |
+| N51 | **Weitere Waffen**: G36, G36C (Karabiner), AKM, MP7, MG34, weitere Maschinengewehre und Maschinenpistolen | offen |
+| N52 | **Militärfahrzeuge** (zu Phase 6): Kampfpanzer Leopard (gibt es), Transporthelikopter Cougar, leichter Transport- und Schulungshelikopter, Kommandofahrzeug Piranha I, Sanitätsfahrzeug Piranha I, geschütztes Mannschaftstransportfahrzeug Duro IIIP, Panzerjäger 90 (Piranha I), offensiver Drohnen-Panzer (Nicolas: "Minotaurus"), Aufklärungsdrohne Northrop Grumman RQ-4 | offen |
+
+**Figuren, Akten, Ideen**
+
+| Nr | Was | Stand |
+|----|-----|-------|
+| N35 | **Spielfiguren** anfangen, einfach gebaut wie in Schedule I. Grosse Aufgabe: Fahrzeuge und Gebäude müssen evtl. an die Figurengrösse angepasst werden | offen – eigener Plan nötig |
+| N38 | **Personalakte** des Spielers: Waffenlizenzen in Stufen, Strafregister, Fahrausweis usw. Online-Datenbank-Software nur auf Computern der Polizei und bei Batman; die eigene Akte jederzeit ohne Gegenstand ansehen. Später Personen mit Akten (auch Joker, Bane, Pinguin). Ideen: `IDEEN-AKTE.md` | offen |
+| N42 | Idee: **Innenräume erst beim Betreten laden**, Module (z. B. gleiche Hotelzimmer), hinter geschlossenen Türen weniger laden | Idee |
+| N43 | Idee: **eigene Geräusche in Gebäuden** (z. B. im Casino Spielgeräusche und Klingeln) | Idee |
 
 ## Nicht Teil von Wayne Manor
 
