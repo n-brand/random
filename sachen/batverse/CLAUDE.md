@@ -53,12 +53,15 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Eigenes Hintergrundbild | Handy: App Einstellungen > Eigenes Bild hochladen; Laptop: Einstellungen > Personalisierung > Eigenes Bild hochladen |
 | Bankautomat aufbrechen | mit einer Schusswaffe darauf schiessen (ca. 15 Pistolentreffer); danach fliegen 20 s Geldscheine heraus, darüberlaufen sammelt sie (je 50 $ Bargeld); nach 3 min wieder heil |
 | Crash | zwei Einsätze (je "dabei", − / + Betrag), STARTEN zahlt beide; jeder hat seinen eigenen AUSZAHLEN-Knopf, Leertaste = starten bzw. nächsten Einsatz auszahlen; nach dem letzten Auszahlen fliegt das Flugzeug bis zum Absturzpunkt weiter |
+| Zigaretten | in der Hand Linksklick = anzünden (braucht ein Feuerzeug im Inventar), brennt ca. 40 s; nochmal Linksklick = ausdrücken; jede angezündete ist verbraucht |
 | Fidget Spinner | in der Hand linke Maus halten = beschleunigen (bis ca. 6 U/s), loslassen = läuft ca. 20 s aus, kurzer Linksklick = stoppt |
 | Werkstatt-Modi | 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person, 5 Geist, Z Zeichnen |
 
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Zigaretten** (Nicolas 2026-11-18, N33: "Zigaretten als Gegenstand"): neu `js/spieler/zigaretten.js` (Spiel-FILES nach spieler/fidget.js, Werkstatt, ASSETS, BV_KEEP). Gegenstand `zigarette` (Art Konsum, Stapel 20 = eine Schachtel; 2D-Symbol Schachtel mit Filtern), erfundene Marke "Gotham Lights" mit Warnhinweis. In der Hand 3D die offene Schachtel (Deckel hinten auf, vier Filter); Linksklick zündet eine an (nur mit Feuerzeug), dann hält man die Zigarette: Glut, feiner Rauch, alle 5 s ein Zug (Glut heller, drei Rauchwölkchen), brennt in 40 s ab (Papier kürzer), dann eine weniger; Linksklick oder anderer Platz = ausgedrückt (auch verbraucht). `zigStep` aus tresorStep. Geprüft in der Werkstatt: 20 -> angezündet -> nach 40 s abgebrannt, 19; Bilder Schachtel, Zigarette in der Hand. Rauch nur in der Hand-Szene (andere sehen ihn nicht, es gibt noch keine Figuren).
 
 - **Desktop-App mit Electron, Symbole Bat-Knopf und Greifhaken, Pistolengriff kürzer** (Nicolas 2026-11-18: "Ja, Electron-App"; "Bat-Knopf und Greifhaken in 2D beide anpassen, passen momentan nicht zu 3D"; Bild: "Griff der 3D-Pistole ist viel zu lange"):
   - Neu `C:Sourceandomdesktop` (package.json, main.js, README.md; node_modules in .gitignore): Electron-Fenster lädt das Spiel aus dem Repo über das eigene Protokoll `batverse://app/` (feste Herkunft, Spielstand bleibt), three.js aus node_modules statt unpkg (das https-Protokoll wird nur für `unpkg.com/three@0.160.0/` umgeleitet). Ohne Menüleiste und Kontextmenü; App-Tasten F11 Vollbild, F5 neu laden, F2 Spiel/Werkstatt, F12 Entwicklerwerkzeuge; beim Schliessen eine Rückfrage statt des stummen beforeunload; externe Links im Browser. **Installation (npm install) war mir nicht erlaubt, Nicolas startet sie selbst; die App ist noch nicht gestartet und nicht geprüft.** Befehle in desktop/README.md.
