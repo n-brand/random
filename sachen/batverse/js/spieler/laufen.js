@@ -97,11 +97,11 @@ function waterAt(x, z) {
 }
 // Klippenkante: Schritt nach (nx, nz) verboten, wenn er naeher als m Meter an die Kuestenlinie fuehrt und nicht landeinwaerts geht
 const coastEdge = (nx, nz, x0, z0, m) => { if (inGothamG(nx, nz)) return false; const s1 = seaD(nx, nz); return s1 > -m && s1 > seaD(x0, z0) - 0.01; };   // Gotham hat eigene Ufer (G1c)
-function updatePlayer(dt, moveX, moveZ, run) {
+function updatePlayer(dt, moveX, moveZ, run, speedOv) {   // speedOv: eigene Geschwindigkeit (Skateboard, skateboard.js)
   const len = Math.hypot(moveX, moveZ);
   if (len > 1) { moveX /= len; moveZ /= len; }
   const surf = waterAt(player.pos.x, player.pos.z), swim = surf !== null && player.pos.y < surf - 0.3;
-  const speed = swim ? 2.8 : run ? RUN : WALK, sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
+  const speed = swim ? 2.8 : speedOv || (run ? RUN : WALK), sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
   const next = player.pos.clone();
   next.x += (-sin * moveZ + cos * moveX) * speed * dt;
   next.z += (-cos * moveZ - sin * moveX) * speed * dt;

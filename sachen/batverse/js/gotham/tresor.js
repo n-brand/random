@@ -124,7 +124,7 @@ function tresorStep() { const now = performance.now(), dt = Math.min(0.1, (now -
     U.led.material = T.broken ? TRESOR_M.russ : T.open ? TRESOR_M.led : TRESOR_M.ledR;
     if (T.fuse > 0) { T.fuse -= dt; for (const c of T.charges) c.material = (Math.floor(T.fuse * 6) % 2) ? TRESOR_M.gas : TRESOR_M.gelb; if (T.fuse <= 0) tresorExplode(T); } }
   const F = TRESOR.flash; if (F) { F.t -= dt; F.L.intensity = Math.max(0, F.t / 0.35) * 60; if (F.t <= 0) { scene.remove(F.L); TRESOR.flash = null; } }
-  tresorHoldStep(dt); if (typeof kofferStep === "function") kofferStep(dt); if (typeof muellStep === "function") muellStep(dt); if (typeof nvStep === "function") nvStep(dt); if (typeof cgStep === "function") cgStep(dt); }
+  tresorHoldStep(dt); if (typeof kofferStep === "function") kofferStep(dt); if (typeof muellStep === "function") muellStep(dt); if (typeof nvStep === "function") nvStep(dt); if (typeof cgStep === "function") cgStep(dt); if (typeof skateStep === "function") skateStep(dt); }
 { const st = document.createElement("style"); st.textContent = "#tresor-pad{position:fixed;inset:0;z-index:45;display:grid;place-items:center;background:rgba(0,0,0,.45);user-select:none;-webkit-user-select:none}#tresor-pad[hidden]{display:none}" +
     ".tp-box{background:#16181c;border:1px solid #3a3d42;border-radius:12px;padding:14px;width:230px;color:#e8e8e8;font:14px system-ui,sans-serif}.tp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.tp-head button{background:none;border:0;color:#aaa;font-size:20px;cursor:pointer}" +
     ".tp-disp{background:#0b1a10;color:#4dff8a;font:700 28px ui-monospace,monospace;letter-spacing:10px;text-align:center;padding:8px;border-radius:6px}.tp-msg{min-height:18px;font-size:12px;color:#aab;margin:6px 0}" +
@@ -146,7 +146,7 @@ const HAND3D = {
 if (typeof HAND3D_VOR !== "undefined") Object.assign(HAND3D, HAND3D_VOR);   // vorher geladene Hand-Modelle (Handys, handy.js)
 const HAND3D_S = { id: null, sc: null, g: null };
 function hand3dRender() { const id = typeof invHeld === "function" ? invHeld() : null, foot = typeof onFoot === "function" ? onFoot() : true;
-  if (!id || !HAND3D[id] || !foot || (typeof invIsOpen === "function" && invIsOpen()) || tresorPadIsOpen()) return;
+  if (!id || !HAND3D[id] || !foot || (typeof invIsOpen === "function" && invIsOpen()) || tresorPadIsOpen() || (typeof SKATE !== "undefined" && SKATE.on)) return;   // auf dem Skateboard nichts in der Hand
   const H = HAND3D_S; if (!H.sc) { H.sc = new THREE.Scene(); H.sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.3)); H.g = new THREE.Group(); const pl = new THREE.PointLight(0xffffff, 3, 0, 0); pl.position.set(-0.15, 0.25, 0.35); H.g.add(pl); H.sc.add(H.g); }
   if (H.id !== id) { H.id = id; for (const c of [...H.g.children]) if (!c.isLight) H.g.remove(c); H.g.add(HAND3D[id]()); }
   H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); { const zz = 0.45, th = Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV()) / 2); H.g.translateX(0.66 * th * camera.aspect * zz); H.g.translateY(-0.4 * th * zz); H.g.translateZ(-zz); }

@@ -21,7 +21,8 @@ function personEnd() { if (typeof laptopClose === "function") laptopClose(); wal
 function personStep(dt) {
   const P = PERSON, busy = personBusy();
   let mx = 0, mz = 0; if (!busy) { if (keys.has("KeyW") || keys.has("ArrowUp")) mz += 1; if (keys.has("KeyS") || keys.has("ArrowDown")) mz -= 1; if (keys.has("KeyD") || keys.has("ArrowRight")) mx += 1; if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1; }
-  const sp = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 7.5 : 4.6, l = Math.hypot(mx, mz) || 1, s = Math.sin(P.yaw), c = Math.cos(P.yaw);
+  const skate = typeof SKATE !== "undefined" && SKATE.on; if (skate) { skateSpeed(dt); mx = 0; mz = SKATE.v > 0.05 ? 1 : 0; }   // Skateboard (../js/spieler/skateboard.js)
+  const sp = skate ? Math.max(0.01, SKATE.v) : keys.has("ShiftLeft") || keys.has("ShiftRight") ? 7.5 : 4.6, l = Math.hypot(mx, mz) || 1, s = Math.sin(P.yaw), c = Math.cos(P.yaw);
   P.pos.x += (-s * mz + c * mx) / l * sp * dt; P.pos.z += (-c * mz - s * mx) / l * sp * dt;
   for (const b of personBoxes()) if (P.pos.y < b.max.y && b.containsPoint(new THREE.Vector3(P.pos.x, Math.max(b.min.y, P.pos.y + 0.5), P.pos.z))) {   // aus dem Modell hinausschieben (kuerzeste Richtung)
     const d = [[P.pos.x - b.min.x, -1, 0], [b.max.x - P.pos.x, 1, 0], [P.pos.z - b.min.z, 0, -1], [b.max.z - P.pos.z, 0, 1]].sort((u, v) => u[0] - v[0])[0]; P.pos.x += d[1] * (d[0] + 0.001); P.pos.z += d[2] * (d[0] + 0.001); }
@@ -29,7 +30,7 @@ function personStep(dt) {
   const pl = Math.max(Math.abs(P.pos.x - PROJEKT.x) < 4 && Math.abs(P.pos.z - PROJEKT.z) < 4 ? 0.15 : 0, typeof personGround === "function" ? personGround(P.pos.x, P.pos.z, P.pos.y) : 0);   // Platte, Daecher der Gotham-Gebaeude
   if (keys.has("Space") && P.ground && !busy) { P.vy = 5; P.ground = false; }
   P.vy -= 18 * dt; P.pos.y += P.vy * dt; if (P.pos.y <= pl) { P.pos.y = pl; P.vy = 0; P.ground = true; }
-  camera.position.set(P.pos.x, P.pos.y + P.EYE, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ");
+  camera.position.set(P.pos.x, P.pos.y + P.EYE, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ"); if (skate) skatePose(dt);   // Third Person auf dem Brett
   sunFollow(P.pos, 100);
   if (typeof weaponsStep === "function") weaponsStep(dt);                 // Batarang, Rauchbombe, Greifhaken (../js/spieler/waffen.js)
   // Zielen auf den Automaten (Bildmitte, bis 3 m): Hinweis
