@@ -7,12 +7,15 @@
 "use strict";
 // Um den Rundkurs (Nicolas 2026-11-17: "die hinteren Gebaeude sollen um die Fahrbahn stehen"): Mitte [x, z] und Richtung der Front zur Strecke [dx, dz].
 // Jedes Gebaeude wird um seine Mitte so gedreht, dass die Kartenseite "Norden" (Front des Polizeipraesidiums, im Spiel zur Strasse) zur Strecke zeigt.
-const WG_ZIEL = { "gcpd": [-245, 0], "waffen-1": [-120, -92], "auto-teuer": [128, 112], "BS-02": [-125, 105], "parkhaus-1": [122, -100] };
-const WG_FRONT = { "gcpd": [1, 0], "waffen-1": [0, 1], "auto-teuer": [0, -1], "BS-02": [0, -1], "parkhaus-1": [0, 1] };
-const WG_NAME = { "gcpd": "Polizeipräsidium mit Verwahrstelle", "waffen-1": "Waffenladen (GUNS & AMMO)", "auto-teuer": "Autohaus (Prestige Motors)", "BS-02": "Casino", "parkhaus-1": "Parkhaus" };
+const WG_ZIEL = { "gcpd": [-245, 0], "waffen-1": [-118, -94], "waffen-2": [-178, -104], "auto-teuer": [128, 112], "BS-02": [-125, 105], "parkhaus-1": [122, -100] };
+const WG_FRONT = { "gcpd": [1, 0], "waffen-1": [0, 1], "waffen-2": [0, 1], "auto-teuer": [0, -1], "BS-02": [0, -1], "parkhaus-1": [0, 1] };
+const WG_NAME = { "gcpd": "Polizeipräsidium mit Verwahrstelle", "waffen-1": "Waffenladen (GUNS & AMMO)", "waffen-2": "Grosser Waffenladen (GOTHAM ARMS)", "auto-teuer": "Autohaus (Prestige Motors)", "BS-02": "Casino", "parkhaus-1": "Parkhaus" };
 const WG_MAP = { "BS-02": [-1300, -620, 60] };                                 // Kartenmitte und groesstes Mass; BS-02 aus gotham/stadt.js (Baustelle des Casinos)
+const GOTHAM_ORTE_ALLE = GOTHAM.orte.slice();                                // alle Orte (Karten-App der Laptops, js/ui/laptop.js), Masse wie im Spiel
+// Waffenlaeden groesser (Nicolas 2026-11-18, N37: "bau den Waffenshop in der Werkstatt aus, er ist noch sehr klein, mach ihn etwas groesser und platziere direkt daneben noch einen viel groesseren"). Nur Werkstatt, im Spiel 20 x 15 x 6 m (OFFENE-FRAGEN 45).
+const WG_MASSE = { "waffen-1": { w: 28, d: 20, h: 8 }, "waffen-2": { w: 56, d: 36, h: 13 } };
+GOTHAM.orte = GOTHAM.orte.map(o => WG_MASSE[o.id] ? { ...o, ...WG_MASSE[o.id] } : o);
 for (const o of GOTHAM.orte) if (WG_ZIEL[o.id]) WG_MAP[o.id] = [o.x, o.z, Math.max(o.w, o.d)];
-const GOTHAM_ORTE_ALLE = GOTHAM.orte.slice();                                // alle Orte (Karten-App der Laptops, js/ui/laptop.js)
 GOTHAM.orte = GOTHAM.orte.filter(o => WG_ZIEL[o.id]);                       // nur diese Orte bauen
 const GCELL = 768;
 const GOT = (() => {

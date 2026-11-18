@@ -121,3 +121,5 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
     - *Bis dahin:* in den Tresoren Goldbarren und Jetons statt Bargeld.
 44. **Tresor-Code:** Alle Tresore starten mit dem Code 0000 (Werkstatt zum Testen). Im Spiel: soll man fremde Codes irgendwo finden können (Zettel, Laptop, USB-Stick N39)?
     - *Bis dahin:* 0000, im Spiel noch keine Tresore.
+
+45. **Waffenläden im Spiel (N37):** In der Werkstatt sind Guns & Ammo jetzt 28 x 20 m und Gotham Arms 56 x 36 m. Sollen sie im Spiel auch so gross werden? Dort stehen Nachbarhäuser dicht daneben, ein grösserer Laden müsste Füllbauten verdrängen. Bis dahin: im Spiel unverändert 20 x 15 m.

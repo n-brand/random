@@ -166,7 +166,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | N28 | **Nachtsichtbrille** (Militär) als Gegenstand 2D/3D; anziehen (Ausrüstungsplatz wie in Minecraft?) -> grüne Sicht mit Rauschen. Ersetzt die Brille aus der Idee N15 | **gebaut 2026-11-18** (nachtsicht.js, Platz Kopf, Taste B) |
 | N33 | **Zigaretten** als Gegenstand | offen |
 | N34 | **Skateboard** wie in Schedule I: Rechtsklick halten, bis der Kreis um die Maus voll ist, dann Wechsel in die Ansicht von hinten auf dem Board; W beschleunigt, deutlich schneller als zu Fuss | **gebaut 2026-11-18** (skateboard.js, Ersatzfigur bis N35) |
-| N36 | **Fidget Spinner** als Gegenstand, Rechtsklick dreht ihn | offen |
+| N36 | **Fidget Spinner** als Gegenstand, Rechtsklick dreht ihn | gebaut 2026-11-18 |
 | N39 | **USB-Sticks**, zuerst 3 verschieden aussehende, mit eigener Software/Daten; in Computer, Laptop oder Server einstecken | offen |
 
 **Bankautomat, Casino, Werkstatt**
@@ -180,7 +180,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | N29 | **Neue Casino-Automaten**, alle mit Jetons, Knöpfe im Jeton-Design: **Crash** (Flugzeug steigt, Faktor wächst, rechtzeitig auszahlen, sonst Absturz = Einsatz weg), **Mines** (ca. 30 verdeckte Felder mit Diamanten und Bomben, Einsatz und Anzahl Bomben selbst wählen, jeder Diamant erhöht den Gewinn, mehr Bomben = mehr Wert je Diamant, Bombe = verloren), **Daily Spin Wheel** (Glücksrad einmal am Tag, wie GTA V). Roulette bleibt. Weitere Ideen: `IDEEN-CASINO.md` | **gebaut 2026-11-18** in der Werkstatt und im Casino (casino-spiele.js) |
 | N30 | **Börse auf dem Laptop** wie in GTA V | teilweise – "Gotham Stock Exchange" mit 8 Aktien, Depot, Kauf/Verkauf ist im Laptop gebaut (2026-11-17); Ausbau offen (`OFFENE-FRAGEN.md` 36) |
 | N31 | **Neues, realistisches Casino in der Werkstatt** nach Recherche echter Casinos (Grösse, Aufteilung, Aussehen) | offen |
-| N37 | **Waffenshop in der Werkstatt** grösser, direkt daneben ein viel grösserer | offen |
+| N37 | **Waffenshop in der Werkstatt** grösser, direkt daneben ein viel grösserer | gebaut 2026-11-18 (nur Werkstatt) |
 | – | Regel: alles, was neu einzeln gebaut wird, beim Tisch in der Werkstatt aufstellen, wo jetzt die Laptops stehen | Regel |
 
 **Handy und Apps**

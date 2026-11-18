@@ -1,0 +1,14 @@
+// Fidget Spinner (Nicolas 2026-11-18, N36: "ein Fidget Spinner als Item waere auch cool, mit Rechtsklick kann man ihn spinnen"). Spiel und Werkstatt, nach gotham/tresor.js (HAND3D).
+// In der Hand: Rechtsklick gibt Schwung (bis ca. 6 Umdrehungen je Sekunde), er dreht weiter und wird langsamer (ca. 25 s), mehrfach klicken = schneller. Leise Surr-Anzeige ueber der Hotbar.
+const FIDGET = { w: 0, a: 0 };
+function buildFidget() { const g = new THREE.Group(), rot = new THREE.Group(), body = new THREE.MeshStandardMaterial({ color: 0x1976d2, metalness: 0.15, roughness: 0.35 }), lager = new THREE.MeshStandardMaterial({ color: 0xd8dce2, metalness: 0.4, roughness: 0.25 }), kappe = new THREE.MeshStandardMaterial({ color: 0x111317, roughness: 0.4 });
+  const sh = new THREE.Shape(); for (let k = 0; k <= 72; k++) { const a = k / 72 * Math.PI * 2, r = 0.022 + 0.014 * Math.pow(Math.max(0, Math.cos(a * 1.5)), 2) * 1.0; const p = [Math.cos(a) * r, Math.sin(a) * r]; k ? sh.lineTo(...p) : sh.moveTo(...p); }   // drei Fluegel
+  for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, h = new THREE.Path(); h.absarc(Math.cos(a) * 0.026, Math.sin(a) * 0.026, 0.0085, 0, Math.PI * 2, true); sh.holes.push(h); }
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.006, bevelEnabled: true, bevelThickness: 0.0015, bevelSize: 0.0015, bevelSegments: 2, curveSegments: 18 }); geo.translate(0, 0, -0.003); rot.add(new THREE.Mesh(geo, body));
+  for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, r = new THREE.Mesh(new THREE.TorusGeometry(0.0078, 0.0016, 8, 20), lager); r.position.set(Math.cos(a) * 0.026, Math.sin(a) * 0.026, 0); rot.add(r); const kg = new THREE.Mesh(new THREE.CylinderGeometry(0.0065, 0.0065, 0.008, 16), lager); kg.rotation.x = Math.PI / 2; kg.position.copy(r.position); rot.add(kg); }   // Gewichte (Kugellager)
+  const mitte = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.0095, 0.012, 20), kappe); mitte.rotation.x = Math.PI / 2; g.add(rot, mitte); g.userData.rot = rot; return g; }
+function fidgetStep(dt) { if (FIDGET.w > 0) { FIDGET.w = Math.max(0, FIDGET.w - (0.6 + FIDGET.w * 0.06) * dt); FIDGET.a += FIDGET.w * dt; }
+  const H = typeof HAND3D_S !== "undefined" ? HAND3D_S : null; if (H && H.g && H.id === "fidget") H.g.traverse(o => { if (o.userData.rot) o.userData.rot.rotation.z = FIDGET.a; }); }
+addEventListener("mousedown", e => { if (e.button !== 2 || !document.pointerLockElement || typeof invHeld !== "function" || invHeld() !== "fidget") return; e.preventDefault(); e.stopImmediatePropagation();
+  FIDGET.w = Math.min(38, FIDGET.w + 14); if (typeof invName === "function") invName("Fidget Spinner · " + (FIDGET.w / (Math.PI * 2)).toFixed(1) + " U/s"); }, true);
+if (typeof HAND3D !== "undefined") HAND3D.fidget = () => { const g = new THREE.Group(), f = buildFidget(); f.scale.setScalar(1.5); f.rotation.set(-0.35, -0.45, 0); g.add(f); g.position.set(-0.02, 0.03, 0); return g; };
