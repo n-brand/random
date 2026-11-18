@@ -132,7 +132,9 @@ addEventListener("keydown", e => { if (!handyIsOpen() || e.target.closest?.("inp
   else if (!home && (k === "ArrowDown" || k === "ArrowUp")) { e.preventDefault(); const sc = document.querySelector("#handy .h-screen"); if (sc) sc.scrollTop += k === "ArrowDown" ? 80 : -80; }
   e.stopImmediatePropagation(); }, true);
 // mit dem Handy in der Hand: Rechtsklick oeffnet es
-addEventListener("mousedown", e => { if (e.button !== 2 || !document.pointerLockElement || typeof invHeld !== "function" || !HANDY_MODELLE[invHeld()]) return; e.preventDefault(); e.stopImmediatePropagation(); handyOpen(null, invHeld()); }, true);
+// kein Browser-Menue: der Rechtsklick oeffnet das Handy und gibt die Maus frei, beim Loslassen kaeme sonst das Kontextmenue (Nicolas 2026-11-18, Bild)
+addEventListener("contextmenu", e => { if (handyIsOpen() || performance.now() - (HANDY.openT || -1e9) < 800) e.preventDefault(); }, true);
+addEventListener("mousedown", e => { if (e.button !== 2 || !document.pointerLockElement || typeof invHeld !== "function" || !HANDY_MODELLE[invHeld()]) return; HANDY.openT = performance.now(); e.preventDefault(); e.stopImmediatePropagation(); handyOpen(null, invHeld()); }, true);
 // 3D in der Hand: flaches Handy mit leuchtendem Bildschirm, Kamera hinten
 for (const id of Object.keys(HANDY_MODELLE)) { const bau = () => { const g = new THREE.Group(), w = id === "handy-wayne", body = new THREE.MeshStandardMaterial({ color: w ? 0x0b0c0e : 0xb9c0c8, metalness: w ? 0.5 : 0.7, roughness: 0.3 }),
     scr = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: w ? 0x3a2a08 : 0x1d3550, emissiveIntensity: 1.4 }), b = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.155, 0.009), body), s = new THREE.Mesh(new THREE.PlaneGeometry(0.066, 0.142), scr);

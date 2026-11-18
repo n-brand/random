@@ -205,7 +205,7 @@ function gunFire(id) {
   for (let k = 0; k < S.pellets; k++) {
     const r = sp * Math.sqrt(Math.random()), a = Math.random() * Math.PI * 2, dir = fwd.clone().addScaledVector(rt, Math.cos(a) * r).addScaledVector(up, Math.sin(a) * r).normalize();
     const st = o.clone().addScaledVector(dir, 0.35), end = o.clone().addScaledVector(dir, S.range), h = shotSeg(st, end, null, S.range > 200 ? 0.6 : 0.4), p = h ? h.p : end;
-    if (h) { gunFx("spark", p); gunFx("dust", p); if (h.hit && h.hit.veh) gunDamage(h.hit.veh, p, S.dmg); }
+    if (h) { gunFx("spark", p); gunFx("dust", p); if (h.hit && h.hit.veh) gunDamage(h.hit.veh, p, S.dmg); if (typeof atmShot === "function") atmShot(p, S.dmg); }   // Bankautomat aufbrechen (bankautomat.js, N18)
     if (k === 0 && (id === "mg" || id === "sniper" || Math.random() < 0.3)) gunFx("tracer", mw, p); }
   const kp = S.kick * (AIM.on ? 0.6 : 1); player.pitch = Math.min(1.5, player.pitch + kp); player.yaw += (Math.random() - 0.5) * kp * 0.4;   // Rueckstoss
   if (GUN.mag[id] === 0 && invHas(S.ammo)) gunReload(id);
