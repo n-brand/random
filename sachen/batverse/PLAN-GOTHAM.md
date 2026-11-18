@@ -179,7 +179,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | N20 | **Spielautomaten grösser** (wirken zu klein) | gebaut 2026-11-18 |
 | N29 | **Neue Casino-Automaten**, alle mit Jetons, Knöpfe im Jeton-Design: **Crash** (Flugzeug steigt, Faktor wächst, rechtzeitig auszahlen, sonst Absturz = Einsatz weg), **Mines** (ca. 30 verdeckte Felder mit Diamanten und Bomben, Einsatz und Anzahl Bomben selbst wählen, jeder Diamant erhöht den Gewinn, mehr Bomben = mehr Wert je Diamant, Bombe = verloren), **Daily Spin Wheel** (Glücksrad einmal am Tag, wie GTA V). Roulette bleibt. Weitere Ideen: `IDEEN-CASINO.md` | **gebaut 2026-11-18** in der Werkstatt und im Casino (casino-spiele.js) |
 | N30 | **Börse auf dem Laptop** wie in GTA V | teilweise – "Gotham Stock Exchange" mit 8 Aktien, Depot, Kauf/Verkauf ist im Laptop gebaut (2026-11-17); Ausbau offen (`OFFENE-FRAGEN.md` 36) |
-| N31 | **Neues, realistisches Casino in der Werkstatt** nach Recherche echter Casinos (Grösse, Aufteilung, Aussehen) | offen |
+| N31 | **Neues, realistisches Casino in der Werkstatt** nach Recherche echter Casinos (Grösse, Aufteilung, Aussehen) | gebaut 2026-11-18 (werkstatt/casino-real.js) |
 | N37 | **Waffenshop in der Werkstatt** grösser, direkt daneben ein viel grösserer | gebaut 2026-11-18 (nur Werkstatt) |
 | – | Regel: alles, was neu einzeln gebaut wird, beim Tisch in der Werkstatt aufstellen, wo jetzt die Laptops stehen | Regel |
 

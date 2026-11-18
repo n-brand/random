@@ -265,9 +265,9 @@ window.werkstattTeleport = p => { if (modus !== "drive") { const d = camera.getW
 // ---------- Auswahl und Ansicht ----------
 const pick = $("pick");
 MODELLE.forEach((m, i) => { const o = document.createElement("option"); o.value = i; o.textContent = m.name; pick.appendChild(o); });
-{ const og = document.createElement("optgroup"); og.label = "Umbauprojekt"; const o = document.createElement("option"); o.value = "projekt"; o.textContent = "Aktuelles Projekt: " + PROJEKT.name; og.appendChild(o); pick.insertBefore(og, pick.firstChild); }
+{ const og = document.createElement("optgroup"); og.label = "Umbauprojekt"; const o = document.createElement("option"); o.value = "projekt"; o.textContent = "Aktuelles Projekt: " + PROJEKT.name; og.appendChild(o); const o2 = document.createElement("option"); o2.value = "casino2"; o2.textContent = "Casino (realistisch)"; og.appendChild(o2); pick.insertBefore(og, pick.firstChild); }
 { const og = document.createElement("optgroup"); og.label = "Gebäude-Vorlagen (kommen mit G3)"; const o = document.createElement("option"); o.disabled = true; o.textContent = "noch keine"; og.appendChild(o); pick.appendChild(og); }
-pick.onchange = () => pick.value === "projekt" ? projektZeigen() : pick.value.startsWith("geb:") ? gebZeigen(pick.value.slice(4)) : laden(+pick.value);
+pick.onchange = () => pick.value === "projekt" ? projektZeigen() : pick.value === "casino2" ? casino2Zeigen() : pick.value.startsWith("geb:") ? gebZeigen(pick.value.slice(4)) : laden(+pick.value);
 let modus = "orbit";
 const setModus = m => { const war = modus; modus = m;
   if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"], ["m-person", "person"], ["m-geist", "geist"]]) $(id)?.setAttribute("aria-pressed", String(m === k));
