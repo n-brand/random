@@ -163,7 +163,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | N25 | **Batarang-Etui wird ein Koffer**: schwarzer Akten-/Geldkoffer, aufnehmbar (Kreis), zweite Variante mit Geld. Als Gegenstand in der Hand zu; im Inventar zeigt der Tooltip keinen Inhalt. 2D und 3D | **gebaut 2026-11-18** (koffer.js; Bargeld im Koffer als Betrag) |
 | N26 | **Mülleimer** in der Werkstatt: öffentlicher Mülleimer, Papierkorb, evtl. eine dritte Variante (z. B. Container). Wie man Gegenstände loswird und ob man sie bis zur Leerung wieder herausnehmen kann: brainstormen (`OFFENE-FRAGEN.md` 35) | **gebaut 2026-11-18** in der Werkstatt (muell.js); im Spiel aufstellen offen |
 | N27 | **Waffenwand in der Werkstatt** (hinter dem Tisch) mit allen bisherigen Waffen, Rechtsklick = Behälter-Inventar (N22) | **gebaut 2026-11-18** |
-| N28 | **Nachtsichtbrille** (Militär) als Gegenstand 2D/3D; anziehen (Ausrüstungsplatz wie in Minecraft?) -> grüne Sicht mit Rauschen. Ersetzt die Brille aus der Idee N15 | offen |
+| N28 | **Nachtsichtbrille** (Militär) als Gegenstand 2D/3D; anziehen (Ausrüstungsplatz wie in Minecraft?) -> grüne Sicht mit Rauschen. Ersetzt die Brille aus der Idee N15 | **gebaut 2026-11-18** (nachtsicht.js, Platz Kopf, Taste B) |
 | N33 | **Zigaretten** als Gegenstand | offen |
 | N34 | **Skateboard** wie in Schedule I: Rechtsklick halten, bis der Kreis um die Maus voll ist, dann Wechsel in die Ansicht von hinten auf dem Board; W beschleunigt, deutlich schneller als zu Fuss | offen |
 | N36 | **Fidget Spinner** als Gegenstand, Rechtsklick dreht ihn | offen |

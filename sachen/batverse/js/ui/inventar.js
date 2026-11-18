@@ -11,6 +11,7 @@ const INV_ITEMS = {
   rauchbombe: { name: "Rauchbombe", art: "Waffe", stack: 8, svg: '<circle cx="13" cy="15" r="7" fill="#4a4e55"/><rect x="11" y="5" width="4" height="4" fill="#9aa0a6"/><path d="M15 5c3-3 6 0 8-2" stroke="#ccc" stroke-width="1.5" fill="none"/>' },
   munition: { name: "9-mm-Munition", art: "Munition", stack: 64, svg: '<g fill="#c99a3a" stroke="#7a5a1a"><rect x="5" y="9" width="4" height="12" rx="1"/><rect x="11" y="7" width="4" height="14" rx="1"/><rect x="17" y="9" width="4" height="12" rx="1"/></g><g fill="#a0a4aa"><rect x="5" y="6" width="4" height="4" rx="2"/><rect x="11" y="4" width="4" height="4" rx="2"/><rect x="17" y="6" width="4" height="4" rx="2"/></g>' },
   goldbarren: { name: "Goldbarren", art: "Wert", stack: 16, svg: '<path d="M3 19 L7 9 H19 L23 19 Z" fill="#e0b03a" stroke="#8a6a1a"/><path d="M7 9 L9 12 H17 L19 9" fill="none" stroke="#f6d77a"/>' },
+  nachtsicht: { name: "Nachtsichtbrille", art: "Ausrüstung", stack: 1, kopf: true, svg: '<path d="M3 13 Q3 9.6 6.4 9.6 H19.6 Q23 9.6 23 13 V14.6 Q23 17 20.6 17 H5.4 Q3 17 3 14.6 Z" fill="#2b2f2a" stroke="#121412" stroke-width=".6"/><circle cx="8.4" cy="13.4" r="3.4" fill="#1e5a2a" stroke="#0d0f0d" stroke-width="1"/><circle cx="17.6" cy="13.4" r="3.4" fill="#1e5a2a" stroke="#0d0f0d" stroke-width="1"/><circle cx="7.6" cy="12.6" r="1" fill="#8dff9d" opacity=".7"/><circle cx="16.8" cy="12.6" r="1" fill="#8dff9d" opacity=".7"/><rect x="11.6" y="7.4" width="2.8" height="2.4" fill="#3a3f39"/>' },   // Nachtsichtbrille (nachtsicht.js), Platz Kopf
   koffer: { name: "Koffer", art: "Behälter", stack: 1, svg: '<path d="M10 9 V6.6 Q10 5.4 11.2 5.4 H14.8 Q16 5.4 16 6.6 V9" fill="none" stroke="#5a5d63" stroke-width="1.6"/><rect x="2.5" y="9" width="21" height="13.5" rx="2" fill="#16171a" stroke="#4a4d52" stroke-width=".8"/><path d="M2.5 15 H23.5" stroke="#2e3035" stroke-width=".8"/><rect x="6" y="12.6" width="2.8" height="1.8" rx=".4" fill="#cfd2d6"/><rect x="17.2" y="12.6" width="2.8" height="1.8" rx=".4" fill="#cfd2d6"/><path d="M3.6 10.2 H6" stroke="#9aa0a6" stroke-width=".6"/>' },   // Koffer (koffer.js), Inhalt je Koffer, im Tooltip nicht sichtbar
   // Werkzeuge zum Aufbrechen und Aufsprengen von Tresoren (Nicolas 2026-11-18, N23; 3D in der Hand: gotham/tresor.js HAND3D)
   brechstange: { name: "Brechstange", art: "Werkzeug", stack: 1, svg: '<path d="M6.5 21.5 L19 6.2 Q21 3.8 23.2 5.4" fill="none" stroke="#7a1418" stroke-width="3.4" stroke-linecap="round"/><path d="M6.5 21.5 L19 6.2 Q21 3.8 23.2 5.4" fill="none" stroke="#c62f35" stroke-width="2.2" stroke-linecap="round"/><path d="M6.5 21.5 L3.6 20.2" stroke="#c62f35" stroke-width="2.2" stroke-linecap="round"/><path d="M10 16 L17 7.6" stroke="#ff8a8e" stroke-width=".6"/>' },
@@ -32,6 +33,7 @@ const INV_DESC = {
   rauchbombe: "Im Bogen werfen (Linksklick). Beim Aufprall entsteht eine dichte Rauchwolke, die etwa 12 Sekunden hält.",
   munition: "9-mm-Patronen. Noch ohne passende Waffe.",
   goldbarren: "Feingold aus dem Tresor der Geheimbasis. Wertanlage.",
+  nachtsicht: "Militärische Nachtsichtbrille. Im Inventar auf den Platz \"Kopf\" ziehen (oder Shift+Klick), oder in der Hand mit Linksklick aufsetzen. Taste B schaltet sie an und aus: im Dunkeln sieht man grün und hell.",
   koffer: "Schwarzer Aktenkoffer mit zwei Schlössern. In der Hand: Rechtsklick öffnet ihn.",
   brechstange: "Zum Aufbrechen einfacher Tresore (Geldkassette, Wandtresor): in die Hand nehmen, vor dem Tresor Rechtsklick und stehen bleiben, bis der Kreis voll ist.",
   sprenggas: "Explosives Gas für stabile Tresore: in der Hand vor dem Tresor Rechtsklick bringt eine Ladung an (Stahlschrank 1, Banktresor 2). Danach mit dem Feuerzeug zünden und Abstand halten.",
@@ -57,9 +59,10 @@ function invBatIcon() { const q = ([x, y]) => (13 + x * 12).toFixed(1) + " " + (
 invBatIcon(); addEventListener("load", () => { if (!INV_ITEMS.batarang.sig) invRender(); });   // Werkstatt: nach allen Skripten neu zeichnen
 const INV_TEST_ALLE = true;   // TEST: alle Gegenstaende besitzen (siehe Aufbau unten)
 const INV = { slots: new Array(36).fill(null), sel: 0, pick: -1, cursor: null, drag: null, box: null };   // box = offener Behaelter (Plaetze ab Index 100)
-const INV_BOX0 = 100, invGet = i => i >= INV_BOX0 ? (INV.box ? INV.box.slots[i - INV_BOX0] : null) : INV.slots[i], invSet = (i, v) => { if (i >= INV_BOX0) { if (INV.box) INV.box.slots[i - INV_BOX0] = v; } else INV.slots[i] = v; };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }
-function invSave() { try { localStorage.setItem("wm-inv", JSON.stringify({ s: INV.slots, sel: INV.sel, c: INV.cursor })); } catch (e) {} }
-function invLoad() { try { const d = JSON.parse(localStorage.getItem("wm-inv") || "null"); if (d && Array.isArray(d.s) && d.s.length === 36) { INV.slots = d.s.map(q => q && INV_ITEMS[q.id] ? q : null); INV.sel = Math.min(INV_SEL_N - 1, d.sel | 0); INV.cursor = d.c && INV_ITEMS[d.c.id] && d.c.n > 0 ? d.c : null; return true; } } catch (e) {} return false; }
+INV.equip = { kopf: null };   // Ausruestung (Nachtsichtbrille, N28); Platz-Index 90 = Kopf
+const INV_BOX0 = 100, INV_KOPF = 90, invGet = i => i === INV_KOPF ? INV.equip.kopf : i >= INV_BOX0 ? (INV.box ? INV.box.slots[i - INV_BOX0] : null) : INV.slots[i], invSet = (i, v) => { if (i === INV_KOPF) INV.equip.kopf = v; else if (i >= INV_BOX0) { if (INV.box) INV.box.slots[i - INV_BOX0] = v; } else INV.slots[i] = v; };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }
+function invSave() { try { localStorage.setItem("wm-inv", JSON.stringify({ s: INV.slots, sel: INV.sel, c: INV.cursor, e: INV.equip })); } catch (e) {} }
+function invLoad() { try { const d = JSON.parse(localStorage.getItem("wm-inv") || "null"); if (d && Array.isArray(d.s) && d.s.length === 36) { INV.slots = d.s.map(q => q && INV_ITEMS[q.id] ? q : null); INV.sel = Math.min(INV_SEL_N - 1, d.sel | 0); INV.cursor = d.c && INV_ITEMS[d.c.id] && d.c.n > 0 ? d.c : null; if (d.e && d.e.kopf && INV_ITEMS[d.e.kopf.id]) INV.equip.kopf = d.e.kopf; return true; } } catch (e) {} return false; }
 // Gegenstand hinzufuegen: zuerst auf vorhandene Stapel, dann in freie Plaetze (Hotbar zuerst). Rueckgabe: Anzahl, die Platz hatte
 function invAdd(id, n = 1) { const it = INV_ITEMS[id]; if (!it) return 0; let left = n;
   for (const s of INV.slots) if (left && s && s.id === id && s.n < it.stack) { const k = Math.min(left, it.stack - s.n); s.n += k; left -= k; }
@@ -88,7 +91,7 @@ function invHandRender() {
 // ---- Verschieben wie in Minecraft (INV.cursor = Stapel an der Maus) ----
 const invRoom = (S, id) => !S ? INV_ITEMS[id].stack : S.id === id ? INV_ITEMS[id].stack - S.n : 0;
 // Linksklick mit Stapel an der Maus: ablegen, auffuellen oder tauschen
-const invSelf = (j, C) => j >= INV_BOX0 && INV.box && C && ((INV.box.self && C.k === INV.box.self && (toast("Der Koffer passt nicht in sich selbst"), true)) || (INV.box.accept && !INV.box.accept(C.id) && (toast(INV_ITEMS[C.id].name + " passt nicht in den " + INV.box.name), true)));   // Koffer (koffer.js), Papierkorb nur kleine Dinge (muell.js)   // Koffer (koffer.js)
+const invSelf = (j, C) => (j === INV_KOPF && C && !INV_ITEMS[C.id].kopf && (toast(INV_ITEMS[C.id].name + " kann man nicht aufsetzen"), true)) || (j === INV_KOPF && C && C.n > 1) || j >= INV_BOX0 && INV.box && C && ((INV.box.self && C.k === INV.box.self && (toast("Der Koffer passt nicht in sich selbst"), true)) || (INV.box.accept && !INV.box.accept(C.id) && (toast(INV_ITEMS[C.id].name + " passt nicht in den " + INV.box.name), true)));   // Koffer (koffer.js), Papierkorb nur kleine Dinge (muell.js)   // Koffer (koffer.js)
 function invPlace(j) { const S = invGet(j), C = INV.cursor; if (!C || invSelf(j, C)) return;
   if (!S) { invSet(j, C); INV.cursor = null; }
   else if (S.id === C.id) { const k = Math.min(C.n, invRoom(S, C.id)); S.n += k; C.n -= k; if (!C.n) INV.cursor = null; }
@@ -98,6 +101,8 @@ function invPlaceOne(j) { const S = invGet(j), C = INV.cursor; if (!C || invRoom
   if (!S && C.n === 1) { invSet(j, C); INV.cursor = null; return true; } if (S) S.n++; else invSet(j, { id: C.id, n: 1 }); if (!--C.n) INV.cursor = null; return true; }   // einzelnes Stueck: Objekt behalten (Zusatzfelder wie k)
 // Shift+Klick: Hotbar -> Inventar bzw. umgekehrt (erst auf gleiche Stapel, dann freie Plaetze); bei offenem Behaelter zwischen Behaelter und Spieler
 function invQuick(i) { const S = invGet(i); if (!S) return; const nb = INV.box ? INV.box.slots.length : 0;
+  if (i === INV_KOPF) { for (const [a, b] of [[9, 36], [0, 9]]) for (let j = a; j < b; j++) if (!INV.slots[j]) { INV.slots[j] = S; INV.equip.kopf = null; return; } return; }   // absetzen
+  if (!INV.box && INV_ITEMS[S.id].kopf && !INV.equip.kopf) { INV.equip.kopf = S; invSet(i, null); return; }   // aufsetzen
   const ranges = i >= INV_BOX0 ? [[9, 36], [0, 9]] : INV.box ? [[INV_BOX0, INV_BOX0 + nb]] : [i < 9 ? [9, 36] : [0, 9]];
   for (let pass = 0; pass < 2 && S.n; pass++) for (const [a, b] of ranges) for (let j = a; j < b && S.n; j++) { const T = invGet(j); if (pass === 0 ? !(T && T.id === S.id) : T) continue; if (invSelf(j, S)) return;
     const k = Math.min(S.n, invRoom(T, S.id)); if (!k) continue; if (!T && k === S.n) { invSet(j, S); invSet(i, null); return; } if (T) T.n += k; else invSet(j, { id: S.id, n: k }); S.n -= k; }   // ganzer Stapel: Objekt umziehen
@@ -106,8 +111,8 @@ function invQuick(i) { const S = invGet(i); if (!S) return; const nb = INV.box ?
 function invReturnCursor() { const C = INV.cursor; if (!C) return; INV.cursor = null; const put = invAdd(C.id, C.n);
   if (put < C.n) { INV.cursor = { id: C.id, n: C.n - put }; invSave(); toast("Kein Platz im Inventar für " + INV_ITEMS[C.id].name); } }
 // Ziehen ueber mehrere Plaetze mit Stapel an der Maus: links gleichmaessig verteilen (Vorschau live), rechts je einen
-const invSnap = () => ({ a: INV.slots.map(q => q && { ...q }), b: INV.box ? INV.box.slots.map(q => q && { ...q }) : null }), invSnapGet = (sn, j) => j >= INV_BOX0 ? sn.b && sn.b[j - INV_BOX0] : sn.a[j];
-function invSpread(D) { INV.slots = D.snap.a.map(q => q && { ...q }); if (INV.box && D.snap.b) INV.box.slots = D.snap.b.map(q => q && { ...q }); INV.cursor = { ...D.snapC }; const C = INV.cursor, L = D.list.filter(j => invRoom(invGet(j), C.id) > 0 && !(j >= INV_BOX0 && INV.box && INV.box.accept && !INV.box.accept(C.id))), per = Math.floor(C.n / L.length);
+const invSnap = () => ({ a: INV.slots.map(q => q && { ...q }), b: INV.box ? INV.box.slots.map(q => q && { ...q }) : null }), invSnapGet = (sn, j) => j === INV_KOPF ? INV.equip.kopf : j >= INV_BOX0 ? sn.b && sn.b[j - INV_BOX0] : sn.a[j];
+function invSpread(D) { INV.slots = D.snap.a.map(q => q && { ...q }); if (INV.box && D.snap.b) INV.box.slots = D.snap.b.map(q => q && { ...q }); INV.cursor = { ...D.snapC }; const C = INV.cursor, L = D.list.filter(j => invRoom(invGet(j), C.id) > 0 && j !== INV_KOPF && !(j >= INV_BOX0 && INV.box && INV.box.accept && !INV.box.accept(C.id))), per = Math.floor(C.n / L.length);
   if (per < 1) return; for (const j of L) { const S = invGet(j), k = Math.min(per, invRoom(S, C.id)); if (S) S.n += k; else invSet(j, { id: C.id, n: k }); C.n -= k; } if (!C.n) INV.cursor = null; }
 const invSlotAt = (x, y) => { const el = document.elementFromPoint(x, y)?.closest?.("#inventar .inv-slot"); return el ? +el.dataset.i : -1; };
 function invDown(e) { const b = e.target.closest(".inv-slot"); if (!b || (e.button !== 0 && e.button !== 2)) return; e.preventDefault(); const i = +b.dataset.i, S = invGet(i), C = INV.cursor;
@@ -155,6 +160,8 @@ function invRender() {
   hb.innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
   if (!box.hidden) { const B = INV.box, ct = box.querySelector(".inv-cont") || (() => { const d = document.createElement("div"); d.className = "inv-cont"; box.querySelector(".inv-head").after(d); return d; })();
     ct.hidden = !B; box.classList.toggle("with-box", !!B); if (B) ct.innerHTML = '<div class="inv-cont-name">' + B.name + (B.actions ? B.actions.map((a, k) => ' <button type="button" class="inv-act" data-a="' + k + '"' + (a.fn ? '' : ' disabled') + '>' + a.label + '</button>').join('') : '') + '</div><div class="inv-cont-grid" style="grid-template-columns: repeat(' + B.cols + ', var(--slot))">' + B.slots.map((s, k) => invSlotHTML(s, INV_BOX0 + k)).join("") + '</div><div class="inv-sep">Inventar</div>';
+    const eq = box.querySelector(".inv-equip") || (() => { const d = document.createElement("div"); d.className = "inv-equip"; box.querySelector(".inv-grid").before(d); return d; })();
+    eq.innerHTML = '<span>Ausrüstung</span>' + invSlotHTML(INV.equip.kopf, INV_KOPF).replace('class="inv-slot', 'title="Kopf" class="inv-slot kopf') + '<span class="inv-eq-k">Kopf' + (INV.equip.kopf ? " · B an/aus" : "") + '</span>';
     box.querySelector(".inv-grid").innerHTML = INV.slots.slice(9).map((s, k) => invSlotHTML(s, k + 9)).join(""); box.querySelector(".inv-bar").innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
     const s = INV.cursor || (INV.sel < 9 ? INV.slots[INV.sel] : null); box.querySelector(".inv-info").textContent = s ? (INV.cursor ? "An der Maus: " : "") + INV_ITEMS[s.id].name + " · " + INV_ITEMS[s.id].art + (s.n > 1 ? " · " + s.n + " Stück" : "") : "";
     const h = box.querySelector(".inv-hint"); if (h) h.textContent = "Ziehen oder klicken: verschieben · Rechtsklick: halber Stapel bzw. einzeln ablegen · Shift+Klick: " + (B ? B.name + " ↔ Inventar" : "Hotbar ↔ Inventar") + " · E, I oder Esc schliesst"; }
@@ -177,12 +184,12 @@ for (const id of ["inventar", "hotbar"]) { const box = document.getElementById(i
   box.addEventListener("mouseleave", () => { INV_TIP.i = -1; invTip(); }); }
 addEventListener("keydown", e => { if (e.key === "Shift" && INV_TIP.i >= 0 && !INV_TIP.shift) { INV_TIP.shift = true; invTip(); } });
 addEventListener("keyup", e => { if (e.key === "Shift" && INV_TIP.shift) { INV_TIP.shift = false; invTip(); } });
-{ const st = document.createElement("style"); st.textContent = ".inv-cont[hidden]{display:none}.inv-cont-name{font-weight:700;margin:2px 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.inv-act{font:600 12px system-ui;padding:4px 10px;border-radius:6px;border:1px solid #555;background:#2a2d33;color:#fff;cursor:pointer}.inv-act:disabled{opacity:.55;cursor:default}.inv-cont-grid{display:grid;gap:4px;margin-bottom:6px}#inventar.with-box .inv-sws{display:none}#inventar.with-box .inv-box{max-height:96vh;overflow:auto}"; document.head.appendChild(st); }   // Behaelter-Teil (Spiel und Werkstatt)
+{ const st = document.createElement("style"); st.textContent = ".inv-cont[hidden]{display:none}.inv-equip{display:flex;align-items:center;gap:10px;margin:2px 0 8px;font-size:12px;color:#aab}.inv-equip .inv-slot.kopf{outline:1px dashed #556}.inv-eq-k{opacity:.8}.inv-cont-name{font-weight:700;margin:2px 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.inv-act{font:600 12px system-ui;padding:4px 10px;border-radius:6px;border:1px solid #555;background:#2a2d33;color:#fff;cursor:pointer}.inv-act:disabled{opacity:.55;cursor:default}.inv-cont-grid{display:grid;gap:4px;margin-bottom:6px}#inventar.with-box .inv-sws{display:none}#inventar.with-box .inv-box{max-height:96vh;overflow:auto}"; document.head.appendChild(st); }   // Behaelter-Teil (Spiel und Werkstatt)
 // Aufbau: Startausstattung beim ersten Mal, Klicks
 { if (!invLoad()) { INV.slots[0] = { id: "gullihaken", n: 1 }; INV.slots[1] = { id: "batarang", n: 6 }; invSave(); }
   // TEST (Nicolas 2026-11-16: "jedes Item zum Testen besitzen"): fehlende Gegenstaende beim Start auffuellen (je ein voller Stapel). Spaeter auf false.
   invReturnCursor();                                                         // beim letzten Mal an der Maus geblieben
-  if (INV_TEST_ALLE) { for (const id in INV_ITEMS) if (id !== "koffer" && !invHas(id) && !(INV.cursor && INV.cursor.id === id)) invAdd(id, INV_ITEMS[id].stack); }   // Koffer nur echt (mit Kennung, koffer.js)
+  if (INV_TEST_ALLE) { for (const id in INV_ITEMS) if (id !== "koffer" && !invHas(id) && !(INV.equip.kopf && INV.equip.kopf.id === id) && !(INV.cursor && INV.cursor.id === id)) invAdd(id, INV_ITEMS[id].stack); }   // Koffer nur echt (mit Kennung, koffer.js)
   document.getElementById("hotbar").addEventListener("click", e => { const b = e.target.closest(".inv-slot"); if (!b) return; e.currentTarget.blur?.(); invSelect(+b.dataset.i); });
   const ib = document.getElementById("inventar");
   ib.addEventListener("pointerdown", invDown); ib.addEventListener("contextmenu", e => e.preventDefault());
