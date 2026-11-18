@@ -1,0 +1,130 @@
+// Weitere Casino-Spiele (Nicolas 2026-11-18, N29: "einen Plane-Automaten – man setzt auf ein Flugzeug, wenn es abstuerzt ist das Geld weg, desto hoeher und weiter es fliegt,
+// desto mehr vervielfacht sich das Geld, man muss auscashen"; "Bomben und Diamanten verdeckt auf einem Feld, man waehlt Einsatz und Anzahl Bomben, je mehr Bomben, desto mehr Wert hat
+// ein Diamant"; "ein Daily Spin Wheel wie bei GTA V"; "alle Casino-Automaten sollen mit den Chips funktionieren, auch die Buttons so designt"). Spiel und Werkstatt, nach ui/jetons.js.
+// cgOpen("crash" | "mines" | "rad"), cgClose(), cgIsOpen(). 3D: buildCrashAutomat(), buildMinesAutomat() (Gehaeuse der Spielautomaten), buildGluecksrad() (grosses Rad, Front -z).
+// Auszahlung im Schnitt 97 % (Crash, Mines). Glücksrad einmal je Tag (localStorage wm-gluecksrad), in der Werkstatt unbegrenzt zum Testen.
+"use strict";
+const CG = { el: null, game: null, bet: 100, msg: "", cls: "", crash: { st: "idle", m: 1, at: 0, t: 0, hist: [], path: [] }, mines: { st: "idle", bombs: 3, cells: [], found: 0 }, rad: { ang: 0, spin: null, hist: [] }, models: [] };
+const CG_CHIPS = [[10, "#2a64d6", "#ffffff", "10"], [100, "#c21d2b", "#ffffff", "100"], [1000, "#17181c", "#d4a640", "1K"], [10000, "#6a2bb0", "#f2d36b", "10K"]];
+const cgFmt = n => (typeof kontoFmt === "function" ? kontoFmt(n) : n + " $");
+const cgChip = (v, col, edge, txt, sel) => '<button type="button" class="cg-chip' + (sel ? " sel" : "") + '" data-bet="' + v + '" style="--c:' + col + ';--e:' + edge + '"><span>' + txt + '</span></button>';
+const CG_CSS = `#cg{position:fixed;inset:0;z-index:46;background:rgba(0,0,0,.55)}#cg[hidden]{display:none}
+.cg-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:620px;background:linear-gradient(#1b0d16,#0d0609);border:2px solid #c9a640;border-radius:16px;padding:16px 18px;color:#f3ead2;font:14px system-ui,sans-serif;box-shadow:0 18px 50px rgba(0,0,0,.6)}
+.cg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.cg-head b{font:800 20px Georgia,serif;letter-spacing:2px;color:#f2d36b}.cg-head button{background:none;border:0;color:#bbb;font-size:24px;cursor:pointer}
+.cg-bal{font-size:13px;color:#d9cfb4;margin-bottom:8px}.cg-bal b{color:#fff}
+.cg-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0}.cg-lab{font-size:12px;color:#bfb497;text-transform:uppercase;letter-spacing:1px}
+.cg-chip{width:46px;height:46px;border-radius:50%;border:4px dashed var(--e);background:radial-gradient(circle,var(--c) 52%,var(--c) 53%);color:var(--e);font:800 12px system-ui;cursor:pointer;box-shadow:0 0 0 3px var(--c),0 3px 6px rgba(0,0,0,.5);display:grid;place-items:center;transition:transform .1s}
+.cg-chip span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--e)}.cg-chip.sel{transform:translateY(-4px);box-shadow:0 0 0 3px var(--c),0 0 0 6px #f2d36b,0 6px 10px rgba(0,0,0,.6)}.cg-chip:disabled{opacity:.4;cursor:default}
+.cg-bet{font:700 18px system-ui;color:#fff;min-width:90px}
+.cg-btn{font:800 15px system-ui;letter-spacing:1px;padding:12px 22px;border-radius:30px;border:3px solid #f2d36b;background:radial-gradient(circle at 50% 30%,#d33,#7a0c16);color:#fff;cursor:pointer;box-shadow:0 4px 0 #3a0508}.cg-btn:disabled{opacity:.45;cursor:default}
+.cg-btn.gruen{background:radial-gradient(circle at 50% 30%,#2fb35a,#0f5a27);box-shadow:0 4px 0 #062d12}.cg-btn.klein{padding:6px 12px;font-size:13px}
+.cg-msg{min-height:20px;margin-top:6px;font-weight:600}.cg-msg.ok{color:#7dff9b}.cg-msg.err{color:#ff8a8a}
+.cg-canvas{display:block;width:100%;border-radius:10px;border:1px solid #4a3a20;background:#050a14}
+.cg-hist{display:flex;gap:5px;flex-wrap:wrap;font:700 11px system-ui}.cg-hist span{padding:2px 7px;border-radius:10px;background:#2a1a10}.cg-hist .hi{background:#1d5a2a}.cg-hist .lo{background:#5a1d1d}
+.cg-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.cg-cell{aspect-ratio:1;border-radius:9px;border:2px solid #4a3a20;background:linear-gradient(#3a2a40,#1a1020);cursor:pointer;font-size:26px;display:grid;place-items:center}
+.cg-cell:hover:not(:disabled){border-color:#f2d36b}.cg-cell:disabled{cursor:default}.cg-cell.dia{background:linear-gradient(#123a52,#0a1a2a);border-color:#4fc3ff}.cg-cell.bomb{background:linear-gradient(#5a1010,#2a0505);border-color:#ff5050}.cg-cell.zu{opacity:.55}`;
+function cgEnsure() { if (CG.el) return; const st = document.createElement("style"); st.textContent = CG_CSS; document.head.appendChild(st);
+  const el = document.createElement("div"); el.id = "cg"; el.hidden = true; el.innerHTML = '<div class="cg-box"></div>'; document.body.appendChild(el); CG.el = el;
+  el.addEventListener("click", cgClick); el.addEventListener("contextmenu", e => e.preventDefault());
+  addEventListener("keydown", e => { if (!cgIsOpen()) return; if (e.key === "Escape") { e.preventDefault(); cgClose(); } else if (e.code === "Space") { e.preventDefault(); cgMain(); } e.stopImmediatePropagation(); }, true);
+  addEventListener("keyup", e => { if (cgIsOpen()) e.stopImmediatePropagation(); }, true); addEventListener("resize", () => { if (cgIsOpen()) cgFit(); }); }
+const cgIsOpen = () => !!(CG.el && !CG.el.hidden);
+const cgBusy = () => CG.crash.st === "fly" || CG.mines.st === "play" || !!CG.rad.spin;
+function cgOpen(game) { cgEnsure(); if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); } if (document.pointerLockElement) document.exitPointerLock(); if (typeof keys !== "undefined") keys.clear?.();
+  CG.game = game; CG.msg = game === "rad" ? (cgRadFrei() ? "Einmal am Tag gratis drehen" : "Heute schon gedreht – morgen wieder") : "Einsatz wählen, dann starten"; CG.cls = ""; CG.el.hidden = false; cgRender(); }
+function cgClose() { if (!cgIsOpen()) return; if (cgBusy()) { CG.msg = "Erst die Runde beenden"; CG.cls = "err"; return cgRender(); } CG.el.hidden = true; if (typeof grabMouse === "function") grabMouse(); }
+function cgFit() { const b = CG.el.querySelector(".cg-box"); b.style.transform = "translate(-50%,-50%)"; const k = Math.min(1, (innerWidth - 20) / (b.offsetWidth + 10), (innerHeight - 20) / (b.offsetHeight + 10)); b.style.transform = "translate(-50%,-50%) scale(" + k.toFixed(3) + ")"; }
+function cgBetRow(lock) { const w = typeof jetWert === "function" ? jetWert() : 0; return '<div class="cg-row"><span class="cg-lab">Einsatz</span>' + CG_CHIPS.map(([v, c, e, t]) => cgChip(v, c, e, t, CG.bet === v).replace("<button", "<button" + (lock ? " disabled" : ""))).join("") +
+  '<button type="button" class="cg-btn klein" data-act="halb"' + (lock ? " disabled" : "") + '>½</button><button type="button" class="cg-btn klein" data-act="doppelt"' + (lock ? " disabled" : "") + '>×2</button><span class="cg-bet">' + cgFmt(CG.bet) + '</span></div>' +
+  '<div class="cg-bal">Deine Jetons: <b>' + cgFmt(w) + '</b>' + (w < CG.bet ? ' – zu wenig, am Jeton-Automaten tauschen' : '') + '</div>'; }
+function cgRender() { const b = CG.el.querySelector(".cg-box"), g = CG.game, title = { crash: "GOTHAM FLIGHT · CRASH", mines: "DIAMOND MINES", rad: "GLÜCKSRAD" }[g];
+  let h = '<div class="cg-head"><b>' + title + '</b><button type="button" data-act="zu" aria-label="Schliessen">&times;</button></div>';
+  if (g === "crash") { const C = CG.crash, fly = C.st === "fly";
+    h += cgBetRow(fly) + '<canvas class="cg-canvas" width="584" height="300"></canvas><div class="cg-row">' + (fly ? '<button type="button" class="cg-btn gruen" data-act="main">AUSZAHLEN ' + cgFmt(Math.floor(CG.bet * C.m)) + '</button>' : '<button type="button" class="cg-btn" data-act="main">STARTEN</button>') +
+      '<div class="cg-hist">' + C.hist.slice(-10).reverse().map(x => '<span class="' + (x >= 2 ? "hi" : "lo") + '">' + x.toFixed(2) + '×</span>').join("") + '</div></div>'; }
+  else if (g === "mines") { const M = CG.mines, play = M.st === "play", k = M.found, mul = cgMinesMul(M.bombs, k), next = cgMinesMul(M.bombs, k + 1);
+    h += cgBetRow(play) + '<div class="cg-row"><span class="cg-lab">Bomben</span><button type="button" class="cg-btn klein" data-act="bm"' + (play ? " disabled" : "") + '>−</button><span class="cg-bet">' + M.bombs + ' 💣</span><button type="button" class="cg-btn klein" data-act="bp"' + (play ? " disabled" : "") + '>+</button>' +
+      '<span class="cg-lab">nächster Diamant</span><span class="cg-bet">' + next.toFixed(2) + '×</span></div><div class="cg-grid">' +
+      Array.from({ length: 30 }, (_, i) => { const c = M.cells[i] || {}; const show = c.open || (M.st === "end"); return '<button type="button" class="cg-cell' + (show ? (c.bomb ? " bomb" : " dia") + (c.open ? "" : " zu") : "") + '" data-cell="' + i + '"' + (!play || c.open ? " disabled" : "") + '>' + (show ? (c.bomb ? "💣" : "💎") : "") + '</button>'; }).join("") +
+      '</div><div class="cg-row">' + (play ? '<button type="button" class="cg-btn gruen" data-act="main"' + (k ? "" : " disabled") + '>AUSZAHLEN ' + cgFmt(Math.floor(CG.bet * (k ? mul : 1))) + ' (' + (k ? mul : 1).toFixed(2) + '×)</button>' : '<button type="button" class="cg-btn" data-act="main">STARTEN</button>') + '</div>'; }
+  else { const frei = cgRadFrei();
+    h += '<canvas class="cg-canvas" width="584" height="380"></canvas><div class="cg-row"><button type="button" class="cg-btn" data-act="main"' + (frei && !CG.rad.spin ? "" : " disabled") + '>DREHEN</button><span class="cg-lab">' + (typeof BV_NS !== "undefined" && BV_NS === "werkstatt" ? "Werkstatt: beliebig oft zum Testen" : "einmal am Tag") + '</span></div>'; }
+  h += '<div class="cg-msg ' + CG.cls + '">' + CG.msg + '</div>'; b.innerHTML = h; cgFit(); cgDraw(); }
+function cgClick(e) { const t = e.target.closest("[data-act],[data-bet],[data-cell]"); if (!t || t.disabled) return; const a = t.dataset.act;
+  if (t.dataset.bet) { CG.bet = +t.dataset.bet; return cgRender(); }
+  if (t.dataset.cell) return cgMinesPick(+t.dataset.cell);
+  if (a === "zu") return cgClose(); if (a === "halb") { CG.bet = Math.max(10, Math.round(CG.bet / 2 / 10) * 10); return cgRender(); } if (a === "doppelt") { CG.bet = Math.min(100000, CG.bet * 2); return cgRender(); }
+  if (a === "bm") { CG.mines.bombs = Math.max(1, CG.mines.bombs - 1); return cgRender(); } if (a === "bp") { CG.mines.bombs = Math.min(24, CG.mines.bombs + 1); return cgRender(); }
+  if (a === "main") cgMain(); }
+function cgMain() { const g = CG.game; if (g === "crash") return CG.crash.st === "fly" ? cgCrashCash() : cgCrashStart(); if (g === "mines") return CG.mines.st === "play" ? cgMinesCash() : cgMinesStart(); if (g === "rad") cgRadSpin(); }
+function cgPay(stake) { if (!jetTake(stake)) { CG.msg = "Nicht genug Jetons für " + cgFmt(stake) + " – am Jeton-Automaten tauschen"; CG.cls = "err"; cgRender(); return false; } return true; }
+// ---- Crash: Faktor m(t) = e^(0,11 t), Absturzpunkt 0,97 / (1 - U) (3 % sofort bei 1,00) ----
+function cgCrashStart() { const C = CG.crash; if (!cgPay(CG.bet)) return; const U = Math.random(); C.at = Math.max(1, Math.floor(0.97 / (1 - U) * 100) / 100); C.m = 1; C.t = 0; C.path = []; C.st = "fly"; C.fall = 0; CG.msg = "Das Flugzeug steigt …"; CG.cls = ""; cgRender(); }
+function cgCrashCash() { const C = CG.crash; if (C.st !== "fly") return; const win = Math.floor(CG.bet * C.m); jetGive(win); C.st = "cashed"; C.hist.push(C.at); CG.msg = "Ausgezahlt bei " + C.m.toFixed(2) + "× – " + cgFmt(win) + " in Jetons (Absturz wäre bei " + C.at.toFixed(2) + "×)"; CG.cls = "ok"; cgRender(); }
+// ---- Mines: 30 Felder, Faktor nach k Diamanten = 0,97 x Produkt (30 - i) / (30 - B - i) ----
+function cgMinesMul(B, k) { let m = 0.97; for (let i = 0; i < k; i++) m *= (30 - i) / (30 - B - i); return k ? m : 1; }
+function cgMinesStart() { const M = CG.mines; if (!cgPay(CG.bet)) return; const idx = [...Array(30).keys()].sort(() => Math.random() - 0.5).slice(0, M.bombs); M.cells = Array.from({ length: 30 }, (_, i) => ({ bomb: idx.includes(i), open: false })); M.found = 0; M.st = "play"; CG.msg = "Felder aufdecken – Diamant erhöht den Gewinn, Bombe = alles weg"; CG.cls = ""; cgRender(); }
+function cgMinesPick(i) { const M = CG.mines; if (M.st !== "play" || M.cells[i].open) return; M.cells[i].open = true;
+  if (M.cells[i].bomb) { M.st = "end"; CG.msg = "BOMBE! Einsatz " + cgFmt(CG.bet) + " verloren"; CG.cls = "err"; return cgRender(); }
+  M.found++; if (M.found >= 30 - M.bombs) return cgMinesCash(); CG.msg = M.found + " Diamant" + (M.found > 1 ? "en" : "") + " – " + cgMinesMul(M.bombs, M.found).toFixed(2) + "×"; CG.cls = "ok"; cgRender(); }
+function cgMinesCash() { const M = CG.mines; if (M.st !== "play" || !M.found) return; const mul = cgMinesMul(M.bombs, M.found), win = Math.floor(CG.bet * mul); jetGive(win); M.st = "end"; CG.msg = "Ausgezahlt: " + cgFmt(win) + " (" + mul.toFixed(2) + "×)"; CG.cls = "ok"; cgRender(); }
+// ---- Glücksrad: 20 Felder, einmal am Tag ----
+const CG_RAD = [["J", 500], ["J", 1000], ["G", 1], ["J", 200], ["B", 5000], ["J", 2500], ["J", 500], ["N", 0], ["J", 1000], ["G", 2], ["J", 200], ["J", 5000], ["B", 10000], ["J", 500], ["X", 100000], ["J", 1000], ["G", 1], ["J", 2500], ["J", 200], ["B", 2500]];
+const cgRadText = ([k, v]) => k === "J" ? cgFmt(v) + " Jetons" : k === "B" ? cgFmt(v) + " Bargeld" : k === "G" ? v + " Goldbarren" : k === "X" ? "JACKPOT " + cgFmt(v) : "Leider nichts";
+const cgRadCol = (k, i) => k === "X" ? "#f2d36b" : k === "B" ? "#1f7a3a" : k === "G" ? "#b8860b" : k === "N" ? "#333" : i % 2 ? "#8a0f1c" : "#1a1a2a";
+const cgHeute = () => new Date().toISOString().slice(0, 10);
+function cgRadFrei() { if (typeof BV_NS !== "undefined" && BV_NS === "werkstatt") return true; try { return localStorage.getItem("wm-gluecksrad") !== cgHeute(); } catch (e) { return true; } }
+function cgRadSpin() { const R = CG.rad; if (R.spin || !cgRadFrei()) return; try { localStorage.setItem("wm-gluecksrad", cgHeute()); } catch (e) {}
+  const n = CG_RAD.length, i = Math.floor(Math.random() * n), seg = Math.PI * 2 / n, ziel = -(i * seg) - seg / 2 + (Math.random() - 0.5) * seg * 0.7;   // Feld i oben am Zeiger
+  const von = R.ang, nach = ziel - Math.PI * 2 * (5 + Math.floor((von - ziel) / (Math.PI * 2)) + 1); R.spin = { von, nach, t: 0, dur: 5.5, i }; CG.msg = "Das Rad dreht …"; CG.cls = ""; cgRender(); }
+function cgRadEnd(i) { const p = CG_RAD[i], [k, v] = p; if (k === "J" || k === "X") jetGive(v); else if (k === "B" && typeof kontoBar === "function") kontoBar(v, "Glücksrad"); else if (k === "G") invAdd("goldbarren", v);
+  CG.msg = k === "N" ? "Leider nichts – morgen wieder" : "Gewonnen: " + cgRadText(p) + "!"; CG.cls = k === "N" ? "err" : "ok"; CG.rad.spin = null; cgRender(); }
+// ---- Zeichnen und Zeit (je Bild aus tresorStep) ----
+function cgPlane(c, x, y, a, s = 1) { c.save(); c.translate(x, y); c.rotate(a); c.scale(s, s); c.fillStyle = "#e8edf2"; c.strokeStyle = "#1a2a3a"; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(26, 0); c.quadraticCurveTo(20, -5, 0, -4); c.lineTo(-22, -3); c.lineTo(-26, -12); c.lineTo(-20, -12); c.lineTo(-12, -3); c.lineTo(-22, 3); c.lineTo(0, 4); c.quadraticCurveTo(20, 5, 26, 0); c.fill(); c.stroke();
+  c.fillStyle = "#c9d3dc"; c.beginPath(); c.moveTo(6, -2); c.lineTo(-8, -20); c.lineTo(-13, -20); c.lineTo(-6, -2); c.fill(); c.stroke(); c.beginPath(); c.moveTo(6, 2); c.lineTo(-6, 15); c.lineTo(-11, 15); c.lineTo(-5, 2); c.fill(); c.stroke();
+  c.fillStyle = "#2a64d6"; c.fillRect(12, -3, 8, 2.4); c.restore(); }
+function cgDraw() { if (!cgIsOpen()) return; const cv = CG.el.querySelector("canvas"); if (!cv) return; const c = cv.getContext("2d"), w = cv.width, h = cv.height;
+  if (CG.game === "crash") { const C = CG.crash, sky = c.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, "#0a1630"); sky.addColorStop(1, "#1c3a5c"); c.fillStyle = sky; c.fillRect(0, 0, w, h);
+    c.strokeStyle = "rgba(255,255,255,.07)"; c.lineWidth = 1; for (let x = 40; x < w; x += 60) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = 30; y < h; y += 50) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+    const T = Math.max(8, C.t * 1.15), X = t => 30 + t / T * (w - 90), Y = m => h - 30 - Math.log(m) / Math.log(Math.max(2, Math.exp(0.11 * T))) * (h - 70);
+    if (C.path.length > 1) { c.strokeStyle = C.st === "crashed" ? "#ff5a5a" : "#7dff9b"; c.lineWidth = 3; c.beginPath(); C.path.forEach(([t, m, wob], k) => { const x = X(t), y = Y(m) + wob; k ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); }
+    const last = C.path[C.path.length - 1]; if (last) { const [t, m, wob] = last, x = X(t), y = Y(m) + wob + C.fall * 40, prev = C.path[Math.max(0, C.path.length - 6)], a = C.st === "crashed" ? 0.6 + C.fall : Math.atan2(Y(m) + wob - (Y(prev[1]) + prev[2]), x - X(prev[0]) || 1);
+      cgPlane(c, x, y, a, 1.1); if (C.st === "crashed") { c.fillStyle = "rgba(255,140,40," + Math.max(0, 0.8 - C.fall) + ")"; c.beginPath(); c.arc(x, y, 18 + C.fall * 30, 0, 7); c.fill(); } }
+    c.fillStyle = C.st === "crashed" ? "#ff6a6a" : C.st === "cashed" ? "#7dff9b" : "#ffffff"; c.font = "800 46px system-ui"; c.textAlign = "center"; c.fillText((C.st === "idle" ? 1 : C.m).toFixed(2) + "×", w / 2, 64);
+    c.font = "700 15px system-ui"; c.fillText(C.st === "crashed" ? "ABGESTÜRZT" : C.st === "cashed" ? "AUSGEZAHLT" : C.st === "fly" ? "steigt …" : "bereit", w / 2, 88); }
+  else if (CG.game === "rad") { const R = CG.rad, n = CG_RAD.length, seg = Math.PI * 2 / n, cx = w / 2, cy = h / 2 + 8, r = h / 2 - 22; c.fillStyle = "#12070c"; c.fillRect(0, 0, w, h);
+    c.save(); c.translate(cx, cy); c.rotate(R.ang); for (let i = 0; i < n; i++) { const [k, v] = CG_RAD[i]; c.fillStyle = cgRadCol(k, i); c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r, -Math.PI / 2 + i * seg, -Math.PI / 2 + (i + 1) * seg); c.closePath(); c.fill(); c.strokeStyle = "#f2d36b"; c.lineWidth = 1.5; c.stroke();
+      c.save(); c.rotate(-Math.PI / 2 + (i + 0.5) * seg); c.fillStyle = k === "X" ? "#1a0a00" : "#fff"; c.font = "700 11px system-ui"; c.textAlign = "right"; c.fillText(k === "J" ? (v >= 1000 ? v / 1000 + "K" : v) + " J" : k === "B" ? (v / 1000) + "K $" : k === "G" ? v + " Gold" : k === "X" ? "JACKPOT" : "–", r - 10, 4); c.restore(); }
+    c.restore(); c.fillStyle = "#c9a640"; c.beginPath(); c.arc(cx, cy, 26, 0, 7); c.fill(); c.fillStyle = "#1a0a00"; c.font = "800 12px system-ui"; c.textAlign = "center"; c.fillText("SPIN", cx, cy + 4);
+    c.strokeStyle = "#f2d36b"; c.lineWidth = 6; c.beginPath(); c.arc(cx, cy, r + 4, 0, 7); c.stroke(); for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; c.fillStyle = (i + Math.floor(performance.now() / 300)) % 2 ? "#fff6c8" : "#7a5a10"; c.beginPath(); c.arc(cx + Math.cos(a) * (r + 12), cy + Math.sin(a) * (r + 12), 3, 0, 7); c.fill(); }
+    c.fillStyle = "#ff3a3a"; c.beginPath(); c.moveTo(cx - 14, 4); c.lineTo(cx + 14, 4); c.lineTo(cx, 30); c.closePath(); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 2; c.stroke(); } }
+function cgStep(dt) { const C = CG.crash;
+  if (C.st === "fly") { C.t += dt; C.m = Math.exp(0.11 * C.t); C.path.push([C.t, Math.min(C.m, C.at), Math.sin(C.t * 2.2) * 6]); if (C.m >= C.at) { C.m = C.at; C.st = "crashed"; C.fall = 0; C.hist.push(C.at); CG.msg = "Abgestürzt bei " + C.at.toFixed(2) + "× – Einsatz " + cgFmt(CG.bet) + " verloren"; CG.cls = "err"; cgRender(); }
+    else if (cgIsOpen()) { const b = CG.el.querySelector('[data-act="main"]'); if (b) b.textContent = "AUSZAHLEN " + cgFmt(Math.floor(CG.bet * C.m)); } }
+  if (C.st === "crashed" && C.fall < 1) C.fall = Math.min(1, C.fall + dt * 1.5);
+  const R = CG.rad; if (R.spin) { const S = R.spin; S.t = Math.min(S.dur, S.t + dt); const k = 1 - Math.pow(1 - S.t / S.dur, 3); R.ang = S.von + (S.nach - S.von) * k; if (S.t >= S.dur) cgRadEnd(S.i); }
+  for (const g of CG.models) if (g.userData.rad) g.userData.rad.rotation.z = CG.rad.ang;   // 3D-Rad dreht mit
+  cgDraw(); }
+// ---- 3D ----
+function cgScreenTex(art) { return canvasTex(320, 240, (c, w, h) => {
+  if (art === "crash") { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#0a1630"); gr.addColorStop(1, "#1c3a5c"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.strokeStyle = "#7dff9b"; c.lineWidth = 4; c.beginPath(); c.moveTo(20, 210); c.quadraticCurveTo(180, 200, 250, 70); c.stroke();
+    cgPlane(c, 255, 62, -1.1, 1.3); c.fillStyle = "#fff"; c.font = "800 34px system-ui"; c.textAlign = "center"; c.fillText("4.20×", 110, 110); c.fillStyle = "#f2d36b"; c.font = "800 22px Georgia"; c.fillText("GOTHAM FLIGHT", w / 2, 30); }
+  else { c.fillStyle = "#14081c"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2d36b"; c.font = "800 22px Georgia"; c.textAlign = "center"; c.fillText("DIAMOND MINES", w / 2, 28);
+    for (let i = 0; i < 30; i++) { const x = 30 + (i % 6) * 44, y = 44 + Math.floor(i / 6) * 38; c.fillStyle = [3, 9, 16, 22].includes(i) ? "#123a52" : i === 13 ? "#5a1010" : "#3a2a40"; c.fillRect(x, y, 38, 32); c.font = "20px system-ui"; if ([3, 9, 16, 22].includes(i)) c.fillText("💎", x + 19, y + 24); if (i === 13) c.fillText("💣", x + 19, y + 24); } } }); }
+function buildCrashAutomat() { const g = buildSpielautomat(0x0b4f8f, { screen: cgScreenTex("crash") }); g.name = "Crash-Automat"; return g; }
+function buildMinesAutomat() { const g = buildSpielautomat(0x1b6b3c, { screen: cgScreenTex("mines") }); g.name = "Mines-Automat"; return g; }
+function buildGluecksrad() { const g = new THREE.Group(), gold = new THREE.MeshStandardMaterial({ color: 0xd4a640, metalness: 0.85, roughness: 0.3 }), sw = new THREE.MeshStandardMaterial({ color: 0x14080c, roughness: 0.5, metalness: 0.3 }), R = 0.95, Y = 1.55;
+  const sockel = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.25, 32), sw); sockel.position.y = 0.125; g.add(sockel); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.03, 8, 40), gold); ring.rotation.x = Math.PI / 2; ring.position.y = 0.25; g.add(ring);
+  for (const sx of [-1, 1]) { const st = new THREE.Mesh(new THREE.BoxGeometry(0.1, Y + 0.2, 0.12), sw); st.position.set(sx * 0.55, (Y + 0.2) / 2 + 0.2, 0.18); st.rotation.z = sx * -0.25; g.add(st); }
+  const tex = canvasTex(512, 512, (c, w) => { const n = CG_RAD.length, seg = Math.PI * 2 / n, r = w / 2 - 4; c.translate(w / 2, w / 2); for (let i = 0; i < n; i++) { const [k, v] = CG_RAD[i]; c.fillStyle = cgRadCol(k, i); c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, r, -Math.PI / 2 + i * seg, -Math.PI / 2 + (i + 1) * seg); c.closePath(); c.fill(); c.strokeStyle = "#f2d36b"; c.lineWidth = 3; c.stroke();
+      c.save(); c.rotate(-Math.PI / 2 + (i + 0.5) * seg); c.fillStyle = k === "X" ? "#1a0a00" : "#fff"; c.font = "700 22px system-ui"; c.textAlign = "right"; c.fillText(k === "J" ? (v >= 1000 ? v / 1000 + "K" : v) : k === "B" ? (v / 1000) + "K $" : k === "G" ? "GOLD" : k === "X" ? "JACKPOT" : "–", r - 14, 8); c.restore(); }
+    c.fillStyle = "#c9a640"; c.beginPath(); c.arc(0, 0, 46, 0, 7); c.fill(); });
+  const rad = new THREE.Group(); rad.position.set(0, Y, 0.05); g.add(rad); const disc = new THREE.Mesh(new THREE.CircleGeometry(R, 64), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.25 })); disc.rotation.y = Math.PI; rad.add(disc);
+  const back = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.08, 64), sw); back.rotation.x = Math.PI / 2; back.position.z = 0.045; rad.add(back);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(R + 0.03, 0.04, 10, 64), gold); rim.position.set(0, Y, 0.02); g.add(rim);
+  const bulbM = new THREE.MeshStandardMaterial({ color: 0xfff6c8, emissive: 0xffe08a, emissiveIntensity: 1.2 }); for (let i = 0; i < 32; i++) { const a = i / 32 * Math.PI * 2, b = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), bulbM); b.position.set(Math.cos(a) * (R + 0.03), Y + Math.sin(a) * (R + 0.03), -0.03); g.add(b); }
+  const zeig = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.18, 3), new THREE.MeshStandardMaterial({ color: 0xe02a2a, metalness: 0.4, roughness: 0.4 })); zeig.rotation.z = Math.PI; zeig.position.set(0, Y + R + 0.08, -0.06); g.add(zeig);
+  const schild = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.28), new THREE.MeshBasicMaterial({ map: canvasTex(320, 76, (c, w, h) => { c.fillStyle = "#14080c"; c.fillRect(0, 0, w, h); c.strokeStyle = "#d4a640"; c.lineWidth = 4; c.strokeRect(3, 3, w - 6, h - 6); c.fillStyle = "#f2d36b"; c.font = "800 34px Georgia"; c.textAlign = "center"; c.fillText("GLÜCKSRAD", w / 2, 50); }) }));
+  schild.position.set(0, 0.42, -0.0); schild.rotation.y = Math.PI; g.add(schild); { const sb = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.32, 0.06), sw); sb.position.set(0, 0.42, 0.035); g.add(sb); }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.userData.rad = rad; g.name = "Glücksrad"; CG.models.push(g); return g; }

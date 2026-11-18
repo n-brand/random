@@ -14,9 +14,10 @@ function nvInit() { if (NV.el) return;
     for (const x of [118, 202]) { const gr = c.createRadialGradient(x, 90, 40, x, 90, 98); gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(0.8, "rgba(0,0,0,0.9)"); gr.addColorStop(1, "rgba(0,0,0,0)"); c.fillStyle = gr; c.beginPath(); c.arc(x, 90, 98, 0, 7); c.fill(); } }
   NV.light = new THREE.HemisphereLight(0xe8ffe8, 0x6a7a6a, 0); scene.add(NV.light); }
 function nvSet(on) { NV.on = on; nvApply(); }
-function nvApply() { nvInit(); const a = nvWorn() && NV.on; NV.active = a; NV.el.hidden = !a; NV.light.intensity = a ? 2.6 : 0;
+function nvApply() { nvInit(); const a = !!(nvWorn() && NV.on && (typeof walking === "undefined" || walking)); NV.active = a;   // nur zu Fuss (nicht in Orbit/Ansehen)
+  NV.el.hidden = !a; NV.light.intensity = a ? 2.6 : 0;
   renderer.domElement.style.filter = a ? "grayscale(1) brightness(1.35) contrast(1.15) sepia(1) hue-rotate(58deg) saturate(3.2)" : ""; }
-function nvStep(dt) { if (nvWorn() !== !!NV.wasWorn) { NV.wasWorn = nvWorn(); nvApply(); } if (!NV.active) return; NV.t += dt; if (NV.t < 0.05) return; NV.t = 0;   // Rauschen ca. 20 x je Sekunde
+function nvStep(dt) { const want = !!(nvWorn() && NV.on && (typeof walking === "undefined" || walking)); if (want !== NV.active || !!nvWorn() !== !!NV.wasWorn) { NV.wasWorn = !!nvWorn(); nvApply(); } if (!NV.active) return; NV.t += dt; if (NV.t < 0.05) return; NV.t = 0;   // Rauschen ca. 20 x je Sekunde
   const c = NV.noise.getContext("2d"), im = c.createImageData(320, 180); for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = v * 0.6; im.data[i + 1] = v; im.data[i + 2] = v * 0.6; im.data[i + 3] = 255; } c.putImageData(im, 0, 0); }
 addEventListener("keydown", e => { if (e.code !== "KeyB" || e.repeat || e.target.closest?.("input, textarea")) return; if (typeof invIsOpen === "function" && invIsOpen()) return;
   if (!nvWorn()) return toast("Keine Nachtsichtbrille aufgesetzt (Inventar: Platz \"Kopf\")"); nvSet(!NV.on); toast(NV.on ? "Nachtsicht an" : "Nachtsicht aus"); });
