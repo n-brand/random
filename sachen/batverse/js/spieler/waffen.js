@@ -141,10 +141,10 @@ function batarangStep(P, dt, i) {
     if (h || P.t > 12) { m.position.copy(h ? h.p : b); m.position.y += 0.02; m.rotation.set(0, m.rotation.y, 0); P.lie = true; return; } m.position.copy(b); m.rotation.y += dt * 8; return; }
   m.rotation.y += dt * 32; m.rotation.z = 0.25;                              // dreht flach, leicht gekippt
   if (P.out) { if (P.tgt && m.position.distanceTo(P.tgt) > 0.5) P.v.copy(P.tgt).sub(m.position).normalize().multiplyScalar(30);
-    else { batTurnLeft(P.v, dt * 1.65); P.v.y -= 1.2 * dt; }   // Linksbogen: rechts hinaus, kreuzt die Mitte bei ca. 22 m (Nicolas 2026-11-16: vorher Rechtskurve)
+    else { batTurnLeft(P.v, dt * 1.65); P.v.y *= Math.exp(-2.5 * dt); }   // Steigen beim Hinausfliegen abklingen lassen (Nicolas 2026-11-18: "in der Haelfte fliegt er viel hoeher"); Linksbogen: rechts hinaus, kreuzt die Mitte bei ca. 22 m (Nicolas 2026-11-16: vorher Rechtskurve)
     if (m.position.distanceTo(P.o) >= P.range - 0.5 || (P.tgt && !P.tgtHit && m.position.distanceTo(P.tgt) < 0.8)) P.out = false; }
   else { const want = hand.clone().sub(m.position), dist = want.length(), sp = Math.min(38, 22 + P.t * 6);
-    if (!P.tgt && !P.home) { batTurnLeft(P.v, dt * 6); P.v.setLength(sp); const dv = Math.hypot(P.v.x, P.v.z), dw = Math.hypot(want.x, want.z); if ((P.v.x * want.x + P.v.z * want.z) / (dv * dw || 1) > 0.7 || P.t > 4) P.home = true; }   // weiter links herum, links zurueck
+    if (!P.tgt && !P.home) { batTurnLeft(P.v, dt * 6); const vy = P.v.y + ((hand.y - m.position.y) * 2 - P.v.y) * Math.min(1, dt * 4), hs = Math.sqrt(Math.max(0, sp * sp - vy * vy)), hl = Math.hypot(P.v.x, P.v.z) || 1; P.v.x *= hs / hl; P.v.z *= hs / hl; P.v.y = vy; const dv = Math.hypot(P.v.x, P.v.z), dw = Math.hypot(want.x, want.z); if ((P.v.x * want.x + P.v.z * want.z) / (dv * dw || 1) > 0.7 || P.t > 4) P.home = true; }   // weiter links herum, links zurueck; beim Wenden zur Handhoehe steuern, nur waagrecht beschleunigen (vorher wuchs das Steigen mit)
     else P.v.lerp(want.normalize().multiplyScalar(sp), Math.min(1, dt * 5));
     if (dist < 1.1 || (dist < 2.5 && P.t > 0.6)) { invAdd("batarang", 1); scene.remove(m); AIM.proj.splice(i, 1); return; } }
   const a = m.position.clone(), b = a.clone().addScaledVector(P.v, dt), h = shotSeg(a, b, null, 0.25);   // ab dem Abwurf pruefen (vorher erst nach 0,05 s: nah an Wand oder Automat flog er durch, Nicolas 2026-11-17)

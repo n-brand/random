@@ -46,4 +46,5 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Batarang-Flugbahn ohne Steigen beim Rückflug** (Nicolas 2026-11-18, N50: "in der Hälfte fliegt der Batarang auf einmal nochmal viel höher und kommt dann zurück"): Ursache: beim Wurf mit leicht erhobenem Blick behielt er beim Wenden die Steiggeschwindigkeit, und das Beschleunigen auf dem Rückweg (`setLength`) vergrösserte sie noch. waffen.js `batarangStep`: hinaus klingt das Steigen ab (`v.y *= exp(-2,5 dt)` statt Schwerkraft 1,2), beim Wenden steuert er zur Handhöhe und beschleunigt nur waagrecht. Gemessen (gleiche Rechnung, ohne Hindernisse): 8 Grad hoch geworfen höchster Punkt 1,4 m am Wendepunkt (vorher 4,1 m beim Rückflug), 20 Grad 3,5 m; Bogen wie vorher (3,5 m rechts, 8,9 m links, nach 1,9 s in der Hand). Gezielter Wurf unverändert.
 - **Notizen 18.11.2026 eingeplant** (Nicolas 2026-11-18, Notizliste): `PLAN-GOTHAM.md` Phase 11 (N16–N50) und Ergänzung Waffen/Militärfahrzeuge; `IDEEN-CASINO.md`, `IDEEN-AKTE.md`; Rückfragen 33–42 in `OFFENE-FRAGEN.md`; diese Datei mit den Arbeitsregeln. Noch nichts davon gebaut.
