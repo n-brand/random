@@ -258,6 +258,9 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   dev(BA, 6.5, IZ0 + 0.45, Math.PI, 0, "Bankautomat", bank); dev(JA, -6.5, IZ0 + 0.45, Math.PI, 0, "Jeton-Automat", jet("Jeton-Automat"));
   dev(JA, KX0 - 0.6, KZ + 1.3, -Math.PI / 2, 0, "Jeton-Automat", jet("Jeton-Automat"));
   dev(BA, 6.4, IZ1 - 0.45, 0, FL2, "Bankautomat", bank); dev(JA, 7.9, IZ1 - 0.45, 0, FL2, "Jeton-Automat", jet("Jeton-Automat")); dev(JA, -6.5, IZ0 + 0.45, Math.PI, FL2, "Jeton-Automat", jet("Jeton-Automat"));
+  // Casino-Spiele (Nicolas 2026-11-18, N29, gotham-casino.js "ins Casino"): Crash und Mines an der Frontwand neben Jeton- und Bankautomat, Gluecksrad mittig vor dem Eingang mit Blick zur Tuer
+  if (typeof buildCrashAutomat === "function") { dev(buildCrashAutomat, -10, IZ0 + 0.55, Math.PI, 0, "Crash-Automat", () => cgOpen("crash")); dev(buildMinesAutomat, 10, IZ0 + 0.55, Math.PI, 0, "Mines-Automat", () => cgOpen("mines"));
+    const rad = buildGluecksrad(); rad.position.set(0, 0.125, IZ0 + 7); g.add(rad); C.push([2.2, 2.7, 1.0, 0, IZ0 + 7]); CAS.gates.push({ name: "Glücksrad", m: rad, call: () => cgOpen("rad"), verbs: ["drehen", "drehen"], near: 3.5 }); }
   CAS.gates.push({ name: "Kasse", m: kGlass, call: jet("Kasse"), verbs: ["Jetons tauschen", "Jetons tauschen"], near: 3 });
 }
 // Tresortuer auf/zu (Rechtsklick); die Sperre in der Tueroeffnung gilt nur geschlossen

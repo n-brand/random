@@ -76,7 +76,7 @@ function buildSpielautomat(farbe = 0x6a1ab0, opt = {}) {
   // Aufsatz: gewoelbt (halber Zylinder) mit JACKPOT-Schild und Lauflicht
   { const sign = canvasTex(256, 96, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#2a0418"); gr.addColorStop(1, "#0c0208"); c.fillStyle = gr; c.fillRect(0, 0, w, h);
       for (let i = 0; i < 16; i++) { c.fillStyle = i % 2 ? "#ffe9a0" : "#ffb02e"; c.beginPath(); c.arc(8 + i * 16, 8, 4, 0, 7); c.fill(); c.beginPath(); c.arc(8 + i * 16, h - 8, 4, 0, 7); c.fill(); }
-      c.font = "900 46px 'Arial Black', Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ff2a55"; c.shadowBlur = 14; c.fillStyle = "#ffd23a"; c.fillText("JACKPOT", w / 2, h / 2 + 2); });
+      const st = opt.sign || "JACKPOT"; c.font = "900 " + Math.min(46, Math.floor(400 / st.length)) + "px 'Arial Black', Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.shadowColor = "#ff2a55"; c.shadowBlur = 14; c.fillStyle = "#ffd23a"; c.fillText(st, w / 2, h / 2 + 2); });   // opt.sign: eigenes Schild (Crash, Mines)
     const top = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, W, 24, 1, false, 0, Math.PI), lack); top.rotation.z = Math.PI / 2; top.scale.set(0.75, 1, 1); top.position.set(0, 1.68, 0.04); top.castShadow = true; g.add(top); tint(top);   // Kuppel: Achse quer, Rundung oben
     tint(add(B(W, 0.32, 0.06), lack, 0, 1.84, F + 0.08));
     const sp = add(new THREE.PlaneGeometry(W - 0.04, 0.3), new THREE.MeshBasicMaterial({ map: sign }), 0, 1.84, F + 0.045, 0, Math.PI); sp.castShadow = false; }
