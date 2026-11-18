@@ -126,6 +126,7 @@ function updatePlayer(dt, moveX, moveZ, run, speedOv) {   // speedOv: eigene Ges
   } else {
     if (player.jump && player.onGround) { player.vy = JUMP; player.onGround = false; }
     player.vy -= GRAVITY * dt;
+    if (typeof gleitUpdate === "function") gleitUpdate(dt, player, wasGround, supportAt(player.pos, player.pos.y), p => pushOut(p, player.pos.y));   // Gleitumhang (spieler/gleiten.js)
   }
   // B1 (Uebergang bis Treppen/Steg in B4): an der Uferkante in der Hoehle mit gehaltener Leertaste hochklettern
   if ((keys.has("Space") || jumpHeld) && player.pos.y < LY - 0.05 && player.pos.y > SEA_Y - 1.5) {

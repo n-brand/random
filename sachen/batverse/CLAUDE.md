@@ -42,6 +42,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Ton an/aus im Fahrzeug | N |
 | Container-Aufzug im Auto | L |
 | Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
+| Gleitumhang | zu Fuss im Fall (mehr als 3 m über dem Boden) **Leertaste** = Umhang auf, Maus lenkt, nach unten schauen = Sturzflug; Leertaste nochmal oder Landen = zu |
 | Drift | im Auto **Q** halten und lenken (ab ca. 25 km/h): Heck bricht aus, Reifenspuren und Qualm; nicht bei Motorrädern und Panzern |
 | Tumbler-Sprung | im Tumbler, 10 s Abklingzeit |
 | Behälter (Waffenwand, später Tresore, Koffer, Mülleimer) | Rechtsklick davor (nur von vorne, aus der Nähe); im Fenster ziehen, Shift+Klick = Behälter ↔ Inventar |
@@ -64,6 +65,8 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Gleitumhang** (Nicolas 2026-11-18, N48: "Gleitumhang: Batman gleitet nach einem Sprung in die Tiefe in einem bestimmten Winkel"): neu `js/spieler/gleiten.js` (Spiel-FILES nach spieler/zigaretten.js, Werkstatt, ASSETS, BV_KEEP), `gleitUpdate(dt, P, amBoden, bodenY, push)` nach der Schwerkraft in laufen.js `updatePlayer` und werkstatt/person.js. Im Fall (schon fallend, mehr als 3 m über dem Boden) Leertaste = Umhang auf: eigene Sinkrate 3,2 m/s statt Schwerkraft, vorwärts 10,5 m/s in Blickrichtung (Gleitwinkel ca. 1:3,3), weich übergeleitet; Blick nach unten = Sturzflug (bis ca. 3-fach schneller vor und runter); Lenken mit der Maus; gegen eine Wand bremst er. Leertaste nochmal oder Landen = zu. Anzeige: dunkle, gezackte Umhang-Ränder oben links und rechts, flattern; Zeile mit Tempo und Höhe. Werkstatt: Person gilt jetzt auch beim Fallen von einer Kante als in der Luft. Geprüft in der Werkstatt aus 40 m: 5 s gleiten, 49,6 m vorwärts bei 19,5 m Sinken (mit Übergang aus dem freien Fall), Sinkrate dann 3,2 m/s; Bild. Im Spiel nicht geflogen (gleicher Code in updatePlayer). Ob nur im Batsuit: OFFENE-FRAGEN 50.
 
 - **Drift für Landfahrzeuge** (Nicolas 2026-11-18, N47: "Drift für Landfahrzeuge, Taste in CLAUDE.md eintragen"): modelle.js `driftStep(C, sp, st, held, dt, y)` (gemeinsam für fahren.js und werkstatt.js): Taste **Q** gehalten, über 7 m/s, nicht in der Luft oder im Wasser, nicht bei Motorrad, Kette, Schwebe-DeLorean -> die Karosserie dreht bis 0,6 rad (ca. 35 Grad) in die Kurve (`C.slip`, nur Optik in carPose/setze), die Kurve wird 1,6-fach enger, das Auto verliert 2-5 m/s². Reifenspuren der Hinterräder als InstancedMesh (600, die ältesten verschwinden, je Bild so lang wie die gefahrene Strecke, entlang der Fahrtrichtung) und Qualm-Sprites (1,5 s). Loslassen: Heck fängt sich in ca. 0,3 s. Geprüft in der Werkstatt (Gotham Police, ca. 100 km/h, A + Q): Slip 0,59, 138 Spuren, 34 Qualmwolken, nach Loslassen 0,02; Bilder. Im Spiel nicht gefahren (gleicher Code).
 
