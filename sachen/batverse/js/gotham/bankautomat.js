@@ -79,11 +79,15 @@ function buildBankautomat(o = {}) {
   const Q = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = o.receiveShadow = true; panel.add(o); return o; };
   Q(rbox(IW, 0.9, 0.05, 0.03), grau, 0, 0.45, 0.025);
   const big = !!o.screen, scr = big ? o.screen() : atmScreenTex();                                              // gleicher Aufbau wie die Startseite des Bankfensters (#bank, konto.js)
-  const sw = big ? 0.62 : 0.34, sh = big ? 0.47 : 0.27;   // eigener Bildschirm (Jeton-Automat) ueber fast die ganze Platte
-  Q(rbox(sw + 0.12, sh + 0.11, 0.04, 0.03), dunkel, 0, 0.5, -0.01);
-  Q(new THREE.PlaneGeometry(sw, sh), M(0xffffff, { map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.6, metalness: 0 }), 0, 0.5, -0.032, Math.PI).castShadow = false;
-  if (!big) for (const s of [-1, 1]) for (let k = 0; k < 4; k++) Q(rbox(0.035, 0.022, 0.015, 0.006), M(0xd7dbe0), s * 0.195, 0.6 - k * 0.065, -0.025);
-  if (!big) for (const [y, w] of [[0.62, 0.09], [0.52, 0.07]]) Q(rbox(w, 0.022, 0.02, 0.008), schwarz, 0.3, y, -0.005);   // Karten- und Belegschlitz links (von vorne gesehen; vorne = -z, +x liegt links)
+  const sw = big ? 0.62 : 0.46, sh = big ? 0.47 : 0.362, sy = big ? 0.5 : 0.57;   // eigener Bildschirm (Jeton-Automat) ueber fast die ganze Platte; Bankautomat 46 x 36 cm (N17: "Bildschirm groesser", vorher 34 x 27)
+  Q(rbox(sw + (big ? 0.12 : 0.05), sh + (big ? 0.11 : 0.05), 0.04, 0.025), dunkel, 0, sy, -0.01);
+  Q(new THREE.PlaneGeometry(sw, sh), M(0xffffff, { map: scr, emissive: 0xffffff, emissiveMap: scr, emissiveIntensity: 0.6, metalness: 0 }), 0, sy, -0.032, Math.PI).castShadow = false;
+  if (!big) for (const s of [-1, 1]) for (let k = 0; k < 4; k++) Q(rbox(0.035, 0.022, 0.015, 0.006), M(0xd7dbe0), s * (sw / 2 + 0.05), sy + 0.12 - k * 0.075, -0.025);   // Seitentasten
+  if (!big) { // unter dem Bildschirm (Nicolas 2026-11-18, N17: "die zwei schwarzen Striche links neben dem Bildschirm sind falsch, gemeint sind Kartenschlitz und Geldausgabe … die Schlitze darunter"); von vorne gesehen links (+x) Karte, rechts Geld
+    const yS = 0.2, licht = M(0x2bd65a, { emissive: 0x22c050, emissiveIntensity: 0.9 });
+    Q(rbox(0.13, 0.075, 0.03, 0.012), dunkel, 0.2, yS, -0.02); Q(rbox(0.095, 0.012, 0.02, 0.004), schwarz, 0.2, yS + 0.008, -0.03); Q(rbox(0.06, 0.006, 0.01, 0.002), licht, 0.2, yS - 0.022, -0.036);   // Kartenschlitz mit gruener Leuchte
+    Q(rbox(0.3, 0.09, 0.035, 0.015), dunkel, -0.09, yS, -0.022); Q(rbox(0.26, 0.032, 0.02, 0.008), schwarz, -0.09, yS + 0.004, -0.034); Q(rbox(0.25, 0.012, 0.012, 0.004), M(0xb8bcc2, { metalness: 0.8, roughness: 0.3 }), -0.09, yS - 0.012, -0.041);   // Geldausgabe mit Klappe
+    Q(rbox(0.08, 0.008, 0.012, 0.003), schwarz, 0.2, yS + 0.075, -0.012); }   // Belegschlitz ueber der Karte
   // schraeges Pult mit Tastenfeld und Farbtasten (neigt sich nach vorne unten, ca. 18 Grad)
   const tilt = -0.32, pult = new THREE.Group(); pult.position.set(0, 1.06, -D / 2 + 0.17); pult.rotation.x = tilt; g.add(pult);
   const P = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; pult.add(o); };
@@ -96,7 +100,7 @@ function buildBankautomat(o = {}) {
   add(rbox(IW - 0.06, 0.02, 0.012, 0.005), weiss, 0, 0.94, -D / 2 + 0.028);
   add(rbox(IW - 0.18, 0.5, 0.02, 0.02), grauH, 0, 0.38, -D / 2 + 0.028);
   add(rbox(0.1, 0.015, 0.015, 0.005), schwarz, -0.18, 0.48, -D / 2 + 0.017);   // Griff
-  add(rbox(0.36, 0.05, 0.05, 0.015), schwarz, 0, 0.84, -D / 2 + 0.03);       // Ausgabeschacht
+  if (o.screen) add(rbox(0.36, 0.05, 0.05, 0.015), schwarz, 0, 0.84, -D / 2 + 0.03);   // Ausgabeschacht (nur Jeton-Automat; beim Bankautomat jetzt unter dem Bildschirm)
   add(new THREE.BoxGeometry(IW, 0.02, D - 0.2), dunkel, 0, 0.95, 0.0);     // Boden der Nische hinter dem Pult
   if (o.extra) o.extra(g, D, IW);
   g.name = o.name || "Bankautomat"; return g;

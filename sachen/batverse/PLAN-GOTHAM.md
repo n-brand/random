@@ -173,7 +173,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 
 | Nr | Was | Stand |
 |----|-----|-------|
-| N17 | **Bankautomat 3D**: die zwei schwarzen Striche links neben dem Bildschirm sind falsch, gemeint sind Kartenschlitz und Geldausgabe. Bildschirm grösser, die Schlitze darunter | offen |
+| N17 | **Bankautomat 3D**: die zwei schwarzen Striche links neben dem Bildschirm sind falsch, gemeint sind Kartenschlitz und Geldausgabe. Bildschirm grösser, die Schlitze darunter | gebaut 2026-11-18 |
 | N18 | **Bankautomat aufbrechen**: beim Beschuss mit einer Waffe ca. 20 s ununterbrochen Geldscheine aus dem Schlitz (Animation), dazu eine zerstörte 3D-Variante. Später aufbrechen, zerstören, manipulieren | offen |
 | N19 | **Jeton-Automat einzeln in der Werkstatt** (Bargeld gegen Jetons) | offen |
 | N20 | **Spielautomaten grösser** (wirken zu klein) | offen |
