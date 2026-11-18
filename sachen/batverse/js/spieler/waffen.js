@@ -62,20 +62,36 @@ function weaponUse() {
     if (bat && !tgt) { const a = 0.65, ca = Math.cos(a), sa = Math.sin(a), vx = v.x, vz = v.z; v.x = vx * ca - vz * sa; v.z = vx * sa + vz * ca; }   // ohne Zielen ca. 37 Grad rechts vom Ziel los (Nicolas 2026-11-16)
     AIM.proj.push({ id, m, v, t: 0, stuck: 0, out: true, tgt, tgtHit: !!ah, range: tgt ? o.distanceTo(tgt) + (ah ? 3 : 0) : 22, o: o.clone() }); if (!invHas(id)) toast(INV_ITEMS[id].name + ": der letzte (kommt zurück)");
   } else if (id === "greifhaken") {
-    AIM.cd = 0.6; const h = aimHit(70); if (!h) return toast("Greifhaken: nichts in Reichweite (70 m)");
+    AIM.cd = 0.6; const h = aimHit(70); if (!h) { grapShot(AIM_ray.ray.origin.clone().addScaledVector(d, 70), null, "Greifhaken: nichts in Reichweite (70 m)"); return; }   // Haken fliegt trotzdem hinaus und kommt zurueck
     let to = h.p.clone(); const dir = d.clone().setY(0).normalize();
     // Decke von unten (Nicolas 2026-11-17: "mit dem Greifhaken komme ich durch die untere Decke auf die zweite Etage"): unter dem Treffer frei, darueber fest -> kein Halt
     // Probe knapp vor dem Treffer: darueber fest und geradeaus frei = Unterseite einer Decke (Fassaden: geradeaus fest)
     const pq = h.p.clone().addScaledVector(d, -0.3);
-    if (d.y > 0.15 && shotAt(pq.x, pq.y + 0.45, pq.z) && !shotAt(pq.x + dir.x * 0.45, pq.y, pq.z + dir.z * 0.45)) return toast("Greifhaken: an der Decke kein Halt");
+    if (d.y > 0.15 && shotAt(pq.x, pq.y + 0.45, pq.z) && !shotAt(pq.x + dir.x * 0.45, pq.y, pq.z + dir.z * 0.45)) { grapShot(h.p.clone(), null, "Greifhaken: an der Decke kein Halt"); return; }
     const wand = h.hit === "solid" || shotAt(pq.x + dir.x * 0.45, pq.y, pq.z + dir.z * 0.45);   // senkrechte Flaeche voraus (auch Gebaeude-Quader, die als Boden zaehlen)
     if (wand) { const out = h.p.clone().addScaledVector(dir, -0.45); let ok = false;   // Spalte vor der Wand: muss bis zur Kante frei sein (sonst Decke/Ueberhang dazwischen)
       for (let k = 0.25; k <= 5; k += 0.25) { if (shotAt(out.x, h.p.y + k + 0.3, out.z)) break; const q = h.p.clone().addScaledVector(dir, 0.5); q.y = h.p.y + k;
         if (!shotAt(q.x, q.y + 0.3, q.z) && !shotAt(q.x, q.y + 1.5, q.z)) { to = q.addScaledVector(dir, 0.6); to.y = h.p.y + k; ok = true; break; } }   // auf die Kante hinauf (oben Platz fuer den Koerper)
       if (!ok) { to = out.clone(); to.y = Math.max(h.p.y - 1.4, player.pos.y); } }   // keine Kante: vor die Wand ziehen (danach faellt man)
-    const from = player.pos.clone(), len = from.distanceTo(to); AIM.grap = { from, to, t: 0, dur: Math.max(0.35, len / 32), hit: h.p.clone() }; AIM_M.rope.visible = true; shotSound?.(0.15, 0.1);
+    grapShot(h.p.clone(), to);
   }
 }
+// Greifhaken mit sichtbarem Seil und Haken (Nicolas 2026-11-18, N44: "Zielhilfe wie bei der Rauchbombe, schiesst ein Seil mit 3D-Haken und zieht es wieder ein"):
+// Phasen von AIM.grap: "aus" Haken fliegt mit 90 m/s von der Hand zum Treffer (Seil haengt daran), "zug" der Spieler fliegt am Seil hin (wie bisher), "ein" Haken loest sich und kommt
+// mit 60 m/s zur Hand zurueck (Seil wird eingezogen). Ohne Halt (nichts in Reichweite, Decke) geht der Haken hinaus und kommt gleich zurueck, mit Meldung.
+function grapHand() { const q = camera.quaternion; return camera.position.clone().add(new THREE.Vector3(0.22, -0.2, -0.55).applyQuaternion(q)); }
+function grapHookMesh() { if (AIM_M.hook) return AIM_M.hook; const g = new THREE.Group(), gr = new THREE.MeshStandardMaterial({ color: 0x3a3f46, metalness: 0.5, roughness: 0.35 }), st = new THREE.MeshStandardMaterial({ color: 0xc8ccd2, metalness: 0.6, roughness: 0.25 });
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.05, 14), gr); cup.rotation.x = Math.PI / 2; g.add(cup);
+  for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, c = new THREE.Mesh(new THREE.ConeGeometry(0.01, 0.09, 6), st); c.position.set(Math.cos(a) * 0.024, Math.sin(a) * 0.024, -0.05); c.rotation.set(-Math.PI / 2 + Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5); g.add(c); }   // Kralle
+  const sp = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.05, 10), st); sp.rotation.x = -Math.PI / 2; sp.position.z = -0.05; g.add(sp); g.scale.setScalar(1.6); g.visible = false; g.userData.dynamic = true; scene.add(g); AIM_M.hook = g; return g; }
+function grapShot(ziel, to, fehler) { const hook = grapHookMesh(), p = grapHand(); hook.position.copy(p); hook.lookAt(ziel); hook.rotateY(Math.PI); hook.visible = true;
+  AIM.grap = { phase: "aus", hookPos: p, ziel: ziel.clone(), to, fehler, t: 0 }; shotSound?.(0.15, 0.1); }
+function grapRope(a, b) { let m = AIM_M.ropeM; if (!m) { m = AIM_M.ropeM = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 6).translate(0, 0.5, 0).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: 0.8 })); m.frustumCulled = false; m.userData.dynamic = true; scene.add(m); }   // Seil als duenner Zylinder (eine Linie war aus der Ferne unsichtbar)
+  const L = a.distanceTo(b), r = 0.012 + L * 0.0004; m.position.copy(a); m.lookAt(b); m.scale.set(r, r, L); m.visible = true; }
+// Zielhilfe des Greifhakens beim Zielen (rechte Maus): Punkte auf der Linie zum Treffer, Ring am Treffer (gelb = Halt in Reichweite), sonst rote Punkte bis 70 m
+function grapAim() { if (!ARC.dots) aimArcInit(); const h = aimHit(70), a = grapHand(), d = AIM_ray.ray.direction, b = h ? h.p : AIM_ray.ray.origin.clone().addScaledVector(d, 70), L = a.distanceTo(b), n = Math.min(48, Math.floor(L / 1.5));
+  for (let i = 0; i < n; i++) { const p = a.clone().lerp(b, (i + 1) / (n + 1)), k = 0.6 + p.distanceTo(camera.position) / 18; ARC.dots.setMatrixAt(i, ARC.M.makeScale(k, k, k).setPosition(p)); }   // Punkte wachsen mit der Entfernung ARC.dots.count = n; ARC.dots.instanceMatrix.needsUpdate = true; ARC.dots.visible = true;
+  ARC.dots.material.color.setHex(h ? 0xffffff : 0xff5a5a); ARC.ring.material.color.setHex(h ? 0xffe08a : 0xff5a5a); ARC.ring.visible = true; ARC.ring.position.copy(b); ARC.ring.lookAt(camera.position); ARC.ring.scale.setScalar(Math.max(1, L / 16)); }
 // Flugbahn beim Zielen mit der Rauchbombe (Nicolas 2026-11-16): gleiche Rechnung wie der Wurf (Start, 17 m/s + 3,5 m/s nach oben, Fall 9,8, shotSeg),
 // Punkte alle 0,09 s bis zum Aufprall (hoechstens 4 s), Ring am Aufprallpunkt. Nur waehrend rechts gehalten wird.
 const ARC = { dots: null, ring: null, M: new THREE.Matrix4(), p: new THREE.Vector3(), v: new THREE.Vector3(), b: new THREE.Vector3() };
@@ -84,8 +100,10 @@ function aimArcInit() {
   ARC.ring = new THREE.Mesh(new THREE.RingGeometry(0.32, 0.48, 32), new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }));
   ARC.ring.rotation.x = -Math.PI / 2; for (const o of [ARC.dots, ARC.ring]) { o.frustumCulled = false; o.userData.dynamic = true; o.renderOrder = 5; scene.add(o); } }
 function aimArc() {
+  if (AIM.on && onFoot() && weaponHeld() === "greifhaken" && !AIM.grap) return grapAim();
   const show = AIM.on && onFoot() && weaponHeld() === "rauchbombe" && !AIM.grap;
   if (!show) { if (ARC.dots) ARC.dots.visible = ARC.ring.visible = false; return; }
+  ARC.dots.material.color.setHex(0xffffff); ARC.ring.material.color.setHex(0xffe08a); ARC.ring.rotation.set(-Math.PI / 2, 0, 0); ARC.ring.scale.setScalar(1);
   if (!ARC.dots) aimArcInit();
   AIM_ray.setFromCamera({ x: 0, y: 0 }, camera); const d = AIM_ray.ray.direction, p = ARC.p.copy(camera.position).addScaledVector(d, 0.5), v = ARC.v.copy(d).multiplyScalar(17), b = ARC.b; p.y -= 0.15; v.y += 3.5;
   const dt = 0.03; let n = 0, hit = null;
@@ -115,11 +133,14 @@ function weaponsStep(dt) {
     for (const s of S.s) { s.position.addScaledVector(s.userData.v, dt); s.userData.v.multiplyScalar(1 - dt * 0.6); const sc = 1.5 + 5 * Math.min(1, S.t / 3) * s.userData.r; s.scale.set(sc, sc, 1); s.material.opacity = Math.max(0, 0.75 * (1 - k)); }
     if (k >= 1) { for (const s of S.s) { scene.remove(s); s.material.dispose(); } AIM.smoke.splice(i, 1); } }
   // Greifhaken: Spieler fliegt am Seil zum Ziel (leichter Bogen)
-  const G = AIM.grap; if (G) { G.t += dt; const u = Math.min(1, G.t / G.dur), e = u * u * (3 - 2 * u);
-    player.pos.lerpVectors(G.from, G.to, e); player.pos.y += Math.sin(u * Math.PI) * Math.min(3, G.from.distanceTo(G.to) * 0.08); player.vy = 0; player.onGround = false;
-    camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
-    const pa = AIM_M.rope.geometry.attributes.position; pa.setXYZ(0, player.pos.x, player.pos.y + 1.2, player.pos.z); pa.setXYZ(1, G.hit.x, G.hit.y, G.hit.z); pa.needsUpdate = true;
-    if (u >= 1 || !onFoot()) { AIM.grap = null; AIM_M.rope.visible = false; } }
+  const G = AIM.grap; if (G) { const hook = AIM_M.hook, hand = grapHand();
+    if (G.phase === "aus") { const step = 90 * dt, rest = G.hookPos.distanceTo(G.ziel); G.hookPos.addScaledVector(G.ziel.clone().sub(G.hookPos).normalize(), Math.min(step, rest));
+      if (rest <= step) { if (G.to && onFoot()) { G.phase = "zug"; G.from = player.pos.clone(); G.t = 0; G.dur = Math.max(0.35, G.from.distanceTo(G.to) / 32); } else { G.phase = "ein"; if (G.fehler) toast(G.fehler); } } }
+    else if (G.phase === "zug") { G.t += dt; const u = Math.min(1, G.t / G.dur), e = u * u * (3 - 2 * u);
+      player.pos.lerpVectors(G.from, G.to, e); player.pos.y += Math.sin(u * Math.PI) * Math.min(3, G.from.distanceTo(G.to) * 0.08); player.vy = 0; player.onGround = false;
+      camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z); if (u >= 1 || !onFoot()) G.phase = "ein"; }
+    else { const h2 = grapHand(), step = 60 * dt, rest = G.hookPos.distanceTo(h2); G.hookPos.addScaledVector(h2.clone().sub(G.hookPos).normalize(), Math.min(step, rest)); if (rest <= step + 0.05) { AIM.grap = null; AIM_M.rope.visible = false; hook.visible = false; if (AIM_M.ropeM) AIM_M.ropeM.visible = false; } }
+    if (AIM.grap) { hook.position.copy(G.hookPos); grapRope(G.phase === "zug" ? new THREE.Vector3(player.pos.x, player.pos.y + 1.2, player.pos.z) : grapHand(), G.hookPos); } }
 }
 // Batarang-Flug: hinaus, Rueckkehr (zielt auf die Hand, wird schneller), Fang = wieder im Inventar. Trifft er etwas, faellt er zu Boden
 // und bleibt liegen, bis man darueber laeuft (1,6 m, aufheben). Fliegt er nach 8 s nicht heim (weit weg/verloren), faellt er herunter.
