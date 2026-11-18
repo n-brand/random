@@ -32,15 +32,15 @@ const CASINO2 = { x: 0, z: 240, W: 64, D: 44, H: 5.5, g: null };
   // Eingang: Glastueren, Sicherheitspult, zwei Bankautomaten
   const glas = M(0x9ab8c8, { transparent: true, opacity: 0.3, metalness: 0.8, roughness: 0.05 }); for (const sx of [-1, 1]) box(1.8, 3, 0.06, glas, sx * 3, 1.5, -D - 0.1);
   box(2.4, 1.1, 0.8, stein, -4.5, 0.55, -D + 3); box(2.5, 0.06, 0.9, gold, -4.5, 1.12, -D + 3); koll(2.4, 0.8, 1.1, -4.5, -D + 3);   // Sicherheitspult
-  if (typeof buildBankautomat === "function") for (const x of [5, 6.3]) { const a = buildBankautomat(); a.scale.setScalar(0.9); a.position.set(x, 0, -D + 0.9); g.add(a); koll(1, 0.9, 2.2, x, -D + 0.9); ziel("Bankautomat", a, () => typeof kontoOpen === "function" && kontoOpen(), "benutzen"); }
+  if (typeof buildBankautomat === "function") for (const x of [5, 6.3]) { const a = buildBankautomat(); a.scale.setScalar(0.9); a.position.set(x, 0, -D + 0.9); a.rotation.y = Math.PI; g.add(a); koll(1, 0.9, 2.2, x, -D + 0.9); ziel("Bankautomat", a, () => typeof kontoOpen === "function" && kontoOpen(), "benutzen"); }
   // Automatenfeld links (x -30..-9, z -16..9) und rechts vorne (x 9..30, z -16..2): Reihen Ruecken an Ruecken, Gaenge 2,6 m
   const slots = [], cols = [0x6a1ab0, 0xb01028, 0x1a4ab0, 0x0f7a4a, 0x8a6a10];
-  const reihe = (x0, x1, z) => { for (let x = x0; x <= x1; x += 1.3) { slots.push([x, 0, z - 0.55, Math.PI, cols[slots.length % 5]]); slots.push([x, 0, z + 0.55, 0, cols[(slots.length + 2) % 5]]); }
+  const reihe = (x0, x1, z) => { for (let x = x0; x <= x1; x += 1.3) { slots.push([x, 0, z - 0.55, 0, cols[slots.length % 5]]); slots.push([x, 0, z + 0.55, Math.PI, cols[(slots.length + 2) % 5]]); }
     const zg = box(x1 - x0 + 1.2, 2.6, 2.2, new THREE.MeshBasicMaterial({ visible: false }), (x0 + x1) / 2, 1.3, z); koll(x1 - x0 + 1.2, 2.2, 2.6, (x0 + x1) / 2, z); ziel("Spielautomat", zg, () => typeof slotOpen === "function" && slotOpen(null), "spielen", 2.6); };
   for (const z of [-13, -8, -3, 2, 7]) reihe(-29, -11, z); for (const z of [-13, -8, -3]) reihe(11, 29, z);
   if (typeof spielautomatInstanzen === "function") spielautomatInstanzen(g, slots.map(s => [s[0], 0, s[2], s[3], s[4]]));
   // Crash und Mines am Rand des Automatenfelds
-  if (typeof buildCrashAutomat === "function") for (const [b, x, spiel] of [[buildCrashAutomat, 11.5, "crash"], [buildMinesAutomat, 13.2, "mines"]]) { const m = b(); m.position.set(x, 0, 2.6); m.rotation.y = Math.PI; g.add(m); koll(1.1, 1, 2.5, x, 2.6); ziel(m.name, m, () => cgOpen(spiel)); }
+  if (typeof buildCrashAutomat === "function") for (const [b, x, spiel] of [[buildCrashAutomat, 11.5, "crash"], [buildMinesAutomat, 13.2, "mines"]]) { const m = b(); m.position.set(x, 0, 2.6); g.add(m); koll(1.1, 1, 2.5, x, 2.6); ziel(m.name, m, () => cgOpen(spiel)); }
   // Pit in der Mitte (x -7..7, z -12..10): Tische im Oval um das Aufsichtspult, Kronleuchter darueber
   const filz = M(0x0f5a32, { roughness: 0.9, emissive: 0x021a0c }), holz = M(0x4a2414, { roughness: 0.5 }), hocker = M(0x7a1a22, { roughness: 0.6 });
   const stuhl = (x, z) => { cyl(0.22, 0.22, 0.1, hocker, x, 0.75, z, 12); cyl(0.04, 0.04, 0.7, gold, x, 0.37, z, 8); };
@@ -62,7 +62,7 @@ const CASINO2 = { x: 0, z: 240, W: 64, D: 44, H: 5.5, g: null };
     gw(8, 0.08, hx0 + 4, hz0); gw(hw - 10, 0.08, hx0 + 10 + (hw - 10) / 2, hz0); gw(0.08, hd, hx0, hz0 + hd / 2);   // Glaswaende mit Tuer (2 m) vorne
     const sch = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.6), new THREE.MeshBasicMaterial({ map: canvasTex(256, 48, (c, w, h) => { c.fillStyle = "#1a0408"; c.fillRect(0, 0, w, h); c.fillStyle = "#f2d36b"; c.font = "bold 30px Georgia"; c.textAlign = "center"; c.fillText("HIGH LIMIT", w / 2, 36); }) })); sch.position.set(hx0 + 9, 3.6, hz0 - 0.05); sch.rotation.y = Math.PI; g.add(sch);
     halbtisch(hx0 + 7, hz0 + 7, Math.PI, "Blackjack"); roulette(hx0 + 15, hz0 + 8, 0);
-    const hl = []; for (let x = hx0 + 3; x < hx0 + hw - 2; x += 1.6) hl.push([x, 0, hz0 + hd - 0.6, Math.PI, 0xd4a640]); if (typeof spielautomatInstanzen === "function") spielautomatInstanzen(g, hl); koll(hw - 4, 1.2, 2.6, hx0 + hw / 2, hz0 + hd - 0.6); }
+    const hl = []; for (let x = hx0 + 3; x < hx0 + hw - 2; x += 1.6) hl.push([x, 0, hz0 + hd - 0.6, 0, 0xd4a640]); if (typeof spielautomatInstanzen === "function") spielautomatInstanzen(g, hl); koll(hw - 4, 1.2, 2.6, hx0 + hw / 2, hz0 + hd - 0.6); }
   // Kasse (Cage) hinten Mitte: Theke mit Gittern und drei Schaltern, Schild
   { box(14, 1.15, 1.0, stein, 0, 0.58, D - 2.5); box(14.2, 0.06, 1.1, gold, 0, 1.18, D - 2.5); for (let x = -6.8; x <= 6.8; x += 0.25) cyl(0.015, 0.015, 1.6, gold, x, 2.0, D - 2.5, 6); box(14.2, 0.08, 0.08, gold, 0, 2.8, D - 2.5);
     for (const x of [-4, 0, 4]) box(1.4, 0.7, 0.05, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 }), x, 1.6, D - 2.52);
