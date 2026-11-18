@@ -33,6 +33,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Hotbar wählen | 1–9, Mausrad (auch Bargeld und Karte rechts daneben) |
 | Zielen / benutzen | rechte Maus halten / linke Maus |
 | Nachladen | R |
+| Scharfschützengewehr-Zoom | beim Zielen (rechte Maus) Mausrad: 6× bis 24×, bleibt bis zum Waffenwechsel |
 | Handy | P oder Handy in der Hand + Rechtsklick (braucht ein Handy im Inventar); Pfeiltasten + Enter wählen Apps, Rücktaste zurück, Esc/P weglegen; im Hochformat weiter laufen (WASD, Shift, Leertaste) und Klick ins Bild = umschauen, Querformat (Browser) hält das Spiel an |
 | Karte gross | K oder M; Minikarte an/aus: Umschalt+K |
 | Geist (fliegen) | G (Spiel und Werkstatt), in der Werkstatt auch 5 |
@@ -58,6 +59,11 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Jeton-Automat einzeln in der Werkstatt, Zoom im Zielfernrohr** (Nicolas 2026-11-18, N19: "Jeton-Automat einzeln in der Werkstatt (Bargeld gegen Jetons)"; "beim Zielen mit dem Scharfschützengewehr soll man mit dem Mausrad noch auf den roten Punkt reinzoomen können, ähnlich wie beim Panzer"):
+  - werkstatt.js (Ladehandler): `buildJetonAutomat()` rechts neben dem Bankautomaten (Projekt x 6,3), Rechtsklick-Ziel "Jeton-Automat" öffnet das Tauschfenster (`jetonOpen`), Kollision über `userData.kind`.
+  - schusswaffen.js: `GUN_SZ` – beim Zielen mit dem Scharfschützengewehr ändert das Mausrad die Vergrösserung 6× bis 24× (Faktor 1-4, je Raste 1,25), Anzeige über der Hotbar, Maus wird entsprechend feiner (aimK = AIM.z); die Hotbar wechselt dabei nicht. Gilt bis zum Waffenwechsel, in Spiel und Werkstatt.
+  - Geprüft in der Werkstatt: Jeton-Automat steht, Ziel öffnet das Fenster, Bild neben dem Bankautomaten; Zoom 6 -> 14,6 nach 4 Rasten, zurück auf 6, Hotbar beim Zielen unverändert, ohne Zielen wechselt sie wie bisher.
 
 - **Crash mit zwei Einsätzen, Handy im Hochformat blockiert nicht, Plattform-Stufe** (Nicolas 2026-11-18: "Ja, zwei Einsätze"; "offenes Handy im Hochformat soll nicht das Spiel blockieren"; "beim Vergrössern der Plattform hast du die unsichtbare Stufe nicht mitgezogen"):
   - casino-spiele.js Crash: `CG.crash.B` = zwei Einsätze { amt, on, st idle/in/out/lost, cm, win }. Unter dem Bild zwei Felder EINSATZ 1/2 mit Haken "dabei", − / + (Stufen 10 … 100 000), vor dem Flug Ergebnis der letzten Runde, im Flug je ein eigener Knopf AUSZAHLEN Betrag (läuft mit) bzw. "+Betrag bei x". STARTEN · Summe zahlt alle Einsätze mit Haken (vorher Prüfung, ob die Jetons reichen). Leertaste: starten bzw. den nächsten offenen Einsatz auszahlen. Sind alle ausgezahlt, fliegt das Flugzeug bis zum Absturzpunkt weiter (Knopf gesperrt); Absturz: nicht ausgezahlte Einsätze verloren, Meldung mit Auszahlung und Verlust. Die allgemeine Einsatzleiste (Chips) gilt nur noch für Mines. OFFENE-FRAGEN 47 erledigt.

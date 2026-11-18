@@ -238,7 +238,11 @@ function gunStep(dt) {
 }
 // nach dem Hauptbild: Hand-Waffe ueber alles (eigene Tiefe)
 function gunRender() { if (!GUN.cur || !GUN.g) return; gunPose(); const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(GUN.scene, camera); renderer.autoClear = ac; }
-const gunZoom = () => { const id = weaponHeld(); return GUN_SPEC[id] ? GUN_SPEC[id].zoom : 1.8; };
+// Zielfernrohr des Scharfschuetzengewehrs: Mausrad zoomt weiter auf den Zielpunkt (Nicolas 2026-11-18: "beim Zielen mit dem Scharfschuetzengewehr soll man mit dem Mausrad noch auf den roten Punkt reinzoomen koennen, aehnlich wie beim Panzer"): Faktor 1-4 auf die 6-fache Vergroesserung (bis 24-fach), Maus wird mit feiner; bleibt bis zum Waffenwechsel.
+const GUN_SZ = { k: 1, id: null };
+const gunZoom = () => { const id = weaponHeld(); if (GUN_SZ.id !== id) { GUN_SZ.id = id; GUN_SZ.k = 1; } return GUN_SPEC[id] ? GUN_SPEC[id].zoom * (id === "sniper" ? GUN_SZ.k : 1) : 1.8; };
+addEventListener("wheel", e => { if (typeof AIM === "undefined" || !AIM.on || weaponHeld() !== "sniper") return; e.preventDefault(); e.stopImmediatePropagation();   // nicht die Hotbar wechseln
+  GUN_SZ.k = Math.max(1, Math.min(4, GUN_SZ.k * (e.deltaY < 0 ? 1.25 : 0.8))); if (GUN_SZ.k < 1.05) GUN_SZ.k = 1; if (typeof invName === "function") invName("Zielfernrohr " + Math.round(GUN_SPEC.sniper.zoom * GUN_SZ.k) + "×"); }, { capture: true, passive: false });
 addEventListener("mouseup", e => { if (e.button === 0) GUN.trig = false; });
 addEventListener("blur", () => { GUN.trig = false; });
 addEventListener("keydown", e => { if (e.code === "KeyR" && !e.repeat && GUN.cur && onFoot()) gunReload(GUN.cur); });
