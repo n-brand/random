@@ -97,7 +97,7 @@ for (const id of ["btn-fs", "btn-fs2"]) $(id).addEventListener("click", e => { e
 document.addEventListener("fullscreenchange", () => { for (const id of ["btn-fs", "btn-fs2"]) $(id).setAttribute("aria-pressed", String(!!document.fullscreenElement)); });
 addEventListener("keydown", e => {
   if (document.fullscreenElement && (e.ctrlKey || e.metaKey) && !["KeyC", "KeyV", "KeyX", "KeyA"].includes(e.code)) e.preventDefault();   // Vollbild: Strg+W/T/N/R usw. abfangen
-  if (typeof handyIsOpen === "function" && handyIsOpen()) { if (e.code === "Escape" || (e.code === "KeyP" && !e.repeat)) handyClose(); return; }   // S4: Handy offen
+  if (typeof handyIsOpen === "function" && handyIsOpen()) { if (e.code === "Escape" || (e.code === "KeyP" && !e.repeat)) { handyClose(); return; } if (handyBlockiert() || !HANDY_LAUF.includes(e.code)) return; }   // S4: Handy offen; im Hochformat gehen die Lauftasten weiter
   if (typeof kontoIsOpen === "function" && kontoIsOpen()) { if (e.code === "Escape") kontoClose(); return; }   // S3: Bankautomat offen
   if (typeof invIsOpen === "function" && invIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyI" || e.code === "KeyE") && !e.repeat)) invClose(); return; }   // S1: Inventar offen
   if (window.skBigIsOpen && skBigIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyK" || e.code === "KeyM") && !e.shiftKey && !e.repeat)) skBigClose(); if (e.code === "Space" || e.code.startsWith("Arrow")) e.preventDefault(); return; }   // T6: grosse Karte offen

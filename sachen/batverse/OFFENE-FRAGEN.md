@@ -126,4 +126,4 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 
 46. **Geld aus dem Bankautomaten (N18):** Je Schein 50 $, in 20 s kommen ca. 240 Scheine (bis 12 000 $, wenn man alles einsammelt). Passt der Betrag? Soll danach die Polizei kommen (Fahndung)? Bis dahin: 50 $ je Schein, keine Polizei, nach 3 min ist der Automat wieder heil.
 
-47. **Crash mit zwei Einsätzen:** Im Vorbild-Bild gibt es zwei Einsatzfelder (BET 1, BET 2), die man getrennt auszahlen kann. Soll Crash das auch bekommen? Bis dahin: ein Einsatz, nur das Aussehen ist angepasst.
+47. **(erledigt 2026-11-18: zwei Einsätze gebaut)** **Crash mit zwei Einsätzen:** Im Vorbild-Bild gibt es zwei Einsatzfelder (BET 1, BET 2), die man getrennt auszahlen kann. Soll Crash das auch bekommen? Bis dahin: ein Einsatz, nur das Aussehen ist angepasst.

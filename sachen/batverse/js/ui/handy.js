@@ -78,7 +78,7 @@ function handyRender() {
   const box = document.getElementById("handy"); if (!box || box.hidden) return; const p = HANDY.page, sc = box.querySelector(".h-screen"), url = box.querySelector(".h-url");
   const shop = HANDY_SHOPS[p.split(":")[1]];
   url.textContent = p === "home" ? "" : p === "web" ? "gotham.web" : p === "bank" ? "gothamcitybank.gotham" : p === "garage" ? "Garage" : p === "kontakte" ? "Kontakte" : p === "einst" ? "Einstellungen" : shop ? shop.url : "";
-  const M = HANDY_MODELLE[HANDY.modell] || HANDY_MODELLE["handy-wayne"], ph = box.querySelector(".h-phone"), quer = handyQuer(p); ph.className = "h-phone " + M.cls + (quer ? " quer" : ""); box.classList.toggle("quer", quer);
+  const M = HANDY_MODELLE[HANDY.modell] || HANDY_MODELLE["handy-wayne"], ph = box.querySelector(".h-phone"), quer = handyQuer(p); ph.className = "h-phone " + M.cls + (quer ? " quer" : ""); if (quer && typeof keys !== "undefined") keys.clear(); box.classList.toggle("quer", quer);
   box.querySelector(".h-modell") || box.querySelector(".h-top").insertAdjacentHTML("afterbegin", '<span class="h-modell"></span>'); box.querySelector(".h-modell").textContent = M.name;
   { const bg = p === "home" && HANDY_BG[HANDY.modell]; sc.style.background = bg ? "#000 url(" + bg + ") center/cover" : ""; sc.style.imageRendering = bg ? "pixelated" : ""; sc.classList.toggle("h-bgimg", !!bg); }   // eigenes Hintergrundbild auf dem Startbildschirm
   box.querySelector(".h-bar").hidden = p === "home"; box.querySelector(".h-money").textContent = kontoFmt(kontoStand());
@@ -103,6 +103,9 @@ function handyRender() {
         '<button type="button" class="h-buy" data-buy="' + sid + ":" + k + '"' + (kontoKann(pr) ? "" : " disabled") + ">" + (kontoKann(pr) ? "Kaufen und liefern" : "Zu wenig Guthaben") + "</button></div>"; }).join("") + "</div>"; }
 }
 const handyIsOpen = () => { const b = document.getElementById("handy"); return b && !b.hidden; };
+// Hochformat blockiert das Spiel nicht (Nicolas 2026-11-18: "offenes Handy im Hochformat soll nicht das Spiel blockieren"): Lauftasten gehen weiter ans Spiel, Klick ins Bild faengt die Maus (Umschauen), das Handy bleibt offen. Querformat (Browser-Seiten) blockiert weiter.
+const HANDY_LAUF = ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", "Space", "KeyC", "ControlLeft"];
+const handyBlockiert = () => handyIsOpen() && handyQuer(HANDY.page);
 function handyOpen(page, modell) { const b = document.getElementById("handy"); if (!b) return; if (b.hidden) { const m = modell || handyEigen(); if (!m) return toast("Kein Handy dabei – im Inventar fehlt ein Handy"); HANDY.modell = m; HANDY.sel = 0; HANDY.call = null; if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear(); b.hidden = false; HANDY.hist = []; HANDY.page = "home"; }
   if (page) handyGo(page); else handyRender(); }
 function handyClose() { const b = document.getElementById("handy"); if (!b || b.hidden) return; b.hidden = true; if (typeof grabMouse === "function") grabMouse(); }
@@ -124,7 +127,7 @@ const handyShop = id => handyOpen("shop:" + id);
     handyPixel(e.target.files[0], 48, 96).then(u => { HANDY_BG[m] = u; handyBgSave(); handyRender(); toast("Hintergrundbild gesetzt"); }).catch(er => toast("Bild: " + er.message)); });
   document.getElementById("btn-handy")?.addEventListener("click", e => { e.currentTarget.blur(); handyIsOpen() ? handyClose() : handyOpen(); }); }
 // Tastatur, solange das Handy offen ist: Pfeiltasten waehlen Apps, Enter oeffnet, Ruecktaste zurueck, Pfeil hoch/runter blaettert auf Seiten, Esc oder P legt es weg
-addEventListener("keydown", e => { if (!handyIsOpen() || e.target.closest?.("input, textarea")) return; const k = e.key, home = HANDY.page === "home", n = handyApps().length;
+addEventListener("keydown", e => { if (!handyIsOpen() || e.target.closest?.("input, textarea")) return; if (!handyQuer(HANDY.page) && HANDY_LAUF.includes(e.code)) return; const k = e.key, home = HANDY.page === "home", n = handyApps().length;
   if (k === "Escape" || e.code === "KeyP") { e.preventDefault(); handyClose(); }
   else if (home && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(k)) { e.preventDefault(); const d = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3 }[k]; HANDY.sel = Math.max(0, Math.min(n - 1, HANDY.sel + d)); handyRender(); }
   else if (home && k === "Enter") { e.preventDefault(); const a = handyApps()[HANDY.sel]; if (a) handyGo(a[0]); }

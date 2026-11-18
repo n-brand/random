@@ -33,7 +33,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Hotbar wählen | 1–9, Mausrad (auch Bargeld und Karte rechts daneben) |
 | Zielen / benutzen | rechte Maus halten / linke Maus |
 | Nachladen | R |
-| Handy | P oder Handy in der Hand + Rechtsklick (braucht ein Handy im Inventar); Pfeiltasten + Enter wählen Apps, Rücktaste zurück, Esc/P weglegen |
+| Handy | P oder Handy in der Hand + Rechtsklick (braucht ein Handy im Inventar); Pfeiltasten + Enter wählen Apps, Rücktaste zurück, Esc/P weglegen; im Hochformat weiter laufen (WASD, Shift, Leertaste) und Klick ins Bild = umschauen, Querformat (Browser) hält das Spiel an |
 | Karte gross | K oder M; Minikarte an/aus: Umschalt+K |
 | Geist (fliegen) | G (Spiel und Werkstatt), in der Werkstatt auch 5 |
 | Tore, Türen, Automaten, Tische | Rechtsklick (zu Fuss), im Fahrzeug auch E |
@@ -51,13 +51,19 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Bat-Knopf | in der Hand Linksklick = Batsignal an/aus (rote LED am Gerät leuchtet, solange es an ist) |
 | Eigenes Hintergrundbild | Handy: App Einstellungen > Eigenes Bild hochladen; Laptop: Einstellungen > Personalisierung > Eigenes Bild hochladen |
 | Bankautomat aufbrechen | mit einer Schusswaffe darauf schiessen (ca. 15 Pistolentreffer); danach fliegen 20 s Geldscheine heraus, darüberlaufen sammelt sie (je 50 $ Bargeld); nach 3 min wieder heil |
-| Crash | nach AUSZAHLEN fliegt das Flugzeug bis zum Absturzpunkt weiter, Starten erst danach |
+| Crash | zwei Einsätze (je "dabei", − / + Betrag), STARTEN zahlt beide; jeder hat seinen eigenen AUSZAHLEN-Knopf, Leertaste = starten bzw. nächsten Einsatz auszahlen; nach dem letzten Auszahlen fliegt das Flugzeug bis zum Absturzpunkt weiter |
 | Fidget Spinner | in der Hand Rechtsklick = Schwung (mehrmals = schneller, bis ca. 6 U/s), läuft ca. 20 s aus |
 | Werkstatt-Modi | 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person, 5 Geist, Z Zeichnen |
 
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Crash mit zwei Einsätzen, Handy im Hochformat blockiert nicht, Plattform-Stufe** (Nicolas 2026-11-18: "Ja, zwei Einsätze"; "offenes Handy im Hochformat soll nicht das Spiel blockieren"; "beim Vergrössern der Plattform hast du die unsichtbare Stufe nicht mitgezogen"):
+  - casino-spiele.js Crash: `CG.crash.B` = zwei Einsätze { amt, on, st idle/in/out/lost, cm, win }. Unter dem Bild zwei Felder EINSATZ 1/2 mit Haken "dabei", − / + (Stufen 10 … 100 000), vor dem Flug Ergebnis der letzten Runde, im Flug je ein eigener Knopf AUSZAHLEN Betrag (läuft mit) bzw. "+Betrag bei x". STARTEN · Summe zahlt alle Einsätze mit Haken (vorher Prüfung, ob die Jetons reichen). Leertaste: starten bzw. den nächsten offenen Einsatz auszahlen. Sind alle ausgezahlt, fliegt das Flugzeug bis zum Absturzpunkt weiter (Knopf gesperrt); Absturz: nicht ausgezahlte Einsätze verloren, Meldung mit Auszahlung und Verlust. Die allgemeine Einsatzleiste (Chips) gilt nur noch für Mines. OFFENE-FRAGEN 47 erledigt.
+  - handy.js: `handyBlockiert()` = offen und im Querformat (Browser-Seiten). Im Hochformat gehen die Lauftasten (`HANDY_LAUF`: WASD, Shift, Leertaste, C, Strg) ans Spiel (bedienung.js, Werkstatt person.js `personBusy`), ein Klick ins Bild fängt die Maus (umschauen), das Handy bleibt offen; alle anderen Tasten bleiben beim Handy. Beim Wechsel ins Querformat werden gedrückte Tasten gelöscht.
+  - werkstatt/person.js: die 0,15-m-Stufe der Platte gilt jetzt für die ganze 14 x 18 m grosse Platte (war noch 8 x 8).
+  - Geprüft in der Werkstatt: Rand der Platte y 0,15; Handy Hochformat: W bewegt die Figur (2,8 m), E öffnet kein Inventar; Querformat: W gesperrt; Crash 100 + 200 $ bezahlt (300), Einsatz 1 bei 1,55× (155 $), Einsatz 2 per Leertaste bei 1,93× (386 $), weiter bis 4,00×; Bild.
 
 - **Crash im neuen Stil** (Nicolas 2026-11-18, Bild eines Crash-Spiels: "mehr so"): casino-spiele.js `cgDraw` – dunkler Grund mit Lichtstrahlen aus der Ecke unten links (drehen sich beim Flug), Achsen mit wandernden goldenen Punkten, rote Kurve mit rot verlaufender Fläche darunter, rotes Flugzeug (`cgPlane(..., farbe)`) an der Spitze. Mitte: grosser weisser Faktor; nach dem Auszahlen grüne Plakette "AUSGEZAHLT x · +Betrag"; beim Absturz fliegt das Flugzeug schnell nach rechts oben aus dem Bild, Kurve blendet aus, "FLUGZEUG WEG" rot und der Faktor weiss gross (darunter die eigene Auszahlung). Vor dem Start "BEREIT ZUM ABHEBEN". Verlauf der letzten 12 Flüge jetzt als Leiste über dem Bild (neueste links; unter 2× blau, ab 2× lila, ab 10× pink). Eigene Umsetzung, keine Grafiken aus dem Vorbild. Zwei Einsätze gleichzeitig wie im Bild: OFFENE-FRAGEN 47. Geprüft: Bilder während des Flugs nach dem Auszahlen und nach dem Absturz.
 
