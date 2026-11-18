@@ -38,6 +38,7 @@ function gunBuild(id) {
   const g = new THREE.Group(), M = GUN_MAT;
   const box = (m, w, h, l, x, y, z, rx = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), m); o.position.set(x, y, z); o.rotation.x = rx; g.add(o); return o; };
   const cyl = (m, r, l, x, y, z, r2 = r, seg = 14) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r2, l, seg), m); o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; };
+  const prof = (m, pts, w, x = 0) => { const sh = new THREE.Shape(); pts.forEach(([z, y], i) => sh[i ? "lineTo" : "moveTo"](z, y)); const ge = new THREE.ExtrudeGeometry(sh, { depth: w, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.002, bevelSegments: 1 }); ge.translate(0, 0, -w / 2); const o = new THREE.Mesh(ge, m); o.rotation.y = -Math.PI / 2; o.position.x = x; g.add(o); return o; };   // Seitenprofil (z, y), quer extrudiert
   const guard = (x, y, z, r) => { const o = new THREE.Mesh(new THREE.TorusGeometry(r, 0.0035, 6, 14, Math.PI), M.metall); o.rotation.set(0, Math.PI / 2, Math.PI); o.position.set(x, y, z); g.add(o); };
   let muzzle;
   if (id === "emp") {   // EMP-Gewehr: kantiger schwarzer Koerper, Kuehlrippen oben, breites Emitter-Gehaeuse vorne mit leuchtendem Ring, Ladeanzeige seitlich
@@ -50,39 +51,43 @@ function gunBuild(id) {
     { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.011, 8, 32), M.empGlow); ring.scale.set(1, 1.22, 1); ring.position.set(0, 0.08, -0.475); g.add(ring);
       const disc = new THREE.Mesh(new THREE.CircleGeometry(0.052, 24), M.empDim); disc.scale.set(1, 1.22, 1); disc.rotation.y = Math.PI; disc.position.set(0, 0.08, -0.474); g.add(disc); }
     box(M.kunst, 0.032, 0.1, 0.045, 0, 0.0, 0.0, 0.3); guard(0, 0.03, -0.045, 0.02);   // Griff, Abzugsbuegel
-    box(M.kunst, 0.05, 0.08, 0.2, 0, 0.06, 0.13, -0.05);                      // Schulterstuetze
+    prof(M.kunst, [[0.03, 0.115], [0.25, 0.105], [0.28, 0.085], [0.28, -0.005], [0.245, -0.012], [0.14, 0.04], [0.06, 0.035], [0.03, 0.045]], 0.045);   // Schulterstuetze als Profil (2026-11-18)
     for (let k = 0; k < 3; k++) box(M.empGlow, 0.004, 0.012, 0.03, 0.037, 0.09, -0.1 - k * 0.04);   // Ladeanzeige
     muzzle = [0, 0.08, -0.49];
   } else if (id === "pistole") {
     box(M.metall, 0.03, 0.03, 0.19, 0, 0.105, -0.06);                      // Schlitten
     for (let k = 0; k < 6; k++) box(M.grau, 0.031, 0.022, 0.003, 0, 0.106, 0.012 + k * 0.006);   // Rillen hinten
-    box(M.kunst, 0.028, 0.022, 0.165, 0, 0.081, -0.05);                     // Griffstueck
-    box(M.kunst, 0.03, 0.115, 0.052, 0, 0.03, 0.018, 0.22);                 // Griff
-    box(M.grau, 0.024, 0.012, 0.05, 0, -0.025, 0.03, 0.22);                 // Magazinboden
+    prof(M.kunst, [[-0.15, 0.094], [0.03, 0.094], [0.048, 0.086], [0.05, 0.062], [0.08, -0.05], [0.033, -0.058], [0.004, 0.042], [-0.012, 0.05], [-0.06, 0.05], [-0.066, 0.072], [-0.15, 0.072]], 0.028);   // Griffstueck mit Griff (Profil, neu 2026-11-18)
+    for (let k = 0; k < 5; k++) box(M.grau, 0.03, 0.004, 0.022, 0, 0.0 + k * 0.016, 0.042 - k * 0.005, -0.42);   // Riffelung am Griff
+    box(M.grau, 0.026, 0.01, 0.05, 0, -0.058, 0.058, -0.2);                 // Magazinboden
     guard(0, 0.068, -0.03, 0.019); box(M.metall, 0.004, 0.016, 0.004, 0, 0.065, -0.025);   // Abzugsbuegel, Abzug
     cyl(M.grau, 0.0065, 0.012, 0, 0.105, -0.158);                           // Laufmuendung
     box(M.metall, 0.006, 0.007, 0.006, 0, 0.123, -0.145); box(M.metall, 0.018, 0.007, 0.006, 0, 0.123, 0.025);   // Korn, Kimme
     muzzle = [0, 0.105, -0.165];
   } else if (id === "mg") {
-    box(M.metall, 0.05, 0.075, 0.34, 0, 0.07, -0.12);                       // Gehaeuse
-    box(M.grau, 0.03, 0.012, 0.36, 0, 0.114, -0.13);                        // Schiene oben
-    box(M.kunst, 0.058, 0.058, 0.24, 0, 0.075, -0.4);                       // Handschutz
-    for (let k = 0; k < 5; k++) box(M.grau, 0.06, 0.008, 0.02, 0, 0.075, -0.31 - k * 0.045);   // Kuehlrippen
-    cyl(M.metall, 0.012, 0.3, 0, 0.08, -0.66); cyl(M.grau, 0.019, 0.06, 0, 0.08, -0.83);   // Lauf, Muendungsbremse
-    box(M.kunst, 0.042, 0.075, 0.24, 0, 0.055, 0.16, -0.06); box(M.grau, 0.044, 0.09, 0.015, 0, 0.05, 0.285);   // Schaft, Kappe
-    box(M.kunst, 0.032, 0.095, 0.042, 0, -0.01, 0.0, 0.32);                 // Pistolengriff
-    guard(0, 0.03, -0.045, 0.02);
-    box(M.metall, 0.032, 0.16, 0.065, 0, -0.04, -0.12, 0.28);               // Magazin
-    box(M.metall, 0.012, 0.012, 0.2, 0.015, 0.035, -0.47, 0.06); box(M.metall, 0.012, 0.012, 0.2, -0.015, 0.035, -0.47, 0.06);   // Zweibein (eingeklappt)
-    box(M.metall, 0.03, 0.03, 0.04, 0, 0.13, -0.04); box(M.glas, 0.024, 0.02, 0.003, 0, 0.133, -0.061);   // Rotpunktvisier
-    box(M.messing, 0.012, 0.012, 0.03, 0.03, 0.08, -0.12);                  // Auswurf
-    muzzle = [0, 0.08, -0.87];
+    // neu (Nicolas 2026-11-18: "Maschinenpistole auch"): oberes und unteres Gehaeuse, Schiene mit Zaehnen, achteckiger Handschutz mit Schlitzen, Lauf mit Feuerdaempfer,
+    // gebogenes Magazin, Pistolengriff schraeg, Schaftrohr mit verstellbarer Schulterstuetze, Rotpunktvisier als Roehre
+    box(M.metall, 0.044, 0.05, 0.3, 0, 0.1, -0.1);                          // oberes Gehaeuse
+    box(M.metall, 0.04, 0.045, 0.2, 0, 0.055, -0.08);                       // unteres Gehaeuse (Magazinschacht)
+    box(M.grau, 0.026, 0.01, 0.56, 0, 0.13, -0.25); for (let k = 0; k < 26; k++) box(M.grau, 0.03, 0.006, 0.01, 0, 0.137, 0.02 - k * 0.021);   // Schiene mit Zaehnen
+    cyl(M.kunst, 0.031, 0.3, 0, 0.098, -0.4, 0.031, 8); for (let k = 0; k < 5; k++) for (const sx of [-1, 1]) box(M.grau, 0.004, 0.012, 0.035, sx * 0.03, 0.098, -0.3 - k * 0.05);   // Handschutz mit Schlitzen
+    cyl(M.metall, 0.011, 0.2, 0, 0.098, -0.64); cyl(M.grau, 0.016, 0.065, 0, 0.098, -0.765, 0.016, 6);   // Lauf, Feuerdaempfer
+    { const pts = []; for (let k = 0; k <= 8; k++) { const t = k / 8; pts.push([-0.15 - 0.075 * t * t, 0.045 - 0.17 * t]); } for (let k = 8; k >= 0; k--) { const t = k / 8; pts.push([-0.085 - 0.06 * t * t, 0.045 - 0.165 * t]); } prof(M.metall, pts, 0.028); }   // gebogenes Magazin (Profil)
+    box(M.kunst, 0.032, 0.1, 0.042, 0, 0.0, 0.01, 0.38);                    // Pistolengriff
+    guard(0, 0.034, -0.04, 0.02); box(M.metall, 0.005, 0.02, 0.005, 0, 0.025, -0.045, 0.3);   // Abzugsbuegel, Abzug
+    cyl(M.metall, 0.016, 0.17, 0, 0.098, 0.135);                             // Schaftrohr
+    box(M.kunst, 0.04, 0.085, 0.13, 0, 0.078, 0.2); box(M.kunst, 0.042, 0.105, 0.016, 0, 0.07, 0.272);   // Schulterstuetze, Kappe
+    box(M.grau, 0.018, 0.012, 0.02, 0, 0.122, 0.04);                        // Ladehebel
+    cyl(M.metall, 0.021, 0.07, 0, 0.165, -0.06); box(M.metall, 0.022, 0.022, 0.05, 0, 0.145, -0.06); box(M.glas, 0.028, 0.028, 0.003, 0, 0.165, -0.096);   // Rotpunktvisier
+    box(M.metall, 0.01, 0.01, 0.2, 0.014, 0.065, -0.47, 0.04); box(M.metall, 0.01, 0.01, 0.2, -0.014, 0.065, -0.47, 0.04);   // Zweibein (eingeklappt)
+    box(M.messing, 0.012, 0.012, 0.03, 0.025, 0.1, -0.1);                    // Auswurf
+    muzzle = [0, 0.098, -0.8];
   } else if (id === "sniper") {
     box(M.metall, 0.045, 0.055, 0.28, 0, 0.075, -0.1);                      // Verschluss
     cyl(M.metall, 0.012, 0.6, 0, 0.08, -0.54, 0.0095); cyl(M.grau, 0.02, 0.08, 0, 0.08, -0.88);   // Lauf, Muendungsbremse
     box(M.oliv, 0.05, 0.06, 0.36, 0, 0.055, -0.33);                         // Vorderschaft
-    box(M.oliv, 0.045, 0.085, 0.3, 0, 0.04, 0.2, -0.05); box(M.oliv, 0.04, 0.03, 0.14, 0, 0.1, 0.2);   // Schaft, Wangenauflage
-    box(M.kunst, 0.05, 0.11, 0.02, 0, 0.03, 0.355);                         // Schaftkappe
+    prof(M.oliv, [[0.04, 0.1], [0.2, 0.1], [0.23, 0.125], [0.345, 0.125], [0.36, 0.105], [0.36, -0.04], [0.31, -0.045], [0.17, 0.02], [0.07, 0.03], [0.04, 0.05]], 0.045);   // Schaft mit Wangenauflage als Profil (2026-11-18)
+    box(M.kunst, 0.05, 0.17, 0.02, 0, 0.04, 0.37);                          // Schaftkappe
     box(M.oliv, 0.034, 0.1, 0.045, 0, -0.005, 0.02, 0.3); guard(0, 0.035, -0.04, 0.02);   // Griff
     box(M.metall, 0.03, 0.06, 0.05, 0, 0.02, -0.12);                        // Magazin
     cyl(M.metall, 0.019, 0.3, 0, 0.15, -0.1); cyl(M.metall, 0.03, 0.07, 0, 0.15, -0.28, 0.019); cyl(M.metall, 0.019, 0.05, 0, 0.15, 0.07, 0.026);   // Zielfernrohr
@@ -279,12 +284,15 @@ function buildWaffenwand() {
   for (const x of [-W / 2 + 0.1, W / 2 - 0.1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.3), frame); l.position.set(x, 0.125, 0.05); g.add(l); }   // Fuesse
   const items = {}, hook = new THREE.MeshStandardMaterial({ color: 0x8a8f96, metalness: 0.8, roughness: 0.3 }), put = (id, o) => { (items[id] = items[id] || []).push(o); g.add(o); };
   const one = id => { if (GUN_SPEC[id]) { const o = new THREE.Group(), m = gunBuild(id); m.rotation.y = -Math.PI / 2; o.add(m); return o; }
-    if (id === "batarang") { const o = new THREE.Group(), m = new THREE.Mesh(AIM_M.bat, AIM_M.batM); m.rotation.set(-Math.PI / 2, 0, Math.PI); o.add(m); return o; }
-    if (id === "rauchbombe") { const o = new THREE.Group(), m = new THREE.Mesh(AIM_M.bomb, AIM_M.bombM); o.add(m); const c = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.05, 10), hook); c.position.y = 0.1; o.add(c); return o; }
-    if (id === "greifhaken") { const o = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.07, 0.06), GUN_MAT.schwarz); o.add(body); const grip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.12, 0.05), GUN_MAT.schwarz); grip.position.set(0.06, -0.08, 0); grip.rotation.z = -0.25; o.add(grip);
-      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 4), hook); tip.rotation.z = Math.PI / 2; tip.position.x = -0.17; o.add(tip); return o; }   // einfacher Platzhalter bis zum neuen 3D-Modell (N44)
-    const it = INV_ITEMS[id]; if (!it) return null;   // Munition: kleine Schachtel
-    const o = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.08), new THREE.MeshStandardMaterial({ color: id === "schrot" ? 0x8a1e22 : id === "gewehrmunition" ? 0x5a5a2a : 0x2a3a5a, roughness: 0.7 })); return o; };
+    if (id === "batarang") { const o = new THREE.Group(), m = new THREE.Mesh(AIM_M.bat, AIM_M.batM); m.rotation.set(Math.PI / 2, 0, 0); o.add(m); return o; }   // Ohren oben
+    if (id === "rauchbombe") { const o = new THREE.Group(), m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 20, 14), AIM_M.bombM); o.add(m); const c = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.028, 0.05, 14), hook); c.position.y = 0.1; o.add(c);
+      const lv = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.1, 0.006), hook); lv.position.set(0.03, 0.08, -0.02); lv.rotation.z = -0.35; o.add(lv); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.004, 6, 16), hook); ring.position.set(-0.035, 0.12, -0.02); o.add(ring);
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.091, 0.091, 0.02, 20), new THREE.MeshStandardMaterial({ color: 0xd9c23a, roughness: 0.6 })); o.add(band); return o; }   // Kugel mit Zuender, Buegel, Sicherungsring, gelbem Band
+    if (id === "greifhaken" && typeof buildGreifhaken === "function") { const o = new THREE.Group(), m = buildGreifhaken(); m.rotation.y = -Math.PI / 2; o.add(m); return o; }   // 3D-Modell (waffen.js, N44)
+    const it = INV_ITEMS[id]; if (!it) return null;   // Munition: Schachtel mit Aufschrift
+    const [bg, t1, t2] = id === "schrot" ? ["#8a1e22", "12 GA", "SCHROT"] : id === "gewehrmunition" ? ["#4f5226", "7.62", "GEWEHR"] : ["#22324f", "9 MM", "PISTOLE"];
+    const lab = canvasTex(128, 80, (c, w, h) => { c.fillStyle = bg; c.fillRect(0, 0, w, h); c.fillStyle = "#f1e6c8"; c.fillRect(6, 6, w - 12, 4); c.fillRect(6, h - 10, w - 12, 4); c.font = "bold 30px Arial"; c.textAlign = "center"; c.fillText(t1, w / 2, 44); c.font = "bold 14px Arial"; c.fillText(t2, w / 2, 62); }), mb = new THREE.MeshStandardMaterial({ color: new THREE.Color(bg), roughness: 0.7 });
+    return new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.08), [mb, mb, mb, mb, mb, new THREE.MeshStandardMaterial({ map: lab, roughness: 0.7 })]); };
   // Reihen von oben: lange Waffen, mittlere, kurze Dinge mit Ablage; je Reihe gleichmaessig verteilt nach Breite
   const rows = [[["sniper"], ["mg"]], [["schrotflinte"], ["emp"]], [["pistole"], ["greifhaken"], ["batarang", 3], ["rauchbombe", 2]], [["munition"], ["gewehrmunition"], ["schrot"]]], ys = [2.15, 1.65, 1.1, 0.55];
   rows.forEach((row, r) => { const objs = []; for (const [id, n = 1] of row) for (let k = 0; k < n; k++) { const o = one(id); if (o) objs.push([id, o]); }

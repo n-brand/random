@@ -185,3 +185,20 @@ function batHandRender() {
   H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); H.g.scale.setScalar(1.05); { const zz = 0.45, th = Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV()) / 2); H.g.translateX(0.64 * th * camera.aspect * zz); H.g.translateY(-0.3 * th * zz); H.g.translateZ(-zz); }   // ganz rechts nach Bildschirmanteil wie das 2D-Handbild (Nicolas 2026-11-17: "Jetons und Batarang sollen auch ganz rechts sein")
   const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(H.sc, camera); renderer.autoClear = ac;
 }
+// Greifhaken als 3D-Modell (Nicolas 2026-11-18, N44: "in 3D soll sie auch noch gemacht werden"): schwarze Seilpistole, Lauf nach -z wie die Schusswaffen,
+// vorne der Abschussbecher mit drei eingeklappten Krallen, seitlich die Seiltrommel, gelber Ring, schraeger Griff mit Abzugsbuegel. Laenge ca. 0,32 m.
+function buildGreifhaken() {
+  const g = new THREE.Group(), sw = new THREE.MeshStandardMaterial({ color: 0x17191d, metalness: 0.4, roughness: 0.45 }), gr = new THREE.MeshStandardMaterial({ color: 0x3a3f46, metalness: 0.6, roughness: 0.35 }),
+    st = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, metalness: 0.9, roughness: 0.25 }), ge = new THREE.MeshStandardMaterial({ color: 0xe8b81c, metalness: 0.3, roughness: 0.4 }), seil = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 });
+  const box = (m, w, h, l, x, y, z, rx = 0) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, l), m); o.position.set(x, y, z); o.rotation.x = rx; g.add(o); return o; };
+  const cyl = (m, r, l, x, y, z, r2 = r, seg = 18) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r2, l, seg), m); o.rotation.x = Math.PI / 2; o.position.set(x, y, z); g.add(o); return o; };
+  box(sw, 0.05, 0.06, 0.2, 0, 0.09, -0.05); box(gr, 0.052, 0.012, 0.18, 0, 0.124, -0.05);           // Gehaeuse, Deckel
+  cyl(sw, 0.028, 0.12, 0, 0.09, -0.2); cyl(ge, 0.03, 0.012, 0, 0.09, -0.15);                        // Abschussrohr, gelber Ring
+  cyl(gr, 0.032, 0.03, 0, 0.09, -0.27, 0.028);                                                      // Becher
+  for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, c = new THREE.Mesh(new THREE.ConeGeometry(0.008, 0.07, 6), st); c.position.set(Math.cos(a) * 0.018, 0.09 + Math.sin(a) * 0.018, -0.3); c.rotation.set(-Math.PI / 2 + Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35); g.add(c); }   // Krallen
+  const spitze = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.04, 10), st); spitze.rotation.x = -Math.PI / 2; spitze.position.set(0, 0.09, -0.31); g.add(spitze);
+  { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.03, 20), seil); t.rotation.z = Math.PI / 2; t.position.set(0.04, 0.08, -0.02); g.add(t); const r = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.006, 20), gr); r.rotation.z = Math.PI / 2; r.position.set(0.057, 0.08, -0.02); g.add(r); }   // Seiltrommel rechts
+  box(sw, 0.034, 0.11, 0.045, 0, 0.02, 0.03, -0.3); for (let k = 0; k < 4; k++) box(gr, 0.036, 0.005, 0.03, 0, -0.01 + k * 0.022, 0.035 - k * 0.006, -0.3);   // Griff mit Rillen
+  const gd = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0035, 6, 14, Math.PI), gr); gd.rotation.set(0, Math.PI / 2, Math.PI); gd.position.set(0, 0.06, -0.025); g.add(gd); box(gr, 0.005, 0.02, 0.005, 0, 0.055, -0.02, 0.3);   // Abzugsbuegel, Abzug
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.name = "Greifhaken"; return g;
+}
