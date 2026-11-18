@@ -19,7 +19,8 @@ function buildTresor(stufe) {
   const S = TRESOR_STUFEN[stufe], M = TRESOR_M, g = new THREE.Group(), body = new THREE.MeshStandardMaterial({ color: S.col, roughness: 0.4, metalness: 0.6 }), y0 = S.stand || S.wall || 0;
   const box = (m, w, h, d, x, y, z, p = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); p.add(o); return o; };
   if (S.stand) { box(M.holz, 0.6, 0.04, 0.45, 0, S.stand - 0.02, 0.02); for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(M.chrom, 0.03, S.stand - 0.04, 0.03, sx * 0.27, (S.stand - 0.04) / 2, 0.02 + sz * 0.19); }   // Beistelltisch
-  if (S.wall) { const W = 1.0, H = 1.7; box(M.beton, W, H, 0.3, 0, H / 2, S.d / 2 - 0.12); }   // Wandstueck, Tresor eingelassen
+  if (S.wall) { const W = 1.0, H = 1.7, D = S.d + 0.1, z = 0.05, w2 = S.w / 2, y1 = S.wall + S.h;   // Wandstueck mit Oeffnung um den Tresor, vorne buendig (Nicolas 2026-11-18: "Wandtresor von innen anschauen": die Wand ging mitten durch den Innenraum)
+    box(M.beton, W / 2 - w2, H, D, -(W / 2 + w2) / 2, H / 2, z); box(M.beton, W / 2 - w2, H, D, (W / 2 + w2) / 2, H / 2, z); box(M.beton, S.w, S.wall, D, 0, S.wall / 2, z); box(M.beton, S.w, H - y1, D, 0, (H + y1) / 2, z); }
   const { w, h, d, t } = S, cy = y0 + h / 2;
   box(body, w, h, t, 0, cy, d / 2 - t / 2); box(body, t, h, d, -w / 2 + t / 2, cy, 0); box(body, t, h, d, w / 2 - t / 2, cy, 0); box(body, w, t, d, 0, y0 + t / 2, 0); box(body, w, t, d, 0, y0 + h - t / 2, 0);   // Korpus offen vorne
   box(M.inner, w - 2 * t, h - 2 * t, 0.01, 0, cy, d / 2 - t - 0.006); if (h > 0.8) for (const k of [1, 2]) box(M.inner, w - 2 * t, 0.02, d - t - 0.04, 0, y0 + t + (h - 2 * t) * k / 3, 0.01);   // Innenwand, Boeden
