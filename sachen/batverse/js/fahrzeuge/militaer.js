@@ -1,74 +1,279 @@
-// Militaerfahrzeuge (Nicolas 2026-11-18, N52, zu Phase 6): Kommandofahrzeug und Sanitaetsfahrzeug Piranha I, Panzerjaeger 90 (Piranha I mit Raketenwerfer-Turm),
-// geschuetztes Mannschaftstransportfahrzeug Duro IIIP, Transporthelikopter Cougar, leichter Transport- und Schulungshelikopter. Vereinfachte eigene Modelle, olivgruen.
-// Spiel und Werkstatt, nach fahrzeuge/modelle.js und fahrzeuge/heli.js (flyAdd, buildPolizeiHeli). Radfahrzeuge: build*/SPEC_* wie die anderen (Werkstatt-Auswahl, Laden
+// Militaerfahrzeuge (Nicolas 2026-11-18, N52, zu Phase 6): Kommandofahrzeug und Sanitaetsfahrzeug Piranha I, Panzerjaeger 90 (Piranha I mit Lenkwaffen-Turm),
+// geschuetztes Mannschaftstransportfahrzeug Duro IIIP, Transporthelikopter Cougar, leichter Transport- und Schulungshelikopter. Eigene, vereinfachte Modelle in Oliv.
+// Ueberarbeitet 2026-11-19 (Nicolas: "warum sieht der Panzer so viel besser aus" -> "Ja, ueberarbeiten"): gleicher Stil wie buildTank – facettierte Materialien
+// (flatShading), dunklere zweite Farbe fuer Anbauteile, Wanne als Loft aus Querschnitten, Schweissnaehte, Schrauben, Gummilappen, Staukisten, Werkzeug, Lichter mit
+// Schutzbuegeln, Abschlepphaken, Winkelspiegel, Luken, Radnaben mit Muttern; Hubschrauber als eigene Modelle (vorher umgefaerbter Polizei-Helikopter).
+// Spiel und Werkstatt, nach fahrzeuge/modelle.js und fahrzeuge/heli.js (flyAdd). Radfahrzeuge: build*/SPEC_* wie die anderen (Werkstatt-Auswahl, Laden
 // Gotham Defense Supply im Handy); Hubschrauber: FLYS (Werkstatt neben dem Landeplatz; Standort im Spiel noch offen, OFFENE-FRAGEN 52). Vorne = -z.
 const MIL_OLIV = 0x4b5a3a, MIL_DUNKEL = 0x262a20;
-// Piranha I 8x8: flache Wanne mit schraeger Bugplatte, vier Achsen (vordere zwei lenken), Fahrerluke vorne links, Nebelwerfer, Heckrampe. v = "kommando" | "sanitaet" | "pzj90"
+function milMat() { const F = { flatShading: true };
+  return { oliv: M(MIL_OLIV, { roughness: 0.8, metalness: 0.15, ...F }), oliv2: M(new THREE.Color(MIL_OLIV).multiplyScalar(0.8).getHex(), { roughness: 0.85, metalness: 0.15, ...F }),
+    dunkel: M(MIL_DUNKEL, { roughness: 0.85, ...F }), stahl: M(0x5a5f63, { metalness: 0.6, roughness: 0.5, ...F }), gummi: M(0x161616, { roughness: 0.95 }), glas: M(0x10161c, { metalness: 0.7, roughness: 0.1 }),
+    reifen: M(0x161616, { roughness: 0.92 }), felge: M(0x3c4630, { roughness: 0.7, metalness: 0.2, ...F }), holz: M(0x6b4a2a, { roughness: 0.9 }), plane: M(0x5b5a3e, { roughness: 1 }) }; }
+const milCyl = (g, r0, r1, len, m, x, y, z, ax = "y", seg = 12) => { const geo = new THREE.CylinderGeometry(r0, r1, len, seg); if (ax === "x") geo.rotateZ(Math.PI / 2); else if (ax === "z") geo.rotateX(Math.PI / 2); return meshIn(g, geo, m, x, y, z); };
+// Radnabe mit Scheibe, 8 Muttern und Deckel (dreht mit dem Rad: w.spin)
+function milNabe(w, wd, K) { const s = w.spin, r = w.r, sd = Math.sign(w.piv.position.x) || 1, X = sd * (wd / 2 + 0.012);
+  milCyl(s, r * 0.5, r * 0.56, 0.05, K.felge, X, 0, 0, "x", 18); milCyl(s, r * 0.17, r * 0.21, 0.1, K.stahl, X + sd * 0.03, 0, 0, "x", 10);
+  for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; milCyl(s, 0.022, 0.022, 0.05, K.stahl, X + sd * 0.03, Math.cos(a) * r * 0.34, Math.sin(a) * r * 0.34, "x", 6); } }
+// Licht mit Gitter-Schutzbuegel (Front -z bzw. Heck +z: dir -1 / +1)
+function milLicht(g, K, x, y, z, dir, m, w = 0.26, h = 0.16) { boxAt(g, w + 0.08, h + 0.08, 0.16, K.dunkel, x, y, z); boxAt(g, w, h, 0.02, m, x, y, z + dir * 0.085);
+  for (const dx of [-1, 0, 1]) boxAt(g, 0.025, h + 0.14, 0.025, K.stahl, x + dx * (w / 2 + 0.03), y, z + dir * 0.15); boxAt(g, w + 0.12, 0.025, 0.025, K.stahl, x, y + h / 2 + 0.07, z + dir * 0.15); }
+// Abschlepphaken (Oese mit Bolzen)
+function milHaken(g, K, x, y, z) { boxAt(g, 0.08, 0.2, 0.16, K.stahl, x, y, z); boxAt(g, 0.22, 0.06, 0.16, K.stahl, x, y - 0.1, z); milCyl(g, 0.03, 0.03, 0.26, K.dunkel, x, y + 0.02, z, "x", 8); }
+// Kanister in Halterung (seitlich), Kiste mit Verschluessen
+function milKanister(g, K, x, y, z, sd) { boxAt(g, 0.16, 0.46, 0.34, K.oliv2, x, y, z); boxAt(g, 0.17, 0.04, 0.36, K.stahl, x, y - 0.12, z); boxAt(g, 0.06, 0.05, 0.1, K.dunkel, x - sd * 0.02, y + 0.25, z - 0.08); }
+function milKiste(g, K, x0, x1, y0, y1, z0, z1, sd) { sideBox(g, x0, x1, y0, y1, z0, z1, K.oliv2); sideBox(g, x0 - sd * 0.01, x1 + sd * 0.01, y1 - 0.025, y1 + 0.005, z0 - 0.01, z1 + 0.01, K.oliv);
+  const xa = Math.abs(x0) > Math.abs(x1) ? x0 : x1; for (const t of [0.25, 0.75]) boxAt(g, 0.03, 0.08, 0.06, K.stahl, xa + sd * 0.015, y1 - 0.08, z0 + (z1 - z0) * t); }
+// Antenne mit Fuss und Feder
+function milAntenne(g, K, x, y, z, h) { milCyl(g, 0.06, 0.07, 0.08, K.dunkel, x, y + 0.04, z); milCyl(g, 0.03, 0.03, 0.18, K.gummi, x, y + 0.17, z, "y", 8); milCyl(g, 0.008, 0.014, h, K.dunkel, x, y + 0.26 + h / 2, z, "y", 6); }
+// Nebelwerfer-Buendel (n Rohre, schraeg nach vorne aussen)
+function milNebel(g, K, x, y, z, sd, n = 3) { const grp = new THREE.Group(); grp.position.set(x, y, z); grp.rotation.set(0.55, sd * 0.35, 0); g.add(grp); boxAt(grp, 0.32, 0.06, 0.22, K.oliv2, 0, -0.06, 0);
+  for (let k = 0; k < n; k++) { const t = milCyl(grp, 0.045, 0.05, 0.26, K.dunkel, (k - (n - 1) / 2) * 0.1, 0.07, -0.02, "z", 10); t.rotation.x = Math.PI / 2 - 0.9; } }
+// Schild-Material (Schrift auf transparentem Grund)
+function milSchrift(text, col = "#1a1d16", w = 512, h = 96, font = "bold 64px Arial") { return new THREE.MeshBasicMaterial({ transparent: true, map: canvasTex(w, h, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = col; c.font = font; c.textAlign = "center"; c.fillText(text, W / 2, H * 0.72); }) }); }
+function milKreuzSchweiz() { return new THREE.MeshBasicMaterial({ map: canvasTex(64, 64, (c) => { c.fillStyle = "#c8102e"; c.fillRect(0, 0, 64, 64); c.fillStyle = "#fff"; c.fillRect(26, 12, 12, 40); c.fillRect(12, 26, 40, 12); }) }); }
+
+// ---- Piranha I 8x8 (Radschuetzenpanzer): Wanne mit langer Bugplatte (Fahrer vorne links, Motor vorne rechts mit Lueftungsgittern), schmale Unterwanne zwischen den Raedern,
+// Oberwanne ueber den Raedern auskragend mit schraegen Seiten, Sichtbloecke und Schiessluken, zwei Hecktueren, zwei Schiffsschrauben-Tunnel (schwimmfaehig), vier Achsen
+// (vordere zwei lenken). v = "kommando" | "sanitaet" | "pzj90". 6,3 x 2,6 m, Dach 2,0 m.
 function buildPiranha(v = "kommando") {
-  const g = new THREE.Group(), HW = 1.25, zF = -3.15, zR = 3.15, oliv = M(MIL_OLIV, { roughness: 0.8, metalness: 0.15 }), dunkel = M(MIL_DUNKEL, { roughness: 0.85 }), glas = M(0x0a0e14, { metalness: 0.6, roughness: 0.1 });
-  const tireM = M(0x161616, { roughness: 0.95 }), rimM = M(0x3a4030, { roughness: 0.7 }), weiss = M(0xeeeeea, { roughness: 0.6 }), rot = M(0xd0202a, { roughness: 0.5 });
-  boxIn(g, -HW, HW, 0.6, 1.4, zF + 1.0, zR, oliv);                                                 // Unterwanne
-  boxIn(g, -HW + 0.15, HW - 0.15, 1.4, 2.0, zF + 1.4, zR, oliv);                                    // Oberwanne
-  for (const sd of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.62, zR - zF - 1.4), oliv); p.position.set(sd * (HW - 0.09), 1.66, (zF + 1.4 + zR) / 2); p.rotation.z = sd * 0.35; g.add(p); }   // schraege Seitenwaende oben
-  { const b = new THREE.Mesh(new THREE.BoxGeometry(2 * HW, 0.12, 1.75), oliv); b.position.set(0, 1.2, zF + 0.72); b.rotation.x = -0.62; g.add(b);   // Bugplatte schraeg
-    const u = new THREE.Mesh(new THREE.BoxGeometry(2 * HW, 0.12, 1.15), oliv); u.position.set(0, 0.68, zF + 0.5); u.rotation.x = 0.5; g.add(u); }   // Bug unten
-  boxIn(g, -HW + 0.25, -0.15, 2.0, 2.15, zF + 1.5, zF + 2.2, dunkel); boxIn(g, -HW + 0.3, -0.2, 1.88, 2.02, zF + 1.42, zF + 1.46, glas);   // Fahrerluke, Winkelspiegel
-  for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const n = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.25, 8), dunkel); n.position.set(sd * (HW - 0.35) + sd * k * 0.09, 2.08, zF + 2.6); n.rotation.x = -0.6; g.add(n); }   // Nebelwerfer
-  boxIn(g, -0.8, 0.8, 0.7, 1.9, zR, zR + 0.05, dunkel); for (const sd of [-1, 1]) boxIn(g, sd * 1.0 - 0.1, sd * 1.0 + 0.1, 1.0, 1.25, zR, zR + 0.04, M(0xc02020, { emissive: 0x400808 }));   // Heckrampe, Ruecklichter
-  for (const sd of [-1, 1]) boxIn(g, sd * 0.85 - 0.12, sd * 0.85 + 0.12, 1.1, 1.22, zF + 0.05, zF + 0.12, mat.glow);   // Scheinwerfer
-  const ant = (x, z, h) => { const a = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, h, 6), dunkel); a.position.set(x, 2.0 + h / 2, z); g.add(a); };
-  if (v === "kommando") { boxIn(g, -0.9, 0.9, 2.0, 2.55, 0.0, 2.6, oliv); ant(-0.9, 2.9, 2.8); ant(0.9, 2.9, 2.4); ant(-0.9, -0.4, 2.0); boxIn(g, 0.3, 0.9, 2.55, 2.75, 0.4, 1.4, dunkel); }   // Kommando: Aufbau, Antennen, Funkgeraetekasten
-  else if (v === "sanitaet") { boxIn(g, -HW + 0.15, HW - 0.15, 2.0, 2.75, -0.2, zR, oliv);   // Sanitaet: hoeherer Aufbau, rotes Kreuz auf weissem Feld (Seiten, Heck, Dach)
+  const g = new THREE.Group(), K = milMat(), { oliv, oliv2, dunkel, stahl, gummi, glas } = K, weiss = M(0xeeeeea, { roughness: 0.6 }), rot = M(0xd0202a, { roughness: 0.5 });
+  const yT = tabF([[3.15, 0.98], [2.95, 1.12], [1.5, 2.0], [-2.95, 2.0], [-3.15, 1.86]]), yB = tabF([[3.15, 0.8], [2.7, 0.42], [-2.85, 0.42], [-3.15, 0.62]]), wF = tabF([[3.15, 0.9], [2.7, 1.0], [-3.15, 1.0]]);
+  const sec = f => { const yb = yB(f), yt = yT(f), w = wF(f), c = y => Math.min(yt, Math.max(yb, y)); return [[0, yb], [0.72 * w, yb], [0.88 * w, c(0.98)], [1.25 * w, c(1.15)], [1.25 * w, c(1.55)], [1.02 * w, yt], [0, yt]]; };
+  loftIn(g, [3.15, 3.05, 2.95, 2.9, 2.7, 2.45, 2.24, 1.9, 1.5, 0.5, -0.5, -1.5, -2.85, -2.95, -3.05, -3.15].map(f => [f, sec(f)]), oliv);                 // Wanne
+  // Bugplatte: Punkt auf der Flaeche bei f (Abstand d nach aussen), Neigung 0,545 rad
+  const GA = 0.545, gl = (f, d = 0) => [1.12 + (2.95 - f) / 1.45 * 0.88 + Math.cos(GA) * d, -f - Math.sin(GA) * d];
+  const aufBug = (geo, m, x, f, d) => { const [y, z] = gl(f, d); return meshIn(g, geo, m, x, y, z, -GA); };
+  aufBug(new THREE.BoxGeometry(2.3, 0.025, 0.05), oliv2, 0, 2.93, 0.01);                                                                          // Schweissnaht Bugkante
+  { aufBug(new THREE.BoxGeometry(2.0, 0.05, 0.62), oliv2, 0, 2.62, 0.04); for (let k = 0; k < 5; k++) aufBug(new THREE.BoxGeometry(0.05, 0.05, 0.6), oliv, -0.8 + k * 0.4, 2.62, 0.08); }   // Schwallblech (geklappt) mit Rippen
+  // Motordeck rechts vorne: Lueftungsgitter (Lamellen), Fahrerluke links mit drei Winkelspiegeln
+  aufBug(new THREE.BoxGeometry(0.9, 0.04, 0.7), dunkel, 0.55, 1.95, 0.02); for (let k = 0; k < 8; k++) aufBug(new THREE.BoxGeometry(0.86, 0.03, 0.035), stahl, 0.55, 1.68 + k * 0.077, 0.05);
+  { const [y, z] = gl(1.72, 0.04); const h = meshIn(g, new THREE.CylinderGeometry(0.3, 0.32, 0.08, 16), oliv2, -0.55, y, z, -GA); meshIn(g, new THREE.BoxGeometry(0.1, 0.06, 0.08), stahl, -0.55, y + 0.05, z + 0.25, -GA); }
+  for (const dx of [-0.22, 0, 0.22]) aufBug(new THREE.BoxGeometry(0.14, 0.09, 0.08), glas, -0.55 + dx, 2.08, 0.05);
+  // Lichter vorne mit Schutzbuegeln, Abschlepphaken, Bugplatte unten mit Naht
+  for (const sd of [-1, 1]) { milLicht(g, K, sd * 0.88, 1.2, -2.86, -1, mat.glow, 0.22, 0.12); boxAt(g, 0.12, 0.07, 0.04, M(0xffa020, { emissive: 0x803000 }), sd * 1.08, 1.2, -2.84); milHaken(g, K, sd * 0.55, 0.86, -3.2); }
+  boxIn(g, -1.0, 1.0, 0.79, 0.82, -3.17, -3.12, oliv2);
+  // Seiten: Kantenleiste ueber den Raedern, Sichtbloecke und Schiessluken im Kampfraum, Staukiste, Kanister, Gummilappen, Werkzeug, Auspuff rechts
+  const oben = (sd, t) => [sd * (1.25 - 0.23 * t + 0.015), 1.55 + 0.45 * t];
+  for (const sd of [-1, 1]) {
+    sideBox(g, sd * 1.24, sd * 1.29, 1.12, 1.17, -2.24, 2.85, oliv2); sideBox(g, sd * 1.24, sd * 1.28, 1.53, 1.57, -2.24, 2.95, oliv2);
+    for (const z of [0.25, 1.05, 1.85]) { const [x, y] = oben(sd, 0.5); const f = boxAt(g, 0.05, 0.2, 0.3, oliv2, x, y, z); f.rotation.z = sd * 0.47; const s = boxAt(g, 0.03, 0.13, 0.22, glas, x + sd * 0.02, y, z); s.rotation.z = sd * 0.47; }
+    for (const z of [0.65, 1.45, 2.25]) { milCyl(g, 0.075, 0.08, 0.05, oliv2, sd * 1.27, 1.36, z, "x", 10); milCyl(g, 0.02, 0.02, 0.06, dunkel, sd * 1.3, 1.36, z, "x", 6); }
+    milKiste(g, K, sd * 1.25, sd * 1.4, 1.2, 1.5, -1.25, -0.25, sd);
+    for (const z of [2.45, 2.85]) milKanister(g, K, sd * 1.37, 1.4, z, sd);
+    for (const z of [-0.42, 2.58]) sideBox(g, sd * 0.95, sd * 1.32, 0.42, 1.12, z, z + 0.03, gummi);
+    { const [x, y] = oben(sd, 0.95); boxAt(g, 0.06, 0.04, 1.3, K.holz, x - sd * 0.05, y + 0.02, -0.6); boxAt(g, 0.18, 0.02, 0.26, stahl, x - sd * 0.05, y + 0.04, -1.3); boxAt(g, 0.04, 0.04, 1.4, stahl, x - sd * 0.16, y + 0.02, 0.6); }
+    for (let k = 0; k < 4; k++) milCyl(g, 0.022, 0.022, 0.02, dunkel, sd * 1.295, 1.14, -1.9 + k * 1.3, "x", 6);
+  }
+  { milCyl(g, 0.08, 0.08, 0.9, dunkel, 1.36, 1.7, -1.2, "z", 10); const sch = boxAt(g, 0.08, 0.22, 1.0, oliv2, 1.42, 1.72, -1.2); for (let k = 0; k < 6; k++) boxAt(g, 0.09, 0.03, 0.06, dunkel, 1.43, 1.72, -1.6 + k * 0.16); }   // Auspuff mit Hitzeschild
+  // Dach: Kommandantenluke mit Winkelspiegeln, zwei Dachluken hinten, Nebelwerfer, Griffstangen
+  const luke = (x, z, r = 0.32) => { milCyl(g, r + 0.05, r + 0.07, 0.06, oliv2, x, 2.03, z, "y", 18); milCyl(g, r, r, 0.08, oliv, x, 2.08, z, "y", 18); boxAt(g, 0.1, 0.05, 0.08, stahl, x + r * 0.7, 2.12, z);
+    for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + (k - 2) * 0.55; boxAt(g, 0.12, 0.09, 0.07, glas, x + Math.cos(a) * (r + 0.14), 2.08, z + Math.sin(a) * (r + 0.14)).rotation.y = -a + Math.PI / 2; } };
+  if (v !== "sanitaet") luke(0.5, -1.15);
+  for (const sd of [-1, 1]) { boxIn(g, sd > 0 ? 0.08 : -0.85, sd > 0 ? 0.85 : -0.08, 2.0, 2.05, 1.5, 2.75, oliv2); for (const z of [1.62, 2.63]) milCyl(g, 0.03, 0.03, 0.62, stahl, sd * 0.46, 2.06, z, "x", 8); boxAt(g, 0.1, 0.05, 0.14, stahl, sd * 0.46, 2.08, 2.1); }
+  for (const sd of [-1, 1]) milNebel(g, K, sd * 0.86, 2.08, -1.38, sd, 3);
+  for (const sd of [-1, 1]) { milCyl(g, 0.02, 0.02, 1.6, stahl, sd * 0.96, 2.08, 0.6, "z", 6); for (const z of [-0.15, 1.35]) milCyl(g, 0.015, 0.015, 0.08, stahl, sd * 0.96, 2.04, z, "y", 6); }
+  // Heck: zwei Tueren mit Scharnieren, Griff und Sichtblock, Schraubentunnel mit Schraube, Ruecklichter mit Buegeln, Anhaengerkupplung, Haken
+  for (const sd of [-1, 1]) { const x0 = sd * 0.06, x1 = sd * 0.95; sideBox(g, x0, x1, 0.94, 1.78, 3.15, 3.2, oliv2);
+    for (const y of [1.08, 1.6]) milCyl(g, 0.04, 0.04, 0.16, stahl, sd * 0.97, y, 3.2, "y", 8); boxAt(g, 0.16, 0.04, 0.06, stahl, sd * 0.2, 1.25, 3.23); boxAt(g, 0.18, 0.12, 0.03, glas, sd * 0.5, 1.55, 3.21);
+    const tun = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 8, 20), oliv2); tun.position.set(sd * 0.62, 0.78, 3.17); g.add(tun); const sch = new THREE.Group(); sch.position.set(sd * 0.62, 0.78, 3.15); g.add(sch);
+    for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.02), dunkel); b.position.y = 0.07; const p = new THREE.Group(); p.rotation.z = k * Math.PI * 2 / 3; p.add(b); sch.add(p); }
+    milLicht(g, K, sd * 1.05, 1.62, 3.15, 1, mat.glowRed, 0.16, 0.1); milHaken(g, K, sd * 1.05, 0.78, 3.24); }
+  boxAt(g, 0.22, 0.16, 0.2, stahl, 0, 0.72, 3.27); milCyl(g, 0.05, 0.05, 0.12, dunkel, 0, 0.72, 3.38, "z", 8);
+  // Varianten
+  if (v === "kommando") {   // Kommandofahrzeug: erhoehter Aufbau hinten, Antennen, Teleskopmast, Kabeltrommel, Zeltrolle, Klimageraet
+    loftIn(g, [0.35, 0.25, -2.75, -2.9].map(f => [f, [[0, 2.0], [0.92, 2.0], [0.92, 2.42], [0.78, 2.55], [0, 2.55]]]), oliv);
+    boxIn(g, -0.93, 0.93, 2.0, 2.04, -0.36, 2.92, oliv2); for (const z of [0.2, 1.4, 2.6]) for (const sd of [-1, 1]) boxAt(g, 0.04, 0.18, 0.4, oliv2, sd * 0.93, 2.25, z);
+    milCyl(g, 0.12, 0.12, 2.6, K.plane, -0.98, 2.42, 1.2, "z", 10); for (const z of [0.2, 2.2]) boxAt(g, 0.06, 0.28, 0.05, stahl, -1.02, 2.38, z);
+    milCyl(g, 0.07, 0.07, 2.7, stahl, 0.2, 2.62, 1.25, "z", 10); for (const z of [0.0, 1.3, 2.5]) boxAt(g, 0.2, 0.1, 0.08, dunkel, 0.2, 2.6, z); milCyl(g, 0.14, 0.14, 0.18, dunkel, 0.2, 2.62, -0.1, "z", 12);
+    boxAt(g, 0.6, 0.4, 0.5, oliv2, 0.55, 2.75, 2.35); for (let k = 0; k < 5; k++) boxAt(g, 0.5, 0.03, 0.02, dunkel, 0.55, 2.65 + k * 0.06, 2.1);
+    milCyl(g, 0.22, 0.22, 0.24, dunkel, 1.15, 1.82, 3.1, "x", 14); milCyl(g, 0.09, 0.09, 0.26, stahl, 1.15, 1.82, 3.1, "x", 10);
+    milAntenne(g, K, -0.8, 2.55, 2.7, 2.8); milAntenne(g, K, 0.8, 2.55, 2.7, 2.4); milAntenne(g, K, -0.8, 2.05, -0.3, 2.0); milAntenne(g, K, -0.45, 2.55, 0.1, 1.2);
+  } else if (v === "sanitaet") {   // Sanitaet: hoeherer Aufbau ab Fahrerplatz, Fenster mattiert, rotes Kreuz auf weissem Feld (Seiten, Heck, Dach), Blaulichter, Trittstufe
+    loftIn(g, [0.25, 0.15, -3.05, -3.15].map(f => [f, [[0, 2.0], [1.02, 2.0], [1.0, 2.62], [0.88, 2.76], [0, 2.76]]]), oliv);
+    boxIn(g, -0.95, -0.06, 1.78, 2.6, 3.15, 3.2, oliv2); boxIn(g, 0.06, 0.95, 1.78, 2.6, 3.15, 3.2, oliv2);
     const kreuz = (x, y, z, ry) => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), weiss), c1 = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.18), rot), c2 = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.62), rot);
-      for (const [o, d] of [[w, 0], [c1, 0.002], [c2, 0.002]]) { o.position.set(x, y, z); o.rotation.y = ry; o.translateZ(d); g.add(o); } };
-    kreuz(HW - 0.14, 2.2, 1.6, Math.PI / 2); kreuz(-HW + 0.14, 2.2, 1.6, -Math.PI / 2); kreuz(0, 2.3, zR + 0.06, 0); { const d = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), weiss); d.rotation.x = -Math.PI / 2; d.position.set(0, 2.76, 1.4); g.add(d); const a = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.18), rot), b = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.62), rot); for (const o of [a, b]) { o.rotation.x = -Math.PI / 2; o.position.set(0, 2.762, 1.4); g.add(o); } }
-    ant(-0.9, -0.4, 1.6); }
-  else if (v === "pzj90") { const t = new THREE.Group(); t.position.set(0, 2.0, 0.6); g.add(t);   // Panzerjaeger 90: Turm mit zwei Lenkwaffen-Rohren auf einem Arm, Zielgeraet
-    const tb = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.35, 16), oliv); tb.position.y = 0.18; t.add(tb);
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.3), oliv); arm.position.set(0.35, 0.7, 0); t.add(arm);
-    for (const sx of [0.1, 0.6]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.6, 12), dunkel); r.rotation.x = Math.PI / 2; r.position.set(sx, 1.15, -0.25); t.add(r);
-      const kp = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.135, 0.06, 12), oliv); kp.rotation.x = Math.PI / 2; kp.position.set(sx, 1.15, -1.06); t.add(kp); }   // zwei Rohre mit Deckel
-    const zg = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.28, 0.4), dunkel); zg.position.set(-0.3, 0.55, -0.2); t.add(zg); const ln = new THREE.Mesh(new THREE.CircleGeometry(0.08, 12), glas); ln.position.set(-0.3, 0.55, -0.41); ln.rotation.y = Math.PI; t.add(ln);
-    g.userData.turm = t; ant(-0.9, 2.8, 2.0); }
+      for (const [o, d] of [[w, 0], [c1, 0.003], [c2, 0.003]]) { o.position.set(x, y, z); o.rotation.y = ry; o.translateZ(d); g.add(o); } };
+    kreuz(1.025, 2.3, 1.6, Math.PI / 2); kreuz(-1.025, 2.3, 1.6, -Math.PI / 2); kreuz(0, 2.25, 3.25, 0);
+    { const d = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), weiss); d.rotation.x = -Math.PI / 2; d.position.set(0, 2.765, 1.4); g.add(d); for (const [w, h] of [[0.62, 0.18], [0.18, 0.62]]) { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), rot); o.rotation.x = -Math.PI / 2; o.position.set(0, 2.768, 1.4); g.add(o); } }
+    for (const sd of [-1, 1]) { boxAt(g, 0.02, 0.3, 0.7, M(0xb8c4c8, { roughness: 0.3 }), sd * 1.01, 2.35, 0.55); const bl = boxAt(g, 0.22, 0.12, 0.22, M(0x2a5cff, { emissive: 0x0a2080 }), sd * 0.7, 2.83, -0.05); }
+    boxIn(g, -0.6, 0.6, 0.62, 0.66, 3.2, 3.5, stahl); milAntenne(g, K, -0.8, 2.76, 2.8, 1.6); luke(0.5, -1.15);
+  } else if (v === "pzj90") {   // Panzerjaeger 90: Turm mit Werfer auf Hebearm, zwei Lenkwaffenrohre neben dem Zielgeraet, Kommandantenluke, Nebelwerfer, Staukorb
+    const t = new THREE.Group(); t.position.set(0, 2.0, 0.7); g.add(t); milCyl(t, 0.92, 0.95, 0.1, oliv2, 0, 0.05, 0, "y", 24);
+    loftIn(t, [0.85, 0.75, -0.75, -0.95].map((f, i) => [f, [[0, 0.08], [i === 0 || i === 3 ? 0.55 : 0.75, 0.08], [i === 0 || i === 3 ? 0.5 : 0.72, 0.42], [i === 0 || i === 3 ? 0.4 : 0.6, 0.55], [0, 0.55]]]), oliv);
+    for (let k = 0; k < 6; k++) milCyl(t, 0.022, 0.022, 0.02, dunkel, -0.6 + k * 0.24, 0.56, -0.78, "y", 6);
+    const kor = boxAt(t, 1.3, 0.04, 0.5, stahl, 0, 0.12, 1.2); for (const x of [-0.64, 0.64]) boxAt(t, 0.03, 0.3, 0.5, stahl, x, 0.25, 1.2); boxAt(t, 1.3, 0.3, 0.03, stahl, 0, 0.25, 1.45); boxAt(t, 1.1, 0.22, 0.4, K.plane, 0, 0.25, 1.2);
+    milCyl(t, 0.28, 0.3, 0.07, oliv2, -0.35, 0.58, 0.2, "y", 16); for (let k = 0; k < 4; k++) { const a = -Math.PI / 2 + (k - 1.5) * 0.6; boxAt(t, 0.1, 0.08, 0.06, glas, -0.35 + Math.cos(a) * 0.36, 0.6, 0.2 + Math.sin(a) * 0.36).rotation.y = -a + Math.PI / 2; }
+    for (const sd of [-1, 1]) milNebel(t, K, sd * 0.68, 0.5, -0.55, sd, 2);
+    const arm = new THREE.Group(); arm.position.set(0.3, 0.55, 0.1); t.add(arm); boxAt(arm, 0.22, 0.75, 0.32, oliv2, 0, 0.35, 0); milCyl(arm, 0.08, 0.08, 0.5, stahl, 0, 0.72, 0, "x", 10);
+    const kopf = new THREE.Group(); kopf.position.set(0, 0.82, 0); arm.add(kopf); boxAt(kopf, 0.4, 0.38, 0.7, oliv, 0, 0, -0.1); boxAt(kopf, 0.3, 0.2, 0.03, glas, 0, 0.03, -0.46); boxAt(kopf, 0.36, 0.05, 0.12, oliv2, 0, 0.17, -0.5);
+    for (const sx of [-0.36, 0.36]) { milCyl(kopf, 0.14, 0.14, 1.65, oliv2, sx, 0, -0.25, "z", 14); for (const z of [-0.9, -0.25, 0.4]) milCyl(kopf, 0.155, 0.155, 0.05, dunkel, sx, 0, z, "z", 14);
+      milCyl(kopf, 0.15, 0.15, 0.05, oliv, sx, 0, -1.09, "z", 14); milCyl(kopf, 0.15, 0.15, 0.05, oliv, sx, 0, 0.6, "z", 14); boxAt(kopf, 0.12, 0.05, 0.08, stahl, sx, 0.15, -0.25); boxAt(kopf, Math.abs(sx) - 0.18, 0.08, 0.14, oliv2, sx / 2, 0, -0.1); }
+    milCyl(kopf, 0.012, 0.012, 0.5, gummi, 0.05, -0.2, 0.25, "z", 6);
+    g.userData.turm = t; milAntenne(g, K, -0.85, 2.05, 2.75, 2.0);
+  }
   mergeStatic(g);
-  const wheels = [[-1.12, -2.25, true], [1.12, -2.25, true], [-1.12, -1.1, true], [1.12, -1.1, true], [-1.12, 0.75, false], [1.12, 0.75, false], [-1.12, 1.9, false], [1.12, 1.9, false]].map(([x, z, f]) => addWheel(g, x, z, 0.55, 0.38, f, tireM, rimM, 0, 20));
-  return { g, wheels };
+  const wheels = [[-1.12, -2.25, true], [1.12, -2.25, true], [-1.12, -1.1, true], [1.12, -1.1, true], [-1.12, 0.75, false], [1.12, 0.75, false], [-1.12, 1.9, false], [1.12, 1.9, false]].map(([x, z, f]) => addWheel(g, x, z, 0.55, 0.38, f, K.reifen, K.felge, 16, 22));
+  for (const w of wheels) milNabe(w, 0.38, K);
+  g.name = v === "pzj90" ? "Panzerjäger 90" : v === "sanitaet" ? "Piranha I Sanitätsfahrzeug" : "Piranha I Kommandofahrzeug"; return { g, wheels };
 }
 const SPEC_PIRANHA = { name: "Piranha I", wheels: [[-1.12, -2.25], [1.12, -2.25], [-1.12, -1.1], [1.12, -1.1], [-1.12, 0.75], [1.12, 0.75], [-1.12, 1.9], [1.12, 1.9]], wb: 3.6, track: 2.24, pts: [-2.6, -0.9, 0.9, 2.6], R: 1.35, circR: 1.3, enter: 4.8,
-  maxN: 24, maxF: 27.8, acc: 6, steer: 0.5, jump: false, grade: 38, camD: 13, camH: 2.6, seat: [-0.6, 2.2, -1.6], bodyH: 2.8, bike: false, mass: 30, mu: 1.6,
+  maxN: 24, maxF: 27.8, acc: 6, steer: 0.5, jump: false, grade: 38, camD: 13, camH: 2.6, seat: [-0.55, 2.15, -1.6], bodyH: 2.8, bike: false, mass: 30, mu: 1.6,
   exits: [[-2.2, -1.2], [2.2, -1.2], [-2.2, 1.4], [2.2, 1.4], [0, -4.4], [0, 4.4]],
   msg: "Piranha I: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen" };
 const SPEC_PIRANHA_K = { ...SPEC_PIRANHA, name: "Piranha I Kommandofahrzeug", msg: SPEC_PIRANHA.msg.replace("Piranha I", "Piranha I Kommandofahrzeug") };
 const SPEC_PIRANHA_S = { ...SPEC_PIRANHA, name: "Piranha I Sanitätsfahrzeug", msg: SPEC_PIRANHA.msg.replace("Piranha I", "Piranha I Sanitätsfahrzeug") };
 const SPEC_PZJ90 = { ...SPEC_PIRANHA, name: "Panzerjäger 90", msg: SPEC_PIRANHA.msg.replace("Piranha I", "Panzerjäger 90") };
-// Duro IIIP 6x6: gepanzerte Kabine vorne, geschuetzter Mannschaftsaufbau hinten mit Tuer und kleinen Fenstern, drei Achsen
+
+// ---- Duro IIIP 6x6: Leiterrahmen mit sichtbaren Achsen und Blattfedern, Motorhaube mit Grill und Rammschutz, Seilwinde, gepanzerte Kabine mit schraeger geteilter
+// Frontscheibe, Tueren mit Panzerglas, Trittstufen und Spiegeln, geschuetzter Mannschaftsaufbau mit kleinen Panzerfenstern, Schiessluken, Hecktuer mit Leiter,
+// Dachluke mit Lafettenring, Tank, Auspuff hinter der Kabine, Reserverad, Staukoerbe. 7,0 x 2,3 x 2,9 m.
 function buildDuro() {
-  const g = new THREE.Group(), HW = 1.15, zF = -3.5, zR = 3.4, oliv = M(MIL_OLIV, { roughness: 0.8, metalness: 0.15 }), dunkel = M(MIL_DUNKEL, { roughness: 0.85 }), glas = M(0x0a0e14, { metalness: 0.6, roughness: 0.1 });
-  const tireM = M(0x161616, { roughness: 0.95 }), rimM = M(0x3a4030, { roughness: 0.7 });
-  boxIn(g, -0.5, 0.5, 0.55, 0.85, zF + 0.4, zR - 0.3, dunkel);                                       // Rahmen
-  boxIn(g, -HW, HW, 0.85, 1.6, zF, zF + 1.4, oliv); boxIn(g, -HW + 0.05, HW - 0.05, 1.6, 2.55, zF + 0.35, zF + 1.9, oliv); boxIn(g, -HW + 0.15, HW - 0.15, 1.85, 2.35, zF + 0.3, zF + 0.34, glas);   // Motorhaube, Kabine, Frontscheibe
-  for (let x = -0.7; x <= 0.71; x += 0.14) boxIn(g, x - 0.03, x + 0.03, 1.0, 1.45, zF - 0.02, zF + 0.01, dunkel);   // Kuehlergrill
-  boxIn(g, -HW - 0.05, HW + 0.05, 0.6, 0.85, zF - 0.25, zF + 0.05, dunkel);                          // Stossfaenger
-  boxIn(g, -HW, HW, 0.95, 2.75, zF + 2.0, zR, oliv); boxIn(g, -HW + 0.05, HW - 0.05, 2.75, 2.82, zF + 2.05, zR - 0.05, dunkel);   // Mannschaftsaufbau, Dach
-  for (const sd of [-1, 1]) { sideBox(g, sd * HW, sd * (HW + 0.02), 1.95, 2.35, zF + 0.55, zF + 1.6, glas); for (const z of [0.3, 1.5, 2.6]) sideBox(g, sd * HW, sd * (HW + 0.02), 1.9, 2.2, z - 0.25, z + 0.25, glas);
-    boxIn(g, sd * 0.8 - 0.14, sd * 0.8 + 0.14, 1.25, 1.4, zF - 0.02, zF + 0.01, mat.glow); boxIn(g, sd * 0.95 - 0.1, sd * 0.95 + 0.1, 1.1, 1.35, zR, zR + 0.02, M(0xc02020, { emissive: 0x400808 })); }
-  boxIn(g, -0.45, 0.45, 1.0, 2.5, zR, zR + 0.04, dunkel); boxIn(g, -0.3, 0.3, 1.8, 2.2, zR + 0.04, zR + 0.05, glas);   // Hecktuer mit Fenster
-  for (const z of [-2.75, 1.0, 2.4]) for (const sd of [-1, 1]) boxIn(g, sd * HW - 0.1, sd * HW + 0.1, 0.95, 1.1, z - 0.6, z + 0.6, dunkel);   // Radlaeufe
-  { const a = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 2.2, 6), dunkel); a.position.set(-0.9, 3.9, zF + 1.6); g.add(a); }
+  const g = new THREE.Group(), K = milMat(), { oliv, oliv2, dunkel, stahl, gummi, glas } = K;
+  // Rahmen, Achsen, Differentiale, Blattfedern
+  for (const sd of [-1, 1]) boxIn(g, sd * 0.38, sd * 0.5, 0.58, 0.82, -3.3, 3.25, dunkel); for (const z of [-2.2, -0.6, 0.4, 1.7, 3.0]) boxIn(g, -0.4, 0.4, 0.62, 0.74, z - 0.05, z + 0.05, dunkel);
+  for (const z of [-2.75, 1.0, 2.4]) { milCyl(g, 0.07, 0.07, 1.7, stahl, 0, 0.52, z, "x", 10); meshIn(g, new THREE.SphereGeometry(0.19, 10, 8), dunkel, 0, 0.5, z);
+    for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) boxAt(g, 0.08, 0.025, 1.1 - k * 0.2, stahl, sd * 0.44, 0.6 + k * 0.03, z); }
+  // Stossfaenger, Seilwinde, Rammschutz, Haken
+  boxIn(g, -1.15, 1.15, 0.6, 0.86, -3.75, -3.5, oliv2); milCyl(g, 0.12, 0.12, 0.7, dunkel, 0, 0.73, -3.62, "x", 12); milCyl(g, 0.13, 0.13, 0.05, stahl, -0.36, 0.73, -3.62, "x", 12); milCyl(g, 0.13, 0.13, 0.05, stahl, 0.36, 0.73, -3.62, "x", 12);
+  for (const sd of [-1, 1]) { milHaken(g, K, sd * 0.85, 0.72, -3.8); for (const x of [0.25, 0.65]) boxIn(g, sd * x - 0.03, sd * x + 0.03, 0.86, 1.55, -3.66, -3.6, stahl); }
+  boxIn(g, -0.75, 0.75, 1.52, 1.57, -3.66, -3.6, stahl); boxIn(g, -0.75, 0.75, 1.15, 1.2, -3.66, -3.6, stahl);
+  // Motorhaube (Profil), Grill, Kotfluegel mit Lichtern, Spritzlappen
+  prismIn(g, [[3.5, 0.9], [3.5, 1.5], [3.4, 1.6], [2.1, 1.7], [2.1, 0.9]], 1.5, oliv); prismIn(g, [[3.51, 1.48], [3.41, 1.6], [3.39, 1.6], [3.49, 1.48]], 1.52, oliv2);
+  for (let x = -0.6; x <= 0.61; x += 0.1) boxIn(g, x - 0.025, x + 0.025, 0.98, 1.44, -3.52, -3.49, dunkel); boxIn(g, -0.68, 0.68, 0.96, 0.99, -3.52, -3.49, stahl); boxIn(g, -0.68, 0.68, 1.43, 1.46, -3.52, -3.49, stahl);
+  for (let k = 0; k < 6; k++) boxIn(g, -0.5, 0.5, 1.705 + k * 0.004, 1.715 + k * 0.004, -2.95 + k * 0.12, -2.9 + k * 0.12, dunkel);
+  for (const sd of [-1, 1]) { prismIn(g, [[3.4, 1.08], [3.3, 1.22], [2.2, 1.22], [2.1, 1.1], [2.1, 1.05], [3.4, 1.05]], 0.5, oliv2, sd * 1.0); milLicht(g, K, sd * 1.0, 1.36, -3.32, -1, mat.glow, 0.2, 0.16);
+    boxAt(g, 0.1, 0.06, 0.04, M(0xffa020, { emissive: 0x803000 }), sd * 1.18, 1.36, -3.36); sideBox(g, sd * 0.78, sd * 1.24, 0.42, 1.05, -2.12, -2.09, gummi); }
+  // Kabine (Profil): schraege Frontscheibe zweigeteilt mit Rahmen, Seitenfenster, Tuerfugen, Griffe, Trittstufen, Spiegel, Dachluke
+  prismIn(g, [[2.1, 0.95], [2.1, 1.65], [1.85, 2.45], [1.75, 2.55], [0.35, 2.55], [0.35, 0.95]], 2.3, oliv);
+  prismIn(g, [[2.11, 1.66], [1.86, 2.44], [1.84, 2.44], [2.09, 1.66]], 2.32, oliv2);
+  { const sl = Math.atan2(0.8, 0.25); for (const sd of [-1, 1]) { const p = boxAt(g, 0.95, 0.66, 0.03, glas, sd * 0.52, 2.06, -1.97); p.rotation.x = Math.PI / 2 - sl; }
+    const ps = boxAt(g, 0.08, 0.8, 0.06, oliv2, 0, 2.06, -1.98); ps.rotation.x = Math.PI / 2 - sl; const wi = boxAt(g, 0.5, 0.03, 0.03, dunkel, -0.4, 1.8, -2.06); wi.rotation.z = 0.3; }
+  for (const sd of [-1, 1]) { sideBox(g, sd * 1.15, sd * 1.17, 1.85, 2.35, -1.75, -0.95, glas); sideBox(g, sd * 1.15, sd * 1.18, 1.8, 1.85, -1.8, -0.9, oliv2); sideBox(g, sd * 1.15, sd * 1.18, 2.35, 2.4, -1.8, -0.9, oliv2);
+    for (const z of [-1.95, -0.72]) sideBox(g, sd * 1.15, sd * 1.165, 1.0, 2.45, z, z + 0.02, dunkel); boxAt(g, 0.05, 0.05, 0.2, stahl, sd * 1.18, 1.65, -0.95);
+    for (const y of [0.5, 0.8]) sideBox(g, sd * 0.9, sd * 1.22, y - 0.02, y + 0.02, -1.7, -1.1, stahl); sideBox(g, sd * 1.18, sd * 1.22, 0.45, 0.95, -1.72, -1.68, stahl);
+    milCyl(g, 0.02, 0.02, 0.5, stahl, sd * 1.4, 2.2, -1.85, "x", 6); boxAt(g, 0.06, 0.38, 0.22, dunkel, sd * 1.66, 2.15, -1.85); boxAt(g, 0.02, 0.32, 0.18, glas, sd * 1.66, 2.15, -1.95); }
+  milCyl(g, 0.3, 0.32, 0.06, oliv2, 0.4, 2.58, -1.0, "y", 16); for (let k = 0; k < 3; k++) boxAt(g, 0.12, 0.08, 0.06, glas, -0.3 + k * 0.25, 2.6, -1.6);
+  boxIn(g, -1.0, 1.0, 1.1, 2.55, -0.35, -0.28, dunkel);
+  // Auspuff hinter der Kabine rechts, Tank links, Batteriekasten rechts
+  milCyl(g, 0.07, 0.07, 1.9, dunkel, 1.05, 2.0, -0.31, "y", 10); boxAt(g, 0.05, 1.0, 0.24, oliv2, 1.14, 2.1, -0.31); milCyl(g, 0.075, 0.075, 0.2, gummi, 1.05, 3.0, -0.31, "y", 10);
+  boxIn(g, -1.05, -0.55, 0.6, 1.02, -1.95, -0.6, oliv2); for (const z of [-1.7, -0.85]) boxIn(g, -1.07, -0.55, 0.58, 0.62, z - 0.03, z + 0.03, stahl); milCyl(g, 0.06, 0.06, 0.05, dunkel, -0.8, 1.05, -1.3, "y", 8);
+  milKiste(g, K, 1.05, 0.6, 0.62, 1.0, -1.9, -0.95, 1);
+  // Mannschaftsaufbau (Loft): Panzerfenster mit dicken Rahmen, Schiessluken, Haltegriffe, Staukorb, Kanister, Spritzlappen, Kotfluegel ueber den Hinterachsen
+  const ms = f => [[0, 1.1], [1.12, 1.1], [1.15, 1.25], [1.15, 2.4], [0.98, 2.82], [0, 2.82]];
+  loftIn(g, [0.25, 0.15, -3.3, -3.4].map(f => [f, f === 0.25 || f === -3.4 ? ms(f).map(([x, y]) => [x * 0.97, y]) : ms(f)]), oliv);
+  for (const sd of [-1, 1]) { for (const z of [0.4, 1.5, 2.6]) { sideBox(g, sd * 1.14, sd * 1.2, 1.78, 2.3, z - 0.3, z + 0.3, oliv2); sideBox(g, sd * 1.19, sd * 1.21, 1.85, 2.23, z - 0.23, z + 0.23, glas); }
+      for (const z of [0.95, 2.05]) { milCyl(g, 0.07, 0.075, 0.05, oliv2, sd * 1.17, 1.55, z, "x", 10); milCyl(g, 0.02, 0.02, 0.06, dunkel, sd * 1.2, 1.55, z, "x", 6); }
+      sideBox(g, sd * 1.13, sd * 1.17, 1.22, 1.27, -0.15, 3.35, oliv2); for (let k = 0; k < 5; k++) milCyl(g, 0.022, 0.022, 0.02, dunkel, sd * 1.17, 1.245, 0.2 + k * 0.75, "x", 6);
+      prismIn(g, [[-0.25, 1.14], [-0.4, 1.2], [-2.9, 1.2], [-3.05, 1.14], [-3.05, 1.1], [-0.25, 1.1]], 0.36, oliv2, sd * 1.1);
+      for (const z of [-0.4, 3.08]) sideBox(g, sd * 0.78, sd * 1.24, 0.42, 1.1, z, z + 0.03, gummi); milKanister(g, K, sd * 1.26, 1.5, 3.05, sd);
+      for (let k = 0; k < 3; k++) milCyl(g, 0.018, 0.018, 0.4, stahl, sd * 0.7, 2.86, 0.6 + k * 1.0, "z", 6); }
+  // Dach: Luke mit Lafettenring, Staukorb, Antennen; Heck: Tuer mit Panzerfenster, Leiter, Ruecklichter, Kupplung, Reserverad
+  milCyl(g, 0.48, 0.5, 0.1, oliv2, 0, 2.87, 1.8, "y", 24); milCyl(g, 0.38, 0.4, 0.08, oliv, 0, 2.92, 1.8, "y", 20); boxAt(g, 0.12, 0.06, 0.1, stahl, 0.3, 2.97, 1.8);
+  { const t = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.025, 6, 32).rotateX(Math.PI / 2), stahl); t.position.set(0, 3.05, 1.8); g.add(t); for (const a of [0.8, 2.4, 3.9, 5.5]) milCyl(g, 0.015, 0.015, 0.16, stahl, Math.cos(a) * 0.5, 2.97, 1.8 + Math.sin(a) * 0.5, "y", 6); }
+  boxIn(g, -0.9, 0.9, 2.82, 2.86, 0.0, 1.1, stahl); for (const x of [-0.88, 0.88]) boxIn(g, x - 0.02, x + 0.02, 2.82, 3.0, 0.0, 1.1, stahl); boxIn(g, -0.85, 0.85, 2.86, 3.08, 0.1, 1.0, K.plane);
+  milAntenne(g, K, -0.85, 2.82, 3.1, 2.4); milAntenne(g, K, 0.85, 2.55, -0.6, 1.8);
+  boxIn(g, -0.5, 0.5, 1.15, 2.55, 3.4, 3.45, oliv2); boxIn(g, -0.2, 0.2, 1.95, 2.3, 3.45, 3.47, glas); boxAt(g, 0.18, 0.05, 0.06, stahl, 0.32, 1.75, 3.48); for (const y of [1.4, 2.3]) milCyl(g, 0.04, 0.04, 0.14, stahl, -0.52, y, 3.44, "y", 8);
+  for (const sd of [-1, 1]) boxIn(g, sd * 0.3 - 0.025, sd * 0.3 + 0.025, 0.35, 1.12, 3.46, 3.51, stahl); for (const y of [0.45, 0.75, 1.05]) boxIn(g, -0.3, 0.3, y - 0.02, y + 0.02, 3.46, 3.51, stahl);
+  for (const sd of [-1, 1]) { milLicht(g, K, sd * 0.85, 1.35, 3.4, 1, mat.glowRed, 0.18, 0.12); milHaken(g, K, sd * 0.7, 0.72, 3.38); }
+  boxAt(g, 0.22, 0.16, 0.2, stahl, 0, 0.72, 3.38);
+  { const rr = new THREE.Group(); rr.position.set(0.82, 1.95, 3.6); g.add(rr); milCyl(rr, 0.5, 0.5, 0.34, K.reifen, 0, 0, 0, "z", 22); milCyl(rr, 0.3, 0.3, 0.36, K.felge, 0, 0, 0, "z", 16); boxAt(g, 0.12, 0.8, 0.14, stahl, 0.82, 1.95, 3.44); }
   mergeStatic(g);
-  const wheels = [[-1.0, -2.75, true], [1.0, -2.75, true], [-1.0, 1.0, false], [1.0, 1.0, false], [-1.0, 2.4, false], [1.0, 2.4, false]].map(([x, z, f]) => addWheel(g, x, z, 0.52, 0.36, f, tireM, rimM, 0, 20));
-  return { g, wheels };
+  const wheels = [[-1.0, -2.75, true], [1.0, -2.75, true], [-1.0, 1.0, false], [1.0, 1.0, false], [-1.0, 2.4, false], [1.0, 2.4, false]].map(([x, z, f]) => addWheel(g, x, z, 0.52, 0.36, f, K.reifen, K.felge, 16, 22));
+  for (const w of wheels) milNabe(w, 0.36, K);
+  g.name = "Duro IIIP"; return { g, wheels };
 }
 const SPEC_DURO = { name: "Duro IIIP", wheels: [[-1.0, -2.75], [1.0, -2.75], [-1.0, 1.0], [1.0, 1.0], [-1.0, 2.4], [1.0, 2.4]], wb: 4.45, track: 2.0, pts: [-2.9, -1.0, 1.0, 2.9], R: 1.25, circR: 1.2, enter: 4.6,
-  maxN: 24, maxF: 25, acc: 6, steer: 0.5, jump: false, grade: 40, camD: 12, camH: 2.6, seat: [-0.5, 2.15, -2.4], bodyH: 2.9, bike: false, mass: 16,
-  exits: [[-2.0, -2.4], [2.0, -2.4], [-2.0, 1.2], [2.0, 1.2], [0, -4.6], [0, 4.6]],
+  maxN: 24, maxF: 25, acc: 6, steer: 0.5, jump: false, grade: 40, camD: 12, camH: 2.6, seat: [-0.5, 2.15, -1.4], bodyH: 2.9, bike: false, mass: 16,
+  exits: [[-2.0, -1.4], [2.0, -1.4], [-2.0, 1.2], [2.0, 1.2], [0, -4.6], [0, 4.6]],
   msg: "Duro IIIP: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen" };
-// Hubschrauber: Polizei-Modell umgefaerbt (olivgruen, ohne Blaulicht, eigene Aufschrift); Cougar groesser und traeger
-function milHeli(text) { const b = buildPolizeiHeli(), lab = canvasTex(512, 96, (c, W, H) => { c.fillStyle = "#3d4a30"; c.fillRect(0, 0, W, H); c.fillStyle = "#e8e8e0"; c.font = "bold 62px Arial"; c.textAlign = "center"; c.fillText(text, W / 2, 70); });
-  b.g.traverse(o => { if (!o.isMesh) return; const m = o.material, hex = m.color && m.color.getHex(); if (m.map && m.isMeshBasicMaterial) o.material = new THREE.MeshBasicMaterial({ map: lab });
-    else if (hex === 0x16233f) o.material = new THREE.MeshStandardMaterial({ color: MIL_OLIV, roughness: 0.75, metalness: 0.15 }); else if (hex === 0xeef0f2) o.material = new THREE.MeshStandardMaterial({ color: 0x3d4a30, roughness: 0.75 }); });
-  for (const l of b.lichter) l.visible = false; b.lichter = null; return b; }
-const COUGAR = flyAdd("Transporthelikopter Cougar", milHeli("ARMEE · T-301"), 1.55, { spec: { max: 42, acc: 10, up: 7, tilt: 0.16, tiltV: 0.003, turn: 0.7 } });
-const SCHULHELI = flyAdd("Schulungshelikopter", milHeli("ARMEE · T-361"), 1.0, { spec: { max: 50, acc: 15, up: 9, tilt: 0.22, tiltV: 0.004, turn: 1.0 } });
+
+// ---- Hubschrauber, eigene Modelle. Gebaut im Massstab des Polizei-Helikopters (Rotor auf ca. 2,8, Kufen bzw. Raeder bei y 0, Heck bis ca. z 6), innere Gruppe um k skaliert;
+// flyAdd skaliert Kollision, Kamera und Ausstieg mit demselben k. Rueckgabe wie buildPolizeiHeli: { g, rotor, heck, lichter } (lichter = Blitzleuchten rot oben, rot unten, weiss hinten).
+function milHeliTeile(k) { const g = new THREE.Group(), i = new THREE.Group(); i.scale.setScalar(k); g.add(i); const K = milMat();
+  const add = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, par = i) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = true; par.add(o); return o; };
+  const blitz = [new THREE.MeshBasicMaterial({ color: 0xff2020 }), new THREE.MeshBasicMaterial({ color: 0xff2020 }), new THREE.MeshBasicMaterial({ color: 0xffffff })];
+  return { g, i, K, add, blitz }; }
+// Transporthelikopter Cougar: langer kastiger Rumpf, Cockpit mit grosser Verglasung und Drahtschneidern, Schiebetuer mit Fenstern, Seitenstummel mit Hauptfahrwerk,
+// Bugrad, zwei Triebwerke oben mit Einlaessen und Auspuffen, Seilwinde ueber der Tuer, Vierblattrotor, Heckausleger mit Leitwerk links (Heckrotor) und Hoehenflosse rechts,
+// Hecksporn, Antennen, Schweizerkreuz-Hoheitszeichen und Kennung T-301. Massstab 1,55 (Rotor ca. 15,6 m).
+function buildCougar(k = 1.55) {
+  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, glasH = M(0x0c141c, { metalness: 0.7, roughness: 0.08, transparent: true, opacity: 0.8, flatShading: true });
+  const yb = tabF([[2.55, 1.05], [2.3, 0.72], [1.7, 0.55], [-2.3, 0.55], [-4.2, 1.5]]), yt = tabF([[2.55, 1.2], [2.3, 1.55], [1.5, 1.95], [1.1, 2.05], [-2.3, 2.05], [-4.2, 1.88]]), wd = tabF([[2.55, 0.25], [2.3, 0.6], [1.7, 0.82], [-2.3, 0.86], [-4.2, 0.28]]);
+  const sec = (f, s = 1, y0 = 0) => { const b = yb(f), t = yt(f), h = t - b, w = wd(f) * s; return [[0, b + y0 * h], [w * 0.8, b + y0 * h], [w, b + Math.max(y0, 0.15) * h], [w, b + 0.78 * h], [w * 0.72, t + (s - 1) * 0.5], [0, t + (s - 1) * 0.5]]; };
+  const FS = [2.55, 2.45, 2.3, 2.1, 1.9, 1.7, 1.5, 1.3, 1.1, 0.5, -0.5, -1.5, -2.3, -2.8, -3.3, -3.8, -4.2]; loftIn(i, FS.map(f => [f, sec(f)]), oliv);
+  loftIn(i, [2.45, 2.3, 2.1, 1.9, 1.7, 1.5, 1.35].map(f => [f, sec(f, 1.015, 0.45)]), glasH);                                                    // Cockpitverglasung
+  for (const x of [0, -0.45, 0.45]) { const b = add(new THREE.BoxGeometry(0.05, 0.05, 1.0), oliv2, x, 1.75, -1.95, -0.62); }                // Rahmenstreben
+  for (const sd of [-1, 1]) { add(new THREE.BoxGeometry(0.03, 0.55, 0.05), oliv2, sd * 0.84, 1.55, -1.35); add(new THREE.BoxGeometry(0.03, 0.3, 0.4), glasH, sd * 0.835, 0.85, -2.0); }   // Tuersaeule, Kinnfenster
+  add(new THREE.BoxGeometry(0.04, 0.35, 0.04), stahl, 0, 2.22, -1.4, 0.4); add(new THREE.BoxGeometry(0.04, 0.3, 0.04), stahl, 0, 0.42, -1.9, -0.4);   // Drahtschneider
+  for (const sd of [-1, 1]) add(new THREE.CylinderGeometry(0.015, 0.015, 0.6, 6), stahl, sd * 0.3, 1.25, -2.75, Math.PI / 2);                  // Staurohre
+  // Seiten: Schiebetuer (Fugen, Schiene, Fenster), Kabinenfenster, Seitenstummel mit Hauptrad, Seilwinde rechts
+  for (const sd of [-1, 1]) { const X = sd * 0.865;
+    for (const z of [-0.9, 0.55]) add(new THREE.BoxGeometry(0.01, 1.3, 0.025), dunkel, X, 1.25, z); add(new THREE.BoxGeometry(0.01, 0.025, 1.45), dunkel, X, 1.9, -0.17); add(new THREE.BoxGeometry(0.03, 0.04, 2.6), stahl, X + sd * 0.015, 1.97, 0.4);
+    for (const z of [-0.5, 0.15, 1.0, 1.6]) { add(new THREE.BoxGeometry(0.02, 0.36, 0.42), oliv2, X, 1.55, z); add(new THREE.BoxGeometry(0.02, 0.3, 0.36), glasH, X + sd * 0.006, 1.55, z); }
+    add(new THREE.BoxGeometry(0.06, 0.08, 0.14), stahl, X + sd * 0.02, 1.25, 0.45);
+    const sp = new THREE.Group(); sp.position.set(sd * 1.0, 0.72, 0.6); i.add(sp); const s = add(new THREE.SphereGeometry(1, 14, 10), oliv, 0, 0, 0, 0, 0, 0, sp); s.scale.set(0.3, 0.22, 1.0);
+    add(new THREE.CylinderGeometry(0.05, 0.05, 0.42, 8), stahl, sd * 1.02, 0.42, 0.75); const r = add(new THREE.CylinderGeometry(0.24, 0.24, 0.18, 16), gummi, sd * 1.02, 0.24, 0.75, 0, 0, Math.PI / 2); add(new THREE.CylinderGeometry(0.12, 0.12, 0.2, 12), stahl, sd * 1.02, 0.24, 0.75, 0, 0, Math.PI / 2); }
+  { add(new THREE.BoxGeometry(0.5, 0.08, 0.1), stahl, 1.05, 2.1, -0.4); add(new THREE.CylinderGeometry(0.1, 0.1, 0.25, 10), dunkel, 1.28, 2.0, -0.4); add(new THREE.CylinderGeometry(0.008, 0.008, 0.5, 4), stahl, 1.28, 1.65, -0.4); }   // Seilwinde
+  add(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 8), stahl, 0, 0.3, -1.85); for (const sd of [-1, 1]) add(new THREE.CylinderGeometry(0.17, 0.17, 0.12, 14), gummi, sd * 0.09, 0.17, -1.85, 0, 0, Math.PI / 2);   // Bugrad (zwei Reifen)
+  // Oben: Triebwerksverkleidung, zwei Triebwerke mit Einlass (Gitter) und schraegem Auspuff, Getriebe, Mast; Wartungsklappen
+  add(new THREE.BoxGeometry(1.25, 0.36, 2.4), oliv2, 0, 2.2, 0.0); add(new THREE.BoxGeometry(1.0, 0.28, 0.9), oliv, 0, 2.45, -0.15);
+  for (const sd of [-1, 1]) { add(new THREE.CylinderGeometry(0.24, 0.26, 1.8, 14), oliv, sd * 0.42, 2.38, 0.3, Math.PI / 2); add(new THREE.CircleGeometry(0.2, 14), dunkel, sd * 0.42, 2.38, -0.61, 0, Math.PI);
+    for (let q = 0; q < 4; q++) add(new THREE.BoxGeometry(0.36, 0.02, 0.02), stahl, sd * 0.42, 2.25 + q * 0.09, -0.62); add(new THREE.CylinderGeometry(0.15, 0.13, 0.5, 12), dunkel, sd * 0.55, 2.42, 1.35, Math.PI / 2 - 0.3, sd * 0.4);
+    for (const z of [-0.3, 0.6]) add(new THREE.BoxGeometry(0.01, 0.2, 0.5), dunkel, sd * 0.63, 2.2, z); }
+  add(new THREE.CylinderGeometry(0.1, 0.14, 0.4, 10), stahl, 0, 2.75, -0.15);
+  const rotor = new THREE.Group(); rotor.position.set(0, 2.98, -0.15); i.add(rotor); add(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 16), dunkel, 0, 0, 0, 0, 0, 0, rotor); add(new THREE.CylinderGeometry(0.1, 0.18, 0.25, 10), stahl, 0, 0.15, 0, 0, 0, 0, rotor);
+  for (let q = 0; q < 4; q++) { const b = add(new THREE.BoxGeometry(0.3, 0.04, 4.8), dunkel, 0, 0.02, 0, 0, q * Math.PI / 2, 0, rotor); b.geometry.translate(0, 0, 2.6); const a = add(new THREE.BoxGeometry(0.1, 0.08, 0.5), stahl, 0, 0, 0, 0, q * Math.PI / 2, 0, rotor); a.geometry.translate(0, 0, 0.35); }
+  // Heck: Ausleger, Leitwerk (Flosse links mit Heckrotor), Hoehenflosse, Sporn, Antennen
+  add(new THREE.CylinderGeometry(0.26, 0.15, 2.9, 12), oliv, 0, 1.8, 5.5, Math.PI / 2 - 0.04); add(new THREE.BoxGeometry(0.5, 0.06, 0.05), oliv2, 0, 1.78, 4.25);
+  { const fin = new THREE.Shape(); fin.moveTo(0, 0); fin.lineTo(1.0, 0); fin.lineTo(1.45, 1.4); fin.lineTo(0.95, 1.45); fin.lineTo(0, 0.25); const fg = new THREE.ExtrudeGeometry(fin, { depth: 0.1, bevelEnabled: false }); fg.translate(0, 0, -0.05); add(fg, oliv, 0, 1.75, 5.45, 0, -Math.PI / 2); }
+  add(new THREE.BoxGeometry(1.0, 0.06, 0.5), oliv, 0.55, 1.95, 6.0); add(new THREE.BoxGeometry(0.05, 0.3, 0.45), oliv2, 1.05, 1.95, 6.0);
+  add(new THREE.BoxGeometry(0.05, 0.35, 0.08), stahl, 0, 1.45, 6.3, 0.4); for (const [x, y, z, h] of [[0, 2.08, 1.8, 0.4], [0, 0.45, 0.2, 0.3], [0.3, 0.5, -0.8, 0.25]]) add(new THREE.CylinderGeometry(0.008, 0.015, h, 6), dunkel, x, y + (y > 1 ? h / 2 : -h / 2), z);
+  const heck = new THREE.Group(); heck.position.set(-0.16, 2.72, 6.5); heck.rotation.y = Math.PI / 2; i.add(heck); add(new THREE.CylinderGeometry(0.08, 0.08, 0.12, 10), dunkel, 0, 0, 0, Math.PI / 2, 0, 0, heck);
+  for (let q = 0; q < 5; q++) add(new THREE.BoxGeometry(0.12, 1.15, 0.02), dunkel, 0, 0, 0, 0, 0, q * Math.PI / 5, heck);
+  // Kennung und Hoheitszeichen
+  for (const sd of [-1, 1]) { const p = add(new THREE.PlaneGeometry(1.3, 0.3), milSchrift("T-301"), sd * 0.6, 1.62, 3.35, 0, sd * Math.PI / 2 - sd * 0.12); p.castShadow = false;
+    const c = add(new THREE.PlaneGeometry(0.4, 0.4), milKreuzSchweiz(), sd * 0.82, 1.45, 2.15, 0, sd * Math.PI / 2 - sd * 0.08); c.castShadow = false; }
+  const lichter = [add(new THREE.SphereGeometry(0.08, 10, 8), blitz[0], 0, 2.42, 1.0), add(new THREE.SphereGeometry(0.08, 10, 8), blitz[1], 0, 0.5, 0.4), add(new THREE.SphereGeometry(0.06, 8, 6), blitz[2], 0, 3.22, 6.6)];
+  g.name = "Transporthelikopter Cougar"; return { g, rotor, heck, lichter };
+}
+// Leichter Transport- und Schulungshelikopter: runder Rumpf mit grosser Verglasung, Schiebetueren hinten, Kufen, Triebwerke unter einer Verkleidung, Vierblattrotor,
+// Heckausleger mit ummanteltem Heckrotor in der Flosse, Hoehenflosse mit Endscheiben, Kennung T-361. Massstab 1,0.
+function buildSchulHeli(k = 1.0) {
+  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, olivR = M(MIL_OLIV, { roughness: 0.6, metalness: 0.2 }), glasH = M(0x0c141c, { metalness: 0.7, roughness: 0.06, transparent: true, opacity: 0.78 });
+  const yb = tabF([[2.4, 1.15], [2.15, 0.78], [1.6, 0.62], [-1.3, 0.62], [-2.5, 1.45]]), yt = tabF([[2.4, 1.3], [2.1, 1.75], [1.4, 2.05], [0.9, 2.12], [-1.3, 2.12], [-2.5, 1.95]]), wd = tabF([[2.4, 0.22], [2.15, 0.55], [1.6, 0.78], [-1.3, 0.8], [-2.5, 0.3]]);
+  const sec = (f, s = 1, y0 = 0) => { const b = yb(f), t = yt(f), h = t - b, w = wd(f) * s, n = 9, P = [], a0 = y0 > 0 ? Math.asin((y0 - 0.5) * 2 / s) : -Math.PI / 2; for (let q = 0; q <= n; q++) { const a = a0 + (Math.PI / 2 - a0) * q / n; P.push([Math.max(0, Math.cos(a) * w), b + h / 2 + Math.sin(a) * h / 2 * s]); } if (y0 > 0) P.unshift([0, P[0][1]]); return P; };
+  const FS = []; for (let f = 2.4; f > -2.5; f -= 0.16) FS.push(+f.toFixed(3)); FS.push(-2.5); loftIn(i, FS.map(f => [f, sec(f)]), olivR);
+  loftIn(i, FS.filter(f => f <= 2.32 && f >= 0.95).map(f => [f, sec(f, 1.012, 0.42)]), glasH);
+  for (const sd of [-1, 1]) { add(new THREE.BoxGeometry(0.03, 0.75, 0.05), oliv2, sd * 0.77, 1.55, -1.0); add(new THREE.BoxGeometry(0.03, 0.03, 1.4), oliv2, sd * 0.79, 1.95, -0.45);
+    for (const z of [-0.95, 0.3, 1.2]) add(new THREE.BoxGeometry(0.01, 1.1, 0.025), dunkel, sd * 0.8, 1.4, z); add(new THREE.BoxGeometry(0.02, 0.4, 0.6), glasH, sd * 0.8, 1.6, 0.75); add(new THREE.BoxGeometry(0.04, 0.04, 2.0), stahl, sd * 0.81, 1.98, 0.6);
+    add(new THREE.BoxGeometry(0.05, 0.05, 0.14), stahl, sd * 0.82, 1.3, 0.35); }
+  add(new THREE.BoxGeometry(0.05, 0.05, 1.1), oliv2, 0, 1.92, -1.65, -0.55);
+  // Kufen mit Streben und Trittbrettern
+  for (const sx of [-1, 1]) { add(new THREE.CylinderGeometry(0.045, 0.045, 3.4, 10), stahl, sx * 0.95, 0.06, -0.1, Math.PI / 2); add(new THREE.CylinderGeometry(0.045, 0.045, 0.32, 10), stahl, sx * 0.95, 0.13, -1.88, -0.7);
+    for (const z of [-0.9, 0.8]) add(new THREE.CylinderGeometry(0.045, 0.045, 1.05, 8), stahl, sx * 0.76, 0.42, z, 0, 0, sx * 0.55); add(new THREE.BoxGeometry(0.22, 0.03, 0.7), dunkel, sx * 0.95, 0.12, -0.6); }
+  // Triebwerksverkleidung mit Einlaessen und Auspuffen, Mast, Rotor
+  add(new THREE.BoxGeometry(1.0, 0.38, 2.0), olivR, 0, 2.25, 0.3); add(new THREE.BoxGeometry(0.75, 0.2, 0.8), olivR, 0, 2.5, 0.0);
+  for (const sd of [-1, 1]) { add(new THREE.BoxGeometry(0.02, 0.18, 0.4), dunkel, sd * 0.51, 2.3, -0.3); for (let q = 0; q < 3; q++) add(new THREE.BoxGeometry(0.025, 0.02, 0.38), stahl, sd * 0.52, 2.24 + q * 0.06, -0.3);
+    add(new THREE.CylinderGeometry(0.1, 0.09, 0.35, 10), dunkel, sd * 0.3, 2.35, 1.38, Math.PI / 2 - 0.25, sd * 0.25); }
+  add(new THREE.CylinderGeometry(0.08, 0.12, 0.35, 10), stahl, 0, 2.75, -0.05);
+  const rotor = new THREE.Group(); rotor.position.set(0, 2.95, -0.05); i.add(rotor); add(new THREE.CylinderGeometry(0.2, 0.22, 0.14, 14), dunkel, 0, 0, 0, 0, 0, 0, rotor); add(new THREE.SphereGeometry(0.14, 10, 8), oliv2, 0, 0.1, 0, 0, 0, 0, rotor);
+  for (let q = 0; q < 4; q++) { const b = add(new THREE.BoxGeometry(0.26, 0.035, 4.7), dunkel, 0, 0.02, 0, 0, q * Math.PI / 2, 0, rotor); b.geometry.translate(0, 0, 2.5); }
+  // Heck: Ausleger, Flosse mit ummanteltem Heckrotor, Hoehenflosse mit Endscheiben
+  add(new THREE.CylinderGeometry(0.24, 0.13, 2.9, 14), olivR, 0, 1.85, 3.8, Math.PI / 2 - 0.05);
+  { const fin = new THREE.Shape(); fin.moveTo(-0.55, 0); fin.lineTo(0.55, 0); fin.lineTo(0.75, 1.0); fin.lineTo(0.45, 1.55); fin.lineTo(0.05, 1.55); fin.lineTo(-0.55, 0.6); const ho = new THREE.Path(); ho.absarc(0.05, 0.6, 0.36, 0, Math.PI * 2, true); fin.holes.push(ho);
+    const fg = new THREE.ExtrudeGeometry(fin, { depth: 0.3, bevelEnabled: false, curveSegments: 20 }); fg.translate(0, 0, -0.15); add(fg, olivR, 0, 1.55, 5.75, 0, -Math.PI / 2); }
+  const heck = new THREE.Group(); heck.position.set(0, 2.15, 5.8); heck.rotation.y = Math.PI / 2; i.add(heck); add(new THREE.CylinderGeometry(0.08, 0.08, 0.1, 10), dunkel, 0, 0, 0, Math.PI / 2, 0, 0, heck);
+  for (let q = 0; q < 8; q++) add(new THREE.BoxGeometry(0.06, 0.66, 0.015), dunkel, 0, 0, 0, 0, 0, q * Math.PI / 8, heck);
+  add(new THREE.BoxGeometry(1.6, 0.05, 0.4), olivR, 0, 1.9, 4.65); for (const sd of [-1, 1]) add(new THREE.BoxGeometry(0.04, 0.4, 0.45), oliv2, sd * 0.8, 1.95, 4.65);
+  for (const sd of [-1, 1]) { const p = add(new THREE.PlaneGeometry(1.1, 0.26), milSchrift("T-361"), sd * 0.47, 1.62, 2.6, 0, sd * Math.PI / 2 - sd * 0.1); p.castShadow = false;
+    const c = add(new THREE.PlaneGeometry(0.34, 0.34), milKreuzSchweiz(), sd * 0.8, 1.35, -0.05, 0, sd * Math.PI / 2); c.castShadow = false; }
+  add(new THREE.CylinderGeometry(0.008, 0.015, 0.4, 6), dunkel, 0, 2.6, 1.5);
+  const lichter = [add(new THREE.SphereGeometry(0.07, 10, 8), blitz[0], 0, 2.48, 1.2), add(new THREE.SphereGeometry(0.07, 10, 8), blitz[1], 0, 0.58, 0.5), add(new THREE.SphereGeometry(0.06, 8, 6), blitz[2], 0, 3.13, 6.0)];
+  g.name = "Schulungshelikopter"; return { g, rotor, heck, lichter };
+}
+const COUGAR = flyAdd("Transporthelikopter Cougar", buildCougar(1.55), 1.55, { spec: { max: 42, acc: 10, up: 7, tilt: 0.16, tiltV: 0.003, turn: 0.7 },
+  feet: [[-1.02 * 1.55, 0.75 * 1.55], [1.02 * 1.55, 0.75 * 1.55], [-0.1 * 1.55, -1.85 * 1.55], [0.1 * 1.55, -1.85 * 1.55]] });
+const SCHULHELI = flyAdd("Schulungshelikopter", buildSchulHeli(1.0), 1.0, { spec: { max: 50, acc: 15, up: 9, tilt: 0.22, tiltV: 0.004, turn: 1.0 } });
 // Standplatz am Boden (ohne Landeplatz-Markierung)
 function heliStand(H, x, y, z, h) { Object.assign(H, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0 }); H.home = { x, y: y + 0.02, z, h }; H.g.visible = true; batPose(H, 0); }
