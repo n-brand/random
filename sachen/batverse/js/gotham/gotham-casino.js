@@ -152,9 +152,9 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   // Spielautomaten (Bildschirm mit 777, leuchtende Haube): unten links ganz, unten rechts bis vor die Kasse, oben beidseits
   const slotT = tex(128, 96, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#2a0a4a"); gr.addColorStop(1, "#0a0420"); c.fillStyle = gr; c.fillRect(0, 0, w, h); c.fillStyle = "#fff"; c.fillRect(8, 22, w - 16, 52); c.font = "bold 40px Arial Black, Arial"; c.textAlign = "center"; c.fillStyle = "#e0102a"; c.fillText("777", w / 2, 64); c.fillStyle = "#ffd23a"; c.font = "bold 14px Arial"; c.fillText("JACKPOT", w / 2, 16); });
   const KX0 = 6, KZ = 33, slots = [];
-  const slotRun = (sx, z0, z1, y) => { let z = z0; for (; z < z1; z += 1.15) slots.push([sx * (IX - 0.45), y + 0.85, z, sx < 0 ? -Math.PI / 2 : Math.PI / 2]); C.push([0.9, 1.8, z - z0 + 0.6, sx * (IX - 0.45), (z0 + z - 1.15) / 2, y]);
+  const slotRun = (sx, z0, z1, y) => { let z = z0; for (; z < z1; z += 1.3) slots.push([sx * (IX - 0.55), y + 0.85, z, sx < 0 ? -Math.PI / 2 : Math.PI / 2]); C.push([1.1, 2.6, z - z0 + 0.75, sx * (IX - 0.55), (z0 + z - 1.3) / 2, y]);   // Automaten 1,25-fach (N20): Abstand 1,3 m, weiter von der Wand
     // Rechtsklick-Ziel je Reihe (unsichtbarer Kasten ueber die ganze Reihe; tore.js misst den Abstand zum Kasten)
-    const hb = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2, z - z0 + 0.2), new THREE.MeshBasicMaterial({ visible: false })); hb.position.set(sx * (IX - 0.45), y + 1, (z0 + z - 1.15) / 2); g.add(hb);
+    const hb = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.6, z - z0 + 0.2), new THREE.MeshBasicMaterial({ visible: false })); hb.position.set(sx * (IX - 0.55), y + 1.3, (z0 + z - 1.3) / 2); g.add(hb);
     CAS.gates.push({ name: "Spielautomat", m: hb, call: () => typeof slotOpen === "function" && slotOpen(null), verbs: ["spielen", "spielen"], near: 2.5 }); };
   slotRun(-1, IZ0 + 5, IZ1 - 6, 0); slotRun(1, IZ0 + 5, KZ - 1.5, 0); slotRun(-1, IZ0 + 7, IZ1 - 2, FL2); slotRun(1, IZ0 + 7, IZ1 - 4, FL2);
   // Spielautomaten als 3D-Modelle (gotham/spielautomat-modell.js, Nicolas 2026-11-17: eigener Bauschritt) in vier Gehaeusefarben, als Instanzen; ohne Modell-Datei die alten Kaesten
@@ -259,7 +259,7 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   dev(JA, KX0 - 0.6, KZ + 1.3, -Math.PI / 2, 0, "Jeton-Automat", jet("Jeton-Automat"));
   dev(BA, 6.4, IZ1 - 0.45, 0, FL2, "Bankautomat", bank); dev(JA, 7.9, IZ1 - 0.45, 0, FL2, "Jeton-Automat", jet("Jeton-Automat")); dev(JA, -6.5, IZ0 + 0.45, Math.PI, FL2, "Jeton-Automat", jet("Jeton-Automat"));
   // Casino-Spiele (Nicolas 2026-11-18, N29, gotham-casino.js "ins Casino"): Crash und Mines an der Frontwand neben Jeton- und Bankautomat, Gluecksrad mittig vor dem Eingang mit Blick zur Tuer
-  if (typeof buildCrashAutomat === "function") { dev(buildCrashAutomat, -10, IZ0 + 0.55, Math.PI, 0, "Crash-Automat", () => cgOpen("crash")); dev(buildMinesAutomat, 10, IZ0 + 0.55, Math.PI, 0, "Mines-Automat", () => cgOpen("mines"));
+  if (typeof buildCrashAutomat === "function") { dev(buildCrashAutomat, -10, IZ0 + 0.65, Math.PI, 0, "Crash-Automat", () => cgOpen("crash")); dev(buildMinesAutomat, 10, IZ0 + 0.65, Math.PI, 0, "Mines-Automat", () => cgOpen("mines"));
     const rad = buildGluecksrad(); rad.position.set(0, 0.125, IZ0 + 7); g.add(rad); C.push([2.2, 2.7, 1.0, 0, IZ0 + 7]); CAS.gates.push({ name: "Glücksrad", m: rad, call: () => cgOpen("rad"), verbs: ["drehen", "drehen"], near: 3.5 }); }
   CAS.gates.push({ name: "Kasse", m: kGlass, call: jet("Kasse"), verbs: ["Jetons tauschen", "Jetons tauschen"], near: 3 });
 }

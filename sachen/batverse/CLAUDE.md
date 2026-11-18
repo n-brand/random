@@ -60,6 +60,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Spielautomaten grösser** (Nicolas 2026-11-18, N20: "Spielautomaten grösser, wirken zu klein"): spielautomat-modell.js `SLOT_SCALE` 1,25 – der ganze Automat (auch Crash und Mines, auch die Casino-Instanzen über die Vorlage) misst jetzt ca. 0,95 x 0,9 x 2,5 m statt 0,76 x 0,72 x 2,05. Casino: Abstand in den Reihen 1,3 m statt 1,15, 0,55 m von der Wand, Kollision und Rechtsklick-Kasten 1,1 x 2,6 m; Crash und Mines 10 cm weiter von der Wand. Geprüft in der Werkstatt: Bild der drei Automaten, Bild einer Casino-Reihe (Werkstatt-Casino aus den Spieldateien).
+
 - **Jeton-Automat einzeln in der Werkstatt, Zoom im Zielfernrohr** (Nicolas 2026-11-18, N19: "Jeton-Automat einzeln in der Werkstatt (Bargeld gegen Jetons)"; "beim Zielen mit dem Scharfschützengewehr soll man mit dem Mausrad noch auf den roten Punkt reinzoomen können, ähnlich wie beim Panzer"):
   - werkstatt.js (Ladehandler): `buildJetonAutomat()` rechts neben dem Bankautomaten (Projekt x 6,3), Rechtsklick-Ziel "Jeton-Automat" öffnet das Tauschfenster (`jetonOpen`), Kollision über `userData.kind`.
   - schusswaffen.js: `GUN_SZ` – beim Zielen mit dem Scharfschützengewehr ändert das Mausrad die Vergrösserung 6× bis 24× (Faktor 1-4, je Raste 1,25), Anzeige über der Hotbar, Maus wird entsprechend feiner (aimK = AIM.z); die Hotbar wechselt dabei nicht. Gilt bis zum Waffenwechsel, in Spiel und Werkstatt.

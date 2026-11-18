@@ -51,6 +51,8 @@ function slotScreenTex(syms = [[1, 0, 3], [5, 0, 2], [4, 0, 6]]) { return canvas
   for (let r = 0; r < 3; r++) { const x = 18 + r * 96; const g2 = c.createLinearGradient(0, 36, 0, 226); g2.addColorStop(0, "#9a9a9a"); g2.addColorStop(0.5, "#ffffff"); g2.addColorStop(1, "#9a9a9a"); c.fillStyle = g2; c.fillRect(x, 36, 88, 190);
     for (let k = 0; k < 3; k++) slotSymDraw(c, SLOT_SYM[syms[r][k]].id, x + 44, 68 + k * 62, 52); }
   c.strokeStyle = "#e0102a"; c.lineWidth = 4; c.beginPath(); c.moveTo(8, 130); c.lineTo(w - 8, 130); c.stroke(); }); }
+// Nicolas 2026-11-18, N20: "Spielautomaten grösser (wirken zu klein)": alles 1,25-fach, also ca. 0,95 x 0,9 x 2,56 m (auch Crash und Mines)
+const SLOT_SCALE = 1.25;
 function buildSpielautomat(farbe = 0x6a1ab0, opt = {}) {
   const g = new THREE.Group(), M = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.4, metalness: 0.3, ...o });
   const add = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
@@ -87,7 +89,7 @@ function buildSpielautomat(farbe = 0x6a1ab0, opt = {}) {
   { const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 20), chrom); hub.rotation.z = Math.PI / 2; hebel.add(hub);
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.017, 0.5, 10), chrom); rod.position.set(-0.04, 0.25, 0); hebel.add(rod);
     const knob = new THREE.Mesh(new THREE.SphereGeometry(0.055, 18, 14), M(0xd0102a, { metalness: 0.2, roughness: 0.25 })); knob.position.set(-0.04, 0.52, 0); hebel.add(knob); }
-  g.name = "Spielautomat"; return g;
+  g.scale.setScalar(SLOT_SCALE); g.name = "Spielautomat"; return g;   // ganzer Automat groesser (N20), auch Instanzen (matrixWorld der Vorlage)
 }
 // viele Automaten als InstancedMesh (ein Netz je Teil): liste = [[x, y, z, ry, farbe], ...] in den Koordinaten von parent; Bildschirm-Texturen in 3 Varianten
 function spielautomatInstanzen(parent, liste) {

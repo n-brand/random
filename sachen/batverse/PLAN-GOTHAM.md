@@ -176,7 +176,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | N17 | **Bankautomat 3D**: die zwei schwarzen Striche links neben dem Bildschirm sind falsch, gemeint sind Kartenschlitz und Geldausgabe. Bildschirm grösser, die Schlitze darunter | gebaut 2026-11-18 |
 | N18 | **Bankautomat aufbrechen**: beim Beschuss mit einer Waffe ca. 20 s ununterbrochen Geldscheine aus dem Schlitz (Animation), dazu eine zerstörte 3D-Variante. Später aufbrechen, zerstören, manipulieren | Beschuss gebaut 2026-11-18 (aufbrechen mit Werkzeug, manipulieren offen) |
 | N19 | **Jeton-Automat einzeln in der Werkstatt** (Bargeld gegen Jetons) | gebaut 2026-11-18 |
-| N20 | **Spielautomaten grösser** (wirken zu klein) | offen |
+| N20 | **Spielautomaten grösser** (wirken zu klein) | gebaut 2026-11-18 |
 | N29 | **Neue Casino-Automaten**, alle mit Jetons, Knöpfe im Jeton-Design: **Crash** (Flugzeug steigt, Faktor wächst, rechtzeitig auszahlen, sonst Absturz = Einsatz weg), **Mines** (ca. 30 verdeckte Felder mit Diamanten und Bomben, Einsatz und Anzahl Bomben selbst wählen, jeder Diamant erhöht den Gewinn, mehr Bomben = mehr Wert je Diamant, Bombe = verloren), **Daily Spin Wheel** (Glücksrad einmal am Tag, wie GTA V). Roulette bleibt. Weitere Ideen: `IDEEN-CASINO.md` | **gebaut 2026-11-18** in der Werkstatt und im Casino (casino-spiele.js) |
 | N30 | **Börse auf dem Laptop** wie in GTA V | teilweise – "Gotham Stock Exchange" mit 8 Aktien, Depot, Kauf/Verkauf ist im Laptop gebaut (2026-11-17); Ausbau offen (`OFFENE-FRAGEN.md` 36) |
 | N31 | **Neues, realistisches Casino in der Werkstatt** nach Recherche echter Casinos (Grösse, Aufteilung, Aussehen) | offen |
