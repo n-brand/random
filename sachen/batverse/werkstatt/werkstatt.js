@@ -105,6 +105,8 @@ addEventListener("load", () => { const tisch = projektG.getObjectByName("Laptop-
   if (tisch && typeof buildWaffenwand === "function" && typeof invBox === "function" && !tisch.getObjectByName("Waffenwand")) { const w = buildWaffenwand(), B = invBox("waffenwand", "Waffenwand", 27, WAFFENWAND_INHALT); w.position.set(-0.25, 0, 1.45); tisch.add(w);   // Waffenwand hinter dem Tisch (N27), Inhalt als Behaelter
     B.onChange = () => waffenwandSync(w, B); waffenwandSync(w, B); w.updateMatrixWorld(true); const p = w.getWorldPosition(new THREE.Vector3());
     gates.push({ name: "Waffenwand", g: w, call: () => invBoxFront(w, 3.4) && invBoxOpen(B), verbs: ["öffnen", "öffnen"], a: [p.x, p.z], b: [p.x, p.z], near: 3.5 }); }
+  if (typeof tresorAdd === "function" && !TRESOR.list.length) { const inh = [[["goldbarren", 2], ["jeton-100", 20]], [["goldbarren", 4], ["jeton-1000", 10], ["munition", 32]], [["goldbarren", 8], ["jeton-1000", 30], ["jeton-10000", 5]], [["goldbarren", 16], ["goldbarren", 16], ["jeton-10000", 20]], [["goldbarren", 6], ["emp", 1], ["batarang", 8]]];   // Tresore aller Stufen (N23), Front zu den Spielautomaten
+    [-0.9, 0.0, 1.0, 2.3, 3.55].forEach((x, k) => tresorAdd(projektG, k + 1, "werkstatt-" + (k + 1), new THREE.Vector3(x, 0, 2.9), 0, inh[k])); }
   projektG.updateMatrixWorld(true); projektG.traverse(m => { if (!m.userData.slot) return; const p = m.getWorldPosition(new THREE.Vector3()); gates.push({ name: "Spielautomat", g: m, call: () => typeof slotOpen === "function" && slotOpen(m), verbs: ["spielen", "spielen"], a: [p.x, p.z], b: [p.x, p.z], near: 3 }); }); });   // gates kommt erst mit gotham-shim.js
 function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = new THREE.Box3().setFromObject(projektG), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z);
   const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 1.9 + fz * r * 0.45, c.y + r * 0.25, c.z + fz * r * 1.9 - fx * r * 0.45); controls.update();
@@ -511,6 +513,7 @@ function loop(t) {
   renderer.render(scene, camera);
   if (typeof gunRender === "function") gunRender();
   if (typeof batHandRender === "function") batHandRender();   // Batarang in der Hand (../js/spieler/waffen.js)
+  if (typeof tresorStep === "function") { tresorStep(); hand3dRender(); }   // Tresore, Werkzeuge in der Hand (gotham/tresor.js)
   if (typeof jetRender === "function") jetRender();                        // Jetons in der Hand (../js/ui/jetons.js)                        // Schusswaffe in der Hand (../js/spieler/schusswaffen.js)
   requestAnimationFrame(loop);
 }

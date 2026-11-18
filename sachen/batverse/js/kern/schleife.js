@@ -96,6 +96,7 @@ function frame() {
   renderer.render(scene, camera);
   if (typeof gunRender === "function") gunRender();
   if (typeof batHandRender === "function") batHandRender();   // Batarang in der Hand (spieler/waffen.js)
+  if (typeof tresorStep === "function") { tresorStep(); hand3dRender(); }   // Tresore, Werkzeuge in der Hand (gotham/tresor.js)
   if (typeof jetRender === "function") jetRender();                        // Jetons in der Hand (ui/jetons.js)                        // Schusswaffe in der Hand (spieler/schusswaffen.js)
   perfFrame(performance.now() - tF);
   requestAnimationFrame(frame);

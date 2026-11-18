@@ -117,3 +117,7 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
     - *Bis dahin:* Ausrüstungsplatz "Kopf" im Inventar.
 42. **"Minotaurus"-Drohnenpanzer (N52):** Den Namen kenne ich nicht sicher. Meinst du einen bestimmten Kettenroboter (z. B. ein unbemanntes Bodenfahrzeug) oder soll ich einen eigenen Entwurf machen?
     - *Bis dahin:* eigener Entwurf.
+43. **Bargeld in Tresoren:** Bargeld ist seit 2026-11-16 nur ein Betrag (kein Gegenstand), Tresore können aber nur Gegenstände aufnehmen. Soll es wieder Geldbündel als Gegenstand geben (z. B. 1 000 $ je Bündel, beim Einzahlen am Automaten zu Bargeld), damit man Geld in Tresore und Koffer legen kann (N24, N25)?
+    - *Bis dahin:* in den Tresoren Goldbarren und Jetons statt Bargeld.
+44. **Tresor-Code:** Alle Tresore starten mit dem Code 0000 (Werkstatt zum Testen). Im Spiel: soll man fremde Codes irgendwo finden können (Zettel, Laptop, USB-Stick N39)?
+    - *Bis dahin:* 0000, im Spiel noch keine Tresore.
