@@ -70,7 +70,7 @@ function atmShot(p, dmg) { for (const A of ATM_BRK.list) { if (A.broken || !atmB
 function atmBreak(A) { A.broken = true; A.t = 0; A.emit = 0; A.screen.userData.mat0 = A.screen.material; A.screen.material = new THREE.MeshBasicMaterial({ map: atmCrackTex() });
   if (A.sign) { A.sign.userData.mat0 = A.sign.material; A.sign.material = A.sign.material.clone(); A.sign.material.emissiveIntensity = 0.04; A.sign.material.color.setHex(0x555a66); }
   if (A.flap) { A.flap.userData.r0 = A.flap.rotation.x; A.flap.rotation.x = -1.1; A.flap.position.z -= 0.03; }   // Klappe der Geldausgabe aufgerissen
-  if (typeof toast === "function") toast("Bankautomat aufgebrochen – Geld fliegt heraus!"); }
+  if (typeof toast === "function") toast("Bankautomat aufgebrochen – Geld fliegt heraus!"); if (typeof akteEintrag === "function") akteEintrag("Bankautomat aufgebrochen (Sachbeschädigung, Diebstahl)", "Fahndung +2", 2); }
 function atmRepair(A) { A.broken = false; A.dmg = 0; A.screen.material = A.screen.userData.mat0; if (A.sign) A.sign.material = A.sign.userData.mat0;
   if (A.flap) { A.flap.rotation.x = A.flap.userData.r0; A.flap.position.z += 0.03; } for (const m of A.holes) A.g.remove(m); A.holes = []; }
 function atmBrokenNear(x, z, r = 3) { const v = new THREE.Vector3(); return ATM_BRK.list.some(A => { if (!A.broken) return false; A.g.getWorldPosition(v); return Math.hypot(v.x - x, v.z - z) < r; }); }

@@ -30,6 +30,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Was | Taste |
 |-----|-------|
 | Inventar | E oder I (zu Fuss) |
+| Meine Akte | **J** (überall beim Begehen, im Fahrzeug, in der Werkstatt), J oder Esc schliesst |
 | Hotbar wählen | 1–9, Mausrad (auch Bargeld und Karte rechts daneben) |
 | Zielen / benutzen | rechte Maus halten / linke Maus |
 | Nachladen | R |
@@ -65,6 +66,8 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Personalakte** (Nicolas 2026-11-18, N38; Empfehlung aus IDEEN-AKTE.md: Taste): neu `js/ui/akte.js` (Spiel-FILES und Werkstatt nach ui/dating.js, ASSETS, BV_KEEP). Taste **J** öffnet "Meine Akte" ohne Gegenstand (Maus frei, Tasten gehen nicht ans Spiel, J/Esc schliesst). Reiter: Person (gezeichnetes Foto, Stammdaten Bruce Wayne, Fahndung), Ausweise (Identitätskarte, Fahrausweis mit Kategorien A, B, C, D, Boot, H, F, M und Punkten), Waffen (Lizenzstufen 1-4, Bruce hat Stufe 4 als Sonderbewilligung; Läden prüfen noch nicht), Strafregister (Einträge mit Datum, Tat, Folge; Fahndung 0-5 Sterne, sinkt alle 2 min um eine Stufe), Besitz (gekaufte Fahrzeuge, Immobilien aus wm-immo, Konto und Bargeld). `akteEintrag(tat, strafe, fahndung)`: Bankautomat aufgebrochen (+2), Tresor aufgebrochen bzw. gesprengt (+1, ab Stufe 3 +2). Stand in localStorage `wm-akte` (Cookies löschen setzt sie zurück). Polizei-Datenbank "GCPD Records" und Batcomputer-Fassung, Brieftasche an der Hotbar und Lizenzprüfung im Waffenladen noch offen. Geprüft in der Werkstatt: J öffnet, Bankautomat-Einbruch -> 1 Eintrag, Fahndung 2, W gesperrt, Bild Ausweise.
 
 - **Militärfahrzeuge (Teil 1)** (Nicolas 2026-11-18, N52): neu `js/fahrzeuge/militaer.js` (Spiel-FILES und Werkstatt nach fahrzeuge/heli.js, ASSETS, BV_KEEP), vereinfachte eigene Modelle in Oliv. `buildPiranha(v)` 8x8 (Wanne mit schräger Bugplatte, vier Achsen, vordere zwei lenken, Fahrerluke, Nebelwerfer, Heckrampe) in drei Varianten: Kommandofahrzeug (Aufbau, Antennen), Sanitätsfahrzeug (höherer Aufbau, rotes Kreuz auf weissem Feld seitlich, hinten, oben), Panzerjäger 90 (Turm mit zwei Lenkwaffenrohren am Arm und Zielgerät; nur Optik, schiesst nicht); `buildDuro()` Duro IIIP 6x6 (gepanzerte Kabine, Mannschaftsaufbau mit Fenstern und Hecktür). Specs `SPEC_PIRANHA_K/_S`, `SPEC_PZJ90`, `SPEC_DURO` (ca. 100 bzw. 90 km/h, schwer). Hubschrauber über `flyAdd` (neu in heli.js, aus dem Polizei-Helikopter herausgelöst; Kollision, Kamera, Ausstieg mit Massstab): Transporthelikopter Cougar (1,55-fach, träger) und Schulungshelikopter (1-fach), beide olivgrün mit ARMEE-Aufschrift, ohne Blaulicht (`milHeli`). Werkstatt: alle in der Auswahl, die zwei Hubschrauber neben dem Landeplatz (`heliStand`). Spiel: Radfahrzeuge im Laden Gotham Defense Supply (Handy, Laptop: Duro 650 000 $, Piranha Kommando 1,2 Mio., Sanität 1,1 Mio., Panzerjäger 90 2,5 Mio.); Hubschrauber im Spiel noch ohne Standort (OFFENE-FRAGEN 52). Noch offen aus N52: Drohnen-Panzer "Minotaurus" (Frage 42), Aufklärungsdrohne RQ-4. Geprüft in der Werkstatt: Bild aller Modelle; Fahrschritte direkt gerechnet (Vorschau gedrosselt): Panzerjäger und Piranha 73 km/h nach 5 s, Duro 71; Cougar steigt 14 m in 2 s, 67 km/h vorwärts.
 

@@ -105,7 +105,7 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
     - *Bis dahin:* herausnehmen bis zur Leerung möglich, Leerung beim Neuladen.
 36. **Börse (N30):** Im Laptop gibt es schon "Gotham Stock Exchange" mit 8 Aktien, Depot und Kauf/Verkauf. Was fehlt dir noch (mehr Firmen, Kurse durch Ereignisse im Spiel, zwei Börsen wie in GTA V, auch auf dem Handy)?
     - *Bis dahin:* bleibt wie gebaut.
-37. **Akte ansehen (N38):** Welche Variante aus `IDEEN-AKTE.md` (Taste, Pausenmenü, Handy-App, Brieftasche an der Hotbar)?
+37. **(gebaut 2026-11-18 mit Taste J; Brieftasche an der Hotbar kann noch dazukommen)** **Akte ansehen (N38):** Welche Variante aus `IDEEN-AKTE.md` (Taste, Pausenmenü, Handy-App, Brieftasche an der Hotbar)?
     - *Bis dahin:* Empfehlung Taste + Brieftasche.
 38. **Spielfiguren (N35):** Grösse der Figur? Heute rechnet das Spiel mit Augenhöhe ca. 1,7 m; Fahrzeuge und Türen passen dazu. Soll die Figur dazu passen (ca. 1,85 m)?
     - *Bis dahin:* passend zur heutigen Augenhöhe.
