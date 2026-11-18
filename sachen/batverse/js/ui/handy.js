@@ -33,13 +33,21 @@ const HANDY_CAT = {
   tank: { spec: () => SPEC_TANK, build: c => buildTank(c), cols: [0x4d5a36, 0x8a7a55, 0x5a5f63], art: "Panzer" },
   tumbler: { spec: () => SPEC_TUMBLER, build: c => buildTumbler(c, c), cols: [0x16181b, 0x4a4f55, 0x5a5f3a], art: "Prototyp" },
 };
-const HANDY = { page: "home", hist: [], owned: [], col: {} };   // owned: { key, c, x, z, y, h, C }
+const HANDY = { page: "home", hist: [], owned: [], col: {}, modell: "handy-wayne", sel: 0, call: null };
+// Zwei Handys als Gegenstand (Nicolas 2026-11-18, N32: "krasse Gaming-Performance Wayne Enterprises und normales Buero-Zeugs einer anderen Firma; Handy als Item, in der Hand Rechtsklick -> Handy unten rechts wie GTA V,
+// Pfeiltasten und Enter; der Browser geht im Querformat vor den ganzen Bildschirm, andere Apps bleiben hochkant unten rechts"). Nicht jedes Handy hat jede App (wie die Laptops).
+const HANDY_MODELLE = { "handy-wayne": { name: "Wayne Phone X", cls: "m-wayne", apps: ["web", "bank", "garage", "kontakte"] }, "handy-office": { name: "Ardent Office 12", cls: "m-office", apps: ["web", "bank", "kontakte"] } };
+const HANDY_KONTAKTE = [["Polizei (GCPD)", "911", "Gotham City Police Department. Was ist passiert, und wo sind Sie?"], ["Taxi", "555-0199", "Gotham Cab, guten Tag! Wir schicken Ihnen einen Wagen – etwa fünf Minuten."], ["Krankenwagen", "911", "Notruf Rettungsdienst. Ist jemand verletzt? Bleiben Sie bitte am Telefon."], ["Feuerwehr", "911", "Gotham Fire Department. Wo brennt es?"], ["Alfred", "Privat", "Ja, Master Wayne? Soll ich den Wagen vorbereiten?", "handy-wayne"]];
+const handyQuer = p => p === "web" || p === "bank" || p.startsWith("shop:");   // Browser-Seiten im Querformat
+const handyApps = () => HANDY_APPS.filter(a => (HANDY_MODELLE[HANDY.modell] || HANDY_MODELLE["handy-wayne"]).apps.includes(a[0]));
+function handyEigen() { if (typeof invHeld === "function" && HANDY_MODELLE[invHeld()]) return invHeld(); if (typeof invHas === "function") for (const k in HANDY_MODELLE) if (invHas(k)) return k; return null; }   // gehaltenes oder erstes Handy im Inventar   // owned: { key, c, x, z, y, h, C }
 const handyHex = c => "#" + c.toString(16).padStart(6, "0");
 const handyName = k => (HANDY_CAT[k].spec() || {}).name || k;
 // Lieferplatz: Hof des Autohauses (Kartenort, Strassenhoehe) bzw. Vorplatz Wayne Tower
 function handyLot(shop) { const o = shop.ort && typeof GOTHAM !== "undefined" ? GOTHAM.orte.find(q => q.id === shop.ort) : null;
   if (o) { const L = typeof GORT !== "undefined" && GORT.lots && GORT.lots[o.id], [x, z] = L || GOT.toGame(o.x, o.z); return { x, z, y: GOT.STR + 0.5 }; } const s = typeof WALK_START !== "undefined" ? WALK_START : { x: 0, z: 0, y: 0 }; return { x: s.x + 6, z: s.z, y: s.y }; }
 function handySpawn(o) { const K = HANDY_CAT[o.key]; if (!K || !K.spec()) return null; const c = o.c ?? K.cols[0] ?? 0x16181b;
+  if (typeof addVehicle !== "function") return null;   // Werkstatt: keine Fahrzeuge aus dem Handy
   o.C = addVehicle(K.spec(), () => K.build(c), o.x, o.z, o.y, o.h || 0, handyName(o.key) + " (gekauft)", c); return o.C; }
 function handySave() { try { localStorage.setItem("wm-gekauft", JSON.stringify(HANDY.owned.map(o => { const C = o.C; if (C && Number.isFinite(C.x)) { o.x = C.x; o.z = C.z; o.y = C.y; o.h = C.h; } return { key: o.key, c: o.c, x: +o.x.toFixed(2), z: +o.z.toFixed(2), y: +o.y.toFixed(2), h: +(o.h || 0).toFixed(3) }; }))); } catch (e) {} }
 function handyBuyWare(shopId, key) { const shop = HANDY_SHOPS[shopId], it = shop.waren.find(i => i[0] === key); if (!it || !INV_ITEMS[key]) return;
@@ -47,7 +55,7 @@ function handyBuyWare(shopId, key) { const shop = HANDY_SHOPS[shopId], it = shop
   const put = invAdd(key, it[2]); if (!put) return toast("Kein Platz im Inventar");
   const pr = Math.round(it[1] * put / it[2]); kontoAus(pr, shop.name + ": " + INV_ITEMS[key].name + (put > 1 ? " (" + put + ")" : "")); toast(INV_ITEMS[key].name + (put > 1 ? " × " + put : "") + " gekauft – im Inventar" + (put < it[2] ? " (nur " + put + " hatten Platz)" : "")); handyRender(); }
 function handyBuy(shopId, key) {
-  const shop = HANDY_SHOPS[shopId], it = shop.items.find(i => i[0] === key), K = HANDY_CAT[key]; if (!it || !K.spec()) return;
+  const shop = HANDY_SHOPS[shopId], it = shop.items.find(i => i[0] === key), K = HANDY_CAT[key]; if (!it || !K.spec()) return; if (typeof addVehicle !== "function") return toast("In der Werkstatt kann man Fahrzeuge nur ansehen");
   if (!kontoKann(it[1])) return toast("Nicht genug Guthaben: " + kontoFmt(it[1]) + " nötig, du hast " + kontoFmt(kontoStand()));
   kontoAus(it[1], shop.name + ": " + handyName(key));
   const lot = handyLot(shop), o = { key, c: HANDY.col[key] ?? K.cols[0], x: lot.x, z: lot.z, y: lot.y, h: 0 }; HANDY.owned.push(o); const C = handySpawn(o);
@@ -56,18 +64,22 @@ function handyBuy(shopId, key) {
   handySave(); if (here) handyClose(); else handyRender();
 }
 // Darstellung
-const HANDY_APPS = [["web", "Internet", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'], ["bank", "Bank", '<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>'], ["garage", "Garage", '<path d="M3 20V9l9-5 9 5v11M7 20v-6h10v6M7 17h10"/>']];
+const HANDY_APPS = [["kontakte", "Kontakte", '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'], ["web", "Internet", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'], ["bank", "Bank", '<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>'], ["garage", "Garage", '<path d="M3 20V9l9-5 9 5v11M7 20v-6h10v6M7 17h10"/>']];
 function handyGo(p, push = true) { if (push && HANDY.page !== p) HANDY.hist.push(HANDY.page); HANDY.page = p; handyRender(); const sc = document.querySelector("#handy .h-screen"); if (sc) sc.scrollTop = 0; }
 function handyRender() {
   const box = document.getElementById("handy"); if (!box || box.hidden) return; const p = HANDY.page, sc = box.querySelector(".h-screen"), url = box.querySelector(".h-url");
   const shop = HANDY_SHOPS[p.split(":")[1]];
-  url.textContent = p === "home" ? "" : p === "web" ? "gotham.web" : p === "bank" ? "gothamcitybank.gotham" : p === "garage" ? "Garage" : shop ? shop.url : "";
+  url.textContent = p === "home" ? "" : p === "web" ? "gotham.web" : p === "bank" ? "gothamcitybank.gotham" : p === "garage" ? "Garage" : p === "kontakte" ? "Kontakte" : shop ? shop.url : "";
+  const M = HANDY_MODELLE[HANDY.modell] || HANDY_MODELLE["handy-wayne"], ph = box.querySelector(".h-phone"), quer = handyQuer(p); ph.className = "h-phone " + M.cls + (quer ? " quer" : ""); box.classList.toggle("quer", quer);
+  box.querySelector(".h-modell") || box.querySelector(".h-top").insertAdjacentHTML("afterbegin", '<span class="h-modell"></span>'); box.querySelector(".h-modell").textContent = M.name;
   box.querySelector(".h-bar").hidden = p === "home"; box.querySelector(".h-money").textContent = kontoFmt(kontoStand());
-  if (p === "home") sc.innerHTML = '<div class="h-apps">' + HANDY_APPS.map(([id, n, svg]) => '<button type="button" class="h-app" data-go="' + id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + svg + "</svg><span>" + n + "</span></button>").join("") + "</div>";
+  if (p === "home") sc.innerHTML = '<div class="h-apps">' + handyApps().map(([id, n, svg], i) => '<button type="button" class="h-app' + (i === HANDY.sel ? " foc" : "") + '" data-go="' + id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + svg + "</svg><span>" + n + "</span></button>").join("") + "</div>";
   else if (p === "web") sc.innerHTML = '<div class="h-page"><h2>Gotham Web</h2><p class="h-sub">Läden</p>' + Object.entries(HANDY_SHOPS).map(([id, s]) => '<button type="button" class="h-link" data-go="shop:' + id + '" style="--c:' + s.farbe + '"><b>' + s.name + "</b><span>" + s.slogan + "</span></button>").join("") +
     '<p class="h-sub">Dienste</p><button type="button" class="h-link" data-go="bank" style="--c:#4a8fd6"><b>Gotham City Bank</b><span>Kontostand und Buchungen</span></button></div>';
   else if (p === "bank") sc.innerHTML = '<div class="h-page"><h2>Gotham City Bank</h2><div class="h-big">' + kontoFmt(kontoStand()) + '</div><p class="h-sub">Bargeld ein- und auszahlen geht an jedem Bankautomaten.</p><ul class="bank-log">' +
     (KONTO.log.slice(0, 12).map(b => "<li><span>" + b.grund.replace(/[<&]/g, "") + '</span><b class="' + (b.n < 0 ? "neg" : "pos") + '">' + (b.n > 0 ? "+" : "") + kontoFmt(b.n) + "</b></li>").join("") || "<li><span>Noch keine Buchungen</span></li>") + "</ul></div>";
+  else if (p === "kontakte") { const C = HANDY.call; sc.innerHTML = C ? '<div class="h-page h-anruf"><div class="h-av">' + C.k[0][0] + '</div><h2>' + C.k[0] + '</h2><p class="h-sub">' + (C.st === "waehlt" ? "Wählt " + C.k[1] + " …" : "Verbunden") + '</p>' + (C.st === "verbunden" ? '<p class="h-sprech">„' + C.k[2] + '“</p>' : "") + '<button type="button" class="h-buy h-auflegen" data-auflegen="1">Auflegen</button></div>'
+      : '<div class="h-page"><h2>Kontakte</h2>' + HANDY_KONTAKTE.filter(k => !k[3] || k[3] === HANDY.modell).map((k, i) => '<div class="h-car"><i style="background:#2c5d9a"></i><div><b>' + k[0] + '</b><span>' + k[1] + '</span></div><button type="button" data-anruf="' + HANDY_KONTAKTE.indexOf(k) + '">Anrufen</button></div>').join("") + '</div>'; }
   else if (p === "garage") sc.innerHTML = '<div class="h-page"><h2>Meine Fahrzeuge</h2>' + (HANDY.owned.map((o, i) => '<div class="h-car"><i style="background:' + handyHex(o.c ?? 0x16181b) + '"></i><div><b>' + handyName(o.key) + "</b><span>" + HANDY_CAT[o.key].art + '</span></div><button type="button" data-holen="' + i + '">Holen</button></div>').join("") || '<p class="h-sub">Noch nichts gekauft. Im Internet findest du drei Händler.</p>') + "</div>";
   else if (shop && shop.waren) { const sid = p.split(":")[1];
     sc.innerHTML = '<div class="h-page h-shop" style="--c:' + shop.farbe + '"><div class="h-hero"><h2>' + shop.name + "</h2><span>" + shop.slogan + "</span></div>" + shop.waren.map(([k, pr, n]) => { const I = INV_ITEMS[k]; if (!I) return ""; const has = invCount(k);
@@ -80,7 +92,7 @@ function handyRender() {
         '<button type="button" class="h-buy" data-buy="' + sid + ":" + k + '"' + (kontoKann(pr) ? "" : " disabled") + ">" + (kontoKann(pr) ? "Kaufen und liefern" : "Zu wenig Guthaben") + "</button></div>"; }).join("") + "</div>"; }
 }
 const handyIsOpen = () => { const b = document.getElementById("handy"); return b && !b.hidden; };
-function handyOpen(page) { const b = document.getElementById("handy"); if (!b) return; if (b.hidden) { if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear(); b.hidden = false; HANDY.hist = []; HANDY.page = "home"; }
+function handyOpen(page, modell) { const b = document.getElementById("handy"); if (!b) return; if (b.hidden) { const m = modell || handyEigen(); if (!m) return toast("Kein Handy dabei – im Inventar fehlt ein Handy"); HANDY.modell = m; HANDY.sel = 0; HANDY.call = null; if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear(); b.hidden = false; HANDY.hist = []; HANDY.page = "home"; }
   if (page) handyGo(page); else handyRender(); }
 function handyClose() { const b = document.getElementById("handy"); if (!b || b.hidden) return; b.hidden = true; if (typeof grabMouse === "function") grabMouse(); }
 const handyShop = id => handyOpen("shop:" + id);
@@ -93,5 +105,24 @@ const handyShop = id => handyOpen("shop:" + id);
     if (d.go) return handyGo(d.go); if (d.col) { const [k, c] = d.col.split(":"); HANDY.col[k] = +c; return handyRender(); }
     if (d.buy) { const [s, k] = d.buy.split(":"); return handyBuy(s, k); }
     if (d.ware) { const [s, k] = d.ware.split(":"); return handyBuyWare(s, k); }
+    if (d.anruf) { const k = HANDY_KONTAKTE[+d.anruf]; HANDY.call = { k, st: "waehlt" }; handyRender(); clearTimeout(HANDY.callT); HANDY.callT = setTimeout(() => { if (HANDY.call && HANDY.call.k === k) { HANDY.call.st = "verbunden"; handyRender(); } }, 1600); return; }
+    if (d.auflegen) { HANDY.call = null; return handyRender(); }
     if (d.holen) { const o = HANDY.owned[+d.holen]; if (o && o.C && summonVehicle(o.C)) { handySave(); handyClose(); } } });
   document.getElementById("btn-handy")?.addEventListener("click", e => { e.currentTarget.blur(); handyIsOpen() ? handyClose() : handyOpen(); }); }
+// Tastatur, solange das Handy offen ist: Pfeiltasten waehlen Apps, Enter oeffnet, Ruecktaste zurueck, Pfeil hoch/runter blaettert auf Seiten, Esc oder P legt es weg
+addEventListener("keydown", e => { if (!handyIsOpen() || e.target.closest?.("input, textarea")) return; const k = e.key, home = HANDY.page === "home", n = handyApps().length;
+  if (k === "Escape" || e.code === "KeyP") { e.preventDefault(); handyClose(); }
+  else if (home && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(k)) { e.preventDefault(); const d = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3 }[k]; HANDY.sel = Math.max(0, Math.min(n - 1, HANDY.sel + d)); handyRender(); }
+  else if (home && k === "Enter") { e.preventDefault(); const a = handyApps()[HANDY.sel]; if (a) handyGo(a[0]); }
+  else if (!home && k === "Backspace") { e.preventDefault(); if (HANDY.call) { HANDY.call = null; return handyRender(); } HANDY.page = HANDY.hist.pop() || "home"; handyRender(); }
+  else if (!home && (k === "ArrowDown" || k === "ArrowUp")) { e.preventDefault(); const sc = document.querySelector("#handy .h-screen"); if (sc) sc.scrollTop += k === "ArrowDown" ? 80 : -80; }
+  e.stopImmediatePropagation(); }, true);
+// mit dem Handy in der Hand: Rechtsklick oeffnet es
+addEventListener("mousedown", e => { if (e.button !== 2 || !document.pointerLockElement || typeof invHeld !== "function" || !HANDY_MODELLE[invHeld()]) return; e.preventDefault(); e.stopImmediatePropagation(); handyOpen(null, invHeld()); }, true);
+// 3D in der Hand: flaches Handy mit leuchtendem Bildschirm, Kamera hinten
+for (const id of Object.keys(HANDY_MODELLE)) { const bau = () => { const g = new THREE.Group(), w = id === "handy-wayne", body = new THREE.MeshStandardMaterial({ color: w ? 0x0b0c0e : 0xb9c0c8, metalness: w ? 0.5 : 0.7, roughness: 0.3 }),
+    scr = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: w ? 0x3a2a08 : 0x1d3550, emissiveIntensity: 1.4 }), b = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.155, 0.009), body), s = new THREE.Mesh(new THREE.PlaneGeometry(0.066, 0.142), scr);
+  s.position.z = 0.0047; g.add(b, s); if (w) { const rim = new THREE.Mesh(new THREE.BoxGeometry(0.077, 0.157, 0.006), new THREE.MeshStandardMaterial({ color: 0xc9a640, metalness: 0.9, roughness: 0.25 })); g.add(rim); }
+  for (let k = 0; k < (w ? 3 : 1); k++) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.004, 14), new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.6 })); c.rotation.x = Math.PI / 2; c.position.set(-0.022 + (k % 2) * 0.014, 0.06 - Math.floor(k / 2) * 0.014, -0.006); g.add(c); }
+  g.scale.setScalar(1.6); g.rotation.set(-0.35, 0.45, 0.12); return g; };
+  if (typeof HAND3D !== "undefined") HAND3D[id] = bau; else (window.HAND3D_VOR = window.HAND3D_VOR || {})[id] = bau; }   // im Spiel laedt tresor.js (HAND3D) spaeter und uebernimmt HAND3D_VOR

@@ -385,3 +385,20 @@ body.touch #hb-name { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px + var(
 #inv-tip .tip-art { display: block; font-size: 11px; opacity: .65; margin-top: 1px; }
 #inv-tip p { margin: 6px 0 0; line-height: 1.35; }
 #inv-tip i { display: block; margin-top: 6px; font-size: 11px; color: #9fc4ff; font-style: normal; }
+
+/* Handys als Gegenstand (Nicolas 2026-11-18, N32): unten rechts im Hochformat, Browser quer ueber den Bildschirm, zwei Modelle */
+#handy { align-items: flex-end; padding-bottom: 24px; }
+#handy.quer { align-items: center; justify-content: center; padding: 12px; }
+.h-phone.quer { width: min(1040px, 94vw); height: min(620px, 86vh); border-radius: 30px; border-width: 10px; }
+.h-phone.quer .h-page { max-width: 760px; margin: 0 auto; }
+.h-modell { font-size: 11px; opacity: .6; margin-right: auto; padding-right: 8px; }
+.h-phone.m-wayne { border-color: #07080a; box-shadow: 0 0 0 2px #c9a640, 0 10px 40px rgba(0,0,0,.6); background: #07080a; }
+.h-phone.m-wayne .h-app svg { background: linear-gradient(160deg, #3a2a08, #0e0e10); color: #f2c94c; box-shadow: inset 0 0 0 1px #6a5420; }
+.h-phone.m-wayne .h-money { color: #f2c94c; }
+.h-phone.m-office { border-color: #b9c0c8; box-shadow: 0 0 0 1px #6b7480, 0 10px 40px rgba(0,0,0,.5); background: #10161e; }
+.h-phone.m-office .h-app svg { background: linear-gradient(160deg, #5a7ea8, #2e3e52); }
+.h-app.foc svg { outline: 3px solid #fff; outline-offset: 3px; }
+.h-anruf { text-align: center; padding-top: 30px; }
+.h-av { width: 84px; height: 84px; margin: 10px auto; border-radius: 50%; background: #2c5d9a; display: grid; place-items: center; font: 700 36px system-ui; color: #fff; }
+.h-sprech { margin: 18px 6px; font-style: italic; line-height: 1.4; }
+.h-auflegen { background: #c9302c; color: #fff; margin-top: 18px; }

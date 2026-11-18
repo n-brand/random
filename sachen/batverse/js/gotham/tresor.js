@@ -143,6 +143,7 @@ const HAND3D = {
   feuerzeug: () => { const g = new THREE.Group(), b = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.012), new THREE.MeshStandardMaterial({ color: 0x2f6fd0, roughness: 0.4 })), t = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.015, 0.012), TRESOR_M.chrom);
     t.position.y = 0.038; g.add(b, t); g.scale.setScalar(2); g.rotation.set(0.1, -0.3, -0.15); return g; },
 };
+if (typeof HAND3D_VOR !== "undefined") Object.assign(HAND3D, HAND3D_VOR);   // vorher geladene Hand-Modelle (Handys, handy.js)
 const HAND3D_S = { id: null, sc: null, g: null };
 function hand3dRender() { const id = typeof invHeld === "function" ? invHeld() : null, foot = typeof onFoot === "function" ? onFoot() : true;
   if (!id || !HAND3D[id] || !foot || (typeof invIsOpen === "function" && invIsOpen()) || tresorPadIsOpen()) return;
