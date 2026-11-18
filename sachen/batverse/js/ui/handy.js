@@ -82,7 +82,9 @@ function handyRender() {
   box.querySelector(".h-modell") || box.querySelector(".h-top").insertAdjacentHTML("afterbegin", '<span class="h-modell"></span>'); box.querySelector(".h-modell").textContent = M.name;
   { const bg = p === "home" && HANDY_BG[HANDY.modell]; sc.style.background = bg ? "#000 url(" + bg + ") center/cover" : ""; sc.style.imageRendering = bg ? "pixelated" : ""; sc.classList.toggle("h-bgimg", !!bg); }   // eigenes Hintergrundbild auf dem Startbildschirm
   box.querySelector(".h-bar").hidden = p === "home"; box.querySelector(".h-money").textContent = kontoFmt(kontoStand());
-  if (p === "home") sc.innerHTML = '<div class="h-apps">' + handyApps().map(([id, n, svg], i) => '<button type="button" class="h-app' + (i === HANDY.sel ? " foc" : "") + '" data-go="' + id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + svg + "</svg><span>" + n + "</span></button>").join("") + "</div>";
+  const HX = typeof HANDY_EXTRA !== "undefined" && HANDY_EXTRA[p.split(":")[0]]; if (HX) url.textContent = HX.url;   // weitere Apps aus eigenen Dateien (z. B. ui/dating.js)
+  if (HX) sc.innerHTML = HX.render(p);
+  else if (p === "home") sc.innerHTML = '<div class="h-apps">' + handyApps().map(([id, n, svg], i) => '<button type="button" class="h-app' + (i === HANDY.sel ? " foc" : "") + '" data-go="' + id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + svg + "</svg><span>" + n + "</span></button>").join("") + "</div>";
   else if (p === "web") sc.innerHTML = '<div class="h-page"><h2>Gotham Web</h2><p class="h-sub">Läden</p>' + Object.entries(HANDY_SHOPS).map(([id, s]) => '<button type="button" class="h-link" data-go="shop:' + id + '" style="--c:' + s.farbe + '"><b>' + s.name + "</b><span>" + s.slogan + "</span></button>").join("") +
     '<p class="h-sub">Dienste</p><button type="button" class="h-link" data-go="bank" style="--c:#4a8fd6"><b>Gotham City Bank</b><span>Kontostand und Buchungen</span></button></div>';
   else if (p === "bank") sc.innerHTML = '<div class="h-page"><h2>Gotham City Bank</h2><div class="h-big">' + kontoFmt(kontoStand()) + '</div><p class="h-sub">Bargeld ein- und auszahlen geht an jedem Bankautomaten.</p><ul class="bank-log">' +
@@ -116,6 +118,7 @@ const handyShop = id => handyOpen("shop:" + id);
   kontoOn(() => handyRender());
   document.getElementById("handy")?.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; b.blur(); const d = b.dataset;
     if (b.classList.contains("h-close")) return handyClose(); if (b.classList.contains("h-back")) { HANDY.page = HANDY.hist.pop() || "home"; return handyRender(); } if (b.classList.contains("h-home")) return handyGo("home");
+    if (d.x && typeof HANDY_EXTRA !== "undefined") { const [app, ...r] = d.x.split(":"); if (HANDY_EXTRA[app]) return HANDY_EXTRA[app].click(r.join(":"), b); }
     if (d.go) return handyGo(d.go); if (d.col) { const [k, c] = d.col.split(":"); HANDY.col[k] = +c; return handyRender(); }
     if (d.buy) { const [s, k] = d.buy.split(":"); return handyBuy(s, k); }
     if (d.ware) { const [s, k] = d.ware.split(":"); return handyBuyWare(s, k); }

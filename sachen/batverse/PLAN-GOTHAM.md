@@ -188,7 +188,7 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | Nr | Was | Stand |
 |----|-----|-------|
 | N32 | **Zwei Handys** (Gaming-Handy von Wayne Enterprises, Büro-Handy einer anderen Firma), als Gegenstand 2D/3D. In der Hand Rechtsklick = Handy unten rechts (wie GTA V, Fenster wie beim Laptop), Pfeiltasten und Enter wählen Apps. Browser: Handy dreht quer und füllt den Bildschirm; andere Apps (Kontakte usw.) bleiben hochkant unten rechts | **gebaut 2026-11-18** (handy.js, Spiel und Werkstatt) |
-| N40 | **Dating-App** auf dem Handy (Aufbau echter Apps recherchieren, eigene bauen) | offen |
+| N40 | **Dating-App** auf dem Handy (Aufbau echter Apps recherchieren, eigene bauen) | gebaut 2026-11-18 (Gotham Hearts) |
 | N41 | **Eigenes Hintergrundbild** für Handy und Laptop hochladen, stark verpixelt gespeichert (Speicher sparen) | gebaut 2026-11-18 |
 | N49 | **Musik-App** wie Spotify (ohne Werbung) mit eigenen Songs von Nicolas; Handy weg = kleine Anzeige mit vor, zurück, Pause, schliessen | offen – wartet auf die Dateien (`OFFENE-FRAGEN.md` 40) |
 
