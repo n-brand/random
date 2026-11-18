@@ -94,12 +94,21 @@ function gunBuild(id) {
     box(M.metall, 0.01, 0.012, 0.22, 0.02, 0.025, -0.52, 0.04); box(M.metall, 0.01, 0.012, 0.22, -0.02, 0.025, -0.52, 0.04);   // Zweibein
     muzzle = [0, 0.08, -0.93];
   } else {                                                                   // schrotflinte (Vorderschaftrepetierer)
-    box(M.metall, 0.046, 0.065, 0.21, 0, 0.075, -0.07);                      // Gehaeuse
-    cyl(M.metall, 0.012, 0.55, 0, 0.095, -0.45); cyl(M.metall, 0.011, 0.45, 0, 0.062, -0.39);   // Lauf, Roehrenmagazin
-    const pump = cyl(M.holz, 0.022, 0.17, 0, 0.066, -0.36); for (let k = 0; k < 6; k++) cyl(M.kunst, 0.0225, 0.006, 0, 0.066, -0.3 - k * 0.022);   // Pumpe mit Rillen
+    // neu (Nicolas 2026-11-18: "schau dann nochmal die Shotgun an"): Gehaeuse laenger mit Auswurf, Lauf mit Laufschiene, Magazinrohr mit Kappe und Laufschelle,
+    // Pumpe mit Rillen, Abzugsbuegel mit Abzug, Holzschaft aus Hals und Kolben, nach hinten abfallend, mit Schaftkappe (vorher flache schraege Platte)
+    box(M.metall, 0.044, 0.072, 0.25, 0, 0.076, -0.075);                      // Gehaeuse
+    box(M.kunst, 0.004, 0.026, 0.07, 0.023, 0.086, -0.07);                   // Auswurfoeffnung rechts
+    box(M.metall, 0.03, 0.012, 0.06, 0, 0.034, -0.03);                       // Abzugsplatte unten
+    cyl(M.metall, 0.0115, 0.5, 0, 0.099, -0.45); box(M.metall, 0.008, 0.006, 0.48, 0, 0.113, -0.45);   // Lauf, Laufschiene
+    cyl(M.metall, 0.0115, 0.43, 0, 0.061, -0.415); cyl(M.metall, 0.0125, 0.02, 0, 0.061, -0.635);   // Roehrenmagazin, Kappe
+    { const cl = box(M.metall, 0.03, 0.05, 0.016, 0, 0.08, -0.6); cl.material = M.metall; }   // Laufschelle
+    const pump = cyl(M.holz, 0.024, 0.17, 0, 0.064, -0.36); for (let k = 0; k < 6; k++) cyl(M.kunst, 0.0245, 0.006, 0, 0.064, -0.3 - k * 0.022);   // Pumpe mit Rillen
     GUN.pump = pump;
-    box(M.holz, 0.04, 0.075, 0.3, 0, 0.04, 0.2, -0.1); box(M.kunst, 0.042, 0.095, 0.018, 0, 0.022, 0.355, -0.1);   // Schaft, Kappe
-    box(M.holz, 0.034, 0.09, 0.06, 0, 0.02, 0.04, 0.35); guard(0, 0.04, -0.06, 0.02);   // Griff
+    guard(0, 0.036, -0.03, 0.022); box(M.metall, 0.006, 0.022, 0.006, 0, 0.022, -0.035, 0.3);   // Abzugsbuegel, Abzug
+    { const sh = new THREE.Shape(); sh.moveTo(0.04, 0.106); sh.lineTo(0.37, 0.088); sh.lineTo(0.37, -0.035); sh.quadraticCurveTo(0.25, -0.01, 0.15, 0.03); sh.quadraticCurveTo(0.09, 0.05, 0.07, 0.02); sh.lineTo(0.045, 0.02); sh.lineTo(0.04, 0.04); sh.lineTo(0.04, 0.106);
+      const sg = new THREE.ExtrudeGeometry(sh, { depth: 0.032, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2, curveSegments: 10 }); sg.translate(0, 0, -0.016);
+      const st = new THREE.Mesh(sg, M.holz); st.rotation.y = -Math.PI / 2; g.add(st); }   // Holzschaft als Seitenprofil: Hals mit Pistolengriff-Bogen, gerader Ruecken, Kolben
+    box(M.kunst, 0.042, 0.13, 0.018, 0, 0.027, 0.38);                        // Schaftkappe
     box(M.messing, 0.008, 0.008, 0.008, 0, 0.11, -0.715);                    // Korn
     box(M.messing, 0.012, 0.016, 0.03, 0.026, 0.075, -0.08);                 // Patrone im Auswurf
     cyl(M.metall, 0.0125, 0.02, 0, 0.062, -0.62);
