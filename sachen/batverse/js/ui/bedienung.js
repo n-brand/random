@@ -87,6 +87,10 @@ document.addEventListener("mousemove", e => { if (dragging) { const k = zoomK() 
 addEventListener("beforeunload", e => { if (walking) { e.preventDefault(); e.returnValue = ""; } });
 // Vollbild mit Tastensperre (Nicolas): im Vollbild bekommt die Seite Strg+W & Co. (Keyboard Lock, Chrome/Edge) und verhindert sie;
 // Esc gedrueckt halten verlaesst das Vollbild. Knopf "Vollbild" (Orbit-Leiste und beim Begehen) oder Taste F.
+// Browser-Menue und F-Tasten (Nicolas 2026-11-18: "wie kann man das als App umbauen, damit die F-Tasten und Rechtsklick nicht immer nerven"): Kontextmenue auf der ganzen Seite aus (ausser in Textfeldern),
+// F1 Hilfe, F3 Suchen, F6 Adressleiste, F7 Textcursor, F10 Menueleiste abgefangen (F5 Neu laden, F11 Vollbild, F12 Entwicklerwerkzeuge bleiben).
+document.addEventListener("contextmenu", e => { if (!e.target.closest?.("input, textarea, [contenteditable]")) e.preventDefault(); });
+addEventListener("keydown", e => { if (["F1", "F3", "F6", "F7", "F10"].includes(e.code)) e.preventDefault(); }, true);
 async function toggleFullscreen() {
   if (document.fullscreenElement) { try { navigator.keyboard?.unlock?.(); } catch (e) {} return document.exitFullscreen().catch(() => {}); }
   try { await document.documentElement.requestFullscreen({ navigationUI: "hide" }); } catch (e) { return toast("Vollbild ist hier nicht möglich"); }

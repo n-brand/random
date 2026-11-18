@@ -71,6 +71,7 @@ function buildSpielautomat(farbe = 0x6a1ab0, opt = {}) {
     [0xffd23a, 0x3ad0ff, 0x3aff7a, 0xff8a2a].forEach((cc, i) => { const k = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.025, 0.06), new THREE.MeshBasicMaterial({ color: cc })); k.position.set(-0.28 + i * 0.11, 0.04, 0.02); pult.add(k); });
     const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.04, 24), new THREE.MeshBasicMaterial({ color: 0xff2a3a })); sp.position.set(0.24, 0.045, 0.02); pult.add(sp); }
   // Oberschrank mit Bildschirm (leicht nach hinten geneigt) im Chromrahmen
+  tint(add(B(W, 0.08, D - 0.1), lack, 0, 0.95, 0.05));   // Zwischenstueck hinter dem Pult: schliesst den Schlitz zwischen Unter- und Oberschrank (Nicolas 2026-11-18, Bild Rueckseite)
   tint(add(B(W, 0.7, D - 0.08), lack, 0, 1.33, 0.04));
   const scr = new THREE.Group(); scr.position.set(0, 1.34, F + 0.02); scr.rotation.x = 0.1; g.add(scr);
   { const fr = new THREE.Mesh(B(0.66, 0.54, 0.04), chrom); fr.castShadow = true; scr.add(fr); const bl = new THREE.Mesh(B(0.6, 0.48, 0.02), schwarz); bl.position.z = -0.016; scr.add(bl);

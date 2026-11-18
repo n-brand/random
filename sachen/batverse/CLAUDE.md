@@ -48,17 +48,25 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Mülleimer | Rechtsklick: Fenster, hineinlegen und bis zur Leerung wieder herausnehmen (keine eigene Taste zum Leeren: Knopf "Jetzt leeren" im Fenster mit Rückfrage, oder Neuladen) |
 | Nachtsichtbrille | aufsetzen: im Inventar auf den Platz "Kopf" ziehen oder Shift+Klick, oder in der Hand Linksklick; **B** = an/aus |
 | Casino-Spiele (Crash, Mines, Glücksrad) | Rechtsklick auf Automat bzw. Rad; Einsatz mit den Jeton-Knöpfen, Leertaste = Starten/Auszahlen, Esc schliesst (nicht während einer Runde) |
-| Skateboard | in der Hand rechte Maus halten (0,6 s, Kreis) = aufsteigen; W anschieben (Shift schneller), S bremsen, A/D und Maus lenken, Leertaste Ollie, Rechtsklick absteigen |
+| Skateboard | in der Hand linke Maus halten (0,6 s, Kreis) = aufsteigen; W anschieben (Shift schneller), S bremsen, A/D und Maus lenken, Leertaste Ollie, Linksklick absteigen |
 | Bat-Knopf | in der Hand Linksklick = Batsignal an/aus (rote LED am Gerät leuchtet, solange es an ist) |
 | Eigenes Hintergrundbild | Handy: App Einstellungen > Eigenes Bild hochladen; Laptop: Einstellungen > Personalisierung > Eigenes Bild hochladen |
 | Bankautomat aufbrechen | mit einer Schusswaffe darauf schiessen (ca. 15 Pistolentreffer); danach fliegen 20 s Geldscheine heraus, darüberlaufen sammelt sie (je 50 $ Bargeld); nach 3 min wieder heil |
 | Crash | zwei Einsätze (je "dabei", − / + Betrag), STARTEN zahlt beide; jeder hat seinen eigenen AUSZAHLEN-Knopf, Leertaste = starten bzw. nächsten Einsatz auszahlen; nach dem letzten Auszahlen fliegt das Flugzeug bis zum Absturzpunkt weiter |
-| Fidget Spinner | in der Hand Rechtsklick = Schwung (mehrmals = schneller, bis ca. 6 U/s), läuft ca. 20 s aus |
+| Fidget Spinner | in der Hand linke Maus halten = beschleunigen (bis ca. 6 U/s), loslassen = läuft ca. 20 s aus, kurzer Linksklick = stoppt |
 | Werkstatt-Modi | 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person, 5 Geist, Z Zeichnen |
 
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Goldbarren, Geldbündel und Geldscheine in 3D; Skateboard und Fidget mit Linksklick; kein Browser-Menü und F-Tasten; Automaten hinten zu** (Nicolas 2026-11-18, N24 "Goldbarren und Geldstapel in 3D überarbeiten", "nicht nur Geldstapel, auch einzelne Geldscheine überarbeiten"; "Skateboard doch mit Linksklick, bei einer Kurve soll sich die Figur reinlegen und nicht raus"; "Fidget Spinner mit Linksklick halten beschleunigen und kurz klicken stoppen"; "wie kann man das als App umbauen, damit die F-Tasten und Rechtsklick nicht nerven"; Bild: "Casino-Automaten haben hinten alle so einen Schlitz"):
+  - Neu `js/gotham/wertsachen.js` (Spiel-FILES und Werkstatt vor gotham/tresor.js, ASSETS, BV_KEEP), eigene Gestaltung "Gotham Federal Reserve Note": `geldScheinTex(wert)` (Papier mit Wellenlinien, Guilloche-Oval mit allgemeinem Kopf, Wert in den Ecken und als Wort, Siegel, Seriennummern, Fledermaus-Wasserzeichen), `buildGeldschein` (15,6 x 6,6 cm, leicht gewölbt), `buildGeldbuendel(wert, n)` (Papierlagen an der Kante, Deckschein, Banderole mit $), `buildGoldbarren(gross)` (Pyramidenstumpf, 1-kg-Barren 12 cm bzw. Standardbarren 25 cm, Stempel GOTHAM REFINERY · FINE GOLD 999.9; Material wenig metallisch, sonst ohne Umgebungsbild schwarz). Eingesetzt: Goldbarren in den Tresoren (tresor.js `tresorFill`), Geldbündel im Geldkoffer (koffer.js), Geldscheine beim aufgebrochenen Bankautomaten, Goldbarren 3D in der Hand (`HAND3D_VOR.goldbarren`). Dabei zweimal der Kommentar-Fehler mitten in der Zeile (Barren ohne Körper), behoben.
+  - skateboard.js: Aufsteigen jetzt linke Maus halten (Kreis), Absteigen Linksklick; die Figur legt sich in die Kurve (Neigung umgekehrt).
+  - fidget.js: linke Maus halten beschleunigt (bis ca. 6 U/s), loslassen = läuft frei aus, kurzer Klick (unter 0,25 s) bremst in unter 1 s auf 0. Rechtsklick hat keine Wirkung mehr.
+  - Browser: Kontextmenü auf der ganzen Seite gesperrt (ausser in Textfeldern), F1/F3/F6/F7/F10 abgefangen (bedienung.js, Werkstatt person.js); F5, F11, F12 bleiben.
+  - spielautomat-modell.js: Zwischenstück hinter dem Pult schliesst die Lücke zwischen Unter- und Oberschrank (hinten sah man einen Schlitz).
+  - Geprüft in der Werkstatt: Bilder Schein, Bündel, Goldbarren; Tresor Stufe 4 mit 8 Barren-Modellen; Skateboard: bei A (Linkskurve) Neigung 0,21, Figur -0,21; Fidget: 3 s halten 6,0 U/s, 2 s frei 5,2 U/s, Stopp in 0,85 s; Kontextmenü gesperrt; Rückseite der Automaten geschlossen (Bild). Echte Mausklicks mit gefangener Maus nicht testbar.
 
 - **Fidget Spinner wie das Vorbild** (Nicolas 2026-11-18, Bild der Google-Suche "fidgetspinner"): fidget.js – Umriss aus der glatten Vereinigung von vier Kreisen (`fidgetSdf`, Mitte r 1,7 cm, drei Lappen r 1,6 cm bei 30/150/270 Grad, 2,7 cm von der Mitte, weich eingezogen; `fidgetUmriss` sucht je Winkel den Rand), dunkles Petrol mit Fase, in jedem Lappen ein hellblaues Lager mit dunklem Ring vorne und hinten, gelbe Mittelkappe (steht still). Das 2D-Symbol wird aus derselben Form erzeugt (`INV_ITEMS.fidget.svg` beim Laden). Bild geprüft (gross, in der Hand, Symbol).
 

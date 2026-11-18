@@ -55,6 +55,11 @@ renderer.domElement.addEventListener("mousedown", e => { if (modus !== "person")
   if (e.button === 0 && !document.pointerLockElement) { grabMouse(); e.stopImmediatePropagation(); return; }   // erster Klick faengt nur die Maus (wie im Spiel), wirft nicht gleich
   if (e.button === 2 && PERSON.aim && !(typeof weaponHeld === "function" && weaponHeld())) { if (document.pointerLockElement) document.exitPointerLock(); if (PERSON.aim === "gate") PERSON.gate.call(); else if (PERSON.aim === "laptop") laptopOpen(PERSON.aimId); else kontoOpen(); } });   // mit Waffe in der Hand zielt Rechtsklick (waffen.js)
 renderer.domElement.addEventListener("contextmenu", e => { if (modus === "person") e.preventDefault(); });
+// Browser-Menue und F-Tasten (Nicolas 2026-11-18: "wie kann man das als App umbauen, damit die F-Tasten und Rechtsklick nicht immer nerven"): Kontextmenue auf der ganzen Seite aus (ausser in Textfeldern),
+// F1 Hilfe, F3 Suchen, F6 Adressleiste, F7 Textcursor, F10 Menueleiste abgefangen (F5 Neu laden, F11 Vollbild, F12 Entwicklerwerkzeuge bleiben).
+document.addEventListener("contextmenu", e => { if (!e.target.closest?.("input, textarea, [contenteditable]")) e.preventDefault(); });
+addEventListener("keydown", e => { if (["F1", "F3", "F6", "F7", "F10"].includes(e.code)) e.preventDefault(); }, true);
+
 addEventListener("mousemove", e => { if (modus !== "person" || document.pointerLockElement !== renderer.domElement) return; const k = 0.0025 * 0.5; PERSON.yaw -= e.movementX * k; PERSON.pitch = Math.max(-1.5, Math.min(1.5, PERSON.pitch - e.movementY * k)); });
 document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement) dragging = false; });
 walking = modus === "drive" || modus === "person";   // beim Laden: Orbit, kein Mausrad-Wechsel in der Hotbar

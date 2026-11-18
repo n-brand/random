@@ -76,7 +76,7 @@ function atmRepair(A) { A.broken = false; A.dmg = 0; A.screen.material = A.scree
 function atmBrokenNear(x, z, r = 3) { const v = new THREE.Vector3(); return ATM_BRK.list.some(A => { if (!A.broken) return false; A.g.getWorldPosition(v); return Math.hypot(v.x - x, v.z - z) < r; }); }
 function atmNoteMesh() { if (ATM_BRK.im) return ATM_BRK.im; const tex = canvasTex(96, 42, (c, w, h) => { c.fillStyle = "#cfe3c4"; c.fillRect(0, 0, w, h); c.strokeStyle = "#3f6b3a"; c.lineWidth = 3; c.strokeRect(2, 2, w - 4, h - 4);
     c.fillStyle = "#3f6b3a"; c.beginPath(); c.ellipse(w / 2, h / 2, 11, 14, 0, 0, Math.PI * 2); c.fill(); c.font = "bold 14px Arial"; c.textAlign = "center"; c.fillText("50", 15, 17); c.fillText("50", w - 15, h - 8); });
-  const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.156, 0.066), new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.9 }), ATM_BRK.max); im.count = 0; im.frustumCulled = false; im.userData.dynamic = true; scene.add(im); ATM_BRK.im = im; return im; }
+  const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.156, 0.066), new THREE.MeshStandardMaterial({ map: typeof geldScheinTex === "function" ? geldScheinTex(50) : tex, side: THREE.DoubleSide, roughness: 0.9 }), ATM_BRK.max); im.count = 0; im.frustumCulled = false; im.userData.dynamic = true; scene.add(im); ATM_BRK.im = im; return im; }
 const ATM_Q = new THREE.Quaternion(), ATM_E = new THREE.Euler(), ATM_M = new THREE.Matrix4(), ATM_S = new THREE.Vector3(1, 1, 1);
 function atmBreakStep(dt) { const N = ATM_BRK.notes;
   for (const A of ATM_BRK.list) { if (!A.broken) continue; A.t += dt;

@@ -1,6 +1,6 @@
 // Skateboard (Nicolas 2026-11-18, N34: "wie bei Schedule I: Rechtsklick so lange gedrueckt halten, bis der Kreis um die Maus voll ist, dann wechselt es automatisch in die
 // Third Person und man ist auf dem Skateboard; mit W beschleunigt man und ist einiges schneller als zu Fuss"). Spiel und Werkstatt, nach gotham/tresor.js (holdRingEl, HAND3D).
-// Aufsteigen: Skateboard in der Hand, rechte Maus 0,6 s halten. Fahren: W anschieben (bis 12 m/s, Shift 15), S bremsen, A/D und Maus lenken, Leertaste Ollie, rechte Maus absteigen.
+// Aufsteigen: Skateboard in der Hand, linke Maus 0,6 s halten. Fahren: W anschieben (bis 12 m/s, Shift 15), S bremsen, A/D und Maus lenken, Leertaste Ollie, Linksklick absteigen.
 // Spiel: skateMove(dt) statt der Laufbewegung (bedienung.js), nutzt updatePlayer mit eigener Geschwindigkeit (Kollision, Boden, Sprung wie zu Fuss). Werkstatt: person.js fragt SKATE.on.
 // Ohne eigene Spielfigur (N35) steht eine einfache Ersatzfigur auf dem Brett.
 const SKATE = { on: false, v: 0, hold: null, g: null, cam: new THREE.Vector3(), lean: 0 };
@@ -25,14 +25,14 @@ function buildSkaterFigur() {
   for (const sx of [-1, 1]) cap(stoff, 0.055, 0.42, sx * 0.36, 1.18, 0, sx * 1.05);   // Arme seitlich ausgestreckt
   g.traverse(o => { if (o.isMesh) o.castShadow = true; }); return g; }   // Gesicht nach -z, Brett liegt quer (x)
 function skateEnsure() { if (SKATE.g) return; const g = new THREE.Group(), b = buildSkateboard(), f = buildSkaterFigur(); f.position.y = 0.09; f.rotation.y = 0; g.add(b, f); g.userData.f = f; g.visible = false; g.userData.dynamic = true; scene.add(g); SKATE.g = g; }
-function skateOn() { skateEnsure(); SKATE.on = true; SKATE.v = 0; SKATE.g.visible = true; const p = typeof player !== "undefined" ? player : null; if (p) SKATE.cam.set(p.pos.x, p.pos.y + 1.7, p.pos.z); toast("Auf dem Skateboard – W anschieben, S bremsen, Leertaste Ollie, Rechtsklick absteigen"); }
+function skateOn() { skateEnsure(); SKATE.on = true; SKATE.v = 0; SKATE.g.visible = true; const p = typeof player !== "undefined" ? player : null; if (p) SKATE.cam.set(p.pos.x, p.pos.y + 1.7, p.pos.z); toast("Auf dem Skateboard – W anschieben, S bremsen, Leertaste Ollie, Linksklick absteigen"); }
 function skateOff() { SKATE.on = false; SKATE.v = 0; if (SKATE.g) SKATE.g.visible = false; if (typeof player !== "undefined") { camera.position.set(player.pos.x, player.pos.y + (typeof EYE !== "undefined" ? EYE : player.EYE || 1.62), player.pos.z); camera.rotation.set(player.pitch, player.yaw, 0, "YXZ"); } toast("Abgestiegen"); }
 // Geschwindigkeit aus den Tasten (gemeinsam fuer Spiel und Werkstatt)
 function skateSpeed(dt) { const fw = keys.has("KeyW") || keys.has("ArrowUp"), bk = keys.has("KeyS") || keys.has("ArrowDown"), max = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 15 : 12;
   if (fw) SKATE.v = Math.min(max, SKATE.v + 6 * dt); else if (bk) SKATE.v = Math.max(0, SKATE.v - 10 * dt); else SKATE.v = Math.max(0, SKATE.v - 1.1 * dt);
   const turn = (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0) - (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0); player.yaw += turn * 1.9 * dt; SKATE.lean += (turn * Math.min(1, SKATE.v / 6) * 0.25 - SKATE.lean) * Math.min(1, dt * 6); }
 // Brett und Figur an den Spieler, Kamera hinter und ueber ihm (Third Person)
-function skatePose(dt) { const g = SKATE.g, p = player.pos; g.position.set(p.x, p.y, p.z); g.rotation.set(0, player.yaw + Math.PI / 2, 0); g.userData.f.rotation.set(SKATE.lean, 0, 0);   // Brett laengs zur Fahrtrichtung, Figur seitlich darauf (Fuesse laengs, Blick zur Seite), neigt sich in die Kurve
+function skatePose(dt) { const g = SKATE.g, p = player.pos; g.position.set(p.x, p.y, p.z); g.rotation.set(0, player.yaw + Math.PI / 2, 0); g.userData.f.rotation.set(-SKATE.lean, 0, 0);   // Brett laengs zur Fahrtrichtung, Figur seitlich darauf (Fuesse laengs, Blick zur Seite), neigt sich in die Kurve
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), want = new THREE.Vector3(p.x - fx * 3.4, p.y + 1.9 - player.pitch * 2, p.z - fz * 3.4); SKATE.cam.lerp(want, Math.min(1, dt * 8));
   camera.position.copy(SKATE.cam); camera.lookAt(p.x + fx * 1.5, p.y + 1.2, p.z + fz * 1.5); }
 // Spiel: statt updatePlayer aus bedienung.js
@@ -40,12 +40,13 @@ function skateMove(dt) { skateSpeed(dt); const x0 = player.pos.x, z0 = player.po
   updatePlayer(dt, 0, SKATE.v > 0.05 ? 1 : 0, false, Math.max(0.01, SKATE.v)); const moved = Math.hypot(player.pos.x - x0, player.pos.z - z0);
   if (SKATE.v > 2 && moved < SKATE.v * dt * 0.3) SKATE.v *= 0.15;   // gegen etwas gefahren
   skatePose(dt); }
-// Aufsteigen: rechte Maus mit Skateboard in der Hand 0,6 s halten (Kreis); auf dem Brett: rechte Maus steigt ab
-addEventListener("mousedown", e => { if (e.button !== 2 || !document.pointerLockElement) return;
+// Aufsteigen: linke Maus mit Skateboard in der Hand 0,6 s halten (Kreis); auf dem Brett: Linksklick steigt ab
+// Nicolas 2026-11-18: "Skateboard doch mit Linksklick" (aufsteigen linke Maus halten, absteigen Linksklick) und "bei einer Kurve soll sich die Figur reinlegen und nicht raus" (skatePose: -lean)
+addEventListener("mousedown", e => { if (e.button !== 0 || !document.pointerLockElement) return;
   if (SKATE.on) { e.preventDefault(); e.stopImmediatePropagation(); return skateOff(); }
   if (typeof invHeld !== "function" || invHeld() !== "skateboard" || (typeof onFoot === "function" && !onFoot())) return; e.preventDefault(); e.stopImmediatePropagation();
   const el = typeof holdRingEl === "function" ? holdRingEl() : null; if (!el) return skateOn(); el.querySelector("span").textContent = "Aufsteigen …"; el.hidden = false; SKATE.hold = { t: 0, el }; }, true);
-addEventListener("mouseup", e => { if (e.button === 2 && SKATE.hold) { SKATE.hold.el.hidden = true; SKATE.hold = null; } });
+addEventListener("mouseup", e => { if (e.button === 0 && SKATE.hold) { SKATE.hold.el.hidden = true; SKATE.hold = null; } });
 function skateStep(dt) { const H = SKATE.hold; if (H) { if (typeof invHeld === "function" && invHeld() !== "skateboard") { H.el.hidden = true; SKATE.hold = null; } else { H.t += dt; H.el.querySelector(".hr-fg").style.strokeDashoffset = String(100 - Math.min(100, H.t / 0.6 * 100)); if (H.t >= 0.6) { H.el.hidden = true; SKATE.hold = null; skateOn(); } } }
   if (SKATE.on && ((typeof invHeld === "function" && invHeld() !== "skateboard") || (typeof walking !== "undefined" && !walking))) skateOff(); }   // Brett weggelegt oder Begehen beendet
 // 3D in der Hand: Brett schraeg gehalten
