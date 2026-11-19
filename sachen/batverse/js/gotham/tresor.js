@@ -70,6 +70,8 @@ function tresorUse(T) {
   if (held === "brechstange") { if (!S.brech) return toast(S.name + ": zu stabil für die Brechstange" + (S.gas ? " – aufsprengen (Gas + Feuerzeug)" : " – nur mit Code")); return tresorHold(T, S.brech, "Aufbrechen", () => tresorBreak(T, "brech")); }
   if (held === "sprenggas") { if (!S.gas) return toast(S.brech ? S.name + ": dafür reicht die Brechstange" : S.name + ": Gas wirkt hier nicht – nur mit Code"); if (T.charges.length >= S.gas) return toast("Genug Ladungen – mit dem Feuerzeug zünden");
     if (!invTake("sprenggas", 1)) return; tresorCharge(T); return toast("Gasladung angebracht (" + T.charges.length + " / " + S.gas + ")" + (T.charges.length >= S.gas ? " – jetzt mit dem Feuerzeug zünden" : "")); }
+  // GateBreaker (N9, 2026-11-19): schwarzer USB-Stick in der Hand hackt das Zahlenschloss – Kreis 4 + 2 x Stufe Sekunden, Tresor oeffnet unbeschaedigt; Batman-Tresor nicht
+  if (held === "usb-hack") { if (S.bat) return toast(S.name + ": GateBreaker wird abgewiesen"); return tresorHold(T, 4 + 2 * T.stufe, "GateBreaker hackt das Schloss", () => { tresorOpen(T); if (typeof akteEintrag === "function") akteEintrag(S.name + " gehackt (Einbruch)", "Fahndung +1", 1); }, "usb-hack"); }
   if (held === "feuerzeug") { if (!S.gas || T.charges.length < S.gas) return toast(S.gas ? "Erst " + (S.gas - T.charges.length) + " Gasladung(en) anbringen" : "Hier gibt es nichts anzuzünden"); T.fuse = 4; return toast("Zündung! 4 Sekunden – Abstand halten"); }
   if (T.lockT > performance.now()) return toast("Tastenfeld gesperrt – noch " + Math.ceil((T.lockT - performance.now()) / 1000) + " s");
   tresorPadOpen(T, "open");
@@ -91,10 +93,10 @@ function tresorExplode(T) { const p = T.g.localToWorld(new THREE.Vector3(TRESOR_
   tresorBreak(T, "spreng"); const pl = typeof player !== "undefined" ? player.pos : camera.position; if (Math.hypot(pl.x - p.x, pl.z - p.z) < 3) toast("Aufgesprengt – viel zu nah an der Explosion!"); }
 // Fortschrittskreis (N21-Grundlage): laeuft, solange man in der Naehe bleibt und sich kaum bewegt; Rechtsklick nochmal oder Weggehen bricht ab
 function holdRingEl() { let el = document.getElementById("hold-ring"); if (!el) { el = document.createElement("div"); el.id = "hold-ring"; el.hidden = true; el.innerHTML = '<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" class="hr-bg"/><circle cx="30" cy="30" r="24" class="hr-fg" pathLength="100"/></svg><span></span>'; document.body.appendChild(el); } return el; }   // auch fuer Koffer (koffer.js)
-function tresorHold(T, sec, label, done) { const pl = typeof player !== "undefined" ? player.pos : camera.position, el = holdRingEl();
-  TRESOR.hold = { T, sec, t: 0, done, x: pl.x, z: pl.z, el }; el.querySelector("span").textContent = label + " …"; el.hidden = false; }
+function tresorHold(T, sec, label, done, item = "brechstange") { const pl = typeof player !== "undefined" ? player.pos : camera.position, el = holdRingEl();
+  TRESOR.hold = { T, sec, t: 0, done, x: pl.x, z: pl.z, el, item }; el.querySelector("span").textContent = label + " …"; el.hidden = false; }
 function tresorHoldStep(dt) { const H = TRESOR.hold; if (!H) return; const pl = typeof player !== "undefined" ? player.pos : camera.position;
-  if (Math.hypot(pl.x - H.x, pl.z - H.z) > 0.6 || (typeof invHeld === "function" && invHeld() !== "brechstange")) { H.el.hidden = true; TRESOR.hold = null; return toast("Abgebrochen"); }
+  if (Math.hypot(pl.x - H.x, pl.z - H.z) > 0.6 || (typeof invHeld === "function" && invHeld() !== (H.item || "brechstange"))) { H.el.hidden = true; TRESOR.hold = null; return toast("Abgebrochen"); }
   H.t += dt; H.el.querySelector(".hr-fg").style.strokeDashoffset = String(100 - Math.min(100, H.t / H.sec * 100)); if (H.t >= H.sec) { H.el.hidden = true; TRESOR.hold = null; H.done(); } }
 // Tastenfeld
 const tresorPadIsOpen = () => !!(TRESOR.pad && !TRESOR.pad.el.hidden);

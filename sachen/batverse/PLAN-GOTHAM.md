@@ -139,7 +139,7 @@ Als Gebäude (innen leer) stehen auch: Club des Pinguins, Grand Ballroom (Events
 | N6 | **Granaten** als Werkzeug | gebaut 2026-11-19 (Handgranate, Gotham Arms) |
 | N7 | **Autoschlüssel**: im Autohaus hinten in einem Schlüsseltresor | offen |
 | N8 | Jeder Gegenstand: **2D im Inventar, 3D in der Hand und ausserhalb** | ✅ 2026-11-19: alle Gegenstände 3D in der Hand (tresor.js HAND3D); 3D ausserhalb (liegend in der Welt) noch offen |
-| N9 | **Generalschlüssel/Hacktool** für Batman: jede Tür öffnen, jedes Fahrzeug stehlen | offen (hängt an N7) |
+| N9 | **Generalschlüssel/Hacktool** für Batman: jede Tür öffnen, jedes Fahrzeug stehlen | teilweise 2026-11-19: GateBreaker-Stick hackt Tresore; Türen/Fahrzeuge offen (hängt an N7) |
 | N10 | Batarang flog durch Gebäude, soll abprallen (Gebäude, Fahrzeug, Baum) | **gebaut 2026-11-17** |
 | N11 | Bankautomat direkt beim Wayne Tower | **gebaut 2026-11-17** (neues Modell auf dem Vorplatz) |
 | N12 | Item zum Ein-/Ausschalten des Batsignals (Bat-Knopf) | **gebaut 2026-11-17** |
