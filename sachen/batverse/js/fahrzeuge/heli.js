@@ -33,7 +33,8 @@ function buildPolizeiHeli() {
   add(new THREE.CylinderGeometry(0.08, 0.12, 0.35, 10), metall, 0, 2.75, -0.05);
   // Polizei-Ausruestung: Waermebild-Kugel, Suchscheinwerfer, Lautsprecher, Blaulichter
   add(new THREE.CylinderGeometry(0.05, 0.05, 0.12, 8), dunkel, 0, 0.62, -1.85); add(new THREE.SphereGeometry(0.17, 14, 10), M2(0xd8dade, { roughness: 0.4 }), 0, 0.46, -1.85); for (const sx of [-0.06, 0.06]) add(new THREE.CircleGeometry(0.045, 12), glas, sx, 0.47, -2.02, 0, Math.PI, 0);
-  add(new THREE.BoxGeometry(0.06, 0.18, 0.06), dunkel, 0.62, 0.5, -0.9); add(new THREE.CylinderGeometry(0.13, 0.16, 0.3, 14), dunkel, 0.62, 0.36, -0.95, Math.PI / 2 - 0.3); add(new THREE.CircleGeometry(0.12, 14), M2(0xfff6d8, { emissive: 0xfff2c0, emissiveIntensity: 0.8 }), 0.62, 0.31, -1.1, Math.PI / 2 + 0.3, Math.PI, 0);
+  add(new THREE.BoxGeometry(0.06, 0.18, 0.06), dunkel, 0.62, 0.5, -0.9); const sw = new THREE.Group(); sw.position.set(0.62, 0.38, -0.92); g.add(sw); const swP = new THREE.Group(); sw.add(swP); swP.rotation.x = -0.3;   // Suchscheinwerfer schwenkbar (Gier sw, Neigung swP), Lampe zeigt nach -z
+  add(new THREE.CylinderGeometry(0.13, 0.16, 0.3, 14), dunkel, 0, 0, -0.05, Math.PI / 2, 0, 0, swP); const swGlas = M2(0xfff6d8, { emissive: 0xfff2c0, emissiveIntensity: 0.3 }); add(new THREE.CircleGeometry(0.12, 14), swGlas, 0, 0, -0.205, 0, Math.PI, 0, swP);
   add(new THREE.BoxGeometry(0.3, 0.14, 0.2), dunkel, -0.5, 0.48, -0.3); for (let q = 0; q < 4; q++) add(new THREE.BoxGeometry(0.26, 0.015, 0.01), metall, -0.5, 0.43 + q * 0.03, -0.405);
   const blauL = new THREE.MeshBasicMaterial({ color: 0x2a5cff }), rotL = new THREE.MeshBasicMaterial({ color: 0xff2020 }), lichter = [add(new THREE.SphereGeometry(0.09, 10, 8), blauL, 0, 2.48, 1.2), add(new THREE.SphereGeometry(0.09, 10, 8), rotL, 0, 0.58, 0.5), add(new THREE.SphereGeometry(0.07, 8, 6), blauL, 0, 3.13, 6.0)];
   // Rotor
@@ -47,7 +48,7 @@ function buildPolizeiHeli() {
   for (let k = 0; k < 8; k++) add(new THREE.BoxGeometry(0.06, 0.66, 0.015), dunkel, 0, 0, 0, 0, 0, k * Math.PI / 8, heck);
   add(new THREE.BoxGeometry(1.6, 0.05, 0.4), blau, 0, 1.9, 4.65); for (const sd of [-1, 1]) add(new THREE.BoxGeometry(0.04, 0.4, 0.45), weiss, sd * 0.8, 1.95, 4.65);
   add(new THREE.CylinderGeometry(0.008, 0.015, 0.4, 6), dunkel, 0, 2.6, 1.5);
-  g.name = "Polizei-Helikopter"; return { g, rotor, heck, lichter, blauL, rotL };
+  g.name = "Polizei-Helikopter"; return { g, rotor, heck, lichter, blauL, rotL, sw, swP, swGlas };
 }
 // Hubschrauber anlegen (auch militaer.js, N52): b = Ergebnis von buildPolizeiHeli (g, rotor, heck, lichter), k = Massstab (Kollision, Kamera, Ausstieg mitskaliert), o = Abweichungen
 function flyAdd(name, b, k = 1, o = {}) { const S = (a) => a.map(p => p.map(v => v * k));
@@ -60,7 +61,26 @@ function flyAdd(name, b, k = 1, o = {}) { const S = (a) => a.map(p => p.map(v =>
   b.g.userData.dynamic = true; b.g.userData.noLift = true; b.g.visible = false; scene.add(b.g);
   for (let i = 0; i < 4; i++) { const c = [0, 0, 0, 0]; c.dyn = true; circles.push(c); H.circ.push(c); }
   FLYS.push(H); return H; }
-const HELI = flyAdd("Polizei-Helikopter", buildPolizeiHeli());
+const HELI = (() => { const b = buildPolizeiHeli(), H = flyAdd("Polizei-Helikopter", b); H.licht = { sw: b.sw, swP: b.swP, glas: b.swGlas, an: false }; const p0 = H.pose; H.pose = (B, dt) => { p0(B, dt); heliLicht(B, dt || 0); }; return H; })();
+// Suchscheinwerfer (Nicolas 2026-11-19: "Polizeihelikopter soll mit einmal Linksklick Licht aktivieren koennen und nochmal wieder aus – Scheinwerfer auch zielbar"):
+// Linksklick (bei gefangener Maus, im fliegenden Polizeihubschrauber) schaltet; die Lampe schwenkt verzoegert auf die Bildmitte (Gier +-100 Grad, nur nach unten). Licht ohne echte
+// Lichtquelle (keine Shader-Neuuebersetzung): heller Kegel von der Lampe zum Treffer und ein Lichtfleck dort (additiv, bis 250 m).
+const HL_M = { kegel: new THREE.MeshBasicMaterial({ color: 0xfff4d0, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+  fleck: new THREE.MeshBasicMaterial({ map: canvasTex(128, 128, (c, w) => { const r = w / 2, gr = c.createRadialGradient(r, r, 0, r, r, r); gr.addColorStop(0, "rgba(255,246,214,1)"); gr.addColorStop(0.55, "rgba(255,240,200,.55)"); gr.addColorStop(1, "rgba(255,240,200,0)"); c.fillStyle = gr; c.fillRect(0, 0, w, w); }), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }) };
+function heliLicht(B, dt) { const L = B.licht; if (!L) return; const fliegt = B.on && typeof FLY !== "undefined" && FLY === B; if (!fliegt && B.thrust < 0.1) L.an = false;
+  if (!L.kegel) { L.kegel = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 1, 1, 20, 1, true).translate(0, -0.5, 0).rotateX(-Math.PI / 2), HL_M.kegel); L.kegel.userData.dynamic = true; L.kegel.visible = false; scene.add(L.kegel);   // Spitze bei 0, oeffnet nach +z (lookAt)
+    L.fleck = new THREE.Mesh(new THREE.CircleGeometry(1, 24), HL_M.fleck); L.fleck.userData.dynamic = true; L.fleck.visible = false; scene.add(L.fleck); }
+  L.glas.emissiveIntensity = L.an ? 3 : 0.3;
+  if (fliegt) { camera.updateMatrixWorld(); const o = camera.getWorldPosition(new THREE.Vector3()), d = camera.getWorldDirection(new THREE.Vector3()), z = o.clone().addScaledVector(d, 400);   // Zielpunkt Bildmitte
+    for (let s = 6, a = o.clone().addScaledVector(d, 6); s < 400; s += 8) { const b2 = o.clone().addScaledVector(d, s + 8), h = typeof shotSeg === "function" ? shotSeg(a, b2, null, 1) : null; if (h) { z.copy(h.p); break; } a.copy(b2); }
+    B.g.updateMatrixWorld(true); const loc = L.sw.parent.worldToLocal(z.clone()).sub(L.sw.position), yaw = Math.max(-1.75, Math.min(1.75, Math.atan2(-loc.x, -loc.z))), pit = Math.max(-1.45, Math.min(0, Math.atan2(loc.y, Math.hypot(loc.x, loc.z)))), k = Math.min(1, dt * 4);
+    L.sw.rotation.y += (yaw - L.sw.rotation.y) * k; L.swP.rotation.x += (pit - L.swP.rotation.x) * k; }
+  if (!L.an) { L.kegel.visible = L.fleck.visible = false; return; }
+  B.g.updateMatrixWorld(true); const p = new THREE.Vector3(0, 0, -0.22).applyMatrix4(L.swP.matrixWorld), dir = new THREE.Vector3(0, 0, -1).transformDirection(L.swP.matrixWorld);
+  let len = 250, hit = null; for (let s = 0, a = p.clone(); s < 250; s += 10) { const b2 = p.clone().addScaledVector(dir, s + 10), h = typeof shotSeg === "function" ? shotSeg(a, b2, null, 0.5) : null; if (h) { hit = h.p; len = h.p.distanceTo(p); break; } a.copy(b2); }
+  const r = 0.12 + len * 0.09; L.kegel.visible = true; L.kegel.position.copy(p); L.kegel.lookAt(p.clone().add(dir)); L.kegel.scale.set(r, r, len);
+  L.fleck.visible = !!hit; if (hit) { L.fleck.position.copy(hit).y += 0.06; L.fleck.lookAt(hit.x, hit.y + 10, hit.z); L.fleck.position.addScaledVector(dir, -0.05); L.fleck.scale.setScalar(r * 1.15); } }
+addEventListener("mousedown", e => { if (e.button !== 0 || !(typeof FLY !== "undefined" && FLY === HELI && HELI.on && document.pointerLockElement)) return; HELI.licht.an = !HELI.licht.an; if (typeof toast === "function") toast("Suchscheinwerfer " + (HELI.licht.an ? "an" : "aus")); e.preventDefault(); e.stopImmediatePropagation(); }, true);
 // Standplatz setzen (Dach des Praesidiums), mit Landeplatz-Markierung (Kreis, H)
 function heliPolizei(x, y, z, h, parent = scene) { Object.assign(HELI, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0 }); HELI.home = { x, y: y + 0.02, z, h }; HELI.g.visible = true; batPose(HELI, 0);
   const pad = new THREE.Group(), gelb = new THREE.MeshBasicMaterial({ color: 0xffd43b }), weiss = new THREE.MeshBasicMaterial({ color: 0xf2f2ee });

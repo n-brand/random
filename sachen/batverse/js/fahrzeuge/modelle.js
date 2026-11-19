@@ -1298,7 +1298,7 @@ function loftIn(g, st, m) {
   const R = st.map(ring), n = R[0].length, tri = (a, b, c) => pos.push(...a, ...c, ...b);
   for (let i = 0; i < R.length - 1; i++) for (let j = 0; j < n; j++) { const a = R[i][j], b = R[i][(j + 1) % n], c = R[i + 1][(j + 1) % n], d = R[i + 1][j]; tri(a, d, c); tri(a, c, b); }
   for (const [k, s] of [[0, 1], [R.length - 1, -1]]) { const r = R[k], c = r.reduce((q, p) => [q[0] + p[0] / n, q[1] + p[1] / n, q[2] + p[2] / n], [0, 0, 0]); for (let j = 0; j < n; j++) s > 0 ? tri(c, r[j], r[(j + 1) % n]) : tri(c, r[(j + 1) % n], r[j]); }
-  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); const o = new THREE.Mesh(geo, m); g.add(o); return o;
+  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); const o = new THREE.Mesh(geo, m); o.castShadow = !(m && m.transparent); g.add(o); return o;   // Lofts werfen Schatten (2026-11-19: Kampfheli-Rumpf fehlte im Schatten)
 }
 const tabF = T => f => { if (f >= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (f >= T[i][0]) { const [f0, a] = T[i - 1], [f1, b] = T[i]; return a + (b - a) * (f0 - f) / (f0 - f1); } return T[T.length - 1][1]; };
 // ---- Rolls-Royce Spectre (Nicolas 2026-11-10, Fotos vorne und oben; stilisiert, ohne Logos/Schriftzug): grosses Coupe mit einer Tuer je Seite,

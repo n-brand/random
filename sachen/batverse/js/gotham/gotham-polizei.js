@@ -60,6 +60,8 @@ function* gcpdGen() {
     piv.rotation.set(0, th, 0); piv.userData.keep = true; scene.add(piv); const hit = piv.children[3];
     const c = f.W(84.3, 1, 0), solid = dkAdd({ cx: c[0], cy: Y + 0.6, cz: c[2], ux, uz, hl: 3.6, hw: 0.15, hh: 0.6, floor: 0, m: 0.1 });
     gates.push({ name: "Schranke", g: hit, open: 0, target: 0, dur: 2.5, verbs: ["öffnen", "schliessen"], a: (([x, , z]) => [x, z])(f.W(80.6, 1, 0)), b: (([x, , z]) => [x, z])(f.W(87.6, 1, 0)), near: 12, solid, anim: k => { piv.rotation.set(0, th, k * 1.45); solid.on = k < 0.6; } }); }
+  // Keilsperre hinter der Schranke (N13, 2026-11-19): Rampe zur Strasse, steile Kante nach innen; Steuersaeule rechts
+  { const k = f.W(84, 5, 0), st = f.W(89.6, 5, 0); keilsperreAdd(k[0], Y + 0.06, k[2], e2[0], e2[1], 7, st[0], st[2], "Keilsperre"); }
   // beschlagnahmte Fahrzeuge (fahrbar, spaet gebaut)
   if (typeof addVehicle === "function") { const fwd = [e2[0], e2[1]], hIn = Math.atan2(fwd[0], fwd[1]), hOut = Math.atan2(-fwd[0], -fwd[1]);
     // [Spezifikation, Bau, Reihe, Feld (0 = erstes), Name]; Feldmitte s = Reihenanfang + 3 * Feld + 1,5, t = Reihenmitte; Front zur Gasse = Heck zur Gasse, also Nase hinein
@@ -151,3 +153,43 @@ function gcpdStep() {
   S.lampM.emissiveIntensity = 0.2 + 1.4 * n; S.clkM.emissiveIntensity = 0.6 * n;
   const d = new Date(), hm = (d.getHours() % 12 + d.getMinutes() / 60) / 12, mm = d.getMinutes() / 60; S.hands[0].rotation.z = -hm * Math.PI * 2; S.hands[1].rotation.z = -mm * Math.PI * 2;
 }
+
+// ---- Keilsperre (N13, Nicolas 2026-11-17 Filmbild Wall Street; gebaut 2026-11-19): hydraulische Strassensperre. Stahlkeil quer ueber die Fahrbahn in einem Rahmen im Boden:
+// hochgefahren steigt die Riffelblech-Platte von der Rampenseite (0 m) zur steilen Kante (0,9 m) an, die steile Stirn hat gelb-schwarze Warnstreifen, darunter zwei
+// Hydraulikzylinder. Eingefahren liegt die Platte buendig im Boden. Kollision: Rampe als geneigte Bodenflaeche (befahrbar, mit dem Motorrad springt man darueber),
+// steile Kante als schmale Wand (haelt Autos von dieser Seite auf). Lokal: x quer, z laengs (+z = steile Seite), Boden y 0. setK(k): 0 = hoch, 1 = eingefahren.
+function buildKeilsperre(W = 7, L = 2, H = 0.9) { const g = new THREE.Group(), dunkel = new THREE.MeshStandardMaterial({ color: 0x24262a, roughness: 0.6, metalness: 0.5 });
+  const riffel = new THREE.MeshStandardMaterial({ color: 0x8a8e94, roughness: 0.45, metalness: 0.6, map: canvasTex(128, 128, (c, w, h) => { c.fillStyle = "#8a8e94"; c.fillRect(0, 0, w, h); c.strokeStyle = "#aeb2b8"; c.lineWidth = 3; for (let y = 8; y < h; y += 16) for (let x = (y / 16 % 2) * 8 + 4; x < w; x += 16) { c.beginPath(); c.moveTo(x - 4, y + 3); c.lineTo(x + 4, y - 3); c.stroke(); } }, W / 1.2, L / 1.2) });
+  const streifen = new THREE.MeshStandardMaterial({ roughness: 0.5, map: canvasTex(256, 32, (c, w, h) => { c.fillStyle = "#f2c200"; c.fillRect(0, 0, w, h); c.fillStyle = "#151515"; for (let k = -2; k < 20; k++) { c.beginPath(); c.moveTo(k * 24, h); c.lineTo(k * 24 + 12, h); c.lineTo(k * 24 + 12 + h, 0); c.lineTo(k * 24 + h, 0); c.fill(); } }, W / 1.5, 1) });
+  const box = (sx, sy, sz, m, x, y, z, par = g) => { const o = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; par.add(o); return o; };
+  for (const sz of [-1, 1]) box(W + 0.3, 0.04, 0.15, dunkel, 0, 0.02, sz * (L / 2 + 0.08)); for (const sx of [-1, 1]) box(0.15, 0.04, L + 0.3, dunkel, sx * (W / 2 + 0.08), 0.02, 0);   // Rahmen im Boden
+  box(W, 0.01, L, new THREE.MeshStandardMaterial({ color: 0x0c0c0e, roughness: 0.9 }), 0, 0.005, 0);                                                                   // Grube
+  const deck = new THREE.Group(); deck.position.set(0, 0.03, -L / 2); g.add(deck); const Lp = Math.hypot(L, H); box(W, 0.06, Lp, riffel, 0, 0, Lp / 2, deck); box(W, 0.065, 0.12, streifen, 0, 0.01, Lp - 0.06, deck);   // Platte mit Warnkante
+  const stirn = box(W, 1, 0.08, streifen, 0, 0.5, L / 2);                                                                                                                  // steile Stirn (Hoehe ueber scale)
+  const zyl = [-W / 3, W / 3].map(x => box(0.14, 1, 0.14, new THREE.MeshStandardMaterial({ color: 0xc8ccd0, metalness: 0.8, roughness: 0.25 }), x, 0.5, L / 4));
+  const a0 = Math.atan2(H, L); g.userData.setK = k => { const u = 1 - k; deck.rotation.x = -a0 * u; stirn.scale.y = Math.max(0.01, H * u); stirn.position.y = H * u / 2; for (const c of zyl) { c.scale.y = Math.max(0.01, H * 0.5 * u); c.position.y = H * 0.25 * u; } };
+  g.userData.setK(1); g.name = "Keilsperre"; return g; }
+// Absperrbock (rot-weiss) und Pylone
+function buildAbsperrbock() { const g = new THREE.Group(), rw = new THREE.MeshStandardMaterial({ roughness: 0.55, map: canvasTex(128, 16, (c, w, h) => { for (let k = 0; k < 8; k++) { c.fillStyle = k % 2 ? "#f2f2ee" : "#c8202a"; c.fillRect(k * 16, 0, 16, h); } }) }), bein = new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: 0.7 });
+  for (const y of [0.6, 0.95]) { const b = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.2, 0.04), rw); b.position.y = y; g.add(b); } for (const x of [-0.9, 0.9]) for (const s of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.1, 0.05), bein); l.position.set(x, 0.53, s * 0.2); l.rotation.x = -s * 0.32; g.add(l); }
+  const lam = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), new THREE.MeshStandardMaterial({ color: 0xffa020, emissive: 0xff8a00, emissiveIntensity: 0.8 })); lam.position.set(0.8, 1.12, 0); g.add(lam); return g; }
+function buildPylone() { const g = new THREE.Group(), or = new THREE.MeshStandardMaterial({ color: 0xff5a1a, roughness: 0.6 }), ws = new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.5 });
+  const f = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.4), new THREE.MeshStandardMaterial({ color: 0x1a1a1a })); f.position.y = 0.02; g.add(f); const k = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.7, 14), or); k.position.y = 0.39; g.add(k);
+  const r = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.11, 0.1, 14), ws); r.position.y = 0.42; g.add(r); return g; }
+// Keilsperre aufstellen: Mitte (x, z) auf Hoehe y, Richtung der Fahrbahn (dx, dz) zeigt zur steilen Seite, Breite W; Steuersaeule seitlich (sx, sz); name fuer den Hinweis
+function keilsperreAdd(x, y, z, dx, dz, W, sx, sz, name = "Keilsperre") { const L = 2, H = 0.9, K = buildKeilsperre(W, L, H), h = Math.atan2(dx, dz); K.position.set(x, y, z); K.rotation.y = h; K.userData.keep = true; scene.add(K);
+  const qx = Math.cos(h), qz = -Math.sin(h);   // quer
+  const rampe = dkAdd({ cx: x, cy: y + 0.225, cz: z, ux: dx, uz: dz, hl: L / 2, hw: W / 2, hh: 0.225, floor: 1, m: 0.05, g: H / L });
+  const wand = dkAdd({ cx: x + dx * (L / 2 - 0.08), cy: y + H / 2, cz: z + dz * (L / 2 - 0.08), ux: qx, uz: qz, hl: W / 2, hw: 0.08, hh: H / 2, floor: 0, m: 0.05 });
+  rampe.on = wand.on = false;
+  // Steuersaeule mit Tasten und Anzeige (rot = hoch, gruen = eingefahren)
+  const S = new THREE.Group(); S.position.set(sx, y, sz); S.rotation.y = h; S.userData.keep = true; scene.add(S); const gr = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.5, metalness: 0.4 });
+  const p = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.25, 0.25), gr); p.position.y = 0.62; S.add(p); const pan = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.3, 0.02), new THREE.MeshStandardMaterial({ color: 0x15161a })); pan.position.set(0, 1.0, -0.135); S.add(pan);
+  const led = new THREE.MeshStandardMaterial({ color: 0x20ff60, emissive: 0x20c040, emissiveIntensity: 1 }), l = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), led); l.position.set(0, 1.1, -0.15); S.add(l);
+  for (const yy of [0.98, 0.9]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.02, 10).rotateX(Math.PI / 2), new THREE.MeshStandardMaterial({ color: yy > 0.95 ? 0xc8202a : 0x2a8a3a })); t.position.set(0, yy, -0.15); S.add(t); }
+  dkAdd({ cx: sx, cy: y + 0.62, cz: sz, ux: qx, uz: qz, hl: 0.15, hw: 0.13, hh: 0.62, floor: 0, m: 0.05 });
+  gates.push({ name, g: p, open: 1, target: 1, dur: 2.0, verbs: ["einfahren", "hochfahren"], a: [sx, sz], b: [sx, sz], near: 4, anim: k => { K.userData.setK(k); const hoch = k < 0.5; rampe.on = wand.on = hoch; led.color.setHex(hoch ? 0xff3030 : 0x20ff60); led.emissive.setHex(hoch ? 0xc02020 : 0x20c040); } });
+  // Absperrboecke und Pylonen seitlich
+  for (const s of [-1, 1]) { const b = buildAbsperrbock(); b.position.set(x + qx * s * (W / 2 + 1.4) - dx * 1.5, y, z + qz * s * (W / 2 + 1.4) - dz * 1.5); b.rotation.y = h; b.userData.keep = true; scene.add(b);
+    for (let k = 0; k < 3; k++) { const c = buildPylone(); c.position.set(x + qx * s * (W / 2 + 0.6) - dx * (2.6 + k * 1.2), y, z + qz * s * (W / 2 + 0.6) - dz * (2.6 + k * 1.2)); c.userData.keep = true; scene.add(c); } }
+  return K; }

@@ -43,8 +43,9 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Ton an/aus im Fahrzeug | N |
 | Container-Aufzug im Auto | L |
 | Seilwinde (Cougar) | im Flug **H** = Haken ablassen; über ein Fahrzeug fliegen, es wird eingehängt und mitgenommen; **H** nochmals = absetzen |
-| Kampfhubschrauber | fliegt wie The Bat; im Flug **Linksklick oder Q** = Kanone (halten), **Rechtsklick oder X** = Rakete (alle 0,6 s), **Mausrad** = Zoom 1× bis 6×; Ziel ist die Bildmitte |
-| Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
+| Kampfhubschrauber | fliegt wie The Bat; im Flug **Linksklick oder Q** = Kanone (halten), **Rechtsklick oder X** = Rakete (alle 0,6 s), **Mausrad** = Zoom 1× bis 6×; Kanone zielt auf die Bildmitte (Kreis), Raketen auf die rote Raute (Kurs des Hubschraubers, Höhe mit der Maus hoch/runter) |
+| Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet); im Flug **Linksklick** = Suchscheinwerfer an/aus, er schwenkt auf die Bildmitte |
+| Keilsperre (Präsidium) | **Rechtsklick** auf die Steuersäule neben der Zufahrt = hochfahren / einfahren (rot = oben, grün = unten) |
 | Gleitumhang | zu Fuss im Fall (mehr als 3 m über dem Boden) **Leertaste** = Umhang auf, Maus lenkt, nach unten schauen = Sturzflug; Leertaste nochmal oder Landen = zu |
 | Drift | im Auto **Q** halten und lenken (ab ca. 25 km/h): Heck bricht aus, Reifenspuren und Qualm; nicht bei Motorrädern und Panzern |
 | Panzer schiessen | **Linksklick** (bei gefangener Maus) oder Leertaste; Mausrad Zoom; Maus frei mit Esc |
@@ -72,6 +73,12 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Keilsperre, Polizeiheli-Scheinwerfer, Kampfheli-Raute und Schatten** (Nicolas 2026-11-19: "Ja, weiter" -> N13; "Zielraute soll rot sein und nach oben und unten bewegbar, Rakete fliegt leichte Kurve"; Bild Schatten: "Schatten sieht noch sehr komisch aus"; "Polizeihelikopter soll mit einmal Linksklick Licht aktivieren und nochmal wieder aus – Scheinwerfer auch zielbar"):
+  - gotham-polizei.js (Spiel und Werkstatt): `buildKeilsperre` (Rahmen im Boden, Riffelblech-Platte steigt von der Rampenseite auf 0,9 m, gelb-schwarze steile Stirn, zwei Hydraulikzylinder, `setK`), `buildAbsperrbock`, `buildPylone`, `keilsperreAdd` (Kollision: Rampe als geneigter Boden, steile Kante als Wand, beide nur hochgefahren; Steuersäule mit Tasten und Anzeige; gates "Keilsperre" einfahren/hochfahren, 2 s; Absperrböcke und je 3 Pylonen seitlich). Aufgestellt 4 m hinter der Schranke der Zufahrt zur Verwahrstelle, Rampe zur Strasse; Start eingefahren. Bild in der Werkstatt (hoch). Im Spiel nicht gefahren (Rampensprung, Abprallen nicht getestet).
+  - militaer.js: Raketen-Raute rot; Richtung = Kurs des Hubschraubers mit der Höhe aus dem Blick (-40 bis +15 Grad, `khRakDir`); die Rakete startet in Nasenrichtung und dreht mit ca. 0,9 rad/s zur Raute (leichte Kurve). Nicht im Flug getestet (Zeiger-Fang hier nicht möglich).
+  - modelle.js `loftIn`: Lofts werfen jetzt Schatten (ausser durchsichtige). Dem Kampfheli fehlte der Rumpf im Schatten (nur Rotor, Ausleger, Anbauten); gilt für alle Fahrzeuge mit Loft-Teilen. Bild mit vollem Rumpfschatten geprüft.
+  - heli.js: Suchscheinwerfer schwenkbar (`sw`/`swP`), Linksklick im Flug schaltet (`HELI.licht`, Meldung), `heliLicht` dreht ihn verzögert auf die Bildmitte (Gier ±100 Grad, nur nach unten) und zeigt einen hellen Kegel bis zum Treffer (bis 250 m) mit Lichtfleck – ohne echte Lichtquelle (keine Shader-Neuübersetzung). Beim Landen/Aussteigen aus. Bild in der Werkstatt geprüft.
 
 - **Waffenläden heller, mehr Licht, Kasse als Laptop mit Kartenlesegerät** (Nicolas 2026-11-19, Bild einer dunklen Vitrine: "Waffenladen Farben anpassen und mehr Beleuchtung"; "Kasse soll ein Laptop sein mit einem Kartenlesegerät"): gotham-orte.js `gortWaffenladen`.
   - Farben:
