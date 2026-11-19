@@ -33,10 +33,14 @@ const FIGUREN = [];
 function figurStep(dt) { for (const f of FIGUREN) if (f.g.visible && f.g.parent) { figurPose(f.g, dt, f.tempo || 0, f.sprung && !f.gleit); if (f.g.userData.cape && typeof batUmhang === "function") batUmhang(f.g, dt, f.tempo || 0, !!f.gleit, !!f.sprung); } }   // Batman: Umhang (F3)
 function figurPose(F, dt, tempo = 0, sprung = false) { const U = F.userData; U.phase += dt * (2.2 + tempo * 1.25); U.t = (U.t || 0) + dt; const p = U.phase, k = Math.min(1, tempo / 4), run = Math.max(0, Math.min(1, (tempo - 5) / 3));
   const sw = Math.sin(p) * (0.5 * k + 0.35 * run), atm = Math.sin(U.t * 2) * 0.012;
-  U.beinL.rotation.x = sw; U.beinR.rotation.x = -sw; U.knieL.rotation.x = Math.max(0, -Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run); U.knieR.rotation.x = Math.max(0, Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run);
-  U.armL.rotation.x = -sw * 0.9; U.armR.rotation.x = sw * 0.9; U.armL.rotation.z = -0.08; U.armR.rotation.z = 0.08; U.unterarmL.rotation.x = U.unterarmR.rotation.x = -0.2 - 0.9 * run;
+  U.beinL.rotation.x = sw; U.beinR.rotation.x = -sw; U.knieL.rotation.x = -Math.max(0, -Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run); U.knieR.rotation.x = -Math.max(0, Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run);   // Knie knicken nach hinten, Ellbogen nach vorne (2026-11-19, Nicolas: "Figuren falsch herum gebaut")
+  U.armL.rotation.x = -sw * 0.9; U.armR.rotation.x = sw * 0.9; U.armL.rotation.z = -0.08; U.armR.rotation.z = 0.08; U.unterarmL.rotation.x = U.unterarmR.rotation.x = 0.2 + 0.9 * run;
   U.rumpf.position.y = 0.95 + Math.abs(Math.sin(p)) * 0.035 * k + atm; U.rumpf.rotation.x = -0.12 * run; U.kopf.rotation.x = 0.1 * run;
-  if (sprung) { U.beinL.rotation.x = -0.5; U.beinR.rotation.x = 0.25; U.knieL.rotation.x = 0.9; U.knieR.rotation.x = 0.5; U.armL.rotation.z = -0.6; U.armR.rotation.z = 0.6; } }
+  if (sprung) {   // Sprung als Ablauf alle 1,6 s (Nicolas 2026-11-19: "die Springen-Animation geht nicht"): in die Knie, abspringen (0,55 m hoch, Beine angezogen, Arme hoch), landen, abfedern, stehen
+    if (U.y0 === undefined) U.y0 = F.position.y; const c = (U.t % 1.6) / 1.6, ein = c < 0.2 ? Math.sin(c / 0.2 * Math.PI / 2) : c < 0.28 ? 1 - (c - 0.2) / 0.08 : c > 0.72 && c < 0.9 ? Math.sin((c - 0.72) / 0.18 * Math.PI) : 0, flug = c >= 0.25 && c <= 0.72 ? (c - 0.25) / 0.47 : -1;
+    const hoch = flug >= 0 ? 4 * 0.55 * flug * (1 - flug) : 0, zieh = flug >= 0 ? Math.sin(flug * Math.PI) : 0, b = 0.75 * ein + 0.9 * zieh;
+    F.position.y = U.y0 + hoch; U.rumpf.position.y = 0.95 - 0.2 * ein; U.rumpf.rotation.x = -0.25 * ein; U.beinL.rotation.x = U.beinR.rotation.x = b; U.knieL.rotation.x = U.knieR.rotation.x = -1.6 * b;
+    const arm = flug >= 0 ? 2.4 * zieh : -0.5 * ein; U.armL.rotation.x = U.armR.rotation.x = arm; U.armL.rotation.z = -0.15; U.armR.rotation.z = 0.15; } }
 
 // ---- Schritt F2: dritte Person zu Fuss (Nicolas 2026-11-19 "Ja, weiter"; Taste V nach OFFENE-FRAGEN 53). Spiel und Werkstatt.
 // V schaltet Ich-Sicht / Kamera hinter der Figur (ueber die rechte Schulter, 3,2 m, Maus dreht wie bisher, Kamera stoesst nicht durch Waende: shotSeg).
@@ -70,7 +74,8 @@ function buildBatman() {
     add(ua, new THREE.CylinderGeometry(0.06, 0.07, 0.2, 10), matt, 0, -0.24, 0); for (let k = 0; k < 3; k++) add(ua, new THREE.BoxGeometry(0.012, 0.05, 0.04), matt, sd * 0.065, -0.17 - k * 0.05, 0.02, 0, 0, sd * 0.3);
     for (const c of ua.children) if (c.isMesh && c.material && c.material.color && c.material.color.getHex() === 0xd8ad86) c.material = matt; }   // Unterarm und Hand: Handschuh
   for (const [bn, kn] of [[U.beinL, U.knieL], [U.beinR, U.knieR]]) { add(kn, new THREE.BoxGeometry(0.1, 0.22, 0.03), schwarz, 0, -0.18, -0.07); add(kn, new THREE.CylinderGeometry(0.08, 0.075, 0.18, 10), matt, 0, -0.36, 0); }
-  // Maske: Haube bis unter die Augen, Ohren, Augenschlitze
+  // Maske: Haube bis unter die Augen, Ohren, Augenschlitze; die Menschen-Ohren der Grundfigur weg (Nicolas 2026-11-19: "Batman hat keine Loecher fuer Ohren")
+  for (const o of [...U.kopf.children]) if (o.isMesh && o.geometry.parameters && o.geometry.parameters.radius === 0.035) U.kopf.remove(o);
   { const k = U.kopf, c = add(k, new THREE.SphereGeometry(0.158, 22, 16, 0, Math.PI * 2, 0, Math.PI * 0.6), schwarz, 0, 0.14, 0); c.scale.set(1.02, 1.14, 1.04);
     const nase = add(k, new THREE.SphereGeometry(0.16, 16, 10, Math.PI * 1.25, Math.PI * 0.5, Math.PI * 0.45, Math.PI * 0.12), schwarz, 0, 0.14, -0.003); nase.scale.set(1, 1.14, 1.02);
     for (const sx of [-1, 1]) { add(k, new THREE.ConeGeometry(0.03, 0.12, 8), schwarz, sx * 0.075, 0.33, 0.0, 0, 0, -sx * 0.12); const a = add(k, new THREE.BoxGeometry(0.05, 0.014, 0.01), new THREE.MeshBasicMaterial({ color: 0xf2f2f2 }), sx * 0.05, 0.165, -0.158, 0, 0, sx * 0.18); }
@@ -91,7 +96,7 @@ function batUmhang(F, dt, tempo, gleiten, luft) { const C = F.userData.cape; if 
     pos.setXYZ(i, xs, y * (1 - s * 0.25), zz); }
   pos.needsUpdate = true; C.mesh.geometry.computeVertexNormals(); C.halt.rotation.x = -s * 0.15; F.rotation.x = -1.2 * s;   // beim Gleiten liegt die Figur fast waagrecht, Umhang auf dem Ruecken
   if (s > 0.05) { const U = F.userData; U.armL.rotation.set(-0.3 * s, 0, -1.35 * s); U.armR.rotation.set(-0.3 * s, 0, 1.35 * s); U.unterarmL.rotation.x = U.unterarmR.rotation.x = 0; U.rumpf.rotation.x = -0.35 * s;
-    U.beinL.rotation.x = U.beinR.rotation.x = 0.15 * s; U.knieL.rotation.x = U.knieR.rotation.x = 0.1 * s; } }
+    U.beinL.rotation.x = U.beinR.rotation.x = 0.15 * s; U.knieL.rotation.x = U.knieR.rotation.x = -0.1 * s; } }
 const batAnzug = () => typeof INV !== "undefined" && INV.equip && INV.equip.koerper && INV.equip.koerper.id === "batsuit";
 function dpEnsure() { if (!DP.w) { DP.w = new THREE.Group(); DP.w.visible = false; DP.w.userData.dynamic = true; scene.add(DP.w); DP.hand = new THREE.Group(); DP.hand.position.y = -0.37; }
   const bat = batAnzug(); if (DP.F && DP.bat === bat) return; DP.bat = bat; if (DP.F) DP.w.remove(DP.F);
