@@ -22,7 +22,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   walkT.wrapS = walkT.wrapT = THREE.RepeatWrapping;
   const mat = (map, off, col = 0xffffff, ex = {}) => M(col, Object.assign({ map, roughness: 0.95, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -off, polygonOffsetUnits: -off }, ex));
   const geo = () => ({ P: [], U: [], I: [] });
-  const MK = geo(), FLB = geo(), FL = geo(), FLX = geo(), FLT = geo(), LG = geo(), LW = geo(), FL2 = geo(), WK = geo(), CE = geo(), WA = geo(), CO = geo(), UP = geo(), LAMP = geo();
+  GDECK.ampeln = []; const MK = geo(), FLB = geo(), FL = geo(), FLX = geo(), FLT = geo(), LG = geo(), LW = geo(), FL2 = geo(), WK = geo(), CE = geo(), WA = geo(), CO = geo(), UP = geo(), LAMP = geo();
   // Fahrbahn-Markierung oben an den Rampen (Variante B, Nicolas 2026-11-13): Atlas 4 Kacheln (0 geradeaus, 1 LOWER mit Pfeil links hinunter, 2 Einfaedeln
   // nach rechts, 3 nur rechts), Spitze oben in der Kachel = in Fahrtrichtung; decal legt ein Rechteck w (quer) x l (laengs) mit Spitze in Richtung (fx, fz)
   const mkTex = canvasTex(640, 128, c => { c.clearRect(0, 0, 640, 128); c.fillStyle = "#e6e6df"; c.strokeStyle = "#e6e6df"; c.lineCap = "butt"; c.lineJoin = "miter";
@@ -176,16 +176,39 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
     { const last = { 1: null, "-1": null };   // Untergrund-Pruefung 2026-11-16: an Knickpunkten sprang die Kette um bis 1,75 m, beim Rennen kam man durch -> Zwischenkreis bei mehr als 1,25 m
     for (let s = r.sA; s <= r.sB; s += 1.2) { const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; const h = gdeckHW(r, s) - 0.65; for (const sg of [1, -1]) { if (gapsOf(r, sg).some(([a, b]) => s > a - 0.65 && s < b + 0.65)) { last[sg] = null; continue; }
       const cx = x + nx * sg * h, cz = z + nz * sg * h, L = last[sg]; if (L && Math.hypot(cx - L[0], cz - L[1]) > 1.25 && Math.hypot(cx - L[0], cz - L[1]) < 4) ring((cx + L[0]) / 2, (cz + L[1]) / 2, 0.65, DY); ring(cx, cz, 0.65, DY); last[sg] = [cx, cz]; } } }   // r 0,65 alle 1,2 m (ueberlappend, Leistung 2026-11-13)
-    for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { if (gdeckK(r, s) < 0.999 || mids.some(p => s > Math.min(p.a - 25 * p.sg, p.b) - 4 && s < Math.max(p.a - 25 * p.sg, p.b) + G.UZ + 5)) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; if (inOther(x, z, r, 15)) continue; posts.push([x, z]); ring(x, z, 0.6, DY);   // an Kreuzungen unten 15 m frei zum Abbiegen, nicht im Trichter (posts.push stand seit 2026-11-13 versehentlich im Kommentar)
-      for (const sg of [1, -1]) { const lx = x + nx * sg * HW / 2, lz = z + nz * sg * HW / 2, k = LAMP.P.length / 3, tx = -nz, tz = nx;
-        for (const [a, b] of [[-1.2, -0.15], [1.2, -0.15], [-1.2, 0.15], [1.2, 0.15]]) { LAMP.P.push(lx + tx * a + nx * b, DY - 0.03, lz + tz * a + nz * b); LAMP.U.push(0, 0); } LAMP.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }
+    for (let s = r.sA + 10; s <= r.sB - 10; s += 15) { if (gdeckK(r, s) < 0.999 || mids.some(p => s > Math.min(p.a - 25 * p.sg, p.b) - 4 && s < Math.max(p.a - 25 * p.sg, p.b) + G.UZ + 5)) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0]; if (inOther(x, z, r, 15)) continue; posts.push([x, z]); ring(x, z, 0.6, DY); }   // an Kreuzungen unten 15 m frei zum Abbiegen, nicht im Trichter (posts.push stand seit 2026-11-13 versehentlich im Kommentar)
+    // Leuchtroehren (N14, Nicolas 2026-11-17 Filmbild: dunkle Decke mit Reihen gruenlich-weisser Roehren; 2026-11-19): alle 4 m vier Reihen quer, je 1,8 m lang; auch an Kreuzungen
+    for (let s = r.sA + 3; s <= r.sB - 3; s += 4) { if (gdeckK(r, s) < 0.999 || mids.some(p => s > Math.min(p.a - 25 * p.sg, p.b) - 2 && s < Math.max(p.a - 25 * p.sg, p.b) + G.UZ + 3)) continue; const [x, z, nx, nz] = sub(r, s, s + 0.5)[0], tx = -nz, tz = nx;
+      for (const q of [-0.72, -0.26, 0.26, 0.72]) { const lx = x + nx * q * HW, lz = z + nz * q * HW, k = LAMP.P.length / 3;
+        for (const [a, b] of [[-0.9, -0.07], [0.9, -0.07], [-0.9, 0.07], [0.9, 0.07]]) { LAMP.P.push(lx + tx * a + nx * b, DY - 0.03, lz + tz * a + nz * b); LAMP.U.push(0, 0); } LAMP.I.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }
+    // Ampeln an den Kreuzungen unten: Eintritt in den Innenraum einer anderen unteren Strasse (alle 2 m geprueft), Mast rechts 4 m davor, Lichter zum Verkehr
+    { let prev = null; for (let s = r.sA + 2; s <= r.sB - 2; s += 2) { const [x, z] = sub(r, s, s + 0.5)[0], ins = inOther(x, z, r, 0); if (prev !== null && ins !== prev) { const d = ins ? 1 : -1, sa = s - d * 5, [ax, az, anx, anz] = sub(r, sa, sa + 0.5)[0], fx = -anz * d, fz = anx * d, sg = -d;
+        GDECK.ampeln.push({ x: ax + anx * sg * (HW - 1.2), z: az + anz * sg * (HW - 1.2), fx, fz, rx: -anx * d, rz: -anz * d, ph: Math.abs(fx) > Math.abs(fz) ? 0 : 1 }); } prev = ins; } }
   }
   const make = (Gm, m, name) => { if (!Gm.I.length) return null; const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(Gm.P, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(Gm.U, 2)); g.setIndex(Gm.I); g.computeVertexNormals(); g.computeBoundingSphere();
     return gsplit(g, m, name, { cast: name !== "Gotham-Untere Strasse Leuchten", free: /Waende|Decke|Deckplatten|Gehsteige|Leuchten|Sperr|Trichter|Mittellinie|Randlinien/.test(name) }); };
   const postG = posts.map(([x, z]) => new THREE.CylinderGeometry(0.45, 0.5, DY - LY, 12).translate(x, (LY + DY) / 2, z));
   GDECK.meshes = [make(MK, mat(mkTex, 3.5, 0xffffff, { alphaTest: 0.5 }), "Gotham-Rampen Markierung"), make(FL, mat(lines(true), 2), "Gotham-Untere Strasse"), make(FLT, mat(plainT, 2), "Gotham-Untere Strasse Trichter"), make(FLX, mat(plainT, 2.5), "Gotham-Untere Kreuzungen"), make(FLB, mat(plainT, 1), "Gotham-Untere Bodenplatte"), make(LG, M(0xd9b23c, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Mittellinie"), make(LW, M(0xd8d8d2, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Randlinien"), make(FL2, mat(lines(false), 2), "Gotham-Untere Strasse Rampen"), make(WK, mat(walkT, 1), "Gotham-Untere Strasse Gehsteige"),
     make(CE, mat(conc, 0, 0x6e6c68), "Gotham-Untere Strasse Decke"), make(WA, mat(conc, 0), "Gotham-Untere Strasse Waende"), make(CO, mat(walkT, 0.5), "Gotham-Deckplatten"),
-    make(UP, mat(plainT, 2), "Gotham-Spuren neben Rampen"), make(LAMP, M(0xfff1c8, { emissive: 0xffe2a0, emissiveIntensity: 1.2, side: THREE.DoubleSide }), "Gotham-Untere Strasse Leuchten")];
+    make(UP, mat(plainT, 2), "Gotham-Spuren neben Rampen"), make(LAMP, M(0xeefff0, { emissive: 0xd8f5d6, emissiveIntensity: 1.3, side: THREE.DoubleSide }), "Gotham-Untere Strasse Leuchten")];   // gruenlich-weiss (Leuchtroehren)
+  gampelBau(LY);
   if (postG.length) { const m = new THREE.Mesh(mergeGeometries(postG, false), M(0x8a8782, { roughness: 0.9 })); m.name = "Gotham-Untere Strasse Stuetzen"; m.castShadow = m.receiveShadow = true; m.userData.keep = true; m.userData.noLift = true; scene.add(m); GDECK.meshes.push(m); }
   GDECK.nCircles = circles.length - nCirc;
 }
+
+// Ampeln (N14): Mast, Gehaeuse mit Rot/Gelb/Gruen zum Verkehr, Fussgaengersignal seitlich; als InstancedMesh. Takt 24 s: Richtung 0 (eher x) gruen 0-9, gelb 9-11, rot 11-24;
+// Richtung 1 versetzt um 12 s; Fussgaenger gruen, wenn ihre Fahrzeugrichtung rot hat. gampelStep (schleife.js) setzt die Lampen nur bei einem Wechsel.
+function gampelBau(LY) { const A = GDECK.ampeln, n = A.length; if (!n) return; const q = new THREE.Object3D(), M = (c, e) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.5, metalness: 0.3, ...(e ? { emissive: e, emissiveIntensity: 1.6 } : {}) });
+  const mk = (geo, m, cnt) => { const im = new THREE.InstancedMesh(geo, m, cnt); im.userData.keep = true; im.userData.noLift = true; im.frustumCulled = false; scene.add(im); return im; };
+  const mast = mk(new THREE.CylinderGeometry(0.07, 0.08, 3.4, 8), M(0x2a2c30), n), geh = mk(new THREE.BoxGeometry(0.34, 0.95, 0.28), M(0x16171a), n), fg = mk(new THREE.BoxGeometry(0.3, 0.55, 0.22), M(0x16171a), n);
+  const L = {}; for (const [k, c, y] of [["r", 0xff2a20, 0.3], ["y", 0xffb020, 0], ["g", 0x30ff70, -0.3]]) L[k] = { on: mk(new THREE.CircleGeometry(0.1, 14), new THREE.MeshBasicMaterial({ color: c }), n), y };
+  const P = { r: mk(new THREE.CircleGeometry(0.075, 12), new THREE.MeshBasicMaterial({ color: 0xff3a30 }), n), g: mk(new THREE.CircleGeometry(0.075, 12), new THREE.MeshBasicMaterial({ color: 0x40ff80 }), n) };
+  A.forEach((a, i) => { const h = Math.atan2(-a.fx, -a.fz); q.rotation.set(0, h, 0); q.position.set(a.x, LY + 1.7, a.z); q.updateMatrix(); mast.setMatrixAt(i, q.matrix);
+    q.position.set(a.x, LY + 3.2, a.z); q.updateMatrix(); geh.setMatrixAt(i, q.matrix); q.position.set(a.x + a.rx * 0.25, LY + 2.2, a.z + a.rz * 0.25); q.rotation.set(0, h, 0); q.updateMatrix(); fg.setMatrixAt(i, q.matrix); });
+  GDECK.amp = { L, P, LY, ph: -1 }; gampelStep(true); }
+function gampelStep(force) { const G = GDECK.amp; if (!G) return; const t = (performance.now() / 1000) % 24, st = k => { const u = (t - k * 12 + 24) % 24; return u < 9 ? "g" : u < 11 ? "y" : "r"; }, key = st(0) + st(1);
+  if (!force && key === G.ph) return; G.ph = key; const A = GDECK.ampeln, q = new THREE.Object3D(), z = new THREE.Matrix4().makeScale(0, 0, 0);
+  A.forEach((a, i) => { const s = st(a.ph), h = Math.atan2(-a.fx, -a.fz), hp = h;
+    for (const k of ["r", "y", "g"]) { if (k !== s) { G.L[k].on.setMatrixAt(i, z); continue; } q.position.set(a.x - a.fx * 0.15, G.LY + 3.2 + G.L[k].y, a.z - a.fz * 0.15); q.rotation.set(0, h, 0); q.updateMatrix(); G.L[k].on.setMatrixAt(i, q.matrix); }
+    const fp = s === "r" ? "g" : "r", ex = a.x + a.rx * 0.25 - a.fx * 0.12, ez = a.z + a.rz * 0.25 - a.fz * 0.12; for (const k of ["r", "g"]) { if (k !== fp) { G.P[k].setMatrixAt(i, z); continue; } q.position.set(ex, G.LY + 2.2 + (k === "r" ? 0.12 : -0.12), ez); q.rotation.set(0, hp, 0); q.updateMatrix(); G.P[k].setMatrixAt(i, q.matrix); } });
+  for (const k of ["r", "y", "g"]) G.L[k].on.instanceMatrix.needsUpdate = true; for (const k of ["r", "g"]) G.P[k].instanceMatrix.needsUpdate = true; }
