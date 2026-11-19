@@ -90,14 +90,37 @@ function buildPiranha(v = "kommando") {
     milCyl(g, 0.22, 0.22, 0.24, dunkel, 1.15, 1.82, 3.1, "x", 14); milCyl(g, 0.09, 0.09, 0.26, stahl, 1.15, 1.82, 3.1, "x", 10);
     milAntenne(g, K, -0.8, 2.55, 2.7, 2.8); milAntenne(g, K, 0.8, 2.55, 2.7, 2.4); milAntenne(g, K, -0.8, 2.05, -0.3, 2.0); milAntenne(g, K, -0.45, 2.55, 0.1, 1.2);
   } else if (v === "sanitaet") {   // Sanitaet: hoeherer Aufbau ab Fahrerplatz, Fenster mattiert, rotes Kreuz auf weissem Feld (Seiten, Heck, Dach), Blaulichter, Trittstufe
-    loftIn(g, [0.25, 0.15, -3.05, -3.15].map(f => [f, [[0, 2.0], [1.02, 2.0], [1.0, 2.62], [0.88, 2.76], [0, 2.76]]]), oliv);
+    // Aufbau (2026-11-19, Nicolas Bild: "beim Sanitaetsfahrzeug noch den oberen Teil fixen"): Seiten buendig mit der Wanne (sitzen auf der schraegen Oberwanne), Front schraeg,
+    // Regenrinne, Blechfugen mit Nieten, gerahmte Milchglasfenster, Seitentuer mit Scharnieren und Griff, Klimageraet, Dachreling, Leiter, Arbeitsscheinwerfer, Blaulichter auf Sockeln
+    const AS = (top) => [[0, 1.95], [1.0, 1.95], [1.18, 1.69], [1.18, Math.min(2.62, top - 0.16)], [1.05, top], [0, top]];
+    loftIn(g, [[0.55, AS(2.3)], [0.15, AS(2.78)], [-3.08, AS(2.78)], [-3.15, AS(2.72)]], oliv);
+    const milch = M(0xb8c4c8, { roughness: 0.3 }), blauL = M(0x2a5cff, { emissive: 0x1a40ff, emissiveIntensity: 0.6 });
+    for (const sd of [-1, 1]) { const X = sd * 1.18;
+      sideBox(g, X, X + sd * 0.05, 2.6, 2.65, -0.1, 3.1, oliv2);                                                                                        // Regenrinne
+      for (const z of [0.95, 1.95, 2.75]) sideBox(g, X, X + sd * 0.008, 1.72, 2.6, z - 0.012, z + 0.012, dunkel);                                       // Blechfugen
+      for (let k = 0; k < 12; k++) milCyl(g, 0.014, 0.014, 0.02, dunkel, X + sd * 0.01, 1.78, 0.05 + k * 0.26, "x", 6);                                   // Nietreihe
+      sideBox(g, X, X + sd * 0.04, 2.12, 2.48, 0.25, 0.85, oliv2); sideBox(g, X + sd * 0.03, X + sd * 0.045, 2.16, 2.44, 0.29, 0.81, milch);               // Fenster mit Rahmen
+      milCyl(g, 0.015, 0.015, 0.4, stahl, X + sd * 0.05, 2.1, 1.45, "z", 6); for (const z of [1.25, 1.65]) boxAt(g, 0.03, 0.04, 0.04, stahl, X + sd * 0.04, 2.1, z);   // Griffstange
+      sideBox(g, X, X + sd * 0.25, 2.62, 2.66, 2.85, 2.95, stahl);                                                                                      // Spiegelarm hinten (Rueckfahrkamera)
+      boxAt(g, 0.12, 0.1, 0.1, dunkel, X + sd * 0.25, 2.6, 2.9); boxAt(g, 0.02, 0.06, 0.06, glas, X + sd * 0.25, 2.6, 2.95); }
+    { const X = 1.18; sideBox(g, X, X + 0.02, 1.75, 2.55, -0.25, 0.15, oliv2); for (const y of [1.85, 2.45]) milCyl(g, 0.03, 0.03, 0.12, stahl, X + 0.03, y, -0.27, "y", 8); boxAt(g, 0.04, 0.05, 0.16, stahl, X + 0.04, 2.1, 0.08); }   // Seitentuer rechts
+    // Front schraeg: Blaulichter auf Sockeln, Arbeitsscheinwerfer, kleines Kreuz, Kante
+    for (const sd of [-1, 1]) { boxAt(g, 0.3, 0.06, 0.3, dunkel, sd * 0.78, 2.81, 0.0); boxAt(g, 0.24, 0.13, 0.24, blauL, sd * 0.78, 2.905, 0.0); boxAt(g, 0.27, 0.02, 0.27, dunkel, sd * 0.78, 2.98, 0.0);
+      milLicht(g, K, sd * 0.62, 2.12, -0.6, -1, mat.glow, 0.18, 0.1); }
+    for (const [pw, ph, m, d] of [[0.42, 0.42, weiss, 0.006], [0.29, 0.085, rot, 0.009], [0.085, 0.29, rot, 0.009]]) { const o = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), m); o.position.set(0, 2.545 + 0.64 * d, -0.35 - 0.77 * d); o.lookAt(0, 3.185, -1.12); g.add(o); }   // kleines Kreuz auf der Schraege
+    // Dach: Klimageraet mit Lamellen, Reling, Dachluke, Antenne
+    boxAt(g, 0.9, 0.28, 0.7, oliv2, 0, 2.92, 2.3); for (let k = 0; k < 6; k++) boxAt(g, 0.8, 0.02, 0.025, dunkel, 0, 2.86 + k * 0.035, 1.94); boxAt(g, 0.5, 0.02, 0.5, dunkel, 0, 3.07, 2.3);
+    for (const sd of [-1, 1]) { milCyl(g, 0.018, 0.018, 2.4, stahl, sd * 0.95, 2.86, 1.35, "z", 6); for (const z of [0.25, 1.35, 2.45]) milCyl(g, 0.015, 0.015, 0.08, stahl, sd * 0.95, 2.82, z, "y", 6); }
+    milCyl(g, 0.3, 0.32, 0.05, oliv2, 0.4, 2.8, 0.6, "y", 16); milAntenne(g, K, -0.8, 2.78, 2.9, 1.6);
+    // Heck: obere Tuerhaelften mit Fenstern und Scharnieren, Leiter rechts, Rueckfahrscheinwerfer, Trittstufe
     boxIn(g, -0.95, -0.06, 1.78, 2.6, 3.15, 3.2, oliv2); boxIn(g, 0.06, 0.95, 1.78, 2.6, 3.15, 3.2, oliv2);
-    const kreuz = (x, y, z, ry) => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), weiss), c1 = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.18), rot), c2 = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.62), rot);
+    for (const sd of [-1, 1]) { sideBox(g, sd * 0.25, sd * 0.75, 2.25, 2.5, 3.2, 3.215, milch); for (const y of [2.0, 2.45]) milCyl(g, 0.035, 0.035, 0.14, stahl, sd * 0.97, y, 3.2, "y", 8); boxAt(g, 0.2, 0.1, 0.08, dunkel, sd * 0.85, 2.68, 3.2); boxAt(g, 0.16, 0.06, 0.02, mat.glow, sd * 0.85, 2.68, 3.245); }
+    for (const x of [1.05, 1.25]) boxIn(g, x - 0.015, x + 0.015, 1.0, 2.75, 3.16, 3.2, stahl); for (let k = 0; k < 6; k++) boxIn(g, 1.04, 1.26, 1.1 + k * 0.28, 1.13 + k * 0.28, 3.16, 3.2, stahl);
+    const kreuz = (x, y, z, ry, s = 1) => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.9 * s, 0.9 * s), weiss), c1 = new THREE.Mesh(new THREE.PlaneGeometry(0.62 * s, 0.18 * s), rot), c2 = new THREE.Mesh(new THREE.PlaneGeometry(0.18 * s, 0.62 * s), rot);
       for (const [o, d] of [[w, 0], [c1, 0.003], [c2, 0.003]]) { o.position.set(x, y, z); o.rotation.y = ry; o.translateZ(d); g.add(o); } };
-    kreuz(1.025, 2.3, 1.6, Math.PI / 2); kreuz(-1.025, 2.3, 1.6, -Math.PI / 2); kreuz(0, 2.25, 3.25, 0);
-    { const d = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), weiss); d.rotation.x = -Math.PI / 2; d.position.set(0, 2.765, 1.4); g.add(d); for (const [w, h] of [[0.62, 0.18], [0.18, 0.62]]) { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), rot); o.rotation.x = -Math.PI / 2; o.position.set(0, 2.768, 1.4); g.add(o); } }
-    for (const sd of [-1, 1]) { boxAt(g, 0.02, 0.3, 0.7, M(0xb8c4c8, { roughness: 0.3 }), sd * 1.01, 2.35, 0.55); const bl = boxAt(g, 0.22, 0.12, 0.22, M(0x2a5cff, { emissive: 0x0a2080 }), sd * 0.7, 2.83, -0.05); }
-    boxIn(g, -0.6, 0.6, 0.62, 0.66, 3.2, 3.5, stahl); milAntenne(g, K, -0.8, 2.76, 2.8, 1.6); luke(0.5, -1.15);
+    kreuz(1.186, 2.28, 1.45, Math.PI / 2); kreuz(-1.186, 2.28, 1.45, -Math.PI / 2); kreuz(0, 2.2, 3.255, 0, 0.75);
+    { const d = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), weiss); d.rotation.x = -Math.PI / 2; d.position.set(0, 2.785, 1.0); g.add(d); for (const [w, h] of [[0.62, 0.18], [0.18, 0.62]]) { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), rot); o.rotation.x = -Math.PI / 2; o.position.set(0, 2.788, 1.0); g.add(o); } }
+    boxIn(g, -0.6, 0.6, 0.62, 0.66, 3.2, 3.5, stahl); luke(0.5, -1.15);
   } else if (v === "pzj90") {   // Panzerjaeger 90: Turm mit Werfer auf Hebearm, zwei Lenkwaffenrohre neben dem Zielgeraet, Kommandantenluke, Nebelwerfer, Staukorb
     const t = new THREE.Group(); t.position.set(0, 2.0, 0.7); g.add(t); milCyl(t, 0.92, 0.95, 0.1, oliv2, 0, 0.05, 0, "y", 24);
     loftIn(t, [0.85, 0.75, -0.75, -0.95].map((f, i) => [f, [[0, 0.08], [i === 0 || i === 3 ? 0.55 : 0.75, 0.08], [i === 0 || i === 3 ? 0.5 : 0.72, 0.42], [i === 0 || i === 3 ? 0.4 : 0.6, 0.55], [0, 0.55]]]), oliv);

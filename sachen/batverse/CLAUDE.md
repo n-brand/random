@@ -69,6 +69,25 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Sanitäts-Aufbau, Polizei-Van und -Pickup, Jet militärischer** (Nicolas 2026-11-19, Bild Sanitätsfahrzeug: "beim Sanitärfahrzeug noch den oberen Teil fixen und dann bei den Polizeifahrzeugen auch und beim Jet auch anpassen – Jet soll mehr nach Militär aussehen"):
+  - militaer.js Sanität: Der Aufbau sass als glatte Kiste auf der Wanne. Neu:
+    - Seiten bündig mit der Wanne (stehen auf der schrägen Oberwanne), schräge Front.
+    - Regenrinne, Blechfugen mit Nieten, gerahmte Milchglasfenster, Seitentür rechts mit Scharnieren und Griff, Griffstangen.
+    - Blaulichter auf Sockeln, Scheinwerfer, kleines Kreuz auf der Schräge.
+    - Dach mit Klimagerät, Reling und Luke; Rückfahrkameras.
+    - Heck mit Fenstern in den oberen Türhälften, Scharnieren, Leiter und Rückfahrscheinwerfern.
+  - modelle.js: Polizei-Van und Polizei-Pickup neu als geformte Karosserie (Loft) mit ausgeschnittenen Radläufen statt Kisten. Gemeinsame Helfer `polArch`, `polKit` (Rammschutz mit Blitzern, Scheinwerfer im Gehäuse, Spiegel am Arm, Kotflügelverbreiterungen).
+    - Van: schräge Frontscheibe mit Rahmen und Wischern, Grill mit Rahmen, Nebelscheinwerfer, Tür- und Schiebetürfugen, Schiene, Trittstufe, vergitterte Laderaum- und Heckfenster, Hecktüren mit Scharnieren, Trittstossstange, Dachreling, Lüfter, Arbeitsscheinwerfer, Suchscheinwerfer, Antennen, Spritzlappen.
+    - Pickup: vier Türen mit Fugen und Griffen, Seilwinde, Trittrohre, Ladefläche mit Rippen, Radkästen, Abdeckleisten und Zurrösen, Heckklappe, Überrollbügel aus Rohren mit Streben und Arbeitsscheinwerfern, Anhängerkupplung.
+    - Specs unverändert. Limousine und Motorrad sind gleich geblieben (waren schon detailliert).
+  - jet.js:
+    - Dunklere Militärgrau-Töne und Splitter-Tarnmuster auf den Flügeln.
+    - Vier Lenkwaffen an Pylonen unter den Flügeln, zwei an Schienen an den Flügelspitzen.
+    - Waffenschacht-Klappen am Bauch, Staurohr, Antennen, Luftbetankungsklappe.
+    - Unauffällige Kennung "GC 01-022" an den Seitenleitwerken (kein echtes Hoheitszeichen).
+    - Flug und Kollisionspunkte unverändert.
+  - Geprüft: Bilder aller vier Fahrzeuge in der Werkstatt. Nicht neu gefahren oder geflogen.
+
 - **Spielfiguren F2: dritte Person zu Fuss** (Nicolas 2026-11-19 "Ja, weiter"; Taste V nach OFFENE-FRAGEN 53): figur.js `DP`, `dpStep(dt, P, boden)` (Spiel aus bedienung.js nach updatePlayer, Werkstatt aus person.js), `dpAn()`. Mit V wechselt man zwischen Ich-Sicht und einer Kamera 3,2 m hinter der Figur, über der rechten Schulter. Die Kamera geht nicht durch Wände (shotSeg). Die Wahl bleibt gespeichert (`wm-dritte`).
   - Figur: dunkler Anzug. Sie dreht sich weich in Laufrichtung, mit Schusswaffe oder beim Zielen in Blickrichtung. Gehen, Rennen und Sprung kommen aus dem Tempo.
   - In der Hand: der gehaltene Gegenstand als 3D-Modell (Schusswaffen über gunBuild, Werkzeuge über HAND3D). Beim Zielen hebt die Figur die Arme in Blickrichtung.

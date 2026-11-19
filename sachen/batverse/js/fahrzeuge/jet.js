@@ -10,7 +10,7 @@
 const JET_Y = 2.0, JET_VS = 42, JET_VR = 34, JET_LIM = 1400;           // Drehpunkt ueber Radunterkante, Abhebe-/Rotiertempo (m/s), Flugraum
 function buildJet() {
   const g = new THREE.Group(), body = new THREE.Group(); body.position.y = -JET_Y; g.add(body);     // body: Modell mit Radunterkante bei y 0
-  const paint = M(0x8b9198, { metalness: 0.3, roughness: 0.6, flatShading: true }), panel = M(0x767c83, { metalness: 0.3, roughness: 0.65, flatShading: true });
+  const paint = M(0x7d848b, { metalness: 0.3, roughness: 0.6, flatShading: true }), panel = M(0x636a71, { metalness: 0.3, roughness: 0.65, flatShading: true });
   const black = M(0x08090b, { roughness: 0.8 }), nozM = M(0x3a3c40, { metalness: 0.6, roughness: 0.45, flatShading: true }), glass = M(0x4a3c14, { metalness: 0.85, roughness: 0.06, transparent: true, opacity: 0.72 });
   const tireM = M(0x121212, { roughness: 0.9 }), rimM = M(0xb8bcc2, { metalness: 0.8, roughness: 0.3 }), glowM = M(0x141414, { emissive: 0xff7a20, emissiveIntensity: 0 });
   const flat = (pts, d, m, y, par = body) => { const sh = new THREE.Shape(); pts.forEach(([x, f], i) => i ? sh.lineTo(x, f) : sh.moveTo(x, f)); const bv = Math.min(0.05, d * 0.4);   // Fase: Kanten duenn und rund wie ein Profil (2026-11-11)
@@ -37,6 +37,25 @@ function buildJet() {
   for (const sd of [-1, 1]) for (const [f0, f1] of [[-1.5, 2.5], [3.5, 5.5]]) boxIn(body, sd * 1.2 - 0.01, sd * 1.2 + 0.01, 2.0, 2.02, f0, f1, black);   // Wartungsklappen-Fugen
   // Seitenleitwerke: zwei, schraeg nach aussen gekippt (28 Grad), Vorderkante gepfeilt, Hinterkante nach vorne
   for (const sd of [-1, 1]) { const tg = new THREE.Group(); tg.position.set(sd * 1.25, 2.55, 0); tg.rotation.z = -sd * 0.49; body.add(tg); prismIn(tg, [[-3.4, 0], [-5.35, 2.75], [-6.7, 2.75], [-7.9, 0]], 0.14, paint); prismIn(tg, [[-3.4, 0], [-5.35, 2.75], [-5.5, 2.75], [-3.65, 0]], 0.16, panel); }
+  // Militaerischer (2026-11-19, Nicolas: "Jet soll mehr nach Militaer aussehen"): Splitter-Tarnung auf Fluegeln, Lenkwaffen an Pylonen, Waffenschacht-Fugen,
+  // Staurohr, Antennen, Luftbetankungsklappe, unauffaellige Kennung an den Seitenleitwerken (kein echtes Hoheitszeichen)
+  const tarnA = M(0x5f666d, { metalness: 0.3, roughness: 0.65, flatShading: true }), tarnB = M(0x9aa1a8, { metalness: 0.3, roughness: 0.6, flatShading: true });
+  for (const sd of [-1, 1]) { flat([[sd * 1.6, 1.4], [sd * 3.6, -0.9], [sd * 3.1, -3.4], [sd * 1.6, -2.6]], 0.012, tarnA, 2.03); flat([[sd * 4.0, -1.4], [sd * 6.2, -2.3], [sd * 6.5, -3.6], [sd * 4.6, -3.9]], 0.012, tarnA, 2.03);
+    flat([[sd * 3.4, -3.6], [sd * 4.4, -2.0], [sd * 4.9, -4.2]], 0.012, tarnB, 2.035); flat([[sd * 1.6, -3.4], [sd * 2.6, -3.6], [sd * 2.2, -5.0], [sd * 1.6, -5.2]], 0.012, tarnB, 2.035); }
+  const stahl = M(0x9aa0a6, { metalness: 0.7, roughness: 0.35 }), weiss = M(0xdedfdc, { roughness: 0.5 }), gelbB = M(0xc8a02a, { roughness: 0.5 });
+  const rakete = (x, f, y, L = 3.0, r = 0.075) => { const z = -f; meshIn(body, new THREE.CylinderGeometry(r, r, L, 12).rotateX(Math.PI / 2), weiss, x, y, z); meshIn(body, new THREE.ConeGeometry(r, 0.35, 12).rotateX(-Math.PI / 2), M(0x5a5f63, { roughness: 0.4 }), x, y, z - L / 2 - 0.17);
+    meshIn(body, new THREE.CylinderGeometry(r * 1.02, r * 1.02, 0.06, 12).rotateX(Math.PI / 2), gelbB, x, y, z - L / 2 + 0.4);
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; for (const [dz, s] of [[L / 2 - 0.25, 0.22], [-L / 2 + 0.55, 0.12]]) { const fin = meshIn(body, new THREE.BoxGeometry(0.01, s, s * 1.2), weiss, x + Math.cos(a) * (r + s / 2), y + Math.sin(a) * (r + s / 2), z + dz); fin.rotation.z = a - Math.PI / 2; } } };
+  for (const sd of [-1, 1]) for (const [x, f] of [[3.0, -1.6], [4.7, -2.4]]) { boxIn(body, sd * x - 0.04, sd * x + 0.04, 1.62, 1.86, -f - 1.0, -f + 0.9, panel); boxIn(body, sd * x - 0.03, sd * x + 0.03, 1.56, 1.62, -f - 0.8, -f + 0.7, stahl); rakete(sd * x, f, 1.45); }
+  for (const sd of [-1, 1]) { boxIn(body, sd * 6.78 - 0.05, sd * 6.78 + 0.05, 1.8, 1.9, 1.2, 3.6, stahl); rakete(sd * 6.9, -2.3, 1.85, 2.6, 0.06); }   // Schienen an den Fluegelspitzen
+  for (const [x0, x1, f0, f1] of [[-0.75, 0.75, 3.0, -2.5], [-1.45, -1.0, 1.5, -1.0], [1.0, 1.45, 1.5, -1.0]]) { boxIn(body, x0, x1, 1.285, 1.295, -f0, -f0 + 0.03, black); boxIn(body, x0, x1, 1.285, 1.295, -f1 - 0.03, -f1, black);
+    boxIn(body, x0, x0 + 0.03, 1.285, 1.295, -f0, -f1, black); boxIn(body, x1 - 0.03, x1, 1.285, 1.295, -f0, -f1, black); }   // Waffenschacht-Klappen am Bauch
+  meshIn(body, new THREE.CylinderGeometry(0.02, 0.03, 1.2, 8).rotateX(Math.PI / 2), stahl, 0, 2.0, -10.0);                                     // Staurohr an der Nase
+  for (const [x, f, h] of [[0, -1.5, 0.3], [0, 2.0, 0.22], [0.5, -6.5, 0.18]]) { const a = boxIn(body, x - 0.015, x + 0.015, 2.7, 2.7 + h, -f - 0.12, -f + 0.12, black); }   // Antennenschwerter auf dem Ruecken
+  boxIn(body, -0.25, 0.25, 2.755, 2.765, -0.5, 0.2, black); boxIn(body, -0.2, 0.2, 2.766, 2.77, -0.4, 0.1, tarnA);                               // Luftbetankungsklappe
+  { const kenn = canvasTex(256, 128, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = "#4e545a"; c.font = "bold 58px Arial"; c.textAlign = "center"; c.fillText("GC", W / 2, 58); c.font = "bold 40px Arial"; c.fillText("01-022", W / 2, 110); });
+    const km = new THREE.MeshBasicMaterial({ map: kenn, transparent: true });
+    for (const sd of [-1, 1]) { const tg = new THREE.Group(); tg.position.set(sd * 1.25, 2.55, 0); tg.rotation.z = -sd * 0.49; body.add(tg); for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.55), km); p.position.set(s * 0.08, 1.3, 6.0); p.rotation.y = s * Math.PI / 2; tg.add(p); } } }
   mergeStatic(body);
   // Hoehenleitwerke (Pendelruder, drehen mit der Nase-Eingabe)
   const stabs = [-1, 1].map(sd => { const sg = new THREE.Group(); sg.position.set(0, 1.95, 7.8); body.add(sg); flat([[sd * 1.0, 1.8], [sd * 4.45, -1.1], [sd * 4.45, -2.0], [sd * 1.0, -1.8]], 0.12, paint, -0.06, sg); return sg; });
