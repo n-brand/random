@@ -17,7 +17,7 @@ function buildSkateboard() {
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.name = "Skateboard"; return g; }   // Laengsachse x, Boden y 0
 // Spielfigur auf dem Brett (figur.js, N35 F1): seitlich, Beine gegraetscht, Knie gebeugt, Arme zur Balance (sonst die alte Ersatzfigur)
 function skaterAusFigur() { const w = new THREE.Group(), f = buildFigur({ oberteil: 0x1c1f26, hose: 0x2d3440, schuhe: 0xeeeeee, frisur: 0 }), U = f.userData; w.add(f);
-  U.beinL.rotation.z = -0.28; U.beinR.rotation.z = 0.28; U.knieL.rotation.x = 0.35; U.knieR.rotation.x = 0.35; U.armL.rotation.z = -1.15; U.armR.rotation.z = 1.15; U.rumpf.position.y = 0.9; return w; }
+  U.beinL.rotation.z = -0.28; U.beinR.rotation.z = 0.28; U.knieL.rotation.x = -0.35; U.knieR.rotation.x = -0.35; U.armL.rotation.z = -1.15; U.armR.rotation.z = 1.15; U.rumpf.position.y = 0.9; return w; }
 // Ersatzfigur (bis es Spielfiguren gibt): seitlich auf dem Brett, Knie leicht gebeugt, Arme zur Balance
 function buildSkaterFigur() {
   const g = new THREE.Group(), stoff = new THREE.MeshStandardMaterial({ color: 0x1c1f26, roughness: 0.9 }), hose = new THREE.MeshStandardMaterial({ color: 0x2d3440, roughness: 0.9 }), haut = new THREE.MeshStandardMaterial({ color: 0xd9b08c, roughness: 0.8 }), schuh = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.7 });
@@ -36,6 +36,12 @@ function skateSpeed(dt) { const fw = keys.has("KeyW") || keys.has("ArrowUp"), bk
   const turn = (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0) - (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0); player.yaw += turn * 1.9 * dt; SKATE.lean += (turn * Math.min(1, SKATE.v / 6) * 0.25 - SKATE.lean) * Math.min(1, dt * 6); }
 // Brett und Figur an den Spieler, Kamera hinter und ueber ihm (Third Person)
 function skatePose(dt) { const g = SKATE.g, p = player.pos; g.position.set(p.x, p.y, p.z); g.rotation.set(0, player.yaw + Math.PI / 2, 0); g.userData.f.rotation.set(-SKATE.lean, 0, 0);   // Brett laengs zur Fahrtrichtung, Figur seitlich darauf (Fuesse laengs, Blick zur Seite), neigt sich in die Kurve
+  // Anschieben (Nicolas 2026-11-19: "es braucht noch eine Animation fuer Skateboard anschieben"): solange W gedrueckt ist und das Brett nicht am Hoechsttempo, setzt das hintere Bein
+  // (beinL, Fahrtrichtung = +x der Figur) vorne neben dem Brett auf, stoesst nach hinten ab und kommt angehoben wieder nach vorn; das Standbein geht tiefer in die Knie.
+  { const f = g.userData.f.children[0], U = f && f.userData; if (U && U.beinL) { const fw = keys.has("KeyW") || keys.has("ArrowUp"), max = keys.has("ShiftLeft") || keys.has("ShiftRight") ? 15 : 12, soll = fw && SKATE.v < max - 0.3 ? 1 : 0;
+    SKATE.pk = (SKATE.pk || 0) + (soll - (SKATE.pk || 0)) * Math.min(1, dt * 6); const k = SKATE.pk; if (soll || k > 0.02) SKATE.pt = (SKATE.pt || 0) + dt * 7; const ph = SKATE.pt || 0, lift = Math.max(0, -Math.sin(ph));
+    U.beinL.rotation.z = -0.28 * (1 - k) + (0.55 * Math.cos(ph) - 0.15) * k; U.beinL.rotation.x = 0.32 * k; U.knieL.rotation.x = -0.35 * (1 - k) - (0.05 + 0.95 * lift) * k;
+    U.knieR.rotation.x = -0.35 - 0.95 * k; U.beinR.rotation.x = 0.48 * k; U.rumpf.position.y = 0.9 - 0.2 * k; U.rumpf.rotation.x = -0.15 * k; U.armL.rotation.z = -1.15 + 0.5 * k; U.armR.rotation.z = 1.15 - 0.5 * k; } }
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), want = new THREE.Vector3(p.x - fx * 3.4, p.y + 1.9 - player.pitch * 2, p.z - fz * 3.4); SKATE.cam.lerp(want, Math.min(1, dt * 8));
   camera.position.copy(SKATE.cam); camera.lookAt(p.x + fx * 1.5, p.y + 1.2, p.z + fz * 1.5); }
 // Spiel: statt updatePlayer aus bedienung.js
