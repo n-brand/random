@@ -78,7 +78,9 @@ const HANDY_BG = (() => { try { return JSON.parse(localStorage.getItem("wm-handy
 const handyBgSave = () => { try { localStorage.setItem("wm-handy-bg", JSON.stringify(HANDY_BG)); } catch (e) { toast("Bild konnte nicht gespeichert werden"); } };
 // Darstellung
 const HANDY_APPS = [["kontakte", "Kontakte", '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'], ["web", "Internet", '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'], ["bank", "Bank", '<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>'], ["garage", "Garage", '<path d="M3 20V9l9-5 9 5v11M7 20v-6h10v6M7 17h10"/>'], ["einst", "Einstellungen", '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>']];
-function handyGo(p, push = true) { if (push && HANDY.page !== p) HANDY.hist.push(HANDY.page); HANDY.page = p; handyRender(); const sc = document.querySelector("#handy .h-screen"); if (sc) sc.scrollTop = 0; }
+// Maus freigeben (nur fuer Seiten im Querformat; im Hochformat bleibt sie gefangen, Apps mit Pfeiltasten und Enter – Nicolas 2026-11-19)
+function handyMausFrei() { if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); } if (document.pointerLockElement) document.exitPointerLock(); }
+function handyGo(p, push = true) { if (push && HANDY.page !== p) HANDY.hist.push(HANDY.page); HANDY.page = p; if (handyQuer(p)) { handyMausFrei(); keys.clear(); } handyRender(); const sc = document.querySelector("#handy .h-screen"); if (sc) sc.scrollTop = 0; }
 function handyRender() {
   const box = document.getElementById("handy"); if (!box || box.hidden) return; const p = HANDY.page, sc = box.querySelector(".h-screen"), url = box.querySelector(".h-url");
   const shop = HANDY_SHOPS[p.split(":")[1]];
@@ -113,7 +115,7 @@ const handyIsOpen = () => { const b = document.getElementById("handy"); return b
 // Hochformat blockiert das Spiel nicht (Nicolas 2026-11-18: "offenes Handy im Hochformat soll nicht das Spiel blockieren"): Lauftasten gehen weiter ans Spiel, Klick ins Bild faengt die Maus (Umschauen), das Handy bleibt offen. Querformat (Browser-Seiten) blockiert weiter.
 const HANDY_LAUF = ["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight", "Space", "KeyC", "ControlLeft"];
 const handyBlockiert = () => handyIsOpen() && handyQuer(HANDY.page);
-function handyOpen(page, modell) { const b = document.getElementById("handy"); if (!b) return; if (b.hidden) { const m = modell || handyEigen(); if (!m) return toast("Kein Handy dabei – im Inventar fehlt ein Handy"); HANDY.modell = m; HANDY.sel = 0; HANDY.call = null; if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear(); b.hidden = false; HANDY.hist = []; HANDY.page = "home"; }
+function handyOpen(page, modell) { const b = document.getElementById("handy"); if (!b) return; if (b.hidden) { const m = modell || handyEigen(); if (!m) return toast("Kein Handy dabei – im Inventar fehlt ein Handy"); HANDY.modell = m; HANDY.sel = 0; HANDY.call = null; if (page && handyQuer(page)) handyMausFrei(); keys.clear(); b.hidden = false; HANDY.hist = []; HANDY.page = "home"; }
   if (page) handyGo(page); else handyRender(); }
 function handyClose() { const b = document.getElementById("handy"); if (!b || b.hidden) return; b.hidden = true; if (typeof grabMouse === "function") grabMouse(); }
 const handyShop = id => handyOpen("shop:" + id);

@@ -43,7 +43,7 @@ function personStep(dt) {
 // Tasten im Person-Modus (aus dem keydown der Werkstatt aufgerufen; true = erledigt)
 function personKey(e) {
   if ((typeof laptopIsOpen === "function" && laptopIsOpen()) || (typeof rouletteIsOpen === "function" && rouletteIsOpen()) || (typeof jetonIsOpen === "function" && jetonIsOpen()) || (typeof slotIsOpen === "function" && slotIsOpen()) || (typeof cgIsOpen === "function" && cgIsOpen()) || (typeof handyIsOpen === "function" && handyIsOpen())) return true;
-  if (e.code === "KeyP" && !e.repeat && typeof handyOpen === "function") { if (document.pointerLockElement) document.exitPointerLock(); handyOpen(); return true; }   // Handy (Taste P wie im Spiel)   // laptop.js / roulette.js fangen die Tasten selbst ab
+  if (e.code === "KeyP" && !e.repeat && typeof handyOpen === "function") { handyOpen(); return true; }   // Handy (Taste P wie im Spiel)   // laptop.js / roulette.js fangen die Tasten selbst ab
   if (typeof kontoIsOpen === "function" && kontoIsOpen()) { if (e.code === "Escape") kontoClose(); return true; }
   if (typeof invIsOpen === "function" && invIsOpen()) { if (e.code === "Escape" || ((e.code === "KeyI" || e.code === "KeyE") && !e.repeat)) invClose(); return true; }
   if ((e.code === "KeyE" || e.code === "KeyI") && !e.repeat) { if (document.pointerLockElement) document.exitPointerLock(); invOpen(); return true; }

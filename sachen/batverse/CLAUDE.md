@@ -70,6 +70,12 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Handy im Hochformat lässt die Maus gefangen** (Nicolas 2026-11-19: "Handy im Hochformat soll die Maus nicht wegnehmen, durch die Apps kann man dann ja mit Pfeiltasten und Enter navigieren"): handy.js `handyMausFrei()`.
+  - Öffnen (P, Rechtsklick mit Handy in der Hand) gibt die Maus nicht mehr frei. Umschauen, Laufen und Apps per Pfeiltasten und Enter gehen gleichzeitig.
+  - Erst eine Seite im Querformat (Internet, Bank, Läden) gibt die Maus frei, über `handyGo` bzw. `handyOpen` mit Quer-Seite.
+  - Werkstatt person.js: P gibt die Maus nicht mehr selbst frei.
+  - Geprüft in der Werkstatt: offen im Hochformat bleibt `dragging` an, Pfeil und Enter öffnen das Internet quer, dann ist die Maus frei. Echter Mausfang im Test nicht möglich.
+
 - **Bus neu mit Radausschnitten** (Nicolas 2026-11-19: "Bus auch überarbeiten – vor allem die Ausscherung für die Reifen"): modelle.js `buildBus`.
   - Vorher steckten die Räder in einem durchgehenden Kasten bis 1,0 m. Jetzt ist die Karosserie ein Loft mit ausgeschnittenen Radläufen (`polArch`), schwarzen Radlauf-Kanten und Schürzen zwischen den Achsen. Runde Dachkanten, leicht gerundete Front.
   - Seiten: Fensterband mit Streben, cremefarbenes Dachband. Zwei Doppeltüren rechts mit Rahmen, Gummi, Griffstangen und Trittlicht. Liniennummer seitlich und hinten, Werbefläche links (Gotham Royal Casino).
