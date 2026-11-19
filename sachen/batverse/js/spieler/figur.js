@@ -16,7 +16,8 @@ function buildFigur(o = {}) { o = { ...FIGUR_STD, ...o }; const g = new THREE.Gr
   const rumpf = gelenk(g, 0, 0.95, 0); { const b = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.36, 4, 12), ober); b.scale.set(1, 1, 0.72); b.position.y = 0.3; b.castShadow = true; rumpf.add(b);
     const bk = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.08, 4, 12), hose); bk.scale.set(1.05, 1, 0.75); bk.position.y = 0.0; rumpf.add(bk); }   // Oberkoerper, Becken
   const hals = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.12, 10), haut); hals.position.y = 0.64; rumpf.add(hals);
-  const kopf = gelenk(rumpf, 0, 0.7, 0); kopf.scale.setScalar(1.18); { const k = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), [haut]); k.scale.set(1, 1.12, 1); k.position.y = 0.14; k.castShadow = true; kopf.add(k);
+  const kopf = gelenk(rumpf, 0, 0.7, 0); kopf.scale.setScalar(1.18); { const k = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), haut);   // Schaedel (war als Material-Liste ohne Gruppen unsichtbar: Hinterkopf fehlte, Nicolas 2026-11-19 Bild "Kopf")
+    k.scale.set(1, 1.12, 1); k.position.y = 0.14; k.castShadow = true; kopf.add(k);
     const ges = new THREE.Mesh(new THREE.SphereGeometry(0.151, 20, 16, Math.PI * 1.12, Math.PI * 0.76, Math.PI * 0.2, Math.PI * 0.55), new THREE.MeshStandardMaterial({ map: figurGesicht(o), roughness: 0.8 })); ges.scale.set(1, 1.12, 1); ges.position.y = 0.14; ges.rotation.y = 0; kopf.add(ges);   // Gesicht vorne (-z)
     for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), haut); e.scale.set(0.6, 1, 1); e.position.set(sx * 0.148, 0.14, 0.01); kopf.add(e); }   // Ohren
     const fr = o.frisur, hm = haar; if (fr === 0) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.158, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.45), hm); h.scale.set(1, 1.12, 1); h.position.y = 0.15; h.rotation.x = 0.3; kopf.add(h); }   // kurz (nach hinten gekippt, Stirn frei)
@@ -30,13 +31,20 @@ function buildFigur(o = {}) { o = { ...FIGUR_STD, ...o }; const g = new THREE.Gr
   g.userData = { kopf, rumpf, armL, armR, unterarmL: uaL, unterarmR: uaR, beinL, beinR, knieL, knieR, phase: 0 }; g.name = "Spielfigur"; return g; }
 // Figuren, die sich bewegen (Werkstatt-Vorfuehrung, Skateboard): FIGUREN.push({ g, tempo }) – figurStep aus tresorStep
 const FIGUREN = [];
-function figurStep(dt) { for (const f of FIGUREN) if (f.g.visible && f.g.parent) { figurPose(f.g, dt, f.tempo || 0, f.sprung && !f.gleit); if (f.g.userData.cape && typeof batUmhang === "function") batUmhang(f.g, dt, f.tempo || 0, !!f.gleit, !!f.sprung); } }   // Batman: Umhang (F3)
+function figurStep(dt) { for (const f of FIGUREN) if (f.g.visible && f.g.parent) { figurPose(f.g, dt, f.tempo || 0, f.sprung && !f.gleit ? "zyklus" : false); if (f.g.userData.cape && typeof batUmhang === "function") batUmhang(f.g, dt, f.tempo || 0, !!f.gleit, !!f.sprung); } }   // Batman: Umhang (F3)
 function figurPose(F, dt, tempo = 0, sprung = false) { const U = F.userData; U.phase += dt * (2.2 + tempo * 1.25); U.t = (U.t || 0) + dt; const p = U.phase, k = Math.min(1, tempo / 4), run = Math.max(0, Math.min(1, (tempo - 5) / 3));
   const sw = Math.sin(p) * (0.5 * k + 0.35 * run), atm = Math.sin(U.t * 2) * 0.012;
   U.beinL.rotation.x = sw; U.beinR.rotation.x = -sw; U.knieL.rotation.x = -Math.max(0, -Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run); U.knieR.rotation.x = -Math.max(0, Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run);   // Knie knicken nach hinten, Ellbogen nach vorne (2026-11-19, Nicolas: "Figuren falsch herum gebaut")
   U.armL.rotation.x = -sw * 0.9; U.armR.rotation.x = sw * 0.9; U.armL.rotation.z = -0.08; U.armR.rotation.z = 0.08; U.unterarmL.rotation.x = U.unterarmR.rotation.x = 0.2 + 0.9 * run;
   U.rumpf.position.y = 0.95 + Math.abs(Math.sin(p)) * 0.035 * k + atm; U.rumpf.rotation.x = -0.12 * run; U.kopf.rotation.x = 0.1 * run;
-  if (sprung) {   // Sprung als Ablauf alle 1,6 s (Nicolas 2026-11-19: "die Springen-Animation geht nicht"): in die Knie, abspringen (0,55 m hoch, Beine angezogen, Arme hoch), landen, abfedern, stehen
+  // sprung: true = in der Luft (dritte Person, echter Sprung), "zyklus" = Vorfuehrung (Werkstatt). Im Lauf (Tempo > 2) Laufsprung: ein Bein vorn gestreckt, das andere hinten angewinkelt,
+  // Arme gegengleich (Nicolas 2026-11-19: "ich will noch waehrend dem Laufen Springen-Animation")
+  const laufSprung = (z) => { U.beinL.rotation.x = 0.85 * z; U.knieL.rotation.x = -0.35 * z; U.beinR.rotation.x = -0.55 * z; U.knieR.rotation.x = -1.25 * z; U.armL.rotation.x = -0.9 * z; U.armR.rotation.x = 1.1 * z; U.unterarmL.rotation.x = U.unterarmR.rotation.x = 0.6 + 0.4 * z; U.rumpf.rotation.x = -0.18 * z; };
+  if (sprung === true) { if (tempo > 2) laufSprung(1); else { U.beinL.rotation.x = U.beinR.rotation.x = 0.7; U.knieL.rotation.x = U.knieR.rotation.x = -1.1; U.armL.rotation.x = U.armR.rotation.x = 1.3; U.armL.rotation.z = -0.15; U.armR.rotation.z = 0.15; } }
+  else if (sprung && tempo > 2) {   // Vorfuehrung: rennen, alle 1,4 s ein Laufsprung (0,45 m)
+    if (U.y0 === undefined) U.y0 = F.position.y; const c = (U.t % 1.4) / 1.4, flug = c >= 0.55 && c <= 0.95 ? (c - 0.55) / 0.4 : -1, z = flug >= 0 ? Math.sin(flug * Math.PI) : 0;
+    F.position.y = U.y0 + (flug >= 0 ? 4 * 0.45 * flug * (1 - flug) : 0); if (flug >= 0) laufSprung(Math.min(1, z * 1.6)); }
+  else if (sprung) {   // Sprung als Ablauf alle 1,6 s (Nicolas 2026-11-19: "die Springen-Animation geht nicht"): in die Knie, abspringen (0,55 m hoch, Beine angezogen, Arme hoch), landen, abfedern, stehen
     if (U.y0 === undefined) U.y0 = F.position.y; const c = (U.t % 1.6) / 1.6, ein = c < 0.2 ? Math.sin(c / 0.2 * Math.PI / 2) : c < 0.28 ? 1 - (c - 0.2) / 0.08 : c > 0.72 && c < 0.9 ? Math.sin((c - 0.72) / 0.18 * Math.PI) : 0, flug = c >= 0.25 && c <= 0.72 ? (c - 0.25) / 0.47 : -1;
     const hoch = flug >= 0 ? 4 * 0.55 * flug * (1 - flug) : 0, zieh = flug >= 0 ? Math.sin(flug * Math.PI) : 0, b = 0.75 * ein + 0.9 * zieh;
     F.position.y = U.y0 + hoch; U.rumpf.position.y = 0.95 - 0.2 * ein; U.rumpf.rotation.x = -0.25 * ein; U.beinL.rotation.x = U.beinR.rotation.x = b; U.knieL.rotation.x = U.knieR.rotation.x = -1.6 * b;
