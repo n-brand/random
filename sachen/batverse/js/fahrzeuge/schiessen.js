@@ -148,7 +148,7 @@ function shotsStep(dt) {
     // Turm und Rohr laufen dem Visier nach (Nicolas 2026-11-12, Variante A zum Testen): Turm hoechstens spec.turretSpeed (40) Grad/s (in fahren.js),
     // Rohrhoehe spec.gunSpeed (20) Grad/s; geschossen wird entlang des Rohrs, die Rohr-Markierung (#gun-mark) zeigt, wohin es gerade zeigt
     if (SHOT.aim) { const dx = SHOT.aim.x - shotA.x, dz = SHOT.aim.z - shotA.z, gv = (C.spec.gunSpeed || 20) * Math.PI / 180 * dt;
-      C.twWant = Math.atan2(-dx, -dz); C.elev += Math.max(-gv, Math.min(gv, Math.max(-0.4, Math.min(0.55, Math.atan2(SHOT.aim.y - shotA.y, Math.hypot(dx, dz)))) - C.elev)); }
+      C.twWant = Math.atan2(-dx, -dz); C.elev += Math.max(-gv, Math.min(gv, Math.max(-0.4, Math.min((C.spec.gunMax || 0.6) - 0.05, Math.atan2(SHOT.aim.y - shotA.y, Math.hypot(dx, dz)))) - C.elev)); }
     if (SHOT.unzoom > 0 && (SHOT.unzoom -= dt) <= 0) SHOT.zoomT = 1;   // TEST Auto-Rauszoomen
     SHOT.zoom += (SHOT.zoomT - SHOT.zoom) * Math.min(1, dt * 10); const fov = 70 / SHOT.zoom; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
     // gezoomt: Kamera nach vorne auf den Visier-Strahl der normalen Kamera, auf den Punkt neben der Zieloptik am Turm (sonst sah man den eigenen

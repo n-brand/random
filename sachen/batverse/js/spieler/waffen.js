@@ -53,8 +53,8 @@ function weaponUse() {
   const id = weaponHeld(); if (id && typeof GUN_SPEC !== "undefined" && GUN_SPEC[id]) { if (onFoot() && !AIM.grap) gunTrigger(true); return; }   // Schusswaffen (schusswaffen.js)
   if (!id || !onFoot() || AIM.cd > 0 || AIM.grap) return;
   AIM_ray.setFromCamera({ x: 0, y: 0 }, camera); const d = AIM_ray.ray.direction.clone(), o = camera.position.clone().addScaledVector(d, 0.5); o.y -= 0.15;
-  if (id === "batarang" || id === "rauchbombe") {
-    if (!invTake(id, 1)) return; AIM.cd = 0.35; const bat = id === "batarang", m = new THREE.Mesh(bat ? AIM_M.bat : AIM_M.bomb, bat ? AIM_M.batM : AIM_M.bombM);
+  if (id === "batarang" || id === "rauchbombe" || id === "granate") {
+    if (!invTake(id, 1)) return; AIM.cd = 0.35; const bat = id === "batarang", m = id === "granate" ? buildGranate() : new THREE.Mesh(bat ? AIM_M.bat : AIM_M.bomb, bat ? AIM_M.batM : AIM_M.bombM);
     m.position.copy(o); if (bat) m.position.addScaledVector(new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw)), 0.25);   // aus der rechten Hand
     m.userData.dynamic = true; scene.add(m); const v = d.clone().multiplyScalar(bat ? 30 : 17); if (!bat) v.y += 3.5;
     // Batarang als Bumerang: fliegt hinaus (beim Zielen gerade bis zum Zielpunkt, sonst im Linksbogen ca. 22 m), kehrt dann in die Hand zurueck
@@ -101,7 +101,7 @@ function aimArcInit() {
   ARC.ring.rotation.x = -Math.PI / 2; for (const o of [ARC.dots, ARC.ring]) { o.frustumCulled = false; o.userData.dynamic = true; o.renderOrder = 5; scene.add(o); } }
 function aimArc() {
   if (AIM.on && onFoot() && weaponHeld() === "greifhaken" && !AIM.grap) return grapAim();
-  const show = AIM.on && onFoot() && weaponHeld() === "rauchbombe" && !AIM.grap;
+  const show = AIM.on && onFoot() && (weaponHeld() === "rauchbombe" || weaponHeld() === "granate") && !AIM.grap;
   if (!show) { if (ARC.dots) ARC.dots.visible = ARC.ring.visible = false; return; }
   if (!ARC.dots) aimArcInit();   // zuerst anlegen (Nicolas 2026-11-18: "Rechtsklick mit Rauchbombe stuerzt das Spiel ab" – die Farben wurden vor dem ersten Anlegen gesetzt)
   ARC.dots.material.color.setHex(0xffffff); ARC.ring.material.color.setHex(0xffe08a); ARC.ring.rotation.set(-Math.PI / 2, 0, 0); ARC.ring.scale.setScalar(1);
@@ -121,6 +121,7 @@ function weaponsStep(dt) {
   // Wurfgeschosse
   for (let i = AIM.proj.length - 1; i >= 0; i--) { const P = AIM.proj[i]; P.t += dt;
     if (P.id === "batarang") { batarangStep(P, dt, i); continue; }
+    if (P.id === "granate") { if (granateStep(P, dt)) AIM.proj.splice(i, 1); continue; }
     if (P.stuck) { if ((P.stuck += dt) > 6) { scene.remove(P.m); AIM.proj.splice(i, 1); } continue; }
     P.v.y -= (P.id === "batarang" ? 2.5 : 9.8) * dt; const a = P.m.position.clone(), b = a.clone().addScaledVector(P.v, dt), h = shotSeg(a, b, null, 0.3);
     if (P.id === "batarang") P.m.rotation.y += dt * 30;
@@ -172,6 +173,30 @@ function batarangStep(P, dt, i) {
   if (h) { batBounce(P, h); return; }
   m.position.copy(b); if (P.t > 8) { P.fall = true; P.v.set(0, 0, 0); }
 }
+// ---- Handgranate (N6, Nicolas 2026-11-17 Notizen "Granaten als Werkzeug"; gebaut 2026-11-19 "Ja, weiter"): Splittergranate in Oliv mit Rillen, Kopf, Buegel und Sicherungsring.
+// Wurf wie die Rauchbombe (Bogen, Zielhilfe), prallt ab (Normale grob: Boden = senkrecht, sonst waagrecht gespiegelt), rollt aus, nach 2,5 s Explosion: Blitz/Feuerball (fxBoom im Spiel,
+// sonst eigener Blitz), Rauch, Knall; Fahrzeuge bis 7 m vehHit (Spiel), Bankautomat in der Naehe atmShot (Schaden 160).
+function buildGranate() { const g = new THREE.Group(), oliv = new THREE.MeshStandardMaterial({ color: 0x4b5a3a, roughness: 0.75, metalness: 0.15, flatShading: true }), metall = new THREE.MeshStandardMaterial({ color: 0x8a9096, metalness: 0.6, roughness: 0.35 }), gold = new THREE.MeshStandardMaterial({ color: 0xc9a640, metalness: 0.7, roughness: 0.3 });
+  const k = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 10), oliv); k.scale.set(1, 1.18, 1); g.add(k);
+  for (const y of [-0.012, 0.012]) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.0322, 0.0025, 4, 16), new THREE.MeshStandardMaterial({ color: 0x2f3826 })); r.rotation.x = Math.PI / 2; r.position.y = y; g.add(r); }
+  const h = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.016, 0.022, 10), metall); h.position.y = 0.044; g.add(h);
+  const b = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.06, 0.012), metall); b.position.set(0.024, 0.026, 0); b.rotation.z = -0.25; g.add(b);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.012, 0.0018, 4, 14), gold); ring.position.set(-0.022, 0.05, 0); ring.rotation.y = Math.PI / 2; g.add(ring);
+  for (const o of g.children) o.castShadow = true; g.name = "Handgranate"; return g; }
+if (typeof HAND3D !== "undefined") HAND3D.granate = () => { const g = new THREE.Group(), m = buildGranate(); m.scale.setScalar(1.4); m.rotation.set(0.2, 0.5, -0.2); g.add(m); return g; };
+function granateStep(P, dt) { P.v.y -= 9.8 * dt; const a = P.m.position.clone(), b = a.clone().addScaledVector(P.v, dt), h = shotSeg(a, b, null, 0.2);
+  if (h) { const steil = P.v.y < 0 && Math.abs(P.v.y) > Math.hypot(P.v.x, P.v.z) * 0.5; if (steil) { P.v.y = -P.v.y * 0.3; P.v.x *= 0.6; P.v.z *= 0.6; } else { P.v.x *= -0.35; P.v.z *= -0.35; } P.m.position.copy(a); if (P.v.length() < 0.6) P.v.set(0, 0, 0); }
+  else P.m.position.copy(b);
+  P.m.rotation.x += dt * P.v.length() * 3;
+  if (P.t < 2.5) return false;
+  const p = P.m.position.clone(); scene.remove(P.m);
+  if (typeof fxBoom === "function") fxBoom(p.clone(), false); else { const f = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false })); f.position.copy(p); f.userData.dynamic = true; scene.add(f);
+    let t = 0; const iv = setInterval(() => { t += 0.03; f.scale.setScalar(1 + t * 10); f.material.opacity = Math.max(0, 1 - t * 3); if (t > 0.35) { clearInterval(iv); scene.remove(f); f.material.dispose(); } }, 30); }
+  aimSmoke(p); if (typeof shotSound === "function") shotSound(0.7, 0.7);
+  if (typeof VEH !== "undefined" && typeof vehHit === "function") for (const v of VEH) if (!v.dead && v.g && v.g.visible && Math.hypot(v.x - p.x, v.z - p.z) < 7) vehHit(v, p.clone());
+  if (typeof atmShot === "function") for (const q of [[0, 0], [0.8, 0], [-0.8, 0], [0, 0.8], [0, -0.8]]) atmShot(new THREE.Vector3(p.x + q[0], p.y + 0.8, p.z + q[1]), 160);
+  const pl = typeof player !== "undefined" ? player.pos : typeof PERSON !== "undefined" ? PERSON.pos : null; if (pl && pl.distanceTo(p) < 5 && typeof toast === "function") toast("Zu nah an der Explosion!");
+  return true; }
 function aimSmoke(p) { const S = { t: 0, s: [] }; for (let k = 0; k < 26; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: AIM_M.smokeT, transparent: true, depthWrite: false, opacity: 0.75 }));
     s.position.copy(p); s.position.y += 0.4; const a = Math.random() * 6.28, r = Math.random(); s.userData.v = new THREE.Vector3(Math.cos(a) * 3 * r, 0.6 + Math.random() * 1.6, Math.sin(a) * 3 * r); s.userData.r = 0.5 + r; s.userData.dynamic = true; scene.add(s); S.s.push(s); }
   AIM.smoke.push(S); shotSound?.(0.25, 0.4); }

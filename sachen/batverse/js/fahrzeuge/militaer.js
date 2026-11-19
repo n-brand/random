@@ -379,7 +379,7 @@ function buildMinotaurus() {
   const gunMin = new Float32Array(360).fill(-0.14);
   g.name = "Minotaurus"; return { g, wheels, turret, gun, gunMin };
 }
-const SPEC_MINOTAURUS = { name: "Minotaurus (Drohnenpanzer)", turretSpeed: 70, gunSpeed: 40, muzzle: 2.3, sight: [0.62, 0.75, -0.45], wheels: [[-1.15, -1.3], [1.15, -1.3], [-1.15, 1.3], [1.15, 1.3]], wb: 2.6, track: 2.3, pts: [-1.2, 0, 1.2], R: 1.3, circR: 1.25, enter: 3.6,
+const SPEC_MINOTAURUS = { name: "Minotaurus (Drohnenpanzer)", turretSpeed: 70, gunSpeed: 40, gunMax: 1.05, muzzle: 2.3, sight: [0.62, 0.75, -0.45], wheels: [[-1.15, -1.3], [1.15, -1.3], [-1.15, 1.3], [1.15, 1.3]], wb: 2.6, track: 2.3, pts: [-1.2, 0, 1.2], R: 1.3, circR: 1.25, enter: 3.6,
   maxN: 16, maxF: 22, revMax: 14, acc: 7, steer: 1.2, jump: false, grade: 75, tracks: true, hull: [-1.2, 0, 1.2].flatMap(x => [-1.9, -0.6, 0.6, 1.9].map(z => [x, 0.05, z])), camD: 8, camH: 1.7, seat: [0, 1.95, 0.4], bodyH: 1.9, bike: false, mass: 9,
   exits: [[-2.2, 0], [2.2, 0], [-2.2, 1.2], [2.2, 1.2], [0, -3.2], [0, 3.2]],
   msg: "Minotaurus (ferngesteuert): W/S Gas/Bremse, A/D lenken, Maus dreht die Waffenstation, Linksklick/Leertaste schiessen, V Kamera, Shift aussteigen" };

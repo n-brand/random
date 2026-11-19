@@ -474,10 +474,10 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
   A.g.updateMatrixWorld(true); A.turret.getWorldPosition(vA); A.gun.getWorldPosition(vB);
   A.tw = A.tw ?? A.h; const tv = (A.spec.turretSpeed || 40) * Math.PI / 180 * dt, gv = (A.spec.gunSpeed || 20) * Math.PI / 180 * dt;
   A.tw += Math.max(-tv, Math.min(tv, wrapW(Math.atan2(-(aim.x - vA.x), -(aim.z - vA.z)) - A.tw)));
-  A.elev = A.elev ?? 0; A.elev += Math.max(-gv, Math.min(gv, Math.max(-0.4, Math.min(0.55, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z)))) - A.elev));
+  A.elev = A.elev ?? 0; A.elev += Math.max(-gv, Math.min(gv, Math.max(-0.4, Math.min((A.spec.gunMax || 0.6) - 0.05, Math.atan2(aim.y - vB.y, Math.hypot(aim.x - vB.x, aim.z - vB.z)))) - A.elev));
   A.turret.rotation.y = wrapW(A.tw - A.h);
   const ad = (((A.turret.rotation.y * 180 / Math.PI) % 360) + 360) % 360, a0 = Math.floor(ad) % 360, fr = ad - Math.floor(ad), lo = A.gunMin ? A.gunMin[a0] * (1 - fr) + A.gunMin[(a0 + 1) % 360] * fr : -0.45;
-  A.gun.rotation.x = Math.max(lo, Math.min(0.6, A.elev));
+  A.gun.rotation.x = Math.max(lo, Math.min(A.spec.gunMax || 0.6, A.elev));
   // Zoom: ab mehr als 1x sitzt die Kamera in der Zieloptik oben am Turm; nach einem Schuss nach 0,35 s zurueck auf 1x (wie im Spiel, dort TEST)
   if (ZOOM.un > 0 && (ZOOM.un -= dt) <= 0) ZOOM.t = 1;
   ZOOM.z += (ZOOM.t - ZOOM.z) * Math.min(1, dt * 10); const fov = 70 / ZOOM.z; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }

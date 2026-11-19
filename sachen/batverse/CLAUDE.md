@@ -61,6 +61,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Eigenes Hintergrundbild | Handy: App Einstellungen > Eigenes Bild hochladen; Laptop: Einstellungen > Personalisierung > Eigenes Bild hochladen |
 | Bankautomat aufbrechen | mit einer Schusswaffe darauf schiessen (ca. 15 Pistolentreffer); danach fliegen 20 s Geldscheine heraus, darüberlaufen sammelt sie (je 50 $ Bargeld); nach 3 min wieder heil |
 | Crash | zwei Einsätze (je "dabei", − / + Betrag), STARTEN zahlt beide; jeder hat seinen eigenen AUSZAHLEN-Knopf, Leertaste = starten bzw. nächsten Einsatz auszahlen; nach dem letzten Auszahlen fliegt das Flugzeug bis zum Absturzpunkt weiter |
+| Handgranate | in der Hand: rechte Maus = Wurfbahn, Linksklick = werfen; explodiert nach 2,5 s |
 | Zigaretten | in der Hand Linksklick = anzünden (braucht ein Feuerzeug im Inventar), brennt ca. 40 s; nochmal Linksklick = ausdrücken; jede angezündete ist verbraucht |
 | USB-Stick | im Laptop: Taskleiste USB-Symbol > einstecken/auswerfen, App "USB-Laufwerk" zeigt die Dateien; Sperrbildschirm: "USB-Stick einstecken" (schwarzer Stick) umgeht das Passwort |
 | Fidget Spinner | in der Hand linke Maus halten = beschleunigen (bis ca. 6 U/s), loslassen = läuft ca. 20 s aus, kurzer Linksklick = stoppt |
@@ -71,6 +72,14 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Handgranate (N6) und Minotaurus zielt höher** (Nicolas 2026-11-19 "Ja, weiter"):
+  - Gegenstand `granate` "Handgranate" (Art Waffe, Stapel 8, 2D-Symbol). waffen.js `buildGranate` (Splittergranate in Oliv mit Rillen, Kopf, Bügel, Sicherungsring) in der Hand (HAND3D) und beim Wurf.
+  - Ablauf: Wurf wie die Rauchbombe mit Zielhilfe (Wurfbahn und Ring). `granateStep` prallt ab (Boden: nach oben, Wand: zurück, gedämpft), rollt aus und explodiert nach 2,5 s.
+  - Explosion: fxBoom im Spiel, in der Werkstatt eigener Blitz; Rauch, Knall. Fahrzeuge bis 7 m vehHit, Bankautomat in der Nähe atmShot 160, Warnung "Zu nah an der Explosion!" unter 5 m.
+  - Gotham Arms: 4 Handgranaten 900 $ (geschätzt).
+  - `gunMax` je Spec (fahren.js, schiessen.js, Werkstatt): Rohr-Höchstwinkel statt fest 0,6 rad. Minotaurus 1,05 rad (60°), Panzer unverändert.
+  - Geprüft in der Werkstatt: Granate geworfen (9,2 m), explodiert mit Rauch, 8 → 7; im Laden. Minotaurus-Winkel nur im Code geprüft, nicht im Bild.
 
 - **Kampfhubschrauber: Zoom** (Nicolas 2026-11-19: "zoomen auch bitte"): militaer.js – im Flug Mausrad zoomt 1× bis 6× auf die Bildmitte (je Raste 1,25, weich), Anzeige im Visier; beim Aussteigen zurück auf das alte Sichtfeld. Die Maus wird beim Zoomen feiner wie beim Panzer (schiessen.js `zoomK` mit `khZoomK`, gleiche Einstellung). Geprüft in der Werkstatt: 5 Rasten = 3,1×, Sichtfeld 45° → 14,8°, nach dem Aussteigen 45°.
 
