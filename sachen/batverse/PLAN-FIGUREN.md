@@ -21,7 +21,7 @@ Einfache, freundliche Figuren im Low-Poly-Stil: runder Kopf, gezeichnetes Gesich
 | F4 | **Figuren in der Welt**: Fussgänger in Gotham (gehen Gehsteige entlang, warten an Kreuzungen), Personal im Casino (Croupiers an den Tischen, Kassierer), Polizisten am Präsidium. Viele gleichzeitig: einfache Instanzen, nur nah animiert. | teilweise 2026-11-19: Personal im Casino (Croupiers, Kassierer), Polizisten am Präsidium; 12 Fussgänger auf den Gehsteigen (gotham-fussgaenger.js); warten an Kreuzungen offen |
 | F5 | **Fahrzeuge**: Figur sitzt sichtbar im Fahrzeug (Sitzpunkt je Spec), Ein-/Aussteigen kurz animiert; wo der Platz nicht passt, Fahrzeug oder Sitz anpassen. | teilweise 2026-11-19: Fahrer sitzt sichtbar in Autos und auf Motorrädern (fahrerStep); Boote/Fluggeräte und Ein-/Aussteigen offen |
 | F6 | **Gebäude prüfen**: Türen, Treppen, Decken, Theken auf Figurengrösse (Casino, Präsidium, Werkstatt-Bauten); Liste der Abweichungen und Korrekturen. | offen |
-| F7 | **Akten und Dating mit Gesichtern**: Fotos in der Akte (N38) und der Dating-App (N40) aus den Figuren gerendert. | offen |
+| F7 | **Akten und Dating mit Gesichtern**: Fotos in der Akte (N38) und der Dating-App (N40) aus den Figuren gerendert. | teilweise 2026-11-19: Akte mit Porträt aus der Figur (figurFoto); Dating offen |
 
 ## Fragen (stehen auch in OFFENE-FRAGEN.md 53)
 

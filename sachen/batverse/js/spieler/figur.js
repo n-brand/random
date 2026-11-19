@@ -147,6 +147,7 @@ const FAHRER = { F: {}, car: null };
 // Boote (BOAT, seat [z, Sitzhoehe], Augen 0,9 m darueber) und Fluggeraete (FLY, cockpit [z, Augenhoehe]) ebenso, nicht im U-Boot und nicht in der Cockpit-Sicht (2026-11-19)
 function fahrerSitz() { const C = typeof CAR !== "undefined" ? CAR : null; if (C && C.on && C.g && C.spec && C.spec.seat) return C.view === 1 ? null : { C, g: C.g, k: C.g.scale.x || 1, x: C.spec.seat[0], y: C.spec.seat[1], z: C.spec.seat[2], bike: !!C.spec.bike };
   const B = typeof BOAT !== "undefined" ? BOAT : null; if (B && B.on && B.g && B.spec && B.spec.seat && !B.spec.sub) return B.view === 1 ? null : { C: B, g: B.g, k: 1, x: 0, y: B.spec.seat[1] + 0.9, z: B.spec.seat[0] };
+  const J = typeof JET !== "undefined" ? JET : null; if (J && J.on && J.g && !J.dead) return J.view === 1 ? null : { C: J, g: J.g, k: J.g.scale.x || 1, x: 0, y: 1.05, z: -5.3 };   // Kampfjet: Augen wie die Cockpit-Kamera (jet.js)
   const F = typeof FLY !== "undefined" ? FLY : null; if (F && F.on && F.g) { if (F.view === 1) return null; const ck = F.cockpit || [-2.3 - (typeof BAT_ZC !== "undefined" ? BAT_ZC * BAT_KZ : 0), 1.45]; return { C: F, g: F.g, k: 1, x: 0, y: ck[1], z: ck[0] }; } return null; }
 function fahrerStep() { const S = fahrerSitz(), C = S && S.C, an = !!S;
   if (!an) { if (FAHRER.cur) { FAHRER.cur.parent && FAHRER.cur.parent.remove(FAHRER.cur); FAHRER.cur = null; FAHRER.car = null; } return; }
@@ -156,3 +157,11 @@ function fahrerStep() { const S = fahrerSitz(), C = S && S.C, an = !!S;
   for (const [b, kn, sd] of [[U.beinL, U.knieL, -1], [U.beinR, U.knieR, 1]]) { b.rotation.set(bike ? 1.1 : 1.6, 0, sd * (bike ? 0.25 : 0.08)); kn.rotation.x = bike ? -1.3 : -1.0; }
   for (const [a, ua, sd] of [[U.armL, U.unterarmL, -1], [U.armR, U.unterarmR, 1]]) { a.rotation.set(bike ? 1.25 : 0.95, 0, sd * 0.12); ua.rotation.x = bike ? 0.15 : 0.55; }
   if (U.cape && typeof batUmhang === "function") batUmhang(F, 1 / 60, 0, false, false); }
+
+// ---- Portraet aus der Spielfigur (F7, 2026-11-19): figurFoto(art) -> Bild (data-URL, 160 x 192) von Kopf und Schultern, einmal gerendert und gemerkt; art "bruce" oder "bat"
+const FIG_FOTO = {};
+function figurFoto(art = "bruce") { if (FIG_FOTO[art]) return FIG_FOTO[art]; let r = null;
+  try { const F = art === "bat" ? buildBatman() : buildFigur({ schulter: 1.22, oberteil: 0x1c1f26, hose: 0x23262c, schuhe: 0x0e0f12, haar: 0x1a120c, frisur: 0 }), sc = new THREE.Scene();
+    sc.background = new THREE.Color(0x26303c); sc.add(new THREE.HemisphereLight(0xffffff, 0x404858, 1.6)); const d = new THREE.DirectionalLight(0xffffff, 1.4); d.position.set(-1, 2, -3); sc.add(d); sc.add(F); F.rotation.y = 0.18; F.updateMatrixWorld(true);
+    const c = new THREE.PerspectiveCamera(15, 160 / 192, 0.1, 20); c.position.set(0, 1.62, -2.4); c.lookAt(0, 1.56, 0); r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(160, 192); r.render(sc, c);
+    FIG_FOTO[art] = r.domElement.toDataURL("image/png"); } catch (e) { FIG_FOTO[art] = null; } finally { if (r) { r.dispose(); r.forceContextLoss(); } } return FIG_FOTO[art]; }
