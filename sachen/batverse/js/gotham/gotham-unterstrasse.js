@@ -5,7 +5,17 @@
 // Stuetzen in der Mitte alle 15 m, Deckenleuchten, Rampen mit Bruestung, obere Fahrspuren neben den Rampen, Abschlusswaende, Deckplatte ueber dem
 // Gelaende-Ausschnitt. Kollision: Kreise (Waende innen, Stuetzen, Bruestungen), Regel: weiter innen als die sichtbare Flaeche.
 "use strict";
-const LICHT_AUS = { on: false, k: 0, t: 0, gates: [] };   // Stromausfall unten (N15), siehe lichtAus
+const LICHT_AUS = { k: 0, gates: [], B: {} };   // Stromausfall je Bereich (N15): B[id] = { on, t, gates, set(an), drin(), text }, siehe lichtAus
+function lichtBereich(id, o) { return LICHT_AUS.B[id] = { on: false, t: 0, gates: [], ...o }; }
+lichtBereich("unten", { text: "in den unteren Strassen", set(an) { const m = GDECK.lampM; if (m) { m.emissiveIntensity = an ? 0 : 1.3; m.color.setHex(an ? 0x2a2c2a : 0xeefff0); }
+    const G = GDECK.amp; if (G) { for (const k of ["r", "y", "g"]) G.L[k].on.visible = !an; for (const k of ["r", "g"]) G.P[k].visible = !an; } },
+  drin(p) { return p.y < GOT.STR - 2 && p.y > GOT.STR - 9 && !!gdeckNear(p.x, p.z, 2); } });
+// Sicherungskasten (Mesh fuer den Rechtsklick und Gehaeuse) an (x, y, z), Front zeigt nach (dx, dz); Ziel erst im ersten Bild in gates (gampelStep)
+function lichtKasten(id, x, y, z, dx, dz, par = scene) { const g = new THREE.Group(), h = Math.atan2(dx, dz); g.position.set(x, y, z); g.rotation.y = h; g.userData.keep = true; par.add(g);
+  const M = LICHT_AUS.M || (LICHT_AUS.M = { k: new THREE.MeshStandardMaterial({ color: 0x8a8e92, roughness: 0.5, metalness: 0.4 }), s: new THREE.MeshBasicMaterial({ map: canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#ffd43b"; c.beginPath(); c.moveTo(w / 2, 4); c.lineTo(w - 4, h - 6); c.lineTo(4, h - 6); c.fill(); c.fillStyle = "#111"; c.font = "bold 34px Arial"; c.textAlign = "center"; c.fillText("⚡", w / 2, h - 14); }) }) });
+  const b = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.85, 0.22), M.k); g.add(b); const sg = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.2), M.s); sg.position.set(0, 0.1, 0.115); g.add(sg);
+  const hm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.1, 0.5), new THREE.MeshBasicMaterial({ visible: false })); g.add(hm); g.updateMatrixWorld(true); const w = hm.getWorldPosition(new THREE.Vector3());
+  const B = LICHT_AUS.B[id], gt = { name: "Sicherungskasten", g: hm, call: () => lichtAus(!B.on, id), verbs: ["Strom abschalten", "Strom abschalten"], a: [w.x, w.z], b: [w.x, w.z], near: 2.5 }; B.gates.push(gt); LICHT_AUS.gates.push(gt); LICHT_AUS.pend = true; return g; }
 
 // liegt (x, z) ueber einer Rampenoeffnung (dort keine obere Fahrbahn)
 function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -1 && n.s <= n.r.L + 1 && gdeckInRamp(n.r, n.s) && n.d < GDECK.RW / 2 + 0.6; }
@@ -208,19 +218,15 @@ function gampelBau(LY) { const A = GDECK.ampeln, n = A.length; if (!n) return; c
     q.position.set(a.x, LY + 3.2, a.z); q.updateMatrix(); geh.setMatrixAt(i, q.matrix); q.position.set(a.x + a.rx * 0.25, LY + 2.2, a.z + a.rz * 0.25); q.rotation.set(0, h, 0); q.updateMatrix(); fg.setMatrixAt(i, q.matrix); });
   GDECK.amp = { L, P, LY, ph: -1 }; gampelStep(true);
   // Sicherungskasten an der Wand je Ampel (N15 "Lichter aus"): Rechtsklick schaltet den Strom unten ab bzw. wieder an
-  const kb = mk(new THREE.BoxGeometry(0.6, 0.85, 0.22), M(0x8a8e92), n), ks = mk(new THREE.PlaneGeometry(0.22, 0.2), new THREE.MeshBasicMaterial({ map: canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#ffd43b"; c.beginPath(); c.moveTo(w / 2, 4); c.lineTo(w - 4, h - 6); c.lineTo(4, h - 6); c.fill(); c.fillStyle = "#111"; c.font = "bold 34px Arial"; c.textAlign = "center"; c.fillText("⚡", w / 2, h - 14); }) }), n);
-  A.forEach((a, i) => { const x = a.x + a.rx * 1.05 - a.fx * 2, z = a.z + a.rz * 1.05 - a.fz * 2, h = Math.atan2(-a.rx, -a.rz); q.rotation.set(0, h, 0); q.position.set(x, LY + 1.4, z); q.updateMatrix(); kb.setMatrixAt(i, q.matrix); q.position.set(x - a.rx * 0.115, LY + 1.5, z - a.rz * 0.115); q.updateMatrix(); ks.setMatrixAt(i, q.matrix);
-    const hm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.1, 0.5), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(x, LY + 1.4, z); hm.userData.keep = true; scene.add(hm);
-    const gt = { name: "Sicherungskasten", g: hm, call: () => lichtAus(!LICHT_AUS.on), verbs: ["Strom abschalten", "Strom abschalten"], a: [x, z], b: [x, z], near: 2.5 }; LICHT_AUS.gates.push(gt); LICHT_AUS.pend = true; }); }
+  A.forEach(a => lichtKasten("unten", a.x + a.rx * 1.05 - a.fx * 2, LY + 1.4, a.z + a.rz * 1.05 - a.fz * 2, -a.rx, -a.rz)); }
 // Stromausfall unten (N15, Nicolas 2026-11-17 Idee "Lichter aus und Nachtsichtbrille"; gebaut 2026-11-19 nur fuer die unteren Strassen): Roehren und Ampeln aus, Kunstlicht unter der Erde
 // fast aus (applyNight, tag-nacht.js), nach 90 s von selbst wieder an. Mit der Nachtsichtbrille (Kopf, B) sieht man weiter.
-function lichtAus(an) { LICHT_AUS.on = an; LICHT_AUS.t = an ? 90 : 0; const m = GDECK.lampM; if (m) { m.emissiveIntensity = an ? 0 : 1.3; m.color.setHex(an ? 0x2a2c2a : 0xeefff0); }
-  const G = GDECK.amp; if (G) { for (const k of ["r", "y", "g"]) G.L[k].on.visible = !an; for (const k of ["r", "g"]) G.P[k].visible = !an; }
-  for (const g of LICHT_AUS.gates) g.verbs = an ? ["Strom einschalten", "Strom einschalten"] : ["Strom abschalten", "Strom abschalten"];
-  if (typeof toast === "function") toast(an ? "Strom unten abgeschaltet – 90 s dunkel (Nachtsichtbrille: B)" : "Strom wieder an"); }
-function gampelStep(force) { if (LICHT_AUS.pend && typeof gates !== "undefined") { LICHT_AUS.pend = false; gates.push(...LICHT_AUS.gates); }   // Sicherungskaesten erst jetzt in gates (tore.js laedt spaeter)
-  { const L = LICHT_AUS, dt = Math.min(0.1, (performance.now() - (L.last || performance.now())) / 1000); L.last = performance.now(); if (L.on && (L.t -= dt) <= 0) lichtAus(false);
-    const pp = typeof player !== "undefined" ? player.pos : null, unten = !!pp && typeof walking !== "undefined" && walking && pp.y < GOT.STR - 2 && !!gdeckNear(pp.x, pp.z, 2), kz = L.on && unten ? 1 : 0; if (L.k !== kz) { L.k = L.k < kz ? Math.min(kz, L.k + dt * 3) : Math.max(kz, L.k - dt * 1.5); if (typeof applyNight === "function") applyNight(); } }
+function lichtAus(an, id = "unten") { const B = LICHT_AUS.B[id]; if (!B) return; B.on = an; B.t = an ? 90 : 0; B.set(an);
+  for (const g of B.gates) g.verbs = an ? ["Strom einschalten", "Strom einschalten"] : ["Strom abschalten", "Strom abschalten"];
+  if (typeof toast === "function") toast(an ? "Strom " + B.text + " abgeschaltet – 90 s dunkel (Nachtsichtbrille: B)" : "Strom " + B.text + " wieder an"); }
+function gampelStep(force) { if (LICHT_AUS.pend && typeof gates !== "undefined") { LICHT_AUS.pend = false; const i0 = LICHT_AUS.gi || 0; gates.push(...LICHT_AUS.gates.slice(i0)); LICHT_AUS.gi = LICHT_AUS.gates.length; }   // Sicherungskaesten erst jetzt in gates (tore.js laedt spaeter)
+  { const L = LICHT_AUS, dt = Math.min(0.1, (performance.now() - (L.last || performance.now())) / 1000); L.last = performance.now(); for (const id in L.B) { const B = L.B[id]; if (B.on && (B.t -= dt) <= 0) lichtAus(false, id); }
+    const pp = typeof player !== "undefined" ? player.pos : null, zu = !!pp && typeof walking !== "undefined" && walking, kz = zu && Object.values(L.B).some(B => B.on && B.drin(pp)) ? 1 : 0; if (L.k !== kz) { L.k = L.k < kz ? Math.min(kz, L.k + dt * 3) : Math.max(kz, L.k - dt * 1.5); if (typeof applyNight === "function") applyNight(); } }
   const G = GDECK.amp; if (!G) return; const t = (performance.now() / 1000) % 24, st = k => { const u = (t - k * 12 + 24) % 24; return u < 9 ? "g" : u < 11 ? "y" : "r"; }, key = st(0) + st(1);
   if (!force && key === G.ph) return; G.ph = key; const A = GDECK.ampeln, q = new THREE.Object3D(), z = new THREE.Matrix4().makeScale(0, 0, 0);
   A.forEach((a, i) => { const s = st(a.ph), h = Math.atan2(-a.fx, -a.fz), hp = h;

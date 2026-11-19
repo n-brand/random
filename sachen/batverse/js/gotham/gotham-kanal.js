@@ -97,6 +97,10 @@ function* kanGen() {
     for (let i = Math.floor(step / 2); i < P.length - 2; i += step) { const p = P[i], nn = S.N[i], [x, z] = [p[0] + nn[0] * (HW - 0.6), p[1] + nn[1] * (HW - 0.6)];
       if (inOther(x, z, si) || [-21, -15].some(y => dkInRoom(x, y, z))) continue;   // nicht an Kreuzungen, nicht ueber U-Bahn, unterer Strasse oder Tiefgarage (der Schacht ginge hindurch)
       KAN.gullis.push({ x, z, si, i, fx: -nn[1], fz: nn[0] }); } }
+  // Stromausfall (N15, 2026-11-19): Lampen aus, Wasser dunkel; Sicherungskasten an jeder achten Leiter (Wand, 1,8 m daneben)
+  if (typeof lichtBereich === "function") { lichtBereich("kanal", { text: "in der Kanalisation", set(an) { M.lampe.emissiveIntensity = an ? 0 : 1.6; M.lampe.color.setHex(an ? 0x2a2824 : 0xffe6b0); M.wasser.emissiveIntensity = an ? 0.1 : 1; },
+      drin(p) { return p.y < KAN.Y + 4 && p.y > KAN.Y - 10 && dkInRoom(p.x, p.y + 0.5, p.z); } });
+    KAN.gullis.filter(g => !g.side).forEach((g, k) => { if (k % 8) return; const nx = g.fz, nz = -g.fx; lichtKasten("kanal", g.x + nx * 0.45 + g.fx * 1.8, KAN.Y + 1.7, g.z + nz * 0.45 + g.fz * 1.8, -nx, -nz, KAN.grp || scene); }); }
   yield;
   // 4. Netze
   const lad = new Map(), lid = new Map();

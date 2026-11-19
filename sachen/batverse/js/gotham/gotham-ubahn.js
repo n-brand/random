@@ -56,6 +56,9 @@ function* ubGen() {
     schiene: M({ color: 0x9aa0a6, metalness: 0.7, roughness: 0.35, emissive: 0x202224, emissiveIntensity: 1 }), kachel: M({ map: tile, emissive: 0x3a3934, emissiveIntensity: 1 }),
     bahnsteig: M({ color: 0xb5b0a4, emissive: 0x34322d, emissiveIntensity: 1 }), kante: M({ color: 0xe6c229, emissive: 0x3d3410, emissiveIntensity: 1 }),
     licht: new THREE.MeshBasicMaterial({ color: 0xfff3d6 }), farbe: M({ vertexColors: true, emissive: 0x111111, emissiveIntensity: 1 }) };
+  // Stromausfall (N15, 2026-11-19): Lichtband aus, selbstleuchtende Flaechen fast dunkel; Kaesten auf den Bahnsteigen
+  if (typeof lichtBereich === "function") lichtBereich("ubahn", { text: "in der U-Bahn", set(an) { for (const k in mats) if (k !== "licht") mats[k].emissiveIntensity = an ? 0.08 : 1; mats.licht.color.setHex(an ? 0x1a1a1a : 0xfff3d6); },
+    drin(p) { return p.y > UB.BED - 1 && p.y < UB.Y + 4 && dkInRoom(p.x, p.y + 0.5, p.z); } });
   const out = new Map(), B = k => gbvBucket(out, k);
   const grp = new THREE.Group(); grp.name = "Gotham-U-Bahn"; grp.userData.keep = true; grp.userData.noLift = true;
   for (const r of UB.rings) {
@@ -180,6 +183,7 @@ function* ubEntrances() {
     const n = P.length, kk = (k + Math.round(40 / r.ds)) % n, toP = P[(k + n - Math.round(4 / r.ds)) % n];
     pav(top, best[0], GOT.STR + GSTR.RAISE, best[1], r.col); pav(bot, P[kk][0], UB.Y, P[kk][1], r.col);
     st.up = best; st.down = [P[kk][0], P[kk][1]];
+    if (typeof lichtKasten === "function") { const a = P[(kk + Math.round(8 / r.ds)) % n], b2 = P[(kk + Math.round(9 / r.ds)) % n], l = Math.hypot(b2[0] - a[0], b2[1] - a[1]) || 1; lichtKasten("ubahn", a[0], UB.Y + 1.3, a[1], (b2[0] - a[0]) / l, (b2[1] - a[1]) / l, UB.grp); }   // Sicherungskasten auf dem Bahnsteig
     const hu = hit(scene, best[0], GOT.STR, best[1]), hd = hit(UB.grp, P[kk][0], UB.Y, P[kk][1]), lines = st.rings.map(q => q.name).join(" / ");
     const near = p => Math.hypot(player.pos.x - p[0], player.pos.z - p[1]) < 6;
     gates.push({ name: "U-Bahn " + st.name, g: hu, call: () => { if (!near(best)) return toast("Zu weit vom Aufzug entfernt"); teleportToPoint({ x: toP[0], y: UB.Y, z: toP[1] }); toast("U-Bahn " + st.name + " (" + lines + ")"); }, verbs: ["hinunter", "hinunter"], a: best, b: best });
