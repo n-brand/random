@@ -163,5 +163,14 @@ const FIG_FOTO = {};
 function figurFoto(art = "bruce") { if (FIG_FOTO[art]) return FIG_FOTO[art]; let r = null;
   try { const F = art === "bat" ? buildBatman() : buildFigur({ schulter: 1.22, oberteil: 0x1c1f26, hose: 0x23262c, schuhe: 0x0e0f12, haar: 0x1a120c, frisur: 0 }), sc = new THREE.Scene();
     sc.background = new THREE.Color(0x26303c); sc.add(new THREE.HemisphereLight(0xffffff, 0x404858, 1.6)); const d = new THREE.DirectionalLight(0xffffff, 1.4); d.position.set(-1, 2, -3); sc.add(d); sc.add(F); F.rotation.y = 0.18; F.updateMatrixWorld(true);
-    const c = new THREE.PerspectiveCamera(15, 160 / 192, 0.1, 20); c.position.set(0, 1.62, -2.4); c.lookAt(0, 1.56, 0); r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(160, 192); r.render(sc, c);
+    const c = new THREE.PerspectiveCamera(17, 160 / 192, 0.1, 20); c.position.set(0, 1.64, -2.4); c.lookAt(0, 1.63, 0); r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(160, 192); r.render(sc, c);
     FIG_FOTO[art] = r.domElement.toDataURL("image/png"); } catch (e) { FIG_FOTO[art] = null; } finally { if (r) { r.dispose(); r.forceContextLoss(); } } return FIG_FOTO[art]; }
+
+// beliebige Figur als Portraet (Gotham Hearts u. a.): figurFotoVon(key, o, bg) -> data-URL (160 x 192), gemerkt; ein WebGL-Kontext fuer mehrere Bilder, nach 3 s Ruhe freigegeben
+const FIG_FR = { r: null, t: 0 };
+function figurFotoVon(key, o, bg = 0x26303c) { if (FIG_FOTO[key] !== undefined) return FIG_FOTO[key];
+  try { const F = buildFigur(o), sc = new THREE.Scene(); sc.background = new THREE.Color(bg); sc.add(new THREE.HemisphereLight(0xffffff, 0x404858, 1.6)); const d = new THREE.DirectionalLight(0xffffff, 1.4); d.position.set(-1, 2, -3); sc.add(d); sc.add(F); F.rotation.y = 0.15; F.updateMatrixWorld(true);
+    const h = 1.62 * (o.groesse || 1), c = new THREE.PerspectiveCamera(17, 160 / 192, 0.1, 20); c.position.set(0, h + 0.02, -2.4); c.lookAt(0, h + 0.01, 0);
+    if (!FIG_FR.r) FIG_FR.r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); FIG_FR.r.setSize(160, 192); FIG_FR.r.render(sc, c); FIG_FOTO[key] = FIG_FR.r.domElement.toDataURL("image/png");
+    clearTimeout(FIG_FR.t); FIG_FR.t = setTimeout(() => { if (FIG_FR.r) { FIG_FR.r.dispose(); FIG_FR.r.forceContextLoss(); FIG_FR.r = null; } }, 3000);
+    sc.traverse(m => { if (m.isMesh) { m.geometry.dispose(); (Array.isArray(m.material) ? m.material : [m.material]).forEach(x => { if (x.map) x.map.dispose(); x.dispose(); }); } }); } catch (e) { FIG_FOTO[key] = null; } return FIG_FOTO[key]; }
