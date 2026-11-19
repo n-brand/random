@@ -7,6 +7,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 
 - **Roulette** (europäisch, 0–36) – bleibt.
 - **Spielautomat "Gotham Fortune"** (3 Walzen, Hebel).
+- **Blackjack** (2026-11-19, an allen Blackjack-Tischen, 3:2, Dealer bis 17).
 
 ## Von Nicolas gewünscht (Plan N29)
 

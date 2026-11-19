@@ -49,7 +49,7 @@ const CASINO2 = { x: 0, z: 240, W: 64, D: 44, H: 5.5, g: null };
     const rad = cyl(0.5, 0.55, 0.16, M(0x2a1408, { metalness: 0.3 }), -1.25, 0.95, 0, 32, t); const kr = cyl(0.42, 0.42, 0.02, M(0xb02020, { emissive: 0x200404 }), -1.25, 1.04, 0, 32, t); for (const sx of [-0.5, 0.4, 1.3]) stuhl(x + sx, z - 1.15); koll(3.2, 1.5, 0.95, x, z); ziel("Roulette", t, () => typeof rouletteOpen === "function" && rouletteOpen()); return t; };
   const halbtisch = (x, z, ry, name) => { const t = new THREE.Group(); t.position.set(x, 0, z); t.rotation.y = ry; g.add(t); const b = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 0.85, 24, 1, false, Math.PI / 2, Math.PI), holz); b.position.y = 0.42; t.add(b);
     const f = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 0.03, 24, 1, false, Math.PI / 2, Math.PI), filz); f.position.y = 0.86; t.add(f); for (let k = 0; k < 5; k++) { const a = Math.PI / 2 + (k + 0.5) / 5 * Math.PI, sx = Math.sin(a + ry) * 1.6, sz = Math.cos(a + ry) * 1.6; stuhl(x + sx, z + sz); }
-    koll(2.5, 1.4, 0.95, x, z); return t; };
+    koll(2.5, 1.4, 0.95, x, z); if (name === "Blackjack") { t.updateMatrixWorld(true); ziel("Blackjack", b, () => typeof cgOpen === "function" && cgOpen("bj"), "spielen", 3); } return t; };
   roulette(-4, -9, 0); roulette(4, -9, 0);
   halbtisch(-5.5, -3, Math.PI / 2, "Blackjack"); halbtisch(-5.5, 2, Math.PI / 2, "Blackjack"); halbtisch(5.5, -3, -Math.PI / 2, "Blackjack"); halbtisch(5.5, 2, -Math.PI / 2, "Blackjack");
   { box(4.4, 0.95, 2.0, holz, 0, 0.47, 7.5); box(4.1, 0.05, 1.7, filz, 0, 0.92, 7.5); box(4.4, 0.2, 0.15, holz, 0, 1.05, 6.55); box(4.4, 0.2, 0.15, holz, 0, 1.05, 8.45); koll(4.4, 2, 1.1, 0, 7.5);   // Craps mit erhoehtem Rand

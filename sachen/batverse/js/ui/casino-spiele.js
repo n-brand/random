@@ -29,7 +29,7 @@ function cgEnsure() { if (CG.el) return; const st = document.createElement("styl
   addEventListener("keydown", e => { if (!cgIsOpen()) return; if (e.key === "Escape") { e.preventDefault(); cgClose(); } else if (e.code === "Space") { e.preventDefault(); cgMain(); } e.stopImmediatePropagation(); }, true);
   addEventListener("keyup", e => { if (cgIsOpen()) e.stopImmediatePropagation(); }, true); addEventListener("resize", () => { if (cgIsOpen()) cgFit(); }); }
 const cgIsOpen = () => !!(CG.el && !CG.el.hidden);
-const cgBusy = () => CG.crash.st === "fly" || CG.crash.st === "after" || CG.mines.st === "play" || !!CG.rad.spin;
+const cgBusy = () => CG.crash.st === "fly" || CG.crash.st === "after" || CG.mines.st === "play" || !!CG.rad.spin || (CG.bj && CG.bj.st === "play");
 function cgOpen(game) { cgEnsure(); if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); } if (document.pointerLockElement) document.exitPointerLock(); if (typeof keys !== "undefined") keys.clear?.();
   CG.game = game; CG.msg = game === "rad" ? (cgRadFrei() ? "Einmal am Tag gratis drehen" : "Heute schon gedreht – morgen wieder") : "Einsatz wählen, dann starten"; CG.cls = ""; CG.el.hidden = false; cgRender(); }
 function cgClose() { if (!cgIsOpen()) return; if (cgBusy()) { CG.msg = "Erst die Runde beenden"; CG.cls = "err"; return cgRender(); } CG.el.hidden = true; if (typeof grabMouse === "function") grabMouse(); }
@@ -37,7 +37,7 @@ function cgFit() { const b = CG.el.querySelector(".cg-box"); b.style.transform =
 function cgBetRow(lock) { const w = typeof jetWert === "function" ? jetWert() : 0; return '<div class="cg-row"><span class="cg-lab">Einsatz</span>' + CG_CHIPS.map(([v, c, e, t]) => cgChip(v, c, e, t, CG.bet === v).replace("<button", "<button" + (lock ? " disabled" : ""))).join("") +
   '<button type="button" class="cg-btn klein" data-act="halb"' + (lock ? " disabled" : "") + '>½</button><button type="button" class="cg-btn klein" data-act="doppelt"' + (lock ? " disabled" : "") + '>×2</button><span class="cg-bet">' + cgFmt(CG.bet) + '</span></div>' +
   '<div class="cg-bal">Deine Jetons: <b>' + cgFmt(w) + '</b>' + (w < CG.bet ? ' – zu wenig, am Jeton-Automaten tauschen' : '') + '</div>'; }
-function cgRender() { const b = CG.el.querySelector(".cg-box"), g = CG.game, title = { crash: "GOTHAM FLIGHT · CRASH", mines: "DIAMOND MINES", rad: "GLÜCKSRAD" }[g];
+function cgRender() { const b = CG.el.querySelector(".cg-box"), g = CG.game, title = { crash: "GOTHAM FLIGHT · CRASH", mines: "DIAMOND MINES", rad: "GLÜCKSRAD", bj: "BLACKJACK" }[g];
   let h = '<div class="cg-head"><b>' + title + '</b><button type="button" data-act="zu" aria-label="Schliessen">&times;</button></div>';
   if (g === "crash") { const C = CG.crash, run = C.st === "fly" || C.st === "after", w = typeof jetWert === "function" ? jetWert() : 0, sum = C.B.reduce((a, b) => a + (b.on ? b.amt : 0), 0);   // zwei Einsaetze (Nicolas 2026-11-18: "Ja, zwei Einsaetze")
     h += '<div class="cg-bal">Deine Jetons: <b>' + cgFmt(w) + '</b>' + (!run && w < sum ? ' – zu wenig, am Jeton-Automaten tauschen' : '') + '</div><div class="cg-hist cg-histtop">' + (C.hist.slice(-12).reverse().map(x => '<span class="' + (x >= 10 ? "x10" : x >= 2 ? "x2" : "x1") + '">' + x.toFixed(2) + '×</span>').join("") || '<span class="x1">noch keine Flüge</span>') + '</div><canvas class="cg-canvas" width="584" height="300"></canvas>' +
@@ -51,6 +51,12 @@ function cgRender() { const b = CG.el.querySelector(".cg-box"), g = CG.game, tit
       '<span class="cg-lab">nächster Diamant</span><span class="cg-bet">' + next.toFixed(2) + '×</span></div><div class="cg-grid">' +
       Array.from({ length: 30 }, (_, i) => { const c = M.cells[i] || {}; const show = c.open || (M.st === "end"); return '<button type="button" class="cg-cell' + (show ? (c.bomb ? " bomb" : " dia") + (c.open ? "" : " zu") : "") + '" data-cell="' + i + '"' + (!play || c.open ? " disabled" : "") + '>' + (show ? (c.bomb ? "💣" : "💎") : "") + '</button>'; }).join("") +
       '</div><div class="cg-row">' + (play ? '<button type="button" class="cg-btn gruen" data-act="main"' + (k ? "" : " disabled") + '>AUSZAHLEN ' + cgFmt(Math.floor(CG.bet * (k ? mul : 1))) + ' (' + (k ? mul : 1).toFixed(2) + '×)</button>' : '<button type="button" class="cg-btn" data-act="main">STARTEN</button>') + '</div>'; }
+  else if (g === "bj") { const J = CG.bj, play = J.st === "play", w = typeof jetWert === "function" ? jetWert() : 0, karte = (c, zu) => zu ? '<div class="bj-k zu"></div>' : '<div class="bj-k' + (c.f === "♥" || c.f === "♦" ? " rot" : "") + '"><b>' + c.r + '</b><span>' + c.f + '</span></div>';
+    h += '<div class="cg-bal">Deine Jetons: <b>' + cgFmt(w) + '</b> · Blackjack zahlt 3:2, Dealer zieht bis 16, steht ab 17</div>' +
+      '<div class="bj-tisch"><div class="bj-zeile"><span class="cg-lab">Dealer' + (J.d.length ? ' · ' + (play ? bjWert([J.d[0]]) + ' + ?' : bjWert(J.d)) : '') + '</span><div class="bj-hand">' + J.d.map((c, i) => karte(c, play && i === 1)).join("") + '</div></div>' +
+      '<div class="bj-zeile"><span class="cg-lab">Du' + (J.p.length ? ' · ' + bjWert(J.p) : '') + (J.bet ? ' · Einsatz ' + cgFmt(J.bet) : '') + '</span><div class="bj-hand">' + J.p.map(c => karte(c)).join("") + '</div></div></div>' +
+      (play ? '<div class="cg-row"><button type="button" class="cg-btn gruen" data-act="bjk">KARTE</button><button type="button" class="cg-btn" data-act="bjs">STEHEN</button><button type="button" class="cg-btn klein" data-act="bjd"' + (J.p.length === 2 ? "" : " disabled") + '>VERDOPPELN</button></div>'
+        : cgBetRow(false) + '<div class="cg-row"><button type="button" class="cg-btn" data-act="main">AUSTEILEN · ' + cgFmt(CG.bet) + '</button><span class="cg-lab">Leertaste: austeilen</span></div>'); }
   else { const frei = cgRadFrei();
     h += '<canvas class="cg-canvas" width="584" height="380"></canvas><div class="cg-row"><button type="button" class="cg-btn" data-act="main"' + (frei && !CG.rad.spin ? "" : " disabled") + '>DREHEN</button><span class="cg-lab">' + (typeof BV_NS !== "undefined" && BV_NS === "werkstatt" ? "Werkstatt: beliebig oft zum Testen" : "einmal am Tag") + '</span></div>'; }
   h += '<div class="cg-msg ' + CG.cls + '">' + CG.msg + '</div>'; b.innerHTML = h; cgFit(); cgDraw(); }
@@ -63,8 +69,9 @@ function cgClick(e) { const t = e.target.closest("[data-act],[data-bet],[data-ce
   if (t.dataset.cell) return cgMinesPick(+t.dataset.cell);
   if (a === "zu") return cgClose(); if (a === "halb") { CG.bet = Math.max(10, Math.round(CG.bet / 2 / 10) * 10); return cgRender(); } if (a === "doppelt") { CG.bet = Math.min(100000, CG.bet * 2); return cgRender(); }
   if (a === "bm") { CG.mines.bombs = Math.max(1, CG.mines.bombs - 1); return cgRender(); } if (a === "bp") { CG.mines.bombs = Math.min(24, CG.mines.bombs + 1); return cgRender(); }
+  if (a === "bjk") return bjKarte(); if (a === "bjs") return bjStehen(); if (a === "bjd") return bjDoppel();
   if (a === "main") cgMain(); }
-function cgMain() { const g = CG.game; if (g === "crash") { const C = CG.crash; if (C.st === "fly") return cgCrashCash(C.B.findIndex(b => b.st === "in")); return C.st === "after" ? null : cgCrashStart(); } if (g === "mines") return CG.mines.st === "play" ? cgMinesCash() : cgMinesStart(); if (g === "rad") cgRadSpin(); }
+function cgMain() { const g = CG.game; if (g === "bj") return CG.bj.st === "play" ? null : bjStart(); if (g === "crash") { const C = CG.crash; if (C.st === "fly") return cgCrashCash(C.B.findIndex(b => b.st === "in")); return C.st === "after" ? null : cgCrashStart(); } if (g === "mines") return CG.mines.st === "play" ? cgMinesCash() : cgMinesStart(); if (g === "rad") cgRadSpin(); }
 function cgPay(stake) { if (!jetTake(stake)) { CG.msg = "Nicht genug Jetons für " + cgFmt(stake) + " – am Jeton-Automaten tauschen"; CG.cls = "err"; cgRender(); return false; } return true; }
 // ---- Crash: Faktor m(t) = e^(0,11 t), Absturzpunkt 0,97 / (1 - U) (3 % sofort bei 1,00) ----
 function cgCrashStart() { const C = CG.crash, B = C.B.filter(b => b.on), sum = B.reduce((a, b) => a + b.amt, 0); if (!sum) { CG.msg = "Mindestens einen Einsatz auf \"dabei\" stellen"; CG.cls = "err"; return cgRender(); }
@@ -152,3 +159,23 @@ function buildGluecksrad() { const g = new THREE.Group(), gold = new THREE.MeshS
   const schild = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.28), new THREE.MeshBasicMaterial({ map: canvasTex(320, 76, (c, w, h) => { c.fillStyle = "#14080c"; c.fillRect(0, 0, w, h); c.strokeStyle = "#d4a640"; c.lineWidth = 4; c.strokeRect(3, 3, w - 6, h - 6); c.fillStyle = "#f2d36b"; c.font = "800 34px Georgia"; c.textAlign = "center"; c.fillText("GLÜCKSRAD", w / 2, 50); }) }));
   schild.position.set(0, 0.42, -0.0); schild.rotation.y = Math.PI; g.add(schild); { const sb = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.32, 0.06), sw); sb.position.set(0, 0.42, 0.035); g.add(sb); }
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); g.userData.rad = rad; g.name = "Glücksrad"; CG.models.push(g); return g; }
+
+// ---- Blackjack (Nicolas 2026-11-19 "Ja, weiter", IDEEN-CASINO: Tische und Croupiers stehen im Casino): 6 Decks, Einsatz in Jetons (Chips wie bei Mines), Karte / Stehen / Verdoppeln;
+// Ass 1 oder 11, Bilder 10; Blackjack (21 mit 2 Karten) zahlt 3:2, gleich = Einsatz zurueck, Dealer zieht bis 16 und steht ab 17. Gewinn als Jetons (jetGive). cgOpen("bj") an den Blackjack-Tischen.
+CG.bj = { st: "idle", p: [], d: [], bet: 0, shoe: [] };
+const BJ_R = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"], BJ_F = ["♠", "♥", "♦", "♣"];
+function bjZiehen() { const J = CG.bj; if (J.shoe.length < 30) { J.shoe = []; for (let d = 0; d < 6; d++) for (const f of BJ_F) for (const r of BJ_R) J.shoe.push({ r, f }); for (let i = J.shoe.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [J.shoe[i], J.shoe[k]] = [J.shoe[k], J.shoe[i]]; } } return J.shoe.pop(); }
+function bjWert(H) { let v = 0, a = 0; for (const c of H) { if (c.r === "A") { v += 11; a++; } else v += /[JQK]/.test(c.r) || c.r === "10" ? 10 : +c.r; } while (v > 21 && a) { v -= 10; a--; } return v; }
+const bjBJ = H => H.length === 2 && bjWert(H) === 21;
+function bjStart() { const J = CG.bj; if (!cgPay(CG.bet)) return; J.bet = CG.bet; J.p = [bjZiehen(), bjZiehen()]; J.d = [bjZiehen(), bjZiehen()]; J.st = "play"; CG.msg = "Karte oder stehen?"; CG.cls = "";
+  if (bjBJ(J.p) || bjBJ(J.d)) return bjEnde(); cgRender(); }
+function bjKarte() { const J = CG.bj; if (J.st !== "play") return; J.p.push(bjZiehen()); if (bjWert(J.p) > 21) return bjEnde(); if (bjWert(J.p) === 21) return bjStehen(); cgRender(); }
+function bjDoppel() { const J = CG.bj; if (J.st !== "play" || J.p.length !== 2) return; if (!cgPay(J.bet)) return; J.bet *= 2; J.p.push(bjZiehen()); if (bjWert(J.p) > 21) return bjEnde(); bjStehen(); }
+function bjStehen() { const J = CG.bj; if (J.st !== "play") return; while (bjWert(J.d) < 17) J.d.push(bjZiehen()); bjEnde(); }
+function bjEnde() { const J = CG.bj, p = bjWert(J.p), d = bjWert(J.d), pb = bjBJ(J.p), db = bjBJ(J.d); let win = 0, txt;
+  if (pb && db) { win = J.bet; txt = "Beide Blackjack – Einsatz zurück"; } else if (pb) { win = Math.floor(J.bet * 2.5); txt = "BLACKJACK! +" + cgFmt(win - J.bet); } else if (db) txt = "Dealer hat Blackjack – verloren";
+  else if (p > 21) txt = "Über 21 – verloren"; else if (d > 21) { win = J.bet * 2; txt = "Dealer über 21 – gewonnen +" + cgFmt(J.bet); } else if (p > d) { win = J.bet * 2; txt = p + " gegen " + d + " – gewonnen +" + cgFmt(J.bet); } else if (p === d) { win = J.bet; txt = p + " gegen " + d + " – unentschieden, Einsatz zurück"; } else txt = p + " gegen " + d + " – verloren";
+  if (win) jetGive(win); J.st = "end"; CG.msg = txt; CG.cls = win > J.bet ? "ok" : win ? "" : "err"; cgRender(); }
+{ const st = document.createElement("style"); st.textContent = ".bj-tisch{background:radial-gradient(ellipse at 50% 0%,#1f6a3a,#0d3a1e);border:3px solid #6a4a20;border-radius:14px;padding:10px 14px;margin:6px 0}.bj-zeile{margin:4px 0 10px}.bj-hand{display:flex;gap:8px;min-height:92px;margin-top:4px}" +
+  ".bj-k{width:62px;height:88px;border-radius:7px;background:#fbf8f0;color:#141414;box-shadow:0 3px 6px rgba(0,0,0,.45);display:flex;flex-direction:column;justify-content:space-between;padding:5px 7px;font:800 18px Georgia,serif}.bj-k span{font-size:28px;align-self:flex-end}.bj-k.rot{color:#c0161e}" +
+  ".bj-k.zu{background:repeating-linear-gradient(45deg,#7a0c16 0 6px,#a01a26 6px 12px);border:3px solid #fbf8f0}"; document.head.appendChild(st); }
