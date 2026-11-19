@@ -142,3 +142,5 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 
 54. **Aufklärungsdrohne (N52):** Soll man die Drohne selbst steuern können (z. B. vom Batcomputer oder Laptop aus, mit Kamerabild von oben und Markieren von Fahrzeugen), oder reicht es, dass sie über Gotham kreist? Und soll der Minotaurus ferngesteuert werden (Spieler bleibt stehen, Bild aus der Kamera des Roboters) statt wie ein Fahrzeug bestiegen?
     - *Bis dahin:* Die Drohne kreist autonom (450 m hoch, 900 m um den Wayne Tower), in der Werkstatt steht sie neben der Piste. Den Minotaurus fährt man wie ein Fahrzeug (einsteigen mit Rechtsklick).
+
+55. **Autoschlüssel (N7) und Fahrzeuge stehlen (N9):** Sollen Fahrzeuge künftig nur mit Schlüssel fahren (Schlüssel als Gegenstand, gekaufte Fahrzeuge mit Schlüssel, im Autohaus hinten ein Schlüsseltresor), und fremde nur mit dem GateBreaker oder durch Kurzschliessen (z. B. 5 s Kreis)? Oder bleiben alle Fahrzeuge frei fahrbar und Schlüssel sind nur Beute? Bis dahin: alle Fahrzeuge frei fahrbar, keine Schlüssel.
