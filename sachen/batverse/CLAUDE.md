@@ -62,11 +62,20 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Zigaretten | in der Hand Linksklick = anzünden (braucht ein Feuerzeug im Inventar), brennt ca. 40 s; nochmal Linksklick = ausdrücken; jede angezündete ist verbraucht |
 | USB-Stick | im Laptop: Taskleiste USB-Symbol > einstecken/auswerfen, App "USB-Laufwerk" zeigt die Dateien; Sperrbildschirm: "USB-Stick einstecken" (schwarzer Stick) umgeht das Passwort |
 | Fidget Spinner | in der Hand linke Maus halten = beschleunigen (bis ca. 6 U/s), loslassen = läuft ca. 20 s aus, kurzer Linksklick = stoppt |
+| Dritte Person zu Fuss | **V** (Spiel und Werkstatt-Person): Kamera hinter der Figur über die rechte Schulter, nochmal V = Ich-Sicht; bleibt gespeichert |
 | Werkstatt-Modi | 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person, 5 Geist, Z Zeichnen |
 
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Spielfiguren F2: dritte Person zu Fuss** (Nicolas 2026-11-19 "Ja, weiter"; Taste V nach OFFENE-FRAGEN 53): figur.js `DP`, `dpStep(dt, P, boden)` (Spiel aus bedienung.js nach updatePlayer, Werkstatt aus person.js), `dpAn()`. Mit V wechselt man zwischen Ich-Sicht und einer Kamera 3,2 m hinter der Figur, über der rechten Schulter. Die Kamera geht nicht durch Wände (shotSeg). Die Wahl bleibt gespeichert (`wm-dritte`).
+  - Figur: dunkler Anzug. Sie dreht sich weich in Laufrichtung, mit Schusswaffe oder beim Zielen in Blickrichtung. Gehen, Rennen und Sprung kommen aus dem Tempo.
+  - In der Hand: der gehaltene Gegenstand als 3D-Modell (Schusswaffen über gunBuild, Werkzeuge über HAND3D). Beim Zielen hebt die Figur die Arme in Blickrichtung.
+  - Die Hand-Anzeigen der Ich-Sicht sind dann aus (2D-Hand, Waffe, Batarang, Jeton, Werkzeug).
+  - Gilt nicht auf dem Skateboard, im Fahrzeug und im Geist.
+  - Geprüft in der Werkstatt mit Bildern: Stehen, Seitwärtsgehen, MG in der Hand, Zielen. Die Figur schaut nach vorne (-z).
+  - Im Spiel nicht im Bild geprüft (gleicher Code).
 
 - **Drohnenpanzer "Minotaurus" und Aufklärungsdrohne** (Nicolas 2026-11-19 "Ja, weiter", Rest von N52): militaer.js.
   - `buildMinotaurus` / `SPEC_MINOTAURUS`: eigener Entwurf (OFFENE-FRAGEN 42), unbemannter Kettenroboter 3,9 m. Flache Wanne mit Keilbug, Sensorleiste mit 4 Kameras und LED-Scheinwerfern, Ketten aus Gliedern um Treib- und Leitrad, 5 Laufrollen je Seite, Schürzen mit Schrauben, Akkupaket mit Lamellen, Rundumkamera auf einem Mast, GPS-Kuppel, Antenne, Kennung M-01. Waffenstation wie der Panzerturm (dreht 70 Grad/s, Rohr 40 Grad/s, Linksklick oder Leertaste schiesst wie der Panzer): 30-mm-Kanone, Lenkwaffen-Behälter, Optik mit Laser, Nebelwerfer. Ketten-Fahrwerk wie der Panzer, schneller (ca. 80 km/h).

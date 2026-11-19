@@ -30,7 +30,7 @@ function personStep(dt) {
   const pl = Math.max(Math.abs(P.pos.x - PROJEKT.x) < 7 && Math.abs(P.pos.z - PROJEKT.z) < 9 ? 0.15 : 0, typeof personGround === "function" ? personGround(P.pos.x, P.pos.z, P.pos.y) : 0);   // Platte, Daecher der Gotham-Gebaeude
   if (keys.has("Space") && P.ground && !busy) { P.vy = 5; P.ground = false; }
   P.vy -= 18 * dt; if (typeof gleitUpdate === "function") gleitUpdate(dt, P, P.ground, pl, q => personPush(q)); P.pos.y += P.vy * dt; if (P.pos.y <= pl) { P.pos.y = pl; P.vy = 0; P.ground = true; } else P.ground = false;   // von Kanten fallen zaehlt als Luft (Gleitumhang)
-  camera.position.set(P.pos.x, P.pos.y + P.EYE, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ"); if (skate) skatePose(dt);   // Third Person auf dem Brett
+  camera.position.set(P.pos.x, P.pos.y + P.EYE, P.pos.z); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ"); if (skate) skatePose(dt); else if (typeof dpStep === "function") dpStep(dt, P, P.ground);   // Third Person auf dem Brett bzw. zu Fuss (Taste V)
   sunFollow(P.pos, 100);
   if (typeof weaponsStep === "function") weaponsStep(dt);                 // Batarang, Rauchbombe, Greifhaken (../js/spieler/waffen.js)
   // Zielen auf den Automaten (Bildmitte, bis 3 m): Hinweis

@@ -92,6 +92,7 @@ body.touch #hb-geld { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
 #hb-geld .hg { cursor: pointer; } #hb-geld .hg.sel { border-color: #e8c547; box-shadow: 0 0 0 2px #e8c547; }
 #hand { display: none; position: fixed; right: 4%; bottom: 2vh; width: min(18vw, 26vh); height: min(18vw, 26vh); z-index: 4; pointer-events: none; transform: rotate(-16deg); filter: drop-shadow(0 8px 12px rgba(0,0,0,.45)); }   /* gehaltener Gegenstand (inventar.js) */
 body.person #hand { display: block; }
+body.dritte #hand { display: none !important; }   /* dritte Person (figur.js) */
 #hand[hidden] { display: none !important; }
 #hand svg { width: 100%; height: 100%; }
 #hand.neu { animation: hand-hoch .25s ease-out; }

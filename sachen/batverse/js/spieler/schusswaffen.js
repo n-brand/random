@@ -303,7 +303,7 @@ function gunStep(dt) {
   const n = typeof night !== "undefined" ? night : 0; GUN.hemi.intensity = 1.1 - n * 0.6; GUN.sun.intensity = 2.2 - n * 1.4; GUN.fill.intensity = 0.9 - n * 0.5;
 }
 // nach dem Hauptbild: Hand-Waffe ueber alles (eigene Tiefe)
-function gunRender() { if (!GUN.cur || !GUN.g) return; gunPose(); const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(GUN.scene, camera); renderer.autoClear = ac; }
+function gunRender() { if (!GUN.cur || !GUN.g || (typeof dpAn === "function" && dpAn())) return; gunPose(); const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(GUN.scene, camera); renderer.autoClear = ac; }
 // Zielfernrohr des Scharfschuetzengewehrs: Mausrad zoomt weiter auf den Zielpunkt (Nicolas 2026-11-18: "beim Zielen mit dem Scharfschuetzengewehr soll man mit dem Mausrad noch auf den roten Punkt reinzoomen koennen, aehnlich wie beim Panzer"): Faktor 1-4 auf die 6-fache Vergroesserung (bis 24-fach), Maus wird mit feiner; bleibt bis zum Waffenwechsel.
 const GUN_SZ = { k: 1, id: null };
 const gunZoom = () => { const id = weaponHeld(); if (GUN_SZ.id !== id) { GUN_SZ.id = id; GUN_SZ.k = 1; } return GUN_SPEC[id] ? GUN_SPEC[id].zoom * (id === "sniper" ? GUN_SZ.k : 1) : 1.8; };

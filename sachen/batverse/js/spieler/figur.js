@@ -37,3 +37,38 @@ function figurPose(F, dt, tempo = 0, sprung = false) { const U = F.userData; U.p
   U.armL.rotation.x = -sw * 0.9; U.armR.rotation.x = sw * 0.9; U.armL.rotation.z = -0.08; U.armR.rotation.z = 0.08; U.unterarmL.rotation.x = U.unterarmR.rotation.x = -0.2 - 0.9 * run;
   U.rumpf.position.y = 0.95 + Math.abs(Math.sin(p)) * 0.035 * k + atm; U.rumpf.rotation.x = -0.12 * run; U.kopf.rotation.x = 0.1 * run;
   if (sprung) { U.beinL.rotation.x = -0.5; U.beinR.rotation.x = 0.25; U.knieL.rotation.x = 0.9; U.knieR.rotation.x = 0.5; U.armL.rotation.z = -0.6; U.armR.rotation.z = 0.6; } }
+
+// ---- Schritt F2: dritte Person zu Fuss (Nicolas 2026-11-19 "Ja, weiter"; Taste V nach OFFENE-FRAGEN 53). Spiel und Werkstatt.
+// V schaltet Ich-Sicht / Kamera hinter der Figur (ueber die rechte Schulter, 3,2 m, Maus dreht wie bisher, Kamera stoesst nicht durch Waende: shotSeg).
+// Die Figur steht an der Spielerposition, dreht sich weich in Laufrichtung (mit Waffe in der Hand oder beim Zielen in Blickrichtung), Animation aus dem Tempo (figurPose),
+// in der Luft Sprunghaltung. Gehaltener Gegenstand sitzt in der rechten Hand (Schusswaffen ueber gunBuild, Werkzeuge ueber HAND3D); beim Zielen hebt sie den Arm in
+// Blickrichtung. Die Hand-Anzeigen der Ich-Sicht (2D-Bild, 3D-Waffe, Batarang, Jeton, Werkzeug) sind dann aus (dpAn()). Stand in localStorage wm-dritte.
+const DP = { on: false, F: null, w: null, h: 0, last: null, item: null, itemId: null, cam: new THREE.Vector3(), D: 3.2, side: 0.45 };
+const dpAn = () => DP.on && typeof walking !== "undefined" && walking && !(typeof ghost !== "undefined" && ghost) && !(typeof SKATE !== "undefined" && SKATE.on) && !document.body.classList.contains("drive");
+try { DP.on = localStorage.getItem("wm-dritte") === "1"; } catch (e) {}
+function dpEnsure() { if (DP.w) return; DP.w = new THREE.Group(); DP.F = buildFigur({ oberteil: 0x1c1f26, hose: 0x23262c, schuhe: 0x0e0f12, haar: 0x1a120c, frisur: 0 }); DP.w.add(DP.F); DP.w.visible = false; DP.w.userData.dynamic = true; scene.add(DP.w);
+  DP.hand = new THREE.Group(); DP.hand.position.y = -0.37; DP.F.userData.unterarmR.add(DP.hand); }
+function dpToggle() { DP.on = !DP.on; try { localStorage.setItem("wm-dritte", DP.on ? "1" : "0"); } catch (e) {} DP.last = null; if (typeof toast === "function") toast(DP.on ? "Dritte Person (V: zurück zur Ich-Sicht)" : "Ich-Sicht"); document.body.classList.toggle("dritte", DP.on); }
+document.body.classList.toggle("dritte", DP.on);
+addEventListener("keydown", e => { if (e.code !== "KeyV" || e.repeat || e.ctrlKey || e.metaKey) return; const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  if (typeof walking === "undefined" || !walking || (typeof ghost !== "undefined" && ghost) || document.body.classList.contains("drive") || (typeof SKATE !== "undefined" && SKATE.on)) return;
+  if (typeof modus !== "undefined" && modus !== "person") return; dpToggle(); });
+// Gegenstand in der rechten Hand der Figur (nur bei Wechsel neu gebaut)
+function dpItem() { const id = typeof invHeld === "function" ? invHeld() : null; if (id === DP.itemId) return DP.item; DP.itemId = id; if (DP.item) DP.hand.remove(DP.item); DP.item = null;
+  let m = null; try { if (id && typeof GUN_SPEC !== "undefined" && GUN_SPEC[id] && typeof gunBuild === "function") m = gunBuild(id); else if (id && typeof HAND3D !== "undefined" && HAND3D[id]) { m = HAND3D[id](); m.position.set(0, 0, 0); } } catch (e) { m = null; }
+  if (m) { m.traverse(o => { if (o.isMesh) o.castShadow = true; }); const g = new THREE.Group(); g.add(m); DP.hand.add(g); DP.item = g; } return DP.item; }
+// je Bild nach der Bewegung zu Fuss: P = Spieler (pos, yaw, pitch), boden = steht auf dem Boden
+function dpStep(dt, P, boden) { const an = dpAn(); if (!an) { if (DP.w) DP.w.visible = false; return false; } dpEnsure();
+  const p = P.pos, F = DP.F, U = F.userData; let tempo = 0, mx = 0, mz = 0;
+  if (DP.last) { mx = p.x - DP.last.x; mz = p.z - DP.last.z; tempo = Math.hypot(mx, mz) / Math.max(dt, 1e-3); if (tempo > 30) tempo = 0; } DP.last = { x: p.x, z: p.z };
+  const id = typeof invHeld === "function" ? invHeld() : null, waffe = !!(id && typeof GUN_SPEC !== "undefined" && GUN_SPEC[id]), ziel = typeof AIM !== "undefined" && !!AIM.on;
+  const soll = waffe || ziel ? P.yaw : tempo > 0.4 ? Math.atan2(-mx, -mz) : DP.h, d = Math.atan2(Math.sin(soll - DP.h), Math.cos(soll - DP.h)); DP.h += d * Math.min(1, dt * 10);
+  DP.w.visible = true; DP.w.position.set(p.x, p.y, p.z); DP.w.rotation.set(0, DP.h, 0); figurPose(F, dt, Math.min(tempo, 9), !boden);
+  const it = dpItem(), hebt = (waffe || ziel) && boden !== null;
+  if (hebt) { U.armR.rotation.set(Math.PI / 2 + P.pitch, 0, 0.05); U.unterarmR.rotation.x = 0; if (waffe) { U.armL.rotation.set(Math.PI / 2 + P.pitch - 0.1, 0, -0.45); U.unterarmL.rotation.x = 0.3; } }
+  if (it) it.rotation.set((hebt ? P.pitch : 0) - (U.armR.rotation.x + U.unterarmR.rotation.x), 0, 0);
+  // Kamera ueber der rechten Schulter, hinter der Figur; nicht durch Waende
+  const cy = Math.cos(P.yaw), sy = Math.sin(P.yaw), cp = Math.cos(P.pitch), sp = Math.sin(P.pitch), ziel3 = new THREE.Vector3(p.x + cy * DP.side, p.y + 1.62, p.z - sy * DP.side);
+  const cam = ziel3.clone().add(new THREE.Vector3(sy * cp, -sp, cy * cp).multiplyScalar(DP.D));
+  if (typeof shotSeg === "function") { const h = shotSeg(ziel3, cam, null, 0.25); if (h) cam.copy(h.p).lerp(ziel3, 0.12); }
+  camera.position.copy(cam); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ"); return true; }

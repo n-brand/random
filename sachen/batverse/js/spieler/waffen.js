@@ -228,7 +228,7 @@ function buildBatarangEtui() {
 }// Batarang in der Hand als 3D-Modell rechts unten (Nicolas 2026-11-17: "3D soll auch in der Hand gezeigt werden, rechts"), eigene Szene wie Jetons und Schusswaffen
 function batHandRender() {
   const id = typeof invHeld === "function" ? invHeld() : null, foot = typeof onFoot === "function" ? onFoot() : true;
-  if (id !== "batarang" || !foot || (typeof invIsOpen === "function" && invIsOpen()) || (AIM.cd > 0.05)) return;
+  if (id !== "batarang" || !foot || (typeof dpAn === "function" && dpAn()) || (typeof invIsOpen === "function" && invIsOpen()) || (AIM.cd > 0.05)) return;
   let H = AIM.hand; if (!H) { const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.3)); const sun = new THREE.DirectionalLight(0xffffff, 2); sun.position.set(1, 2, 1.5); sc.add(sun);
     const g = new THREE.Group(), m = new THREE.Mesh(AIM_M.bat, AIM_M.batM.map(q => { const c = q.clone(); c.metalness = 0.45; return c; })); m.rotation.set(1.2, 0, -0.35); g.add(m); const pl = new THREE.PointLight(0xffffff, 3, 0, 0); pl.position.set(-0.15, 0.25, 0.35); g.add(pl); sc.add(g); H = AIM.hand = { sc, g }; }   // schraeg in der Hand, Flaeche zum Betrachter; Licht faehrt mit der Kamera (sonst je nach Blickrichtung dunkel)
   H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); H.g.scale.setScalar(1.05); { const zz = 0.45, th = Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV()) / 2); H.g.translateX(0.64 * th * camera.aspect * zz); H.g.translateY(-0.3 * th * zz); H.g.translateZ(-zz); }   // ganz rechts nach Bildschirmanteil wie das 2D-Handbild (Nicolas 2026-11-17: "Jetons und Batarang sollen auch ganz rechts sein")

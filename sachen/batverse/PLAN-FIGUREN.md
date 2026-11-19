@@ -16,7 +16,7 @@ Einfache, freundliche Figuren im Low-Poly-Stil: runder Kopf, gezeichnetes Gesich
 | Schritt | Inhalt | Stand |
 |---|---|---|
 | F1 | **Figur-Modell** `buildFigur(o)` (js/spieler/figur.js): Kopf, Haare (Varianten), Gesicht (Augen, Brauen, Mund als Textur), Rumpf, Arme, Beine, Schuhe; Farben je Figur (Haut, Haare, Oberteil, Hose, Schuhe); Gelenke als Gruppen. **Laufanimation** `figurPose(F, t, tempo)`: Stehen (leichtes Atmen), Gehen, Rennen (Arme und Beine schwingen, Kopf wippt), Springen. Werkstatt: Auswahl "Spielfigur" mit Drehteller; die Ersatzfigur auf dem Skateboard wird diese Figur. | gebaut 2026-11-18 |
-| F2 | **Dritte Person** zu Fuss: Taste (z. B. F5 wäre Browser – Vorschlag **V** wie bei Fahrzeugen) wechselt Ich-Sicht/Kamera hinter der Figur; Figur dreht sich in Laufrichtung, Animation aus dem Tempo; Waffen und Gegenstände in der Hand der Figur. | offen |
+| F2 | **Dritte Person** zu Fuss: Taste (z. B. F5 wäre Browser – Vorschlag **V** wie bei Fahrzeugen) wechselt Ich-Sicht/Kamera hinter der Figur; Figur dreht sich in Laufrichtung, Animation aus dem Tempo; Waffen und Gegenstände in der Hand der Figur. | gebaut 2026-11-19 (Taste V, Spiel und Werkstatt) |
 | F3 | **Batman-Figur**: Anzug, Umhang (flattert, beim Gleiten N48 ausgebreitet), Maske; Wechsel über den Batsuit im Inventar (Körper-Platz, OFFENE-FRAGEN 50). | offen |
 | F4 | **Figuren in der Welt**: Fussgänger in Gotham (gehen Gehsteige entlang, warten an Kreuzungen), Personal im Casino (Croupiers an den Tischen, Kassierer), Polizisten am Präsidium. Viele gleichzeitig: einfache Instanzen, nur nah animiert. | offen |
 | F5 | **Fahrzeuge**: Figur sitzt sichtbar im Fahrzeug (Sitzpunkt je Spec), Ein-/Aussteigen kurz animiert; wo der Platz nicht passt, Fahrzeug oder Sitz anpassen. | offen |

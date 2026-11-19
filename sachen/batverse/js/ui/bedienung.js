@@ -229,6 +229,7 @@ function walkStep(dt) {
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
   if (typeof SKATE !== "undefined" && SKATE.on) return skateMove(dt);   // Skateboard (spieler/skateboard.js)
   updatePlayer(dt, mx, mz, keys.has("ShiftLeft") || keys.has("ShiftRight"));
+  if (typeof dpStep === "function") dpStep(dt, player, player.onGround);   // dritte Person (spieler/figur.js, Taste V)
 }
 $("btn-night").addEventListener("click", e => { e.currentTarget.blur(); daySet(night > 0.5 ? 0.25 : 0.75); });   // Tageszeit (kern/tageszeit.js): Mittag bzw. Mitternacht
 addEventListener("resize", () => {

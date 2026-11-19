@@ -146,7 +146,7 @@ const HAND3D = {
 if (typeof HAND3D_VOR !== "undefined") Object.assign(HAND3D, HAND3D_VOR);   // vorher geladene Hand-Modelle (Handys, handy.js)
 const HAND3D_S = { id: null, sc: null, g: null };
 function hand3dRender() { const id = typeof invHeld === "function" ? invHeld() : null, foot = typeof onFoot === "function" ? onFoot() : true;
-  if (!id || !HAND3D[id] || !foot || (typeof invIsOpen === "function" && invIsOpen()) || tresorPadIsOpen() || (typeof SKATE !== "undefined" && SKATE.on)) return;   // auf dem Skateboard nichts in der Hand
+  if (!id || !HAND3D[id] || !foot || (typeof dpAn === "function" && dpAn()) || (typeof invIsOpen === "function" && invIsOpen()) || tresorPadIsOpen() || (typeof SKATE !== "undefined" && SKATE.on)) return;   // auf dem Skateboard nichts in der Hand
   const H = HAND3D_S; if (!H.sc) { H.sc = new THREE.Scene(); H.sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.3)); H.g = new THREE.Group(); const pl = new THREE.PointLight(0xffffff, 3, 0, 0); pl.position.set(-0.15, 0.25, 0.35); H.g.add(pl); H.sc.add(H.g); }
   if (H.id !== id) { H.id = id; for (const c of [...H.g.children]) if (!c.isLight) H.g.remove(c); H.g.add(HAND3D[id]()); }
   H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); { const zz = 0.45, th = Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV()) / 2); H.g.translateX(0.66 * th * camera.aspect * zz); H.g.translateY(-0.4 * th * zz); H.g.translateZ(-zz); }
