@@ -959,29 +959,61 @@ function towFollow(T, t) {
   v.h = Math.atan2(sg * dx / l, sg * dz / l); v.x = hx - t.az * Math.sin(v.h); v.z = hz - t.az * Math.cos(v.h);
   return -sg * Math.atan2(TOW.lift, D);                                                                                          // vorne gegriffen (sg < 0) = Nase hoch
 }
-// Stadtbus: Niederflur, 12 m, Fensterband, zwei Tueren rechts, Zielanzeige vorne, Dachaufbauten
+// Stadtbus "Gotham Transit" (ueberarbeitet 2026-11-19, Nicolas: "Bus auch ueberarbeiten – vor allem die Ausscherung fuer die Reifen"): Niederflur, 12 m. Karosserie als Loft
+// mit ausgeschnittenen Radlaeufen (vorher steckten die Raeder in einem durchgehenden Kasten), schwarze Radlauf-Kanten, Schuerze zwischen den Achsen; Fensterband mit
+// Streben, cremefarbenes Dachband, runde Dachkanten; Front mit grosser Scheibe, Wischern, Zielanzeige, Scheinwerfern im Gehaeuse, Blinkern, Stossfaenger, Kennzeichen, Logo,
+// Spiegel an gebogenen Armen; zwei Doppeltueren rechts mit Rahmen, Gummi und Griffstangen, Liniennummer an der Seite, Werbeflaeche links; Heck mit Motorgitter, Heckscheibe,
+// Leuchten, Liniennummer; Dach mit Klimaanlage (Gitter), Akkukasten, zwei Dachluken. Hinten Zwillingsreifen. Vorne = -z, Ursprung Mitte.
 function buildBus() {
   const g = new THREE.Group(), HW = 1.27, zF = -6.0, zR = 6.0, H = 3.05;
-  const paint = M(0x1f4f8f, { metalness: 0.3, roughness: 0.35 }), cream = M(0xf0ece0, { roughness: 0.45 }), black = M(0x101113, { roughness: 0.7 }), grey = M(0x8a8e94, { metalness: 0.4, roughness: 0.45 });
-  const glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0xb8bcc2, { metalness: 0.7, roughness: 0.35 });
-  boxIn(g, -HW, HW, 0.35, 1.0, zF, zR, paint); boxIn(g, -HW, HW, 1.0, 2.55, zF + 0.05, zR - 0.05, glass); boxIn(g, -HW, HW, 2.55, H, zF, zR, cream);
-  for (const sd of [-1, 1]) for (const z of [zF, zR]) meshIn(g, new THREE.CylinderGeometry(0.14, 0.14, zR - zF, 10).rotateX(Math.PI / 2), cream, sd * (HW - 0.14), H - 0.02, 0);   // runde Dachkanten
-  for (const sd of [-1, 1]) for (let z = zF + 0.9; z < zR - 0.4; z += 1.45) sideBox(g, sd * (HW - 0.01), sd * (HW + 0.012), 1.0, 2.55, z - 0.05, z + 0.05, black);   // Fensterstreben
-  for (const [z0, z1] of [[zF + 0.35, zF + 1.6], [-0.6, 0.65]]) { sideBox(g, HW, HW + 0.015, 0.4, 2.5, z0, z1, glass); sideBox(g, HW + 0.012, HW + 0.02, 0.4, 2.5, (z0 + z1) / 2 - 0.02, (z0 + z1) / 2 + 0.02, black); }   // Tueren rechts
-  boxIn(g, -HW + 0.05, HW - 0.05, 1.0, 2.5, zF - 0.02, zF, glass); boxIn(g, -HW + 0.05, HW - 0.05, 1.6, 2.5, zR, zR + 0.02, glass);   // Front, Heckscheibe
+  const paint = M(0x1f4f8f, { metalness: 0.3, roughness: 0.35, flatShading: true }), cream = M(0xf0ece0, { roughness: 0.45 }), black = M(0x101113, { roughness: 0.7 }), grey = M(0x8a8e94, { metalness: 0.4, roughness: 0.45 });
+  const glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0xb8bcc2, { metalness: 0.7, roughness: 0.35 }), gummi = M(0x1a1a1a, { roughness: 0.95 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 });
+  const yb = polArch([[3.6, 0.5], [-2.4, 0.5]], 0.32, 0.1), hw = tabF([[6.0, 1.16], [5.92, 1.25], [5.8, 1.27], [-5.85, 1.27], [-6.0, 1.2]]), yt = tabF([[6.0, 2.85], [5.85, 3.0], [5.6, 3.05], [-5.8, 3.05], [-6.0, 2.95]]);
+  const FS = []; for (let f = 6.0; f > -6.0; f -= 0.06) FS.push(+f.toFixed(3)); FS.push(-6.0);
+  loftIn(g, FS.map(f => { const b = yb(f), w = hw(f), t = yt(f); return [f, [[0, b], [w - 0.05, b], [w, b + 0.05], [w, t - 0.18], [w - 0.06, t - 0.06], [w - 0.18, t], [0, t]]]; }), paint);
+  // Radlauf-Kanten (schwarz), Schuerze unten
+  for (const sd of [-1, 1]) for (const z of [-3.6, 2.4]) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.045, 6, 20, Math.PI), black); t.rotation.y = Math.PI / 2; t.position.set(sd * (HW + 0.005), 0.5, z); g.add(t); }
+  for (const sd of [-1, 1]) for (const [z0, z1] of [[-5.85, -4.25], [-2.95, 1.75], [3.05, 5.85]]) sideBox(g, sd * (HW - 0.02), sd * (HW + 0.01), 0.3, 0.42, z0, z1, black);
+  // Fensterband, Streben, Dachband
+  for (const sd of [-1, 1]) { const X = sd * HW;
+    sideBox(g, X, X + sd * 0.012, 1.12, 2.5, sd > 0 ? -4.3 : -5.4, sd > 0 ? -0.75 : 5.6, glass); if (sd > 0) { sideBox(g, X, X + sd * 0.012, 1.12, 2.5, 0.8, 5.6, glass); }
+    for (let z = -5.2; z < 5.7; z += 1.45) sideBox(g, X, X + sd * 0.02, 1.1, 2.52, z - 0.05, z + 0.05, black);
+    sideBox(g, X, X + sd * 0.016, 2.52, 2.98, -5.75, 5.85, cream); sideBox(g, X, X + sd * 0.02, 1.08, 1.12, -5.75, 5.85, black); sideBox(g, X, X + sd * 0.016, 0.82, 0.95, -5.7, 5.8, cream);
+    sideBox(g, X, X + sd * 0.02, 0.6, 0.7, -5.8, -5.55, M(0xffa020, { emissive: 0x804000 })); }
+  // Tueren rechts: je zwei Fluegel mit Rahmen, Gummi in der Mitte, Griffstangen, Trittlicht
+  for (const [z0, z1] of [[-5.55, -4.35], [-0.65, 0.65]]) { const X = HW, zm = (z0 + z1) / 2;
+    sideBox(g, X - 0.01, X + 0.02, 0.32, 2.6, z0 - 0.04, z1 + 0.04, black); sideBox(g, X + 0.005, X + 0.022, 0.4, 2.5, z0, z1, glass); sideBox(g, X + 0.02, X + 0.03, 0.4, 2.5, zm - 0.03, zm + 0.03, gummi);
+    for (const z of [z0 + 0.12, z1 - 0.12]) sideBox(g, X + 0.02, X + 0.06, 1.0, 1.9, z - 0.015, z + 0.015, chrome); sideBox(g, X + 0.005, X + 0.03, 0.34, 0.37, z0, z1, M(0xfff2c0, { emissive: 0x806020 })); }
+  // Liniennummer seitlich, Schrift, Werbeflaeche links
+  { const lin = canvasTex(256, 64, (c, W, Hh) => { c.fillStyle = "#111"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#ffb020"; c.font = "bold 46px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("12", W / 2, Hh / 2 + 2); });
+    fireSign(g, new THREE.MeshBasicMaterial({ map: lin }), 0.5, 0.18, HW + 0.025, 2.38, -3.9, 1); fireSign(g, new THREE.MeshBasicMaterial({ map: lin }), 0.6, 0.2, 0, 2.7, zR + 0.03, 0, 1); }
+  for (const sd of [-1, 1]) fireSign(g, fireLabel("Gotham Transit", 80), 2.0, 0.3, sd * (HW + 0.02), 0.66, sd > 0 ? 3.2 : -1.5, sd);
+  { const ad = canvasTex(512, 128, (c, W, Hh) => { const gr = c.createLinearGradient(0, 0, W, 0); gr.addColorStop(0, "#151515"); gr.addColorStop(1, "#3a2a0a"); c.fillStyle = gr; c.fillRect(0, 0, W, Hh); c.fillStyle = "#e8c547"; c.font = "bold 40px Georgia, serif"; c.textAlign = "center"; c.fillText("GOTHAM ROYAL CASINO", W / 2, 60); c.fillStyle = "#ddd"; c.font = "26px Arial"; c.fillText("Uptown · 24 h geöffnet", W / 2, 104); });
+    fireSign(g, new THREE.MeshBasicMaterial({ map: ad }), 3.6, 0.9, -(HW + 0.02), 1.65, 2.6, -1); }
+  // Front: Scheibe mit Rahmen und Wischern, Zielanzeige, Scheinwerfer im Gehaeuse, Blinker, Stossfaenger, Kennzeichen, Logo
+  boxIn(g, -1.12, 1.12, 1.0, 2.5, zF - 0.015, zF + 0.02, glass); boxIn(g, -1.16, 1.16, 2.5, 2.55, zF - 0.02, zF + 0.02, black); boxIn(g, -0.015, 0.015, 1.0, 2.5, zF - 0.03, zF, black);
+  for (const sd of [-1, 1]) { const w = boxAt(g, 0.9, 0.03, 0.03, black, sd * 0.5, 1.15, zF - 0.04); w.rotation.z = sd * 0.35; }
   { const t = canvasTex(512, 64, (c, W, Hh) => { c.fillStyle = "#111"; c.fillRect(0, 0, W, Hh); c.fillStyle = "#ffb020"; c.font = "bold 44px Arial, sans-serif"; c.textBaseline = "middle"; c.fillText("12  DOWNTOWN", 16, Hh / 2 + 2); }); t.repeat.set(1, 1);
-    meshIn(g, new THREE.PlaneGeometry(1.9, 0.24), new THREE.MeshBasicMaterial({ map: t }), 0, 2.72, zF - 0.012, Math.PI); g.children[g.children.length - 1].rotation.set(0, Math.PI, 0); }   // Zielanzeige
-  for (const sd of [-1, 1]) { boxIn(g, sd * (HW - 0.35) - 0.2, sd * (HW - 0.35) + 0.2, 0.55, 0.72, zF - 0.03, zF, mat.glow); boxIn(g, sd * (HW - 0.2) - 0.1, sd * (HW - 0.2) + 0.1, 0.7, 1.2, zR, zR + 0.03, mat.glowRed);
-    sideBox(g, sd * HW, sd * (HW + 0.01), 0.82, 0.95, zF + 0.1, zR - 0.1, cream);                                             // Zierstreifen
-    fireSign(g, fireLabel("Gotham Transit", 80), 2.0, 0.3, sd * (HW + 0.012), 0.66, sd > 0 ? 3.2 : -1.5, sd);
-    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.3), 1.9, 2.4, zF + 0.12, zF + 0.2, black); }
-  boxIn(g, -0.8, 0.8, H, H + 0.3, 1.5, 4.0, grey); boxIn(g, -0.7, 0.7, H, H + 0.22, -3.5, -1.8, grey);                         // Klimaanlage, Akku
-  boxIn(g, -HW, HW, 0.25, 0.45, zF - 0.08, zF + 0.1, black); boxIn(g, -HW, HW, 0.25, 0.45, zR - 0.1, zR + 0.08, black);
-  for (const z of [-3.6, 2.4]) boxIn(g, -1.0, 1.0, 0.35, 1.05, z - 0.6, z + 0.6, black);
+    const z = meshIn(g, new THREE.PlaneGeometry(1.9, 0.24), new THREE.MeshBasicMaterial({ map: t }), 0, 2.72, zF - 0.035); z.rotation.set(0, Math.PI, 0); boxIn(g, -1.0, 1.0, 2.58, 2.86, zF - 0.03, zF + 0.05, black); }
+  for (const sd of [-1, 1]) { boxAt(g, 0.5, 0.2, 0.08, black, sd * 0.8, 0.66, zF + 0.02); for (const dx of [-0.12, 0.12]) meshIn(g, new THREE.CircleGeometry(0.075, 14), mat.glow, sd * 0.8 + dx, 0.66, zF - 0.025, Math.PI);
+    boxAt(g, 0.1, 0.1, 0.03, M(0xffa020, { emissive: 0x804000 }), sd * 1.12, 0.66, zF - 0.01); }
+  boxIn(g, -1.24, 1.24, 0.25, 0.48, zF - 0.1, zF + 0.1, black); boxAt(g, 0.5, 0.12, 0.02, M(0xeeeeea, { roughness: 0.5 }), 0, 0.37, zF - 0.105); boxAt(g, 0.5, 0.12, 0.02, chrome, 0, 0.88, zF - 0.01);
+  // Spiegel an gebogenen Armen (Bus-Spiegel nach vorne)
+  for (const sd of [-1, 1]) { const arm = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.02, 6, 12, Math.PI / 2), black); arm.position.set(sd * (HW + 0.02), 2.25, zF + 0.32); arm.rotation.set(0, sd > 0 ? Math.PI : -Math.PI / 2, 0); g.add(arm);
+    boxAt(g, 0.12, 0.42, 0.18, black, sd * (HW + 0.32), 2.05, zF - 0.02); boxAt(g, 0.1, 0.36, 0.02, M(0x9ab0c0, { metalness: 0.9, roughness: 0.05 }), sd * (HW + 0.32), 2.05, zF + 0.075); }
+  // Heck: Motorgitter, Heckscheibe, Leuchten, Stossfaenger, Kennzeichen
+  boxIn(g, -1.05, 1.05, 1.6, 2.5, zR - 0.02, zR + 0.015, glass); boxIn(g, -1.05, 1.05, 0.55, 1.45, zR - 0.01, zR + 0.02, black); for (let y = 0.6; y < 1.42; y += 0.08) boxIn(g, -1.0, 1.0, y, y + 0.03, zR + 0.02, zR + 0.04, grey);
+  for (const sd of [-1, 1]) { boxIn(g, sd * (HW - 0.18) - 0.1, sd * (HW - 0.18) + 0.1, 0.6, 1.4, zR, zR + 0.04, black); boxIn(g, sd * (HW - 0.18) - 0.08, sd * (HW - 0.18) + 0.08, 1.0, 1.35, zR + 0.04, zR + 0.05, mat.glowRed); boxIn(g, sd * (HW - 0.18) - 0.08, sd * (HW - 0.18) + 0.08, 0.68, 0.95, zR + 0.04, zR + 0.05, M(0xffa020, { emissive: 0x804000 })); }
+  boxIn(g, -1.24, 1.24, 0.25, 0.48, zR - 0.1, zR + 0.1, black); boxAt(g, 0.5, 0.12, 0.02, M(0xeeeeea, { roughness: 0.5 }), 0, 0.37, zR + 0.105);
+  // Dach: Klimaanlage mit Gittern, Akkukasten, Dachluken, Dachband creme
+  boxIn(g, -1.1, 1.1, H - 0.01, H + 0.005, -5.6, 5.7, cream);
+  boxIn(g, -0.85, 0.85, H, H + 0.32, 1.5, 4.0, grey); for (const sd of [-1, 1]) for (let z = 1.7; z < 3.9; z += 0.12) boxIn(g, sd * 0.85 - 0.01, sd * 0.85 + 0.01, H + 0.06, H + 0.26, z, z + 0.05, black);
+  boxIn(g, -0.75, 0.75, H, H + 0.22, -3.5, -1.8, grey); for (const z of [-3.4, -1.9]) boxIn(g, -0.76, 0.76, H + 0.2, H + 0.23, z, z + 0.04, black);
+  for (const z of [-0.6, 0.8]) { boxIn(g, -0.4, 0.4, H, H + 0.06, z - 0.35, z + 0.35, M(0xdcdcd4, { roughness: 0.5 })); boxIn(g, -0.32, 0.32, H + 0.06, H + 0.08, z - 0.27, z + 0.27, glass); }
   mergeStatic(g);
   const wheels = [];
   for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.05, -3.6, 0.5, 0.3, true, tireM, rimM, 0, 24));
-  for (const sd of [-1, 1]) for (const x of [0.88, 1.18]) wheels.push(addWheel(g, sd * x, 2.4, 0.5, 0.28, false, tireM, rimM, 0, 24));
+  for (const sd of [-1, 1]) for (const x of [0.84, 1.1]) wheels.push(addWheel(g, sd * x, 2.4, 0.5, 0.25, false, tireM, rimM, 0, 24));
   for (const w of wheels) sedanCap(w, 0.28, 0xb8bcc2, 0xdfe2e6, 10);
   return { g, wheels };
 }

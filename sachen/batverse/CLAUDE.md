@@ -70,6 +70,14 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Bus neu mit Radausschnitten** (Nicolas 2026-11-19: "Bus auch überarbeiten – vor allem die Ausscherung für die Reifen"): modelle.js `buildBus`.
+  - Vorher steckten die Räder in einem durchgehenden Kasten bis 1,0 m. Jetzt ist die Karosserie ein Loft mit ausgeschnittenen Radläufen (`polArch`), schwarzen Radlauf-Kanten und Schürzen zwischen den Achsen. Runde Dachkanten, leicht gerundete Front.
+  - Seiten: Fensterband mit Streben, cremefarbenes Dachband. Zwei Doppeltüren rechts mit Rahmen, Gummi, Griffstangen und Trittlicht. Liniennummer seitlich und hinten, Werbefläche links (Gotham Royal Casino).
+  - Front: Scheibe mit Mittelstrebe und Wischern, Zielanzeige vor der Scheibe, Doppelscheinwerfer im Gehäuse, Blinker, Stossfänger, Kennzeichen, Bus-Spiegel an gebogenen Armen.
+  - Heck mit Motorgitter, Leuchten und Kennzeichen. Dach mit Klimaanlage (Gitter), Akkukasten, Dachluken.
+  - Hinten schmalere Zwillingsreifen (ragen nicht mehr aus der Seite). Grösse, Radlage und Spec unverändert.
+  - Geprüft: Bilder von vorne, hinten und Radlauf nah. Im Spiel baut buildBus fehlerfrei; die fahrenden Linienbusse nicht im Bild angeschaut.
+
 - **Spielfiguren F3: Batman-Figur** (Nicolas 2026-11-19 "Ja, weiter"): figur.js `buildBatman()` mit denselben Gelenken wie buildFigur.
   - Anzug: dunkelgrau mit schwarzen Panzerplatten (Brust, Bauchsegmente, Schultern, Schienbeine). Fledermaus-Emblem aus der Batsignal-Kontur. Gurt mit Taschen und Schnalle, Handschuhe mit Finnen, Stiefel.
   - Maske bis unter die Augen mit Ohren und weissen Augenschlitzen, Kinn frei.
