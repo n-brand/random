@@ -72,6 +72,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Gotham Police dunkelblau** (Nicolas 2026-11-19: "Gotham Police soll auch dunkelblau werden"): modelle.js `buildPolice` – Lack dunkelblau (#16233f wie Pickup und Helikopter), Band unten jetzt weiss, Wagennummer auf dem Dach weiss. Schriftzug POLICE · GOTHAM CITY unverändert. Bild geprüft.
+
 - **Seilwinde am Cougar nimmt Fahrzeuge mit** (Nicolas 2026-11-19: "der Transporthelikopter hat ja eine Seilwinde rechts – die soll als Spezialfunktion irgendetwas mitnehmen können"): militaer.js `WINDE`, `windeStep` (aus der pose des Cougar), `windeTaste`.
   - Ablauf:
     - Im Flug H lässt Seil und Haken ab (5 m/s, bis 30 m oder bis zum Boden).

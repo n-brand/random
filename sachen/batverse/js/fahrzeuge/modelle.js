@@ -540,7 +540,7 @@ const SEDAN = { fF: 2.52, fR: -2.5, r: 0.34, wf: [1.45, -1.5], ys: 0.6, track: 1
 // ---- Polizeiauto "Gotham Police" (Nicolas 2026-11-10, eigener Entwurf; 2026-11-11 als Loft): weisse Limousine, dunkelblaues Band, POLICE / GOTHAM CITY
 // auf beiden Seiten und hinten (Canvas, auf der Flaeche), Lichtbalken rot/blau (blinkt beim Fahren), Rammschutz aus Rohr, Suchscheinwerfer, Antenne
 function buildPolice() {
-  const paint = M(0xeef0f2, { metalness: 0.4, roughness: 0.32 }), blue = M(0x1b2c4f, { metalness: 0.3, roughness: 0.4 }), dark = M(0x0a0b0c, { roughness: 0.7 });
+  const paint = M(0x16233f, { metalness: 0.45, roughness: 0.3 }), blue = M(0xeef0f2, { metalness: 0.3, roughness: 0.4 })   /* 2026-11-19 Nicolas: "Gotham Police soll auch dunkelblau werden" – Lack dunkelblau, Band weiss */, dark = M(0x0a0b0c, { roughness: 0.7 });
   const glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), chrome = M(0xa8adb3, { metalness: 0.9, roughness: 0.25 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0x2a2c30, { metalness: 0.6, roughness: 0.4 });
   const red = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 }), blu = new THREE.MeshStandardMaterial({ color: 0x0a1a5a, emissive: 0x2a5cff, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 });
   const amber = M(0xffa020, { emissive: 0x6a3a00 });
@@ -576,7 +576,7 @@ function buildPolice() {
   polKit(g, { black: dark, chrome, paint }).rammschutz(-2.52, 0.3, 0.84, 0.95);
   for (const sd of [-1, 1]) k.face(1, sd * 0.14, sd * 0.26, 0.545, 0.6, 0.02, sd < 0 ? red : blu);                                  // Blitzer im Grill
   meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.12, 12).rotateX(Math.PI / 2), chrome, 0.88, 1.06, -0.98); meshIn(g, new THREE.CircleGeometry(0.055, 12), mat.glow, 0.88, 1.06, -1.045, Math.PI); boxIn(g, 0.8, 0.86, 0.94, 1.03, -0.99, -0.95, dark);   // zweiter Suchscheinwerfer
-  { const num = new THREE.MeshStandardMaterial({ map: canvasTex(256, 160, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = "#1b2c4f"; c.font = "bold 130px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("17", W / 2, H / 2 + 6); }), transparent: true, roughness: 0.45, polygonOffset: true, polygonOffsetFactor: -2 });
+  { const num = new THREE.MeshStandardMaterial({ map: canvasTex(256, 160, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = "#eef0f2"; c.font = "bold 130px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("17", W / 2, H / 2 + 6); }), transparent: true, roughness: 0.45, polygonOffset: true, polygonOffsetFactor: -2 });
     const r = meshIn(g, new THREE.PlaneGeometry(0.75, 0.47), num, 0, 1.418, 0.45); r.rotation.set(-Math.PI / 2, 0, 0);   // von hinten lesbar
     for (const sd of [-1, 1]) k.skin(sd, -1.32, -1.72, 0.66, 0.86, k.bodyX, num, 0.008, 8, 3); }
   for (const x of [-0.35, 0.35]) meshIn(g, new THREE.CylinderGeometry(0.004, 0.006, 0.36, 4), dark, x, 1.59, 0.75);
