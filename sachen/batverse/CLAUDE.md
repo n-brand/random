@@ -74,6 +74,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Gebäude auf Figurengrösse geprüft (F6), Casino-Treppe flacher** ("Ja, weiter"): Massstab Figur 1,78 m (Augen 1,62 m). In Ordnung: Türen Waffenladen 2,9 m, Casino 4 m, Präsidium 5,3 m, Börse 6 m, Schiessstand-Tür 2,4 m; Theken Casino-Kasse 1,13 m, Waffenladen 0,97 m, Börsenposten 1,08 m, Werkbank 0,96 m; Decken ab 4,4 m (Läden), 14 m (Börse). Abweichung: Casino-Freitreppe 20 Stufen zu 36,5 cm (doppelt so hoch wie üblich) – gotham-casino.js jetzt 40 Stufen zu 18,25 cm mit 30 cm Auftritt (Treppe 12 m statt 8,4 m lang, beginnt 3,6 m weiter vorne; Loch oben, Geländer und Rampen-Kollision folgen). Geprüft in der Werkstatt: Testgang alle 5 cm von 0 auf 7,30 m, grösster Sprung 6 cm; Bild.
+
 - **Gotham Hearts mit Porträts aus Spielfiguren (F7)** ("Ja, weiter"): figur.js `figurFotoVon(key, o, bg)` – beliebige Figur als Porträt (ein WebGL-Kontext für mehrere Bilder, nach 3 s Ruhe freigegeben, Ergebnis gemerkt). dating.js `dgAvatar`: jedes Profil als Figur mit Haut- und Haarfarbe, Frisur, Kleidung und Hintergrund aus dem Profil (Frauen schmaler, Noah mit Bart); das eigene Profil zeigt Bruce. Quadratische Ausschnitte oben ausgerichtet. Porträt-Kamera etwas höher und weiter (Kopf war oben angeschnitten), gilt auch für die Akte. Geprüft in der Werkstatt: 6 Profile und Bruce (Bild), 9 Bilder in ca. 0,3 s beim ersten Mal. Die Zeichnung bleibt als Rückfall.
 
 - **Fussgänger schneller, Ultra-Orbit aus, Kanal-Fehler behoben** (Nicolas 2026-11-19: "die Fussgänger in Gotham – teste bitte Performance"; "der Ultra-Orbit-Mode soll deaktiviert werden, so dass er ohne Änderung im Code nicht anschaltbar ist, wenn man im Orbit rauszoomt"):

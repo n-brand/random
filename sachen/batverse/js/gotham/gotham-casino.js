@@ -101,7 +101,7 @@ function* casinoGen() {
 // Rechtsklick-Ziele in CAS.gates, Rampenstuecke der Treppe in CAS.ramp, Tresortuer in CAS.vault.
 function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T, DW, H2 }) {
   const IX = BW / 2 - T, IZ0 = Z0 + T, IZ1 = Z0 + BD - T, IL = IZ1 - IZ0, IC = (IZ0 + IZ1) / 2, C = CAS.innen = []; CAS.rouT = []; CAS.personal = []; CAS.gates = []; CAS.ramp = []; const O = new THREE.Object3D();
-  const FL2 = HG + 0.3, NS = 20, RS = FL2 / NS, TS = 0.42, SW = 3.5, ZE = IZ1 - 3, ZS = ZE - NS * TS;   // 2. Stock 7,3 m; Treppe 7 m breit, 20 Stufen zu 36,5 cm, Auftritt 42 cm
+  const FL2 = HG + 0.3, NS = 40, RS = FL2 / NS, TS = 0.3, SW = 3.5, ZE = IZ1 - 3, ZS = ZE - NS * TS;   // 2. Stock 7,3 m; Treppe 7 m breit, 40 Stufen zu 18,25 cm, Auftritt 30 cm (F6 2026-11-19: vorher 20 zu 36,5 cm, fuer eine 1,78-m-Figur doppelt so hoch wie ueblich)
   CAS.FL2 = FL2; CAS.stair = { SW, ZS, ZE, RS, TS };
   const inst = (geo, m, list, shadow = false) => { const im = new THREE.InstancedMesh(geo, m, list.length); list.forEach((t, i) => { O.position.set(t[0], t[1], t[2]); O.rotation.set(t[4] || 0, t[3] || 0, 0); O.scale.setScalar(t[5] || 1); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
     im.castShadow = shadow; im.receiveShadow = true; g.add(im); return im; };
