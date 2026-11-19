@@ -151,3 +151,42 @@ function hand3dRender() { const id = typeof invHeld === "function" ? invHeld() :
   if (H.id !== id) { H.id = id; for (const c of [...H.g.children]) if (!c.isLight) H.g.remove(c); H.g.add(HAND3D[id]()); }
   H.g.position.copy(camera.position); H.g.quaternion.copy(camera.quaternion); { const zz = 0.45, th = Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV()) / 2); H.g.translateX(0.66 * th * camera.aspect * zz); H.g.translateY(-0.4 * th * zz); H.g.translateZ(-zz); }
   const ac = renderer.autoClear; renderer.autoClear = false; renderer.clearDepth(); renderer.render(H.sc, camera); renderer.autoClear = ac; }
+// ---- weitere 3D-Modelle in der Hand (N8, "Ja, weiter" 2026-11-19): Gullihaken, Munition (vier Sorten), Batsuit, Mantel ----
+const HAND3D_M = (c, r = 0.6, m = 0.1, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...o });
+// Munitionsschachtel: Karton mit Aufdruck, offener Deckel, oben Patronen (Laenge l, Radius r, Huelse/Spitze) bzw. Schrotpatronen
+function hand3dMunition(farbe, text, l, r, art) { const g = new THREE.Group(), W = 0.13, H = 0.07, D = 0.09;
+  const t = canvasTex(256, 128, (q, w, h) => { q.fillStyle = farbe; q.fillRect(0, 0, w, h); q.fillStyle = "rgba(0,0,0,.35)"; q.fillRect(0, h - 26, w, 26); q.fillStyle = "#fff"; q.font = "bold 46px Arial"; q.textAlign = "center"; q.fillText(text, w / 2, 62); q.font = "bold 18px Arial"; q.fillText("GOTHAM AMMO", w / 2, h - 7); });
+  const kart = HAND3D_M(farbe, 0.85), front = new THREE.MeshStandardMaterial({ map: t, roughness: 0.85 }), box = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), [kart, kart, kart, kart, front, kart]); g.add(box);
+  const deckel = new THREE.Mesh(new THREE.BoxGeometry(W, 0.004, D), kart); deckel.position.set(0, H / 2 + D / 2 * Math.sin(1.2), -D / 2 - D / 2 * Math.cos(1.2)); deckel.rotation.x = 1.2;   // Deckel hinten aufgeklappt g.add(deckel);
+  const messing = HAND3D_M(0xc9a640, 0.3, 0.8), kupfer = HAND3D_M(0xb06a3a, 0.35, 0.7), rot = HAND3D_M(0xb02a24, 0.6);
+  const n = art === "schrot" ? [3, 2] : [5, 3], dx = W / (n[0] + 0.5), dz = D / (n[1] + 0.5);
+  for (let i = 0; i < n[0]; i++) for (let k = 0; k < n[1]; k++) { const x = -W / 2 + dx * (i + 0.75), z = -D / 2 + dz * (k + 0.75), y0 = H / 2 - l * 0.55;
+    if (art === "schrot") { const h = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l * 0.75, 12), rot); h.position.set(x, y0 + l * 0.4, z); g.add(h); const b = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.05, r * 1.05, l * 0.25, 12), messing); b.position.set(x, y0 + l * 0.9, z); g.add(b); }
+    else { const h = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l * 0.7, 10), messing); h.position.set(x, y0 + l * 0.35, z); g.add(h); const s = new THREE.Mesh(new THREE.ConeGeometry(r * 0.95, l * 0.3, 10), kupfer); s.position.set(x, y0 + l * 0.85, z); g.add(s); } }
+  // eine Patrone liegt vorne heraus
+  if (art !== "schrot") { const p = new THREE.Group(), h = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l * 0.7, 10), messing), s = new THREE.Mesh(new THREE.ConeGeometry(r * 0.95, l * 0.3, 10), kupfer); s.position.y = l * 0.5; p.add(h, s); p.rotation.z = Math.PI / 2; p.position.set(0.02, -H / 2 - r, D / 2 + 0.03); g.add(p); }
+  g.rotation.set(0.45, -0.55, 0.05); g.scale.setScalar(1.25); g.position.set(0, -0.03, 0); return g; }
+Object.assign(HAND3D, {
+  gullihaken: () => { const g = new THREE.Group(), rot = HAND3D_M(0xc8202a, 0.45, 0.3), stahl = HAND3D_M(0x6a6f74, 0.35, 0.7);
+    const q = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.16, 4, 10), rot); q.rotation.z = Math.PI / 2; q.position.y = 0.2; g.add(q);   // T-Griff
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.46, 10), stahl); s.position.y = -0.03; g.add(s);
+    const c = new THREE.CatmullRomCurve3([new THREE.Vector3(0, -0.26, 0), new THREE.Vector3(0, -0.31, 0), new THREE.Vector3(0.035, -0.32, 0), new THREE.Vector3(0.05, -0.29, 0)]); g.add(new THREE.Mesh(new THREE.TubeGeometry(c, 16, 0.009, 8), stahl));   // Haken
+    g.rotation.set(0.3, 0.4, -0.2); g.scale.setScalar(0.6); g.position.y = 0.0; return g; },
+  munition: () => hand3dMunition("#d8b440", "9 mm", 0.03, 0.0045, "kurz"),
+  sturmmunition: () => hand3dMunition("#4a6a3a", "5,56", 0.057, 0.0042, "lang"),
+  gewehrmunition: () => hand3dMunition("#3a3f46", "7,62", 0.07, 0.005, "lang"),
+  schrot: () => hand3dMunition("#8a2420", "12/70", 0.07, 0.0095, "schrot"),
+  batsuit: () => { const g = new THREE.Group(), schwarz = HAND3D_M(0x18191c, 0.55, 0.3), matt = HAND3D_M(0x101113, 0.85);   // zusammengelegter Anzug mit Emblem, darauf die Maske
+    for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.2 - k * 0.01, 0.025, 0.15 - k * 0.006), k % 2 ? matt : schwarz); b.position.y = k * 0.026; g.add(b); }
+    if (typeof BAT_SIGNAL_PTS !== "undefined") { const s = new THREE.Shape(), P = BAT_SIGNAL_PTS, A = [...P, ...P.slice(0, -1).reverse().map(([x, y]) => [-x, y])]; A.forEach(([x, y], i) => i ? s.lineTo(x * 0.07, -y * 0.07) : s.moveTo(x * 0.07, -y * 0.07));
+      const e = new THREE.Mesh(new THREE.ShapeGeometry(s), HAND3D_M(0x6a5a2a, 0.4, 0.6, { side: THREE.DoubleSide })); e.rotation.x = -Math.PI / 2; e.position.set(-0.03, 0.066, 0.02); g.add(e); }
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6), schwarz); m.scale.set(1, 1.1, 1.05); m.position.set(0.05, 0.07, -0.02); g.add(m);
+    for (const sx of [-1, 1]) { const o = new THREE.Mesh(new THREE.ConeGeometry(0.01, 0.04, 6), schwarz); o.position.set(0.05 + sx * 0.024, 0.125, -0.02); o.rotation.z = -sx * 0.12; g.add(o); }
+    g.rotation.set(0.6, -0.4, 0.1); g.scale.setScalar(1.1); g.position.y = -0.05; return g; },
+  mantel: () => { const g = new THREE.Group(), stoff = HAND3D_M(0x4a4e58, 0.9), futter = HAND3D_M(0x5a1e24, 0.8), knopf = HAND3D_M(0x111111, 0.4, 0.3);   // ueber den Arm gelegter Mantel
+    const k = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.32, 0.16), stoff); g.add(k); const f = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.3, 0.14), futter); f.position.x = -0.031; g.add(f);
+    const kr = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.04, 0.17), stoff); kr.position.y = 0.17; kr.rotation.z = 0.15; g.add(kr);   // Kragen
+    for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.005, 10), knopf); b.rotation.z = Math.PI / 2; b.position.set(0.032, 0.08 - i * 0.07, 0.04); g.add(b); }
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.07), stoff); s.position.set(0.01, -0.02, -0.11); s.rotation.x = 0.25; g.add(s);   // Aermel
+    g.rotation.set(0.15, -0.6, -0.2); g.scale.setScalar(0.7); g.position.y = -0.04; return g; },
+});

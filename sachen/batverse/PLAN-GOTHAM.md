@@ -138,7 +138,7 @@ Als Gebäude (innen leer) stehen auch: Club des Pinguins, Grand Ballroom (Events
 | N5 | **Laptops in der Werkstatt**: wie der Bankautomat, aber anderes UI. Zwei Laptops nebeneinander mit verschiedenem Gehäuse, gleiche Software; nicht jeder hat jede App. Benutzername schon eingetragen; manche entsperrt, manche ohne, manche mit Passwort. Apps: **Web** (Browser mit angehefteten Seiten wie GTA V: Autohändler, Waffen, Börse, Bank, Immobilien – überall schon angemeldet; eigene Immobilien mit Wert), **Kontakte** (Polizei, Taxi, Krankenwagen, Feuerwehr anrufen), **E-Mail**, **Karten**; weitere Apps später | **gebaut 2026-11-17** in der Werkstatt (PLAN-LAPTOP.md L1-L3); im Spiel aufstellen offen |
 | N6 | **Granaten** als Werkzeug | gebaut 2026-11-19 (Handgranate, Gotham Arms) |
 | N7 | **Autoschlüssel**: im Autohaus hinten in einem Schlüsseltresor | offen |
-| N8 | Jeder Gegenstand: **2D im Inventar, 3D in der Hand und ausserhalb** | Schusswaffen 3D in der Hand; übrige noch 2D-Symbol in der Hand, 3D-Modelle offen |
+| N8 | Jeder Gegenstand: **2D im Inventar, 3D in der Hand und ausserhalb** | ✅ 2026-11-19: alle Gegenstände 3D in der Hand (tresor.js HAND3D); 3D ausserhalb (liegend in der Welt) noch offen |
 | N9 | **Generalschlüssel/Hacktool** für Batman: jede Tür öffnen, jedes Fahrzeug stehlen | offen (hängt an N7) |
 | N10 | Batarang flog durch Gebäude, soll abprallen (Gebäude, Fahrzeug, Baum) | **gebaut 2026-11-17** |
 | N11 | Bankautomat direkt beim Wayne Tower | **gebaut 2026-11-17** (neues Modell auf dem Vorplatz) |
