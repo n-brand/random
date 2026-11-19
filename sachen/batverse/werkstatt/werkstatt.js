@@ -44,6 +44,7 @@ const MODELLE = [
   { name: "Polizei-Helikopter", flug: "heli" },
   { name: "Transporthelikopter Cougar", flug: "cougar" },
   { name: "Schulungshelikopter", flug: "schulheli" },
+  { name: "Kampfhubschrauber", flug: "kampfheli" },
 ];
 
 // ---------- Szene: Licht, Boden, Rundkurs, Slalom ----------
@@ -148,7 +149,7 @@ function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = n
   const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 1.9 + fz * r * 0.45, c.y + r * 0.25, c.z + fz * r * 1.9 - fx * r * 0.45); controls.update();
   $info.innerHTML = "<table><tr><td>Projekt</td><td>" + PROJEKT.name + "</td></tr><tr><td>Masse</td><td>" + fmt(s.x) + " x " + fmt(s.z) + " x " + fmt(s.y) + " m</td></tr></table><div class=\"note\">Aktuelles Umbauprojekt, Plan: " + PROJEKT.plan + "</div>"; }
 // ---------- Fluggeraete ----------
-const FLUG = { jet: () => JET, bat: () => BAT_FLY, heli: () => HELI, cougar: () => COUGAR, schulheli: () => SCHULHELI };
+const FLUG = { jet: () => JET, bat: () => BAT_FLY, heli: () => HELI, cougar: () => COUGAR, schulheli: () => SCHULHELI, kampfheli: () => KAMPFHELI };
 // Startbahn (Kampfjet) und Landeplatz (The Bat) am Nordrand der Flaeche
 const PAD = { x: -100, z: -200 };
 { const asph = new THREE.MeshStandardMaterial({ color: 0x2c2f33, roughness: 0.9 }), weiss = new THREE.MeshStandardMaterial({ color: 0xeeeeea, roughness: 0.6 });
@@ -160,6 +161,7 @@ const PAD = { x: -100, z: -200 };
   for (const [w, d, x, z] of [[1, 7, -2.2, 0], [1, 7, 2.2, 0], [3.4, 1, 0, 0]]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), weiss); b.position.set(PAD.x + x, 0.03, PAD.z + z); flaeche.add(b); }   // H
 }
 heliStand(COUGAR, PAD.x - 32, 0, PAD.z, -Math.PI / 2); heliStand(SCHULHELI, PAD.x + 26, 0, PAD.z, -Math.PI / 2);   // Militaer-Hubschrauber neben dem Landeplatz (N52)
+heliStand(KAMPFHELI, PAD.x + 55, 0, PAD.z, -Math.PI / 2);   // Kampfhubschrauber neben dem Landeplatz (2026-11-19)
 drohneStand(100, 0, RUNWAY.z + RUNWAY.w / 2 + 30, -Math.PI / 2);   // Aufklaerungsdrohne neben der Piste (N52), Nase nach Osten
 Object.assign(FLY, { x: PAD.x, y: 0, z: PAD.z, h: -Math.PI / 2 }); FLY.home = { x: FLY.x, y: FLY.y, z: FLY.z, h: FLY.h }; batPose(FLY, 0);
 for (const F of [JET, FLY]) F.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });

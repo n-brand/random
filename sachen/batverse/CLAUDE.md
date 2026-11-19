@@ -42,6 +42,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Tore, Türen, Automaten, Tische | Rechtsklick (zu Fuss), im Fahrzeug auch E |
 | Ton an/aus im Fahrzeug | N |
 | Container-Aufzug im Auto | L |
+| Kampfhubschrauber | fliegt wie The Bat; im Flug **Linksklick oder Q** = Kanone (halten), **Rechtsklick oder X** = Rakete (alle 0,6 s); Ziel ist die Bildmitte |
 | Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
 | Gleitumhang | zu Fuss im Fall (mehr als 3 m über dem Boden) **Leertaste** = Umhang auf, Maus lenkt, nach unten schauen = Sturzflug; Leertaste nochmal oder Landen = zu |
 | Drift | im Auto **Q** halten und lenken (ab ca. 25 km/h): Heck bricht aus, Reifenspuren und Qualm; nicht bei Motorrädern und Panzern |
@@ -69,6 +70,26 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Kampfhubschrauber, der schiessen kann** (Nicolas 2026-11-19: "noch so einen Helikopter fürs Militär, der schiessen kann – als neues Modell, such mal im Internet"): militaer.js `buildKampfheli`, `KAMPFHELI` (flyAdd, Massstab 1,4), `khWaffen`.
+  - Recherche: typische Bauweise nach AH-1 Cobra und AH-64 Apache – schmaler Rumpf, Tandem-Cockpit, Stummelflügel mit Raketen, Kanone im Turm unter der Nase.
+  - Modell (eigener Entwurf):
+    - Rumpf als Loft, zwei gestufte Glaskuppeln mit Rahmen (Schütze vorne, Pilot erhöht), Sensorkugel an der Nase.
+    - Kanonenturm unter der Nase, dreht zum Ziel.
+    - Stummelflügel mit je einem Raketenbehälter (7 Rohre) und zwei Lenkwaffen.
+    - Zwei Triebwerke mit Einlass und Auspuff, Vierblattrotor.
+    - Heckausleger mit Leitwerk, Heckrotor und Höhenflosse; Spornradfahrwerk.
+    - Kennung T-410, Schweizerkreuz, rote Blitzleuchten.
+  - Fliegt schneller und wendiger als Cougar und Schulungshelikopter (72 m/s).
+  - Waffen im Flug, Ziel ist die Bildmitte (Strahl von der Kamera), mit grünem Visier und Anzeige:
+    - Kanone: Linksklick (bei gefangener Maus) oder Q halten, 10 Schuss/s mit Leuchtspur und Mündungsblitz. Treffer an Fahrzeugen über gunDamage.
+    - Rakete: Rechtsklick oder X, alle 0,6 s, abwechselnd links und rechts. Beschleunigt auf 180 m/s, Rauchspur, Explosion (fxBoom). Fahrzeuge im Umkreis von 6 m bekommen vehHit.
+    - In der Werkstatt nur Blitz, kein Fahrzeugschaden.
+  - Werkstatt: neben dem Landeplatz und in der Auswahl. Im Spiel noch ohne Standort (wie die anderen Militärhubschrauber, OFFENE-FRAGEN 52).
+  - Geprüft in der Werkstatt:
+    - Bilder des Modells.
+    - Waffen direkt gerechnet: Kanone 12 Treffer am Boden, Turm folgt dem Ziel; Rakete mit Rauchspur (Bild).
+    - Echter Mausklick im Flug nicht getestet.
 
 - **Geldtransporter neu mit Radausschnitten** (Nicolas 2026-11-19: "Geldtransporter auch überarbeiten"): modelle.js `buildGeldtransporter`.
   - Vorher steckten die Räder in Kästen. Jetzt sind Haube und Kabine ein Loft mit Radausschnitt, der gepanzerte Kasten ein Loft mit gefasten Kanten und Ausschnitt über der Zwillingsachse, dazu Kotflügelverbreiterungen.

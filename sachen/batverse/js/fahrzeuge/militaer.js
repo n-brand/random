@@ -398,3 +398,97 @@ function drohneStep(dt) { if (DROHNE.stand) return; if (!DROHNE.c) { if (typeof 
   const D = DROHNE, g = D.g; D.a += dt * D.V / D.R;
   g.position.set(D.c[0] + Math.cos(D.a) * D.R, D.H, D.c[1] + Math.sin(D.a) * D.R); g.rotation.set(0, Math.PI - D.a, 0);   // Nase entlang der Kreisbahn
   g.userData.blitz.visible = Math.sin(performance.now() / 160) > 0.6; }
+
+// ---- Kampfhubschrauber (Nicolas 2026-11-19: "noch so einen Helikopter fuers Militaer, der schiessen kann – als neues Modell, such mal im Internet"). Eigener Entwurf nach der
+// ueblichen Bauweise (Vorbilder AH-1 Cobra, AH-64 Apache): schmaler Rumpf, Tandem-Cockpit (Schuetze vorne, Pilot erhoeht dahinter, zwei Glaskuppeln), Sensorkugel an der Nase,
+// Kanone im Drehturm unter der Nase, Stummelfluegel mit je einem Raketenbehaelter und zwei Lenkwaffen, zwei Triebwerke seitlich oben, Vierblattrotor, Heckausleger mit Leitwerk,
+// Heckrotor und Hoehenflosse, Spornradfahrwerk. Massstab 1,4 (ca. 15 m lang, Rotor ca. 12,6 m).
+// Waffen im Flug (khWaffen aus pose): Linksklick oder Q = Kanone (Dauerfeuer, Leuchtspur, 10 Schuss/s, Treffer an Fahrzeugen ueber gunDamage), Rechtsklick oder X = Rakete
+// (Rauchspur, Explosion fxBoom, Fahrzeuge im Umkreis 6 m vehHit; alle 0,6 s). Ziel = Bildmitte; Visier und Anzeige (#kh-visier). In der Werkstatt ohne Fahrzeugschaden (dort nur Blitz).
+function buildKampfheli(k = 1.4) {
+  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, grau = M(0x3c4436, { roughness: 0.7, metalness: 0.2, flatShading: true }), glasH = M(0x0c141c, { metalness: 0.7, roughness: 0.06, transparent: true, opacity: 0.75 });
+  const yb = tabF([[2.75, 1.05], [2.4, 0.8], [1.8, 0.62], [-1.0, 0.66], [-1.9, 1.15]]), yt = tabF([[2.75, 1.18], [2.4, 1.42], [1.9, 1.55], [0.9, 1.72], [-0.2, 1.92], [-1.9, 1.72]]), wd = tabF([[2.75, 0.16], [2.4, 0.36], [1.9, 0.46], [-1.0, 0.5], [-1.9, 0.3]]);
+  const FS = []; for (let f = 2.75; f > -1.9; f -= 0.12) FS.push(+f.toFixed(2)); FS.push(-1.9);
+  loftIn(i, FS.map(f => { const b = yb(f), t = yt(f), w = wd(f), h = t - b; return [f, [[0, b], [w * 0.7, b], [w, b + 0.25 * h], [w, b + 0.75 * h], [w * 0.6, t], [0, t]]]; }), grau);
+  // Tandem-Cockpit: zwei Glaskuppeln mit Rahmen, Sensorkugel an der Nase
+  for (const [z, y, sx, sy, sz] of [[-1.75, 1.6, 0.4, 0.34, 0.62], [-0.75, 1.85, 0.44, 0.38, 0.64]]) { const c = add(new THREE.SphereGeometry(1, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), glasH, 0, y, z); c.scale.set(sx, sy, sz);
+    add(new THREE.BoxGeometry(0.05, 0.05, sz * 2), oliv2, 0, y + sy - 0.02, z); const r = add(new THREE.TorusGeometry(1, 0.03, 6, 20, Math.PI), oliv2, 0, y, z, 0, Math.PI / 2, 0); r.scale.set(sz, sy, sx); }
+  add(new THREE.SphereGeometry(0.22, 14, 10), dunkel, 0, 1.0, -2.68); for (const sx of [-0.08, 0.08]) add(new THREE.CircleGeometry(0.06, 12), glasH, sx, 1.02, -2.9, 0, Math.PI, 0);
+  // Kanonenturm unter der Nase (dreht zum Ziel)
+  const turm = new THREE.Group(); turm.position.set(0, 0.55, -2.05); i.add(turm); add(new THREE.SphereGeometry(0.17, 12, 10), dunkel, 0, 0, 0, 0, 0, 0, turm);
+  const rohr = new THREE.Group(); turm.add(rohr); add(new THREE.CylinderGeometry(0.05, 0.05, 0.25, 10), stahl, 0, 0, -0.22, Math.PI / 2, 0, 0, rohr); add(new THREE.CylinderGeometry(0.025, 0.03, 0.85, 8), stahl, 0, 0, -0.65, Math.PI / 2, 0, 0, rohr);
+  add(new THREE.CylinderGeometry(0.04, 0.04, 0.08, 8), dunkel, 0, 0, -1.08, Math.PI / 2, 0, 0, rohr); const mund = new THREE.Object3D(); mund.position.set(0, 0, -1.12); rohr.add(mund);
+  // Stummelfluegel mit Raketenbehaelter (innen) und zwei Lenkwaffen (aussen)
+  const starts = [];
+  for (const sd of [-1, 1]) { const w = add(new THREE.BoxGeometry(1.15, 0.08, 0.75), grau, sd * 1.05, 1.18, 0.2, 0, 0, sd * 0.1);
+    add(new THREE.BoxGeometry(0.06, 0.22, 0.4), oliv2, sd * 0.95, 1.02, 0.15); add(new THREE.BoxGeometry(0.06, 0.22, 0.4), oliv2, sd * 1.45, 1.06, 0.15);
+    const pod = add(new THREE.CylinderGeometry(0.17, 0.17, 1.0, 14), oliv2, sd * 0.95, 0.8, 0.1, Math.PI / 2, 0, 0); add(new THREE.CircleGeometry(0.16, 14), dunkel, sd * 0.95, 0.8, -0.41, 0, Math.PI, 0);
+    for (let q = 0; q < 7; q++) { const a = q / 6 * Math.PI * 2, r = q ? 0.09 : 0; add(new THREE.CircleGeometry(0.03, 8), M(0x101010), sd * 0.95 + Math.cos(a) * r, 0.8 + Math.sin(a) * r, -0.415, 0, Math.PI, 0); }
+    const st = new THREE.Object3D(); st.position.set(sd * 0.95, 0.8, -0.5); i.add(st); starts.push(st);
+    add(new THREE.BoxGeometry(0.06, 0.05, 1.0), stahl, sd * 1.45, 0.92, 0.15); for (const dx of [-0.11, 0.11]) { add(new THREE.CylinderGeometry(0.055, 0.055, 1.05, 10), M(0xdcdcd4, { roughness: 0.5 }), sd * 1.45 + dx, 0.84, 0.1, Math.PI / 2, 0, 0);
+      add(new THREE.ConeGeometry(0.055, 0.16, 10), dunkel, sd * 1.45 + dx, 0.84, -0.5, -Math.PI / 2, 0, 0); } }
+  // Triebwerke seitlich oben mit Einlass und Auspuff, Getriebe, Mast, Rotor
+  for (const sd of [-1, 1]) { add(new THREE.CylinderGeometry(0.2, 0.22, 1.4, 12), grau, sd * 0.55, 1.88, 0.25, Math.PI / 2, 0, 0); add(new THREE.CircleGeometry(0.17, 12), dunkel, sd * 0.55, 1.88, -0.46, 0, Math.PI, 0);
+    add(new THREE.CylinderGeometry(0.13, 0.11, 0.35, 10), dunkel, sd * 0.68, 1.95, 1.05, Math.PI / 2 - 0.3, sd * 0.5, 0); }
+  add(new THREE.BoxGeometry(0.7, 0.3, 1.1), grau, 0, 2.02, 0.1); add(new THREE.CylinderGeometry(0.08, 0.11, 0.4, 10), stahl, 0, 2.35, 0.0);
+  const rotor = new THREE.Group(); rotor.position.set(0, 2.58, 0.0); i.add(rotor); add(new THREE.CylinderGeometry(0.2, 0.22, 0.14, 14), dunkel, 0, 0, 0, 0, 0, 0, rotor);
+  for (let q = 0; q < 4; q++) { const b = add(new THREE.BoxGeometry(0.26, 0.035, 4.4), dunkel, 0, 0.02, 0, 0, q * Math.PI / 2, 0, rotor); b.geometry.translate(0, 0, 2.35); }
+  // Heck: Ausleger, Leitwerk, Heckrotor, Hoehenflosse, Spornrad
+  add(new THREE.CylinderGeometry(0.24, 0.13, 3.8, 12), grau, 0, 1.55, 3.6, Math.PI / 2 - 0.03, 0, 0);
+  { const fin = new THREE.Shape(); fin.moveTo(0, 0); fin.lineTo(0.8, 0); fin.lineTo(1.2, 1.2); fin.lineTo(0.75, 1.25); fin.lineTo(0, 0.2); const fg = new THREE.ExtrudeGeometry(fin, { depth: 0.08, bevelEnabled: false }); fg.translate(0, 0, -0.04); add(fg, grau, 0, 1.5, 4.95, 0, -Math.PI / 2); }
+  add(new THREE.BoxGeometry(1.5, 0.05, 0.4), grau, 0, 1.6, 5.1);
+  const heck = new THREE.Group(); heck.position.set(-0.13, 2.45, 5.85); heck.rotation.y = Math.PI / 2; i.add(heck); for (let q = 0; q < 4; q++) add(new THREE.BoxGeometry(0.1, 1.1, 0.02), dunkel, 0, 0, 0, 0, 0, q * Math.PI / 4, heck);
+  for (const sd of [-1, 1]) { add(new THREE.CylinderGeometry(0.035, 0.035, 0.6, 8), stahl, sd * 0.55, 0.45, -1.0, 0, 0, sd * 0.35); add(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 14), gummi, sd * 0.68, 0.2, -1.0, 0, 0, Math.PI / 2); }
+  add(new THREE.CylinderGeometry(0.03, 0.03, 1.15, 8), stahl, 0, 0.75, 5.0, 0.5, 0, 0); add(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 12), gummi, 0, 0.12, 5.25, 0, 0, Math.PI / 2);
+  // Kennung, Hoheitszeichen, Antennen
+  for (const sd of [-1, 1]) { const p = add(new THREE.PlaneGeometry(0.9, 0.22), milSchrift("T-410"), sd * 0.43, 1.42, 1.2, 0, sd * Math.PI / 2 - sd * 0.06); p.castShadow = false; const c = add(new THREE.PlaneGeometry(0.3, 0.3), milKreuzSchweiz(), sd * 0.25, 1.6, 3.0, 0, sd * Math.PI / 2 - sd * 0.06); c.castShadow = false; }
+  add(new THREE.CylinderGeometry(0.008, 0.012, 0.4, 4), dunkel, 0, 2.15, 1.3);
+  const lichter = [add(new THREE.SphereGeometry(0.06, 10, 8), blitz[0], 0, 2.2, 0.9), add(new THREE.SphereGeometry(0.06, 10, 8), blitz[1], 0, 0.6, 0.0), add(new THREE.SphereGeometry(0.05, 8, 6), blitz[2], 0, 2.7, 5.6)];
+  g.name = "Kampfhubschrauber"; return { g, rotor, heck, lichter, turm, rohr, mund, starts };
+}
+const KAMPFHELI = (() => { const b = buildKampfheli(1.4), k = 1.4;
+  const H = flyAdd("Kampfhubschrauber", b, k, { spec: { max: 72, acc: 20, up: 11, tilt: 0.28, tiltV: 0.0045, turn: 1.15 }, feet: [[-0.68 * k, -1.0 * k], [0.68 * k, -1.0 * k], [-0.1 * k, 5.25 * k], [0.1 * k, 5.25 * k]] });
+  H.waffen = { turm: b.turm, rohr: b.rohr, mund: b.mund, starts: b.starts, cd: 0, rcd: 0, kanone: false, rak: false, seite: 0, kugeln: [], raketen: [], fx: [] };
+  const pose0 = H.pose; H.pose = (B, dt) => { pose0(B, dt); if (typeof khWaffen === "function") khWaffen(B, dt || 0); }; return H; })();
+// Waffen: Ziel aus der Bildmitte, Turm folgt, Kugeln und Raketen fliegen bis zum Treffer
+const KH_V = new THREE.Vector3(), KH_A = new THREE.Vector3(), KH_B = new THREE.Vector3(), KH_Q = new THREE.Quaternion();
+const KH_M = { spur: new THREE.MeshBasicMaterial({ color: 0xffd27a }), rak: new THREE.MeshStandardMaterial({ color: 0xdcdcd4, roughness: 0.5 }), flamme: new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }),
+  rauch: new THREE.MeshBasicMaterial({ color: 0x9a9a9a, transparent: true, opacity: 0.5, depthWrite: false }), blitz: new THREE.MeshBasicMaterial({ color: 0xffc070, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false }) };
+const KH_G = { spur: new THREE.BoxGeometry(0.06, 0.06, 2.2), rak: new THREE.CylinderGeometry(0.06, 0.06, 0.9, 8).rotateX(Math.PI / 2), kugel: new THREE.SphereGeometry(1, 10, 8) };
+function khZiel() { camera.updateMatrixWorld(); const o = camera.getWorldPosition(new THREE.Vector3()), d = camera.getWorldDirection(new THREE.Vector3()); KH_A.copy(o).addScaledVector(d, 12);
+  for (let s = 12; s < 1500; s += 6) { KH_B.copy(o).addScaledVector(d, s + 6); const h = typeof shotSeg === "function" ? shotSeg(KH_A, KH_B, null, 2) : null; if (h) return h.p; KH_A.copy(KH_B); } return KH_B.clone(); }
+function khFx(p, r, life, m) { const o = new THREE.Mesh(KH_G.kugel, m.clone()); o.position.copy(p); o.scale.setScalar(r); o.userData.dynamic = true; scene.add(o); KAMPFHELI.waffen.fx.push({ o, t: 0, life, r, rauch: m === KH_M.rauch, add: m.blending === THREE.AdditiveBlending }); }
+function khTreffer(p, hit, rakete) { const v = hit && hit.veh;
+  if (rakete) { if (typeof fxBoom === "function") fxBoom(p.clone(), false); else khFx(p, 4, 0.6, KH_M.blitz); if (typeof shotSound === "function") shotSound(0.6, 0.6);
+    if (typeof VEH !== "undefined" && typeof vehHit === "function") for (const w of VEH) if (!w.dead && w.g.visible && Math.hypot(w.x - p.x, w.z - p.z) < 6) vehHit(w, p.clone()); }
+  else { khFx(p, 0.35, 0.15, KH_M.blitz); if (v && typeof gunDamage === "function") gunDamage(v, p, 12); } }
+function khWaffen(B, dt) { const W = B.waffen; if (!W) return; const an = B.on && typeof FLY !== "undefined" && FLY === B;
+  const el = document.getElementById("kh-visier") || (() => { const e = document.createElement("div"); e.id = "kh-visier"; e.hidden = true; e.innerHTML = "<i></i><span></span>"; document.body.appendChild(e);
+    const st = document.createElement("style"); st.textContent = "#kh-visier{position:fixed;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border:2px solid rgba(120,255,140,.85);border-radius:50%;pointer-events:none;z-index:6}#kh-visier i{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;background:#7cff8c;border-radius:50%}#kh-visier span{position:absolute;top:52px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 12px system-ui;color:#c8ffd0;text-shadow:0 1px 2px #000}#kh-visier[hidden]{display:none}"; document.head.appendChild(st); return e; })();
+  el.hidden = !an; W.cd = Math.max(0, W.cd - dt); W.rcd = Math.max(0, W.rcd - dt);
+  if (an) { const ziel = khZiel(); B.g.updateMatrixWorld(true);
+    // Turm zum Ziel drehen (lokale Richtung im Hubschrauber)
+    W.turm.parent.updateMatrixWorld(true); const loc = W.turm.parent.worldToLocal(ziel.clone()).sub(W.turm.position); const yaw = Math.atan2(-loc.x, -loc.z), pit = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
+    W.turm.rotation.y += (Math.max(-1.6, Math.min(1.6, yaw)) - W.turm.rotation.y) * Math.min(1, dt * 8); W.rohr.rotation.x += (Math.max(-1.0, Math.min(0.25, pit)) - W.rohr.rotation.x) * Math.min(1, dt * 8);
+    el.querySelector("span").textContent = "Linksklick/Q Kanone · Rechtsklick/X Rakete" + (W.rcd > 0 ? " (lädt)" : "");
+    if (W.kanone && W.cd === 0) { W.cd = 0.1; const m = W.mund.getWorldPosition(new THREE.Vector3()), d = ziel.clone().sub(m).normalize(); d.x += (Math.random() - 0.5) * 0.012; d.y += (Math.random() - 0.5) * 0.012; d.z += (Math.random() - 0.5) * 0.012; d.normalize();
+      const o = new THREE.Mesh(KH_G.spur, KH_M.spur); o.position.copy(m); o.lookAt(m.clone().add(d)); o.userData.dynamic = true; scene.add(o); W.kugeln.push({ o, p: m.clone(), d, t: 0 }); khFx(m.clone().addScaledVector(d, 0.3), 0.18, 0.05, KH_M.blitz);
+      if (typeof shotSound === "function" && Math.random() < 0.5) shotSound(0.15, 0.12); }
+    if (W.rak && W.rcd === 0) { W.rcd = 0.6; W.rak = false; const st = W.starts[W.seite++ % W.starts.length], m = st.getWorldPosition(new THREE.Vector3()), d = ziel.clone().sub(m).normalize();
+      const o = new THREE.Mesh(KH_G.rak, KH_M.rak); const fl = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.6, 8).rotateX(-Math.PI / 2).translate(0, 0, 0.75), KH_M.flamme); o.add(fl); o.position.copy(m); o.lookAt(m.clone().add(d)); o.userData.dynamic = true; scene.add(o);
+      W.raketen.push({ o, p: m.clone(), d, v: 60, t: 0, rt: 0 }); if (typeof shotSound === "function") shotSound(0.35, 0.4); } }
+  else { W.kanone = false; W.rak = false; }
+  // Kugeln (600 m/s), Raketen (beschleunigen auf 180 m/s, Rauchspur), Blitze und Rauch ausblenden
+  for (let q = W.kugeln.length - 1; q >= 0; q--) { const K = W.kugeln[q]; K.t += dt; const n = K.p.clone().addScaledVector(K.d, 600 * dt), h = typeof shotSeg === "function" ? shotSeg(K.p, n, null, 1) : null;
+    if (h || K.t > 2.5) { if (h) khTreffer(h.p, h.hit, false); scene.remove(K.o); W.kugeln.splice(q, 1); continue; } K.p.copy(n); K.o.position.copy(n); }
+  for (let q = W.raketen.length - 1; q >= 0; q--) { const R = W.raketen[q]; R.t += dt; R.v = Math.min(180, R.v + 240 * dt); const n = R.p.clone().addScaledVector(R.d, R.v * dt), h = typeof shotSeg === "function" ? shotSeg(R.p, n, null, 0.8) : null;
+    R.rt += dt; if (R.rt > 0.03) { R.rt = 0; khFx(R.p.clone(), 0.35, 1.2, KH_M.rauch); }
+    if (h || R.t > 6) { khTreffer(h ? h.p : R.p, h && h.hit, true); scene.remove(R.o); W.raketen.splice(q, 1); continue; } R.p.copy(n); R.o.position.copy(n); }
+  for (let q = W.fx.length - 1; q >= 0; q--) { const F = W.fx[q]; F.t += dt; const u = F.t / F.life; if (u >= 1) { scene.remove(F.o); F.o.material.dispose(); W.fx.splice(q, 1); continue; }
+    F.o.scale.setScalar(F.r * (1 + u * (F.rauch ? 2 : 0.6))); F.o.material.opacity = (1 - u) * (F.add ? 1 : 0.5); } }
+// Bedienung: Maus (bei gefangener Maus) und Tasten Q/X, nur im fliegenden Kampfhubschrauber
+addEventListener("mousedown", e => { if (!(typeof FLY !== "undefined" && FLY === KAMPFHELI && KAMPFHELI.on && document.pointerLockElement)) return;
+  if (e.button === 0) KAMPFHELI.waffen.kanone = true; else if (e.button === 2) KAMPFHELI.waffen.rak = true; else return; e.preventDefault(); e.stopImmediatePropagation(); }, true);
+addEventListener("mouseup", e => { if (e.button === 0) KAMPFHELI.waffen.kanone = false; }, true);
+addEventListener("keydown", e => { if (!(typeof FLY !== "undefined" && FLY === KAMPFHELI && KAMPFHELI.on) || e.repeat) return; if (e.code === "KeyQ") KAMPFHELI.waffen.kanone = true; else if (e.code === "KeyX") KAMPFHELI.waffen.rak = true; });
+addEventListener("keyup", e => { if (e.code === "KeyQ") KAMPFHELI.waffen.kanone = false; });
