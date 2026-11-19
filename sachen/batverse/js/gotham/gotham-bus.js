@@ -95,7 +95,7 @@ function* gbusGen() {
   // halten an den Enden 15 s (Bank bzw. Praesidium, Annahme), schneller (14 m/s), kuerzere Kollisionskreise. Gleiche Kollision, EMP und Halten vor Hindernissen wie die Busse.
   { const n = GBUS.lines.length, TR = [["Geldtransporter", typeof buildGeldtransporter === "function" && buildGeldtransporter, 0, 0.35, 1], ["Geldtransporter", typeof buildGeldtransporter === "function" && buildGeldtransporter, 3, 0.6, -1], ["Gefangenentransporter", typeof buildPolizeiVan === "function" && buildPolizeiVan, 1, 0.5, 1]];
     if (n) for (const [name, fn, li, fr, d] of TR) { if (!fn) continue; const L = GBUS.lines[li % n], m = fn(), g = m.g || m; g.name = name + " (fährt)"; g.userData.keep = true; g.userData.noLift = true; scene.add(g);
-      GBUS.buses.push({ line: L, g, s: L.len * fr, d, v: 0, wait: 0, y: Y, off: [0, 0], hold: 0, circ: gbusCirc(), wheels: m.wheels || [], tr: { name, vmax: 14, t: 2.1, r: 1.2, h: 2.7, wait: 15 } }); yield; } }
+      GBUS.buses.push({ line: L, g, s: L.len * fr, d, v: 0, wait: 0, y: Y, off: [0, 0], hold: 0, circ: gbusCirc(), wheels: m.wheels || [], tr: { name, vmax: 14, t: 2.1, r: 1.2, h: 2.7, wait: 15 } }); if (name === "Geldtransporter") gbusRaubAdd(GBUS.buses[GBUS.buses.length - 1]); yield; } }
   if (GBUS.station) { const S = GBUS.station; for (const k of [0, 2]) { const b = buildBus(), t = -S.D / 2 + 8 + k * 11 + 3; b.g.position.set(S.cx + S.ux * 4 - S.uz * t, Y, S.cz + S.uz * 4 + S.ux * t); b.g.rotation.y = Math.atan2(-S.ux, -S.uz) + Math.PI / 2; b.g.userData.keep = true; b.g.userData.noLift = true; b.g.name = "Bus abgestellt"; scene.add(b.g); gbusCircSet(gbusCirc(), b.g.position.x, b.g.position.z, Y, b.g.rotation.y); } }
   GBUS.last = performance.now();
 }
@@ -113,7 +113,7 @@ function gbusPush(b, nx, nz, pen, speed, k) { const imp = b.hold > 0.1 ? 0 : Mat
   if (speed > 6 && typeof toast === "function" && !(b.msgT > performance.now() - 3000)) { b.msgT = performance.now(); toast("Zusammenstoss mit " + (b.tr ? "dem " + b.tr.name : "dem Bus " + b.line.name)); } }
 function gbusStep() {
   if (!GBUS.buses.length) return; const now = performance.now(), dt = Math.min(0.1, (now - GBUS.last) / 1000); GBUS.last = now; const cam = camera.position;
-  for (const b of GBUS.buses) { const L = b.line;
+  for (const b of GBUS.buses) { const L = b.line; if (b.raub) gbusRaubStep(b, dt);
     b.hold = Math.max(0, (b.hold || 0) - dt); if (!b.hold && (b.off[0] || b.off[1])) { const f = Math.max(0, 1 - dt * 0.8); b.off[0] *= f; b.off[1] *= f; if (Math.hypot(b.off[0], b.off[1]) < 0.02) b.off[0] = b.off[1] = 0; }
     // vor einem Hindernis in der Spur halten (Fahrzeug des Spielers oder Spieler zu Fuss, bis ca. 9 m vor der Mitte)
     { const fx = -Math.sin(b.g.rotation.y), fz = -Math.cos(b.g.rotation.y), hd = b.tr ? 5.5 : 8, hx = b.g.position.x + fx * hd, hz = b.g.position.z + fz * hd, near = (x, z, r) => Math.hypot(x - hx, z - hz) < r;
@@ -134,3 +134,24 @@ function gbusStep() {
     const gy = (px, pz, y0) => { const g = gothamDeckAt(px, pz, y0 + 1) ?? groundAt(px, pz, y0 + 2); return g === null || !isFinite(g) || Math.abs(g - y0) > 1.2 ? y0 : g; }, yF = gy(x + ux * 5, z + uz * 5, b.yF ?? b.y), yB = gy(x - ux * 5, z - uz * 5, b.yB ?? b.y);   // gy: mehr als 1,2 m je Bild hoeher (Ueberfuehrung) oder tiefer (Kanal unter einer Rampe ohne Kollision in der Ferne) ist nicht der eigene Boden
     b.yF = yF; b.yB = yB; b.y = (yF + yB) / 2; b.g.position.set(x + b.off[0], b.y, z + b.off[1]); b.g.rotation.set(Math.atan2(yF - yB, 10), Math.atan2(-ux, -uz), 0, "YXZ"); gbusCircSet(b.circ, x + b.off[0], z + b.off[1], b.y, b.g.rotation.y, true, ...(b.tr ? [b.tr.t, b.tr.r, b.tr.h] : [])); }
 }
+
+// ---- Ueberfall auf den Geldtransporter (N3, "Ja, weiter" 2026-11-19): steht der Transporter (EMP, gerammt, im Weg, am Ende der Fahrt), Rechtsklick an der Hecktuer:
+// mit der Brechstange 5 s aufbrechen (Kreis, stehen bleiben) oder mit Sprenggas (1 Ladung, 3 s Zuendung, Knall, Rauch). Danach steht er 2 min mit offener Tuer, drinnen ein
+// Behaelter (invBox) mit Geldscheinen und Goldbarren (leer = beim naechsten Ueberfall neu gefuellt). Eintrag in der Akte (Fahndung +2). Fahrer und Polizei gibt es noch nicht.
+function gbusRaubAdd(b) { const k = GBUS.buses.filter(q => q.raub).length, hm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 0.8), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(0, 1.3, 3.0); b.g.add(hm);
+  b.raub = { k, hm, box: null, offen: 0, fuse: 0 }; const gt = { name: "Geldtransporter (Hecktür)", g: hm, call: () => gbusRaub(b), verbs: ["aufbrechen", "aufbrechen"], a: [0, 0], b: [0, 0], near: 3.2 }; b.raub.gate = gt;
+  if (typeof gates !== "undefined") gates.push(gt); }
+function gbusRaubBox(b) { const R = b.raub; if (!R.box && typeof invBox === "function") R.box = invBox("geldtransporter-" + R.k, "Geldtransporter", 18, []); const B = R.box;
+  if (B && B.slots.every(q => !q)) { const n = 40 + Math.floor(Math.random() * 60), g = 1 + Math.floor(Math.random() * 3); B.slots[0] = { id: "bargeld", n: Math.min(100, n) }; if (n > 100) B.slots[1] = { id: "bargeld", n: n - 100 }; B.slots[2] = { id: "goldbarren", n: g }; B.save(); } return B; }
+function gbusRaubOpen(b, wie) { const R = b.raub; R.offen = 120; b.hold = Math.max(b.hold, 120); b.v = 0; R.gate.verbs = ["ausräumen", "ausräumen"]; gbusRaubBox(b);
+  if (typeof akteEintrag === "function") akteEintrag("Geldtransporter überfallen (" + wie + ")", "Fahndung +2", 2); toast("Hecktür " + wie + " – Rechtsklick: Inhalt"); }
+function gbusRaub(b) { const R = b.raub; if (R.offen > 0) { const B = gbusRaubBox(b); if (B && typeof invBoxOpen === "function") invBoxOpen(B); return; }
+  if (b.v > 0.3) return toast("Der Transporter fährt – erst anhalten (z. B. EMP-Gewehr)"); if (R.fuse > 0) return toast("Zündung läuft – weg da!");
+  const held = typeof invHeld === "function" ? invHeld() : null; b.hold = Math.max(b.hold, 8);
+  if (held === "brechstange" && typeof tresorHold === "function") return tresorHold(null, 5, "Hecktür aufbrechen", () => gbusRaubOpen(b, "aufgebrochen"));
+  if (held === "sprenggas") { if (!invTake("sprenggas", 1)) return; R.fuse = 3; return toast("Gasladung an der Hecktür – Zündung in 3 s, Abstand halten!"); }
+  toast("Hecktür verriegelt – Brechstange oder Sprenggas in die Hand nehmen"); }
+function gbusRaubStep(b, dt) { const R = b.raub; if (!R) return; b.g.updateMatrixWorld(true); const p = R.hm.getWorldPosition(new THREE.Vector3()), weg = !b.g.visible ? 1e6 : 0; R.gate.a[0] = R.gate.b[0] = p.x + weg; R.gate.a[1] = R.gate.b[1] = p.z + weg;
+  if (R.fuse > 0) { b.hold = Math.max(b.hold, 3); if ((R.fuse -= dt) <= 0) { R.fuse = 0; if (typeof fxBoom === "function") fxBoom(p.clone(), false); if (typeof aimSmoke === "function") aimSmoke(p.clone()); if (typeof shotSound === "function") shotSound(0.9, 0.8);
+      const pl = typeof player !== "undefined" ? player.pos : null; if (pl && pl.distanceTo(p) < 3) toast("Viel zu nah an der Explosion!"); gbusRaubOpen(b, "aufgesprengt"); } }
+  if (R.offen > 0 && (R.offen -= dt) <= 0) { R.offen = 0; R.gate.verbs = ["aufbrechen", "aufbrechen"]; } }
