@@ -35,7 +35,7 @@ function kalRender() { const erst = new Date(KAL.y, KAL.m, 1), tage = new Date(K
     ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(t => '<span class="kal-wt">' + t + "</span>").join("") + "<span></span>".repeat(off);
   for (let d = 1; d <= tage; d++) { const k = kalKey(new Date(KAL.y, KAL.m, d)), T = proTag[k] || [];
     z += '<button type="button" data-x="kalender:tag:' + k + '" class="kal-d' + (k === heute ? " heute" : "") + (k === KAL.sel ? " sel" : "") + '">' + d + '<i>' + [...new Set(T.map(t => t.art))].map(a => '<em style="background:' + KAL_FARBE[a] + '"></em>').join("") + "</i></button>"; }
-  z += "</div>";
+  z += "</div>"; const links = z; z = "";   // links Monat, rechts Termine (quer zweispaltig)
   const [sy, sm, sd] = KAL.sel.split("-").map(Number), s0 = new Date(sy, sm - 1, sd).getTime(), heuteT = kalTermine(s0, s0 + 864e5);
   const zeile = (t, mitTag) => '<div class="kal-t" style="border-left-color:' + KAL_FARBE[t.art] + '"><b>' + (mitTag ? kalTag(t.ts) + " · " : "") + kalZeit(t.ts) + " " + kalEsc(t.titel) + "</b><span>" + kalEsc(t.ort || "") + "</span>" +
     (t.art === "date" ? '<div class="kal-k"><button type="button" data-x="kalender:chat:' + t.id + '">Chat öffnen</button><button type="button" class="weg" data-x="kalender:absagen:' + t.id + '">Absagen</button></div>' : "") +
@@ -45,7 +45,7 @@ function kalRender() { const erst = new Date(KAL.y, KAL.m, 1), tage = new Date(K
     : '<button type="button" class="kal-plus" data-x="kalender:neu:1">+ Termin an diesem Tag</button>';
   const jetzt = Date.now(), bald = kalTermine(jetzt, jetzt + 30 * 864e5).slice(0, 5);
   z += '<div class="kal-lab">Demnächst</div>' + (bald.length ? bald.map(t => zeile(t, true)).join("") : '<div class="kal-leer">Nichts geplant</div>');
-  return '<div class="kal">' + z + "</div>"; }
+  return '<div class="kal"><div class="kal-l">' + links + '</div><div class="kal-r">' + z + "</div></div>"; }
 function kalClick(v) { const [a, x] = v.split(":");
   if (a === "mon") { KAL.m += +x; if (KAL.m < 0) { KAL.m = 11; KAL.y--; } if (KAL.m > 11) { KAL.m = 0; KAL.y++; } }
   else if (a === "tag") { KAL.sel = x; KAL.neu = false; }
@@ -53,18 +53,24 @@ function kalClick(v) { const [a, x] = v.split(":");
   else if (a === "neu") KAL.neu = x === "1";
   else if (a === "add") { const [n, h, m, ort] = KAL_VORLAGEN[+x], [y, mo, d] = KAL.sel.split("-").map(Number); KAL.eigene.push({ ts: new Date(y, mo - 1, d, h, m).getTime(), titel: n, ort }); KAL.neu = false; kalSave(); }
   else if (a === "weg") { KAL.eigene.splice(+x, 1); kalSave(); }
-  else if (a === "chat" && typeof DG !== "undefined") { DG.chat = x; DG.match = null; DG.tab = "matches"; if (typeof handyGo === "function") return handyGo("dating"); }
+  else if (a === "chat" && typeof DG !== "undefined") { DG.chat = x; DG.match = null; DG.tab = "matches"; return kalOeffne("dating"); }
   else if (a === "absagen" && typeof DG !== "undefined" && DG.matches[x]) { const M = DG.matches[x]; M.termin = null; M.date = null; M.step = Math.max(0, (typeof DG_ANTWORT !== "undefined" ? DG_ANTWORT.length : 3) - 1);
     M.msgs.push(["ich", "Ich muss unser Treffen leider absagen 😕"], ["sie", "Schade! Dann ein andermal?"]); if (typeof dgSave === "function") dgSave(); if (typeof toast === "function") toast("Verabredung abgesagt"); }
   if (typeof handyRender === "function") handyRender(); }
 // aus Gotham Hearts in den Kalender springen (Tag des Termins)
-function kalZeige(ts) { const d = new Date(+ts); KAL.y = d.getFullYear(); KAL.m = d.getMonth(); KAL.sel = kalKey(d); KAL.neu = false; if (typeof handyGo === "function") handyGo("kalender"); }
+function kalZeige(ts) { const d = new Date(+ts); KAL.y = d.getFullYear(); KAL.m = d.getMonth(); KAL.sel = kalKey(d); KAL.neu = false; kalOeffne("kalender"); }
 // Erinnerung 30 min vorher (alle 20 s geprueft, je Termin einmal)
 setInterval(() => { const j = Date.now(); for (const t of kalTermine(j, j + 30 * 60e3)) { const k = t.ts + t.titel; if (KAL.erinnert[k]) continue; KAL.erinnert[k] = 1; kalSave();
   if (typeof toast === "function") toast("Erinnerung: " + t.titel + " um " + kalZeit(t.ts) + (t.ort ? " · " + t.ort : "")); } }, 20000);
+// auch auf den Laptops (laptop.js zeigt HANDY_EXTRA-Apps im Fenster), dazu Gotham Hearts
+if (typeof LT_APPS !== "undefined" && typeof LAPTOP_DEF !== "undefined") { LT_APPS.kalender = ["Kalender", "#4a8cff", '<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16M8 4v4M16 4v4"/>']; LT_APPS.dating = ["Gotham Hearts", "#ff4f7e", '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'];
+  for (const id in LAPTOP_DEF) LAPTOP_DEF[id].apps.push("kalender", "dating"); }
+// andere App oeffnen: auf dem Laptop im Laptop-Fenster, sonst auf dem Handy
+function kalOeffne(app) { if (typeof laptopIsOpen === "function" && laptopIsOpen() && typeof LT !== "undefined") { LT.app = app; ltRender(); if (typeof ltScreenDraw === "function") ltScreenDraw(LT.cur); return; } if (typeof handyGo === "function") handyGo(app); }
 if (typeof HANDY_APPS !== "undefined") { HANDY_APPS.push(["kalender", "Kalender", '<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16M8 4v4M16 4v4"/><circle cx="12" cy="15" r="1.6" fill="currentColor"/>']); for (const m in HANDY_MODELLE) HANDY_MODELLE[m].apps.push("kalender"); }
 (window.HANDY_EXTRA = window.HANDY_EXTRA || {}).kalender = { url: "kalender.wayne", render: kalRender, click: kalClick };
 { const st = document.createElement("style"); st.textContent = `
+.h-phone.quer .kal,.lt-hx .kal{display:flex;gap:22px;align-items:flex-start;max-width:820px;margin:0 auto}.h-phone.quer .kal-l,.lt-hx .kal-l{flex:1.1;position:sticky;top:0}.h-phone.quer .kal-r,.lt-hx .kal-r{flex:1}.h-phone.quer .kal-r>.kal-lab:first-child,.lt-hx .kal-r>.kal-lab:first-child{margin-top:2px}
 .kal{padding:4px 12px 14px;color:#e8ecf2;font-family:system-ui,sans-serif}.kal-kopf{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px}.kal-kopf b{font:700 16px system-ui}
 .kal-kopf button{border:0;background:#1a2230;color:#9fc4ff;font-size:20px;width:34px;height:30px;border-radius:8px;cursor:pointer}
 .kal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.kal-wt{text-align:center;font-size:10px;opacity:.55;padding:2px 0}

@@ -54,7 +54,7 @@ function dgClick(v) { const [a, x, y] = v.split(":"), p = dgNext();
   else if (a === "reset") { DG.seen = []; dgSave(); }
   else if (a === "sag") { const P = DG_PROFILE.find(q => q.id === x), M = DG.matches[x], i = +y, st = M.step; M.msgs.push(["ich", DG_ANTWORT[st][0][i]]); M.tippt = true; dgSave();
     setTimeout(() => { M.tippt = false; const t = dgTxt(DG_ANTWORT[st][1][i], P); M.msgs.push(["sie", t]); M.step = st + 1; if (st === DG_ANTWORT.length - 1) M.date = DG_ANTWORT[st][0][i].replace(/\?$/, "") + " – " + t.split(/[!?.]/)[1].trim().replace(/[?☕😉]/g, "").trim(); if (st === DG_ANTWORT.length - 1 && typeof kalTerminAusDate === "function") M.termin = kalTerminAusDate(i, P);   // Kalender (ui/kalender.js)
-    dgSave(); if (typeof handyRender === "function" && HANDY.page === "dating") handyRender(); }, 1400); }
+    dgSave(); if (typeof handyRender === "function" && HANDY.page === "dating") handyRender(); if (typeof laptopIsOpen === "function" && laptopIsOpen() && LT.app === "dating") ltRender(); }, 1400); }
   if (typeof handyRender === "function") handyRender(); }
 if (typeof HANDY_APPS !== "undefined") { HANDY_APPS.push(["dating", "Gotham Hearts", '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>']); for (const m in HANDY_MODELLE) HANDY_MODELLE[m].apps.push("dating"); }
 (window.HANDY_EXTRA = window.HANDY_EXTRA || {}).dating = { url: "gothamhearts.app", render: dgRender, click: dgClick };

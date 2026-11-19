@@ -208,7 +208,7 @@ const LT_CSS = `
 .lt-einst{display:grid;grid-template-columns:200px 1fr;height:100%}.lt-enav{padding:12px 8px;background:rgba(127,127,127,.08);display:flex;flex-direction:column;gap:2px}
 .lt-enav button{text-align:left;padding:9px 14px;border:0;border-radius:6px;background:none;color:inherit;font:14px "Segoe UI",sans-serif;cursor:pointer}.lt-enav button:hover{background:rgba(127,127,127,.15)}.lt-enav button.on{background:rgba(47,125,225,.18);box-shadow:inset 3px 0 0 #2f7de1;font-weight:600}
 .lt-ebody{padding:18px 24px;overflow:auto}.lt-ebody h2{margin:0 0 10px}.lt-ebody .lt-row span{opacity:.75}
-.lt-upl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}.lt-upl label{cursor:pointer}.lt-upl span{flex-basis:100%;font-size:12px;opacity:.65}.lt-usbmenu{right:auto;left:120px}.lt-wps{display:flex;gap:12px}.lt-wps button{width:140px;height:88px;border-radius:8px;border:3px solid transparent;cursor:pointer}.lt-wps button.on{border-color:#2f7de1}
+.lt-hx{background:#0b0e13;min-height:100%;padding:10px 6px;box-sizing:border-box}.lt-hx>.dg{max-width:420px;margin:0 auto}.lt-upl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}.lt-upl label{cursor:pointer}.lt-upl span{flex-basis:100%;font-size:12px;opacity:.65}.lt-usbmenu{right:auto;left:120px}.lt-wps{display:flex;gap:12px}.lt-wps button{width:140px;height:88px;border-radius:8px;border:3px solid transparent;cursor:pointer}.lt-wps button.on{border-color:#2f7de1}
 .lt-hell{width:280px}
 .lt-opt{display:grid;grid-template-columns:22px 1fr;column-gap:10px;align-items:center;width:100%;max-width:420px;text-align:left;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(127,127,127,.3);border-radius:8px;background:none;color:inherit;cursor:pointer;font:14px "Segoe UI",sans-serif}
 .lt-opt i{grid-row:span 2;width:16px;height:16px;border-radius:50%;border:2px solid #8a9099}.lt-opt.on{border-color:#2f7de1}.lt-opt.on i{border:5px solid #2f7de1}.lt-opt span{font-size:12px;opacity:.7}
@@ -287,6 +287,7 @@ function ltLogin(pw) { const id = LT.cur, D = ltD(id);
   if (D.lock === "passwort" && pw !== D.pw) { LT.err = pw ? "Falsches Passwort" : "Passwort eingeben"; ltRender(); const r = LT.el.querySelector(".lt-pwrow"); if (r) { r.classList.add("lt-shake"); } const f = LT.el.querySelector(".lt-pw"); if (f) f.focus(); return; }
   LT.locked[id] = false; LT.err = ""; ltRender(); ltScreenDraw(id); }
 function ltClick(e) {
+  { const xb = e.target.closest("[data-x]"); if (xb && LT.app && typeof HANDY_EXTRA !== "undefined") { const [app, ...r] = xb.dataset.x.split(":"); if (HANDY_EXTRA[app]) { e.stopPropagation(); HANDY_EXTRA[app].click(r.join(":"), xb); ltRender(); return; } } }   // Klicks in Handy-Apps
   const b = e.target.closest("[data-a]"); if (!b) { if (LT.pmenu) { LT.pmenu = false; ltRender(); } return; } const a = b.dataset.a, v = b.dataset.v; e.stopPropagation(); b.blur?.();
   if (a === "power") { LT.pmenu = !LT.pmenu; return ltRender(); }
   if (a.startsWith("usb") && typeof usbClick === "function" && usbClick(a, v)) { ltRender(); ltScreenDraw(LT.cur); return; }   // USB-Sticks (ui/usb.js)
@@ -361,6 +362,7 @@ function ltWebPage() {
   return h;
 }
 function ltAppBody(a) {
+  if (typeof HANDY_EXTRA !== "undefined" && HANDY_EXTRA[a]) return '<div class="lt-hx">' + HANDY_EXTRA[a].render() + "</div>";   // Handy-Apps aus eigenen Dateien (Kalender, Gotham Hearts; Nicolas 2026-11-19)
   if (a === "usb" && typeof usbBody === "function") return usbBody();
   if (a === "web") return ltWebPage();
   if (a === "kontakte") { const C = LT.call;

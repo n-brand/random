@@ -43,7 +43,7 @@ const HANDY = { page: "home", hist: [], owned: [], col: {}, modell: "handy-wayne
 // Pfeiltasten und Enter; der Browser geht im Querformat vor den ganzen Bildschirm, andere Apps bleiben hochkant unten rechts"). Nicht jedes Handy hat jede App (wie die Laptops).
 const HANDY_MODELLE = { "handy-wayne": { name: "Wayne Phone X", cls: "m-wayne", apps: ["web", "bank", "garage", "kontakte", "einst"] }, "handy-office": { name: "Ardent Office 12", cls: "m-office", apps: ["web", "bank", "kontakte", "einst"] } };
 const HANDY_KONTAKTE = [["Polizei (GCPD)", "911", "Gotham City Police Department. Was ist passiert, und wo sind Sie?"], ["Taxi", "555-0199", "Gotham Cab, guten Tag! Wir schicken Ihnen einen Wagen – etwa fünf Minuten."], ["Krankenwagen", "911", "Notruf Rettungsdienst. Ist jemand verletzt? Bleiben Sie bitte am Telefon."], ["Feuerwehr", "911", "Gotham Fire Department. Wo brennt es?"], ["Alfred", "Privat", "Ja, Master Wayne? Soll ich den Wagen vorbereiten?", "handy-wayne"]];
-const handyQuer = p => p === "web" || p === "bank" || p.startsWith("shop:");   // Browser-Seiten im Querformat
+const handyQuer = p => p === "web" || p === "bank" || p === "kalender" || p.startsWith("shop:");   // Kalender quer (Nicolas 2026-11-19)   // Browser-Seiten im Querformat
 const handyApps = () => HANDY_APPS.filter(a => (HANDY_MODELLE[HANDY.modell] || HANDY_MODELLE["handy-wayne"]).apps.includes(a[0]));
 function handyEigen() { if (typeof invHeld === "function" && HANDY_MODELLE[invHeld()]) return invHeld(); if (typeof invHas === "function") for (const k in HANDY_MODELLE) if (invHas(k)) return k; return null; }   // gehaltenes oder erstes Handy im Inventar   // owned: { key, c, x, z, y, h, C }
 const handyHex = c => "#" + c.toString(16).padStart(6, "0");

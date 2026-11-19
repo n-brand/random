@@ -70,6 +70,16 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Kalender und Gotham Hearts auch auf dem Laptop, Kalender auf dem Handy quer** (Nicolas 2026-11-19: "Kalender soll auch auf dem Laptop sein und beim Handy in den Quermodus gehen"; "die Hearts-App auch auf dem PC"):
+  - laptop.js: Brücke für Handy-Apps aus eigenen Dateien. `ltAppBody` zeigt `HANDY_EXTRA[app].render()` im Fenster (dunkel, `.lt-hx`), `ltClick` leitet `data-x`-Klicks an `HANDY_EXTRA[app].click` weiter.
+  - kalender.js trägt Kalender und Gotham Hearts in `LT_APPS` und in die Apps beider Laptops ein (Desktop und Taskleiste). `kalOeffne(app)`: "Chat öffnen" und "Im Kalender ansehen" wechseln auf dem Laptop die Laptop-App, sonst die Handy-App.
+  - Hearts-Antworten aktualisieren auch das Laptop-Fenster.
+  - Handy: `handyQuer` gilt auch für den Kalender (wie Internet; gibt die Maus frei). Kalender quer und auf dem Laptop zweispaltig: Monat links, Termine rechts. Hochformat unverändert untereinander.
+  - Laptops gibt es bisher nur in der Werkstatt.
+  - Geprüft in der Werkstatt:
+    - Laptop A mit beiden Apps; Kalender zweispaltig mit dem Hearts-Date (Bild); "Chat öffnen" zeigt den Chat im Laptop, das Handy bleibt zu; zurück in den Kalender auf den Tag des Dates.
+    - Handy: Kalender quer (Bild).
+
 - **Polizeiauto und Polizei-Motorrad überarbeitet** (Nicolas 2026-11-19: "Police normal und Police-Motorrad soll überarbeitet werden"): modelle.js.
   - `buildPolice`:
     - Flacher Lichtbalken mit 8 Segmenten (rot links, blau rechts, blinken weiter über beacon), weisse Frontblitzer und seitliche Strahler, auf Füssen.
