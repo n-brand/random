@@ -70,6 +70,7 @@ function* casinoGen() {
   const beams = []; for (const sx of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(...L(sx * (BW / 2 - 3), H + 1.2, Z0 + BD / 2)); g.add(piv); cyl(0.9, 1.1, 1.6, gold, sx * (BW / 2 - 3), H + 1.6, Z0 + BD / 2, 16);
     const cone = new THREE.Mesh(new THREE.CylinderGeometry(9, 0.6, 260, 20, 1, true), beamM); cone.position.y = 130; const tilt = new THREE.Group(); tilt.rotation.z = 0.35; tilt.add(cone); piv.add(tilt); piv.userData.ph = sx > 0 ? 0 : Math.PI; beams.push(piv); }
   casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T, DW, H2 });
+  figurPersonal(g, CAS.personal);   // Personal (F4): Croupiers an Roulette und Blackjack, zwei Kassierer
   // Vordach getragen (Nicolas 2026-11-17: "die Platte beim Eingang schwebt"; vorher standen die Wuerfelsaeulen darunter): zwei Saeulen an den vorderen Ecken, Zugstangen zur Fassade
   for (const sx of [-1, 1]) { cyl(0.22, 0.26, 4.9, gold, sx * 10.4, 2.45, Z0 - 7.4, 12); cyl(0.4, 0.4, 0.2, gold, sx * 10.4, 0.2, Z0 - 7.4, 12); CAS.innen.push([0.6, 4.9, 0.6, sx * 10.4, Z0 - 7.4]);
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, Math.hypot(7.6, 4.5), 6), gold); rod.position.set(sx * 10.4, 7.75, Z0 - 3.8); rod.rotation.x = Math.atan2(7.6, 4.5); g.add(rod); }
@@ -99,7 +100,7 @@ function* casinoGen() {
 // Wiederholte Teile als InstancedMesh, Licht ueber leuchtende Materialien (keine zusaetzlichen Lichter). Kollision in CAS.innen [sx, sy, sz, x, z, y0] (lokal),
 // Rechtsklick-Ziele in CAS.gates, Rampenstuecke der Treppe in CAS.ramp, Tresortuer in CAS.vault.
 function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG, T, DW, H2 }) {
-  const IX = BW / 2 - T, IZ0 = Z0 + T, IZ1 = Z0 + BD - T, IL = IZ1 - IZ0, IC = (IZ0 + IZ1) / 2, C = CAS.innen = []; CAS.rouT = []; CAS.gates = []; CAS.ramp = []; const O = new THREE.Object3D();
+  const IX = BW / 2 - T, IZ0 = Z0 + T, IZ1 = Z0 + BD - T, IL = IZ1 - IZ0, IC = (IZ0 + IZ1) / 2, C = CAS.innen = []; CAS.rouT = []; CAS.personal = []; CAS.gates = []; CAS.ramp = []; const O = new THREE.Object3D();
   const FL2 = HG + 0.3, NS = 20, RS = FL2 / NS, TS = 0.42, SW = 3.5, ZE = IZ1 - 3, ZS = ZE - NS * TS;   // 2. Stock 7,3 m; Treppe 7 m breit, 20 Stufen zu 36,5 cm, Auftritt 42 cm
   CAS.FL2 = FL2; CAS.stair = { SW, ZS, ZE, RS, TS };
   const inst = (geo, m, list, shadow = false) => { const im = new THREE.InstancedMesh(geo, m, list.length); list.forEach((t, i) => { O.position.set(t[0], t[1], t[2]); O.rotation.set(t[4] || 0, t[3] || 0, 0); O.scale.setScalar(t[5] || 1); O.updateMatrix(); im.setMatrixAt(i, O.matrix); });
@@ -164,10 +165,10 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   inst(new THREE.BoxGeometry(0.82, 0.22, 0.72).translate(0, 0.96, 0), new THREE.MeshBasicMaterial({ color: 0xffb02e }), slots); }
   // Tische: Roulette (Rechtsklick spielt), Blackjack halbrund, Poker oval; Jeton-Stapel darauf
   const stools = [], chairs = [], chipL = [];
-  const rouTable = (x, z, y, sx) => { CAS.rouT.push(box(3.4, 0.82, 1.7, wood, x, y + 0.41, z)); const top = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.5), felt); top.rotation.x = -Math.PI / 2; top.position.set(x, y + 0.83, z); g.add(top);
+  const rouTable = (x, z, y, sx) => { CAS.personal.push([x - sx * 1.0, y, z - 1.25, Math.PI, "croupier"]); CAS.rouT.push(box(3.4, 0.82, 1.7, wood, x, y + 0.41, z)); const top = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.5), felt); top.rotation.x = -Math.PI / 2; top.position.set(x, y + 0.83, z); g.add(top);
     const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.16, 32), [wood, M({ map: rouTex, emissive: 0x150808, emissiveIntensity: 1 }), wood]); wheel.position.set(x - sx * 1.15, y + 0.92, z); g.add(wheel); C.push([3.4, 0.9, 1.7, x, z, y]);
     for (const dx of [-0.9, 0, 0.9]) stools.push([x + dx, y + 0.38, z + 1.35]); chipL.push([x + sx * 0.4, y + 0.835, z - 0.3, [[100, 4, 0, 0], [1000, 2, 0.06, 0.05], [10, 6, -0.07, 0.03]]]); };
-  const bjTable = (x, z, y) => { const bj = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.82, 32, 1, false, Math.PI / 2, Math.PI), wood); bj.position.set(x, y + 0.41, z); g.add(bj);
+  const bjTable = (x, z, y) => { CAS.personal.push([x, y, z + 0.55, 0, "croupier"]); const bj = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.82, 32, 1, false, Math.PI / 2, Math.PI), wood); bj.position.set(x, y + 0.41, z); g.add(bj);
     const bt = new THREE.Mesh(new THREE.CircleGeometry(1.6, 32, Math.PI, Math.PI), felt); bt.rotation.x = -Math.PI / 2; bt.position.set(x, y + 0.83, z); g.add(bt); C.push([3.4, 0.9, 1.7, x, z - 0.4, y]);
     for (let k = 0; k < 5; k++) { const a = Math.PI * (0.15 + k * 0.175); stools.push([x - Math.cos(a) * 2.2, y + 0.38, z - Math.sin(a) * 2.2]); } chipL.push([x, y + 0.835, z - 0.35, [[100, 6, -0.1, 0], [1000, 4, 0.1, 0], [10000, 2, 0, 0.1]]]); };
   const pokerTable = (x, z, y) => { const b = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.8, 40), wood); b.scale.set(1.7, 1, 1); b.position.set(x, y + 0.4, z); g.add(b);
@@ -197,7 +198,7 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
   C.push([KW, HG, 0.75, KXM, KZ]);
   for (let k = 0; k < 3; k++) { const x = KX0 + KW * (k + 0.5) / 3; cyl(0.16, 0.16, 0.03, gold, x, 1.55, KZ - 0.02, 20).rotation.x = Math.PI / 2; box(0.7, 0.04, 0.5, gold, x, 1.18, KZ - 0.1);
     box(0.5, 0.25, 0.4, M({ color: 0x24272c }), x + 0.6, 1.29, KZ + 0.25); const sc = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.18), screenM); sc.position.set(x + 0.6, 1.5, KZ + 0.3); sc.rotation.y = Math.PI; g.add(sc);
-    stools.push([x, 0.38, KZ + 1.0]); chipL.push([x - 0.1, 1.165, KZ - 0.08, [[1000, 3, 0, 0], [100, 5, 0.12, 0.02]]]);
+    if (k !== 1) CAS.personal.push([x, 0, KZ + 0.75, 0, "kasse"]); stools.push([x, 0.38, KZ + 1.0]); chipL.push([x - 0.1, 1.165, KZ - 0.08, [[1000, 3, 0, 0], [100, 5, 0.12, 0.02]]]);
     const nr = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.18), new THREE.MeshBasicMaterial({ map: canvasTex(128, 46, (c, w, h) => { c.fillStyle = "#0c0a08"; c.fillRect(0, 0, w, h); c.fillStyle = "#7fe08a"; c.font = "bold 30px Arial"; c.textAlign = "center"; c.fillText("Schalter " + (k + 1), w / 2, 34); }) }));
     nr.position.set(x, 2.55, KZ - 0.06); nr.rotation.y = Math.PI; g.add(nr); }
   { const sg = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.15), new THREE.MeshBasicMaterial({ map: canvasTex(512, 84, (c, w, h) => { c.fillStyle = "#0c0a08"; c.fillRect(0, 0, w, h); c.strokeStyle = "#c9973a"; c.lineWidth = 4; c.strokeRect(4, 4, w - 8, h - 8); c.shadowColor = "#ffb02e"; c.shadowBlur = 12; c.fillStyle = "#ffd23a"; c.font = "bold 46px Arial"; c.textAlign = "center"; c.fillText("KASSE · JETONS", w / 2, 58); }) }));
@@ -279,3 +280,14 @@ function casinoStep() {
   A.glass.emissiveIntensity = 0.8 * n;   // tagsueber 0 (sonst wirkt das Glas braun)
   A.beamM.opacity = 0.08 * n; A.beams.forEach(b => { b.visible = n > 0.05; b.rotation.y = t * 0.4 + b.userData.ph; });
 }
+
+// ---- Personal als Spielfiguren (F4 Teil 1, "Ja, weiter" 2026-11-19): figurPersonal(parent, [[x, y, z, Drehung, Art], ...]) stellt Figuren (js/spieler/figur.js, laedt spaeter: wartet
+// darauf) in lokalen Koordinaten auf; sie atmen und drehen ab und zu den Kopf (FIGUREN mit Tempo 0, figurStep). Arten: croupier, kasse, polizei, wache.
+const FIG_PERSONAL = {
+  croupier: [{ oberteil: 0x111214, hose: 0x111214, schuhe: 0x0b0b0c, haar: 0x2a1a10, frisur: 0, schulter: 1.05 }, { haut: 0xd8a880, oberteil: 0x111214, hose: 0x111214, haar: 0xb03a20, frisur: 1, schulter: 0.9, groesse: 0.97 }, { haut: 0x8a5a3a, oberteil: 0x111214, hose: 0x111214, haar: 0x1a1a1a, frisur: 2 }],
+  kasse: [{ oberteil: 0x6a1420, hose: 0x111214, haar: 0x3a2414, frisur: 1, schulter: 0.9, groesse: 0.96 }, { haut: 0xc68a60, oberteil: 0x6a1420, hose: 0x111214, haar: 0x0e0a08, frisur: 0 }],
+  polizei: [{ oberteil: 0x1b2c4f, hose: 0x1b2c4f, schuhe: 0x0b0b0c, haar: 0x2a1a10, frisur: 0, schulter: 1.12 }, { haut: 0xb07850, oberteil: 0x1b2c4f, hose: 0x1b2c4f, schuhe: 0x0b0b0c, haar: 0x0e0a08, frisur: 3, bart: true, schulter: 1.15 }],
+};
+function figurPersonal(parent, liste) { if (typeof buildFigur !== "function" || typeof FIGUREN === "undefined") return setTimeout(() => figurPersonal(parent, liste), 500);
+  liste.forEach(([x, y, z, ry, art], i) => { const V = FIG_PERSONAL[art] || FIG_PERSONAL.croupier, f = buildFigur(V[i % V.length]); f.position.set(x, y, z); f.rotation.y = ry; f.userData.keep = true; f.name = "Personal " + art; parent.add(f);
+    f.userData.phase = Math.random() * 6; FIGUREN.push({ g: f, tempo: 0, personal: true }); }); }

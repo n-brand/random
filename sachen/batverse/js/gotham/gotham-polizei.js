@@ -60,6 +60,8 @@ function* gcpdGen() {
     piv.rotation.set(0, th, 0); piv.userData.keep = true; scene.add(piv); const hit = piv.children[3];
     const c = f.W(84.3, 1, 0), solid = dkAdd({ cx: c[0], cy: Y + 0.6, cz: c[2], ux, uz, hl: 3.6, hw: 0.15, hh: 0.6, floor: 0, m: 0.1 });
     gates.push({ name: "Schranke", g: hit, open: 0, target: 0, dur: 2.5, verbs: ["öffnen", "schliessen"], a: (([x, , z]) => [x, z])(f.W(80.6, 1, 0)), b: (([x, , z]) => [x, z])(f.W(87.6, 1, 0)), near: 12, solid, anim: k => { piv.rotation.set(0, th, k * 1.45); solid.on = k < 0.6; } }); }
+  // Polizisten vor dem Portal und an der Schranke (F4, 2026-11-19), Blick zur Strasse
+  if (typeof figurPersonal === "function") { const blick = Math.atan2(e2[0], e2[1]), liste = [[sm - 3.5, -1.6], [sm + 3.5, -1.6], [89.4, 3.2]].map(([ss, tt]) => { const w = f.W(ss, tt, 0); return [w[0], Y, w[2], blick, "polizei"]; }); figurPersonal(scene, liste); }
   // Keilsperre hinter der Schranke (N13, 2026-11-19): Rampe zur Strasse, steile Kante nach innen; Steuersaeule rechts
   { const k = f.W(84, 5, 0), st = f.W(89.6, 5, 0); keilsperreAdd(k[0], Y + 0.06, k[2], e2[0], e2[1], 7, st[0], st[2], "Keilsperre"); }
   // beschlagnahmte Fahrzeuge (fahrbar, spaet gebaut)
