@@ -62,12 +62,22 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Zigaretten | in der Hand Linksklick = anzünden (braucht ein Feuerzeug im Inventar), brennt ca. 40 s; nochmal Linksklick = ausdrücken; jede angezündete ist verbraucht |
 | USB-Stick | im Laptop: Taskleiste USB-Symbol > einstecken/auswerfen, App "USB-Laufwerk" zeigt die Dateien; Sperrbildschirm: "USB-Stick einstecken" (schwarzer Stick) umgeht das Passwort |
 | Fidget Spinner | in der Hand linke Maus halten = beschleunigen (bis ca. 6 U/s), loslassen = läuft ca. 20 s aus, kurzer Linksklick = stoppt |
+| Batsuit anziehen | im Inventar auf den Platz "Körper" ziehen oder Shift+Klick; in der dritten Person (V) ist man dann Batman mit Umhang |
 | Dritte Person zu Fuss | **V** (Spiel und Werkstatt-Person): Kamera hinter der Figur über die rechte Schulter, nochmal V = Ich-Sicht; bleibt gespeichert |
 | Werkstatt-Modi | 1 Ansehen, 2 Fahren, 3 Drehteller, 4 Person, 5 Geist, Z Zeichnen |
 
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Spielfiguren F3: Batman-Figur** (Nicolas 2026-11-19 "Ja, weiter"): figur.js `buildBatman()` mit denselben Gelenken wie buildFigur.
+  - Anzug: dunkelgrau mit schwarzen Panzerplatten (Brust, Bauchsegmente, Schultern, Schienbeine). Fledermaus-Emblem aus der Batsignal-Kontur. Gurt mit Taschen und Schnalle, Handschuhe mit Finnen, Stiefel.
+  - Maske bis unter die Augen mit Ohren und weissen Augenschlitzen, Kinn frei.
+  - Umhang als biegsame Fläche mit gezackter Unterkante (`batUmhang`): flattert, weht mit dem Tempo nach hinten, in der Luft etwas mehr. Beim Gleiten (gleiten.js) liegt die Figur fast waagrecht, die Arme sind ausgebreitet und der Umhang ist wie ein Flügel bis zu den Händen gespannt.
+  - inventar.js: neuer Ausrüstungsplatz "Körper" (Index 91, `INV.equip.koerper`, gespeichert in wm-inv) neben "Kopf". Nur Gegenstände mit `koerper: true` (Batsuit). Ziehen, Shift+Klick an- und ausziehen. Andere Gegenstände: "… kann man nicht anziehen".
+  - Mit angezogenem Batsuit zeigt die dritte Person (V) Batman, sonst Bruce (`dpEnsure` wechselt die Figur, der Gegenstand in der Hand wandert mit).
+  - Geprüft in der Werkstatt mit Bildern: Batman von vorne, rennend mit wehendem Umhang, gleitend (Seitenansicht), von hinten in der dritten Person. Batsuit an/aus über Shift+Klick, die Figur wechselt.
+  - Gleiten geht weiter auch ohne Batsuit (OFFENE-FRAGEN 50).
 
 - **Sanitäts-Aufbau, Polizei-Van und -Pickup, Jet militärischer** (Nicolas 2026-11-19, Bild Sanitätsfahrzeug: "beim Sanitärfahrzeug noch den oberen Teil fixen und dann bei den Polizeifahrzeugen auch und beim Jet auch anpassen – Jet soll mehr nach Militär aussehen"):
   - militaer.js Sanität: Der Aufbau sass als glatte Kiste auf der Wanne. Neu:
