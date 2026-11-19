@@ -82,6 +82,7 @@ function* gortGen() {
         gates.push({ name: "Bankautomat", g: hm, call: () => kontoOpen(), verbs: ["benutzen", "benutzen"], a: hp, b: hp, near: 4 }); } }
     else if (kind === "stadion") gortStadion(out, f, o, front, Y, box, sign, M);
     else if (kind === "kirche") gortKirche(out, f, o, front, Y, box, sign, M, col);
+    else if (o.id === "waffen-1" || o.id === "waffen-2") { gortWaffenladen({ out, f, o, front, Y, box, L1, L2, H, seed, P0, ax, az, e2 }); sign(front, sideLen(front) / 2, Y + 4.1, Math.min((sideLen(front) - 3) * 0.85, 12), 0.15, 1.5); }   // begehbar (2026-11-19)
     else {
       const ins = kind === "laden" || kind === "krippe" || kind === "atm" ? 1.5 : 4, type = { portal: "buero", kh: "kratzer", turm: "kratzer", laden: "laden", miet: "miet", halle: "lager", krippe: "laden", fabrik: "fabrik" }[kind];
       const glas = kind === "turm" || kind === "kh" || kind === "halle", N = Math.max(1, Math.round(H / GH)), Hb = kind === "halle" || kind === "fabrik" ? H : N * GH;
@@ -104,7 +105,7 @@ function* gortGen() {
       else sign(front, sideLen(front) / 2, Y + Hb - 2, Math.min(fl * 0.7, 24), 0.15, ins);
     }
     bautAdd({ id: "GO-" + o.id.toUpperCase(), name: o.name.split(" (")[0], art: "Gebäude", poly: [Wp(0, 0), Wp(L1, 0), Wp(L1, L2), Wp(0, L2)], y0: Y - 1, y1: Y + H + 10, info: (sgOf.get(o.id)?.text || o.name) + " · " + Math.round(H) + " m" });
-    if (o.id === "waffen-1" || o.id === "waffen-2") { const sd = f.side(front), u = sd[6] / 2, hp = Wp(sd[0] + sd[2] * u + sd[4], sd[1] + sd[3] * u + sd[5]), hm = new THREE.Mesh(new THREE.BoxGeometry(4, 3.5, 4), new THREE.MeshBasicMaterial({ visible: false }));   // Waffenladen oeffnet den Shop im Handy
+    if (false && (o.id === "waffen-1" || o.id === "waffen-2")) { const sd = f.side(front), u = sd[6] / 2, hp = Wp(sd[0] + sd[2] * u + sd[4], sd[1] + sd[3] * u + sd[5]), hm = new THREE.Mesh(new THREE.BoxGeometry(4, 3.5, 4), new THREE.MeshBasicMaterial({ visible: false }));   // Waffenladen oeffnet den Shop im Handy
       hm.position.set(hp[0], Y + 1.75, hp[1]); scene.add(hm); const sid = o.id === "waffen-1" ? "waffen" : "arms";
       gates.push({ name: (sid === "waffen" ? "Guns & Ammo" : "Gotham Arms") + " (Shop)", g: hm, call: () => typeof handyShop === "function" && handyShop(sid), verbs: ["Waffen ansehen", "Waffen ansehen"], a: hp, b: hp, near: 8 }); }
     if (o.id === "auto-billig" || o.id === "auto-teuer") { const sd = f.side(front), u = sd[6] / 2, P = (d, h) => Wp(sd[0] + sd[2] * u + sd[4] * d, sd[1] + sd[3] * u + sd[5] * d);   // S4: Autohaus oeffnet den Shop, Lieferplatz vor der Front
@@ -220,3 +221,70 @@ TILES.tasks.push({ gen: null, plan() {}, step() { if (GORT.done || TILES.startup
 // je Bild (schleife.js): Schilder und Rosette leuchten nachts (nur bei Aenderung)
 function gortStep() { const M = GORT.mats; if (!M) return; const n = typeof night === "number" ? night : 0; if (GORT._n === n) return; GORT._n = n;
   M.schild.emissiveIntensity = 0.15 + 0.85 * n; if (M.rose) M.rose.emissiveIntensity = 0.05 + 0.9 * n; if (M.fenster) M.fenster.emissiveIntensity = 0.05 + 0.9 * n; }
+// ---- Begehbare Waffenlaeden (Nicolas 2026-11-19, Bild beider Laeden in der Werkstatt: "ich will in beide reingehen koennen – bau es mit einer hellbraungrauen Waffenwand") ----
+// Statt Vollkoerper: Erdgeschoss selbst gebaut (Aussenwand Ziegel bzw. Ladenfront mit Tuer 2,6 m in der Mitte, innen helle Wandverkleidung, dunkler Holzboden, Decke mit
+// Lichtfeldern), darueber die oberen Geschosse und das Dach aus gbvShell. Innen: grosse hellbraungraue Lochwand an der Rueckwand mit den Schusswaffen des Ladens
+// (gunBuild, mehrfach, mit Preisschildern), Theke mit Glasvitrine (Pistolen liegen darin) und Kasse, frei stehende Vitrinen, Regale mit Munitionsschachteln an den
+// Seitenwaenden, Fussmatte. Rechtsklick an der Theke oeffnet den Laden im Handy. Kollision: Waende mit Tueroeffnung, Decke, Theke, Vitrinen, Regale. Spiel und Werkstatt.
+function gortWaffenladen(c) {
+  const { out, f, o, front, Y, box, L1, L2, H, seed } = c, GH = GBV.GH, ins = 1.5, N = Math.max(1, Math.round(H / GH)), Hb = N * GH, uo = seed % 8, vo = Math.floor(seed / 8) % 4, arms = o.id === "waffen-2", sid = arms ? "arms" : "waffen";
+  gbvShell({ P0: c.P0, e1: [c.ax, c.az], e2: c.e2, L1, L2, front: -1, type: "laden", N: Math.max(0, N - 1), H: Hb - GH, glas: false, seed, fire: [0, 0, 0, 0], y: Y + GH }, out);   // obere Geschosse, Dach
+  const col = h => { const q = new THREE.Color(h); return [q.r, q.g, q.b]; }, Fl = f.side(front)[6], Dp = f.side((front + 1) % 4)[6], um = Fl / 2, tw = 1.3, Hi = GH - 0.3;
+  // Aussenwaende Erdgeschoss (Front mit Tuer)
+  for (let k = 0; k < 4; k++) { const len = f.side(k)[6];
+    if (k !== front) gbvWall(out, "ziegel", f, k, ins, len - ins, Y, Y + GH, ins, GH, uo, vo, Y);
+    else { gbvWall(out, "laden", f, k, ins, um - tw, Y, Y + GH, ins, GH, uo, vo, Y); gbvWall(out, "laden", f, k, um + tw, len - ins, Y, Y + GH, ins, GH, uo, vo, Y); gbvWall(out, "ziegel", f, k, um - tw, um + tw, Y + 2.9, Y + GH, ins, GH, uo, vo, Y); } }
+  // innen: Wandverkleidung (hell), an der Tuer Laibung; Boden, Decke; Kollision der Waende (0,3 m stark)
+  const innen = col(0xd9d3c8), wand = (k, a, b, y0, y1, farbe = innen) => { const [As, At, ds, dt, os, ot] = f.side(k), u = (a + b) / 2, w = -ins - 0.16, s = As + ds * u + os * w, t = At + dt * u + ot * w, ls = ds ? b - a : 0.3, lt = ds ? 0.3 : b - a;
+    gbvBox(out, "farbe", f, s, t, ls, lt, y0, y1, farbe); box(s, t, ls, lt, y0, y1); };
+  for (let k = 0; k < 4; k++) { const len = f.side(k)[6]; if (k !== front) wand(k, ins, len - ins, Y, Y + GH); else { wand(k, ins, um - tw, Y, Y + GH); wand(k, um + tw, len - ins, Y, Y + GH); wand(k, um - tw, um + tw, Y + 2.9, Y + GH); } }
+  { const [As, At, ds, dt, os, ot] = f.side(front); for (const sg of [-1, 1]) { const u = um + sg * (tw + 0.03), s = As + ds * u - os * (ins + 0.16), t = At + dt * u - ot * (ins + 0.16); gbvBox(out, "eisen", f, s, t, ds ? 0.12 : 0.36, ds ? 0.36 : 0.12, Y, Y + 2.95); }   // Tuerrahmen
+    const s = As + ds * um - os * (ins + 0.16), t = At + dt * um - ot * (ins + 0.16); gbvBox(out, "eisen", f, s, t, ds ? 2 * tw + 0.24 : 0.36, ds ? 0.36 : 2 * tw + 0.24, Y + 2.85, Y + 2.97); }
+  gbvBox(out, "farbe", f, L1 / 2, L2 / 2, L1 - 2 * ins - 0.6, L2 - 2 * ins - 0.6, Y + 0.05, Y + 0.08, col(0x4a3a2c));                                 // Holzboden
+  if (N > 1) box(L1 / 2, L2 / 2, L1 - 2 * ins - 0.6, L2 - 2 * ins - 0.6, Y + Hi, Y + Hb); else box(L1 / 2, L2 / 2, L1 - 2 * ins - 0.6, L2 - 2 * ins - 0.6, Y + Hi, Y + GH);
+  // Einrichtung als eigene Gruppe: lokal x = laengs der Front, z = nach aussen (zur Strasse), Ursprung = Mitte der Front innen am Boden
+  const [As, At, ds, dt, os, ot] = f.side(front), O = f.W(As + ds * um - os * (ins + 0.32), At + dt * um - ot * (ins + 0.32), Y + 0.08), ow = f.dirW(os, ot), dwv = f.dirW(ds, dt);
+  const g = new THREE.Group(); g.name = "Waffenladen " + o.id; g.position.set(O[0], O[1], O[2]); g.rotation.y = Math.atan2(ow[0], ow[2]); g.userData.keep = true; scene.add(g);
+  const sx = Math.cos(g.rotation.y) * dwv[0] - Math.sin(g.rotation.y) * dwv[2] > 0 ? 1 : -1, W2 = Fl / 2 - ins - 0.32, D = Dp - 2 * ins - 0.64;   // halbe Innenbreite, Innentiefe
+  const L = (x, z) => { const v = new THREE.Vector3(x, 0, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y); return [O[0] + v.x, O[2] + v.z]; }, lx = [Math.cos(g.rotation.y), -Math.sin(g.rotation.y)];
+  const koll = (x, z, bx, bz, h) => { const [cx, cz] = L(x, z); dkAdd({ cx, cy: O[1] + h / 2, cz, ux: lx[0], uz: lx[1], hl: bx / 2, hw: bz / 2, hh: h / 2, m: 0.25 }); };
+  const Mt = (c, r = 0.6, m = 0.1, o2 = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...o2 }), add = (geo, m, x, y, z, ry = 0) => { const q = new THREE.Mesh(geo, m); q.position.set(x, y, z); q.rotation.y = ry; q.castShadow = q.receiveShadow = true; g.add(q); return q; };
+  const holz = Mt(0x5a3a22, 0.55), dunkel = Mt(0x23252a, 0.6, 0.3), glasM = Mt(0xbfd8e6, 0.05, 0.3, { transparent: true, opacity: 0.28 }), weiss = Mt(0xf2f0ea, 0.5), licht = new THREE.MeshBasicMaterial({ color: 0xfff6e0 });
+  // Lochwand hellbraungrau an der Rueckwand (Textur mit Loechern), Rahmen, Schild
+  const lochT = canvasTex(256, 128, (q, w, h) => { q.fillStyle = "#b3a594"; q.fillRect(0, 0, w, h); q.fillStyle = "rgba(60,50,40,.55)"; for (let y = 8; y < h; y += 16) for (let x = 8; x < w; x += 16) { q.beginPath(); q.arc(x, y, 2.2, 0, 7); q.fill(); } }, 1, 1);
+  const wb = W2 * 2 - 1.2, lochM = Mt(0xffffff, 0.85, 0, { map: lochT }); lochM.map.wrapS = lochM.map.wrapT = THREE.RepeatWrapping; lochM.map.repeat.set(wb / 2, 1.6);
+  add(new THREE.BoxGeometry(wb, 3.2, 0.05), lochM, 0, 0.5 + 1.6, -D + 0.03); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 0.46, -D + 0.05); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 3.74, -D + 0.05);
+  add(new THREE.BoxGeometry(W2 * 2 + 0.4, 0.05, D + 0.4), Mt(0xe6e3dc, 0.8, 0, { emissive: 0x8c8a84 }), 0, Hi - 0.05, -D / 2);   // Decke (eigenes Material: das Umgebungslicht von unten ist gruenlich)
+  // Waffen an der Lochwand (Raster), Preisschilder; in der Werkstatt laden die Waffen erst spaeter: dann nachholen
+  const tz = -D + 2.4, tb = Math.min(W2 * 1.2, 9), vz = tz + 3.2;
+  const fuell = () => { if (typeof gunBuild !== "function" || typeof HANDY_SHOPS === "undefined") return setTimeout(fuell, 400);
+  const waren = (typeof HANDY_SHOPS !== "undefined" && HANDY_SHOPS[sid] && HANDY_SHOPS[sid].waren || []).filter(w => typeof GUN_SPEC !== "undefined" && GUN_SPEC[w[0]]).map(w => w[0]);
+  if (waren.length && typeof gunBuild === "function") { const sp = 1.55, nc = Math.max(1, Math.floor((wb - 0.4) / sp)), rows = [3.2, 2.5, 1.8, 1.15]; let i = 0;
+    for (const y of rows) for (let cI = 0; cI < nc; cI++) { const id = waren[i++ % waren.length], x = -((nc - 1) * sp) / 2 + cI * sp; try { const m = gunBuild(id); m.rotation.y = Math.PI / 2; m.position.set(x, y, -D + 0.16); m.traverse(q => { if (q.isMesh) q.castShadow = true; }); g.add(m); } catch (e) {}
+      add(new THREE.BoxGeometry(0.16, 0.08, 0.01), weiss, x + 0.45, y - 0.22, -D + 0.07); } }
+    for (let k = 0; k < Math.floor((tb - 1.2) / 0.7); k++) { try { const p = gunBuild(k % 2 ? "pistole" : "mp7"); p.rotation.set(0, Math.PI / 2, Math.PI / 2); p.scale.setScalar(0.9); p.position.set(-tb / 2 + 0.6 + k * 0.7, 1.03, tz); g.add(p); } catch (e) {} }
+    for (const x of [-W2 * 0.45, W2 * 0.45]) { if (Math.abs(x) < 1.6 || vz > -1.5) continue; try { const p = gunBuild(arms ? "g36c" : "schrotflinte"); p.rotation.set(0, Math.PI / 2, Math.PI / 2); p.scale.setScalar(0.8); p.position.set(x, 0.85, vz); g.add(p); } catch (e) {} } };
+  const fuell2 = () => { if (typeof gunBuild !== "function") return setTimeout(fuell2, 400); const W = (HANDY_SHOPS[sid] && HANDY_SHOPS[sid].waren || []).map(w => w[0]).filter(id => GUN_SPEC[id]); vit.forEach(([x, z], i) => { try { const p = gunBuild(W[i % W.length] || "pistole"); p.rotation.set(0, Math.PI / 2, Math.PI / 2); p.scale.setScalar(0.85); p.position.set(x, 0.85, z); g.add(p); } catch (e) {} }); };
+  fuell();
+  // Theke mit Glasvitrine und Kasse (quer, 2,4 m vor der Rueckwand), dahinter Durchgang
+  add(new THREE.BoxGeometry(tb, 0.95, 0.7), holz, 0, 0.475, tz); add(new THREE.BoxGeometry(tb, 0.04, 0.72), dunkel, 0, 0.97, tz);
+  add(new THREE.BoxGeometry(tb - 0.6, 0.32, 0.6), glasM, -0.3, 1.15, tz); koll(0, tz, tb, 0.75, 1.3);
+  add(new THREE.BoxGeometry(0.42, 0.22, 0.36), dunkel, tb / 2 - 0.4, 1.1, tz); add(new THREE.BoxGeometry(0.3, 0.16, 0.02), Mt(0x1a3a24, 0.3, 0, { emissive: 0x2a8a4a, emissiveIntensity: 0.6 }), tb / 2 - 0.4, 1.32, tz + 0.1);   // Kasse
+  // frei stehende Vitrinen und Regale mit Munition an den Seitenwaenden
+  for (const x of [-W2 * 0.45, W2 * 0.45]) { if (Math.abs(x) < 1.6 || vz > -1.5) continue; add(new THREE.BoxGeometry(1.6, 0.8, 0.8), holz, x, 0.4, vz); add(new THREE.BoxGeometry(1.6, 0.5, 0.8), glasM, x, 1.05, vz); koll(x, vz, 1.6, 0.8, 1.3);
+  }
+  // grosse Laeden: weitere Reihen von Vitrinen mit Waffen in der Mitte
+  const vit = []; for (let z = vz - 0.2 + 3.6; z < -3.2; z += 3.6) for (let x = -W2 + 4; x <= W2 - 4; x += 4.2) { if (Math.abs(x) < 2) continue; add(new THREE.BoxGeometry(2.2, 0.8, 0.9), holz, x, 0.4, z); add(new THREE.BoxGeometry(2.2, 0.5, 0.9), glasM, x, 1.05, z); koll(x, z, 2.2, 0.9, 1.3); vit.push([x, z]); }
+  const munC = [0x6b7a3a, 0x8a2a22, 0x2a4a7a, 0xc9a640];
+  for (const sd of [-1, 1]) { const rx = sd * (W2 - 0.3), z0 = -D + 3.4, z1 = -1.8; if (z1 - z0 < 1.5) continue; const lz = z1 - z0, zm = (z0 + z1) / 2;
+    for (const y of [0.4, 1.1, 1.8]) add(new THREE.BoxGeometry(0.5, 0.04, lz), holz, rx, y, zm); add(new THREE.BoxGeometry(0.04, 2.2, lz), holz, rx + sd * 0.24, 1.1, zm); koll(rx, zm, 0.55, lz, 2.2);
+    let k = 0; for (const y of [0.42, 1.12, 1.82]) for (let z = z0 + 0.15; z < z1 - 0.15; z += 0.24) { const b = add(new THREE.BoxGeometry(0.22, 0.16, 0.18), Mt(munC[k++ % 4], 0.7), rx, y + 0.1, z); } }
+  // Lichtfelder an der Decke, Fussmatte, Schild "Kasse"
+  for (let z = -1.5; z > -D + 0.8; z -= 3) for (let x = -W2 + 1.5; x < W2 - 1; x += 3.2) add(new THREE.BoxGeometry(1.4, 0.03, 0.5), licht, x, Hi - 0.1, z);
+  add(new THREE.BoxGeometry(2.0, 0.015, 1.2), Mt(0x1e1f22, 0.95), 0, 0.01, -0.8);
+  { const t = canvasTex(256, 64, (q, w, h) => { q.fillStyle = "#1d2229"; q.fillRect(0, 0, w, h); q.fillStyle = "#f4efe2"; q.font = "bold 34px Arial"; q.textAlign = "center"; q.fillText(arms ? "GOTHAM ARMS" : "GUNS & AMMO", w / 2, 44); }), s = add(new THREE.PlaneGeometry(2.6, 0.65), new THREE.MeshBasicMaterial({ map: t }), 0, 4.0, -D + 0.08); }
+  fuell2();
+  // Rechtsklick an der Theke oeffnet den Laden im Handy
+  const hm = add(new THREE.BoxGeometry(tb, 1.6, 1.4), new THREE.MeshBasicMaterial({ visible: false }), 0, 0.8, tz); hm.castShadow = false; const hp = L(0, tz);
+  gates.push({ name: (arms ? "Gotham Arms" : "Guns & Ammo") + " (Theke)", g: hm, call: () => typeof handyShop === "function" && handyShop(sid), verbs: ["Waffen kaufen", "Waffen kaufen"], a: hp, b: hp, near: 4 });
+  return Hb; }

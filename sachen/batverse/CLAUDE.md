@@ -70,6 +70,18 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Waffenläden begehbar mit hellbraungrauer Waffenwand** (Nicolas 2026-11-19, Bild beider Läden: "ich will in beide reingehen können – bau es mit einer hellbraungrauen Waffenwand"): gotham-orte.js `gortWaffenladen` für waffen-1 (Guns & Ammo) und waffen-2 (Gotham Arms), Spiel und Werkstatt.
+  - Bau: Erdgeschoss selbst gebaut statt Vollkörper. Ladenfront mit Tür (2,6 m) und Türrahmen, innen helle Wandverkleidung, Holzboden, helle Decke mit Lichtfeldern. Obere Geschosse und Dach aus gbvShell (ohne zweite Ladenfront), Schild wie vorher.
+  - Einrichtung:
+    - Grosse hellbraungraue Lochwand (#b3a594) an der Rückwand, mit allen Schusswaffen des Ladens in Reihen und Preisschildern.
+    - Theke mit Glasvitrine (Pistolen und MP7 darin) und Kasse.
+    - Vitrinen, im grossen Gotham Arms in Reihen über die ganze Fläche.
+    - Regale mit Munitionsschachteln an den Seitenwänden, Fussmatte, Schild über der Lochwand.
+  - Die Waffen kommen nach, sobald schusswaffen.js geladen ist (in der Werkstatt später als die Gebäude).
+  - Kollision: Wände mit Türöffnung, Decke, Theke, Vitrinen, Regale.
+  - Rechtsklick an der Theke öffnet den Laden im Handy ("Waffen kaufen"). Der alte Klick an der Fassade ist aus.
+  - Geprüft in der Werkstatt: Bilder innen beider Läden. Lauftest durch die Tür 18 m hinein bis an die Theke; neben der Tür hält die Wand. Im Spiel nicht im Bild geprüft (gleiche Datei).
+
 - **Bilder der 3D-Modelle in den Web-Läden, Börse mit Logos und Detailseite** (Nicolas 2026-11-19: "im Web bei den einzelnen Shops Bilder der 3D-Versionen – Waffen, Fahrzeuge, Gebäude – und bei den Aktien in einer Detailansicht auch das Logo der Firma usw."):
   - Neu `js/ui/vorschau.js` (Spiel-FILES und Werkstatt nach ui/kalender.js, ASSETS, BV_KEEP): eigener kleiner Renderer (320 × 200, durchsichtig).
     - `vsBild(key, bau, ansicht, cls)` baut jedes Modell einmal, rendert es und merkt sich das Bild im Speicher der Seite. Die Warteschlange rechnet ein Modell je 30 ms, solange lädt ein Schimmer-Platzhalter.
