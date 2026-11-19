@@ -54,3 +54,18 @@ addEventListener("mousedown", e => { if (e.button === 0 && document.pointerLockE
 addEventListener("mouseup", e => { if (e.button === 0 && KOFFER.hold) kofferHoldEnd(false); });
 // in der Hand: Koffer zu, am Griff gehalten
 if (typeof HAND3D !== "undefined") HAND3D.koffer = () => { const g = new THREE.Group(), m = buildKoffer({ offen: false }); m.rotation.set(Math.PI / 2, 0.25, 0); m.position.set(0, -0.05, 0.05); m.scale.setScalar(0.8); g.add(m); g.position.y = -0.1; return g; };
+
+// ---- Beute am Boden (N21 "Aufnehmen mit Kreis" fuer Geld und Gold; 2026-11-19): beuteAdd(pos, id, n) legt ein 3D-Modell (Geldbuendel bzw. Goldbarren) hin; darauf zielen
+// (bis 3 m, Bildmitte) und linke Maus halten: Kreis 0,6 s, dann ins Inventar (invAdd). Zum Beispiel beim Aufsprengen eines Geldtransporters (gotham-bus.js).
+const BEUTE = { welt: [], hold: null, rc: new THREE.Raycaster() };
+function beuteAdd(pos, id, n = 1) { const g = new THREE.Group();
+  if (id === "goldbarren") { const m = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.06, 0.1), new THREE.MeshStandardMaterial({ color: 0xe0b03a, metalness: 0.9, roughness: 0.25, emissive: 0x3a2a08 })); m.position.y = 0.03; g.add(m); }
+  else { const m = typeof HAND3D !== "undefined" && HAND3D["geld-bar"] ? HAND3D["geld-bar"]() : new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.07), new THREE.MeshStandardMaterial({ color: 0x9ccf8a })); m.rotation.set(0, 0, 0); m.position.set(0, 0.02, 0); m.scale.setScalar(1.3); g.add(m); }
+  g.position.copy(pos); g.rotation.y = Math.random() * 6.28; g.userData.beute = { id, n }; g.userData.dynamic = true; scene.add(g); BEUTE.welt.push(g); return g; }
+function beuteZiel() { if (!BEUTE.welt.length) return null; BEUTE.rc.setFromCamera({ x: 0, y: 0 }, camera); BEUTE.rc.far = 3.2; const h = BEUTE.rc.intersectObjects(BEUTE.welt, true)[0]; if (!h) return null; let o = h.object; while (o && !o.userData.beute) o = o.parent; return o; }
+function beuteStep(dt) { const H = BEUTE.hold; if (!H) return; if (beuteZiel() !== H.g) { H.el.hidden = true; BEUTE.hold = null; return; } H.t += dt; H.el.querySelector(".hr-fg").style.strokeDashoffset = String(100 - Math.min(100, H.t / 0.6 * 100));
+  if (H.t < 0.6) return; H.el.hidden = true; BEUTE.hold = null; const B = H.g.userData.beute, put = invAdd(B.id, B.n); if (!put) return toast("Kein Platz im Inventar");
+  if (put < B.n) { B.n -= put; toast(INV_ITEMS[B.id].name + " × " + put + " aufgenommen (kein Platz für den Rest)"); return; } scene.remove(H.g); BEUTE.welt.splice(BEUTE.welt.indexOf(H.g), 1); toast(INV_ITEMS[B.id].name + (B.n > 1 ? " × " + B.n : "") + " aufgenommen"); }
+addEventListener("mousedown", e => { if (e.button !== 0 || !document.pointerLockElement || (typeof onFoot === "function" && !onFoot()) || (typeof weaponHeld === "function" && weaponHeld()) || KOFFER.hold) return; const g = beuteZiel(); if (!g) return;
+  const el = holdRingEl(); el.querySelector("span").textContent = "Aufnehmen …"; el.hidden = false; BEUTE.hold = { g, t: 0, el }; }, true);
+addEventListener("mouseup", e => { if (e.button === 0 && BEUTE.hold) { BEUTE.hold.el.hidden = true; BEUTE.hold = null; } });

@@ -159,6 +159,8 @@ function gbusRaub(b) { const R = b.raub; if (R.offen > 0) { const B = gbusRaubBo
   toast("Hecktür verriegelt – Brechstange oder Sprenggas in die Hand nehmen"); }
 function gbusRaubStep(b, dt) { const R = b.raub; if (!R) return; b.g.updateMatrixWorld(true); const p = R.hm.getWorldPosition(new THREE.Vector3()), weg = !b.g.visible ? 1e6 : 0; R.gate.a[0] = R.gate.b[0] = p.x + weg; R.gate.a[1] = R.gate.b[1] = p.z + weg;
   if (R.fuse > 0) { b.hold = Math.max(b.hold, 3); if ((R.fuse -= dt) <= 0) { R.fuse = 0; if (typeof fxBoom === "function") fxBoom(p.clone(), false); if (typeof aimSmoke === "function") aimSmoke(p.clone()); if (typeof shotSound === "function") shotSound(0.9, 0.8);
-      const pl = typeof player !== "undefined" ? player.pos : null; if (pl && pl.distanceTo(p) < 3) toast("Viel zu nah an der Explosion!"); gbusRaubOpen(b, "aufgesprengt"); } }
+      const pl = typeof player !== "undefined" ? player.pos : null; if (pl && pl.distanceTo(p) < 3) toast("Viel zu nah an der Explosion!"); gbusRaubOpen(b, "aufgesprengt");
+      if (typeof beuteAdd === "function") { const bk = new THREE.Vector3(-Math.sin(b.g.rotation.y), 0, -Math.cos(b.g.rotation.y)).negate(), q = new THREE.Vector3(bk.z, 0, -bk.x), n = 3 + Math.floor(Math.random() * 3);   // Geldbuendel fliegen heraus (N21)
+        for (let i = 0; i < n + (Math.random() < 0.35 ? 1 : 0); i++) { const d = 4.5 + Math.random() * 3, w = (Math.random() - 0.5) * 4, pos = b.g.position.clone().addScaledVector(bk, d).addScaledVector(q, w); pos.y = b.y + 0.02; beuteAdd(pos, i < n ? "bargeld" : "goldbarren", i < n ? 10 : 1); } } } }
   if (R.offen > 0 && (R.offen -= dt) <= 0) { R.offen = 0; R.gate.verbs = ["aufbrechen", "aufbrechen"]; }
   const soll = R.offen > 0 ? 1 : 0; if (R.auf !== soll) { R.auf = soll > R.auf ? Math.min(1, R.auf + dt * 1.2) : Math.max(0, R.auf - dt * 0.8); for (const [piv, sx] of R.fl) piv.rotation.y = sx * 1.75 * R.auf; R.raum.visible = R.auf > 0.02; } }
