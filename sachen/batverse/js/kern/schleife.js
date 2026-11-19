@@ -56,7 +56,8 @@ function frame() {
   if (typeof ubTrainStep === "function") ubTrainStep();                                      // U-Bahn: Zuege (gotham-ubahn.js)
   if (typeof casinoStep === "function") casinoStep();
   if (typeof gboeStep === "function") gboeStep(dt);
-  if (typeof gampelStep === "function") gampelStep();                                     // Ampeln der unteren Strassen (gotham-unterstrasse.js)                                        // Boerse: Kurse, Laufband (gotham-boerse.js)                                      // Casino: Neon, Roulette, Scheinwerfer (gotham-casino.js)
+  if (typeof gampelStep === "function") gampelStep();
+  if (typeof heliEinsatzStep === "function") heliEinsatzStep(dt);                         // Polizeihubschrauber bei Fahndung (heli.js)                                     // Ampeln der unteren Strassen (gotham-unterstrasse.js)                                        // Boerse: Kurse, Laufband (gotham-boerse.js)                                      // Casino: Neon, Roulette, Scheinwerfer (gotham-casino.js)
   if (typeof gcpdStep === "function") gcpdStep();                                          // Polizeipraesidium: Batsignal, Uhr, Laternen (gotham-polizei.js)
   if (typeof ghafStep === "function") ghafStep();                                          // Hafen: Containerbruecken, Lampen (gotham-hafen.js)
   if (typeof gortStep === "function") gortStep();                                          // Orte: Schilder nachts (gotham-orte.js)

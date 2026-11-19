@@ -67,12 +67,12 @@ const HELI = (() => { const b = buildPolizeiHeli(), H = flyAdd("Polizei-Helikopt
 // Lichtquelle (keine Shader-Neuuebersetzung): heller Kegel von der Lampe zum Treffer und ein Lichtfleck dort (additiv, bis 250 m).
 const HL_M = { kegel: new THREE.MeshBasicMaterial({ color: 0xfff4d0, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
   fleck: new THREE.MeshBasicMaterial({ map: canvasTex(128, 128, (c, w) => { const r = w / 2, gr = c.createRadialGradient(r, r, 0, r, r, r); gr.addColorStop(0, "rgba(255,246,214,1)"); gr.addColorStop(0.55, "rgba(255,240,200,.55)"); gr.addColorStop(1, "rgba(255,240,200,0)"); c.fillStyle = gr; c.fillRect(0, 0, w, w); }), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }) };
-function heliLicht(B, dt) { const L = B.licht; if (!L) return; const fliegt = B.on && typeof FLY !== "undefined" && FLY === B; if (!fliegt && B.thrust < 0.1) L.an = false;
+function heliLicht(B, dt) { const L = B.licht; if (!L) return; const fliegt = B.on && typeof FLY !== "undefined" && FLY === B, auto = !!(B.auto && B.autoZ); if (!fliegt && !auto && B.thrust < 0.1) L.an = false;
   if (!L.kegel) { L.kegel = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 1, 1, 20, 1, true).translate(0, -0.5, 0).rotateX(-Math.PI / 2), HL_M.kegel); L.kegel.userData.dynamic = true; L.kegel.visible = false; scene.add(L.kegel);   // Spitze bei 0, oeffnet nach +z (lookAt)
     L.fleck = new THREE.Mesh(new THREE.CircleGeometry(1, 24), HL_M.fleck); L.fleck.userData.dynamic = true; L.fleck.visible = false; scene.add(L.fleck); }
   L.glas.emissiveIntensity = L.an ? 3 : 0.3;
-  if (fliegt) { camera.updateMatrixWorld(); const o = camera.getWorldPosition(new THREE.Vector3()), d = camera.getWorldDirection(new THREE.Vector3()), z = o.clone().addScaledVector(d, 400);   // Zielpunkt Bildmitte
-    for (let s = 6, a = o.clone().addScaledVector(d, 6); s < 400; s += 8) { const b2 = o.clone().addScaledVector(d, s + 8), h = typeof shotSeg === "function" ? shotSeg(a, b2, null, 1) : null; if (h) { z.copy(h.p); break; } a.copy(b2); }
+  if (fliegt || auto) { let z; if (auto) z = B.autoZ.clone(); else { camera.updateMatrixWorld(); const o = camera.getWorldPosition(new THREE.Vector3()), d = camera.getWorldDirection(new THREE.Vector3()); z = o.clone().addScaledVector(d, 400);   // Zielpunkt Bildmitte (selbst geflogen) bzw. Einsatz-Ziel
+    for (let s = 6, a = o.clone().addScaledVector(d, 6); s < 400; s += 8) { const b2 = o.clone().addScaledVector(d, s + 8), h = typeof shotSeg === "function" ? shotSeg(a, b2, null, 1) : null; if (h) { z.copy(h.p); break; } a.copy(b2); } }
     B.g.updateMatrixWorld(true); const loc = L.sw.parent.worldToLocal(z.clone()).sub(L.sw.position), yaw = Math.max(-1.75, Math.min(1.75, Math.atan2(-loc.x, -loc.z))), pit = Math.max(-1.45, Math.min(0, Math.atan2(loc.y, Math.hypot(loc.x, loc.z)))), k = Math.min(1, dt * 4);
     L.sw.rotation.y += (yaw - L.sw.rotation.y) * k; L.swP.rotation.x += (pit - L.swP.rotation.x) * k; }
   if (!L.an) { L.kegel.visible = L.fleck.visible = false; return; }
@@ -87,3 +87,30 @@ function heliPolizei(x, y, z, h, parent = scene) { Object.assign(HELI, { x, y: y
   const ring = new THREE.Mesh(new THREE.RingGeometry(5.6, 6.0, 48).rotateX(-Math.PI / 2), gelb); pad.add(ring);
   for (const [w, d, px, pz] of [[0.6, 4, -1.3, 0], [0.6, 4, 1.3, 0], [2.0, 0.6, 0, 0]]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), weiss); b.position.set(px, 0, pz); pad.add(b); }
   pad.position.set(x, y + 0.03, z); pad.rotation.y = h; scene.add(pad); }
+
+// ---- Polizeihubschrauber-Einsatz (Nicolas 2026-11-19 "Ja, weiter": erste Reaktion der Polizei auf Ueberfaelle): steigt die Fahndung (Akte, ui/akte.js) auf 2 oder mehr, startet der
+// Hubschrauber vom Praesidium (nur wenn ihn niemand fliegt): steigt auf, fliegt in Reisehoehe zum Spieler, kreist 60 s in ca. 30 m Hoehe mit dem Suchscheinwerfer auf ihn,
+// sucht 20 s an der letzten Stelle, wenn man untergetaucht ist (unter der Strasse, im Untergrund, im Fahrzeug unten), und fliegt dann zurueck und landet. Ohne Kollision (fliegt hoch).
+const HEINS = { phase: null, t: 0, a: 0, last: null, f0: null };   // f0: letzte Fahndungsstufe (null = beim Laden nicht ausloesen)
+function heliEinsatzStart() { if (!HELI.home || HEINS.phase || (typeof FLY !== "undefined" && FLY === HELI && HELI.on)) return; HEINS.phase = "start"; HEINS.t = 0; HELI.auto = true; HELI.thrust = 1; HELI.g.visible = true;
+  if (typeof toast === "function") toast("Polizeihubschrauber gestartet – Fahndung läuft"); }
+function heliEinsatzStep(dt) { if (typeof HELI === "undefined" || typeof AKTE === "undefined") return; const f = AKTE.fahndung || 0; if (f >= 2 && HEINS.f0 !== null && HEINS.f0 < 2) heliEinsatzStart(); HEINS.f0 = f;
+  const E = HEINS, H = HELI; if (!E.phase) return; if (typeof FLY !== "undefined" && FLY === H && H.on) { E.phase = null; H.auto = false; H.autoZ = null; return; }   // Spieler ist eingestiegen
+  E.t += dt; const hm = H.home, pp = typeof player !== "undefined" ? player.pos : camera.position, Y0 = typeof GOT !== "undefined" ? GOT.STR : 0, reise = Math.max(hm.y + 60, Y0 + 140);
+  const sichtbar = !(typeof under === "number" && under > 0.5) && pp.y > Y0 - 3; if (sichtbar) E.last = pp.clone();
+  let T, vmax = 30;
+  if (E.phase === "start") { T = new THREE.Vector3(hm.x, hm.y + 40, hm.z); vmax = 8; if (H.y > hm.y + 38) E.phase = "flug"; }
+  else if (E.phase === "flug") { const L = E.last || pp; T = new THREE.Vector3(L.x, reise, L.z); if (Math.hypot(H.x - L.x, H.z - L.z) < 60) { E.phase = "kreisen"; E.t = 0; E.a = Math.atan2(H.z - L.z, H.x - L.x); } }
+  else if (E.phase === "kreisen" || E.phase === "suche") { const L = E.last || pp; E.a += dt * 0.28; T = new THREE.Vector3(L.x + Math.cos(E.a) * 28, Math.max(L.y + 30, Y0 + 30), L.z + Math.sin(E.a) * 28); vmax = 16;
+    if (E.phase === "kreisen" && !sichtbar) { E.phase = "suche"; E.t = 0; if (typeof toast === "function") toast("Der Hubschrauber hat dich verloren – er sucht noch"); }
+    else if (E.phase === "suche" && sichtbar) { E.phase = "kreisen"; }
+    if ((E.phase === "kreisen" && (E.t > 60 || f === 0)) || (E.phase === "suche" && E.t > 20)) { E.phase = "rueck"; if (typeof toast === "function") toast("Polizeihubschrauber dreht ab"); } }
+  else if (E.phase === "rueck") { T = new THREE.Vector3(hm.x, reise, hm.z); if (Math.hypot(H.x - hm.x, H.z - hm.z) < 3) E.phase = "landen"; }
+  else if (E.phase === "landen") { T = new THREE.Vector3(hm.x, hm.y, hm.z); vmax = 4; if (Math.abs(H.y - hm.y) < 0.1 && Math.hypot(H.x - hm.x, H.z - hm.z) < 0.3) { Object.assign(H, { x: hm.x, y: hm.y, z: hm.z, h: hm.h, pitch: 0, roll: 0, thrust: 0, auto: false, autoZ: null }); E.phase = null; batPose(H, dt); return; } }
+  // bewegen: erst Hoehe (beim Start und Landen), sonst gleichzeitig; Nase in Flugrichtung, beim Kreisen zum Ziel
+  const dx = T.x - H.x, dy = T.y - H.y, dz = T.z - H.z, dh = Math.hypot(dx, dz), stieg = E.phase === "kreisen" || E.phase === "suche" ? 1.6 : 1;
+  const sh = Math.min(dh, vmax * dt * (E.phase === "start" ? 0 : 1)), sy = Math.sign(dy) * Math.min(Math.abs(dy), 9 * dt * stieg + (E.phase === "landen" ? 0 : 0));
+  if (dh > 0.01) { H.x += dx / dh * sh; H.z += dz / dh * sh; } H.y += sy;
+  const L = E.last || pp, zu = E.phase === "kreisen" || E.phase === "suche" ? [L.x - H.x, L.z - H.z] : dh > 1 ? [dx, dz] : null; if (zu) { const hs = Math.atan2(-zu[0], -zu[1]), d = Math.atan2(Math.sin(hs - H.h), Math.cos(hs - H.h)); H.h += d * Math.min(1, dt * 1.5); }
+  H.pitch = -Math.min(0.18, sh / Math.max(dt, 1e-3) / vmax * 0.15); H.roll = 0; H.thrust = 1;
+  H.licht.an = E.phase === "kreisen" || E.phase === "suche"; H.autoZ = H.licht.an ? new THREE.Vector3(L.x, L.y + 0.9, L.z) : null; batPose(H, dt); }
