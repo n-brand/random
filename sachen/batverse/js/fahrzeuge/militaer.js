@@ -470,7 +470,7 @@ function buildKampfheli(k = 1.4) {
   g.name = "Kampfhubschrauber"; return { g, rotor, heck, lichter, turm, rohr, mund, starts };
 }
 const KAMPFHELI = (() => { const b = buildKampfheli(1.4), k = 1.4;
-  const H = flyAdd("Kampfhubschrauber", b, k, { spec: { max: 72, acc: 20, up: 11, tilt: 0.28, tiltV: 0.0045, turn: 1.15 }, feet: [[-0.68 * k, -1.0 * k], [0.68 * k, -1.0 * k], [-0.1 * k, 5.25 * k], [0.1 * k, 5.25 * k]] });
+  const H = flyAdd("Kampfhubschrauber", b, k, { cockpit: [-0.75 * k, 1.62 * k], spec: { max: 72, acc: 20, up: 11, tilt: 0.28, tiltV: 0.0045, turn: 1.15 }, feet: [[-0.68 * k, -1.0 * k], [0.68 * k, -1.0 * k], [-0.1 * k, 5.25 * k], [0.1 * k, 5.25 * k]] });
   H.camHoch = 5.5; H.mausDreht = true;   // Maus dreht den ganzen Hubschrauber verzoegert (Nicolas 2026-11-19), Kamera folgt nicht selbst nach   // Kamera hoeher: Hubschrauber im unteren Bilddrittel, Visier (Bildmitte) frei ueber ihm (Nicolas 2026-11-19 "Kamera hoeher")
   H.waffen = { turm: b.turm, rohr: b.rohr, mund: b.mund, starts: b.starts, cd: 0, rcd: 0, kanone: false, rak: false, seite: 0, kugeln: [], raketen: [], fx: [] };
   const pose0 = H.pose; H.pose = (B, dt) => { pose0(B, dt); if (typeof khWaffen === "function") khWaffen(B, dt || 0); }; return H; })();
