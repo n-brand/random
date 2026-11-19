@@ -30,7 +30,7 @@ function buildFigur(o = {}) { o = { ...FIGUR_STD, ...o }; const g = new THREE.Gr
   g.userData = { kopf, rumpf, armL, armR, unterarmL: uaL, unterarmR: uaR, beinL, beinR, knieL, knieR, phase: 0 }; g.name = "Spielfigur"; return g; }
 // Figuren, die sich bewegen (Werkstatt-Vorfuehrung, Skateboard): FIGUREN.push({ g, tempo }) – figurStep aus tresorStep
 const FIGUREN = [];
-function figurStep(dt) { for (const f of FIGUREN) if (f.g.visible && f.g.parent) figurPose(f.g, dt, f.tempo || 0, f.sprung); }
+function figurStep(dt) { for (const f of FIGUREN) if (f.g.visible && f.g.parent) { figurPose(f.g, dt, f.tempo || 0, f.sprung && !f.gleit); if (f.g.userData.cape && typeof batUmhang === "function") batUmhang(f.g, dt, f.tempo || 0, !!f.gleit, !!f.sprung); } }   // Batman: Umhang (F3)
 function figurPose(F, dt, tempo = 0, sprung = false) { const U = F.userData; U.phase += dt * (2.2 + tempo * 1.25); U.t = (U.t || 0) + dt; const p = U.phase, k = Math.min(1, tempo / 4), run = Math.max(0, Math.min(1, (tempo - 5) / 3));
   const sw = Math.sin(p) * (0.5 * k + 0.35 * run), atm = Math.sin(U.t * 2) * 0.012;
   U.beinL.rotation.x = sw; U.beinR.rotation.x = -sw; U.knieL.rotation.x = Math.max(0, -Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run); U.knieR.rotation.x = Math.max(0, Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run);

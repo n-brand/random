@@ -70,6 +70,12 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Mehr Figuren in der Werkstatt** (Nicolas 2026-11-19: "stell mal ein paar verschiedene Figuren auf in der Werkstatt, ich will sie mal ansehen"): werkstatt.js Auswahl "Spielfiguren" (vorher "Spielfiguren (Entwurf)", vier Figuren). Jetzt 14 Figuren mit Namensschild:
+  - Vorne acht Typen im Stand: Bruce Wayne, Bauarbeiter (Warnweste, Bart), Ärztin, Polizist, Studentin (Locken), Rentner (graues Haar, Bart), Croupière (rote Haare), Feuerwehrmann.
+  - Hinten in Bewegung: gehen, rennen, springen, Batman stehend, Batman rennend (Umhang weht), Batman gleitend (1,6 m hoch, Umhang gespannt).
+  - figur.js `figurStep` bewegt jetzt auch den Umhang (batUmhang).
+  - Geprüft: Bilder der Reihen.
+
 - **Waffenläden begehbar mit hellbraungrauer Waffenwand** (Nicolas 2026-11-19, Bild beider Läden: "ich will in beide reingehen können – bau es mit einer hellbraungrauen Waffenwand"): gotham-orte.js `gortWaffenladen` für waffen-1 (Guns & Ammo) und waffen-2 (Gotham Arms), Spiel und Werkstatt.
   - Bau: Erdgeschoss selbst gebaut statt Vollkörper. Ladenfront mit Tür (2,6 m) und Türrahmen, innen helle Wandverkleidung, Holzboden, helle Decke mit Lichtfeldern. Obere Geschosse und Dach aus gbvShell (ohne zweite Ladenfront), Schild wie vorher.
   - Einrichtung:
