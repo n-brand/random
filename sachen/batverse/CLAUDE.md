@@ -73,6 +73,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Kampfhubschrauber: dreht mit der Maus, Raketen geradeaus** (Nicolas 2026-11-19: "Drehen mit der Maus soll nicht nur die Kanone unten mitbewegen, sondern verzögert den ganzen Heli wegen den Raketen – Raketen fliegen geradeaus"): militaer.js – im Flug dreht sich der Hubschrauber verzögert zur Blickrichtung (höchstens ca. 70 °/s, nicht durch Wände); die Kamera schiebt sich bei ihm nicht mehr selbst hinter ihn (the-bat.js `B.mausDreht`). Raketen fliegen in Nasenrichtung (mit Neigung), orange Raute zeigt, wohin (250 m voraus); Kanone im Turm zielt weiter auf die Bildmitte (Kreis). Geprüft in der Werkstatt: 1 rad Unterschied in ca. 2 s eingeholt, Rakete genau in Nasenrichtung.
+
 - **Handgranate (N6) und Minotaurus zielt höher** (Nicolas 2026-11-19 "Ja, weiter"):
   - Gegenstand `granate` "Handgranate" (Art Waffe, Stapel 8, 2D-Symbol). waffen.js `buildGranate` (Splittergranate in Oliv mit Rillen, Kopf, Bügel, Sicherungsring) in der Hand (HAND3D) und beim Wurf.
   - Ablauf: Wurf wie die Rauchbombe mit Zielhilfe (Wurfbahn und Ring). `granateStep` prallt ab (Boden: nach oben, Wand: zurück, gedämpft), rollt aus und explodiert nach 2,5 s.

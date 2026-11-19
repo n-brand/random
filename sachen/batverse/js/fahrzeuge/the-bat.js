@@ -224,7 +224,7 @@ function flyStep(dt) {
   B.pitch += ((landed ? 0 : -(S.tilt || 0.12) * th - along * (S.tiltV || 0.002) + 0.015 * Math.sin(t * 1.3)) - B.pitch) * Math.min(1, dt * 3);
   B.roll += ((landed ? 0 : st * Math.min(0.35, 0.1 + sp / 80) + 0.012 * Math.sin(t * 1.7)) - B.roll) * Math.min(1, dt * 3);
   // Beim Vorwaertsfliegen gleitet die Ansicht langsam zurueck hinter The Bat in die Standardhoehe (Nicolas 2026-11-09)
-  if (B.view === 0 && along > 3 && th > 0) { const k = Math.min(1, dt * 0.9); player.yaw += Math.atan2(Math.sin(B.h - player.yaw), Math.cos(B.h - player.yaw)) * k; player.pitch += (-0.2 - player.pitch) * k; }
+  if (B.view === 0 && along > 3 && th > 0 && !B.mausDreht) { const k = Math.min(1, dt * 0.9); player.yaw += Math.atan2(Math.sin(B.h - player.yaw), Math.cos(B.h - player.yaw)) * k; player.pitch += (-0.2 - player.pitch) * k; }
   batPose(B, dt); batCamera(B);
   speedEl.textContent = Math.round(sp * 3.6) + " km/h · " + Math.max(0, Math.round(B.y - supportAt(new THREE.Vector3(B.x, B.y + 0.6, B.z), B.y + 0.6))) + " m über Boden";
   engineUpdate({ v: sp + Math.abs(B.vy) * 2, throttle: B.thrust, air: false, wet: false });

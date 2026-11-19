@@ -471,7 +471,7 @@ function buildKampfheli(k = 1.4) {
 }
 const KAMPFHELI = (() => { const b = buildKampfheli(1.4), k = 1.4;
   const H = flyAdd("Kampfhubschrauber", b, k, { spec: { max: 72, acc: 20, up: 11, tilt: 0.28, tiltV: 0.0045, turn: 1.15 }, feet: [[-0.68 * k, -1.0 * k], [0.68 * k, -1.0 * k], [-0.1 * k, 5.25 * k], [0.1 * k, 5.25 * k]] });
-  H.camHoch = 5.5;   // Kamera hoeher: Hubschrauber im unteren Bilddrittel, Visier (Bildmitte) frei ueber ihm (Nicolas 2026-11-19 "Kamera hoeher")
+  H.camHoch = 5.5; H.mausDreht = true;   // Maus dreht den ganzen Hubschrauber verzoegert (Nicolas 2026-11-19), Kamera folgt nicht selbst nach   // Kamera hoeher: Hubschrauber im unteren Bilddrittel, Visier (Bildmitte) frei ueber ihm (Nicolas 2026-11-19 "Kamera hoeher")
   H.waffen = { turm: b.turm, rohr: b.rohr, mund: b.mund, starts: b.starts, cd: 0, rcd: 0, kanone: false, rak: false, seite: 0, kugeln: [], raketen: [], fx: [] };
   const pose0 = H.pose; H.pose = (B, dt) => { pose0(B, dt); if (typeof khWaffen === "function") khWaffen(B, dt || 0); }; return H; })();
 // Waffen: Ziel aus der Bildmitte, Turm folgt, Kugeln und Raketen fliegen bis zum Treffer
@@ -493,18 +493,22 @@ function khWaffen(B, dt) { const W = B.waffen; if (!W) return; const an = B.on &
   // Zoom mit dem Mausrad (Nicolas 2026-11-19 "zoomen auch bitte"): 1x bis 6x auf die Bildmitte, weich; beim Aussteigen zurueck
   if (an) { if (!W.fov0) W.fov0 = camera.fov; W.zt = W.zt || 1; W.z = (W.z || 1) + (W.zt - (W.z || 1)) * Math.min(1, dt * 8); const fv = W.fov0 / W.z; if (Math.abs(camera.fov - fv) > 0.01) { camera.fov = fv; camera.updateProjectionMatrix(); } }
   else if (W.fov0) { camera.fov = W.fov0; camera.updateProjectionMatrix(); W.fov0 = null; W.z = W.zt = 1; }
-  if (an) { const ziel = khZiel(); B.g.updateMatrixWorld(true);
+  if (an) { { const dh = Math.atan2(Math.sin(player.yaw - B.h), Math.cos(player.yaw - B.h)), turn = Math.max(-1.2 * dt, Math.min(1.2 * dt, dh * Math.min(1, dt * 2)));   // Hubschrauber dreht verzoegert zur Blickrichtung (hoechstens ca. 70 Grad/s)
+      if (Math.abs(turn) > 1e-5 && (typeof batFree !== "function" || batFree(B, B.x, B.y, B.z, B.h + turn))) B.h = Math.atan2(Math.sin(B.h + turn), Math.cos(B.h + turn)); }
+    const ziel = khZiel(); B.g.updateMatrixWorld(true);
+    { const rk = document.getElementById("kh-rak") || (() => { const e = document.createElement("div"); e.id = "kh-rak"; e.style.cssText = "position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;z-index:6;border:2px solid rgba(255,200,90,.9);transform:rotate(45deg)"; document.body.appendChild(e); return e; })();
+      const fw = B.g.getWorldDirection(new THREE.Vector3()).negate(), q = B.g.position.clone().addScaledVector(fw, 250); q.project(camera); rk.hidden = q.z > 1; rk.style.left = ((q.x + 1) / 2 * innerWidth) + "px"; rk.style.top = ((1 - q.y) / 2 * innerHeight) + "px"; }   // Raketen-Markierung (geradeaus, 250 m)
     // Turm zum Ziel drehen (lokale Richtung im Hubschrauber)
     W.turm.parent.updateMatrixWorld(true); const loc = W.turm.parent.worldToLocal(ziel.clone()).sub(W.turm.position); const yaw = Math.atan2(-loc.x, -loc.z), pit = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
     W.turm.rotation.y += (Math.max(-1.6, Math.min(1.6, yaw)) - W.turm.rotation.y) * Math.min(1, dt * 8); W.rohr.rotation.x += (Math.max(-1.0, Math.min(0.25, pit)) - W.rohr.rotation.x) * Math.min(1, dt * 8);
-    el.querySelector("span").textContent = "Linksklick/Q Kanone · Rechtsklick/X Rakete" + (W.rcd > 0 ? " (lädt)" : "") + " · Mausrad Zoom " + (W.z || 1).toFixed(1).replace(".", ",") + "×";
+    el.querySelector("span").textContent = "Linksklick/Q Kanone (Kreis) · Rechtsklick/X Rakete (Raute, geradeaus)" + (W.rcd > 0 ? " (lädt)" : "") + " · Mausrad Zoom " + (W.z || 1).toFixed(1).replace(".", ",") + "×";
     if (W.kanone && W.cd === 0) { W.cd = 0.1; const m = W.mund.getWorldPosition(new THREE.Vector3()), d = ziel.clone().sub(m).normalize(); d.x += (Math.random() - 0.5) * 0.012; d.y += (Math.random() - 0.5) * 0.012; d.z += (Math.random() - 0.5) * 0.012; d.normalize();
       const o = new THREE.Mesh(KH_G.spur, KH_M.spur); o.position.copy(m); o.lookAt(m.clone().add(d)); o.userData.dynamic = true; scene.add(o); W.kugeln.push({ o, p: m.clone(), d, t: 0 }); khFx(m.clone().addScaledVector(d, 0.3), 0.18, 0.05, KH_M.blitz);
       if (typeof shotSound === "function" && Math.random() < 0.5) shotSound(0.15, 0.12); }
-    if (W.rak && W.rcd === 0) { W.rcd = 0.6; W.rak = false; const st = W.starts[W.seite++ % W.starts.length], m = st.getWorldPosition(new THREE.Vector3()), d = ziel.clone().sub(m).normalize();
+    if (W.rak && W.rcd === 0) { W.rcd = 0.6; W.rak = false; const st = W.starts[W.seite++ % W.starts.length], m = st.getWorldPosition(new THREE.Vector3()), d = B.g.getWorldDirection(new THREE.Vector3()).negate();   // Raketen fliegen geradeaus in Nasenrichtung (Nicolas 2026-11-19)
       const o = new THREE.Mesh(KH_G.rak, KH_M.rak); const fl = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.6, 8).rotateX(-Math.PI / 2).translate(0, 0, 0.75), KH_M.flamme); o.add(fl); o.position.copy(m); o.lookAt(m.clone().add(d)); o.userData.dynamic = true; scene.add(o);
       W.raketen.push({ o, p: m.clone(), d, v: 60, t: 0, rt: 0 }); if (typeof shotSound === "function") shotSound(0.35, 0.4); } }
-  else { W.kanone = false; W.rak = false; }
+  else { W.kanone = false; W.rak = false; const rk = document.getElementById("kh-rak"); if (rk) rk.hidden = true; }
   // Kugeln (600 m/s), Raketen (beschleunigen auf 180 m/s, Rauchspur), Blitze und Rauch ausblenden
   for (let q = W.kugeln.length - 1; q >= 0; q--) { const K = W.kugeln[q]; K.t += dt; const n = K.p.clone().addScaledVector(K.d, 600 * dt), h = typeof shotSeg === "function" ? shotSeg(K.p, n, null, 1) : null;
     if (h || K.t > 2.5) { if (h) khTreffer(h.p, h.hit, false); scene.remove(K.o); W.kugeln.splice(q, 1); continue; } K.p.copy(n); K.o.position.copy(n); }
