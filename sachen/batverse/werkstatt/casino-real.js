@@ -52,7 +52,7 @@ const CASINO2 = { x: 0, z: 240, W: 64, D: 44, H: 5.5, g: null };
     koll(2.5, 1.4, 0.95, x, z); if (name === "Blackjack") { t.updateMatrixWorld(true); ziel("Blackjack", b, () => typeof cgOpen === "function" && cgOpen("bj"), "spielen", 3); } return t; };
   roulette(-4, -9, 0); roulette(4, -9, 0);
   halbtisch(-5.5, -3, Math.PI / 2, "Blackjack"); halbtisch(-5.5, 2, Math.PI / 2, "Blackjack"); halbtisch(5.5, -3, -Math.PI / 2, "Blackjack"); halbtisch(5.5, 2, -Math.PI / 2, "Blackjack");
-  { box(4.4, 0.95, 2.0, holz, 0, 0.47, 7.5); box(4.1, 0.05, 1.7, filz, 0, 0.92, 7.5); box(4.4, 0.2, 0.15, holz, 0, 1.05, 6.55); box(4.4, 0.2, 0.15, holz, 0, 1.05, 8.45); koll(4.4, 2, 1.1, 0, 7.5);   // Craps mit erhoehtem Rand
+  { box(4.4, 0.95, 2.0, holz, 0, 0.47, 7.5); box(4.1, 0.05, 1.7, filz, 0, 0.92, 7.5); box(4.4, 0.2, 0.15, holz, 0, 1.05, 6.55); box(4.4, 0.2, 0.15, holz, 0, 1.05, 8.45); koll(4.4, 2, 1.1, 0, 7.5); { const ct = box(4.6, 1.4, 2.4, new THREE.MeshBasicMaterial({ visible: false }), 0, 0.7, 7.5); ziel("Craps", ct, () => typeof cgOpen === "function" && cgOpen("craps"), "spielen", 3.5); }   // Craps mit erhoehtem Rand (spielbar 2026-11-19)
     for (const sx of [-1.6, -0.6, 0.6, 1.6]) { stuhl(sx, 6.1); stuhl(sx, 8.9); } }
   { box(1.6, 1.1, 1.0, stein, 0, 0.55, -2.5); box(1.7, 0.05, 1.1, gold, 0, 1.12, -2.5); for (const sx of [-0.4, 0.4]) { const s = box(0.6, 0.38, 0.04, M(0x0a1a2a, { emissive: 0x1a4a7a, emissiveIntensity: 0.6 }), sx, 1.35, -2.6); s.rotation.x = -0.3; } koll(1.6, 1.0, 1.2, 0, -2.5); }   // Aufsichtspult (Pit Boss)
   const kristall = M(0xfff4d8, { emissive: 0xffe8b0, emissiveIntensity: 0.8, transparent: true, opacity: 0.9 });

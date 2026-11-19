@@ -9,6 +9,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 - **Spielautomat "Gotham Fortune"** (3 Walzen, Hebel).
 - **Blackjack** (2026-11-19, an allen Blackjack-Tischen, 3:2, Dealer bis 17).
 - **Plinko** und **Hi-Lo** (2026-11-19, Automaten neben Crash und Mines).
+- **Craps** (2026-11-19, Craps-Tisch im realistischen Casino: Pass, Don't Pass, Field).
 
 ## Von Nicolas gewünscht (Plan N29)
 
