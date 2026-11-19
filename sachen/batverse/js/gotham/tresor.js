@@ -145,7 +145,7 @@ const HAND3D = {
 };
 if (typeof HAND3D_VOR !== "undefined") Object.assign(HAND3D, HAND3D_VOR);   // vorher geladene Hand-Modelle (Handys, handy.js)
 const HAND3D_S = { id: null, sc: null, g: null };
-function hand3dRender() { const id = typeof invHeld === "function" ? invHeld() : null, foot = typeof onFoot === "function" ? onFoot() : true;
+function hand3dRender() { const id = typeof INV !== "undefined" && typeof INV_SEL_BAR !== "undefined" && INV.sel === INV_SEL_BAR ? "geld-bar" : typeof INV !== "undefined" && typeof INV_SEL_KARTE !== "undefined" && INV.sel === INV_SEL_KARTE ? "geld-karte" : typeof invHeld === "function" ? invHeld() : null, foot = typeof onFoot === "function" ? onFoot() : true;
   if (!id || !HAND3D[id] || !foot || (typeof dpAn === "function" && dpAn()) || (typeof invIsOpen === "function" && invIsOpen()) || tresorPadIsOpen() || (typeof SKATE !== "undefined" && SKATE.on)) return;   // auf dem Skateboard nichts in der Hand
   const H = HAND3D_S; if (!H.sc) { H.sc = new THREE.Scene(); H.sc.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.3)); H.g = new THREE.Group(); const pl = new THREE.PointLight(0xffffff, 3, 0, 0); pl.position.set(-0.15, 0.25, 0.35); H.g.add(pl); H.sc.add(H.g); }
   if (H.id !== id) { H.id = id; for (const c of [...H.g.children]) if (!c.isLight) H.g.remove(c); H.g.add(HAND3D[id]()); }
@@ -189,4 +189,18 @@ Object.assign(HAND3D, {
     for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.005, 10), knopf); b.rotation.z = Math.PI / 2; b.position.set(0.032, 0.08 - i * 0.07, 0.04); g.add(b); }
     const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.07), stoff); s.position.set(0.01, -0.02, -0.11); s.rotation.x = 0.25; g.add(s);   // Aermel
     g.rotation.set(0.15, -0.6, -0.2); g.scale.setScalar(0.7); g.position.y = -0.04; return g; },
+});
+// Bargeld und Kreditkarte 3D in der Hand (Nicolas 2026-11-19, Bild 2D-Schein in der Hand): Buendel Dollarscheine mit Banderole bzw. blaue Karte mit Chip und Nummer
+Object.assign(HAND3D, {
+  "geld-bar": () => { const g = new THREE.Group(), t = canvasTex(256, 112, (q, w, h) => { q.fillStyle = "#cfe6c4"; q.fillRect(0, 0, w, h); q.strokeStyle = "#3d6e36"; q.lineWidth = 6; q.strokeRect(6, 6, w - 12, h - 12); q.lineWidth = 2; q.strokeRect(16, 16, w - 32, h - 32);
+      q.fillStyle = "#3d6e36"; q.beginPath(); q.ellipse(w / 2, h / 2, 26, 32, 0, 0, 7); q.fill(); q.fillStyle = "#cfe6c4"; q.beginPath(); q.ellipse(w / 2, h / 2, 18, 24, 0, 0, 7); q.fill(); q.fillStyle = "#3d6e36"; q.font = "bold 30px Georgia"; q.fillText("100", 24, 48); q.fillText("100", w - 78, h - 24); q.font = "bold 12px Georgia"; q.textAlign = "center"; q.fillText("GOTHAM RESERVE NOTE", w / 2, 28); });
+    const schein = new THREE.MeshStandardMaterial({ map: t, roughness: 0.85 }), rand = new THREE.MeshStandardMaterial({ color: 0xbdd6b2, roughness: 0.9 }), band = new THREE.MeshStandardMaterial({ color: 0xd8b440, roughness: 0.6 });
+    const st = new THREE.Mesh(new THREE.BoxGeometry(0.156, 0.022, 0.066), [rand, rand, schein, rand, rand, rand]); g.add(st); const b = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.024, 0.068), band); g.add(b);
+    const lose = new THREE.Mesh(new THREE.BoxGeometry(0.156, 0.001, 0.066), [rand, rand, schein, rand, rand, rand]); lose.position.set(0.02, 0.014, 0.008); lose.rotation.y = 0.18; g.add(lose);   // ein Schein oben verrutscht
+    g.rotation.set(1.05, -0.35, 0.25); g.scale.setScalar(1.5); g.position.y = -0.02; return g; },
+  "geld-karte": () => { const g = new THREE.Group(), t = canvasTex(256, 162, (q, w, h) => { const gr = q.createLinearGradient(0, 0, w, h); gr.addColorStop(0, "#2f7de1"); gr.addColorStop(1, "#1b4f8f"); q.fillStyle = gr; q.fillRect(0, 0, w, h);
+      q.fillStyle = "#d8b440"; q.fillRect(28, 52, 38, 30); q.strokeStyle = "#9a7a20"; q.lineWidth = 1.5; q.strokeRect(28, 52, 38, 30); q.beginPath(); q.moveTo(28, 67); q.lineTo(66, 67); q.moveTo(47, 52); q.lineTo(47, 82); q.stroke();
+      q.fillStyle = "#fff"; q.font = "bold 18px Arial"; q.fillText("GOTHAM CITY BANK", 28, 34); q.font = "20px monospace"; q.fillText("4012 8821 0042 7731", 26, 112); q.font = "13px Arial"; q.fillText("BRUCE WAYNE", 28, 140); q.fillText("12/31", 190, 140); });
+    const front = new THREE.MeshStandardMaterial({ map: t, roughness: 0.35, metalness: 0.2 }), rand = new THREE.MeshStandardMaterial({ color: 0x1b4f8f, roughness: 0.4 });
+    const k = new THREE.Mesh(new THREE.BoxGeometry(0.0856, 0.0008, 0.054), [rand, rand, front, rand, rand, rand]); g.add(k); g.rotation.set(1.2, -0.3, 0.2); g.scale.setScalar(2.4); return g; },
 });

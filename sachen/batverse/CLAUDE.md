@@ -74,6 +74,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Bargeld und Karte 3D in der Hand** (Nicolas 2026-11-19, zwei Bilder: Schein und Karte noch 2D in der Hand): tresor.js `HAND3D["geld-bar"]` (Bündel 100er-Scheine "Gotham Reserve Note" mit goldener Banderole, ein Schein oben verrutscht) und `HAND3D["geld-karte"]` (blaue Karte der Gotham City Bank mit Chip, Nummer, Name, Ablauf); `hand3dRender` nimmt bei gewähltem Bargeld- bzw. Kartenfeld diese Modelle, das 2D-Bild blendet sich aus. Bilder geprüft.
+
 - **3D in der Hand für alle Gegenstände (N8)** ("Ja, weiter"): tresor.js `HAND3D` – neu Gullihaken (roter T-Griff, Schaft, Haken), Munition als Schachtel mit Aufdruck und Patronen (`hand3dMunition`: 9 mm gelb, 5,56 grün, 7,62 grau, Schrot 12/70 rot mit Schrotpatronen; bei Patronen liegt eine vorne heraus), Batsuit (zusammengelegt mit goldenem Emblem und Maske mit Ohren), Mantel (über den Arm gelegt, Futter, Kragen, Knöpfe). Das 2D-Handbild blendet sich dafür von selbst aus. Damit haben alle Gegenstände ein 3D-Modell in der Hand (Schusswaffen, Batarang und Jetons hatten schon eigene). Bilder einzeln und in Handlage geprüft.
 
 - **Tumbler in echten Massen** ("Ja, weiter"; offen aus MASSE-FAHRZEUGE.md): modelle.js `massSpecXZ`/`massBauXZ` – Länge und Breite getrennt: Karosserie in einer inneren Gruppe gestreckt, Radlager nur verschoben (Räder bleiben rund), Fahrdaten (Räder, Radstand, Spur, Kollision, Sitz, Ausstiege) mitskaliert. Tumbler Breite x 1,08, Länge x 0,86: 5,37 x 2,60 -> 4,62 x 2,81 m (Film ca. 4,6 x 2,8 x 1,5), Radstand 2,84, Spur 2,11. Gemessen und Bild geprüft; Räder und Spezifikation stimmen überein. Nicht gefahren.
