@@ -235,7 +235,7 @@ function gortWaffenladen(c) {
     if (k !== front) gbvWall(out, "ziegel", f, k, ins, len - ins, Y, Y + GH, ins, GH, uo, vo, Y);
     else { gbvWall(out, "laden", f, k, ins, um - tw, Y, Y + GH, ins, GH, uo, vo, Y); gbvWall(out, "laden", f, k, um + tw, len - ins, Y, Y + GH, ins, GH, uo, vo, Y); gbvWall(out, "ziegel", f, k, um - tw, um + tw, Y + 2.9, Y + GH, ins, GH, uo, vo, Y); } }
   // innen: Wandverkleidung (hell), an der Tuer Laibung; Boden, Decke; Kollision der Waende (0,3 m stark)
-  const innen = col(0xd9d3c8), wand = (k, a, b, y0, y1, farbe = innen) => { const [As, At, ds, dt, os, ot] = f.side(k), u = (a + b) / 2, w = -ins - 0.16, s = As + ds * u + os * w, t = At + dt * u + ot * w, ls = ds ? b - a : 0.3, lt = ds ? 0.3 : b - a;
+  const innen = col(0xf2eee6), wand = (k, a, b, y0, y1, farbe = innen) => { const [As, At, ds, dt, os, ot] = f.side(k), u = (a + b) / 2, w = -ins - 0.16, s = As + ds * u + os * w, t = At + dt * u + ot * w, ls = ds ? b - a : 0.3, lt = ds ? 0.3 : b - a;
     gbvBox(out, "farbe", f, s, t, ls, lt, y0, y1, farbe); box(s, t, ls, lt, y0, y1); };
   for (let k = 0; k < 4; k++) { const len = f.side(k)[6]; if (k !== front) wand(k, ins, len - ins, Y, Y + GH); else { wand(k, ins, um - tw, Y, Y + GH); wand(k, um + tw, len - ins, Y, Y + GH); wand(k, um - tw, um + tw, Y + 2.9, Y + GH); } }
   { const [As, At, ds, dt, os, ot] = f.side(front); for (const sg of [-1, 1]) { const u = um + sg * (tw + 0.03), s = As + ds * u - os * (ins + 0.16), t = At + dt * u - ot * (ins + 0.16); gbvBox(out, "eisen", f, s, t, ds ? 0.12 : 0.36, ds ? 0.36 : 0.12, Y, Y + 2.95); }   // Tuerrahmen
@@ -249,10 +249,12 @@ function gortWaffenladen(c) {
   const L = (x, z) => { const v = new THREE.Vector3(x, 0, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y); return [O[0] + v.x, O[2] + v.z]; }, lx = [Math.cos(g.rotation.y), -Math.sin(g.rotation.y)];
   const koll = (x, z, bx, bz, h) => { const [cx, cz] = L(x, z); dkAdd({ cx, cy: O[1] + h / 2, cz, ux: lx[0], uz: lx[1], hl: bx / 2, hw: bz / 2, hh: h / 2, m: 0.25 }); };
   const Mt = (c, r = 0.6, m = 0.1, o2 = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...o2 }), add = (geo, m, x, y, z, ry = 0) => { const q = new THREE.Mesh(geo, m); q.position.set(x, y, z); q.rotation.y = ry; q.castShadow = q.receiveShadow = true; g.add(q); return q; };
-  const holz = Mt(0x5a3a22, 0.55), dunkel = Mt(0x23252a, 0.6, 0.3), glasM = Mt(0xbfd8e6, 0.05, 0.3, { transparent: true, opacity: 0.28 }), weiss = Mt(0xf2f0ea, 0.5), licht = new THREE.MeshBasicMaterial({ color: 0xfff6e0 });
+  const holz = Mt(0x9a6c44, 0.5, 0.05, { emissive: 0x3a2614 }), dunkel = Mt(0x23252a, 0.6, 0.3), glasM = Mt(0xe8f4ff, 0.03, 0.2, { transparent: true, opacity: 0.14 }), weiss = Mt(0xf2f0ea, 0.5), licht = new THREE.MeshBasicMaterial({ color: 0xfff6e0 });
+  const sockel = Mt(0xeceae4, 0.4, 0.05, { emissive: 0x4a4844 }), kante = Mt(0xd6d0c4, 0.8, 0, { emissive: 0x3a3832 });   // Vitrinen-Sockel hell, Ablage hell (2026-11-19)
+  add(new THREE.BoxGeometry(W2 * 2 + 0.5, 0.02, D + 0.5), Mt(0xb9b4aa, 0.3, 0.1, { emissive: 0x403d38 }), 0, 0.01, -D / 2);   // heller polierter Boden
   // Lochwand hellbraungrau an der Rueckwand (Textur mit Loechern), Rahmen, Schild
   const lochT = canvasTex(256, 128, (q, w, h) => { q.fillStyle = "#b3a594"; q.fillRect(0, 0, w, h); q.fillStyle = "rgba(60,50,40,.55)"; for (let y = 8; y < h; y += 16) for (let x = 8; x < w; x += 16) { q.beginPath(); q.arc(x, y, 2.2, 0, 7); q.fill(); } }, 1, 1);
-  const wb = W2 * 2 - 1.2, lochM = Mt(0xffffff, 0.85, 0, { map: lochT }); lochM.map.wrapS = lochM.map.wrapT = THREE.RepeatWrapping; lochM.map.repeat.set(wb / 2, 1.6);
+  const wb = W2 * 2 - 1.2, lochM = Mt(0xffffff, 0.85, 0, { map: lochT, emissive: 0x3a332a, emissiveMap: lochT }); lochM.map.wrapS = lochM.map.wrapT = THREE.RepeatWrapping; lochM.map.repeat.set(wb / 2, 1.6);
   add(new THREE.BoxGeometry(wb, 3.2, 0.05), lochM, 0, 0.5 + 1.6, -D + 0.03); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 0.46, -D + 0.05); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 3.74, -D + 0.05);
   add(new THREE.BoxGeometry(W2 * 2 + 0.4, 0.05, D + 0.4), Mt(0xe6e3dc, 0.8, 0, { emissive: 0x8c8a84 }), 0, Hi - 0.05, -D / 2);   // Decke (eigenes Material: das Umgebungslicht von unten ist gruenlich)
   // Waffen an der Lochwand (Raster), Preisschilder; in der Werkstatt laden die Waffen erst spaeter: dann nachholen
@@ -268,20 +270,29 @@ function gortWaffenladen(c) {
   fuell();
   // Theke mit Glasvitrine und Kasse (quer, 2,4 m vor der Rueckwand), dahinter Durchgang
   add(new THREE.BoxGeometry(tb, 0.95, 0.7), holz, 0, 0.475, tz); add(new THREE.BoxGeometry(tb, 0.04, 0.72), dunkel, 0, 0.97, tz);
-  add(new THREE.BoxGeometry(tb - 0.6, 0.32, 0.6), glasM, -0.3, 1.15, tz); koll(0, tz, tb, 0.75, 1.3);
-  add(new THREE.BoxGeometry(0.42, 0.22, 0.36), dunkel, tb / 2 - 0.4, 1.1, tz); add(new THREE.BoxGeometry(0.3, 0.16, 0.02), Mt(0x1a3a24, 0.3, 0, { emissive: 0x2a8a4a, emissiveIntensity: 0.6 }), tb / 2 - 0.4, 1.32, tz + 0.1);   // Kasse
+  add(new THREE.BoxGeometry(tb - 0.6, 0.32, 0.6), glasM, -0.3, 1.15, tz); add(new THREE.BoxGeometry(tb - 0.7, 0.02, 0.04), licht, -0.3, 1.3, tz - 0.27); koll(0, tz, tb, 0.75, 1.3);
+  { const kx = tb / 2 - 0.45, alu = Mt(0xb8bcc2, 0.35, 0.6), schirm = canvasTex(256, 160, (q, w, h) => { q.fillStyle = "#0e2a3a"; q.fillRect(0, 0, w, h); q.fillStyle = "#e8f4ff"; q.font = "bold 20px Arial"; q.fillText(arms ? "GOTHAM ARMS · KASSE" : "GUNS & AMMO · KASSE", 12, 28);
+      q.font = "16px Arial"; [["Pistole", "2 500 $"], ["9 mm × 32", "150 $"], ["Summe", "2 650 $"]].forEach(([a, b], i) => { q.fillStyle = i === 2 ? "#9fe8a8" : "#cfe0ee"; q.fillText(a, 12, 62 + i * 26); q.fillText(b, 180, 62 + i * 26); }); q.fillStyle = "#2f7de1"; q.fillRect(12, 128, 232, 22); q.fillStyle = "#fff"; q.fillText("Karte einstecken …", 60, 145); });
+    add(new THREE.BoxGeometry(0.36, 0.02, 0.25), alu, kx, 1.0, tz + 0.05); add(new THREE.BoxGeometry(0.3, 0.004, 0.16), Mt(0x1a1b1e, 0.6), kx, 1.012, tz + 0.0);   // Laptop: Unterteil, Tastatur
+    const deckel = new THREE.Group(); deckel.position.set(kx, 1.01, tz + 0.17); deckel.rotation.x = -0.3; g.add(deckel); const dl = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.24, 0.012), alu); dl.position.y = 0.12; deckel.add(dl);
+    const sc = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.2), new THREE.MeshBasicMaterial({ map: schirm })); sc.position.set(0, 0.125, 0.0065); deckel.add(sc);   // Bildschirm zur Kundschaft (Tastatur zur Seite hinter der Theke)
+    add(new THREE.BoxGeometry(0.09, 0.03, 0.17), Mt(0x15161a, 0.5), kx - 0.32, 1.015, tz + 0.12); add(new THREE.BoxGeometry(0.07, 0.002, 0.05), Mt(0x9fe8a8, 0.3, 0, { emissive: 0x2a8a4a, emissiveIntensity: 0.8 }), kx - 0.32, 1.032, tz + 0.08);   // Kartenlesegeraet: Gehaeuse, Anzeige
+    for (let q = 0; q < 9; q++) add(new THREE.BoxGeometry(0.016, 0.004, 0.012), Mt(0x9aa0a8, 0.5, 0.3), kx - 0.345 + (q % 3) * 0.022, 1.032, tz + 0.13 + Math.floor(q / 3) * 0.018);   // Tasten
+    add(new THREE.BoxGeometry(0.06, 0.006, 0.004), Mt(0x050505, 0.8), kx - 0.32, 1.02, tz + 0.205); add(new THREE.BoxGeometry(0.006, 0.006, 0.006), Mt(0x30ff60, 0.3, 0, { emissive: 0x20c040 }), kx - 0.29, 1.033, tz + 0.05); }   // Kartenschlitz, LED
   // frei stehende Vitrinen und Regale mit Munition an den Seitenwaenden
-  for (const x of [-W2 * 0.45, W2 * 0.45]) { if (Math.abs(x) < 1.6 || vz > -1.5) continue; add(new THREE.BoxGeometry(1.6, 0.8, 0.8), holz, x, 0.4, vz); add(new THREE.BoxGeometry(1.6, 0.5, 0.8), glasM, x, 1.05, vz); koll(x, vz, 1.6, 0.8, 1.3);
+  for (const x of [-W2 * 0.45, W2 * 0.45]) { if (Math.abs(x) < 1.6 || vz > -1.5) continue; add(new THREE.BoxGeometry(1.6, 0.8, 0.8), sockel, x, 0.4, vz); add(new THREE.BoxGeometry(1.64, 0.04, 0.84), kante, x, 0.8, vz); add(new THREE.BoxGeometry(1.6, 0.5, 0.8), glasM, x, 1.05, vz); add(new THREE.BoxGeometry(1.5, 0.02, 0.04), licht, x, 1.28, vz - 0.32); koll(x, vz, 1.6, 0.8, 1.3);
   }
   // grosse Laeden: weitere Reihen von Vitrinen mit Waffen in der Mitte
-  const vit = []; for (let z = vz - 0.2 + 3.6; z < -3.2; z += 3.6) for (let x = -W2 + 4; x <= W2 - 4; x += 4.2) { if (Math.abs(x) < 2) continue; add(new THREE.BoxGeometry(2.2, 0.8, 0.9), holz, x, 0.4, z); add(new THREE.BoxGeometry(2.2, 0.5, 0.9), glasM, x, 1.05, z); koll(x, z, 2.2, 0.9, 1.3); vit.push([x, z]); }
+  const vit = []; for (let z = vz - 0.2 + 3.6; z < -3.2; z += 3.6) for (let x = -W2 + 4; x <= W2 - 4; x += 4.2) { if (Math.abs(x) < 2) continue; add(new THREE.BoxGeometry(2.2, 0.8, 0.9), sockel, x, 0.4, z); add(new THREE.BoxGeometry(2.24, 0.04, 0.94), kante, x, 0.8, z); add(new THREE.BoxGeometry(2.2, 0.5, 0.9), glasM, x, 1.05, z); add(new THREE.BoxGeometry(2.1, 0.02, 0.04), licht, x, 1.28, z - 0.37); koll(x, z, 2.2, 0.9, 1.3); vit.push([x, z]); }
   const munC = [0x6b7a3a, 0x8a2a22, 0x2a4a7a, 0xc9a640];
   for (const sd of [-1, 1]) { const rx = sd * (W2 - 0.3), z0 = -D + 3.4, z1 = -1.8; if (z1 - z0 < 1.5) continue; const lz = z1 - z0, zm = (z0 + z1) / 2;
     for (const y of [0.4, 1.1, 1.8]) add(new THREE.BoxGeometry(0.5, 0.04, lz), holz, rx, y, zm); add(new THREE.BoxGeometry(0.04, 2.2, lz), holz, rx + sd * 0.24, 1.1, zm); koll(rx, zm, 0.55, lz, 2.2);
     let k = 0; for (const y of [0.42, 1.12, 1.82]) for (let z = z0 + 0.15; z < z1 - 0.15; z += 0.24) { const b = add(new THREE.BoxGeometry(0.22, 0.16, 0.18), Mt(munC[k++ % 4], 0.7), rx, y + 0.1, z); } }
   // Lichtfelder an der Decke, Fussmatte, Schild "Kasse"
-  for (let z = -1.5; z > -D + 0.8; z -= 3) for (let x = -W2 + 1.5; x < W2 - 1; x += 3.2) add(new THREE.BoxGeometry(1.4, 0.03, 0.5), licht, x, Hi - 0.1, z);
-  add(new THREE.BoxGeometry(2.0, 0.015, 1.2), Mt(0x1e1f22, 0.95), 0, 0.01, -0.8);
+  for (let z = -1.2; z > -D + 0.6; z -= 2.2) for (let x = -W2 + 1.2; x < W2 - 0.8; x += 2.4) add(new THREE.BoxGeometry(1.6, 0.03, 0.6), licht, x, Hi - 0.1, z);   // mehr und groessere Lichtfelder (2026-11-19)
+  add(new THREE.BoxGeometry(wb, 0.05, 0.08), licht, 0, 3.82, -D + 0.12);   // LED-Leiste ueber der Lochwand
+  for (let x = -wb / 2 + 1; x < wb / 2; x += 2.2) { add(new THREE.CylinderGeometry(0.07, 0.09, 0.2, 10), dunkel, x, Hi - 0.22, -D + 1.2); const l = add(new THREE.CircleGeometry(0.06, 10), licht, x, Hi - 0.3, -D + 1.15); l.rotation.x = Math.PI / 2 + 0.6; }   // Strahler auf die Wand
+  add(new THREE.BoxGeometry(2.0, 0.015, 1.2), Mt(0x1e1f22, 0.95), 0, 0.03, -0.8);
   { const t = canvasTex(256, 64, (q, w, h) => { q.fillStyle = "#1d2229"; q.fillRect(0, 0, w, h); q.fillStyle = "#f4efe2"; q.font = "bold 34px Arial"; q.textAlign = "center"; q.fillText(arms ? "GOTHAM ARMS" : "GUNS & AMMO", w / 2, 44); }), s = add(new THREE.PlaneGeometry(2.6, 0.65), new THREE.MeshBasicMaterial({ map: t }), 0, 4.0, -D + 0.08); }
   fuell2();
   // Rechtsklick an der Theke oeffnet den Laden im Handy

@@ -73,6 +73,21 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Waffenläden heller, mehr Licht, Kasse als Laptop mit Kartenlesegerät** (Nicolas 2026-11-19, Bild einer dunklen Vitrine: "Waffenladen Farben anpassen und mehr Beleuchtung"; "Kasse soll ein Laptop sein mit einem Kartenlesegerät"): gotham-orte.js `gortWaffenladen`.
+  - Farben:
+    - Heller polierter Boden, hellere Wände, wärmeres und helleres Holz.
+    - Vitrinen mit hellem Sockel und heller Ablage, klareres Glas.
+    - Lochwand leuchtet leicht.
+  - Licht:
+    - Dichtere und grössere Deckenleuchten.
+    - LED-Leisten in jeder Vitrine und in der Theke.
+    - LED-Leiste über der Lochwand, Strahler auf die Waffenwand.
+    - Alles über leuchtende Flächen, keine echten Lichtquellen (die würden im Spiel jedes Material teurer machen).
+  - Kasse:
+    - Silberner Laptop auf der Theke, Bildschirm zur Kundschaft (Laden, Posten, Summe, "Karte einstecken …"), Tastatur hinter der Theke.
+    - Daneben ein Kartenlesegerät mit Anzeige, Tastenfeld, Kartenschlitz und grüner LED.
+  - Geprüft in der Werkstatt: Bilder innen beider Läden.
+
 - **Kampfhubschrauber: dreht mit der Maus, Raketen geradeaus** (Nicolas 2026-11-19: "Drehen mit der Maus soll nicht nur die Kanone unten mitbewegen, sondern verzögert den ganzen Heli wegen den Raketen – Raketen fliegen geradeaus"): militaer.js – im Flug dreht sich der Hubschrauber verzögert zur Blickrichtung (höchstens ca. 70 °/s, nicht durch Wände); die Kamera schiebt sich bei ihm nicht mehr selbst hinter ihn (the-bat.js `B.mausDreht`). Raketen fliegen in Nasenrichtung (mit Neigung), orange Raute zeigt, wohin (250 m voraus); Kanone im Turm zielt weiter auf die Bildmitte (Kreis). Geprüft in der Werkstatt: 1 rad Unterschied in ca. 2 s eingeholt, Rakete genau in Nasenrichtung.
 
 - **Handgranate (N6) und Minotaurus zielt höher** (Nicolas 2026-11-19 "Ja, weiter"):
