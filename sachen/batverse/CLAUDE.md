@@ -72,6 +72,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Kampfhubschrauber: Kamera höher, Visier frei** (Nicolas 2026-11-19, Bild: Visier sass mitten auf dem Hubschrauber; Vorschlag "Kamera höher" gewählt): the-bat.js `batCamera` kennt je Fluggerät `camHoch` (m) – die Kamera schaut so viel über das Fluggerät und steigt um 30 % davon mit. Kampfhubschrauber 5,5 m: Er sitzt im unteren Bilddrittel (ca. 26 % unter der Mitte), das Visier in der Bildmitte zeigt frei aufs Ziel vor ihm. Andere Fluggeräte unverändert (0). Bild geprüft in der Werkstatt.
+
 - **Fahrzeuggrössen korrigiert und Feuerwehr überarbeitet** (Nicolas 2026-11-19: "Ja, mit Feuerwehr" zum Vorschlag in MASSE-FAHRZEUGE.md; "alle Feuerwehrfahrzeuge nochmal überarbeiten"):
   - modelle.js `massSpec(spec, k)` / `massBau(bau, k)`: Modell und Fahrdaten zusammen skaliert (Räder, Radstand, Spur, Kollision, Kamera, Sitz, Ausstiege; Mündung und Visier skalieren lokal mit).
     - G-Klasse 0,95, Rolls-Royce grau 0,95, Police Pickup 0,95, Duro 0,94, Panzer 1,06.

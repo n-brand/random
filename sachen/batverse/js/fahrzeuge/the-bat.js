@@ -164,7 +164,7 @@ function batCamera(B) {
     const dx = Math.sin(player.yaw) * Math.cos(e) * D, H = Math.sin(e) * D, dz = Math.cos(player.yaw) * Math.cos(e) * D;
     let k = 1; for (let t = 0.12; t <= 1.0001; t += 0.04) if (!batAir(tx + dx * t, ty + H * t, tz + dz * t)) { k = t - 0.05; break; }
     if (k * D >= DMIN || e >= 1.45) { k = Math.max(k, DMIN / D); camera.position.set(tx + dx * k, ty + H * k, tz + dz * k); break; } }
-  camera.lookAt(tx, ty + 0.4, tz);
+  const L = B.camHoch || 0; camera.position.y += L * 0.3; camera.lookAt(tx, ty + 0.4 + L, tz);   // camHoch (m): Blick ueber das Fluggeraet, es sitzt im unteren Bilddrittel (Kampfhubschrauber: Visier frei, Nicolas 2026-11-19)
 }
 function useFly() {
   if (!walking || ghost) return false;
