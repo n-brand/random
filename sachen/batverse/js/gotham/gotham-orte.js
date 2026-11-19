@@ -336,6 +336,7 @@ function gortHinterraum(c) {
   add(new THREE.BoxGeometry(c.W2v * 2 + 0.5, 0.02, T), Mt(arms ? 0x6c6e70 : 0x8a8478, 0.85, 0, { emissive: 0x262624 }), 0, 0.012, zm);
   add(new THREE.BoxGeometry(c.W2v * 2 + 0.4, 0.05, T + 0.2), Mt(0xe6e3dc, 0.8, 0, { emissive: 0x8c8a84 }), 0, Hi - 0.05, zm);
   if (!arms) return gortWerkstattRaum(c, { ds, tx, zm, T, wandM });
+  window.GORT_RANGE_D = D + 0.3;   // Beginn des Schiessstands (lokal z < -D), fuer die Geraeusche (ui/geraeusche.js)
   // ---- Schiessstand: Schuetzenbereich (x von der Tuerseite 4 m), Schusslinie bei xs, Bahnen in z, Ziel nach -ds
   const xa = ds * W2, xs = xa - ds * 4.2, xe = -ds * (W2 - 1.0), lang = Math.abs(xe - xs), bw = 1.7, n = Math.max(2, Math.floor((T - 0.6) / bw)), z0 = -D - 0.3 - (T - n * bw) / 2;
   const blech = Mt(0x3a3d42, 0.7, 0.4, { emissive: 0x1c1d20 }), gummi = Mt(0x1a1a1c, 0.95), panel = Mt(0x8a8e92, 0.6, 0.2, { emissive: 0x1e2022 }), rot = new THREE.MeshBasicMaterial({ color: 0xff3030 }), gruen = new THREE.MeshBasicMaterial({ color: 0x30ff60 });
