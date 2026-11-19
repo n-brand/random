@@ -139,7 +139,13 @@ function gbusStep() {
 // mit der Brechstange 5 s aufbrechen (Kreis, stehen bleiben) oder mit Sprenggas (1 Ladung, 3 s Zuendung, Knall, Rauch). Danach steht er 2 min mit offener Tuer, drinnen ein
 // Behaelter (invBox) mit Geldscheinen und Goldbarren (leer = beim naechsten Ueberfall neu gefuellt). Eintrag in der Akte (Fahndung +2). Fahrer und Polizei gibt es noch nicht.
 function gbusRaubAdd(b) { const k = GBUS.buses.filter(q => q.raub).length, hm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 0.8), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(0, 1.3, 3.0); b.g.add(hm);
-  b.raub = { k, hm, box: null, offen: 0, fuse: 0 }; const gt = { name: "Geldtransporter (Hecktür)", g: hm, call: () => gbusRaub(b), verbs: ["aufbrechen", "aufbrechen"], a: [0, 0], b: [0, 0], near: 3.2 }; b.raub.gate = gt;
+  // sichtbare Hecktuer (2026-11-19): zwei Fluegel an Scharnieren aussen (Heck bei z 3,5), dahinter dunkler Laderaum mit Geldkassetten; schwingen beim Ueberfall auf
+  const tm = new THREE.MeshStandardMaterial({ color: 0x34465a, roughness: 0.45, metalness: 0.5 }), dunkel = new THREE.MeshBasicMaterial({ color: 0x07080a }), kas = new THREE.MeshStandardMaterial({ color: 0x8a8e94, metalness: 0.6, roughness: 0.4 }), fl = [];
+  const raum = new THREE.Group(); raum.visible = false; b.g.add(raum); const rw = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.9), dunkel); rw.position.set(0, 1.72, 3.505); raum.add(rw);
+  for (let i = 0; i < 4; i++) { const k2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.28, 0.4), kas); k2.position.set(-0.55 + (i % 2) * 1.1, 0.95 + Math.floor(i / 2) * 0.32, 3.2); raum.add(k2); }
+  for (const sx of [-1, 1]) { const piv = new THREE.Group(); piv.position.set(sx * 1.02, 1.72, 3.54); b.g.add(piv); const d = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.92, 0.06), tm); d.position.x = -sx * 0.5; d.castShadow = true; piv.add(d);
+    const gr = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.3, 0.05), kas); gr.position.set(-sx * 0.88, 0, 0.05); piv.add(gr); fl.push([piv, sx]); }
+  b.raub = { k, hm, box: null, offen: 0, fuse: 0, fl, raum, auf: 0 }; const gt = { name: "Geldtransporter (Hecktür)", g: hm, call: () => gbusRaub(b), verbs: ["aufbrechen", "aufbrechen"], a: [0, 0], b: [0, 0], near: 3.2 }; b.raub.gate = gt;
   if (typeof gates !== "undefined") gates.push(gt); }
 function gbusRaubBox(b) { const R = b.raub; if (!R.box && typeof invBox === "function") R.box = invBox("geldtransporter-" + R.k, "Geldtransporter", 18, []); const B = R.box;
   if (B && B.slots.every(q => !q)) { const n = 40 + Math.floor(Math.random() * 60), g = 1 + Math.floor(Math.random() * 3); B.slots[0] = { id: "bargeld", n: Math.min(100, n) }; if (n > 100) B.slots[1] = { id: "bargeld", n: n - 100 }; B.slots[2] = { id: "goldbarren", n: g }; B.save(); } return B; }
@@ -154,4 +160,5 @@ function gbusRaub(b) { const R = b.raub; if (R.offen > 0) { const B = gbusRaubBo
 function gbusRaubStep(b, dt) { const R = b.raub; if (!R) return; b.g.updateMatrixWorld(true); const p = R.hm.getWorldPosition(new THREE.Vector3()), weg = !b.g.visible ? 1e6 : 0; R.gate.a[0] = R.gate.b[0] = p.x + weg; R.gate.a[1] = R.gate.b[1] = p.z + weg;
   if (R.fuse > 0) { b.hold = Math.max(b.hold, 3); if ((R.fuse -= dt) <= 0) { R.fuse = 0; if (typeof fxBoom === "function") fxBoom(p.clone(), false); if (typeof aimSmoke === "function") aimSmoke(p.clone()); if (typeof shotSound === "function") shotSound(0.9, 0.8);
       const pl = typeof player !== "undefined" ? player.pos : null; if (pl && pl.distanceTo(p) < 3) toast("Viel zu nah an der Explosion!"); gbusRaubOpen(b, "aufgesprengt"); } }
-  if (R.offen > 0 && (R.offen -= dt) <= 0) { R.offen = 0; R.gate.verbs = ["aufbrechen", "aufbrechen"]; } }
+  if (R.offen > 0 && (R.offen -= dt) <= 0) { R.offen = 0; R.gate.verbs = ["aufbrechen", "aufbrechen"]; }
+  const soll = R.offen > 0 ? 1 : 0; if (R.auf !== soll) { R.auf = soll > R.auf ? Math.min(1, R.auf + dt * 1.2) : Math.max(0, R.auf - dt * 0.8); for (const [piv, sx] of R.fl) piv.rotation.y = sx * 1.75 * R.auf; R.raum.visible = R.auf > 0.02; } }
