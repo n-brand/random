@@ -1903,3 +1903,15 @@ const SPEC_POLIZEIPICKUP = { name: "Gotham Police Pickup", wheels: [[-0.92, -1.7
   maxN: 34, maxF: 44.4, acc: 11, steer: 0.62, jump: false, grade: 42, camD: 9.5, camH: 1.7, seat: [-0.45, 1.6, -0.9], bodyH: 2.3, bike: false, mass: 8,
   exits: [[-1.9, -0.9], [1.9, -0.9], [-1.9, 1.2], [1.9, 1.2], [0, -3.8], [0, 3.8]],
   msg: "Gotham Police Pickup: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blaulicht blinkt beim Fahren)" };
+
+// ---- Massstab je Modell (Nicolas 2026-11-19: "Ja, mit Feuerwehr" zum Vorschlag in MASSE-FAHRZEUGE.md): Modell und Fahrdaten zusammen skalieren, damit nichts auseinanderlaeuft.
+// massSpec(spec, k) skaliert in place: Raeder, Radstand, Spur, Kollisionspunkte, Radius, Einstiegsweite, Kamera, Sitz, Hoehe, Ausstiege, Rumpfpunkte (Tempo bleibt).
+// massBau(bau, k) liefert einen Bau, der die Gruppe skaliert und den Radradius anpasst (Drehung der Raeder). Muendung und Visier eines Turms sind lokal und skalieren mit.
+function massSpec(sp, k) { const s = v => Array.isArray(v) ? v.map(s) : typeof v === "number" ? v * k : v;
+  for (const key of ["wheels", "wb", "track", "pts", "R", "circR", "enter", "camD", "camH", "seat", "bodyH", "exits", "hull"]) if (sp[key] !== undefined) sp[key] = s(sp[key]); sp.massstab = k; return sp; }
+function massBau(bau, k) { return (...a) => { const b = bau(...a); b.g.scale.multiplyScalar(k); for (const w of b.wheels || []) w.r *= k; return b; }; }
+// Korrekturen nach MASSE-FAHRZEUGE.md (Abweichung vorher -> nachher, Laenge / Karosseriehoehe)
+massSpec(SPEC_GCLASS, 0.95); buildGClass = massBau(buildGClass, 0.95);                       // G-Klasse 5,05 -> 4,80 m (echt 4,66), Hoehe 1,93 (1,97)
+massSpec(SPEC_ROLLS, 0.95); buildRolls = massBau(buildRolls, 0.95);                          // Rolls-Royce (grau) 6,26 -> 5,95 m (echt 5,76)
+massSpec(SPEC_POLIZEIPICKUP, 0.95); buildPolizeiPickup = massBau(buildPolizeiPickup, 0.95);  // Pickup 6,33 -> 6,0 m (echt 5,9), Dach 2,0
+massSpec(SPEC_TANK, 1.06); buildTank = massBau(buildTank, 1.06);                             // Panzer 9,10 -> 9,65 m (echt 9,97 mit Rohr), Hoehe 2,84

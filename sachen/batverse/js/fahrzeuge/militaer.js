@@ -210,6 +210,7 @@ const SPEC_DURO = { name: "Duro IIIP", wheels: [[-1.0, -2.75], [1.0, -2.75], [-1
   maxN: 24, maxF: 25, acc: 6, steer: 0.5, jump: false, grade: 40, camD: 12, camH: 2.6, seat: [-0.5, 2.15, -1.4], bodyH: 2.9, bike: false, mass: 16,
   exits: [[-2.0, -1.4], [2.0, -1.4], [-2.0, 1.2], [2.0, 1.2], [0, -4.6], [0, 4.6]],
   msg: "Duro IIIP: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen" };
+if (typeof massSpec === "function") { massSpec(SPEC_DURO, 0.94); buildDuro = massBau(buildDuro, 0.94); }   // Duro 7,66 -> 7,2 m (echt 6,9), Dach 2,77 (MASSE-FAHRZEUGE.md)
 
 // ---- Hubschrauber, eigene Modelle. Gebaut im Massstab des Polizei-Helikopters (Rotor auf ca. 2,8, Kufen bzw. Raeder bei y 0, Heck bis ca. z 6), innere Gruppe um k skaliert;
 // flyAdd skaliert Kollision, Kamera und Ausstieg mit demselben k. Rueckgabe wie buildPolizeiHeli: { g, rotor, heck, lichter } (lichter = Blitzleuchten rot oben, rot unten, weiss hinten).

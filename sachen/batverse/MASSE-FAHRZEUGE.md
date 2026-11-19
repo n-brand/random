@@ -22,9 +22,9 @@ Abweichung = Modell gegenüber echt, nur Länge und Karosseriehöhe (Breite mit 
 | DeLorean | 4,63 × 2,25 × 1,44 | 4,27 × 1,86 × 1,14 | **Länge +8 %, Höhe +26 %** |
 | Tumbler | 5,37 × 2,60 × 1,66 | 4,6 × 2,8 × 1,5 | **Länge +17 %** |
 | Bus | 12,23 × 3,30 × 3,37 | 12,0 × 2,55 × 3,1 | passt |
-| Gotham Fire Engine | 10,11 × **3,96** × 4,35 | 10 × 2,55 × 3,3 | **Breite und Höhe viel zu gross** |
+| Gotham Fire Engine | 10,11 × 3,96 × 4,35 (Karosserie 3,04 breit, Dach 3,34) | Flughafen-Löschfahrzeug 10–12 × 3,0 × 3,6 | passt (nach Foto eines Flughafen-Löschfahrzeugs; Breite mit Spiegeln) |
 | Gotham Fire Ladder | 12,76 × 3,20 × 3,93 | 12 × 2,55 × 3,5 | Höhe +12 % |
-| Gotham Fire Crane | 12,75 × 3,30 × 5,92 | 12 × 2,55 × 4,0 | **Höhe viel zu gross** |
+| Gotham Fire Crane | 12,75 × 3,30 × 5,92 | 12 × 2,55 × 4,0 | **Höhe zu gross** (eingeklappter Kran) |
 | Abschleppwagen | 9,73 × 3,00 × 3,27 | 10 × 2,55 × 3,6 | passt |
 | Piranha I | 6,72 × 2,93 × (Dach 2,0) | 6,25 × 2,5 × 1,85 | Länge +7 % |
 | Duro IIIP | 7,66 × 3,38 × (Dach 2,95) | 6,9 × 2,16 × 2,9 | Länge +11 % |
@@ -34,7 +34,8 @@ Abweichung = Modell gegenüber echt, nur Länge und Karosseriehöhe (Breite mit 
 ## Befund
 
 - **G-Klasse und Geldtransporter liegen beide nahe an echt.** Ein echter Geldtransporter ist wirklich rund 1 m höher und 2,7 m länger als eine G-Klasse. Im Bild verstärkt die Perspektive den Eindruck (der Transporter steht näher an der Kamera), und die wuchtige Front mit Rammschutz wirkt zusätzlich gross. Die G-Klasse ist eher etwas zu lang (+8 %).
-- **Klar daneben** sind die Feuerwehr (Fire Engine fast 4 m breit, Höhe 4,35 m; Fire Crane fast 6 m hoch), der DeLorean (zu hoch), der Tumbler (zu lang) und leicht der Duro und der Rolls-Royce (grau).
+- **Korrektur 2026-11-19:** Die Fire Engine ist nach Nicolas' Foto ein Flughafen-Löschfahrzeug; dafür passen 3,0 m Breite und 3,3 m Dachhöhe. Die erste Einschätzung (zu breit) war falsch.
+- **Klar daneben** sind der Fire Crane (fast 6 m hoch, eingeklappter Kran), der DeLorean (zu hoch), der Tumbler (zu lang) und leicht der Duro und der Rolls-Royce (grau).
 - Es gibt **keinen gemeinsamen Massstab-Check**: jedes Modell wurde für sich nach Fotos gebaut.
 
 ## Vorschlag
@@ -47,3 +48,10 @@ Abweichung = Modell gegenüber echt, nur Länge und Karosseriehöhe (Breite mit 
 4. Danach in der Werkstatt-Reihe nochmals messen und diese Tabelle nachführen.
 
 Bis zur Entscheidung: nichts skaliert; die Feuerwehr bekommt bei ihrer Überarbeitung schon die richtigen Masse (2,55 m breit, Höhe nach Tabelle).
+
+## Umgesetzt (Nicolas 2026-11-19: "Ja, mit Feuerwehr")
+
+- `massSpec` / `massBau` (modelle.js): Modell und Fahrdaten zusammen skaliert. G-Klasse 0,95 (4,80 m), Rolls-Royce grau 0,95 (5,95 m), Police Pickup 0,95 (6,0 m), Duro 0,94 (7,2 m), Panzer 1,06 (9,65 m).
+- Nicht skaliert, weil die Proportionen falsch sind (gleichmässig skalieren würde anderes verschlechtern): Tumbler (zu lang, aber zu schmal), DeLorean (zu hoch). Später neu aufbauen.
+- Werkstatt: Auswahl "Grössenvergleich (alle Fahrzeuge)" – alle Fahrzeuge in einer Reihe auf 1-m-Raster mit Spielfigur und Tür, Schild mit gemessenen Massen.
+- Feuerwehr: siehe Änderungen in CLAUDE.md.

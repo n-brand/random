@@ -145,6 +145,23 @@ function figurZeigen() { if (modus !== "orbit") setModus("orbit"); if (!FIGUR_PL
       FIGUREN.push({ g: f, tempo, sprung: art === "sprung", gleit: art === "gleit" }); const s = figurSchild(name); s.position.set(f.position.x, (art === "gleit" ? 1.6 : 0) + 2.4, 3.5); G.add(s); }); }
   controls.target.set(FIGUR_PLATZ.x, 1.0, FIGUR_PLATZ.z + 1.5); camera.position.set(FIGUR_PLATZ.x + 1, 3.0, FIGUR_PLATZ.z - 11); controls.update();
   $info.innerHTML = "<table><tr><td>Projekt</td><td>Spielfiguren (F1–F3)</td></tr><tr><td>Grösse</td><td>1,78 m, Augen auf 1,62 m</td></tr></table><div class=\"note\">Vorne acht Typen, hinten gehen, rennen, springen und Batman (stehend, rennend, gleitend). Plan: PLAN-FIGUREN.md</div>"; }
+// Groessenvergleich (MASSE-FAHRZEUGE.md, Nicolas 2026-11-19): alle Fahrzeuge nebeneinander mit Blick nach vorne (-z) auf einem 1-m-Raster, Spielfigur (1,78 m) und Tuer (2,2 m)
+// als Massstab, ueber jedem Fahrzeug ein Schild mit Name und gemessenen Massen (L x B x H, mit Spiegeln und Aufbauten)
+const GROESSE = { x: 140, z: 75, g: null };
+function groesseSchild(G, a, b, y, x0) { const c = document.createElement("canvas"); c.width = 512; c.height = 96; const q = c.getContext("2d"); q.fillStyle = "rgba(12,14,18,.82)"; q.fillRect(0, 0, 512, 96);
+  q.fillStyle = "#fff"; q.textAlign = "center"; q.font = "600 30px system-ui"; q.fillText(a.slice(0, 30), 256, 40); q.font = "24px system-ui"; q.fillStyle = "#bfe0ff"; q.fillText(b, 256, 78);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) })); s.scale.set(2.6, 0.49, 1); s.position.set(x0, y, 0); G.add(s); }
+function groesseZeigen() { if (modus !== "orbit") setModus("orbit"); if (!GROESSE.g) { const G = new THREE.Group(); G.position.set(GROESSE.x, 0, GROESSE.z); scene.add(G); GROESSE.g = G; let x = 0;
+    if (typeof buildFigur === "function") { const f = buildFigur({}); f.position.set(-2, 0, 0); G.add(f); groesseSchild(G, "Spielfigur", "1,78 m", 2.4, -2); }
+    const tm = new THREE.MeshStandardMaterial({ color: 0x8a6a4a }); for (const [w, h, px, py] of [[0.1, 2.2, -4.5, 1.1], [0.1, 2.2, -3.5, 1.1], [1.1, 0.1, -4.0, 2.25]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.1), tm); b.position.set(px, py, 0); G.add(b); }
+    groesseSchild(G, "Tür", "2,2 m", 2.8, -4); x = 1;
+    for (const m of MODELLE) { if (!m.bau) continue; let b; try { b = m.bau(); } catch (e) { continue; } const o = b.g; o.updateMatrixWorld(true); const box = new THREE.Box3();
+      o.traverse(q => { if (q.isMesh && q.geometry && q.visible) { if (!q.geometry.boundingBox) q.geometry.computeBoundingBox(); box.union(q.geometry.boundingBox.clone().applyMatrix4(q.matrixWorld)); } });
+      const sz = box.getSize(new THREE.Vector3()), cx = (box.min.x + box.max.x) / 2; x += sz.x / 2 + 0.8; o.position.set(x - cx, 0, 0); o.userData.dynamic = true; G.add(o);
+      groesseSchild(G, m.name.split(" (")[0], [sz.z, sz.x, sz.y].map(v => v.toFixed(2).replace(".", ",")).join(" × ") + " m", sz.y + 0.6, x); x += sz.x / 2 + 0.8; }
+    const n = Math.ceil(x + 8), grid = new THREE.GridHelper(n, n, 0x3a4048, 0x5a6068); grid.position.set(x / 2, 0.02, 0); G.add(grid); GROESSE.breite = x; }
+  controls.target.set(GROESSE.x + 12, 1.5, GROESSE.z); camera.position.set(GROESSE.x + 6, 4, GROESSE.z - 22); controls.update();
+  $info.innerHTML = "<table><tr><td>Ansicht</td><td>Grössenvergleich</td></tr><tr><td>Fahrzeuge</td><td>" + MODELLE.filter(m => m.bau).length + "</td></tr></table><div class=\"note\">Alle Fahrzeuge nebeneinander, Raster 1 m, Spielfigur 1,78 m und Tür 2,2 m als Massstab. Masse mit Spiegeln und Aufbauten. Soll- und Ist-Werte: MASSE-FAHRZEUGE.md. Mit der Maus entlang der Reihe schwenken.</div>"; }
 function projektZeigen() { if (modus !== "orbit") setModus("orbit"); const b = new THREE.Box3().setFromObject(projektG), c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()), r = Math.max(s.x, s.y, s.z);
   const fx = -Math.sin(PROJEKT.h), fz = -Math.cos(PROJEKT.h); controls.target.copy(c); camera.position.set(c.x + fx * r * 1.9 + fz * r * 0.45, c.y + r * 0.25, c.z + fz * r * 1.9 - fx * r * 0.45); controls.update();
   $info.innerHTML = "<table><tr><td>Projekt</td><td>" + PROJEKT.name + "</td></tr><tr><td>Masse</td><td>" + fmt(s.x) + " x " + fmt(s.z) + " x " + fmt(s.y) + " m</td></tr></table><div class=\"note\">Aktuelles Umbauprojekt, Plan: " + PROJEKT.plan + "</div>"; }
@@ -287,9 +304,9 @@ window.werkstattTeleport = p => { if (modus !== "drive") { const d = camera.getW
 // ---------- Auswahl und Ansicht ----------
 const pick = $("pick");
 MODELLE.forEach((m, i) => { const o = document.createElement("option"); o.value = i; o.textContent = m.name; pick.appendChild(o); });
-{ const og = document.createElement("optgroup"); og.label = "Umbauprojekt"; const o = document.createElement("option"); o.value = "projekt"; o.textContent = "Aktuelles Projekt: " + PROJEKT.name; og.appendChild(o); const o2 = document.createElement("option"); o2.value = "casino2"; o2.textContent = "Casino (realistisch)"; og.appendChild(o2); const o3 = document.createElement("option"); o3.value = "figur"; o3.textContent = "Spielfiguren"; og.appendChild(o3); pick.insertBefore(og, pick.firstChild); }
+{ const og = document.createElement("optgroup"); og.label = "Umbauprojekt"; const o = document.createElement("option"); o.value = "projekt"; o.textContent = "Aktuelles Projekt: " + PROJEKT.name; og.appendChild(o); const o2 = document.createElement("option"); o2.value = "casino2"; o2.textContent = "Casino (realistisch)"; og.appendChild(o2); const o3 = document.createElement("option"); o3.value = "figur"; o3.textContent = "Spielfiguren"; og.appendChild(o3); const o4 = document.createElement("option"); o4.value = "groesse"; o4.textContent = "Grössenvergleich (alle Fahrzeuge)"; og.appendChild(o4); pick.insertBefore(og, pick.firstChild); }
 { const og = document.createElement("optgroup"); og.label = "Gebäude-Vorlagen (kommen mit G3)"; const o = document.createElement("option"); o.disabled = true; o.textContent = "noch keine"; og.appendChild(o); pick.appendChild(og); }
-pick.onchange = () => pick.value === "projekt" ? projektZeigen() : pick.value === "casino2" ? casino2Zeigen() : pick.value === "figur" ? figurZeigen() : pick.value.startsWith("geb:") ? gebZeigen(pick.value.slice(4)) : laden(+pick.value);
+pick.onchange = () => pick.value === "projekt" ? projektZeigen() : pick.value === "casino2" ? casino2Zeigen() : pick.value === "figur" ? figurZeigen() : pick.value === "groesse" ? groesseZeigen() : pick.value.startsWith("geb:") ? gebZeigen(pick.value.slice(4)) : laden(+pick.value);
 let modus = "orbit";
 const setModus = m => { const war = modus; modus = m;
   if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"], ["m-person", "person"], ["m-geist", "geist"]]) $(id)?.setAttribute("aria-pressed", String(m === k));
