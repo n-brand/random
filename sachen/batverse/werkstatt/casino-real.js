@@ -33,6 +33,7 @@ const CASINO2 = { x: 0, z: 240, W: 64, D: 44, H: 5.5, g: null };
   const glas = M(0x9ab8c8, { transparent: true, opacity: 0.3, metalness: 0.8, roughness: 0.05 }); for (const sx of [-1, 1]) box(1.8, 3, 0.06, glas, sx * 3, 1.5, -D - 0.1);
   box(2.4, 1.1, 0.8, stein, -4.5, 0.55, -D + 3); box(2.5, 0.06, 0.9, gold, -4.5, 1.12, -D + 3); koll(2.4, 0.8, 1.1, -4.5, -D + 3);   // Sicherheitspult
   if (typeof buildBankautomat === "function") for (const x of [5, 6.3]) { const a = buildBankautomat(); a.scale.setScalar(0.9); a.position.set(x, 0, -D + 0.9); a.rotation.y = Math.PI; g.add(a); koll(1, 0.9, 2.2, x, -D + 0.9); ziel("Bankautomat", a, () => typeof kontoOpen === "function" && kontoOpen(), "benutzen"); }
+  if (typeof buildJetonAutomat === "function") for (const x of [7.7, 9.0]) { const j = buildJetonAutomat(); j.scale.setScalar(0.9); j.position.set(x, 0, -D + 0.9); j.rotation.y = Math.PI; g.add(j); koll(1, 0.9, 2.2, x, -D + 0.9); ziel("Jeton-Automat", j, () => typeof jetonOpen === "function" && jetonOpen("Jeton-Automat"), "benutzen"); }   // Jeton-Automaten neben den Bankautomaten (Nicolas 2026-11-19: "der Jeton-Automat ist nicht mehr im neuen Casino")
   // Automatenfeld links (x -30..-9, z -16..9) und rechts vorne (x 9..30, z -16..2): Reihen Ruecken an Ruecken, Gaenge 2,6 m
   const slots = [], cols = [0x6a1ab0, 0xb01028, 0x1a4ab0, 0x0f7a4a, 0x8a6a10];
   const reihe = (x0, x1, z) => { for (let x = x0; x <= x1; x += 1.3) { slots.push([x, 0, z - 0.55, 0, cols[slots.length % 5]]); slots.push([x, 0, z + 0.55, Math.PI, cols[(slots.length + 2) % 5]]); }
