@@ -72,6 +72,15 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Polizei-Helikopter neu** (Nicolas 2026-11-19: "der Polizeihelikopter ist ja noch mega hässlich"): heli.js `buildPolizeiHeli` neu, gleiche Masse, gleiche Anschlüsse (rotor, heck, lichter).
+  - Rumpf als glatter Loft, dunkelblau mit weisser Unterseite, grosse Glaskanzel mit Mittelstrebe.
+  - Schiebetüren mit Fugen, Fenstern und Schiene; Kufen mit Streben und Trittbrettern.
+  - Triebwerksverkleidung mit Einlassgittern und Auspuffen, Vierblattrotor mit gelben Blattspitzen.
+  - Heckausleger mit ummanteltem Heckrotor in der Flosse, Höhenflosse mit weissen Endscheiben.
+  - Polizei-Ausrüstung: Wärmebild-Kugel unter der Nase, Suchscheinwerfer rechts unten, Lautsprecher, Blaulichter (blinken im Flug), POLICE · GCPD und N-GCPD 1.
+  - Geprüft: Bilder von vorne, der Seite, nah und von oben.
+- **Vorschlag zu den Fahrzeuggrössen** (Nicolas 2026-11-19: "G-Klasse und Geldtransporter sind unrealistisch anders gross – mach einen Vorschlag"): neu `MASSE-FAHRZEUGE.md` mit Messung aller Fahrzeuge, Vergleich mit echten Massen und Vorschlag (Grössenvergleich in der Werkstatt, Sollmasse ±5 %, Massstab je Modell bzw. Neubau). Noch nichts geändert.
+
 - **Gotham Police dunkelblau** (Nicolas 2026-11-19: "Gotham Police soll auch dunkelblau werden"): modelle.js `buildPolice` – Lack dunkelblau (#16233f wie Pickup und Helikopter), Band unten jetzt weiss, Wagennummer auf dem Dach weiss. Schriftzug POLICE · GOTHAM CITY unverändert. Bild geprüft.
 
 - **Seilwinde am Cougar nimmt Fahrzeuge mit** (Nicolas 2026-11-19: "der Transporthelikopter hat ja eine Seilwinde rechts – die soll als Spezialfunktion irgendetwas mitnehmen können"): militaer.js `WINDE`, `windeStep` (aus der pose des Cougar), `windeTaste`.
