@@ -70,6 +70,16 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Geldtransporter neu mit Radausschnitten** (Nicolas 2026-11-19: "Geldtransporter auch überarbeiten"): modelle.js `buildGeldtransporter`.
+  - Vorher steckten die Räder in Kästen. Jetzt sind Haube und Kabine ein Loft mit Radausschnitt, der gepanzerte Kasten ein Loft mit gefasten Kanten und Ausschnitt über der Zwillingsachse, dazu Kotflügelverbreiterungen.
+  - Kabine: schräge Panzerglas-Scheibe mit dickem Rahmen und Wischern, vergitterte Seitenfenster mit Rahmen, Türfugen, Griff, Trittstufen, Spiegel am Arm.
+  - Front: Grill mit Chromrahmen, Scheinwerfer im Gehäuse, Rammschutz mit Blitzern.
+  - Kasten: Tank, schwere Seitentür mit drei Scharnieren und Schloss, runde Schiessscharten, Nietreihen, goldenes Band, Schrift.
+  - Heck: Doppeltür mit Scharnieren, Verriegelungsstange mit goldenem Schloss, Gitterfenster, Trittstossstange, Kennzeichen, Anhängerkupplung.
+  - Dach: Luke, vier Kameras, Antennen, oranger Warnbalken (blinkt weiter).
+  - Grösse, Radlage, Spec unverändert.
+  - Geprüft: Bilder von vorne, hinten, Seite und Radlauf.
+
 - **Mehr Figuren in der Werkstatt** (Nicolas 2026-11-19: "stell mal ein paar verschiedene Figuren auf in der Werkstatt, ich will sie mal ansehen"): werkstatt.js Auswahl "Spielfiguren" (vorher "Spielfiguren (Entwurf)", vier Figuren). Jetzt 14 Figuren mit Namensschild:
   - Vorne acht Typen im Stand: Bruce Wayne, Bauarbeiter (Warnweste, Bart), Ärztin, Polizist, Studentin (Locken), Rentner (graues Haar, Bart), Croupière (rote Haare), Feuerwehrmann.
   - Hinten in Bewegung: gehen, rennen, springen, Batman stehend, Batman rennend (Umhang weht), Batman gleitend (1,6 m hoch, Umhang gespannt).

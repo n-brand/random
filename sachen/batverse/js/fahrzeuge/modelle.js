@@ -1658,43 +1658,72 @@ const SPEC_TERZO = { name: "Lamborghini Terzo Millennio", wheels: [[-0.86, -1.45
 
 // ===================== Dienstfahrzeuge (Nicolas 2026-11-17: "ich will ausserdem Geldtransporter, Polizei-Van und Polizei-Motorrad"; eigene Entwuerfe, ohne Marken) =====================
 // Front nach -z, Ursprung = Mitte zwischen den Achsen, Boden y 0 (wie die anderen Modelle). Blaulicht/Warnlicht ueber beacon (blinkt beim Fahren, fahren.js).
-// Geldtransporter "Gotham Secure": gepanzerter Kastenwagen mit Haube, dunkles Stahlblau mit goldenem Band, kleine Fenster mit Gittern, Schiessscharten,
-// Doppeltuer hinten, Seitentuer, orange Warnleuchte, Rammschutz; schwer (langsam, kraeftig).
+// Geldtransporter "Gotham Secure" (ueberarbeitet 2026-11-19, Nicolas: "Geldtransporter auch ueberarbeiten"): gepanzerter Kastenwagen, dunkles Stahlblau mit goldenem Band.
+// Haube und Kabine als Loft mit Radausschnitt, gepanzerter Kasten als Loft mit gefasten Kanten und Radausschnitt ueber der Zwillingsachse (vorher steckten die Raeder in Kaesten);
+// schraege Panzerglas-Scheibe mit dickem Rahmen und Wischern, vergitterte Kabinenfenster, Tuerfugen, Griffe, Trittstufen, Spiegel am Arm, Grill mit Rahmen, Scheinwerfer im Gehaeuse,
+// Rammschutz mit Blitzern (polKit), Kotfluegelverbreiterungen, Tank; Kasten mit schwerer Seitentuer (drei Scharniere, Schloss), runden Schiessscharten, Nietreihen,
+// Hecktueren mit Scharnieren, Verriegelungsstange, kleinem Gitterfenster, Trittstossstange, Kennzeichen, Anhaengerkupplung; Dach mit Luke, Kameras, Antennen, oranger Warnbalken.
 function buildGeldtransporter() {
-  const g = new THREE.Group(), HW = 1.18, zF = -3.3, zR = 3.5;
-  const paint = M(0x22324a, { metalness: 0.55, roughness: 0.3 }), steel = M(0x3a4048, { metalness: 0.75, roughness: 0.35 }), black = M(0x111214, { roughness: 0.7 }), gold = M(0xd4a640, { metalness: 0.9, roughness: 0.3 });
-  const glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0x3a3e44, { metalness: 0.7, roughness: 0.35 });
-  boxIn(g, -0.55, 0.55, 0.45, 0.72, zF + 0.3, zR - 0.2, black);                                                               // Rahmen
-  boxIn(g, -HW + 0.08, HW - 0.08, 0.72, 1.5, zF, zF + 1.3, paint); boxIn(g, -HW + 0.1, HW - 0.1, 1.5, 1.56, zF + 0.05, zF + 1.3, paint);   // Haube
-  for (let y = 0.85; y < 1.42; y += 0.09) boxIn(g, -0.6, 0.6, y, y + 0.05, zF - 0.03, zF, steel);                               // Grill
-  boxIn(g, -HW - 0.02, HW + 0.02, 0.45, 0.78, zF - 0.32, zF - 0.05, black); for (const sd of [-1, 1]) boxIn(g, sd * 0.55 - 0.05, sd * 0.55 + 0.05, 0.6, 1.25, zF - 0.32, zF - 0.22, black);   // Rammschutz
-  boxIn(g, -HW, HW, 0.72, 2.55, zF + 1.3, zF + 2.9, paint); boxIn(g, -HW + 0.12, HW - 0.12, 1.65, 2.35, zF + 1.28, zF + 1.32, glass);   // Kabine, Frontscheibe
-  boxIn(g, -HW - 0.04, HW + 0.04, 0.72, 2.95, zF + 2.9, zR, paint);                                                             // gepanzerter Kasten
-  boxIn(g, -HW - 0.05, HW + 0.05, 2.95, 3.02, zF + 2.85, zR + 0.03, steel);                                                    // Dachkante
-  for (const sd of [-1, 1]) {
-    sideBox(g, sd * (HW - 0.01), sd * (HW + 0.02), 1.7, 2.3, zF + 1.55, zF + 2.75, glass);                                     // Seitenfenster Kabine
-    for (let z = zF + 1.6; z < zF + 2.7; z += 0.12) sideBox(g, sd * (HW + 0.02), sd * (HW + 0.04), 1.7, 2.3, z, z + 0.025, steel);   // Gitter
-    sideBox(g, sd * (HW + 0.045), sd * (HW + 0.07), 1.6, 1.74, zF + 2.95, zR - 0.02, gold); sideBox(g, sd * (HW + 0.005), sd * (HW + 0.025), 1.6, 1.74, zF + 1.3, zF + 2.9, gold);                                    // goldenes Band
-    fireSign(g, fireLabel("GOTHAM SECURE · Geldtransport", 72), 3.2, 0.36, sd * (HW + 0.065), 2.2, zF + 4.6, sd);
-    for (const z of [zF + 3.5, zF + 5.8]) sideBox(g, sd * (HW + 0.04), sd * (HW + 0.08), 1.25, 1.4, z, z + 0.16, black);     // Schiessscharten
-    sideBox(g, sd * (HW + 0.04), sd * (HW + 0.06), 0.85, 2.85, zF + 3.0, zF + 3.04, black); sideBox(g, sd * (HW + 0.04), sd * (HW + 0.06), 0.85, 2.85, zF + 4.1, zF + 4.14, black);   // Seitentuer (Fugen)
-    sideBox(g, sd * (HW + 0.02), sd * (HW + 0.32), 1.95, 2.35, zF + 1.4, zF + 1.48, black);                                     // Spiegel
-    boxIn(g, sd * 0.78 - 0.17, sd * 0.78 + 0.17, 1.1, 1.3, zF - 0.03, zF, mat.glow);                                           // Scheinwerfer
-    boxIn(g, sd * (HW - 0.25) - 0.13, sd * (HW - 0.25) + 0.13, 1.0, 1.25, zR, zR + 0.02, mat.glowRed);                           // Rueckleuchten
-  }
-  boxIn(g, -0.03, 0.03, 0.8, 2.85, zR, zR + 0.03, black); for (const sd of [-1, 1]) boxIn(g, sd * 0.45 - 0.05, sd * 0.45 + 0.05, 1.6, 1.75, zR, zR + 0.06, chrome);   // Doppeltuer hinten, Griffe
-  boxIn(g, -0.25, 0.25, 2.1, 2.5, zR, zR + 0.02, glass); for (let x = -0.22; x < 0.24; x += 0.09) boxIn(g, x, x + 0.02, 2.1, 2.5, zR + 0.02, zR + 0.04, steel);   // Heckfenster mit Gitter
-  boxIn(g, -HW, HW, 0.5, 0.75, zR, zR + 0.2, black);                                                                            // Stossstange
+  const g = new THREE.Group(), zF = -3.3, zR = 3.5, HW = 1.22;
+  const paint = M(0x22324a, { metalness: 0.55, roughness: 0.3, flatShading: true }), steel = M(0x3a4048, { metalness: 0.75, roughness: 0.35 }), black = M(0x111214, { roughness: 0.7 }), gold = M(0xd4a640, { metalness: 0.9, roughness: 0.3 });
+  const glass = M(0x0b1016, { metalness: 0.7, roughness: 0.06 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 }), tireM = M(0x121212, { roughness: 0.92 }), rimM = M(0x3a3e44, { metalness: 0.7, roughness: 0.35 }), gummi = M(0x161616, { roughness: 0.95 });
+  const K = polKit(g, { black, chrome, paint });
+  // Haube und Kabine
+  const ybV = polArch([[2.0, 0.46]], 0.45, 0.12), ytV = tabF([[3.3, 1.08], [3.22, 1.38], [3.1, 1.5], [2.05, 1.58], [2.0, 1.62], [1.55, 2.45], [1.45, 2.55], [0.4, 2.6]]), hwV = tabF([[3.3, 1.0], [3.2, 1.1], [3.0, 1.14], [0.4, 1.14]]);
+  const FS = []; for (let f = 3.3; f > 0.4; f -= 0.05) FS.push(+f.toFixed(3)); FS.push(0.4);
+  loftIn(g, FS.map(f => { const b = ybV(f), t = ytV(f), w = hwV(f), s = Math.min(1.62, t - 0.05); return [f, [[0, b], [w - 0.06, b], [w, b + 0.06], [w, s], [w - (t > 1.7 ? 0.1 : 0.05), t], [0, t]]]; }), paint);
+  // gepanzerter Kasten
+  const ybK = polArch([[-1.9, 0.46]], 0.45, 0.12), BS = []; for (let f = 0.42; f > -3.5; f -= 0.05) BS.push(+f.toFixed(3)); BS.push(-3.5);
+  loftIn(g, BS.map(f => { const b = ybK(f), e = f > 0.35 || f < -3.43 ? 0.03 : 0; return [f, [[0, b], [HW - 0.06 - e, b], [HW - e, b + 0.08], [HW - e, 2.8 - e], [HW - 0.1 - e, 2.95 - e], [0, 2.95 - e]]]; }), paint);
+  boxIn(g, -HW - 0.03, HW + 0.03, 2.93, 2.99, -0.42, zR + 0.02, steel);                                                                                  // Dachkante
+  // Frontscheibe (Panzerglas, dicker Rahmen), Wischer
+  { const sl = Math.atan2(0.83, 0.45), ws = boxAt(g, 1.86, 0.92, 0.04, glass, 0, 2.04, -1.79); ws.rotation.x = Math.PI / 2 - sl;
+    for (const sd of [-1, 1]) { const p = boxAt(g, 0.12, 0.98, 0.07, steel, sd * 0.99, 2.04, -1.8); p.rotation.x = Math.PI / 2 - sl; const w = boxAt(g, 0.6, 0.025, 0.025, black, sd * 0.4, 1.66, -2.03); w.rotation.z = sd * 0.25; }
+    const o = boxAt(g, 2.0, 0.08, 0.08, steel, 0, 2.47, -1.56); }
+  // Grill mit Rahmen, Scheinwerfer, Stossfaenger, Rammschutz, Kennzeichen
+  boxIn(g, -0.62, 0.62, 0.7, 1.32, zF - 0.02, zF + 0.02, black); for (let y = 0.76; y < 1.28; y += 0.08) boxIn(g, -0.58, 0.58, y, y + 0.04, zF - 0.035, zF, steel); boxIn(g, -0.65, 0.65, 1.3, 1.34, zF - 0.04, zF + 0.01, chrome); boxIn(g, -0.65, 0.65, 0.68, 0.72, zF - 0.04, zF + 0.01, chrome);
+  for (const sd of [-1, 1]) K.lampe(sd * 0.83, 1.12, zF + 0.06, 0.24, 0.15);
+  boxIn(g, -1.14, 1.14, 0.42, 0.68, zF - 0.14, zF + 0.1, black); K.rammschutz(zF - 0.12, 0.42, 1.32, 1.7); boxAt(g, 0.5, 0.12, 0.02, M(0xeeeeea, { roughness: 0.5 }), 0, 0.82, zF - 0.37);
+  // Kabine seitlich: Fenster mit Gitter, Tuerfugen, Griff, Trittstufen, Spiegel, Tank, Verbreiterungen
+  for (const sd of [-1, 1]) { const X = sd * 1.14;
+    sideBox(g, X - sd * 0.1, X + sd * 0.005, 1.72, 2.3, -1.45, -0.6, glass); for (let z = -1.4; z < -0.62; z += 0.11) sideBox(g, X, X + sd * 0.03, 1.72, 2.3, z, z + 0.025, steel); sideBox(g, X, X + sd * 0.035, 1.68, 1.72, -1.5, -0.55, steel); sideBox(g, X, X + sd * 0.035, 2.3, 2.34, -1.5, -0.55, steel);
+    for (const z of [-1.55, -0.45]) sideBox(g, X, X + sd * 0.015, 0.8, 2.45, z - 0.012, z + 0.012, black); boxAt(g, 0.04, 0.05, 0.18, chrome, X + sd * 0.02, 1.5, -0.62);
+    for (const y of [0.45, 0.75]) sideBox(g, X - sd * 0.25, X + sd * 0.1, y - 0.02, y + 0.02, -1.45, -0.6, steel);
+    K.spiegel(sd, X, 2.15, -1.6); K.flare(sd, sd * 1.06, -2.0, 0.46);
+    for (const sd2 of [1]) sideBox(g, sd * 0.85, sd * 1.12, 0.12, 0.5, -1.45 - 0.02, -1.45, gummi); }
+  boxIn(g, -1.05, -0.6, 0.48, 0.85, -0.35, 0.35, steel); for (const z of [-0.2, 0.2]) boxIn(g, -1.07, -0.6, 0.47, 0.5, z - 0.02, z + 0.02, black);   // Tank
+  // Kasten: goldenes Band, Schrift, Seitentuer rechts (schwer), Schiessscharten, Nietreihen, Verbreiterungen
+  for (const sd of [-1, 1]) { const X = sd * HW;
+    sideBox(g, X, X + sd * 0.015, 1.6, 1.74, -0.35, zR - 0.05, gold); sideBox(g, sd * 1.14, sd * 1.155, 1.6, 1.74, -1.5, -0.42, gold);
+    fireSign(g, fireLabel("GOTHAM SECURE · Geldtransport", 72), 3.2, 0.36, X + sd * 0.02, 2.25, 1.75, sd);
+    for (const z of [0.25, 2.9]) { milCylG(g, 0.09, 0.1, 0.06, steel, X + sd * 0.03, 1.32, z); milCylG(g, 0.035, 0.035, 0.07, black, X + sd * 0.05, 1.32, z); }
+    for (const y of [0.78, 2.72]) for (let z = -0.3; z < zR - 0.1; z += 0.32) milCylG(g, 0.018, 0.018, 0.02, steel, X + sd * 0.012, y, z);
+    K.flare(sd, sd * 1.12, 1.9, 0.46); sideBox(g, sd * 0.85, sd * 1.2, 0.12, 0.5, 2.55, 2.57, gummi); }
+  { const X = HW; sideBox(g, X, X + 0.02, 0.85, 2.7, 0.55, 1.45, steel); for (const z of [0.52, 1.48]) sideBox(g, X, X + 0.025, 0.85, 2.7, z - 0.012, z + 0.012, black);
+    for (const y of [1.0, 1.75, 2.5]) boxAt(g, 0.06, 0.16, 0.1, steel, X + 0.05, y, 0.55); boxAt(g, 0.05, 0.12, 0.1, chrome, X + 0.04, 1.55, 1.38); milCylG(g, 0.03, 0.03, 0.04, gold, X + 0.06, 1.42, 1.38); }   // Seitentuer
+  // Heck: Doppeltuer, Scharniere, Verriegelungsstange, Gitterfenster, Leuchten, Trittstossstange, Kennzeichen, Kupplung, Schrift
+  boxIn(g, -0.015, 0.015, 0.8, 2.85, zR - 0.01, zR + 0.03, black);
+  for (const sd of [-1, 1]) { for (const y of [1.0, 1.85, 2.6]) boxAt(g, 0.14, 0.14, 0.08, steel, sd * 1.12, y, zR + 0.03);
+    boxIn(g, sd * (HW - 0.15) - 0.1, sd * (HW - 0.15) + 0.1, 0.9, 1.5, zR - 0.01, zR + 0.04, black); boxIn(g, sd * (HW - 0.15) - 0.08, sd * (HW - 0.15) + 0.08, 1.15, 1.45, zR + 0.04, zR + 0.05, mat.glowRed); boxIn(g, sd * (HW - 0.15) - 0.08, sd * (HW - 0.15) + 0.08, 0.95, 1.12, zR + 0.04, zR + 0.05, M(0xffa020, { emissive: 0x804000 })); }
+  meshIn(g, new THREE.CylinderGeometry(0.03, 0.03, 1.4, 8).rotateZ(Math.PI / 2), steel, 0, 1.6, zR + 0.07); for (const x of [-0.55, 0.55]) boxAt(g, 0.08, 0.12, 0.08, steel, x, 1.6, zR + 0.05); boxAt(g, 0.12, 0.2, 0.08, gold, 0, 1.6, zR + 0.07);
+  boxIn(g, -0.25, 0.25, 2.1, 2.45, zR - 0.01, zR + 0.02, glass); for (let x = -0.22; x < 0.24; x += 0.09) boxIn(g, x, x + 0.02, 2.1, 2.45, zR + 0.02, zR + 0.04, steel);
+  boxIn(g, -HW, HW, 0.45, 0.68, zR - 0.05, zR + 0.22, black); for (let x = -1.05; x < 1.08; x += 0.14) boxIn(g, x - 0.04, x + 0.04, 0.68, 0.685, zR + 0.02, zR + 0.21, steel);
+  boxAt(g, 0.5, 0.12, 0.02, M(0xeeeeea, { roughness: 0.5 }), 0, 0.78, zR + 0.03); boxAt(g, 0.12, 0.08, 0.3, steel, 0, 0.5, zR + 0.32); meshIn(g, new THREE.SphereGeometry(0.045, 10, 8), chrome, 0, 0.58, zR + 0.45);
   { const t = meshIn(g, new THREE.PlaneGeometry(1.8, 0.3), fireLabel("GOTHAM SECURE", 90), 0, 2.72, zR + 0.035); }
-  for (const z of [-2.0, 1.9]) boxIn(g, -0.95, 0.95, 0.45, 1.15, z - 0.58, z + 0.58, black);                                    // Radhaeuser
-  const warn = lightBar(g, 2.55, zF + 2.2, 1.4, 0xff9a10, 0xff9a10);
+  // Dach: Luke, Kameras, Antennen, Warnbalken
+  milCylG(g, 0.32, 0.34, 0.06, steel, 0, 3.0, 1.8, "y"); boxAt(g, 0.12, 0.05, 0.08, chrome, 0.26, 3.05, 1.8);
+  for (const [x, z] of [[-1.0, -0.3], [1.0, -0.3], [-1.0, 3.35], [1.0, 3.35]]) { meshIn(g, new THREE.SphereGeometry(0.07, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), black, x, 2.99, z); }
+  for (const [x, z, h] of [[0.7, 2.8, 0.7], [-0.7, 0.2, 0.45]]) meshIn(g, new THREE.CylinderGeometry(0.005, 0.009, h, 4), black, x, 2.99 + h / 2, z);
+  const warn = lightBar(g, 2.6, -1.1, 1.5, 0xff9a10, 0xff9a10);
   mergeStatic(g);
   const wheels = [];
   for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 0.98, -2.0, 0.46, 0.3, true, tireM, rimM, 0, 24));
-  for (const sd of [-1, 1]) for (const x of [0.82, 1.1]) wheels.push(addWheel(g, sd * x, 1.9, 0.46, 0.27, false, tireM, rimM, 0, 24));
+  for (const sd of [-1, 1]) for (const x of [0.82, 1.1]) wheels.push(addWheel(g, sd * x, 1.9, 0.46, 0.26, false, tireM, rimM, 0, 24));
   for (const w of wheels) sedanCap(w, 0.27, 0x3a3e44, 0x9aa0a6, 8);
   return { g, wheels, beacon: warn };
 }
+// Zylinder als Helfer fuer den Geldtransporter (Achse x, oder y)
+const milCylG = (g, r0, r1, len, m, x, y, z, ax = "x") => { const geo = new THREE.CylinderGeometry(r0, r1, len, 12); if (ax === "x") geo.rotateZ(Math.PI / 2); return meshIn(g, geo, m, x, y, z); };
 const SPEC_GELDTRANSPORTER = { name: "Gotham Secure (Geldtransporter)", wheels: [[-0.98, -2.0], [0.98, -2.0], [-0.98, 1.9], [0.98, 1.9]], wb: 3.9, track: 1.96, pts: [-2.6, -0.8, 1.0, 2.8], R: 1.2, circR: 1.15, enter: 4.5,
   maxN: 24, maxF: 30.6, acc: 6.5, steer: 0.58, jump: false, grade: 32, camD: 12, camH: 2.1, seat: [-0.55, 2.0, -1.0], bodyH: 3.0, bike: false, brake: 22, mass: 30,
   exits: [[-2.1, -1.0], [2.1, -1.0], [-2.1, 1.0], [2.1, 1.0], [0, -4.6], [0, 4.8]],
