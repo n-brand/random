@@ -2,7 +2,9 @@
 // buildFigur(o) -> Gruppe (Fuesse bei y 0, Blick nach -z, 1,78 m gross, Augen auf 1,62 m) mit Gelenken in userData: kopf, rumpf, armL/armR (Schulter), unterarmL/R (Ellbogen),
 // beinL/beinR (Huefte), knieL/R. o: { haut, haar, oberteil, hose, schuhe, frisur 0-3, bart } (Farben als Zahl). Eigener Entwurf: runder Kopf, gezeichnetes Gesicht, Kapseln, flache Farben.
 // Kopf 1,18-fach (verspielter Stil). figurPose(F, t, tempo, sprung): Stehen (Atmen), Gehen/Rennen (Arme und Beine schwingen gegenlaeufig, Knie beugen, Kopf wippt) aus tempo in m/s, sprung = in der Luft.
-const FIGUR_STD = { haut: 0xe0b48c, haar: 0x2a1a10, oberteil: 0x22324a, hose: 0x2a2c30, schuhe: 0x15161a, frisur: 0, bart: false };
+const FIGUR_STD = { haut: 0xe0b48c, haar: 0x2a1a10, oberteil: 0x22324a, hose: 0x2a2c30, schuhe: 0x15161a, frisur: 0, bart: false, schulter: 1, bauch: 1, groesse: 1 };
+// Koerperbau (Nicolas 2026-11-19: "alle Figuren sehen gleich aus – Batman und Bruce etwas breitere Schultern"): schulter (Breite, ab 1,05 mit Schulterpartie, Arme weiter aussen),
+// bauch (Tiefe und Bauchwoelbung), groesse (ganze Figur skaliert, nur fuer Nebenfiguren; Augenhoehe 1,62 m gilt bei 1)
 function figurGesicht(o) { return canvasTex(128, 128, (c, w, h) => { const hx = "#" + o.haut.toString(16).padStart(6, "0"); c.fillStyle = hx; c.fillRect(0, 0, w, h);
   c.fillStyle = "#ffffff"; for (const x of [44, 84]) { c.beginPath(); c.ellipse(x, 58, 10, 12, 0, 0, Math.PI * 2); c.fill(); }
   c.fillStyle = "#2a1e16"; for (const x of [46, 82]) { c.beginPath(); c.arc(x, 60, 6, 0, Math.PI * 2); c.fill(); } c.fillStyle = "#fff"; for (const x of [48, 84]) { c.beginPath(); c.arc(x, 57, 2, 0, Math.PI * 2); c.fill(); }
@@ -13,7 +15,10 @@ function figurGesicht(o) { return canvasTex(128, 128, (c, w, h) => { const hx = 
 function buildFigur(o = {}) { o = { ...FIGUR_STD, ...o }; const g = new THREE.Group(), M = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75 }), haut = M(o.haut), haar = M(o.haar), ober = M(o.oberteil), hose = M(o.hose), schuh = M(o.schuhe);
   const cap = (m, r, l, par, y = -l / 2 - r) => { const k = new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 4, 10), m); k.position.y = y; k.castShadow = true; par.add(k); return k; };
   const gelenk = (par, x, y, z) => { const j = new THREE.Group(); j.position.set(x, y, z); par.add(j); return j; };
-  const rumpf = gelenk(g, 0, 0.95, 0); { const b = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.36, 4, 12), ober); b.scale.set(1, 1, 0.72); b.position.y = 0.3; b.castShadow = true; rumpf.add(b);
+  const S = o.schulter, Bb = o.bauch; const rumpf = gelenk(g, 0, 0.95, 0); { const b = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.36, 4, 12), ober); b.scale.set(0.92 + 0.08 * S, 1, 0.72 * (0.9 + 0.1 * Bb)); b.position.y = 0.3; b.castShadow = true; rumpf.add(b);
+    if (S > 1.04) { const sp = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.5 * S - 0.4, 4, 10), ober); sp.rotation.z = Math.PI / 2; sp.scale.set(1, 1, 0.78); sp.position.y = 0.47; sp.castShadow = true; rumpf.add(sp);   // Schulterpartie (V-Form)
+      const br = new THREE.Mesh(new THREE.SphereGeometry(0.19, 14, 10), ober); br.scale.set(S * 1.05, 0.75, 0.62); br.position.set(0, 0.38, -0.03); rumpf.add(br); }   // Brust
+    if (Bb > 1.05) { const bu = new THREE.Mesh(new THREE.SphereGeometry(0.17, 14, 10), ober); bu.scale.set(1.05, 0.95, 0.75 * Bb); bu.position.set(0, 0.17, -0.05); bu.castShadow = true; rumpf.add(bu); }   // Bauch
     const bk = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.08, 4, 12), hose); bk.scale.set(1.05, 1, 0.75); bk.position.y = 0.0; rumpf.add(bk); }   // Oberkoerper, Becken
   const hals = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.12, 10), haut); hals.position.y = 0.64; rumpf.add(hals);
   const kopf = gelenk(rumpf, 0, 0.7, 0); kopf.scale.setScalar(1.18); { const k = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), haut);   // Schaedel (war als Material-Liste ohne Gruppen unsichtbar: Hinterkopf fehlte, Nicolas 2026-11-19 Bild "Kopf")
@@ -25,10 +30,10 @@ function buildFigur(o = {}) { o = { ...FIGUR_STD, ...o }; const g = new THREE.Gr
     else if (fr === 2) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), hm); h.scale.set(1.1, 0.9, 1.1); h.position.y = 0.26; kopf.add(h); }   // Locken
     // fr 3: Glatze
   }
-  const arm = (sx) => { const s = gelenk(rumpf, sx * 0.25, 0.5, 0); cap(ober, 0.065, 0.2, s); const e = gelenk(s, 0, -0.33, 0); cap(haut, 0.055, 0.2, e); const hd = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), haut); hd.position.y = -0.36; e.add(hd); return [s, e]; };
+  const arm = (sx) => { const s = gelenk(rumpf, sx * 0.25 * (0.6 + 0.4 * S), 0.5, 0); cap(ober, 0.065, 0.2, s); const e = gelenk(s, 0, -0.33, 0); cap(haut, 0.055, 0.2, e); const hd = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), haut); hd.position.y = -0.36; e.add(hd); return [s, e]; };
   const bein = (sx) => { const h = gelenk(rumpf, sx * 0.1, -0.06, 0); cap(hose, 0.08, 0.3, h); const k = gelenk(h, 0, -0.44, 0); cap(hose, 0.07, 0.3, k); const f = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.24), schuh); f.position.set(0, -0.45, -0.04); f.castShadow = true; k.add(f); return [h, k]; };
   const [armL, uaL] = arm(-1), [armR, uaR] = arm(1), [beinL, knieL] = bein(-1), [beinR, knieR] = bein(1);
-  g.userData = { kopf, rumpf, armL, armR, unterarmL: uaL, unterarmR: uaR, beinL, beinR, knieL, knieR, phase: 0 }; g.name = "Spielfigur"; return g; }
+  if (o.groesse !== 1) g.scale.setScalar(o.groesse); g.userData = { kopf, rumpf, armL, armR, unterarmL: uaL, unterarmR: uaR, beinL, beinR, knieL, knieR, phase: 0 }; g.name = "Spielfigur"; return g; }
 // Figuren, die sich bewegen (Werkstatt-Vorfuehrung, Skateboard): FIGUREN.push({ g, tempo }) – figurStep aus tresorStep
 const FIGUREN = [];
 function figurStep(dt) { for (const f of FIGUREN) if (f.g.visible && f.g.parent) { figurPose(f.g, dt, f.tempo || 0, f.sprung && !f.gleit ? "zyklus" : false); if (f.g.userData.cape && typeof batUmhang === "function") batUmhang(f.g, dt, f.tempo || 0, !!f.gleit, !!f.sprung); } }   // Batman: Umhang (F3)
@@ -63,7 +68,7 @@ try { DP.on = localStorage.getItem("wm-dritte") === "1"; } catch (e) {}
 // Augen, Ohren, weisse Augenschlitze, Kinn frei), Umhang als biegsame Flaeche an den Schultern (batUmhang: flattert, weht mit dem Tempo nach hinten, beim Gleiten ausgebreitet).
 // Angezogen wird der Batsuit im Inventar auf dem Platz "Koerper"; dann zeigt die dritte Person (V) Batman statt Bruce.
 function buildBatman() {
-  const F = buildFigur({ haut: 0xd8ad86, oberteil: 0x2a2c31, hose: 0x2a2c31, schuhe: 0x0b0b0d, haar: 0x0b0b0d, frisur: 3 }), U = F.userData, m = (c, r = 0.55, mt = 0.25) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
+  const F = buildFigur({ haut: 0xd8ad86, oberteil: 0x2a2c31, hose: 0x2a2c31, schuhe: 0x0b0b0d, haar: 0x0b0b0d, frisur: 3, schulter: 1.3 }), U = F.userData, m = (c, r = 0.55, mt = 0.25) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: mt });
   const schwarz = m(0x111214, 0.45, 0.35), matt = m(0x18191c, 0.8, 0.1), gold = m(0x6a5a2a, 0.5, 0.5);
   const add = (par, geo, mt, x, y, z, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = true; par.add(o); return o; };
   // Brustpanzer, Bauchsegmente, Emblem
@@ -108,7 +113,7 @@ function batUmhang(F, dt, tempo, gleiten, luft) { const C = F.userData.cape; if 
 const batAnzug = () => typeof INV !== "undefined" && INV.equip && INV.equip.koerper && INV.equip.koerper.id === "batsuit";
 function dpEnsure() { if (!DP.w) { DP.w = new THREE.Group(); DP.w.visible = false; DP.w.userData.dynamic = true; scene.add(DP.w); DP.hand = new THREE.Group(); DP.hand.position.y = -0.37; }
   const bat = batAnzug(); if (DP.F && DP.bat === bat) return; DP.bat = bat; if (DP.F) DP.w.remove(DP.F);
-  DP.F = bat ? (DP.Fb || (DP.Fb = buildBatman())) : (DP.Fn || (DP.Fn = buildFigur({ oberteil: 0x1c1f26, hose: 0x23262c, schuhe: 0x0e0f12, haar: 0x1a120c, frisur: 0 })));
+  DP.F = bat ? (DP.Fb || (DP.Fb = buildBatman())) : (DP.Fn || (DP.Fn = buildFigur({ schulter: 1.22, oberteil: 0x1c1f26, hose: 0x23262c, schuhe: 0x0e0f12, haar: 0x1a120c, frisur: 0 })));
   DP.w.add(DP.F); DP.F.userData.unterarmR.add(DP.hand); }
 function dpToggle() { DP.on = !DP.on; try { localStorage.setItem("wm-dritte", DP.on ? "1" : "0"); } catch (e) {} DP.last = null; if (typeof toast === "function") toast(DP.on ? "Dritte Person (V: zurück zur Ich-Sicht)" : "Ich-Sicht"); document.body.classList.toggle("dritte", DP.on); }
 document.body.classList.toggle("dritte", DP.on);
