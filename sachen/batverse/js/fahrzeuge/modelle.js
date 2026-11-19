@@ -557,18 +557,29 @@ function buildPolice() {
     sideBox(g, sd * (k.hw(0.85) - 0.06), sd * (k.hw(0.85) + 0.1), 0.97, 1.0, -0.88, -0.8, dark); sideBox(g, sd * (k.hw(0.85) + 0.06), sd * (k.hw(0.85) + 0.2), 0.96, 1.1, -0.92, -0.78, dark);   // Spiegel
     k.face(1, sd * 0.42, sd * 0.78, 0.63, 0.74, 0.012, mat.glow); k.face(1, sd * 0.78, sd * 0.84, 0.63, 0.7, 0.012, amber);   // Scheinwerfer, Blinker
     k.face(-1, sd * 0.5, sd * 0.84, 0.72, 0.86, 0.012, mat.glowRed);                                                      // Rueckleuchten
-    for (const y of [0.42, 0.66]) meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 0.5, 10).rotateZ(Math.PI / 2), dark, sd * 0.3, y, -2.66);   // Rammschutz Querrohre
-    meshIn(g, new THREE.CylinderGeometry(0.04, 0.04, 0.5, 10), dark, sd * 0.32, 0.5, -2.68); meshIn(g, new THREE.CylinderGeometry(0.025, 0.025, 0.16, 8).rotateX(Math.PI / 2), dark, sd * 0.32, 0.42, -2.58);   // Rammschutz Pfosten, Halter
-    boxIn(g, sd * 0.5 - 0.04, sd * 0.5 + 0.04, 1.41, 1.45, -0.38, -0.3, dark);                                            // Fuesse Lichtbalken
-    const lens = meshIn(g, new THREE.CapsuleGeometry(0.075, 0.42, 4, 12).rotateZ(Math.PI / 2), sd < 0 ? red : blu, sd * 0.38, 1.53, -0.39); lens.scale.z = 1.25;   // Lichtbalken rot/blau
   }
   k.face(1, -0.4, 0.4, 0.5, 0.66, 0.008, dark); for (let x = -0.36; x <= 0.37; x += 0.06) k.face(1, x - 0.008, x + 0.008, 0.51, 0.65, 0.016, chrome);   // Grill
   k.face(1, -0.86, 0.86, 0.27, 0.45, 0.04, dark); k.face(-1, -0.88, 0.88, 0.27, 0.47, 0.04, dark);                          // Stossfaenger
   k.face(-1, -0.22, 0.22, 0.5, 0.62, 0.008, M(0xe6e8ea, { roughness: 0.5 }));                                               // Kennzeichenfeld
-  boxIn(g, -0.75, 0.75, 1.45, 1.49, -0.47, -0.31, dark); boxIn(g, -0.12, 0.12, 1.49, 1.59, -0.44, -0.34, dark);             // Lichtbalken Traeger und Mitte
   meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.12, 12).rotateX(Math.PI / 2), chrome, -0.88, 1.06, -0.98); meshIn(g, new THREE.CircleGeometry(0.055, 12), mat.glow, -0.88, 1.06, -1.045, Math.PI); boxIn(g, -0.86, -0.8, 0.94, 1.03, -0.99, -0.95, dark);   // Suchscheinwerfer (Fahrerseite)
   { const t = meshIn(g, new THREE.PlaneGeometry(0.9, 0.28), text("POLICE", "GOTHAM CITY"), 0, 0.76, -k.endF(0, 0.76, -1) + 0.012); }   // Schriftzug hinten
   meshIn(g, new THREE.CylinderGeometry(0.006, 0.006, 0.8, 4), dark, 0.5, 1.38, 2.05);                                     // Antenne
+  // Ueberarbeitet 2026-11-19 (Nicolas: "Police normal soll ueberarbeitet werden"): flacher Lichtbalken mit 8 Segmenten (rot links, blau rechts; blinken ueber beacon),
+  // weissen Frontblitzern und seitlichen Strahlern auf Fuessen; Rammschutz wie beim Van (polKit); Blitzer im Grill; Suchscheinwerfer beidseits; Wagennummer 17 auf Dach
+  // und hinterem Kotfluegel; zwei weitere Antennen
+  { const yb = 1.45, z = -0.38, alu = M(0x3a3d42, { metalness: 0.6, roughness: 0.35 });
+    for (const sd of [-1, 1]) boxIn(g, sd * 0.52 - 0.04, sd * 0.52 + 0.04, 1.4, yb, z - 0.06, z + 0.06, dark);
+    boxIn(g, -0.74, 0.74, yb, yb + 0.05, z - 0.15, z + 0.15, dark); boxIn(g, -0.72, 0.72, yb + 0.05, yb + 0.065, z - 0.14, z + 0.14, alu);
+    for (let q = 0; q < 8; q++) { const x0 = -0.7 + q * 0.175; boxIn(g, x0, x0 + 0.16, yb + 0.065, yb + 0.15, z - 0.13, z + 0.13, q < 4 ? red : blu); }
+    boxIn(g, -0.72, 0.72, yb + 0.15, yb + 0.165, z - 0.14, z + 0.14, alu);
+    for (const sd of [-1, 1]) { boxIn(g, sd * 0.1 - 0.06, sd * 0.1 + 0.06, yb + 0.08, yb + 0.135, z - 0.135, z - 0.13, mat.glow); sideBox(g, sd * 0.72, sd * 0.735, yb + 0.08, yb + 0.135, z - 0.06, z + 0.06, mat.glow); } }
+  polKit(g, { black: dark, chrome, paint }).rammschutz(-2.52, 0.3, 0.84, 0.95);
+  for (const sd of [-1, 1]) k.face(1, sd * 0.14, sd * 0.26, 0.545, 0.6, 0.02, sd < 0 ? red : blu);                                  // Blitzer im Grill
+  meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.12, 12).rotateX(Math.PI / 2), chrome, 0.88, 1.06, -0.98); meshIn(g, new THREE.CircleGeometry(0.055, 12), mat.glow, 0.88, 1.06, -1.045, Math.PI); boxIn(g, 0.8, 0.86, 0.94, 1.03, -0.99, -0.95, dark);   // zweiter Suchscheinwerfer
+  { const num = new THREE.MeshStandardMaterial({ map: canvasTex(256, 160, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = "#1b2c4f"; c.font = "bold 130px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("17", W / 2, H / 2 + 6); }), transparent: true, roughness: 0.45, polygonOffset: true, polygonOffsetFactor: -2 });
+    const r = meshIn(g, new THREE.PlaneGeometry(0.75, 0.47), num, 0, 1.418, 0.45); r.rotation.set(-Math.PI / 2, 0, 0);   // von hinten lesbar
+    for (const sd of [-1, 1]) k.skin(sd, -1.32, -1.72, 0.66, 0.86, k.bodyX, num, 0.008, 8, 3); }
+  for (const x of [-0.35, 0.35]) meshIn(g, new THREE.CylinderGeometry(0.004, 0.006, 0.36, 4), dark, x, 1.59, 0.75);
   mergeStatic(g);
   const wheels = [[-0.82, -1.45, true], [0.82, -1.45, true], [-0.82, 1.5, false], [0.82, 1.5, false]].map(([x, z, f]) => addWheel(g, x, z, 0.34, 0.24, f, tireM, rimM, 0, 24));
   for (const w of wheels) sedanCap(w, 0.24, 0x2a2c30, 0xc8ccd0, 6);                                                        // schwarze Stahlfelge, Chromkappe
@@ -1761,22 +1772,47 @@ const SPEC_POLIZEIVAN = { name: "Gotham Police Van", wheels: [[-0.88, -1.9], [0.
   maxN: 30, maxF: 36.1, acc: 9, steer: 0.62, jump: false, grade: 34, camD: 10, camH: 1.8, seat: [-0.45, 1.75, -1.45], bodyH: 2.7, bike: false, mass: 12,
   exits: [[-1.9, -1.4], [1.9, -1.4], [-1.9, 1.2], [1.9, 1.2], [0, -4.0], [0, 4.0]],
   msg: "Gotham Police Van: W/S Gas/Bremse, A/D lenken, V Kamera, R zurücksetzen, Shift aussteigen (Blaulicht blinkt beim Fahren)" };
-// Polizei-Motorrad: Tourer in Weiss mit blauem Band, Verkleidung mit Windschild, Seitenkoffer mit POLICE, Blaulichter rot/blau vorne und am Heck, Sturzbuegel
+// Polizei-Motorrad (ueberarbeitet 2026-11-19, Nicolas: "Police-Motorrad soll ueberarbeitet werden"): Tourer in Weiss auf Basis von buildBike. Gerundete Verkleidung (Loft) mit
+// blauem Band, Doppelscheinwerfer und Wappen, gebogenes Windschild mit Rahmen, Spiegel an Stielen, Blitzer rot/blau an der Verkleidung, Sirene, Tankstreifen, Sturzbuegel
+// vorne und hinten, Trittbretter, abgerundete Seitenkoffer (Deckelfuge, POLICE, Schloss, Rueckstrahler, blauer Streifen), Lichtbuegel hinten mit Blaulichtern,
+// Funkkasten, Antenne. Vorne = -z (Vorderrad z -0,72, Hinterrad z 0,72).
 function buildPolizeiMotorrad() {
-  const b = buildBike(0xeef0f2), g = b.g, blue = M(0x1b2c4f, { metalness: 0.3, roughness: 0.4 }), black = M(0x141517, { roughness: 0.7 }), chrome = M(0xe8eaec, { metalness: 0.95, roughness: 0.12 });
-  const shield = new THREE.MeshStandardMaterial({ color: 0xbfd4e8, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.45 });
-  prismIn(g, [[0.78, 0.62], [0.74, 1.02], [0.5, 1.12], [0.36, 0.92], [0.42, 0.62]], 0.62, M(0xeef0f2, { metalness: 0.5, roughness: 0.32 }));   // Verkleidung vorne
-  prismIn(g, [[0.77, 0.7], [0.75, 0.8], [0.42, 0.8], [0.42, 0.7]], 0.64, blue);                                                // blaues Band an der Verkleidung
-  { const ws = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.42, 0.02), shield); ws.position.set(0, 1.28, -0.6); ws.rotation.x = 0.45; g.add(ws); }   // Windschild
-  for (const sd of [-1, 1]) {
-    boxIn(g, sd * 0.24 - 0.13, sd * 0.24 + 0.13, 0.55, 0.95, 0.55, 1.05, M(0xeef0f2, { metalness: 0.4, roughness: 0.35 }));   // Seitenkoffer
-    fireSign(g, (() => { const m = fireLabel("POLICE", 120); m.color = new THREE.Color(0x1b2c4f); return m; })(), 0.42, 0.12, sd * (0.24 + sd * 0.131), 0.82, 0.8, sd);
-    boxIn(g, sd * 0.24 - 0.135, sd * 0.24 + 0.135, 0.62, 0.66, 0.54, 1.06, blue);
-    meshIn(g, new THREE.TorusGeometry(0.22, 0.02, 6, 12, Math.PI), chrome, sd * 0.3, 0.45, -0.25).rotation.set(0, Math.PI / 2, Math.PI / 2);   // Sturzbuegel
-  }
+  const b = buildBike(0xeef0f2), g = b.g, white = M(0xeef0f2, { metalness: 0.45, roughness: 0.3 }), blue = M(0x1b2c4f, { metalness: 0.3, roughness: 0.4 }), black = M(0x141517, { roughness: 0.7 }), chrome = M(0xe8eaec, { metalness: 0.95, roughness: 0.12 });
   const red = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2 }), blu = new THREE.MeshStandardMaterial({ color: 0x0a1a5a, emissive: 0x2a5cff, emissiveIntensity: 0.2 });
-  for (const sd of [-1, 1]) { meshIn(g, new THREE.SphereGeometry(0.045, 10, 8), sd < 0 ? red : blu, sd * 0.18, 0.98, -0.72); meshIn(g, new THREE.CylinderGeometry(0.04, 0.04, 0.12, 10), sd < 0 ? red : blu, sd * 0.2, 1.2, 1.0);
-    meshIn(g, new THREE.CylinderGeometry(0.01, 0.01, 0.3, 4), black, sd * 0.2, 1.0, 1.0); }
+  const shield = new THREE.MeshStandardMaterial({ color: 0xbfd4e8, metalness: 0.1, roughness: 0.05, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
+  // Verkleidung als Loft, blaues Band als etwas groesserer Ring darueber
+  const w = tabF([[0.96, 0.08], [0.88, 0.2], [0.74, 0.28], [0.55, 0.31], [0.4, 0.27]]), yb = tabF([[0.96, 0.84], [0.86, 0.72], [0.72, 0.66], [0.4, 0.6]]), yt = tabF([[0.96, 0.95], [0.86, 1.05], [0.72, 1.12], [0.52, 1.15], [0.4, 1.08]]);
+  const FS = [0.96, 0.92, 0.88, 0.82, 0.76, 0.7, 0.62, 0.55, 0.47, 0.4], sec = (f, s = 1, a = 0, z = 1) => { const B = yb(f), T = yt(f), H = T - B, W = w(f) * s, y0 = B + a * H, y1 = B + z * H;
+    return [[0, y0], [W * 0.75, y0], [W, Math.min(y1, B + 0.45 * H)], [W * 0.82, Math.min(y1, B + 0.85 * H)], [0, y1]]; };
+  loftIn(g, FS.map(f => [f, sec(f)]), white); loftIn(g, FS.slice(1, -1).map(f => [f, sec(f, 1.02, 0.18, 0.36)]), blue);
+  for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(0.055, 0.055, 0.05, 14).rotateX(Math.PI / 2), black, sd * 0.07, 0.9, -0.92); meshIn(g, new THREE.CircleGeometry(0.045, 14), mat.glow, sd * 0.07, 0.9, -0.947, Math.PI);   // Doppelscheinwerfer
+    boxAt(g, 0.02, 0.05, 0.12, sd < 0 ? red : blu, sd * 0.3, 0.8, -0.62); boxAt(g, 0.06, 0.03, 0.04, M(0xffa020, { emissive: 0x804000 }), sd * 0.24, 0.96, -0.84); }   // Blitzer seitlich, Blinker
+  { const bd = new THREE.MeshStandardMaterial({ map: canvasTex(128, 128, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = "#c9a640"; c.beginPath(); c.moveTo(64, 8); c.lineTo(116, 28); c.quadraticCurveTo(112, 92, 64, 122); c.quadraticCurveTo(16, 92, 12, 28); c.closePath(); c.fill();
+      c.fillStyle = "#1b2c4f"; c.font = "bold 30px Arial"; c.textAlign = "center"; c.fillText("GCPD", 64, 74); }), transparent: true, roughness: 0.4 });
+    for (const sd of [-1, 1]) { const o = meshIn(g, new THREE.PlaneGeometry(0.13, 0.13), bd, sd * 0.29, 0.98, -0.5); o.rotation.y = sd * Math.PI / 2; } }
+  // Windschild gebogen (Ebene mit nach hinten gebogenen Seiten), Rahmen, Spiegel
+  { const geo = new THREE.PlaneGeometry(0.44, 0.34, 10, 1), pp = geo.attributes.position; for (let q = 0; q < pp.count; q++) pp.setZ(q, (pp.getX(q) / 0.22) ** 2 * 0.08); geo.computeVertexNormals();
+    const ws = new THREE.Mesh(geo, shield); ws.position.set(0, 1.28, -0.64); ws.rotation.x = -0.5; g.add(ws); const rf = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.02, 0.03), black); rf.position.set(0, 1.135, -0.72); rf.rotation.x = -0.5; rf.scale.x = 0.88; g.add(rf); }
+  for (const sd of [-1, 1]) { const st = meshIn(g, new THREE.CylinderGeometry(0.01, 0.01, 0.22, 6), black, sd * 0.33, 1.1, -0.55); st.rotation.z = -sd * 0.6; boxAt(g, 0.13, 0.08, 0.03, black, sd * 0.42, 1.2, -0.55); boxAt(g, 0.11, 0.065, 0.01, M(0x9ab0c0, { metalness: 0.9, roughness: 0.05 }), sd * 0.42, 1.2, -0.535); }
+  meshIn(g, new THREE.CylinderGeometry(0.06, 0.05, 0.1, 12).rotateX(Math.PI / 2), chrome, -0.16, 0.6, -0.72); meshIn(g, new THREE.CircleGeometry(0.045, 12), black, -0.16, 0.6, -0.772, Math.PI);   // Sirene
+  prismIn(g, [[0.41, 0.82], [0.38, 0.9], [-0.2, 0.86], [-0.2, 0.8]], 0.37, blue);                                               // Tankstreifen
+  // Sturzbuegel vorne (je zwei Boegen) und hinten, Trittbretter
+  for (const sd of [-1, 1]) { for (const [r, y, z] of [[0.2, 0.46, -0.22], [0.14, 0.62, -0.28]]) { const t = new THREE.Mesh(new THREE.TorusGeometry(r, 0.018, 6, 14, Math.PI), chrome); t.rotation.set(0, Math.PI / 2, Math.PI / 2); t.position.set(sd * 0.3, y, z); g.add(t); }
+    const h = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.016, 6, 14, Math.PI), chrome); h.rotation.set(0, Math.PI / 2, Math.PI / 2); h.position.set(sd * 0.36, 0.5, 0.62); g.add(h);
+    boxAt(g, 0.12, 0.025, 0.3, black, sd * 0.27, 0.38, 0.0); for (let q = 0; q < 4; q++) boxAt(g, 0.12, 0.012, 0.02, M(0x3a3c40, { roughness: 0.8 }), sd * 0.27, 0.395, -0.11 + q * 0.07); }
+  // Seitenkoffer abgerundet: Seitenprofil als Form mit Rundungen, quer extrudiert
+  { const sh = new THREE.Shape(), R = 0.07, z0 = 0.46, z1 = 1.06, y0 = 0.46, y1 = 0.9; sh.moveTo(-(z0 + 0.06), y0 + R); sh.lineTo(-z0, y1 - R); sh.quadraticCurveTo(-z0, y1, -(z0 + R), y1); sh.lineTo(-(z1 - R), y1); sh.quadraticCurveTo(-z1, y1, -z1, y1 - R);
+    sh.lineTo(-z1, y0 + R); sh.quadraticCurveTo(-z1, y0, -(z1 - R), y0); sh.lineTo(-(z0 + 0.06 + R), y0); sh.quadraticCurveTo(-(z0 + 0.06), y0, -(z0 + 0.06), y0 + R);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.18, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 3 }).rotateY(Math.PI / 2);
+    const lab = (() => { const m = fireLabel("POLICE", 120); m.color = new THREE.Color(0x1b2c4f); return m; })();
+    for (const sd of [-1, 1]) { const x = sd > 0 ? 0.2 : -0.38; const k = new THREE.Mesh(geo, white); k.position.x = x; g.add(k); const X = sd * 0.4;
+      boxAt(g, 0.012, 0.015, 0.6, black, X + sd * 0.012, 0.8, 0.76); boxAt(g, 0.012, 0.05, 0.56, blue, X + sd * 0.012, 0.6, 0.76); fireSign(g, lab, 0.4, 0.11, X + sd * 0.02, 0.7, 0.76, sd);
+      boxAt(g, 0.02, 0.04, 0.05, chrome, X + sd * 0.015, 0.78, 0.5); boxAt(g, 0.02, 0.05, 0.06, M(0xc02020, { emissive: 0x400808 }), X + sd * 0.012, 0.64, 1.06); } }
+  // Lichtbuegel hinten mit Blaulichtern, Funkkasten, Antenne
+  for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(0.014, 0.014, 0.42, 6), chrome, sd * 0.2, 1.12, 1.0); boxAt(g, 0.09, 0.07, 0.07, sd < 0 ? red : blu, sd * 0.2, 1.36, 1.0); boxAt(g, 0.1, 0.02, 0.08, black, sd * 0.2, 1.31, 1.0); }
+  meshIn(g, new THREE.CylinderGeometry(0.012, 0.012, 0.42, 6).rotateZ(Math.PI / 2), chrome, 0, 1.2, 1.0); boxAt(g, 0.26, 0.14, 0.2, black, 0, 1.02, 0.95); boxAt(g, 0.22, 0.02, 0.01, M(0x30ff60, { emissive: 0x108020 }), 0, 1.05, 0.845);
+  meshIn(g, new THREE.CylinderGeometry(0.004, 0.007, 0.9, 4), black, -0.12, 1.5, 1.04);
+  for (const sd of [-1, 1]) { meshIn(g, new THREE.SphereGeometry(0.04, 10, 8), sd < 0 ? red : blu, sd * 0.36, 0.66, -0.4); }   // Blitzer am vorderen Buegel
   return { g, wheels: b.wheels, beacon: [red, blu] };
 }
 const SPEC_POLIZEIMOTORRAD = { ...SPEC_BIKE, name: "Gotham Police Motorrad", maxN: 36, maxF: 44.4, acc: 14,

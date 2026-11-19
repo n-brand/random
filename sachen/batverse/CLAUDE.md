@@ -70,6 +70,20 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Polizeiauto und Polizei-Motorrad überarbeitet** (Nicolas 2026-11-19: "Police normal und Police-Motorrad soll überarbeitet werden"): modelle.js.
+  - `buildPolice`:
+    - Flacher Lichtbalken mit 8 Segmenten (rot links, blau rechts, blinken weiter über beacon), weisse Frontblitzer und seitliche Strahler, auf Füssen.
+    - Rammschutz wie beim Van (polKit, mit Blitzern), Blitzer im Grill, Suchscheinwerfer auf beiden Seiten.
+    - Wagennummer 17 auf dem Dach (von hinten lesbar) und an den hinteren Kotflügeln, zwei weitere Antennen.
+  - `buildPolizeiMotorrad` (Basis buildBike):
+    - Gerundete Verkleidung als Loft mit blauem Band, Doppelscheinwerfer, Wappen GCPD, Blitzer und Blinker.
+    - Gebogenes Windschild mit Rahmen, Spiegel an Stielen, Sirene, Tankstreifen.
+    - Sturzbügel vorne (doppelt) und hinten, Trittbretter mit Rillen.
+    - Abgerundete Seitenkoffer mit Deckelfuge, blauem Streifen, POLICE, Schloss, Rückstrahler.
+    - Lichtbügel hinten mit Blaulichtern, Funkkasten, Antenne.
+  - Specs unverändert.
+  - Geprüft: Bilder beider Modelle von vorne, hinten, oben und der Seite.
+
 - **Handy im Hochformat ragt aus dem Bild, ohne Abdunklung** (Nicolas 2026-11-19, Bild: "Handy im Hochformat soll leicht aus dem Bildschirm ragen und dafür weniger Platz verbrauchen, ausserdem soll hier ausnahmsweise der Bildschirm nicht dunkler werden"): style.css und werkstatt/person.css `#handy:not(.quer)`.
   - Kein dunkler Hintergrund mehr; Klicks neben dem Handy gehen durch.
   - Das Handy ist 300 statt 360 px breit und 140 px nach unten aus dem Bild geschoben (`--h-weg`).
