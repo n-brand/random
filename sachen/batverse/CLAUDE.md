@@ -74,6 +74,11 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Prüfrunde im Spiel: Keilsperre, Börse, Waffenläden; Fehler bei den Läden behoben** ("Ja, weiter"):
+  - Keilsperre (Präsidium): hochgefahren Rampe 0,05 → 0,85 m begehbar, steile Kante hält Person (1,35 m vor der Mitte) und Auto (r 1 m) auf, eingefahren flach. In Ordnung.
+  - Börse: über die Stufen (je 20 cm) durch die Tür bis an den mittleren Handelsposten; an der Fassade 0,5 m davor Schluss. In Ordnung.
+  - Waffenläden: auf der Spielkarte sind beide 20 x 15 m (die Grössen 28 x 20 / 56 x 36 m gelten nur in der Werkstatt, OFFENE-FRAGEN 45). Der Umbau von heute (Personalbereich, Schiessstand) ergab im Spiel eine negative Ladentiefe bei Gotham Arms und 1,7 m schmale Seitenräume bei Guns & Ammo. gotham-orte.js: Hinterraum/Schiessstand nur bei genug Platz (Gotham Arms ab 24 m Innentiefe; Guns & Ammo ab 14 m Tiefe und 19 m Breite), sonst ein Raum wie vorher. Geprüft im Spiel: beide Läden durch die Tür bis hinter die Vitrinen begehbar.
+
 - **Fussgänger warten an Kreuzungen und telefonieren** ("Ja, weiter"): gotham-fussgaenger.js – am Ende des Gehsteigs (Kreuzung, Einfahrt, Strassenende) bleiben sie 2-6 s stehen (Stand-Animation) und schauen nach links und rechts, dann drehen sie um. Etwa jeder Dritte telefoniert: Handy in der rechten Hand, Hand am Ohr (Pose per Suche ermittelt: Abstand Hand–Ohr 10 cm). Geprüft: Pose von vorne und von der Seite (Bild, Werkstatt). Im Spiel nicht angesehen.
 
 - **Gebäude auf Figurengrösse geprüft (F6), Casino-Treppe flacher** ("Ja, weiter"): Massstab Figur 1,78 m (Augen 1,62 m). In Ordnung: Türen Waffenladen 2,9 m, Casino 4 m, Präsidium 5,3 m, Börse 6 m, Schiessstand-Tür 2,4 m; Theken Casino-Kasse 1,13 m, Waffenladen 0,97 m, Börsenposten 1,08 m, Werkbank 0,96 m; Decken ab 4,4 m (Läden), 14 m (Börse). Abweichung: Casino-Freitreppe 20 Stufen zu 36,5 cm (doppelt so hoch wie üblich) – gotham-casino.js jetzt 40 Stufen zu 18,25 cm mit 30 cm Auftritt (Treppe 12 m statt 8,4 m lang, beginnt 3,6 m weiter vorne; Loch oben, Geländer und Rampen-Kollision folgen). Geprüft in der Werkstatt: Testgang alle 5 cm von 0 auf 7,30 m, grösster Sprung 6 cm; Bild.

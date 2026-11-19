@@ -245,7 +245,7 @@ function gortWaffenladen(c) {
   // Einrichtung als eigene Gruppe: lokal x = laengs der Front, z = nach aussen (zur Strasse), Ursprung = Mitte der Front innen am Boden
   const [As, At, ds, dt, os, ot] = f.side(front), O = f.W(As + ds * um - os * (ins + 0.32), At + dt * um - ot * (ins + 0.32), Y + 0.08), ow = f.dirW(os, ot), dwv = f.dirW(ds, dt);
   const g = new THREE.Group(); g.name = "Waffenladen " + o.id; g.position.set(O[0], O[1], O[2]); g.rotation.y = Math.atan2(ow[0], ow[2]); g.userData.keep = true; scene.add(g);
-  const sx = Math.cos(g.rotation.y) * dwv[0] - Math.sin(g.rotation.y) * dwv[2] > 0 ? 1 : -1, W2v = Fl / 2 - ins - 0.32, W2 = arms ? W2v : Math.min(W2v, 6.2), Dv = Dp - 2 * ins - 0.64, D = arms ? Dv - 12.3 : Math.round(Dv / 2);   // halbe Innenbreite, Innentiefe gesamt (Dv) und Laden (D; dahinter Hinterraum, 2026-11-19)
+  const sx = Math.cos(g.rotation.y) * dwv[0] - Math.sin(g.rotation.y) * dwv[2] > 0 ? 1 : -1, W2v = Fl / 2 - ins - 0.32, Dv = Dp - 2 * ins - 0.64, hinten = arms ? Dv >= 24 : Dv >= 14 && W2v >= 9.5, W2 = arms || !hinten ? W2v : Math.min(W2v, 6.2), D = !hinten ? Dv : arms ? Dv - 12.3 : Math.round(Dv / 2);   // Hinterraum/Schiessstand nur bei genug Platz (Werkstatt 28 x 20 bzw. 56 x 36 m); auf der Spielkarte (20 x 15 m) ein Raum wie bisher (2026-11-19, Pruefung im Spiel)   // halbe Innenbreite, Innentiefe gesamt (Dv) und Laden (D; dahinter Hinterraum, 2026-11-19)
   const L = (x, z) => { const v = new THREE.Vector3(x, 0, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y); return [O[0] + v.x, O[2] + v.z]; }, lx = [Math.cos(g.rotation.y), -Math.sin(g.rotation.y)];
   const koll = (x, z, bx, bz, h) => { const [cx, cz] = L(x, z); dkAdd({ cx, cy: O[1] + h / 2, cz, ux: lx[0], uz: lx[1], hl: bx / 2, hw: bz / 2, hh: h / 2, m: 0.25 }); };
   const Mt = (c, r = 0.6, m = 0.1, o2 = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...o2 }), add = (geo, m, x, y, z, ry = 0) => { const q = new THREE.Mesh(geo, m); q.position.set(x, y, z); q.rotation.y = ry; q.castShadow = q.receiveShadow = true; g.add(q); return q; };
@@ -254,7 +254,7 @@ function gortWaffenladen(c) {
   add(new THREE.BoxGeometry(W2 * 2 + 0.5, 0.02, D + 0.5), Mt(0xb9b4aa, 0.3, 0.1, { emissive: 0x403d38 }), 0, 0.01, -D / 2);   // heller polierter Boden
   // Lochwand hellbraungrau an der Rueckwand (Textur mit Loechern), Rahmen, Schild
   const lochT = canvasTex(256, 128, (q, w, h) => { q.fillStyle = "#b3a594"; q.fillRect(0, 0, w, h); q.fillStyle = "rgba(60,50,40,.55)"; for (let y = 8; y < h; y += 16) for (let x = 8; x < w; x += 16) { q.beginPath(); q.arc(x, y, 2.2, 0, 7); q.fill(); } }, 1, 1);
-  const wb = W2 * 2 - 5, lochM = Mt(0xffffff, 0.85, 0, { map: lochT, emissive: 0x3a332a, emissiveMap: lochT }); lochM.map.wrapS = lochM.map.wrapT = THREE.RepeatWrapping; lochM.map.repeat.set(wb / 2, 1.6);
+  const wb = W2 * 2 - (hinten ? 5 : 1.2), lochM = Mt(0xffffff, 0.85, 0, { map: lochT, emissive: 0x3a332a, emissiveMap: lochT }); lochM.map.wrapS = lochM.map.wrapT = THREE.RepeatWrapping; lochM.map.repeat.set(wb / 2, 1.6);
   add(new THREE.BoxGeometry(wb, 3.2, 0.05), lochM, 0, 0.5 + 1.6, -D + 0.03); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 0.46, -D + 0.05); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 3.74, -D + 0.05);
   add(new THREE.BoxGeometry(W2 * 2 + 0.4, 0.05, D + 0.4), Mt(0xe6e3dc, 0.8, 0, { emissive: 0x8c8a84 }), 0, Hi - 0.05, -D / 2);   // Decke (eigenes Material: das Umgebungslicht von unten ist gruenlich)
   // Waffen an der Lochwand (Raster), Preisschilder; in der Werkstatt laden die Waffen erst spaeter: dann nachholen
@@ -296,7 +296,7 @@ function gortWaffenladen(c) {
   add(new THREE.BoxGeometry(2.0, 0.015, 1.2), Mt(0x1e1f22, 0.95), 0, 0.03, -0.8);
   { const t = canvasTex(256, 64, (q, w, h) => { q.fillStyle = "#1d2229"; q.fillRect(0, 0, w, h); q.fillStyle = "#f4efe2"; q.font = "bold 34px Arial"; q.textAlign = "center"; q.fillText(arms ? "GOTHAM ARMS" : "GUNS & AMMO", w / 2, 44); }), s = add(new THREE.PlaneGeometry(2.6, 0.65), new THREE.MeshBasicMaterial({ map: t }), 0, 4.0, -D + 0.08); }
   fuell2();
-  gortHinterraum({ add, koll, Mt, g, L, W2, W2v, D, Dv, Hi, arms, licht, holz, dunkel, weiss });
+  if (hinten) gortHinterraum({ add, koll, Mt, g, L, W2, W2v, D, Dv, Hi, arms, licht, holz, dunkel, weiss });
   // Rechtsklick an der Theke oeffnet den Laden im Handy
   const hm = add(new THREE.BoxGeometry(tb, 1.6, 1.4), new THREE.MeshBasicMaterial({ visible: false }), 0, 0.8, tz); hm.castShadow = false; const hp = L(0, tz);
   gates.push({ name: (arms ? "Gotham Arms" : "Guns & Ammo") + " (Theke)", g: hm, call: () => typeof handyShop === "function" && handyShop(sid), verbs: ["Waffen kaufen", "Waffen kaufen"], a: hp, b: hp, near: 4 });
