@@ -92,4 +92,5 @@ function overviewSet(on) {
   else { if (TILES.range === OVERVIEW.range1) TILES.range = OVERVIEW.range0; TILES.budget = OVERVIEW.budget0; if (SET.shadow) applyShadows(true); }
   TILES.cx = NaN; if (typeof toast === "function") toast(on ? "Übersicht: weiter laden, Schatten aus" : "Normale Ansicht");
 }
-function overviewStep() { if (walking) { overviewSet(false); return; } const d = camera.position.distanceTo(controls.target); if (!OVERVIEW.on && d > 700) overviewSet(true); else if (OVERVIEW.on && d < 550) overviewSet(false); }
+const OVERVIEW_AUS = true;   // Ultra-Orbit deaktiviert (Nicolas 2026-11-19); false = ab 700 m Abstand wieder mehr laden, Schatten aus
+function overviewStep() { if (walking || OVERVIEW_AUS) { if (OVERVIEW.on) overviewSet(false); return; } const d = camera.position.distanceTo(controls.target); if (!OVERVIEW.on && d > 700) overviewSet(true); else if (OVERVIEW.on && d < 550) overviewSet(false); }

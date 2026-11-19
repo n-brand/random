@@ -13,14 +13,18 @@ function gfussAt(q, s, sd) { const L = q.L, P = q.r.pts; let j = 1; while (j < L
   return [a[0] + (b[0] - a[0]) * t - uz * sd * o, a[1] + (b[1] - a[1]) * t + ux * sd * o, ux, uz]; }
 function gfussSetzen(F, cam) { const R = gfussStrassen(); if (!R.length) return false;
   for (let k = 0; k < 60; k++) { const q = R[Math.floor(Math.random() * R.length)], s = Math.random() * q.len, sd = Math.random() < 0.5 ? 1 : -1, [x, z] = gfussAt(q, s, sd), d = Math.hypot(x - cam.x, z - cam.z);
-    if (d < 40 || d > 120 || !GSTR.walkAt(x, z)) continue; Object.assign(F, { q, s, sd, dir: Math.random() < 0.5 ? 1 : -1, v: 1.1 + Math.random() * 0.5 }); F.g.visible = true; return true; }
+    if (d < 35 || d > 100 || !GSTR.walkAt(x, z)) continue; Object.assign(F, { q, s, sd, dir: Math.random() < 0.5 ? 1 : -1, v: 1.1 + Math.random() * 0.5 }); F.g.visible = true; return true; }
   F.g.visible = false; return false; }
 function gfussStep(dt) { if (typeof GSTR === "undefined" || !GSTR.done || typeof buildFigur !== "function") return; const cam = camera.position, inG = typeof inGothamG === "function" && inGothamG(cam.x, cam.z) && cam.y > GOT.STR - 3 && cam.y < GOT.STR + 400;
   if (!GFUSS.bau) { GFUSS.bau = true; for (let i = 0; i < GFUSS.N; i++) { const o = { haut: gfussW(GFUSS_HAUT), haar: gfussW(GFUSS_HAAR), oberteil: gfussW(GFUSS_ZEUG), hose: gfussW(GFUSS_HOSE), schuhe: Math.random() < 0.4 ? 0xeeeeee : 0x15161a, frisur: Math.floor(Math.random() * 4), bart: Math.random() < 0.2,
-      schulter: 0.85 + Math.random() * 0.3, bauch: Math.random() < 0.2 ? 1.3 : 1, groesse: 0.92 + Math.random() * 0.1 }, g = buildFigur(o); g.name = "Fussgänger"; g.visible = false; g.userData.dynamic = true; scene.add(g); GFUSS.list.push({ g, q: null }); } }
-  for (const F of GFUSS.list) { if (!inG) { F.g.visible = false; F.q = null; continue; }
-    if (!F.q || Math.hypot(F.g.position.x - cam.x, F.g.position.z - cam.z) > 170) { if (!gfussSetzen(F, cam)) continue; }
+      schulter: 0.85 + Math.random() * 0.3, bauch: Math.random() < 0.2 ? 1.3 : 1, groesse: 0.92 + Math.random() * 0.1 }, g = buildFigur(o); g.name = "Fussgänger"; g.visible = false; g.userData.dynamic = true; scene.add(g);
+      const fern = new THREE.Group(), kb = new THREE.Mesh(GFUSS.kg || (GFUSS.kg = new THREE.CapsuleGeometry(0.2, 1.05, 3, 8).translate(0, 0.76, 0)), new THREE.MeshStandardMaterial({ color: o.oberteil, roughness: 0.75 })), kk = new THREE.Mesh(GFUSS.hg || (GFUSS.hg = new THREE.SphereGeometry(0.13, 10, 8).translate(0, 1.6, 0)), new THREE.MeshStandardMaterial({ color: o.haut, roughness: 0.75 }));
+      kb.scale.set(o.schulter, 1, 0.75); fern.add(kb, kk); fern.scale.setScalar(o.groesse); fern.visible = false; fern.userData.dynamic = true; scene.add(fern); GFUSS.list.push({ g, fern, q: null }); } }   // Fern-Figur ab 35 m: 2 Teile statt 21 (Leistung)
+  for (const F of GFUSS.list) { if (!inG) { F.g.visible = F.fern.visible = false; F.q = null; continue; }
+    if (!F.q || Math.hypot(F.g.position.x - cam.x, F.g.position.z - cam.z) > 170) { if (!gfussSetzen(F, cam)) { F.fern.visible = false; continue; } }
     let s = F.s + F.dir * F.v * dt; if (s < 2 || s > F.q.len - 2) { F.dir = -F.dir; s = F.s; }
     const [x, z, ux, uz] = gfussAt(F.q, s, F.sd); if (!GSTR.walkAt(x, z)) { F.dir = -F.dir; } else F.s = s;   // Gehsteig zu Ende (Kreuzung, Einfahrt): umdrehen
     const [px, pz] = gfussAt(F.q, F.s, F.sd); F.g.position.set(px, GOT.STR + GSTR.RAISE, pz); F.g.rotation.y = Math.atan2(-ux * F.dir, -uz * F.dir);
-    if (Math.hypot(px - cam.x, pz - cam.z) < 90) figurPose(F.g, dt, F.v, false); } }
+    // Leistung (Nicolas 2026-11-19 "teste bitte Performance": je Figur 21 Teile, mit Schatten doppelt): ab 100 m nicht gezeichnet, Schatten nur bis 25 m, Animation bis 60 m
+    const d = Math.hypot(px - cam.x, pz - cam.z), nah = d < 35; F.g.visible = nah; F.fern.visible = !nah && d < 100; if (!nah) { F.fern.position.copy(F.g.position); F.fern.position.y += Math.abs(Math.sin(F.s * 3.2)) * 0.03; } const sh = d < 25; if (F.sh !== sh) { F.sh = sh; F.g.traverse(o => { if (o.isMesh) o.castShadow = sh; }); }
+    if (d < 60) figurPose(F.g, dt, F.v, false); } }
