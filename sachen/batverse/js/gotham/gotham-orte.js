@@ -245,7 +245,7 @@ function gortWaffenladen(c) {
   // Einrichtung als eigene Gruppe: lokal x = laengs der Front, z = nach aussen (zur Strasse), Ursprung = Mitte der Front innen am Boden
   const [As, At, ds, dt, os, ot] = f.side(front), O = f.W(As + ds * um - os * (ins + 0.32), At + dt * um - ot * (ins + 0.32), Y + 0.08), ow = f.dirW(os, ot), dwv = f.dirW(ds, dt);
   const g = new THREE.Group(); g.name = "Waffenladen " + o.id; g.position.set(O[0], O[1], O[2]); g.rotation.y = Math.atan2(ow[0], ow[2]); g.userData.keep = true; scene.add(g);
-  const sx = Math.cos(g.rotation.y) * dwv[0] - Math.sin(g.rotation.y) * dwv[2] > 0 ? 1 : -1, W2 = Fl / 2 - ins - 0.32, D = Dp - 2 * ins - 0.64;   // halbe Innenbreite, Innentiefe
+  const sx = Math.cos(g.rotation.y) * dwv[0] - Math.sin(g.rotation.y) * dwv[2] > 0 ? 1 : -1, W2 = Fl / 2 - ins - 0.32, Dv = Dp - 2 * ins - 0.64, D = arms ? Dv - 12.3 : Math.round(Dv / 2);   // halbe Innenbreite, Innentiefe gesamt (Dv) und Laden (D; dahinter Hinterraum, 2026-11-19)
   const L = (x, z) => { const v = new THREE.Vector3(x, 0, z).applyAxisAngle(new THREE.Vector3(0, 1, 0), g.rotation.y); return [O[0] + v.x, O[2] + v.z]; }, lx = [Math.cos(g.rotation.y), -Math.sin(g.rotation.y)];
   const koll = (x, z, bx, bz, h) => { const [cx, cz] = L(x, z); dkAdd({ cx, cy: O[1] + h / 2, cz, ux: lx[0], uz: lx[1], hl: bx / 2, hw: bz / 2, hh: h / 2, m: 0.25 }); };
   const Mt = (c, r = 0.6, m = 0.1, o2 = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m, ...o2 }), add = (geo, m, x, y, z, ry = 0) => { const q = new THREE.Mesh(geo, m); q.position.set(x, y, z); q.rotation.y = ry; q.castShadow = q.receiveShadow = true; g.add(q); return q; };
@@ -254,7 +254,7 @@ function gortWaffenladen(c) {
   add(new THREE.BoxGeometry(W2 * 2 + 0.5, 0.02, D + 0.5), Mt(0xb9b4aa, 0.3, 0.1, { emissive: 0x403d38 }), 0, 0.01, -D / 2);   // heller polierter Boden
   // Lochwand hellbraungrau an der Rueckwand (Textur mit Loechern), Rahmen, Schild
   const lochT = canvasTex(256, 128, (q, w, h) => { q.fillStyle = "#b3a594"; q.fillRect(0, 0, w, h); q.fillStyle = "rgba(60,50,40,.55)"; for (let y = 8; y < h; y += 16) for (let x = 8; x < w; x += 16) { q.beginPath(); q.arc(x, y, 2.2, 0, 7); q.fill(); } }, 1, 1);
-  const wb = W2 * 2 - 1.2, lochM = Mt(0xffffff, 0.85, 0, { map: lochT, emissive: 0x3a332a, emissiveMap: lochT }); lochM.map.wrapS = lochM.map.wrapT = THREE.RepeatWrapping; lochM.map.repeat.set(wb / 2, 1.6);
+  const wb = W2 * 2 - 5, lochM = Mt(0xffffff, 0.85, 0, { map: lochT, emissive: 0x3a332a, emissiveMap: lochT }); lochM.map.wrapS = lochM.map.wrapT = THREE.RepeatWrapping; lochM.map.repeat.set(wb / 2, 1.6);
   add(new THREE.BoxGeometry(wb, 3.2, 0.05), lochM, 0, 0.5 + 1.6, -D + 0.03); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 0.46, -D + 0.05); add(new THREE.BoxGeometry(wb + 0.12, 0.08, 0.1), holz, 0, 3.74, -D + 0.05);
   add(new THREE.BoxGeometry(W2 * 2 + 0.4, 0.05, D + 0.4), Mt(0xe6e3dc, 0.8, 0, { emissive: 0x8c8a84 }), 0, Hi - 0.05, -D / 2);   // Decke (eigenes Material: das Umgebungslicht von unten ist gruenlich)
   // Waffen an der Lochwand (Raster), Preisschilder; in der Werkstatt laden die Waffen erst spaeter: dann nachholen
@@ -295,7 +295,89 @@ function gortWaffenladen(c) {
   add(new THREE.BoxGeometry(2.0, 0.015, 1.2), Mt(0x1e1f22, 0.95), 0, 0.03, -0.8);
   { const t = canvasTex(256, 64, (q, w, h) => { q.fillStyle = "#1d2229"; q.fillRect(0, 0, w, h); q.fillStyle = "#f4efe2"; q.font = "bold 34px Arial"; q.textAlign = "center"; q.fillText(arms ? "GOTHAM ARMS" : "GUNS & AMMO", w / 2, 44); }), s = add(new THREE.PlaneGeometry(2.6, 0.65), new THREE.MeshBasicMaterial({ map: t }), 0, 4.0, -D + 0.08); }
   fuell2();
+  gortHinterraum({ add, koll, Mt, g, W2, D, Dv, Hi, arms, licht, holz, dunkel, weiss });
   // Rechtsklick an der Theke oeffnet den Laden im Handy
   const hm = add(new THREE.BoxGeometry(tb, 1.6, 1.4), new THREE.MeshBasicMaterial({ visible: false }), 0, 0.8, tz); hm.castShadow = false; const hp = L(0, tz);
   gates.push({ name: (arms ? "Gotham Arms" : "Guns & Ammo") + " (Theke)", g: hm, call: () => typeof handyShop === "function" && handyShop(sid), verbs: ["Waffen kaufen", "Waffen kaufen"], a: hp, b: hp, near: 4 });
   return Hb; }
+// ---- Hinterraum der Waffenlaeden (Nicolas 2026-11-19: "der kleine Waffenladen ist mir zu gross – Haelfte wuerde reichen, ueberleg wie man den Rest fuellen koennte; beim grossen
+// haette ich gerne einen grossen Raum, wo man einen Schiessstand hat"). Trennwand bei z = -D mit Tuer an der Seite ds; dahinter bis -Dv:
+// klein (Guns & Ammo): Buechsenmacher-Werkstatt (Werkbank mit Schraubstock, Werkzeugwand, zerlegte Pistole), Lager (Regale mit Munitionskisten, Pakete), Waffentresor, Buero-Ecke.
+// gross (Gotham Arms): Schiessstand quer ueber die ganze Breite – Schuetzenbereich an der Tuerseite, Kabinen mit Trennwaenden und Ablage, Bahnen bis ca. 40 m, Scheiben an
+// Deckenschienen in verschiedenen Abstaenden, schraeger Kugelfang hinten, Prallbleche an der Decke, Ampel "Feuer frei", Gehoerschutz. Lokal: x laengs der Front, z nach aussen.
+function gortHinterraum(c) {
+  const { add, koll, Mt, W2, D, Dv, Hi, arms, licht, holz, dunkel, weiss } = c, ds = arms ? -1 : 1, tw = 0.75, tx = ds * (W2 - 1.4), zw = -D - 0.15, T = Dv - D - 0.3, zm = -D - 0.3 - T / 2;
+  const wandM = Mt(0xf2eee6, 0.8, 0, { emissive: 0x403e3a });
+  // Trennwand mit Tuer, Rahmen, Schild
+  for (const [a, b] of [[-W2 - 0.3, Math.min(tx - tw, tx + tw)], [Math.max(tx - tw, tx + tw), W2 + 0.3]].map(([a, b]) => [Math.min(a, b), Math.max(a, b)])) {
+    if (b - a < 0.05) continue; add(new THREE.BoxGeometry(b - a, Hi, 0.3), wandM, (a + b) / 2, Hi / 2, zw); koll((a + b) / 2, zw, b - a, 0.3, Hi); }
+  add(new THREE.BoxGeometry(2 * tw, Hi - 2.4, 0.3), wandM, tx, 2.4 + (Hi - 2.4) / 2, zw);
+  for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.1, 2.45, 0.36), dunkel, tx + s * (tw + 0.02), 1.22, zw); add(new THREE.BoxGeometry(2 * tw + 0.24, 0.1, 0.36), dunkel, tx, 2.42, zw);
+  { const t = canvasTex(256, 64, (q, w, h) => { q.fillStyle = arms ? "#7a1a16" : "#2a2d33"; q.fillRect(0, 0, w, h); q.fillStyle = "#fff"; q.font = "bold 30px Arial"; q.textAlign = "center"; q.fillText(arms ? "SCHIESSSTAND" : "NUR PERSONAL", w / 2, 43); });
+    add(new THREE.PlaneGeometry(1.4, 0.35), new THREE.MeshBasicMaterial({ map: t }), tx, 2.75, zw + 0.16); }
+  // Boden, Decke, Lichter des Hinterraums
+  add(new THREE.BoxGeometry(W2 * 2 + 0.5, 0.02, T), Mt(arms ? 0x6c6e70 : 0x8a8478, 0.85, 0, { emissive: 0x262624 }), 0, 0.012, zm);
+  add(new THREE.BoxGeometry(W2 * 2 + 0.4, 0.05, T + 0.2), Mt(0xe6e3dc, 0.8, 0, { emissive: 0x8c8a84 }), 0, Hi - 0.05, zm);
+  if (!arms) return gortWerkstattRaum(c, { ds, tx, zm, T, wandM });
+  // ---- Schiessstand: Schuetzenbereich (x von der Tuerseite 4 m), Schusslinie bei xs, Bahnen in z, Ziel nach -ds
+  const xa = ds * W2, xs = xa - ds * 4.2, xe = -ds * (W2 - 1.0), lang = Math.abs(xe - xs), bw = 1.7, n = Math.max(2, Math.floor((T - 0.6) / bw)), z0 = -D - 0.3 - (T - n * bw) / 2;
+  const blech = Mt(0x3a3d42, 0.7, 0.4, { emissive: 0x1c1d20 }), gummi = Mt(0x1a1a1c, 0.95), panel = Mt(0x8a8e92, 0.6, 0.2, { emissive: 0x1e2022 }), rot = new THREE.MeshBasicMaterial({ color: 0xff3030 }), gruen = new THREE.MeshBasicMaterial({ color: 0x30ff60 });
+  const scheibe = canvasTex(128, 192, (q, w, h) => { q.fillStyle = "#f4efe2"; q.fillRect(0, 0, w, h); q.fillStyle = "#151515"; q.beginPath(); q.ellipse(w / 2, h * 0.36, w * 0.2, h * 0.14, 0, 0, 7); q.fill(); q.fillRect(w * 0.18, h * 0.5, w * 0.64, h * 0.46);
+    q.strokeStyle = "#f4efe2"; q.lineWidth = 2; for (const r of [0.1, 0.2, 0.3]) { q.beginPath(); q.ellipse(w / 2, h * 0.68, w * r, h * r * 0.75, 0, 0, 7); q.stroke(); } q.fillStyle = "#e33"; q.beginPath(); q.arc(w / 2, h * 0.68, 5, 0, 7); q.fill(); });
+  const scM = new THREE.MeshStandardMaterial({ map: scheibe, roughness: 0.9, side: THREE.DoubleSide, emissive: 0x555248, emissiveMap: scheibe });
+  for (let i = 0; i <= n; i++) { const z = z0 - i * bw;   // Trennwaende der Kabinen (1,6 m lang, 2 m hoch) und Deckenschienen
+    add(new THREE.BoxGeometry(1.6, 2.0, 0.06), panel, xs + ds * 0.5, 1.0, z); koll(xs + ds * 0.5, z, 1.6, 0.08, 2.0); }
+  for (let i = 0; i < n; i++) { const z = z0 - (i + 0.5) * bw, d = [7, 10, 15, 25, 12, 20, 8, 30][i % 8], xd = xs - ds * Math.min(d, lang - 2);
+    add(new THREE.BoxGeometry(0.5, 0.06, bw - 0.1), holz, xs - ds * 0.1, 1.05, z); add(new THREE.BoxGeometry(0.06, 1.0, bw - 0.1), panel, xs - ds * 0.33, 0.52, z);   // Ablage, Brett darunter
+    add(new THREE.BoxGeometry(lang, 0.06, 0.06), blech, (xs + xe) / 2, Hi - 0.35, z);   // Schiene der Scheibe
+    add(new THREE.BoxGeometry(0.1, 0.12, 0.1), dunkel, xd, Hi - 0.42, z); add(new THREE.BoxGeometry(0.02, Hi - 2.2, 0.02), blech, xd, (Hi - 0.42 + 1.75) / 2 + 0.05, z);   // Laufkatze, Draht
+    const s = add(new THREE.PlaneGeometry(0.6, 0.9), scM, xd, 1.4, z, Math.PI / 2); s.castShadow = false;
+    add(new THREE.BoxGeometry(0.24, 0.14, 0.12), Mt(0x1a1b1e, 0.5), xs + ds * 0.05, 1.15, z - 0.4); add(new THREE.BoxGeometry(0.16, 0.08, 0.004), Mt(0x30ff60, 0.3, 0, { emissive: 0x20a040 }), xs + ds * 0.05, 1.17, z - 0.33);   // Bedienpult der Scheibe
+    const gh = add(new THREE.TorusGeometry(0.09, 0.025, 6, 14, Math.PI), Mt(0xc8202a, 0.5), xs + ds * 0.9, 1.75, z + bw / 2 - 0.12); gh.rotation.x = 0; }   // Gehoerschutz am Haken
+  koll(xs - ds * 0.1, z0 - n * bw / 2, 0.55, n * bw, 1.1);   // Ablagen als Sperre: in die Bahnen geht man nicht
+  // Kugelfang (schraeg, Gummigranulat) und Prallbleche an der Decke, Seitenwaende dunkel
+  { const kf = add(new THREE.BoxGeometry(0.4, Hi * 1.25, n * bw + 0.4), gummi, xe - ds * 0.5, Hi / 2, z0 - n * bw / 2); kf.rotation.z = ds * 0.6; }
+  for (let x = xs - ds * 3; Math.abs(x - xs) < lang - 3; x -= ds * 4) { const p = add(new THREE.BoxGeometry(1.4, 0.04, n * bw), blech, x, Hi - 0.7, z0 - n * bw / 2); p.rotation.z = ds * 0.5; }
+  add(new THREE.BoxGeometry(lang, Hi - 0.1, 0.06), Mt(0x55585e, 0.9, 0, { emissive: 0x2a2c30 }), (xs + xe) / 2, Hi / 2, -D - 0.31); add(new THREE.BoxGeometry(lang, Hi - 0.1, 0.06), Mt(0x55585e, 0.9, 0, { emissive: 0x2a2c30 }), (xs + xe) / 2, Hi / 2, -Dv + 0.04);
+  // Licht: hell im Schuetzenbereich, Strahler auf die Scheiben; Ampel "Feuer frei" und Schild ueber der Schusslinie
+  for (let z = z0 - 0.8; z > z0 - n * bw; z -= 2.4) add(new THREE.BoxGeometry(2.4, 0.03, 0.6), licht, xa - ds * 2.2, Hi - 0.1, z);
+  for (let x = xs - ds * 6; Math.abs(x - xs) < lang - 1; x -= ds * 6) for (let i = 0; i < n; i += 2) add(new THREE.BoxGeometry(0.4, 0.03, 0.4), licht, x, Hi - 0.12, z0 - (i + 0.5) * bw);
+  for (const [y, m] of [[2.55, rot], [2.3, gruen]]) add(new THREE.SphereGeometry(0.09, 12, 8), m, xs + ds * 0.1, y, z0 + 0.1);
+  { const t = canvasTex(512, 64, (q, w, h) => { q.fillStyle = "#1d2229"; q.fillRect(0, 0, w, h); q.fillStyle = "#ffd43b"; q.font = "bold 24px Arial"; q.textAlign = "center"; q.fillText("SCHUSSLINIE · GEHÖRSCHUTZ TRAGEN", w / 2, 43); });
+    const s = add(new THREE.PlaneGeometry(Math.min(6, n * bw), 0.4), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }), xs + ds * 0.2, 2.9, z0 - n * bw / 2, ds * Math.PI / 2); s.castShadow = false; }
+  // Bank und Waffenablage im Wartebereich
+  add(new THREE.BoxGeometry(0.45, 0.45, 3), holz, xa - ds * 0.5, 0.225, z0 - n * bw / 2 - 1.5); koll(xa - ds * 0.5, z0 - n * bw / 2 - 1.5, 0.45, 3, 0.45);
+  return { xs, n }; }
+// kleiner Laden: Buechsenmacher-Werkstatt, Lager, Tresor, Buero-Ecke
+function gortWerkstattRaum(c, r) {
+  const { add, koll, Mt, W2, D, Dv, Hi, licht, holz, dunkel, weiss } = c, { ds, zm, T } = r, zb = -Dv + 0.35, stahl = Mt(0x8a9096, 0.4, 0.6), gruen = Mt(0x4b5a3a, 0.7), karton = Mt(0xb08a5a, 0.85);
+  // Werkbank an der Rueckwand (Mitte), Werkzeugwand, Schraubstock, Lampe, zerlegte Pistole auf Matte
+  const wbL = Math.min(5, W2), wx = -ds * W2 * 0.25; add(new THREE.BoxGeometry(wbL, 0.08, 0.8), holz, wx, 0.92, zb + 0.15); add(new THREE.BoxGeometry(wbL, 0.86, 0.7), Mt(0x5a5f66, 0.6, 0.3), wx, 0.44, zb + 0.15); koll(wx, zb + 0.15, wbL, 0.8, 1.0);
+  const tafel = canvasTex(256, 128, (q, w, h) => { q.fillStyle = "#9c8e7c"; q.fillRect(0, 0, w, h); q.fillStyle = "rgba(50,40,30,.5)"; for (let y = 6; y < h; y += 12) for (let x = 6; x < w; x += 12) q.fillRect(x, y, 2, 2);
+    q.strokeStyle = "#2a2c30"; q.lineWidth = 5; for (let i = 0; i < 9; i++) { const x = 18 + i * 26; q.beginPath(); q.moveTo(x, 20); q.lineTo(x + (i % 2 ? 4 : -4), 20 + 40 + (i % 3) * 14); q.stroke(); } q.fillStyle = "#c8202a"; q.fillRect(20, 96, 60, 14); q.fillRect(150, 92, 40, 20); });
+  add(new THREE.BoxGeometry(wbL, 1.4, 0.04), Mt(0xffffff, 0.8, 0, { map: tafel, emissive: 0x2a2620, emissiveMap: tafel }), wx, 1.85, zb - 0.22);
+  add(new THREE.BoxGeometry(0.2, 0.16, 0.14), stahl, wx - wbL / 2 + 0.4, 1.05, zb + 0.35); add(new THREE.BoxGeometry(0.03, 0.03, 0.3), stahl, wx - wbL / 2 + 0.4, 1.1, zb + 0.5);   // Schraubstock
+  add(new THREE.BoxGeometry(0.9, 0.006, 0.5), Mt(0x2a6a3a, 0.9), wx + 0.4, 0.965, zb + 0.2);   // Reinigungsmatte
+  if (typeof gunBuild === "function") { try { const p = gunBuild("pistole"); p.rotation.set(0, Math.PI / 2, Math.PI / 2); p.position.set(wx + 0.3, 1.0, zb + 0.2); c.g.add(p); } catch (e) {} }
+  for (let k = 0; k < 4; k++) add(new THREE.CylinderGeometry(0.012, 0.012, 0.12, 6), stahl, wx + 0.7 + k * 0.06, 0.975, zb + 0.32).rotation.z = Math.PI / 2;   // Kleinteile
+  { const a = add(new THREE.CylinderGeometry(0.015, 0.015, 0.7, 6), dunkel, wx - 0.6, 1.3, zb + 0.1); a.rotation.x = 0.3; add(new THREE.ConeGeometry(0.12, 0.14, 12), Mt(0x2a6a9a, 0.5), wx - 0.6, 1.6, zb + 0.28); add(new THREE.CircleGeometry(0.1, 12), licht, wx - 0.6, 1.53, zb + 0.28).rotation.x = Math.PI / 2; }
+  // Lager: Schwerlastregale an der Seitenwand gegenueber der Tuer mit Munitionskisten und Kartons
+  const rx = -ds * (W2 - 0.5); for (let z = -D - 1.0; z > -Dv + 1.2; z -= 2.6) { for (const y of [0.15, 0.95, 1.75, 2.55]) add(new THREE.BoxGeometry(0.9, 0.05, 2.4), Mt(0xc86a1a, 0.6, 0.2), rx, y, z);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(new THREE.BoxGeometry(0.06, 2.7, 0.06), Mt(0x2a4a8a, 0.5, 0.3), rx + sx * 0.42, 1.35, z + sz * 1.17); koll(rx, z, 0.95, 2.45, 2.7);
+    let k = 0; for (const y of [0.18, 0.98, 1.78, 2.58]) for (let q = -0.9; q <= 0.9; q += 0.45) { const kis = k++ % 3; add(new THREE.BoxGeometry(kis ? 0.5 : 0.7, kis ? 0.3 : 0.45, 0.38), kis === 1 ? gruen : karton, rx, y + (kis ? 0.17 : 0.25), z + q); } }
+  // zweites Regal frei im Raum (Rueckseite an Rueckseite gedacht), Gang zur Werkbank bleibt frei
+  { const mx = -ds * (W2 - 3.6), lz = Math.max(2, T - 3.2), mz = zm + 0.4; for (const y of [0.15, 0.95, 1.75]) add(new THREE.BoxGeometry(0.9, 0.05, lz), Mt(0xc86a1a, 0.6, 0.2), mx, y, mz); for (const sz of [-1, 1]) for (const sx of [-1, 1]) add(new THREE.BoxGeometry(0.06, 1.95, 0.06), Mt(0x2a4a8a, 0.5, 0.3), mx + sx * 0.42, 0.98, mz + sz * (lz / 2 - 0.03)); koll(mx, mz, 0.95, lz, 1.95);
+    let k = 0; for (const y of [0.18, 0.98, 1.78]) for (let q = -lz / 2 + 0.3; q < lz / 2 - 0.2; q += 0.42) add(new THREE.BoxGeometry(0.42, 0.26, 0.34), k++ % 2 ? gruen : Mt(0x6b7a3a, 0.7), mx, y + 0.15, mz + q); }
+  // Waffentresor (gross, Drehrad) in der Ecke an der Tuerseite hinten
+  { const sx = ds * (W2 - 0.8), sz = -Dv + 0.9; add(new THREE.BoxGeometry(1.1, 2.0, 0.8), Mt(0x2a2d33, 0.45, 0.6), sx, 1.0, sz); koll(sx, sz, 1.1, 0.8, 2.0);
+    add(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 16), stahl, sx, 1.1, sz + 0.42).rotation.x = Math.PI / 2; for (let k = 0; k < 3; k++) add(new THREE.BoxGeometry(0.03, 0.26, 0.03), stahl, sx, 1.1, sz + 0.46).rotation.z = k * Math.PI / 3;
+    add(new THREE.BoxGeometry(0.1, 0.06, 0.02), Mt(0x30ff60, 0.3, 0, { emissive: 0x20a040 }), sx + 0.35, 1.45, sz + 0.41); }
+  // Buero-Ecke an der Trennwand: Tisch, Stuhl, Laptop zu, Ordner
+  { const bx = -ds * W2 * 0.2, bz = -D - 1.0; add(new THREE.BoxGeometry(1.6, 0.05, 0.7), holz, bx, 0.75, bz); for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.05, 0.75, 0.65), dunkel, bx + s * 0.75, 0.375, bz); koll(bx, bz, 1.6, 0.7, 0.8);
+    add(new THREE.BoxGeometry(0.34, 0.02, 0.24), Mt(0xb8bcc2, 0.35, 0.6), bx - 0.3, 0.785, bz); for (let k = 0; k < 5; k++) add(new THREE.BoxGeometry(0.06, 0.3, 0.25), Mt([0xc8202a, 0x2a4a8a, 0x2a6a3a][k % 3], 0.7), bx + 0.4 + k * 0.07, 0.93, bz - 0.15);
+    add(new THREE.BoxGeometry(0.5, 0.06, 0.5), dunkel, bx, 0.48, bz - 0.75); add(new THREE.BoxGeometry(0.5, 0.55, 0.06), dunkel, bx, 0.8, bz - 1.0); add(new THREE.CylinderGeometry(0.03, 0.03, 0.45, 6), stahl, bx, 0.23, bz - 0.75); }
+  // Paketstapel und Packtisch neben der Tuer
+  { const px = r.tx - ds * 2.2, pz = -D - 1.6; add(new THREE.BoxGeometry(1.4, 0.9, 0.7), holz, px, 0.45, pz); koll(px, pz, 1.4, 0.7, 0.9); add(new THREE.CylinderGeometry(0.08, 0.08, 0.3, 12), Mt(0x9a7a4a, 0.5), px - 0.4, 0.98, pz).rotation.z = Math.PI / 2;
+    for (let k = 0; k < 4; k++) add(new THREE.BoxGeometry(0.5, 0.35, 0.4), karton, px + 0.2 + (k % 2) * 0.05, 0.9 + 0.175 + 0.36 * Math.floor(k / 2) - (k > 1 ? 0 : 0), pz + (k % 2 ? 0.1 : -0.1)).rotation.y = k * 0.3; }
+  for (let z = -D - 1.2; z > -Dv + 0.8; z -= 2.4) for (let x = -W2 + 1.5; x < W2 - 1; x += 3.6) add(new THREE.BoxGeometry(1.2, 0.03, 0.4), licht, x, Hi - 0.1, z);
+  return { werkstatt: true }; }
