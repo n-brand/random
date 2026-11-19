@@ -70,6 +70,21 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Bilder der 3D-Modelle in den Web-Läden, Börse mit Logos und Detailseite** (Nicolas 2026-11-19: "im Web bei den einzelnen Shops Bilder der 3D-Versionen – Waffen, Fahrzeuge, Gebäude – und bei den Aktien in einer Detailansicht auch das Logo der Firma usw."):
+  - Neu `js/ui/vorschau.js` (Spiel-FILES und Werkstatt nach ui/kalender.js, ASSETS, BV_KEEP): eigener kleiner Renderer (320 × 200, durchsichtig).
+    - `vsBild(key, bau, ansicht, cls)` baut jedes Modell einmal, rendert es und merkt sich das Bild im Speicher der Seite. Die Warteschlange rechnet ein Modell je 30 ms, solange lädt ein Schimmer-Platzhalter.
+    - Ansichten: "schraeg" für Fahrzeuge (je Farbe ein Bild), "seite" für Waffen (heller Hintergrund), "haus" für Gebäude.
+    - Grösse nur aus sichtbaren Netzen (`vsBox`).
+    - `vsHaus(id)` baut zu jeder Immobilie ein Gebäude aus den Gebäude-Vorlagen der Stadt: Tower und Penthouse als Hochhaus, Loft als Fabrik, Diner als Laden, Halle als Lager usw.
+  - Handy (handy.js): Fahrzeug-Läden mit grossem Bild je Fahrzeug (wechselt mit der Farbwahl), Waffenläden mit Bild statt Symbol (Munition behält das Symbol). Quer als Raster mit mehreren Spalten.
+  - Laptop (laptop.js): Budget Cars, Prestige Motors, Defense Supply, Guns & Ammo, Gotham Arms mit Bildern; Gotham Estates mit Gebäudebild je Immobilie.
+  - Börse: Logo je Firma in der Liste (`LT_FIRMA`, `ltLogo`, eigene SVG-Logos für alle 8 Firmen). Klick auf Name oder Kürzel öffnet die Detailseite (`ltAktieSeite`):
+    - Grosses Logo, Name, Branche, Kurs mit Veränderung, grosser Kursverlauf mit Fläche und Achse.
+    - Beschreibung und Kennzahlen: Hoch/Tief, Marktwert, Dividende, Mitarbeitende, Gründung, Sitz, CEO (erfunden).
+    - Depot mit +1/+10/−1/−10, "‹ Alle Aktien" zurück.
+  - Geprüft in der Werkstatt mit Bildern: Prestige Motors (5 Fahrzeuge), Gotham Arms (8 Waffen), Gotham Estates (8 Gebäude), Börse Liste und Detailseite Wayne Enterprises, Handy Defense Supply quer als Raster (8 Fahrzeuge).
+  - Im Spiel nicht im Bild angeschaut (gleicher Code; dort nur das Handy, Laptops stehen noch nicht).
+
 - **Kalender und Gotham Hearts auch auf dem Laptop, Kalender auf dem Handy quer** (Nicolas 2026-11-19: "Kalender soll auch auf dem Laptop sein und beim Handy in den Quermodus gehen"; "die Hearts-App auch auf dem PC"):
   - laptop.js: Brücke für Handy-Apps aus eigenen Dateien. `ltAppBody` zeigt `HANDY_EXTRA[app].render()` im Fenster (dunkel, `.lt-hx`), `ltClick` leitet `data-x`-Klicks an `HANDY_EXTRA[app].click` weiter.
   - kalender.js trägt Kalender und Gotham Hearts in `LT_APPS` und in die Apps beider Laptops ein (Desktop und Taskleiste). `kalOeffne(app)`: "Chat öffnen" und "Im Kalender ansehen" wechseln auf dem Laptop die Laptop-App, sonst die Handy-App.
