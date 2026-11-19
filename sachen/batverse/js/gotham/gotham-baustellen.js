@@ -6,7 +6,7 @@
 // reich = zwei Container, aufgeraeumt; arm = ein Container, ein Haufen mehr, Zaun mit Luecken. Hoechstens ca. 100 Dreiecke je Baustelle,
 // je Material ein Netz, in 768-m-Zellen (gsplit, weit weg ausgeblendet). Zufall fest aus der ID-Nummer.
 // Aufbau nach dem Start als Kachel-Aufgabe (nach den Strassen: das Tor sucht GSTR.onRoad), Zwischenspeicher IndexedDB "GBST".
-const GBST = { skip: ["BS-02"], list: [],   // skip: BS-02 traegt das Casino (gotham-casino.js)
+const GBST = { skip: ["BS-02", "BS-01"], list: [],   // skip: BS-02 traegt das Casino (gotham-casino.js)
   done: false, Y: GOT.STR, maxTris: 0, CC: 128, cells: null, live: new Map() };
 const gbstCKey = (i, k) => i * 100000 + k;
 async function gbstCacheLoad(ck) {

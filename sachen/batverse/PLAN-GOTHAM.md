@@ -131,7 +131,7 @@ Als Gebäude (innen leer) stehen auch: Club des Pinguins, Grand Ballroom (Events
 
 | Nr | Was | Stand |
 |----|-----|-------|
-| N1 | **Börse**, Aktienhandel (Wayne Enterprises, Autohauskette usw.). Vorlage für einen begehbaren Handelssaal (Nicolas 2026-11-17, Filmbild): `karten/planung/boerse-vorbild-handelssaal.webp` – grosser Saal mit Säulen, achteckige Handelsposten mit Bildschirm-Kränzen und Leuchtdach, Händlertische mit vielen Monitoren, Kurstafeln oben an den Wänden, Gedränge, Papier am Boden. Bild nur lokal (Filmstandbild, nicht ins öffentliche Repo) | offen – braucht Kursmodell und Seite im Web (Kurse im Laptop schon da) |
+| N1 | ✅ Gebäude 2026-11-19 (BS-01, Handelssaal begehbar) · **Börse**, Aktienhandel (Wayne Enterprises, Autohauskette usw.). Vorlage für einen begehbaren Handelssaal (Nicolas 2026-11-17, Filmbild): `karten/planung/boerse-vorbild-handelssaal.webp` – grosser Saal mit Säulen, achteckige Handelsposten mit Bildschirm-Kränzen und Leuchtdach, Händlertische mit vielen Monitoren, Kurstafeln oben an den Wänden, Gedränge, Papier am Boden. Bild nur lokal (Filmstandbild, nicht ins öffentliche Repo) | offen – braucht Kursmodell und Seite im Web (Kurse im Laptop schon da) |
 | N2 | **Geldwäsche**: bargeldintensive Betriebe, Immobilien, Kunst, Gold, Luxusgüter, Kryptowährungen | offen – Idee, Ablauf mit Nicolas klären |
 | N3 | **Geld- und Gefangenentransporte** (fahrende Transporter) | ✅ fahren 2026-11-19 (2 Geld, 1 Gefangene, auf Buslinien-Wegen); Überfall offen |
 | N4 | Casinos | ein Casino steht (BS-02); weitere offen |
