@@ -53,7 +53,7 @@ function shotAimPoint(skip) {
 function gunMark(C) {
   const el = document.getElementById("gun-mark"); if (!el) return;
   if (!SHOT.aim) { el.hidden = true; return; }
-  C.gun.updateWorldMatrix(true, false); C.gun.getWorldPosition(shotA); const mz = C.gun.localToWorld(shotV.set(0, 0, -SHOT.MUZZLE)).clone(), dir = mz.clone().sub(shotA).normalize();
+  C.gun.updateWorldMatrix(true, false); C.gun.getWorldPosition(shotA); const mz = C.gun.localToWorld(shotV.set(0, 0, -(C.spec.muzzle || SHOT.MUZZLE))).clone(), dir = mz.clone().sub(shotA).normalize();
   const p = mz.addScaledVector(dir, Math.max(5, SHOT.aim.distanceTo(mz))); camera.updateMatrixWorld(); p.project(camera);
   const W = renderer.domElement.clientWidth || innerWidth, H = renderer.domElement.clientHeight || innerHeight, x = (p.x + 1) / 2 * W, y = (1 - p.y) / 2 * H, sn = shotSightN();
   const sx = (sn.x + 1) / 2 * W, sy = (1 - sn.y) / 2 * H, off = Math.hypot(x - sx, y - sy);
@@ -154,13 +154,13 @@ function shotsStep(dt) {
     // gezoomt: Kamera nach vorne auf den Visier-Strahl der normalen Kamera, auf den Punkt neben der Zieloptik am Turm (sonst sah man den eigenen
     // Turm gross), Blick entlang dieses Strahls, um den Visier-Winkel gesenkt: das Visier zeigt genau dorthin wie ohne Zoom, und die Ansicht ist
     // unabhaengig davon, wie weit das Ziel weg ist (Nicolas 2026-11-12: auf nahe Ziele lag die Ansicht vorher etwas hoeher, Parallaxe der Optik)
-    if (SHOT.zoom > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(shotB.set(0.52, 1.25, -0.9));
+    if (SHOT.zoom > 1.01) { C.turret.updateWorldMatrix(true, false); C.turret.localToWorld(C.spec.sight ? shotB.set(...C.spec.sight) : shotB.set(0.52, 1.25, -0.9));
       const o = shotRay.ray.origin, d = shotRay.ray.direction, t = Math.max(0, shotB.sub(o).dot(d)); camera.position.copy(o).addScaledVector(d, t);
       camera.up.set(0, 1, 0); camera.lookAt(shotB.copy(camera.position).add(d)); camera.rotateX(-Math.atan(sny * Math.tan(fov * Math.PI / 360))); }
     if (label) label.textContent = (SHOT.cd > 0 ? "lädt … " + SHOT.cd.toFixed(1) + " s" : "Linksklick oder Leertaste: schießen") + (SHOT.zoomT > 1 ? " · " + SHOT.zoomT.toFixed(1).replace(".", ",") + "x" : " · Mausrad: Zoom");
     if ((keys.has("Space") || jumpHeld || SHOT.maus) && SHOT.cd === 0 && SHOT.aim) {   // Leertaste oder linke Maus (Nicolas 2026-11-18: "beim Panzer schiessen soll mit Linksklick gehen")
       C.gun.updateWorldMatrix(true, false); C.gun.getWorldPosition(shotA);
-      SHOT.cd = SHOT.RELOAD; const mz = C.gun.localToWorld(new THREE.Vector3(0, 0, -SHOT.MUZZLE)), dir = mz.clone().sub(shotA).normalize();   // entlang des Rohrs
+      SHOT.cd = SHOT.RELOAD; const mz = C.gun.localToWorld(new THREE.Vector3(0, 0, -(C.spec.muzzle || SHOT.MUZZLE))), dir = mz.clone().sub(shotA).normalize();   // entlang des Rohrs
       const shell = fxAddMesh(fxGeo, fxAdd(0xffe2a0), mz, 0.14); shell.scale.set(0.12, 0.12, 0.5); shell.lookAt(mz.clone().add(dir));
       SHOT.shells.push({ o: shell, p: mz.clone(), dir, s: 0, from: C });
       SHOT.fx.push({ o: fxAddMesh(fxGeo, fxAdd(0xffc070), mz, 0.6), t0: now, life: 0.12, grow: 4, fade: true });   // Muendungsblitz

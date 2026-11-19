@@ -139,3 +139,6 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 52. **Militär-Standort (N52):** Wo sollen Cougar und Schulungshelikopter im Spiel stehen (z. B. ein kleiner Militärflugplatz auf dem Festland, Dach des Wayne Towers, bei der Geheimbasis)? Und soll der Panzerjäger 90 schiessen können (Lenkwaffen wie der Panzer)? Bis dahin: Hubschrauber nur in der Werkstatt, Radfahrzeuge im Laden Defense Supply, Panzerjäger nur Optik.
 
 53. **Spielfiguren (N35, PLAN-FIGUREN.md):** Taste für die dritte Person zu Fuss (Vorschlag V)? Soll die eigene Figur anpassbar sein (Haare, Kleidung) oder fest Bruce Wayne bzw. Batman? Bis dahin: Ich-Sicht bleibt, Figur nur in der Werkstatt und auf dem Skateboard.
+
+54. **Aufklärungsdrohne (N52):** Soll man die Drohne selbst steuern können (z. B. vom Batcomputer oder Laptop aus, mit Kamerabild von oben und Markieren von Fahrzeugen), oder reicht es, dass sie über Gotham kreist? Und soll der Minotaurus ferngesteuert werden (Spieler bleibt stehen, Bild aus der Kamera des Roboters) statt wie ein Fahrzeug bestiegen?
+    - *Bis dahin:* Die Drohne kreist autonom (450 m hoch, 900 m um den Wayne Tower), in der Werkstatt steht sie neben der Piste. Den Minotaurus fährt man wie ein Fahrzeug (einsteigen mit Rechtsklick).

@@ -14,7 +14,7 @@ const HANDY_SHOPS = {
   arms: { name: "Gotham Arms", url: "gotham-arms.gotham", ort: "waffen-2", farbe: "#8a9a5b", slogan: "Schweres Gerät für Profis.",
     waren: [["mg", 18000, 1], ["sniper", 24000, 1], ["g36", 22000, 1], ["g36c", 19000, 1], ["akm", 15000, 1], ["mp7", 16000, 1], ["mp5", 14000, 1], ["mg34", 30000, 1], ["sturmmunition", 450, 30], ["munition", 150, 32], ["gewehrmunition", 400, 20]] },
   militaer: { name: "Gotham Defense Supply", url: "defense-supply.gotham", ort: null, farbe: "#7f9a4e", slogan: "Ausgemustertes Militärgerät. Lieferung frei Haus.",
-    items: [["haul", 900000], ["tank", 3500000], ["duro", 650000], ["piranhak", 1200000], ["piranhas", 1100000], ["pzj90", 2500000], ["tumbler", 5000000]] },
+    items: [["haul", 900000], ["tank", 3500000], ["duro", 650000], ["piranhak", 1200000], ["piranhas", 1100000], ["pzj90", 2500000], ["minotaurus", 1800000], ["tumbler", 5000000]] },
 };
 // Katalog: Spezifikation, Bau (Farbe c), Farben zur Wahl (leer = feste Farbe), Art
 const HANDY_CAT = {
@@ -34,6 +34,7 @@ const HANDY_CAT = {
   piranhak: { spec: () => SPEC_PIRANHA_K, build: () => buildPiranha("kommando"), cols: [], art: "Radschützenpanzer" },
   piranhas: { spec: () => SPEC_PIRANHA_S, build: () => buildPiranha("sanitaet"), cols: [], art: "Sanitätsfahrzeug" },
   pzj90: { spec: () => SPEC_PZJ90, build: () => buildPiranha("pzj90"), cols: [], art: "Panzerjäger" },
+  minotaurus: { spec: () => SPEC_MINOTAURUS, build: () => buildMinotaurus(), cols: [], art: "Drohnenpanzer" },
   tank: { spec: () => SPEC_TANK, build: c => buildTank(c), cols: [0x4d5a36, 0x8a7a55, 0x5a5f63], art: "Panzer" },
   tumbler: { spec: () => SPEC_TUMBLER, build: c => buildTumbler(c, c), cols: [0x16181b, 0x4a4f55, 0x5a5f3a], art: "Prototyp" },
 };

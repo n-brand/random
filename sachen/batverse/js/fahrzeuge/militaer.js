@@ -277,3 +277,101 @@ const COUGAR = flyAdd("Transporthelikopter Cougar", buildCougar(1.55), 1.55, { s
 const SCHULHELI = flyAdd("Schulungshelikopter", buildSchulHeli(1.0), 1.0, { spec: { max: 50, acc: 15, up: 9, tilt: 0.22, tiltV: 0.004, turn: 1.0 } });
 // Standplatz am Boden (ohne Landeplatz-Markierung)
 function heliStand(H, x, y, z, h) { Object.assign(H, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0 }); H.home = { x, y: y + 0.02, z, h }; H.g.visible = true; batPose(H, 0); }
+
+// ---- "Minotaurus" Drohnenpanzer (N52, eigener Entwurf nach OFFENE-FRAGEN 42): unbemannter Kettenroboter, 3,9 x 2,9 x 2,1 m. Flache Wanne mit Keilbug, Sensorleiste
+// mit Kameras und LED-Scheinwerfern, Ketten aus Gliedern um Treib- und Leitrad, fuenf Laufrollen je Seite, Seitenschuerzen mit Schrauben, Akkupaket hinten mit Lamellen.
+// Fernbedienbare Waffenstation (Turm wie beim Panzer: turret/gun/gunMin, schiesst mit Linksklick/Leertaste): Gehaeuse mit 30-mm-Kanone, Lenkwaffen-Behaelter links,
+// Optik rechts, Nebelwerfer, Rundumkamera auf einem Mast, Funk- und GPS-Antennen. Gefahren wird er wie ein Fahrzeug (ferngesteuert gedacht).
+function buildMinotaurus() {
+  const g = new THREE.Group(), K = milMat(), { oliv, oliv2, dunkel, stahl, gummi, glas } = K, track = M(0x232323, { roughness: 0.9, metalness: 0.4, flatShading: true }), led = M(0xdfefff, { emissive: 0xbfdfff, emissiveIntensity: 0.9 });
+  const sec = (w, yb, yt) => [[0, yb], [w - 0.1, yb], [w, yb + 0.12], [w, yt - 0.12], [w - 0.15, yt], [0, yt]];
+  loftIn(g, [[1.95, sec(0.7, 0.62, 0.72)], [1.75, sec(0.9, 0.4, 0.92)], [1.25, sec(0.95, 0.32, 1.12)], [-1.6, sec(0.95, 0.32, 1.12)], [-1.85, sec(0.9, 0.42, 1.06)]], oliv);
+  // Ketten: Glieder entlang einer Schleife (Treibrad vorne, Leitrad hinten)
+  const loop = [], arc = (cz, cy, r, a0, a1) => { for (let k = 0; k <= 10; k++) { const a = a0 + (a1 - a0) * k / 10; loop.push([cz + r * Math.cos(a), cy + r * Math.sin(a)]); } };
+  loop.push([-1.4, 0.03], [1.4, 0.03]); arc(1.65, 0.4, 0.37, -2.3, Math.PI / 2); arc(-1.7, 0.42, 0.39, Math.PI / 2, 4.3); loop.push(loop[0]);
+  const LINK = 0.13, links = []; { let carry = 0; for (let i = 0; i < loop.length - 1; i++) { const [z0, y0] = loop[i], [z1, y1] = loop[i + 1], L = Math.hypot(z1 - z0, y1 - y0); let s = carry;
+    for (; s < L; s += LINK) { const u = s / L; links.push([z0 + (z1 - z0) * u, y0 + (y1 - y0) * u, Math.atan2(-(y1 - y0), z1 - z0)]); } carry = s - L; } }
+  const linkG = new THREE.BoxGeometry(0.42, 0.045, LINK - 0.015), cleatG = new THREE.BoxGeometry(0.4, 0.03, 0.03).translate(0, -0.035, 0);
+  for (const sd of [-1, 1]) { const X = sd * 1.15;
+    for (const [z, y, a] of links) { meshIn(g, linkG, track, X, y, z, a); meshIn(g, cleatG, track, X, y, z, a); }
+    for (const dx of [-0.13, 0.13]) { milCyl(g, 0.34, 0.34, 0.08, stahl, X + dx, 0.4, 1.65, "x", 16); for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; meshIn(g, new THREE.BoxGeometry(0.08, 0.07, 0.07), stahl, X + dx, 0.4 + Math.sin(a) * 0.37, 1.65 + Math.cos(a) * 0.37, -a); } }
+    milCyl(g, 0.13, 0.16, 0.36, dunkel, X, 0.4, 1.65, "x", 10); for (const dx of [-0.12, 0.12]) milCyl(g, 0.33, 0.33, 0.1, stahl, X + dx, 0.42, -1.7, "x", 16); milCyl(g, 0.1, 0.1, 0.36, dunkel, X, 0.42, -1.7, "x", 10);
+    for (const z of [-0.7, 0.7]) milCyl(g, 0.07, 0.07, 0.24, stahl, X, 0.82, z, "x", 8);
+    for (let k = 0; k < 3; k++) { const z0 = -1.6 + k * 1.08, z1 = z0 + 1.04; sideBox(g, sd * 1.4, sd * 1.45, 0.48, 0.9, z0, z1, oliv); sideBox(g, sd * 1.41, sd * 1.44, 0.34, 0.48, z0, z1, gummi);
+      for (let b = 0; b < 4; b++) milCyl(g, 0.018, 0.018, 0.02, dunkel, sd * 1.455, 0.84, z0 + 0.1 + b * 0.28, "x", 6); }   // Schuerze in drei Feldern mit Schrauben und Gummilappen
+    sideBox(g, sd * 0.92, sd * 1.46, 0.88, 0.94, -1.75, 1.8, oliv2);
+    milHaken(g, K, sd * 0.6, 0.62, -1.98); milHaken(g, K, sd * 0.6, 0.62, 1.9); }
+  // Sensorleiste vorne: Kameras, LED-Scheinwerfer, Laserscanner
+  boxAt(g, 1.5, 0.16, 0.14, dunkel, 0, 0.98, -1.72); for (const x of [-0.55, -0.2, 0.2, 0.55]) { milCyl(g, 0.05, 0.05, 0.06, glas, x, 0.98, -1.8, "z", 12); milCyl(g, 0.065, 0.065, 0.03, stahl, x, 0.98, -1.78, "z", 12); }
+  for (const sd of [-1, 1]) { boxAt(g, 0.3, 0.07, 0.06, dunkel, sd * 0.85, 0.8, -1.86); boxAt(g, 0.26, 0.04, 0.02, led, sd * 0.85, 0.8, -1.9); }
+  milCyl(g, 0.09, 0.1, 0.12, dunkel, 0, 1.12, -1.6, "y", 14); milCyl(g, 0.08, 0.08, 0.04, glas, 0, 1.2, -1.6, "y", 14);
+  // Deck: Akkupaket mit Lamellen hinten, Griffleisten, Ruecklichter, Staukiste, Nummer
+  boxAt(g, 1.3, 0.2, 0.9, oliv2, 0, 1.22, 1.15); for (let k = 0; k < 8; k++) boxAt(g, 1.2, 0.03, 0.03, stahl, 0, 1.33, 0.78 + k * 0.1);
+  for (const sd of [-1, 1]) { milCyl(g, 0.02, 0.02, 1.2, stahl, sd * 0.88, 1.17, 0.0, "z", 6); boxAt(g, 0.12, 0.08, 0.2, M(0xc02020, { emissive: 0x400808 }), sd * 0.7, 0.95, 1.86); }
+  milKiste(g, K, -0.88, -0.45, 1.12, 1.32, -1.35, -0.85, -1);
+  for (const sd of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.16), milSchrift("M-01", "#e8e6d8", 256, 64, "bold 44px Arial")); p.position.set(sd * 0.955, 0.75, -0.6); p.rotation.y = sd * Math.PI / 2; g.add(p); }
+  // Rundumkamera auf Mast, Antennen, GPS-Kuppel
+  milCyl(g, 0.04, 0.05, 0.9, stahl, -0.6, 1.57, 1.45, "y", 8); meshIn(g, new THREE.SphereGeometry(0.12, 12, 8), dunkel, -0.6, 2.05, 1.45); for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2; boxAt(g, 0.06, 0.05, 0.03, glas, -0.6 + Math.sin(a) * 0.11, 2.05, 1.45 + Math.cos(a) * 0.11).rotation.y = a; }
+  milAntenne(g, K, 0.75, 1.12, 1.7, 1.4); meshIn(g, new THREE.SphereGeometry(0.1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), M(0xd8d8cc, { roughness: 0.6 }), 0.4, 1.32, 1.65);
+  mergeStatic(g);
+  // Waffenstation (dreht): Gehaeuse, Lenkwaffen-Behaelter links, Optik mit Laser rechts, Nebelwerfer; Kanone als eigene Gruppe
+  const turret = new THREE.Group(); turret.position.set(0, 1.12, -0.15); g.add(turret); const T = new THREE.Group(); turret.add(T);
+  milCyl(T, 0.62, 0.66, 0.1, dunkel, 0, 0.05, 0, "y", 20);
+  const ts = (w, yb, yt) => [[0, yb], [w, yb], [w, yt - 0.1], [w - 0.13, yt], [0, yt]];
+  loftIn(T, [[0.72, ts(0.36, 0.12, 0.42)], [0.45, ts(0.55, 0.1, 0.65)], [-0.6, ts(0.55, 0.1, 0.65)], [-0.75, ts(0.48, 0.14, 0.6)]], oliv);
+  for (let k = 0; k < 5; k++) milCyl(T, 0.02, 0.02, 0.02, dunkel, -0.4 + k * 0.2, 0.66, 0.3, "y", 6);
+  boxAt(T, 0.3, 0.36, 1.1, oliv2, -0.75, 0.48, -0.05); for (const y of [0.39, 0.57]) milCyl(T, 0.08, 0.08, 0.04, dunkel, -0.75, y, -0.62, "z", 12); boxAt(T, 0.06, 0.4, 0.06, stahl, -0.6, 0.3, -0.05);
+  boxAt(T, 0.28, 0.26, 0.36, dunkel, 0.62, 0.5, -0.25); boxAt(T, 0.2, 0.14, 0.02, glas, 0.62, 0.52, -0.44); boxAt(T, 0.06, 0.06, 0.02, M(0xff3030, { emissive: 0x800000 }), 0.68, 0.42, -0.44);
+  for (const sd of [-1, 1]) milNebel(T, K, sd * 0.42, 0.66, 0.35, sd, 3);
+  mergeStatic(T);
+  const gun = new THREE.Group(); gun.position.set(0, 0.36, -0.55); T.add(gun);
+  boxAt(gun, 0.34, 0.3, 0.36, oliv2, 0, 0, -0.05); milCyl(gun, 0.07, 0.08, 0.8, stahl, 0, 0, -0.6, "z", 12); milCyl(gun, 0.09, 0.09, 0.3, dunkel, 0, 0, -0.95, "z", 12);
+  milCyl(gun, 0.05, 0.055, 1.0, stahl, 0, 0, -1.6, "z", 12); milCyl(gun, 0.075, 0.065, 0.2, dunkel, 0, 0, -2.18, "z", 12); for (let k = 0; k < 3; k++) boxAt(gun, 0.16, 0.02, 0.02, dunkel, 0, 0.05, -2.12 + k * 0.05);
+  boxAt(gun, 0.08, 0.08, 0.3, dunkel, 0.2, 0.06, -0.3);
+  mergeStatic(gun); for (const o of [...gun.children, ...T.children]) o.castShadow = true;
+  const wheels = []; for (const sd of [-1, 1]) for (let k = 0; k < 5; k++) { const w = addWheel(g, sd * 1.15, -1.1 + k * 0.55, 0.24, 0.34, false, gummi, K.felge, 0, 14); milCyl(w.spin, 0.08, 0.1, 0.04, dunkel, sd * 0.18, 0, 0, "x", 10); wheels.push(w); }
+  const gunMin = new Float32Array(360).fill(-0.14);
+  g.name = "Minotaurus"; return { g, wheels, turret, gun, gunMin };
+}
+const SPEC_MINOTAURUS = { name: "Minotaurus (Drohnenpanzer)", turretSpeed: 70, gunSpeed: 40, muzzle: 2.3, sight: [0.62, 0.75, -0.45], wheels: [[-1.15, -1.3], [1.15, -1.3], [-1.15, 1.3], [1.15, 1.3]], wb: 2.6, track: 2.3, pts: [-1.2, 0, 1.2], R: 1.3, circR: 1.25, enter: 3.6,
+  maxN: 16, maxF: 22, revMax: 14, acc: 7, steer: 1.2, jump: false, grade: 75, tracks: true, hull: [-1.2, 0, 1.2].flatMap(x => [-1.9, -0.6, 0.6, 1.9].map(z => [x, 0.05, z])), camD: 8, camH: 1.7, seat: [0, 1.95, 0.4], bodyH: 1.9, bike: false, mass: 9,
+  exits: [[-2.2, 0], [2.2, 0], [-2.2, 1.2], [2.2, 1.2], [0, -3.2], [0, 3.2]],
+  msg: "Minotaurus (ferngesteuert): W/S Gas/Bremse, A/D lenken, Maus dreht die Waffenstation, Linksklick/Leertaste schiessen, V Kamera, Shift aussteigen" };
+
+// ---- Aufklaerungsdrohne (N52, Vorbild RQ-4, ohne Marken): schlanker Rumpf mit Buckel (Satellitenantenne), sehr lange schmale Fluegel (ca. 40 m), Triebwerk oben hinten
+// mit Einlauf, V-Leitwerk, Bugrad und Hauptfahrwerk, Sensorkuppel unten, Positions- und Blitzlicht. Massstab 1:1, Nase -z.
+// Im Spiel kreist sie autonom ueber Gotham (450 m hoch, Kreis 900 m um den Wayne Tower, 60 m/s); in der Werkstatt steht sie am Boden (drohneStand). Nicht steuerbar (OFFENE-FRAGEN 54).
+function buildAufklaerungsdrohne() {
+  const g = new THREE.Group(), grau = M(0xc9ccc8, { roughness: 0.55, metalness: 0.2 }), grau2 = M(0xa9aca8, { roughness: 0.6, metalness: 0.2 }), dunkel = M(0x2a2c2e, { roughness: 0.7 }), stahl = M(0x7a7f84, { metalness: 0.6, roughness: 0.4 }), gummi = M(0x161616, { roughness: 0.95 });
+  const hw = tabF([[7.3, 0.05], [7.0, 0.45], [6.2, 0.72], [4.5, 0.82], [2.0, 0.75], [-2.0, 0.62], [-5.0, 0.42], [-7.0, 0.22], [-7.3, 0.12]]), top = tabF([[7.3, 1.75], [7.0, 2.2], [6.0, 2.6], [4.3, 2.95], [2.8, 2.75], [0, 2.45], [-3.5, 2.3], [-7.0, 2.1], [-7.3, 2.05]]),
+    bot = tabF([[7.3, 1.7], [7.0, 1.35], [6.0, 1.15], [3.0, 1.1], [-2.0, 1.2], [-5.0, 1.55], [-7.3, 1.85]]);
+  const FS = []; for (let f = 7.3; f > -7.3; f -= 0.35) FS.push(+f.toFixed(2)); FS.push(-7.3);
+  loftIn(g, FS.map(f => { const w = hw(f), t = top(f), b = bot(f), m = (t + b) / 2, h = (t - b) / 2, P = []; for (let q = 0; q <= 10; q++) { const a = -Math.PI / 2 + Math.PI * q / 10; P.push([Math.max(0, Math.cos(a) * w), m + Math.sin(a) * h]); } return [f, P]; }), grau);
+  // Fluegel: schmal, leicht gepfeilt, nach aussen spitz zulaufend, mit Querrudern und Positionslichtern
+  for (const sd of [-1, 1]) { const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0, 2.0); sh.lineTo(19.5, 0.9); sh.lineTo(19.9, 0.55); sh.lineTo(19.5, 0.1); sh.lineTo(0, 0);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.14, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 2 }); geo.rotateX(Math.PI / 2); if (sd < 0) geo.rotateZ(Math.PI);
+    const w = new THREE.Mesh(geo, grau); w.position.set(sd * 0.55, 2.12, 0.6); w.rotation.z = sd * 0.03; g.add(w);
+    for (let k = 0; k < 3; k++) { const a = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.06, 0.35), grau2); a.position.set(sd * (5.55 + k * 4.8), 2.1 + k * 0.15, 2.45 - k * 0.27); a.rotation.z = sd * 0.03; g.add(a); }
+    const nav = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshBasicMaterial({ color: sd < 0 ? 0xff2020 : 0x20ff40 })); nav.position.set(sd * 20.3, 2.75, 1.15); g.add(nav); }
+  // Triebwerk oben hinten mit Einlauf und Duese, Pylon, V-Leitwerk
+  { const n = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 3.6, 18).rotateX(Math.PI / 2), grau); n.position.set(0, 2.75, 4.6); g.add(n); const e = new THREE.Mesh(new THREE.CircleGeometry(0.5, 18), dunkel); e.position.set(0, 2.75, 2.79); e.rotation.y = Math.PI; g.add(e);
+    const d = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.8, 16).rotateX(Math.PI / 2), stahl); d.position.set(0, 2.72, 6.7); g.add(d); const s = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 2.0), grau); s.position.set(0, 2.45, 4.2); g.add(s); }
+  for (const sd of [-1, 1]) { const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(1.9, 0); sh.lineTo(2.2, 3.1); sh.lineTo(1.4, 3.1); sh.lineTo(0, 0); const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: false }); geo.translate(0, 0, -0.05);
+    geo.rotateX(-sd * 0.8); const t = new THREE.Mesh(geo, grau); t.position.set(sd * 0.2, 2.3, 5.2); t.rotation.y = -Math.PI / 2; g.add(t); }
+  // Fahrwerk: Bugrad, zwei Hauptraeder; Sensorkuppel unten, Antennen, Blitzlicht
+  const rad = (x, z, h, r) => { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, h, 8), stahl); s.position.set(x, r + h / 2, z); g.add(s); const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.2, 14).rotateZ(Math.PI / 2), gummi); t.position.set(x, r, z); g.add(t); };
+  rad(0, -5.6, 0.85, 0.28); for (const sd of [-1, 1]) rad(sd * 1.1, 0.9, 0.75, 0.38); for (const sd of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.2), stahl); b.position.set(sd * 0.6, 1.12, 0.9); b.rotation.z = sd * 0.2; g.add(b); }
+  { const k = new THREE.Mesh(new THREE.SphereGeometry(0.45, 14, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), dunkel); k.position.set(0, 1.12, -3.2); g.add(k); }
+  for (const [z, h] of [[-1.0, 0.5], [1.8, 0.4]]) { const a = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, 0.25), dunkel); a.position.set(0, 2.5 + h / 2, z); g.add(a); }
+  const blitz = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); blitz.position.set(0, 3.0, 1.0); g.add(blitz);
+  for (const o of g.children) o.castShadow = true;
+  g.name = "Aufklärungsdrohne"; g.userData.blitz = blitz; return g;
+}
+// Drohne einmal anlegen; im Spiel Kreisflug (drohneStep aus tresorStep), in der Werkstatt Stand (drohneStand)
+const DROHNE = { g: null, stand: false, a: 0, R: 900, H: 450, V: 60, c: null };
+function drohneHolen() { if (!DROHNE.g) { DROHNE.g = buildAufklaerungsdrohne(); DROHNE.g.userData.dynamic = true; scene.add(DROHNE.g); } return DROHNE.g; }
+function drohneStand(x, y, z, h) { const g = drohneHolen(); DROHNE.stand = true; g.position.set(x, y, z); g.rotation.set(0, h, 0); }
+function drohneStep(dt) { if (DROHNE.stand) return; if (!DROHNE.c) { if (typeof WTO === "undefined") return; DROHNE.c = [WTO.cx, WTO.cz]; drohneHolen(); }
+  const D = DROHNE, g = D.g; D.a += dt * D.V / D.R;
+  g.position.set(D.c[0] + Math.cos(D.a) * D.R, D.H, D.c[1] + Math.sin(D.a) * D.R); g.rotation.set(0, Math.PI - D.a, 0);   // Nase entlang der Kreisbahn
+  g.userData.blitz.visible = Math.sin(performance.now() / 160) > 0.6; }

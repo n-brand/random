@@ -20,6 +20,7 @@ const MODELLE = [
   { name: "Piranha I Sanitätsfahrzeug", spec: SPEC_PIRANHA_S, bau: () => buildPiranha("sanitaet") },
   { name: "Panzerjäger 90", spec: SPEC_PZJ90, bau: () => buildPiranha("pzj90") },
   { name: "Duro IIIP", spec: SPEC_DURO, bau: () => buildDuro() },
+  { name: "Minotaurus (Drohnenpanzer)", spec: SPEC_MINOTAURUS, bau: () => buildMinotaurus() },
   { name: "Gotham Secure (Geldtransporter)", spec: SPEC_GELDTRANSPORTER, bau: () => buildGeldtransporter() },
   { name: "Gotham Fire Engine", spec: SPEC_FIRE_ENGINE, bau: () => buildFireTruck("engine") },
   { name: "Gotham Fire Ladder", spec: SPEC_FIRE_LADDER, bau: () => buildFireTruck("ladder") },
@@ -147,6 +148,7 @@ const PAD = { x: -100, z: -200 };
   for (const [w, d, x, z] of [[1, 7, -2.2, 0], [1, 7, 2.2, 0], [3.4, 1, 0, 0]]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), weiss); b.position.set(PAD.x + x, 0.03, PAD.z + z); flaeche.add(b); }   // H
 }
 heliStand(COUGAR, PAD.x - 32, 0, PAD.z, -Math.PI / 2); heliStand(SCHULHELI, PAD.x + 26, 0, PAD.z, -Math.PI / 2);   // Militaer-Hubschrauber neben dem Landeplatz (N52)
+drohneStand(100, 0, RUNWAY.z + RUNWAY.w / 2 + 30, -Math.PI / 2);   // Aufklaerungsdrohne neben der Piste (N52), Nase nach Osten
 Object.assign(FLY, { x: PAD.x, y: 0, z: PAD.z, h: -Math.PI / 2 }); FLY.home = { x: FLY.x, y: FLY.y, z: FLY.z, h: FLY.h }; batPose(FLY, 0);
 for (const F of [JET, FLY]) F.g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 function flugReset(F) { if (F === JET) return jetReset(); Object.assign(F, { ...F.home, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0, gearT: 0 }); player.yaw = F.h; batPose(F, 0); toast(F.name + " zurück auf dem Landeplatz"); }
@@ -450,7 +452,7 @@ function waffe(dt) {   // wie schiessen.js: Turm zeigt in Blickrichtung, das Roh
   ZOOM.z += (ZOOM.t - ZOOM.z) * Math.min(1, dt * 10); const fov = 70 / ZOOM.z; if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   // gezoomt (wie schiessen.js): Kamera auf dem Visier-Strahl der normalen Kamera neben der Zieloptik am Turm, Blick entlang des Strahls,
   // um den Visier-Winkel gesenkt: Visier zeigt wie ohne Zoom, Ansicht unabhaengig von der Zielentfernung (keine Parallaxe)
-  if (ZOOM.z > 1.01) { A.turret.updateWorldMatrix(true, false); A.turret.localToWorld(vA.set(0.52, 1.25, -0.9));
+  if (ZOOM.z > 1.01) { A.turret.updateWorldMatrix(true, false); A.turret.localToWorld(A.spec.sight ? vA.set(...A.spec.sight) : vA.set(0.52, 1.25, -0.9));
     const o = rc.ray.origin, d = rc.ray.direction, t = Math.max(0, vA.sub(o).dot(d)); camera.position.copy(o).addScaledVector(d, t);
     camera.up.set(0, 1, 0); camera.lookAt(camera.position.clone().add(d)); camera.rotateX(-Math.atan(0.28 * Math.tan(fov * Math.PI / 360))); }
   SCHUSS.cd = Math.max(0, SCHUSS.cd - dt);
