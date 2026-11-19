@@ -1996,3 +1996,8 @@ massSpec(SPEC_GCLASS, 0.95); buildGClass = massBau(buildGClass, 0.95);          
 massSpec(SPEC_ROLLS, 0.95); buildRolls = massBau(buildRolls, 0.95);                          // Rolls-Royce (grau) 6,26 -> 5,95 m (echt 5,76)
 massSpec(SPEC_POLIZEIPICKUP, 0.95); buildPolizeiPickup = massBau(buildPolizeiPickup, 0.95);  // Pickup 6,33 -> 6,0 m (echt 5,9), Dach 2,0
 massSpec(SPEC_TANK, 1.06); buildTank = massBau(buildTank, 1.06);                             // Panzer 9,10 -> 9,65 m (echt 9,97 mit Rohr), Hoehe 2,84
+// Laenge und Breite getrennt (Proportionen falsch, Raeder bleiben rund): Karosserie in einer inneren Gruppe gestreckt, Radlager nur verschoben (2026-11-19)
+function massSpecXZ(sp, kx, kz) { const xz = v => [v[0] * kx, v[1] * kz]; sp.wheels = sp.wheels.map(xz); if (sp.exits) sp.exits = sp.exits.map(xz); sp.wb *= kz; sp.track *= kx; sp.pts = sp.pts.map(v => v * kz); sp.R *= kx; sp.circR *= kx; if (sp.seat) sp.seat = [sp.seat[0] * kx, sp.seat[1], sp.seat[2] * kz]; sp.massstabXZ = [kx, kz]; return sp; }
+function massBauXZ(bau, kx, kz) { return (...a) => { const b = bau(...a), g = b.g, wp = new Set((b.wheels || []).map(w => w.piv)), inner = new THREE.Group(); inner.scale.set(kx, 1, kz); inner.name = "Karosserie";
+  for (const c of [...g.children]) { if (wp.has(c)) { c.position.x *= kx; c.position.z *= kz; } else inner.add(c); } g.add(inner); return b; }; }
+massSpecXZ(SPEC_TUMBLER, 1.08, 0.86); buildTumbler = massBauXZ(buildTumbler, 1.08, 0.86);   // Tumbler 5,37 x 2,60 -> ca. 4,6 x 2,8 m (Film ca. 4,6 x 2,8 x 1,5; MASSE-FAHRZEUGE.md)

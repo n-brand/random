@@ -55,3 +55,4 @@ Bis zur Entscheidung: nichts skaliert; die Feuerwehr bekommt bei ihrer Überarbe
 - Nicht skaliert, weil die Proportionen falsch sind (gleichmässig skalieren würde anderes verschlechtern): Tumbler (zu lang, aber zu schmal), DeLorean (zu hoch). Später neu aufbauen.
 - Werkstatt: Auswahl "Grössenvergleich (alle Fahrzeuge)" – alle Fahrzeuge in einer Reihe auf 1-m-Raster mit Spielfigur und Tür, Schild mit gemessenen Massen.
 - Feuerwehr: siehe Änderungen in CLAUDE.md.
+- 2026-11-19: Tumbler mit massBauXZ (Breite 1,08, Länge 0,86) auf 4,62 x 2,81 m. DeLorean geprüft: Karosserie ca. 1,1 m hoch, die 1,44 m sind der Zeitmaschinen-Aufbau – bleibt.
