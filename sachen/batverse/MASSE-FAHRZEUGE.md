@@ -23,8 +23,8 @@ Abweichung = Modell gegenüber echt, nur Länge und Karosseriehöhe (Breite mit 
 | Tumbler | 5,37 × 2,60 × 1,66 | 4,6 × 2,8 × 1,5 | **Länge +17 %** |
 | Bus | 12,23 × 3,30 × 3,37 | 12,0 × 2,55 × 3,1 | passt |
 | Gotham Fire Engine | 10,11 × 3,96 × 4,35 (Karosserie 3,04 breit, Dach 3,34) | Flughafen-Löschfahrzeug 10–12 × 3,0 × 3,6 | passt (nach Foto eines Flughafen-Löschfahrzeugs; Breite mit Spiegeln) |
-| Gotham Fire Ladder | 12,76 × 3,20 × 3,93 | 12 × 2,55 × 3,5 | Höhe +12 % |
-| Gotham Fire Crane | 12,75 × 3,30 × 5,92 | 12 × 2,55 × 4,0 | **Höhe zu gross** (eingeklappter Kran) |
+| Gotham Fire Ladder | 11,81 × 3,10 × 3,63 (neu, mit Leiterüberstand) | 12 × 2,55 × 3,5 | passt (vorher 3,93 hoch) |
+| Gotham Fire Crane | 9,47 × 3,30 × 4,02 (neu, Kran nach hinten geklappt) | 12 × 2,55 × 4,0 | passt (vorher 5,92 hoch) |
 | Abschleppwagen | 9,73 × 3,00 × 3,27 | 10 × 2,55 × 3,6 | passt |
 | Piranha I | 6,72 × 2,93 × (Dach 2,0) | 6,25 × 2,5 × 1,85 | Länge +7 % |
 | Duro IIIP | 7,66 × 3,38 × (Dach 2,95) | 6,9 × 2,16 × 2,9 | Länge +11 % |

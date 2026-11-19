@@ -72,6 +72,19 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Fahrzeuggrössen korrigiert und Feuerwehr überarbeitet** (Nicolas 2026-11-19: "Ja, mit Feuerwehr" zum Vorschlag in MASSE-FAHRZEUGE.md; "alle Feuerwehrfahrzeuge nochmal überarbeiten"):
+  - modelle.js `massSpec(spec, k)` / `massBau(bau, k)`: Modell und Fahrdaten zusammen skaliert (Räder, Radstand, Spur, Kollision, Kamera, Sitz, Ausstiege; Mündung und Visier skalieren lokal mit).
+    - G-Klasse 0,95, Rolls-Royce grau 0,95, Police Pickup 0,95, Duro 0,94, Panzer 1,06.
+    - Tumbler und DeLorean bleiben, weil die Proportionen falsch sind; später neu bauen.
+  - Werkstatt: neue Auswahl "Grössenvergleich (alle Fahrzeuge)" – alle 33 Fahrzeuge in einer Reihe auf 1-m-Raster, mit Spielfigur (1,78 m) und Tür (2,2 m), Schild mit gemessenen Massen je Fahrzeug.
+  - Feuerwehr:
+    - Fire Ladder `buildFireLadder` neu: Kabine und Aufbau als Loft mit Radausschnitten, geschlossene Radhäuser, Frontscheibe mit Wischern, Grill, Scheinwerfer im Gehäuse, Rammschutz, Warnstreifen, Kabinenfenster, Türfugen, Trittstufen, Spiegel am Arm, Rollläden mit Rahmen, Abstützungen, Lichtbalken mit 8 Segmenten. Drehkranz mit Steuerstand, liegende Leiter mit Korb auf einer Auflage über der Kabine. Höhe 3,63 statt 3,93 m.
+    - Fire Crane: Kran nach hinten auf den Aufbau geklappt (Höhe 4,0 statt 5,9 m), Kotflügelverbreiterungen, Spritzlappen, Türfugen, Griffe, Trittstufen, Warnstreifen hinten, Lichtbalken mit Segmenten.
+    - Fire Engine (Flughafen-Löschfahrzeug, Grösse passt): Kotflügelverbreiterungen, Spritzlappen, Dachreling, Heckleiter, Warnstreifen hinten, Schlauchhaspel.
+    - Fire Chief: wie das Polizeiauto – Lichtbalken mit Segmenten rot/weiss, Rammschutz mit Blitzern, Blitzer im Grill, zwei Suchscheinwerfer, Nummer C1 auf dem Dach, Antennen.
+  - Geschlossene Radhäuser (Regel) nachgetragen bei Bus, Police Van, Police Pickup und Geldtransporter.
+  - Geprüft in der Werkstatt: Bilder aller Feuerwehrfahrzeuge, Masse nachgemessen; Grössenvergleich-Reihe im Bild.
+
 - **Polizei-Helikopter neu** (Nicolas 2026-11-19: "der Polizeihelikopter ist ja noch mega hässlich"): heli.js `buildPolizeiHeli` neu, gleiche Masse, gleiche Anschlüsse (rotor, heck, lichter).
   - Rumpf als glatter Loft, dunkelblau mit weisser Unterseite, grosse Glaskanzel mit Mittelstrebe.
   - Schiebetüren mit Fugen, Fenstern und Schiene; Kufen mit Streben und Trittbrettern.

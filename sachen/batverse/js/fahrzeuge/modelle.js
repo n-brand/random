@@ -640,8 +640,67 @@ const fireText = (big, small, col = "#f2c84b") => { const t = canvasTex(1024, 20
   t.repeat.set(1, 1); return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 }); };
 // Schild auf einer Seite (sd -1 links, 1 rechts) oder vorne/hinten (sd 0, fz -1 vorne / 1 hinten)
 const fireSign = (g, m, w, h, x, y, z, sd, fz = 0) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(x, y, z); o.rotation.y = sd ? sd * Math.PI / 2 : fz < 0 ? Math.PI : 0; g.add(o); return o; };
+// ---- Drehleiter "Ladder 7" (neu 2026-11-19, Nicolas: "alle Feuerwehrfahrzeuge nochmal ueberarbeiten"; Masse nach MASSE-FAHRZEUGE.md: ca. 10,4 x 2,5 x 3,5 m):
+// Frontlenker-Kabine und Aufbau als Loft mit Radausschnitten, geschlossene Radhaeuser, grosse Frontscheibe mit Rahmen und Wischern, Grill, Scheinwerfer im Gehaeuse, Rammschutz,
+// Warnstreifen an den Ecken, Kabinenfenster, Tuerfugen, Griffe, Trittstufen, Spiegel am Arm; weisses Band, Rolllaeden, Schrift; Lichtbalken mit Segmenten (rot/weiss, blinkt),
+// Drehkranz mit Steuerstand, liegende Leiter aus drei Teilen mit Korb auf einer Auflage ueber der Kabine, Abstuetzungen, Heck mit Rollladen, Warnstreifen, Leuchten.
+function buildFireLadder() {
+  const g = new THREE.Group(), zF = -3.9, zR = 6.5, HW = 1.25, zA = -2.4, zB = 3.3, r = 0.52;
+  const red = M(0xb3121a, { metalness: 0.35, roughness: 0.35, flatShading: true }), white = M(0xf2f2ee, { roughness: 0.45 }), dark = M(0x111214, { roughness: 0.75 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 });
+  const alu = M(0xb8bcc2, { metalness: 0.7, roughness: 0.35 }), glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0xd8dce0, { metalness: 0.85, roughness: 0.25 });
+  const shutter = (() => { const t = canvasTex(64, 256, (c, W, H) => { c.fillStyle = "#c3c7cc"; c.fillRect(0, 0, W, H); for (let y = 0; y < H; y += 8) { c.fillStyle = "#8d9196"; c.fillRect(0, y, W, 2); } }); return M(0xffffff, { map: t, metalness: 0.6, roughness: 0.35 }); })();
+  const chev = (() => { const t = canvasTex(128, 128, (c, W, H) => { c.fillStyle = "#f4f4f2"; c.fillRect(0, 0, W, H); c.fillStyle = "#c8231b"; for (let k = -4; k < 6; k++) { c.beginPath(); c.moveTo(k * 32, H); c.lineTo(k * 32 + 16, H); c.lineTo(k * 32 + 16 + H, 0); c.lineTo(k * 32 + H, 0); c.fill(); } }); return M(0xffffff, { map: t, roughness: 0.5 }); })();
+  const bR = new THREE.MeshStandardMaterial({ color: 0x5a0a0a, emissive: 0xff2020, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 }), bW = new THREE.MeshStandardMaterial({ color: 0xbfc4cc, emissive: 0xffffff, emissiveIntensity: 0.2, transparent: true, opacity: 0.92 });
+  const K = polKit(g, { black: dark, chrome, paint: red }), cab1 = -1.3, top = 2.45;
+  const ybC = polArch([[2.4, r]], 0.6, 0.12), ytC = tabF([[3.9, 2.78], [3.82, 2.95], [3.65, 3.0], [1.3, 3.0]]), hwC = tabF([[3.9, 1.18], [3.82, 1.25], [1.3, 1.25]]);
+  const FS = []; for (let f = 3.9; f > 1.3; f -= 0.05) FS.push(+f.toFixed(3)); FS.push(1.3);
+  loftIn(g, FS.map(f => { const b = ybC(f), t = ytC(f), w = hwC(f); return [f, [[0, b], [w - 0.06, b], [w, b + 0.06], [w, t - 0.12], [w - 0.1, t], [0, t]]]; }), red);
+  const ybK = polArch([[-3.3, r]], 0.6, 0.12), BS = []; for (let f = 1.22; f > -6.5; f -= 0.06) BS.push(+f.toFixed(3)); BS.push(-6.5);
+  loftIn(g, BS.map(f => { const b = ybK(f); return [f, [[0, b], [HW - 0.06, b], [HW, b + 0.06], [HW, top - 0.08], [HW - 0.08, top], [0, top]]]; }), red);
+  boxIn(g, -1.0, 1.0, 0.6, 2.9, cab1 - 0.02, cab1 + 0.1, dark);                                                                                 // Fuge Kabine/Aufbau
+  // Front: Scheibe mit Rahmen und Wischern, weisse Front unten, Grill, Lichter, Stossfaenger, Rammschutz, Warnstreifen
+  boxIn(g, -1.1, 1.1, 1.78, 2.72, zF - 0.02, zF + 0.01, glass); boxIn(g, -0.015, 0.015, 1.78, 2.72, zF - 0.035, zF, dark); for (const sd of [-1, 1]) { const w = boxAt(g, 0.8, 0.025, 0.025, dark, sd * 0.5, 1.84, zF - 0.04); w.rotation.z = sd * 0.3; }
+  boxIn(g, -1.15, 1.15, 0.78, 1.2, zF - 0.04, zF + 0.01, white); for (let x = -0.75; x <= 0.76; x += 0.1) boxIn(g, x - 0.025, x + 0.025, 1.25, 1.68, zF - 0.035, zF, chrome);
+  boxIn(g, -0.8, 0.8, 1.66, 1.7, zF - 0.04, zF, chrome); for (const sd of [-1, 1]) { K.lampe(sd * 0.85, 1.0, zF + 0.03, 0.26, 0.14); boxAt(g, 0.12, 0.12, 0.03, bR, sd * 1.05, 1.5, zF - 0.02); }
+  boxIn(g, -1.25, 1.25, 0.5, 0.78, zF - 0.16, zF + 0.1, chrome); for (const sd of [-1, 1]) boxIn(g, sd * 1.05 - 0.2, sd * 1.05 + 0.2, 0.52, 0.76, zF - 0.17, zF - 0.16, chev);
+  boxAt(g, 0.5, 0.12, 0.02, white, 0, 0.64, zF - 0.17); fireSign(g, fireText("GOTHAM", ""), 1.6, 0.26, 0, 2.86, zF - 0.02, 0, -1);
+  // Seiten: Kabinenfenster, Tuerfugen, Griffe, Trittstufen, Spiegel, Band, Schrift, Rolllaeden, Verbreiterungen, Spritzlappen
+  for (const sd of [-1, 1]) { const X = sd * HW;
+    for (const [z0, z1] of [[zF + 0.25, zF + 1.15], [zF + 1.4, cab1 - 0.15]]) { sideBox(g, X - sd * 0.08, X + sd * 0.008, 1.85, 2.72, z0, z1, glass); sideBox(g, X, X + sd * 0.02, 0.62, 2.78, z1 + 0.06, z1 + 0.085, dark); }
+    for (const z of [zF + 1.0, cab1 - 0.3]) boxAt(g, 0.04, 0.05, 0.16, chrome, X + sd * 0.02, 1.7, z); for (const y of [0.85, 1.25]) sideBox(g, X - sd * 0.2, X + sd * 0.08, y - 0.02, y + 0.02, zF + 0.35, zF + 1.0, alu);
+    K.spiegel(sd, X, 2.45, zF + 0.3); K.flare(sd, sd * 1.02, zA, r); K.flare(sd, sd * 1.12, zB, r);
+    sideBox(g, X, X + sd * 0.012, 1.22, 1.4, zF + 0.05, zR - 0.05, white); fireSign(g, fireText("LADDER 7", "GFD"), 1.5, 0.3, X + sd * 0.016, 1.6, zF + 1.25, sd);
+    const n = 4, len = (zR - 0.3 - (cab1 + 0.2)) / n; for (let i = 0; i < n; i++) { const z0 = cab1 + 0.3 + i * len, z1 = z0 + len - 0.15; sideBox(g, X, X + sd * 0.014, 1.48, top - 0.12, z0, z1, shutter); sideBox(g, X, X + sd * 0.02, 1.44, 1.48, z0 - 0.02, z1 + 0.02, alu); }
+    fireSign(g, fireText("GOTHAM FIRE DEPT.", "AERIAL LADDER"), 4.6, 0.8, X + sd * 0.022, 1.95, (cab1 + zR) / 2 + 0.3, sd);
+    for (const z of [zA + 0.65, zB + 0.75]) sideBox(g, sd * 0.85, sd * 1.24, 0.15, 0.6, z, z + 0.02, M(0x161616, { roughness: 0.95 }));
+    for (const z of [zA + 1.0, zR - 0.6]) { boxIn(g, Math.min(sd * HW, sd * (HW + 0.25)), Math.max(sd * HW, sd * (HW + 0.25)), 0.55, 0.85, z - 0.2, z + 0.2, dark); boxAt(g, 0.3, 0.06, 0.3, alu, sd * (HW + 0.15), 0.45, z); }   // Abstuetzungen
+    boxIn(g, sd * 0.95 - 0.16, sd * 0.95 + 0.16, 0.95, 1.3, zR, zR + 0.03, dark); boxIn(g, sd * 0.95 - 0.13, sd * 0.95 + 0.13, 1.1, 1.27, zR + 0.03, zR + 0.04, mat.glowRed); boxIn(g, sd * 0.95 - 0.13, sd * 0.95 + 0.13, 0.98, 1.08, zR + 0.03, zR + 0.04, M(0xffa020, { emissive: 0x804000 }));
+    boxIn(g, sd * (HW - 0.12) - 0.07, sd * (HW - 0.12) + 0.07, top - 0.14, top + 0.02, zR - 0.1, zR + 0.03, sd < 0 ? bR : bW); }
+  // geschlossene Radhaeuser (Regel)
+  boxIn(g, -0.84, 0.84, 0.55, 1.18, zA - 0.62, zA + 0.62, dark); boxIn(g, -0.68, 0.68, 0.55, 1.18, zB - 0.62, zB + 0.62, dark);
+  // Heck: Rollladen, Warnstreifen, Trittbrett, Schild
+  boxIn(g, -HW + 0.15, HW - 0.15, 1.45, top - 0.15, zR, zR + 0.015, shutter); for (const sd of [-1, 1]) boxIn(g, sd * 0.75 - 0.35, sd * 0.75 + 0.35, 0.6, 0.92, zR, zR + 0.02, chev);
+  boxIn(g, -HW, HW, 0.5, 0.62, zR - 0.1, zR + 0.25, alu); fireSign(g, fireText("GFD", ""), 0.9, 0.28, 0, 1.3, zR + 0.03, 0, 1);
+  // Lichtbalken auf der Kabine (vor der Leiterauflage)
+  boxIn(g, -1.0, 1.0, 3.0, 3.05, zF + 0.2, zF + 0.5, dark); for (let q = 0; q < 8; q++) { const x0 = -0.96 + q * 0.24; boxIn(g, x0, x0 + 0.22, 3.05, 3.14, zF + 0.22, zF + 0.48, q < 4 ? bR : bW); }
+  // Drehkranz mit Steuerstand, Leiterauflage ueber der Kabine, liegende Leiter aus drei Teilen, Korb
+  meshIn(g, new THREE.CylinderGeometry(0.9, 1.0, 0.25, 24), alu, 0, top + 0.12, zR - 1.6); boxIn(g, -0.5, 0.5, top + 0.24, top + 0.62, zR - 2.2, zR - 1.0, red); boxIn(g, 0.55, 0.95, top + 0.24, top + 0.7, zR - 1.9, zR - 1.4, dark);
+  for (const sd of [-1, 1]) boxIn(g, sd * 0.55 - 0.05, sd * 0.55 + 0.05, 3.0, 3.18, zF + 0.8, zF + 0.95, dark); boxIn(g, -0.6, 0.6, 3.14, 3.2, zF + 0.75, zF + 1.0, dark);
+  const lg = new THREE.Group(); lg.position.set(0, top + 0.66, zR - 1.6); lg.rotation.x = Math.atan2(3.2 - (top + 0.66), zR - 1.6 - (zF + 0.9)) * -1; g.add(lg);
+  for (let k = 0; k < 3; k++) { const w = 0.6 - k * 0.09, y = k * 0.11, z0 = -(zR - 1.6 - zF) - 0.3 + k * 0.4, z1 = 0.6 - k * 0.2;
+    for (const sd of [-1, 1]) boxIn(lg, sd * w - 0.04, sd * w + 0.04, y, y + 0.12, z0, z1, k ? alu : white);
+    for (let z = z0 + 0.15; z < z1; z += 0.35) boxIn(lg, -w, w, y + 0.03, y + 0.06, z - 0.02, z + 0.02, alu); }
+  { const zk = -(zR - 1.6 - zF) - 0.75; boxIn(lg, -0.55, 0.55, -0.05, 0.05, zk - 0.4, zk + 0.4, alu); for (const sd of [-1, 1]) boxIn(lg, sd * 0.55 - 0.03, sd * 0.55 + 0.03, 0.05, 0.6, zk - 0.4, zk + 0.4, alu); boxIn(lg, -0.55, 0.55, 0.57, 0.62, zk - 0.4, zk + 0.4, alu); }
+  mergeStatic(g);
+  const tw = 0.34, wheels = [];
+  for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.02, zA, r, tw, true, tireM, rimM, 0, 24));
+  for (const sd of [-1, 1]) for (const x of [0.86, 1.2]) wheels.push(addWheel(g, sd * x, zB, r, tw, false, tireM, rimM, 0, 24));
+  for (const w of wheels) sedanCap(w, tw, 0xd8dce0, 0xe8ebee, 8);
+  return { g, wheels, beacon: [bR, bW] };
+}
 function buildFireTruck(kind) {
-  if (kind === "engine") return buildFireEngine();                       // Nicolas 2026-11-12: Loeschfahrzeug neu nach Foto (Flughafen-Loeschfahrzeug)
+  if (kind === "engine") return buildFireEngine();
+  if (kind === "ladder") return buildFireLadder();                       // neu 2026-11-19 (Loft, Radausschnitte, 3,5 m hoch)                       // Nicolas 2026-11-12: Loeschfahrzeug neu nach Foto (Flughafen-Loeschfahrzeug)
   const ladder = kind === "ladder", g = new THREE.Group(), L = ladder ? 10.4 : 8.6, zF = -2.4 - 1.5, zR = zF + L, HW = 1.25;
   const red = M(0xb3121a, { metalness: 0.35, roughness: 0.35 }), white = M(0xf2f2ee, { roughness: 0.45 }), dark = M(0x111214, { roughness: 0.75 }), chrome = M(0xc8ccd0, { metalness: 0.9, roughness: 0.22 });
   const alu = M(0xb8bcc2, { metalness: 0.7, roughness: 0.35 }), glass = M(0x0a0e14, { metalness: 0.65, roughness: 0.08 }), tireM = M(0x111111, { roughness: 0.92 }), rimM = M(0xd8dce0, { metalness: 0.85, roughness: 0.25 });
@@ -728,13 +787,17 @@ function buildFireChief() {
     for (const f of [1.0, -0.36]) k.skin(sd, f, f - 0.012, f => k.arch(f) + 0.03, f => k.yT(f) - 0.02, k.bodyX, dark, 0.009, 1, 6);   // Tuerfugen
     sideBox(g, sd * (k.hw(0.85) - 0.06), sd * (k.hw(0.85) + 0.1), 0.97, 1.0, -0.88, -0.8, dark); sideBox(g, sd * (k.hw(0.85) + 0.06), sd * (k.hw(0.85) + 0.2), 0.96, 1.1, -0.92, -0.78, paint);   // Spiegel
     k.face(1, sd * 0.42, sd * 0.78, 0.63, 0.74, 0.012, mat.glow); k.face(-1, sd * 0.5, sd * 0.84, 0.72, 0.86, 0.012, mat.glowRed);
-    boxIn(g, sd * 0.5 - 0.04, sd * 0.5 + 0.04, 1.41, 1.45, -0.38, -0.3, dark);
-    const lens = meshIn(g, new THREE.CapsuleGeometry(0.075, 0.42, 4, 12).rotateZ(Math.PI / 2), sd < 0 ? bR : bW, sd * 0.38, 1.53, -0.39); lens.scale.z = 1.25;
   }
   k.face(1, -0.4, 0.4, 0.5, 0.66, 0.008, dark); for (let x = -0.36; x <= 0.37; x += 0.06) k.face(1, x - 0.008, x + 0.008, 0.51, 0.65, 0.016, chrome);   // Grill
   k.face(1, -0.86, 0.86, 0.27, 0.45, 0.04, dark); k.face(-1, -0.88, 0.88, 0.27, 0.47, 0.04, dark);
-  boxIn(g, -0.75, 0.75, 1.45, 1.49, -0.47, -0.31, dark);
   meshIn(g, new THREE.PlaneGeometry(0.9, 0.18), fireText("GOTHAM FIRE DEPT.", ""), 0, 0.76, -k.endF(0, 0.76, -1) + 0.012);   // hinten
+  { const yb = 1.45, z = -0.38, alu = M(0x3a3d42, { metalness: 0.6, roughness: 0.35 });   // 2026-11-19 wie das Polizeiauto
+    for (const sd of [-1, 1]) boxIn(g, sd * 0.52 - 0.04, sd * 0.52 + 0.04, 1.4, yb, z - 0.06, z + 0.06, dark); boxIn(g, -0.74, 0.74, yb, yb + 0.05, z - 0.15, z + 0.15, dark); boxIn(g, -0.72, 0.72, yb + 0.05, yb + 0.065, z - 0.14, z + 0.14, alu);
+    for (let q = 0; q < 8; q++) { const x0 = -0.7 + q * 0.175; boxIn(g, x0, x0 + 0.16, yb + 0.065, yb + 0.15, z - 0.13, z + 0.13, q < 4 ? bR : bW); } boxIn(g, -0.72, 0.72, yb + 0.15, yb + 0.165, z - 0.14, z + 0.14, alu);
+    polKit(g, { black: dark, chrome, paint }).rammschutz(-2.52, 0.3, 0.84, 0.95); for (const sd of [-1, 1]) k.face(1, sd * 0.14, sd * 0.26, 0.545, 0.6, 0.02, sd < 0 ? bR : bW);
+    for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.12, 12).rotateX(Math.PI / 2), chrome, sd * 0.88, 1.06, -0.98); meshIn(g, new THREE.CircleGeometry(0.055, 12), mat.glow, sd * 0.88, 1.06, -1.045, Math.PI); }
+    const num = new THREE.MeshStandardMaterial({ map: canvasTex(256, 160, (c, W, H) => { c.clearRect(0, 0, W, H); c.fillStyle = "#f2f2ee"; c.font = "bold 120px Arial, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("C1", W / 2, H / 2 + 6); }), transparent: true, roughness: 0.45, polygonOffset: true, polygonOffsetFactor: -2 });
+    const rn = meshIn(g, new THREE.PlaneGeometry(0.75, 0.47), num, 0, 1.418, 0.45); rn.rotation.set(-Math.PI / 2, 0, 0); for (const x of [-0.35, 0.35]) meshIn(g, new THREE.CylinderGeometry(0.004, 0.006, 0.36, 4), dark, x, 1.59, 0.75); }
   mergeStatic(g);
   const wheels = [[-0.82, -1.45, true], [0.82, -1.45, true], [-0.82, 1.5, false], [0.82, 1.5, false]].map(([x, z, f]) => addWheel(g, x, z, 0.34, 0.24, f, tireM, rimM, 0, 24));
   for (const w of wheels) sedanCap(w, 0.24, 0x2a2c30, 0xc8ccd0, 6);
@@ -817,6 +880,12 @@ function buildFireEngine() {
   meshIn(head, new THREE.TorusGeometry(0.1, 0.025, 6, 16), black, 0, -0.08, -1.04);
   meshIn(head, new THREE.BoxGeometry(0.18, 0.14, 0.2), black, 0.26, 0.05, -0.55);
   meshIn(head, new THREE.TorusGeometry(0.35, 0.05, 6, 14, Math.PI), black, 0, 0.2, 0.2, Math.PI / 2);                         // Schlauchbogen
+  { const K = polKit(g, { black, chrome: alu, paint: red });   // 2026-11-19: Ergaenzungen
+    for (const sd of [-1, 1]) { for (const z of [-3.0, 1.6, 3.2]) K.flare(sd, sd * 1.25, z, 0.66); for (const z of [-3.0 + 0.8, 3.2 + 0.85]) sideBox(g, sd * 1.0, sd * 1.5, 0.15, 0.75, z, z + 0.02, M(0x161616, { roughness: 0.95 }));
+      for (const z of [zC + 0.3, zR - 1.2]) meshIn(g, new THREE.CylinderGeometry(0.02, 0.02, 0.2, 6), alu, sd * 1.1, 3.42, z); meshIn(g, new THREE.CylinderGeometry(0.02, 0.02, zR - 1.2 - zC - 0.3, 6).rotateX(Math.PI / 2), alu, sd * 1.1, 3.52, (zC + 0.3 + zR - 1.2) / 2); }
+    for (const sd of [-1, 1]) boxIn(g, sd * 0.5 - 0.03, sd * 0.5 + 0.03, 1.0, 3.3, zR + 0.12, zR + 0.16, alu); for (let y = 1.15; y < 3.25; y += 0.3) boxIn(g, -0.5, 0.5, y - 0.02, y + 0.02, zR + 0.12, zR + 0.16, alu);   // Heckleiter
+    for (const sd of [-1, 1]) boxIn(g, sd * 0.95 - 0.3, sd * 0.95 + 0.3, 0.95, 1.2, zR + 0.06, zR + 0.08, chev);
+    meshIn(g, new THREE.CylinderGeometry(0.3, 0.3, 0.3, 18).rotateZ(Math.PI / 2), black, 0.95, 2.2, zR - 0.3); meshIn(g, new THREE.CylinderGeometry(0.34, 0.34, 0.04, 18).rotateZ(Math.PI / 2), alu, 1.12, 2.2, zR - 0.3); }
   g.remove(mon); mergeStatic(g); g.add(mon);
   low.rotation.x = Math.PI / 2; up.rotation.x = -Math.PI / 2;                                                                // eingeklappt (Start)
   const wheels = [];
@@ -850,15 +919,16 @@ function buildFireCrane() {
   for (const sd of [-1, 1]) meshIn(g, new THREE.CapsuleGeometry(0.07, 0.42, 4, 10).rotateZ(Math.PI / 2), sd < 0 ? bR : bW, sd * 0.42, 3.6, zF + 0.42);
   // Kran: Drehsaeule hinter der Kabine, Hauptarm schraeg hoch, Knickarm nach vorne ueber die Kabine, Seil mit Haken
   const cz = zC + 0.55; boxIn(g, -HW, HW, 0.85, 1.6, zC + 0.05, zC + 1.1, dark); meshIn(g, new THREE.CylinderGeometry(0.42, 0.48, 0.5, 18), dark, 0, 1.85, cz);
-  boxIn(g, -0.3, 0.3, 2.1, 3.9, cz - 0.3, cz + 0.3, red);                                                                       // Saeule
+  boxIn(g, -0.3, 0.3, 2.1, 3.45, cz - 0.3, cz + 0.3, red);                                                                      // Saeule (2026-11-19 niedriger: Kran liegt nach hinten auf dem Aufbau)
   const arm = (x0, y0, z0, x1, y1, z1, w, h, m) => { const d = new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0), L = d.length(), o = new THREE.Mesh(new THREE.BoxGeometry(w, h, L), m);
     o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); o.lookAt(x1, y1, z1); g.add(o); return o; };
-  arm(0, 3.6, cz, 0, 5.7, cz - 0.6, 0.5, 0.42, red);                                                                             // Hauptarm
-  arm(0, 5.75, cz - 0.6, 0, 5.75, zF - 2.4, 0.36, 0.34, dark); arm(0, 5.75, zF - 2.4, 0, 5.75, zF - 3.4, 0.26, 0.24, dark);      // Knickarm, Ausschub
-  meshIn(g, new THREE.CylinderGeometry(0.14, 0.14, 0.56, 14).rotateZ(Math.PI / 2), alu, 0, 5.75, cz - 0.6);                   // Gelenk
-  arm(0, 4.2, cz + 0.05, 0, 5.2, cz - 0.45, 0.16, 0.16, alu);                                                                    // Hydraulikzylinder
-  meshIn(g, new THREE.CylinderGeometry(0.012, 0.012, 2.6, 4), black, 0, 4.4, zF - 3.4);                                         // Seil
-  meshIn(g, new THREE.TorusGeometry(0.12, 0.035, 6, 14, Math.PI * 1.4), alu, 0, 3.0, zF - 3.4);                                 // Haken
+  arm(0, 3.42, cz, 0, 3.48, zR - 1.2, 0.5, 0.42, red);                                                                             // Hauptarm nach hinten auf dem Aufbau
+  arm(0, 3.85, zR - 1.2, 0, 3.85, cz + 0.6, 0.36, 0.34, dark); arm(0, 3.85, cz + 0.6, 0, 3.85, cz + 0.1, 0.26, 0.24, dark);   // Knickarm zurueckgeklappt, Ausschub
+  meshIn(g, new THREE.CylinderGeometry(0.16, 0.16, 0.56, 14).rotateZ(Math.PI / 2), alu, 0, 3.66, zR - 1.2);                   // Gelenk
+  arm(0, 3.3, cz + 0.6, 0, 3.55, cz + 2.4, 0.14, 0.14, alu);                                                                     // Hydraulikzylinder
+  for (const z of [cz + 2.0, zR - 1.8]) boxIn(g, -0.35, 0.35, 3.2, 3.24, z - 0.12, z + 0.12, dark);                               // Auflagen
+  meshIn(g, new THREE.CylinderGeometry(0.012, 0.012, 0.35, 4), black, 0, 3.55, cz + 0.12);                                      // Seil
+  meshIn(g, new THREE.TorusGeometry(0.12, 0.035, 6, 14, Math.PI * 1.4), alu, 0, 3.32, cz + 0.12);                              // Haken (eingehaengt)
   // Aufbau: Rolllaeden, zwei Raeume offen mit Ausruestung, Stuetzen
   boxIn(g, -HW, HW, 0.95, 3.15, zC + 1.15, zR, red); boxIn(g, -HW, HW, 3.15, 3.2, zC + 1.15, zR, white);
   const col = [0xffd43b, 0x2f6fd8, 0xe07012, 0x3aa35a, 0xd23a3a].map(c => M(c, { roughness: 0.6 }));
@@ -877,6 +947,13 @@ function buildFireCrane() {
   for (const sd of [-1, 1]) fireSign(g, fireLabel("Rescue 5", 90), 0.9, 0.3, sd * (HW + 0.013), 1.3, zC + 1.75, sd);
   boxIn(g, -HW + 0.2, HW - 0.2, 1.3, 3.0, zR, zR + 0.012, shutter);
   const axles = [-3.75, 1.75, 3.25]; for (const z of axles) boxIn(g, -0.95, 0.95, 0.55, 1.35, z - 0.66, z + 0.66, black);
+  { const K = polKit(g, { black, chrome: alu, paint: red });   // 2026-11-19: Verbreiterungen, Spritzlappen, Tuerfugen, Griffe, Lichtbalken mit Segmenten, Warnstreifen hinten, geschlossene Radhaeuser bleiben
+    for (const sd of [-1, 1]) { for (const z of [-3.75, 1.75, 3.25]) K.flare(sd, sd * 1.05, z, 0.56); for (const z of [-3.75 + 0.7, 3.25 + 0.75]) sideBox(g, sd * 0.85, sd * 1.25, 0.15, 0.62, z, z + 0.02, M(0x161616, { roughness: 0.95 }));
+      for (const z of [zF + 1.0]) sideBox(g, sd * HW, sd * (HW + 0.015), 1.0, 3.25, z - 0.012, z + 0.012, black); boxAt(g, 0.04, 0.05, 0.16, alu, sd * (HW + 0.02), 1.9, zF + 0.85);
+      for (const y of [0.75, 1.05]) sideBox(g, sd * (HW - 0.2), sd * (HW + 0.08), y - 0.02, y + 0.02, zF + 0.2, zF + 0.9, alu); }
+    const chv = canvasTex(128, 128, (c, W, H) => { c.fillStyle = "#f4f4f2"; c.fillRect(0, 0, W, H); c.fillStyle = "#c8231b"; for (let k = -4; k < 6; k++) { c.beginPath(); c.moveTo(k * 32, H); c.lineTo(k * 32 + 16, H); c.lineTo(k * 32 + 16 + H, 0); c.lineTo(k * 32 + H, 0); c.fill(); } });
+    for (const sd of [-1, 1]) boxIn(g, sd * 0.7 - 0.4, sd * 0.7 + 0.4, 0.95, 1.25, zR, zR + 0.02, M(0xffffff, { map: chv, roughness: 0.5 }));
+    for (let q = 0; q < 8; q++) { const x0 = -0.78 + q * 0.195; boxIn(g, x0, x0 + 0.18, 3.52, 3.6, zF + 0.32, zF + 0.53, q < 4 ? bR : bW); } }
   mergeStatic(g);
   const wheels = [];
   for (const [i, z] of axles.entries()) for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.05, z, 0.56, 0.42, i === 0, tireM, rimM, 0, 28));
@@ -1021,6 +1098,7 @@ function buildBus() {
   boxIn(g, -0.85, 0.85, H, H + 0.32, 1.5, 4.0, grey); for (const sd of [-1, 1]) for (let z = 1.7; z < 3.9; z += 0.12) boxIn(g, sd * 0.85 - 0.01, sd * 0.85 + 0.01, H + 0.06, H + 0.26, z, z + 0.05, black);
   boxIn(g, -0.75, 0.75, H, H + 0.22, -3.5, -1.8, grey); for (const z of [-3.4, -1.9]) boxIn(g, -0.76, 0.76, H + 0.2, H + 0.23, z, z + 0.04, black);
   for (const z of [-0.6, 0.8]) { boxIn(g, -0.4, 0.4, H, H + 0.06, z - 0.35, z + 0.35, M(0xdcdcd4, { roughness: 0.5 })); boxIn(g, -0.32, 0.32, H + 0.06, H + 0.08, z - 0.27, z + 0.27, glass); }
+  boxIn(g, -0.89, 0.89, 0.42, 1.08, -3.6 - 0.58, -3.6 + 0.58, M(0x0c0d0f, { roughness: 0.9 })); boxIn(g, -0.7, 0.7, 0.42, 1.08, 2.4 - 0.58, 2.4 + 0.58, M(0x0c0d0f, { roughness: 0.9 }));   // geschlossene Radhaeuser
   mergeStatic(g);
   const wheels = [];
   for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 1.05, -3.6, 0.5, 0.3, true, tireM, rimM, 0, 24));
@@ -1715,6 +1793,7 @@ function buildGeldtransporter() {
   for (const [x, z] of [[-1.0, -0.3], [1.0, -0.3], [-1.0, 3.35], [1.0, 3.35]]) { meshIn(g, new THREE.SphereGeometry(0.07, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), black, x, 2.99, z); }
   for (const [x, z, h] of [[0.7, 2.8, 0.7], [-0.7, 0.2, 0.45]]) meshIn(g, new THREE.CylinderGeometry(0.005, 0.009, h, 4), black, x, 2.99 + h / 2, z);
   const warn = lightBar(g, 2.6, -1.1, 1.5, 0xff9a10, 0xff9a10);
+  boxIn(g, -0.82, 0.82, 0.45, 1.02, -2.0 - 0.56, -2.0 + 0.56, M(0x0c0d0f, { roughness: 0.9 })); boxIn(g, -0.68, 0.68, 0.45, 1.02, 1.9 - 0.56, 1.9 + 0.56, M(0x0c0d0f, { roughness: 0.9 }));   // geschlossene Radhaeuser
   mergeStatic(g);
   const wheels = [];
   for (const sd of [-1, 1]) wheels.push(addWheel(g, sd * 0.98, -2.0, 0.46, 0.3, true, tireM, rimM, 0, 24));
@@ -1792,6 +1871,7 @@ function buildPolizeiVan() {
   for (const [x, z, h] of [[0.55, 0.0, 0.8], [-0.55, 1.6, 0.5]]) meshIn(g, new THREE.CylinderGeometry(0.006, 0.01, h, 4), black, x, 2.6 + h / 2, z);
   meshIn(g, new THREE.CylinderGeometry(0.07, 0.08, 0.13, 12).rotateX(Math.PI / 2), chrome, -1.05, 2.15, -1.5); meshIn(g, new THREE.CircleGeometry(0.06, 12), mat.glow, -1.05, 2.15, -1.57, Math.PI);
   const bar = lightBar(g, 2.6, -1.0, 1.6, 0xff2020, 0x2a5cff);
+  for (const z of [-1.9, 1.9]) boxIn(g, -0.74, 0.74, 0.4, 0.86, z - 0.48, z + 0.48, M(0x0c0d0f, { roughness: 0.9 }));   // geschlossene Radhaeuser
   mergeStatic(g);
   const wheels = [[-0.88, -1.9, true], [0.88, -1.9, true], [-0.88, 1.9, false], [0.88, 1.9, false]].map(([x, z, f]) => addWheel(g, x, z, 0.38, 0.26, f, tireM, rimM, 0, 24));
   for (const w of wheels) sedanCap(w, 0.26, 0x2a2c30, 0xc8ccd0, 6);
@@ -1894,6 +1974,7 @@ function buildPolizeiPickup() {
   meshIn(g, new THREE.CylinderGeometry(0.045, 0.045, 1.75, 10).rotateZ(Math.PI / 2), black, 0, 2.25, 0.75);
   meshIn(g, new THREE.CylinderGeometry(0.006, 0.01, 0.9, 4), black, 0.6, 2.55, -0.2); meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.11, 12).rotateX(Math.PI / 2), chrome, -1.02, 1.7, -1.15); meshIn(g, new THREE.CircleGeometry(0.05, 12), mat.glow, -1.02, 1.7, -1.21, Math.PI);
   const bar = lightBar(g, 2.28, 0.75, 1.7, 0xff2020, 0x2a5cff);
+  for (const z of [-1.75, 1.75]) boxIn(g, -0.76, 0.76, 0.48, 0.98, z - 0.54, z + 0.54, M(0x0c0d0f, { roughness: 0.9 }));   // geschlossene Radhaeuser
   mergeStatic(g);
   const wheels = [[-0.92, -1.75, true], [0.92, -1.75, true], [-0.92, 1.75, false], [0.92, 1.75, false]].map(([x, z, f]) => addWheel(g, x, z, 0.44, 0.3, f, tireM, rimM, 14, 24));
   for (const w of wheels) sedanCap(w, 0.3, 0x2a2c30, 0xc8ccd0, 5);
