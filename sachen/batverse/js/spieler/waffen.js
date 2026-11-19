@@ -7,7 +7,8 @@
 const AIM = { on: false, z: 1, cd: 0, proj: [], smoke: [], grap: null };
 const weaponHeld = () => { const id = typeof invHeld === "function" ? invHeld() : null; return id && INV_ITEMS[id].art === "Waffe" ? id : null; };
 const onFoot = () => walking && !ghost && !document.body.classList.contains("drive");
-const aimK = () => AIM.z;
+// Maus beim Zielen feiner: im Verhaeltnis zur Vergroesserung, beim Scharfschuetzengewehr mit dem Mausrad-Zoom zusaetzlich staerker (Nicolas 2026-11-19: "je mehr man zoomt, desto weniger soll die Maussensitivitaet sein")
+const aimK = () => AIM.z * (AIM.on && typeof GUN_SZ !== "undefined" && typeof weaponHeld === "function" && weaponHeld() === "sniper" ? Math.sqrt(GUN_SZ.k) : 1);
 const AIM_V = new THREE.Vector3(), AIM_D = new THREE.Vector3(), AIM_ray = new THREE.Raycaster();
 // Modelle: Batarang (flach, schwarz), Rauchbombe (Kugel), Rauch (weiche Sprites), Seil
 const AIM_M = (() => {
@@ -115,6 +116,8 @@ function aimArc() {
 function weaponsStep(dt) {
   AIM.cd = Math.max(0, AIM.cd - dt);
   const can = onFoot() && !!weaponHeld(); if (!can && AIM.on) AIM.on = false;
+  // ohne Zielen sofort normale Sicht und Empfindlichkeit, Zielfernrohr-Zoom zurueck (Nicolas 2026-11-19: "nach dem Zoomen oder beim Scrollen auf einen anderen Slot direkt Sensitivitaet auf normal")
+  if (!AIM.on && AIM.z !== 1) { AIM.z = 1; if (onFoot()) { camera.fov = 70; camera.updateProjectionMatrix(); } } if (!AIM.on && typeof GUN_SZ !== "undefined") GUN_SZ.k = 1;
   const zt = AIM.on ? (typeof gunZoom === "function" ? gunZoom() : 1.8) : 1; if (Math.abs(AIM.z - zt) > 0.001 || (AIM.on && camera.fov !== 70 / AIM.z)) { AIM.z += (zt - AIM.z) * Math.min(1, dt * 12); if (Math.abs(AIM.z - zt) < 0.002) AIM.z = zt; if (onFoot()) { camera.fov = 70 / AIM.z; camera.updateProjectionMatrix(); } }
   document.body.classList.toggle("aiming", AIM.on); document.body.classList.toggle("armed", can);
   aimArc(); if (typeof gunStep === "function") gunStep(dt);
