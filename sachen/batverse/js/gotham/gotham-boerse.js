@@ -73,6 +73,9 @@ function* gboeGen() {
     const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647; for (let i = 0; i < N; i++) { q.position.set((rnd() - 0.5) * (BW - 4), 0.05 + rnd() * 0.01, iz0 + 2 + rnd() * (BD - 5)); q.rotation.set(-Math.PI / 2, 0, rnd() * 6.3); q.updateMatrix(); pm.setMatrixAt(i, q.matrix); } g.add(pm); }
   for (const sx of [-1, 1]) for (const z of [iz0 + 2, iz0 + 5]) { cyl(0.05, 0.05, 1, gold, sx * (DW + 0.5), 0.5, z, 10); cyl(0.12, 0.15, 0.06, gold, sx * (DW + 0.5), 0.03, z, 12); }
   scene.add(g);
+  // Rechtsklick an einem Handelsposten: Boersen-App (ui/aktien.js) zum Kaufen und Verkaufen
+  g.updateMatrixWorld(true); for (const [x, z] of posten) { const hm = new THREE.Mesh(new THREE.BoxGeometry(5.4, 1.6, 5.4), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(x, 0.8, z); g.add(hm); hm.updateMatrixWorld(true); const p = hm.getWorldPosition(new THREE.Vector3());
+    gates.push({ name: "Handelsposten", g: hm, call: () => typeof akxOeffne === "function" ? akxOeffne() : typeof toast === "function" && toast("Börse: Handeln im Handy (App Börse)"), verbs: ["Aktien handeln", "Aktien handeln"], a: [p.x, p.z], b: [p.x, p.z], near: 4.5 }); }
   { const poly = [P(-BW / 2, Z0), P(BW / 2, Z0), P(BW / 2, Z0 + BD), P(-BW / 2, Z0 + BD)]; bautAdd({ id: "GO-BOERSE", name: "Gotham Stock Exchange", art: "Gebäude", poly, y0: Y - 1, y1: Y + H + 2, info: "Börse mit Handelssaal (begehbar) · früher Baustelle BS-01" }); }
   GBOE.anim = { g, scr, scrT, taf, tafT, lauf, laufT, t: -99, off: 0 }; gboeZeichnen();
 }

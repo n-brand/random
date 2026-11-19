@@ -204,3 +204,4 @@ Object.assign(HAND3D, {
     const front = new THREE.MeshStandardMaterial({ map: t, roughness: 0.35, metalness: 0.2 }), rand = new THREE.MeshStandardMaterial({ color: 0x1b4f8f, roughness: 0.4 });
     const k = new THREE.Mesh(new THREE.BoxGeometry(0.0856, 0.0008, 0.054), [rand, rand, front, rand, rand, rand]); g.add(k); g.rotation.set(1.2, -0.3, 0.2); g.scale.setScalar(2.4); return g; },
 });
+HAND3D.bargeld = HAND3D["geld-bar"];   // Geldscheine aus dem Inventar wie das Bargeld-Buendel

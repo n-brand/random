@@ -44,7 +44,7 @@ const KONTO_GELD_SVG = { bar: '<rect x="2" y="7" width="22" height="12" rx="1.5"
 function kontoGeldRender() {
   let el = document.getElementById("hb-geld");
   if (!el) { el = document.createElement("div"); el.id = "hb-geld"; el.innerHTML = '<div class="hg hg-bar" title="Bargeld"><svg viewBox="0 0 26 26" aria-hidden="true">' + KONTO_GELD_SVG.bar + '</svg><b></b></div><div class="hg hg-karte" title="Kredit (Kontostand)"><svg viewBox="0 0 26 26" aria-hidden="true">' + KONTO_GELD_SVG.karte + '</svg><b></b></div>'; document.body.appendChild(el);
-    el.addEventListener("click", e => { const h = e.target.closest(".hg"); if (h && typeof invSelect === "function") invSelect(h.classList.contains("hg-bar") ? INV_SEL_BAR : INV_SEL_KARTE); }); }
+    el.addEventListener("click", e => { if (typeof invIsOpen === "function" && invIsOpen()) return; const h = e.target.closest(".hg"); if (h && typeof invSelect === "function") invSelect(h.classList.contains("hg-bar") ? INV_SEL_BAR : INV_SEL_KARTE); }); }
   el.querySelector(".hg-bar b").textContent = kontoFmt(KONTO.bar); el.querySelector(".hg-karte b").textContent = kontoFmt(KONTO.stand);
   if (typeof INV !== "undefined") { el.querySelector(".hg-bar").classList.toggle("sel", INV.sel === INV_SEL_BAR); el.querySelector(".hg-karte").classList.toggle("sel", INV.sel === INV_SEL_KARTE); }
 }
