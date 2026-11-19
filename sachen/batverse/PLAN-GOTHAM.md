@@ -133,7 +133,7 @@ Als Gebäude (innen leer) stehen auch: Club des Pinguins, Grand Ballroom (Events
 |----|-----|-------|
 | N1 | **Börse**, Aktienhandel (Wayne Enterprises, Autohauskette usw.). Vorlage für einen begehbaren Handelssaal (Nicolas 2026-11-17, Filmbild): `karten/planung/boerse-vorbild-handelssaal.webp` – grosser Saal mit Säulen, achteckige Handelsposten mit Bildschirm-Kränzen und Leuchtdach, Händlertische mit vielen Monitoren, Kurstafeln oben an den Wänden, Gedränge, Papier am Boden. Bild nur lokal (Filmstandbild, nicht ins öffentliche Repo) | offen – braucht Kursmodell und Seite im Web (Kurse im Laptop schon da) |
 | N2 | **Geldwäsche**: bargeldintensive Betriebe, Immobilien, Kunst, Gold, Luxusgüter, Kryptowährungen | offen – Idee, Ablauf mit Nicolas klären |
-| N3 | **Geld- und Gefangenentransporte** (fahrende Transporter) | offen |
+| N3 | **Geld- und Gefangenentransporte** (fahrende Transporter) | ✅ fahren 2026-11-19 (2 Geld, 1 Gefangene, auf Buslinien-Wegen); Überfall offen |
 | N4 | Casinos | ein Casino steht (BS-02); weitere offen |
 | N5 | **Laptops in der Werkstatt**: wie der Bankautomat, aber anderes UI. Zwei Laptops nebeneinander mit verschiedenem Gehäuse, gleiche Software; nicht jeder hat jede App. Benutzername schon eingetragen; manche entsperrt, manche ohne, manche mit Passwort. Apps: **Web** (Browser mit angehefteten Seiten wie GTA V: Autohändler, Waffen, Börse, Bank, Immobilien – überall schon angemeldet; eigene Immobilien mit Wert), **Kontakte** (Polizei, Taxi, Krankenwagen, Feuerwehr anrufen), **E-Mail**, **Karten**; weitere Apps später | **gebaut 2026-11-17** in der Werkstatt (PLAN-LAPTOP.md L1-L3); im Spiel aufstellen offen |
 | N6 | **Granaten** als Werkzeug | gebaut 2026-11-19 (Handgranate, Gotham Arms) |

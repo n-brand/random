@@ -91,6 +91,11 @@ function* gbusGen() {
   // Busse: je Linie einer (fahrend), zwei im Busbahnhof
   for (const line of GBUS.lines) { const b = buildBus(); b.g.name = "Bus " + line.name; b.g.userData.keep = true; b.g.userData.noLift = true; scene.add(b.g);
     GBUS.buses.push({ line, g: b.g, s: 30, d: 1, v: 0, wait: 0, y: Y, off: [0, 0], hold: 0, circ: gbusCirc() }); yield; }
+  // Geld- und Gefangenentransporte (N3, Nicolas 2026-11-17 Notizen; gebaut 2026-11-19 "Ja, weiter"): fahren wie die Busse auf den Linienwegen, aber ohne Haltestellen,
+  // halten an den Enden 15 s (Bank bzw. Praesidium, Annahme), schneller (14 m/s), kuerzere Kollisionskreise. Gleiche Kollision, EMP und Halten vor Hindernissen wie die Busse.
+  { const n = GBUS.lines.length, TR = [["Geldtransporter", typeof buildGeldtransporter === "function" && buildGeldtransporter, 0, 0.35, 1], ["Geldtransporter", typeof buildGeldtransporter === "function" && buildGeldtransporter, 3, 0.6, -1], ["Gefangenentransporter", typeof buildPolizeiVan === "function" && buildPolizeiVan, 1, 0.5, 1]];
+    if (n) for (const [name, fn, li, fr, d] of TR) { if (!fn) continue; const L = GBUS.lines[li % n], m = fn(), g = m.g || m; g.name = name + " (fährt)"; g.userData.keep = true; g.userData.noLift = true; scene.add(g);
+      GBUS.buses.push({ line: L, g, s: L.len * fr, d, v: 0, wait: 0, y: Y, off: [0, 0], hold: 0, circ: gbusCirc(), wheels: m.wheels || [], tr: { name, vmax: 14, t: 2.1, r: 1.2, h: 2.7, wait: 15 } }); yield; } }
   if (GBUS.station) { const S = GBUS.station; for (const k of [0, 2]) { const b = buildBus(), t = -S.D / 2 + 8 + k * 11 + 3; b.g.position.set(S.cx + S.ux * 4 - S.uz * t, Y, S.cz + S.uz * 4 + S.ux * t); b.g.rotation.y = Math.atan2(-S.ux, -S.uz) + Math.PI / 2; b.g.userData.keep = true; b.g.userData.noLift = true; b.g.name = "Bus abgestellt"; scene.add(b.g); gbusCircSet(gbusCirc(), b.g.position.x, b.g.position.z, Y, b.g.rotation.y); } }
   GBUS.last = performance.now();
 }
@@ -102,23 +107,23 @@ TILES.tasks.push({ gen: null, plan() {}, step() { if (GBUS.done || TILES.startup
 // Kollision (Nicolas 2026-11-16): je Bus drei bewegte Kreise (r 1,45 m bei -4,3 / 0 / 4,3 m, bis 3,2 m hoch) fuer Fussgaenger und Fahrzeuge.
 // gbusPush (aus vehPushStep, fahren.js): seitlicher Versatz b.off (Eindringtiefe mal Massenanteil, beim ersten Kontakt dazu Tempo x Anteil x 0,6 bis 2,5 m), Bus haelt 2,5 s und kehrt dann in ca. 3 s in die Spur zurueck. Bus-Masse fuer den Anteil: 40.
 function gbusCirc() { return [0, 1, 2].map(() => { const c = [0, 0, 0, 0]; c.dyn = true; circles.push(c); return c; }); }
-function gbusCircSet(C, x, z, y, h, on = true) { const ax = -Math.sin(h), az = -Math.cos(h); [-4.3, 0, 4.3].forEach((t, i) => { const c = C[i]; c[0] = x + ax * t; c[1] = z + az * t; c[2] = on ? 1.45 : 0; c[3] = y + 3.2; }); }
+function gbusCircSet(C, x, z, y, h, on = true, T = 4.3, r = 1.45, hh = 3.2) { const ax = -Math.sin(h), az = -Math.cos(h); [-T, 0, T].forEach((t, i) => { const c = C[i]; c[0] = x + ax * t; c[1] = z + az * t; c[2] = on ? r : 0; c[3] = y + hh; }); }
 function gbusPush(b, nx, nz, pen, speed, k) { const imp = b.hold > 0.1 ? 0 : Math.min(2.5, speed * k * 0.6);   // erster Kontakt: Stoss nach Tempo und Massenanteil
   b.off[0] += nx * (pen + imp); b.off[1] += nz * (pen + imp); const L = Math.hypot(b.off[0], b.off[1]); if (L > 4) { b.off[0] *= 4 / L; b.off[1] *= 4 / L; } b.hold = Math.max(b.hold, 2.5); b.v = 0;
-  if (speed > 6 && typeof toast === "function" && !(b.msgT > performance.now() - 3000)) { b.msgT = performance.now(); toast("Zusammenstoss mit dem Bus " + b.line.name); } }
+  if (speed > 6 && typeof toast === "function" && !(b.msgT > performance.now() - 3000)) { b.msgT = performance.now(); toast("Zusammenstoss mit " + (b.tr ? "dem " + b.tr.name : "dem Bus " + b.line.name)); } }
 function gbusStep() {
   if (!GBUS.buses.length) return; const now = performance.now(), dt = Math.min(0.1, (now - GBUS.last) / 1000); GBUS.last = now; const cam = camera.position;
   for (const b of GBUS.buses) { const L = b.line;
     b.hold = Math.max(0, (b.hold || 0) - dt); if (!b.hold && (b.off[0] || b.off[1])) { const f = Math.max(0, 1 - dt * 0.8); b.off[0] *= f; b.off[1] *= f; if (Math.hypot(b.off[0], b.off[1]) < 0.02) b.off[0] = b.off[1] = 0; }
     // vor einem Hindernis in der Spur halten (Fahrzeug des Spielers oder Spieler zu Fuss, bis ca. 9 m vor der Mitte)
-    { const fx = -Math.sin(b.g.rotation.y), fz = -Math.cos(b.g.rotation.y), hx = b.g.position.x + fx * 8, hz = b.g.position.z + fz * 8, near = (x, z, r) => Math.hypot(x - hx, z - hz) < r;
+    { const fx = -Math.sin(b.g.rotation.y), fz = -Math.cos(b.g.rotation.y), hd = b.tr ? 5.5 : 8, hx = b.g.position.x + fx * hd, hz = b.g.position.z + fz * hd, near = (x, z, r) => Math.hypot(x - hx, z - hz) < r;
       b.block = (CAR && CAR.on && near(CAR.x, CAR.z, 3.5)) || (walking && !ghost && !(CAR && CAR.on) && near(player.pos.x, player.pos.z, 2.5)); }
     if (b.hold || b.block) b.v = 0;
     else if (b.wait > 0) b.wait -= dt;
     else { // naechster Halt in Fahrtrichtung (oder Routenende)
-      let target = b.d > 0 ? L.len - 8 : 8, tst = null; for (const st of L.stops) if (st !== b.prev && st.dir === b.d && (b.d > 0 ? st.s > b.s - 0.5 && st.s < target : st.s < b.s + 0.5 && st.s > target)) { target = st.s; tst = st; }   // naechster Halt (nicht der gerade bediente)
-      const dist = Math.abs(target - b.s); b.v = Math.min(GBUS.VMAX, b.v + GBUS.ACC * dt, Math.sqrt(2 * GBUS.ACC * dist)); const step = Math.min(dist, b.v * dt); b.s += b.d * step;
-      if (dist - step < 0.05) { b.v = 0; b.wait = GBUS.DWELL; b.prev = tst; if (!tst) b.d = -b.d; } }
+      let target = b.d > 0 ? L.len - 8 : 8, tst = null; if (!b.tr) for (const st of L.stops) if (st !== b.prev && st.dir === b.d && (b.d > 0 ? st.s > b.s - 0.5 && st.s < target : st.s < b.s + 0.5 && st.s > target)) { target = st.s; tst = st; }   // naechster Halt (nicht der gerade bediente)
+      const dist = Math.abs(target - b.s); b.v = Math.min(b.tr ? b.tr.vmax : GBUS.VMAX, b.v + GBUS.ACC * (b.tr ? 1.6 : 1) * dt, Math.sqrt(2 * GBUS.ACC * dist)); const step = Math.min(dist, b.v * dt); b.s += b.d * step; if (b.wheels) for (const w of b.wheels) if (w.spin) w.spin.rotation.x -= step / (w.r || 0.45);
+      if (dist - step < 0.05) { b.v = 0; b.wait = b.tr ? b.tr.wait : GBUS.DWELL; b.prev = tst; if (!tst) b.d = -b.d; } }
     const i = Math.max(0, Math.min(L.R.length - 2, Math.floor(b.s / 4))), f = b.s / 4 - i, p = L.R[i], q = L.R[i + 1], x0 = p[0] + (q[0] - p[0]) * f, z0 = p[1] + (q[1] - p[1]) * f;
     if (Math.abs(x0 - cam.x) > 700 || Math.abs(z0 - cam.z) > 700) { b.g.visible = false; gbusCircSet(b.circ, 0, 0, 0, 0, false); continue; } b.g.visible = true;
     const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, ux = (q[0] - p[0]) / l * b.d, uz = (q[1] - p[1]) / l * b.d, off0 = Math.min(p[2] / 4, 3.5);   // rechte Spur
@@ -127,5 +132,5 @@ function gbusStep() {
     b.lane = b.lane === undefined ? laneT : b.lane + (laneT - b.lane) * Math.min(1, dt * 2); const off = b.lane, x = x0 - uz * off, z = z0 + ux * off;
     // Hoehe und Neigung aus dem Boden 5 m vor und hinter der Mitte (Nicolas 2026-11-16: "bei einer Steigung bewegt er sich nicht korrekt mit")
     const gy = (px, pz, y0) => { const g = gothamDeckAt(px, pz, y0 + 1) ?? groundAt(px, pz, y0 + 2); return g === null || !isFinite(g) || Math.abs(g - y0) > 1.2 ? y0 : g; }, yF = gy(x + ux * 5, z + uz * 5, b.yF ?? b.y), yB = gy(x - ux * 5, z - uz * 5, b.yB ?? b.y);   // gy: mehr als 1,2 m je Bild hoeher (Ueberfuehrung) oder tiefer (Kanal unter einer Rampe ohne Kollision in der Ferne) ist nicht der eigene Boden
-    b.yF = yF; b.yB = yB; b.y = (yF + yB) / 2; b.g.position.set(x + b.off[0], b.y, z + b.off[1]); b.g.rotation.set(Math.atan2(yF - yB, 10), Math.atan2(-ux, -uz), 0, "YXZ"); gbusCircSet(b.circ, x + b.off[0], z + b.off[1], b.y, b.g.rotation.y); }
+    b.yF = yF; b.yB = yB; b.y = (yF + yB) / 2; b.g.position.set(x + b.off[0], b.y, z + b.off[1]); b.g.rotation.set(Math.atan2(yF - yB, 10), Math.atan2(-ux, -uz), 0, "YXZ"); gbusCircSet(b.circ, x + b.off[0], z + b.off[1], b.y, b.g.rotation.y, true, ...(b.tr ? [b.tr.t, b.tr.r, b.tr.h] : [])); }
 }

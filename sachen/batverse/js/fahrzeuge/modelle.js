@@ -1968,12 +1968,12 @@ function buildPolizeiPickup() {
   { const t = meshIn(g, new THREE.PlaneGeometry(1.0, 0.24), fireLabel("POLICE", 110), 0, 1.1, zR + 0.012); }
   for (const sd of [-1, 1]) { boxIn(g, sd * 0.88 - 0.08, sd * 0.88 + 0.08, 0.95, 1.32, zR, zR + 0.03, black); boxIn(g, sd * 0.88 - 0.06, sd * 0.88 + 0.06, 1.12, 1.3, zR + 0.03, zR + 0.04, mat.glowRed); boxIn(g, sd * 0.88 - 0.06, sd * 0.88 + 0.06, 0.98, 1.1, zR + 0.03, zR + 0.04, M(0xffa020, { emissive: 0x804000 })); }
   boxIn(g, -1.02, 1.02, 0.45, 0.65, zR - 0.05, zR + 0.15, black); boxAt(g, 0.5, 0.12, 0.02, white, 0, 0.75, zR + 0.01); boxAt(g, 0.12, 0.08, 0.3, stahl, 0, 0.5, zR + 0.25); meshIn(g, new THREE.SphereGeometry(0.045, 10, 8), chrome, 0, 0.58, zR + 0.38);
-  // Ueberrollbuegel aus Rohren mit Streben, Lichtbalken, Arbeitsscheinwerfer
-  for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(0.045, 0.045, 0.9, 10), black, sd * 0.85, 1.8, 0.75); const d = meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 1.17, 10), black, sd * 0.85, 1.8, 1.12); d.rotation.x = -0.69;
-    boxAt(g, 0.2, 0.12, 0.12, black, sd * 0.55, 2.38, 0.75); boxAt(g, 0.16, 0.08, 0.02, mat.glow, sd * 0.55, 2.38, 0.81); }
-  meshIn(g, new THREE.CylinderGeometry(0.045, 0.045, 1.75, 10).rotateZ(Math.PI / 2), black, 0, 2.25, 0.75);
+  // Ueberrollbuegel aus Rohren mit Streben, Lichtbalken, Arbeitsscheinwerfer (2026-11-19 Nicolas, Bild: "Lichter zu hoch, der ganze Rahmen": Querrohr auf Dachhoehe 2,08 statt 2,25 m)
+  for (const sd of [-1, 1]) { meshIn(g, new THREE.CylinderGeometry(0.045, 0.045, 0.73, 10), black, sd * 0.85, 1.715, 0.75); const d = meshIn(g, new THREE.CylinderGeometry(0.035, 0.035, 1.04, 10), black, sd * 0.85, 1.715, 1.12); d.rotation.x = -0.792;
+    boxAt(g, 0.16, 0.1, 0.1, black, sd * 0.96, 2.08, 0.78); boxAt(g, 0.12, 0.07, 0.02, mat.glow, sd * 0.96, 2.08, 0.84); }   // Arbeitsscheinwerfer seitlich an den Ecken, nach hinten
+  meshIn(g, new THREE.CylinderGeometry(0.045, 0.045, 1.75, 10).rotateZ(Math.PI / 2), black, 0, 2.08, 0.75);
   meshIn(g, new THREE.CylinderGeometry(0.006, 0.01, 0.9, 4), black, 0.6, 2.55, -0.2); meshIn(g, new THREE.CylinderGeometry(0.06, 0.07, 0.11, 12).rotateX(Math.PI / 2), chrome, -1.02, 1.7, -1.15); meshIn(g, new THREE.CircleGeometry(0.05, 12), mat.glow, -1.02, 1.7, -1.21, Math.PI);
-  const bar = lightBar(g, 2.28, 0.75, 1.7, 0xff2020, 0x2a5cff);
+  const bar = lightBar(g, 2.11, 0.75, 1.7, 0xff2020, 0x2a5cff);
   for (const z of [-1.75, 1.75]) boxIn(g, -0.76, 0.76, 0.48, 0.98, z - 0.54, z + 0.54, M(0x0c0d0f, { roughness: 0.9 }));   // geschlossene Radhaeuser
   mergeStatic(g);
   const wheels = [[-0.92, -1.75, true], [0.92, -1.75, true], [-0.92, 1.75, false], [0.92, 1.75, false]].map(([x, z, f]) => addWheel(g, x, z, 0.44, 0.3, f, tireM, rimM, 14, 24));
