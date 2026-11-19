@@ -5,6 +5,7 @@
 // Stuetzen in der Mitte alle 15 m, Deckenleuchten, Rampen mit Bruestung, obere Fahrspuren neben den Rampen, Abschlusswaende, Deckplatte ueber dem
 // Gelaende-Ausschnitt. Kollision: Kreise (Waende innen, Stuetzen, Bruestungen), Regel: weiter innen als die sichtbare Flaeche.
 "use strict";
+const LICHT_AUS = { on: false, k: 0, t: 0, gates: [] };   // Stromausfall unten (N15), siehe lichtAus
 
 // liegt (x, z) ueber einer Rampenoeffnung (dort keine obere Fahrbahn)
 function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -1 && n.s <= n.r.L + 1 && gdeckInRamp(n.r, n.s) && n.d < GDECK.RW / 2 + 0.6; }
@@ -190,7 +191,7 @@ function gdeckOpen(x, z) { const n = gdeckNear(x, z, 12); return !!n && n.s >= -
   const postG = posts.map(([x, z]) => new THREE.CylinderGeometry(0.45, 0.5, DY - LY, 12).translate(x, (LY + DY) / 2, z));
   GDECK.meshes = [make(MK, mat(mkTex, 3.5, 0xffffff, { alphaTest: 0.5 }), "Gotham-Rampen Markierung"), make(FL, mat(lines(true), 2), "Gotham-Untere Strasse"), make(FLT, mat(plainT, 2), "Gotham-Untere Strasse Trichter"), make(FLX, mat(plainT, 2.5), "Gotham-Untere Kreuzungen"), make(FLB, mat(plainT, 1), "Gotham-Untere Bodenplatte"), make(LG, M(0xd9b23c, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Mittellinie"), make(LW, M(0xd8d8d2, { roughness: 0.8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), "Gotham-Untere Strasse Randlinien"), make(FL2, mat(lines(false), 2), "Gotham-Untere Strasse Rampen"), make(WK, mat(walkT, 1), "Gotham-Untere Strasse Gehsteige"),
     make(CE, mat(conc, 0, 0x6e6c68), "Gotham-Untere Strasse Decke"), make(WA, mat(conc, 0), "Gotham-Untere Strasse Waende"), make(CO, mat(walkT, 0.5), "Gotham-Deckplatten"),
-    make(UP, mat(plainT, 2), "Gotham-Spuren neben Rampen"), make(LAMP, M(0xeefff0, { emissive: 0xd8f5d6, emissiveIntensity: 1.3, side: THREE.DoubleSide }), "Gotham-Untere Strasse Leuchten")];   // gruenlich-weiss (Leuchtroehren)
+    make(UP, mat(plainT, 2), "Gotham-Spuren neben Rampen"), make(LAMP, GDECK.lampM = M(0xeefff0, { emissive: 0xd8f5d6, emissiveIntensity: 1.3, side: THREE.DoubleSide }), "Gotham-Untere Strasse Leuchten")];   // gruenlich-weiss (Leuchtroehren)
   gampelBau(LY);
   if (postG.length) { const m = new THREE.Mesh(mergeGeometries(postG, false), M(0x8a8782, { roughness: 0.9 })); m.name = "Gotham-Untere Strasse Stuetzen"; m.castShadow = m.receiveShadow = true; m.userData.keep = true; m.userData.noLift = true; scene.add(m); GDECK.meshes.push(m); }
   GDECK.nCircles = circles.length - nCirc;
@@ -205,8 +206,22 @@ function gampelBau(LY) { const A = GDECK.ampeln, n = A.length; if (!n) return; c
   const P = { r: mk(new THREE.CircleGeometry(0.075, 12), new THREE.MeshBasicMaterial({ color: 0xff3a30 }), n), g: mk(new THREE.CircleGeometry(0.075, 12), new THREE.MeshBasicMaterial({ color: 0x40ff80 }), n) };
   A.forEach((a, i) => { const h = Math.atan2(-a.fx, -a.fz); q.rotation.set(0, h, 0); q.position.set(a.x, LY + 1.7, a.z); q.updateMatrix(); mast.setMatrixAt(i, q.matrix);
     q.position.set(a.x, LY + 3.2, a.z); q.updateMatrix(); geh.setMatrixAt(i, q.matrix); q.position.set(a.x + a.rx * 0.25, LY + 2.2, a.z + a.rz * 0.25); q.rotation.set(0, h, 0); q.updateMatrix(); fg.setMatrixAt(i, q.matrix); });
-  GDECK.amp = { L, P, LY, ph: -1 }; gampelStep(true); }
-function gampelStep(force) { const G = GDECK.amp; if (!G) return; const t = (performance.now() / 1000) % 24, st = k => { const u = (t - k * 12 + 24) % 24; return u < 9 ? "g" : u < 11 ? "y" : "r"; }, key = st(0) + st(1);
+  GDECK.amp = { L, P, LY, ph: -1 }; gampelStep(true);
+  // Sicherungskasten an der Wand je Ampel (N15 "Lichter aus"): Rechtsklick schaltet den Strom unten ab bzw. wieder an
+  const kb = mk(new THREE.BoxGeometry(0.6, 0.85, 0.22), M(0x8a8e92), n), ks = mk(new THREE.PlaneGeometry(0.22, 0.2), new THREE.MeshBasicMaterial({ map: canvasTex(64, 64, (c, w, h) => { c.fillStyle = "#ffd43b"; c.beginPath(); c.moveTo(w / 2, 4); c.lineTo(w - 4, h - 6); c.lineTo(4, h - 6); c.fill(); c.fillStyle = "#111"; c.font = "bold 34px Arial"; c.textAlign = "center"; c.fillText("⚡", w / 2, h - 14); }) }), n);
+  A.forEach((a, i) => { const x = a.x + a.rx * 1.05 - a.fx * 2, z = a.z + a.rz * 1.05 - a.fz * 2, h = Math.atan2(-a.rx, -a.rz); q.rotation.set(0, h, 0); q.position.set(x, LY + 1.4, z); q.updateMatrix(); kb.setMatrixAt(i, q.matrix); q.position.set(x - a.rx * 0.115, LY + 1.5, z - a.rz * 0.115); q.updateMatrix(); ks.setMatrixAt(i, q.matrix);
+    const hm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.1, 0.5), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(x, LY + 1.4, z); hm.userData.keep = true; scene.add(hm);
+    const gt = { name: "Sicherungskasten", g: hm, call: () => lichtAus(!LICHT_AUS.on), verbs: ["Strom abschalten", "Strom abschalten"], a: [x, z], b: [x, z], near: 2.5 }; LICHT_AUS.gates.push(gt); LICHT_AUS.pend = true; }); }
+// Stromausfall unten (N15, Nicolas 2026-11-17 Idee "Lichter aus und Nachtsichtbrille"; gebaut 2026-11-19 nur fuer die unteren Strassen): Roehren und Ampeln aus, Kunstlicht unter der Erde
+// fast aus (applyNight, tag-nacht.js), nach 90 s von selbst wieder an. Mit der Nachtsichtbrille (Kopf, B) sieht man weiter.
+function lichtAus(an) { LICHT_AUS.on = an; LICHT_AUS.t = an ? 90 : 0; const m = GDECK.lampM; if (m) { m.emissiveIntensity = an ? 0 : 1.3; m.color.setHex(an ? 0x2a2c2a : 0xeefff0); }
+  const G = GDECK.amp; if (G) { for (const k of ["r", "y", "g"]) G.L[k].on.visible = !an; for (const k of ["r", "g"]) G.P[k].visible = !an; }
+  for (const g of LICHT_AUS.gates) g.verbs = an ? ["Strom einschalten", "Strom einschalten"] : ["Strom abschalten", "Strom abschalten"];
+  if (typeof toast === "function") toast(an ? "Strom unten abgeschaltet – 90 s dunkel (Nachtsichtbrille: B)" : "Strom wieder an"); }
+function gampelStep(force) { if (LICHT_AUS.pend && typeof gates !== "undefined") { LICHT_AUS.pend = false; gates.push(...LICHT_AUS.gates); }   // Sicherungskaesten erst jetzt in gates (tore.js laedt spaeter)
+  { const L = LICHT_AUS, dt = Math.min(0.1, (performance.now() - (L.last || performance.now())) / 1000); L.last = performance.now(); if (L.on && (L.t -= dt) <= 0) lichtAus(false);
+    const pp = typeof player !== "undefined" ? player.pos : null, unten = !!pp && typeof walking !== "undefined" && walking && pp.y < GOT.STR - 2 && !!gdeckNear(pp.x, pp.z, 2), kz = L.on && unten ? 1 : 0; if (L.k !== kz) { L.k = L.k < kz ? Math.min(kz, L.k + dt * 3) : Math.max(kz, L.k - dt * 1.5); if (typeof applyNight === "function") applyNight(); } }
+  const G = GDECK.amp; if (!G) return; const t = (performance.now() / 1000) % 24, st = k => { const u = (t - k * 12 + 24) % 24; return u < 9 ? "g" : u < 11 ? "y" : "r"; }, key = st(0) + st(1);
   if (!force && key === G.ph) return; G.ph = key; const A = GDECK.ampeln, q = new THREE.Object3D(), z = new THREE.Matrix4().makeScale(0, 0, 0);
   A.forEach((a, i) => { const s = st(a.ph), h = Math.atan2(-a.fx, -a.fz), hp = h;
     for (const k of ["r", "y", "g"]) { if (k !== s) { G.L[k].on.setMatrixAt(i, z); continue; } q.position.set(a.x - a.fx * 0.15, G.LY + 3.2 + G.L[k].y, a.z - a.fz * 0.15); q.rotation.set(0, h, 0); q.updateMatrix(); G.L[k].on.setMatrixAt(i, q.matrix); }
