@@ -36,7 +36,7 @@ function buildFigur(o = {}) { o = { ...FIGUR_STD, ...o }; const g = new THREE.Gr
   if (o.groesse !== 1) g.scale.setScalar(o.groesse); g.userData = { kopf, rumpf, armL, armR, unterarmL: uaL, unterarmR: uaR, beinL, beinR, knieL, knieR, phase: 0 }; g.name = "Spielfigur"; return g; }
 // Figuren, die sich bewegen (Werkstatt-Vorfuehrung, Skateboard): FIGUREN.push({ g, tempo }) – figurStep aus tresorStep
 const FIGUREN = [];
-function figurStep(dt) { for (const f of FIGUREN) if (f.g.visible && f.g.parent) { figurPose(f.g, dt, f.tempo || 0, f.sprung && !f.gleit ? "zyklus" : false); if (f.personal) { const U = f.g.userData; U.kopf.rotation.y = Math.sin((U.t || 0) * 0.35 + U.phase) * 0.45; } if (f.g.userData.cape && typeof batUmhang === "function") batUmhang(f.g, dt, f.tempo || 0, !!f.gleit, !!f.sprung); } }   // Batman: Umhang (F3)
+function figurStep(dt) { if (typeof fahrerStep === "function") fahrerStep(); for (const f of FIGUREN) if (f.g.visible && f.g.parent) { figurPose(f.g, dt, f.tempo || 0, f.sprung && !f.gleit ? "zyklus" : false); if (f.personal) { const U = f.g.userData; U.kopf.rotation.y = Math.sin((U.t || 0) * 0.35 + U.phase) * 0.45; } if (f.g.userData.cape && typeof batUmhang === "function") batUmhang(f.g, dt, f.tempo || 0, !!f.gleit, !!f.sprung); } }   // Batman: Umhang (F3)
 function figurPose(F, dt, tempo = 0, sprung = false) { const U = F.userData; U.phase += dt * (2.2 + tempo * 1.25); U.t = (U.t || 0) + dt; const p = U.phase, k = Math.min(1, tempo / 4), run = Math.max(0, Math.min(1, (tempo - 5) / 3));
   const sw = Math.sin(p) * (0.5 * k + 0.35 * run), atm = Math.sin(U.t * 2) * 0.012;
   U.beinL.rotation.x = sw; U.beinR.rotation.x = -sw; U.knieL.rotation.x = -Math.max(0, -Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run); U.knieR.rotation.x = -Math.max(0, Math.sin(p - 0.6)) * (0.7 * k + 0.4 * run);   // Knie knicken nach hinten, Ellbogen nach vorne (2026-11-19, Nicolas: "Figuren falsch herum gebaut")
@@ -140,3 +140,15 @@ function dpStep(dt, P, boden) { const an = dpAn(); if (!an) { if (DP.w) DP.w.vis
   const cam = ziel3.clone().add(new THREE.Vector3(sy * cp, -sp, cy * cp).multiplyScalar(DP.D));
   if (typeof shotSeg === "function") { const h = shotSeg(ziel3, cam, null, 0.25); if (h) cam.copy(h.p).lerp(ziel3, 0.12); }
   camera.position.copy(cam); camera.rotation.set(P.pitch, P.yaw, 0, "YXZ"); return true; }
+
+// ---- Fahrer sichtbar im Fahrzeug (F5, "Ja, weiter" 2026-11-19): im Auto (CAR, fahren.js) mit Aussenkamera sitzt Bruce bzw. Batman (Batsuit am Koerper) auf dem Fahrersitz:
+// Augen auf spec.seat (wie die Cockpit-Kamera), Oberschenkel waagrecht nach vorne, Unterschenkel nach unten, Haende vorne am Lenkrad bzw. Lenker; in der Cockpit-Sicht (V) ausgeblendet.
+const FAHRER = { F: {}, car: null };
+function fahrerStep() { const C = typeof CAR !== "undefined" ? CAR : null, an = !!(C && C.on && C.g && C.spec && C.spec.seat && C.view !== 1);
+  if (!an) { if (FAHRER.cur) { FAHRER.cur.parent && FAHRER.cur.parent.remove(FAHRER.cur); FAHRER.cur = null; FAHRER.car = null; } return; }
+  const bat = typeof batAnzug === "function" && batAnzug(), key = bat ? "bat" : "bruce", F = FAHRER.F[key] || (FAHRER.F[key] = bat ? buildBatman() : buildFigur({ schulter: 1.22, oberteil: 0x1c1f26, hose: 0x23262c, schuhe: 0x0e0f12, haar: 0x1a120c, frisur: 0 }));
+  if (FAHRER.cur !== F || FAHRER.car !== C) { if (FAHRER.cur && FAHRER.cur.parent) FAHRER.cur.parent.remove(FAHRER.cur); C.g.add(F); FAHRER.cur = F; FAHRER.car = C; const k = C.g.scale.x || 1, [sx, sy, sz] = C.spec.seat; F.scale.setScalar(1 / k); F.position.set(sx / k, (sy - 1.62) / k, sz / k); F.rotation.set(0, 0, 0); }
+  const U = F.userData, bike = !!C.spec.bike; U.rumpf.position.y = 0.95; U.rumpf.rotation.x = bike ? -0.35 : 0.08; U.kopf.rotation.set(0, 0, 0);
+  for (const [b, kn, sd] of [[U.beinL, U.knieL, -1], [U.beinR, U.knieR, 1]]) { b.rotation.set(bike ? 1.1 : 1.6, 0, sd * (bike ? 0.25 : 0.08)); kn.rotation.x = bike ? -1.3 : -1.0; }
+  for (const [a, ua, sd] of [[U.armL, U.unterarmL, -1], [U.armR, U.unterarmR, 1]]) { a.rotation.set(bike ? 1.25 : 0.95, 0, sd * 0.12); ua.rotation.x = bike ? 0.15 : 0.55; }
+  if (U.cape && typeof batUmhang === "function") batUmhang(F, 1 / 60, 0, false, false); }
