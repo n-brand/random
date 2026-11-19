@@ -70,6 +70,21 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Kalender-App, verbunden mit Gotham Hearts** (Nicolas 2026-11-19: "mach eine Kalender-App, die mit der Hearts-App verbunden ist"): neu `js/ui/kalender.js` (Spiel-FILES und Werkstatt nach ui/dating.js, ASSETS, BV_KEEP), App "Kalender" auf beiden Handys.
+  - Echtes Datum (wie das Glücksrad). Monatsansicht mit Blättern, heute umrandet, gewählter Tag blau, farbige Punkte je Termin-Art. Darunter die Termine des gewählten Tages und "Demnächst" (nächste 5 in 30 Tagen).
+  - Termin-Arten:
+    - Dates aus Hearts (rosa).
+    - Feste Wayne-Termine (blau): Vorstandssitzung Montag 9 Uhr, Wohltätigkeitsgala am 15. um 19 Uhr.
+    - Patrouille Donnerstag 22 Uhr (gelb).
+    - Eigene Termine aus Vorlagen (grau): Training in der Bathöhle, Abendessen mit Alfred, Tumbler warten, Treffen mit Gordon. Ohne Tippen, damit die Lauftasten im Hochformat frei bleiben. Löschbar.
+  - Verbindung zu Hearts:
+    - Die Verabredung am Ende des Chats bekommt einen echten Zeitpunkt und Ort (`M.termin`, `kalTerminAusDate`): Bar Noir nächsten Freitag 20 Uhr, Hafenpromenade Samstag 15 Uhr, Café am Wayne Tower morgen 8 Uhr. Ältere Verabredungen werden einmal eingeordnet.
+    - Im Chat zeigt das Feld Tag, Zeit und Ort mit "Im Kalender ansehen". Im Kalender führt "Chat öffnen" in den Chat.
+    - "Absagen" schreibt die Absage in den Chat, entfernt den Termin und setzt das Gespräch auf "Treffen vorschlagen" zurück.
+  - Erinnerung als Meldung 30 min vor jedem Termin (einmal).
+  - Eigene Termine und Erinnerungen in localStorage `wm-kalender`.
+  - Geprüft in der Werkstatt: Match mit Mara, Chat bis zur Verabredung, dann Termin Fr 20.11. 20:00 Bar Noir im Kalender (Bild). Chat öffnen, eigener Termin "Abendessen mit Alfred" angelegt und gelöscht, Absagen (Termin weg, zwei Nachrichten im Chat).
+
 - **Handy im Hochformat lässt die Maus gefangen** (Nicolas 2026-11-19: "Handy im Hochformat soll die Maus nicht wegnehmen, durch die Apps kann man dann ja mit Pfeiltasten und Enter navigieren"): handy.js `handyMausFrei()`.
   - Öffnen (P, Rechtsklick mit Handy in der Hand) gibt die Maus nicht mehr frei. Umschauen, Laufen und Apps per Pfeiltasten und Enter gehen gleichzeitig.
   - Erst eine Seite im Querformat (Internet, Bank, Läden) gibt die Maus frei, über `handyGo` bzw. `handyOpen` mit Quer-Seite.
