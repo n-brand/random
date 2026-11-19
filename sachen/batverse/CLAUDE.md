@@ -42,6 +42,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Tore, Türen, Automaten, Tische | Rechtsklick (zu Fuss), im Fahrzeug auch E |
 | Ton an/aus im Fahrzeug | N |
 | Container-Aufzug im Auto | L |
+| Seilwinde (Cougar) | im Flug **H** = Haken ablassen; über ein Fahrzeug fliegen, es wird eingehängt und mitgenommen; **H** nochmals = absetzen |
 | Kampfhubschrauber | fliegt wie The Bat; im Flug **Linksklick oder Q** = Kanone (halten), **Rechtsklick oder X** = Rakete (alle 0,6 s); Ziel ist die Bildmitte |
 | Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
 | Gleitumhang | zu Fuss im Fall (mehr als 3 m über dem Boden) **Leertaste** = Umhang auf, Maus lenkt, nach unten schauen = Sturzflug; Leertaste nochmal oder Landen = zu |
@@ -70,6 +71,14 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Seilwinde am Cougar nimmt Fahrzeuge mit** (Nicolas 2026-11-19: "der Transporthelikopter hat ja eine Seilwinde rechts – die soll als Spezialfunktion irgendetwas mitnehmen können"): militaer.js `WINDE`, `windeStep` (aus der pose des Cougar), `windeTaste`.
+  - Ablauf:
+    - Im Flug H lässt Seil und Haken ab (5 m/s, bis 30 m oder bis zum Boden).
+    - Kommt der Haken auf das Dach eines Fahrzeugs, wird es eingehängt, auf 9 m Seil hochgezogen, fliegt mit und dreht mit dem Hubschrauber.
+    - H nochmals setzt ab: Die Last fällt mit 9 m/s auf den Boden, das Seil fährt ein. Ohne Last zieht H das Seil wieder ein.
+  - Spiel: alle abgestellten Fahrzeuge. fahren.js überspringt Fahrzeuge an der Winde (`v.windeBy`, `v.windeFall`) wie am Abschlepphaken. Werkstatt: das gewählte Modell.
+  - Geprüft in der Werkstatt: Taxi eingehängt, mit dem Cougar 20 m versetzt und gehoben (Bild), abgesetzt auf den Boden, Seil eingezogen. Mit echter Taste im Spiel nicht geflogen.
 
 - **Kampfhubschrauber, der schiessen kann** (Nicolas 2026-11-19: "noch so einen Helikopter fürs Militär, der schiessen kann – als neues Modell, such mal im Internet"): militaer.js `buildKampfheli`, `KAMPFHELI` (flyAdd, Massstab 1,4), `khWaffen`.
   - Recherche: typische Bauweise nach AH-1 Cobra und AH-64 Apache – schmaler Rumpf, Tandem-Cockpit, Stummelflügel mit Raketen, Kanone im Turm unter der Nase.

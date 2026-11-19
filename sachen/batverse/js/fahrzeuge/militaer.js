@@ -260,6 +260,27 @@ function buildCougar(k = 1.55) {
   const lichter = [add(new THREE.SphereGeometry(0.08, 10, 8), blitz[0], 0, 2.42, 1.0), add(new THREE.SphereGeometry(0.08, 10, 8), blitz[1], 0, 0.5, 0.4), add(new THREE.SphereGeometry(0.06, 8, 6), blitz[2], 0, 3.22, 6.6)];
   g.name = "Transporthelikopter Cougar"; return { g, rotor, heck, lichter };
 }
+// Seilwinde des Cougar (Nicolas 2026-11-19: "der Transporthelikopter hat ja eine Seilwinde rechts – die soll als Spezialfunktion irgendetwas mitnehmen koennen"): im Flug H = Seil mit
+// Haken ablassen (bis 30 m oder zum Boden); trifft der Haken das Dach eines Fahrzeugs, wird es eingehaengt und auf 9 m hochgezogen und fliegt mit (dreht mit dem Hubschrauber);
+// H nochmals = absetzen (faellt mit 9 m/s auf den Boden) bzw. Seil einziehen. Im Spiel alle abgestellten Fahrzeuge (VEH, Kennzeichen v.windeBy), in der Werkstatt das Modell (AKT).
+const WINDE = { L: 0, ziel: 0, st: "ein", last: null, off: 0, fall: [], seil: null, haken: null, tip: null };
+function windeTaste() { const W = WINDE; if (W.last) { W.fall.push(W.last); W.last.windeBy = null; W.last.windeFall = true; if (typeof toast === "function") toast("Last abgesetzt"); W.last = null; W.st = "ein"; return; }
+  if (W.st === "ab") { W.st = "ein"; if (typeof toast === "function") toast("Seil wird eingezogen"); } else { W.st = "ab"; if (typeof toast === "function") toast("Seilwinde: Haken wird abgelassen – über ein Fahrzeug fliegen"); } }
+function windeBoden(x, z, y) { return typeof groundAt === "function" ? groundAt(x, z, y) : 0; }
+const windeAkt = () => { try { return typeof AKT !== "undefined" ? AKT : null; } catch (e) { return null; } };   // Werkstatt-Modell (let, beim Laden noch nicht da)
+function windeStep(B, dt) { const W = WINDE; if (!B.on && W.L < 0.01 && !W.last && !W.fall.length) return; if (!W.tip) { W.tip = new THREE.Object3D(); W.tip.position.set(1.28, 1.45, -0.4); B.g.children[0].add(W.tip);
+    W.seil = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 6).translate(0, -0.5, 0), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 })); W.seil.userData.dynamic = true; W.seil.visible = false; scene.add(W.seil);
+    W.haken = new THREE.Group(); const st = new THREE.MeshStandardMaterial({ color: 0xd4a640, metalness: 0.6, roughness: 0.35 }); W.haken.add(new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.12), st)); const h = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.035, 6, 12, Math.PI * 1.5), st); h.position.y = -0.3; W.haken.add(h);
+    W.haken.userData.dynamic = true; W.haken.visible = false; scene.add(W.haken); }
+  B.g.updateMatrixWorld(true); const T = W.tip.getWorldPosition(new THREE.Vector3()), gr = windeBoden(T.x, T.z, T.y);
+  W.ziel = W.last ? 9 : W.st === "ab" ? Math.min(30, Math.max(0, T.y - gr - 0.5)) : 0; W.L += Math.sign(W.ziel - W.L) * Math.min(Math.abs(W.ziel - W.L), 5 * dt);
+  const P = T.clone(); P.y -= W.L; W.seil.visible = W.haken.visible = W.L > 0.15; W.seil.position.copy(T); W.seil.scale.set(1, Math.max(0.01, W.L), 1); W.haken.position.copy(P); W.haken.rotation.y = B.h;
+  const kand = []; if (typeof VEH !== "undefined") for (const v of VEH) if (!v.on && !v.dead && v.g && v.g.visible && !v.windeBy) kand.push(v); { const A = windeAkt(); if (A && A.g && !kand.includes(A)) kand.push(A); }
+  if (W.st === "ab" && !W.last && W.L > 1) for (const v of kand) { const top = (v.y ?? 0) + ((v.spec && v.spec.bodyH) || 1.5), r = Math.max(1.2, ((v.spec && v.spec.R) || 1) * 1.1);
+    if (Math.hypot(v.x - P.x, v.z - P.z) < r && Math.abs(P.y - top) < 1.3) { W.last = v; v.windeBy = B; W.off = (v.h || 0) - B.h; if (typeof toast === "function") toast((v.label || (v.spec && v.spec.name) || "Fahrzeug") + " eingehängt – H setzt ab"); break; } }
+  if (W.last) { const v = W.last, bh = (v.spec && v.spec.bodyH) || 1.5; v.x = P.x; v.z = P.z; v.y = P.y - bh - 0.35; v.h = B.h + W.off; v.g.position.set(v.x, v.y, v.z); v.g.rotation.set(0, v.h, 0); if ("v" in v) v.v = 0; }
+  for (let q = W.fall.length - 1; q >= 0; q--) { const v = W.fall[q], g0 = windeBoden(v.x, v.z, v.y + 1); v.y = Math.max(g0, v.y - 9 * dt); v.g.position.y = v.y; if (v.y <= g0 + 0.001) { v.windeFall = false; v.settled = false; W.fall.splice(q, 1); } } }
+addEventListener("keydown", e => { if (e.code !== "KeyH" || e.repeat || !(typeof FLY !== "undefined" && FLY === COUGAR && COUGAR.on)) return; e.preventDefault(); windeTaste(); });
 // Leichter Transport- und Schulungshelikopter: runder Rumpf mit grosser Verglasung, Schiebetueren hinten, Kufen, Triebwerke unter einer Verkleidung, Vierblattrotor,
 // Heckausleger mit ummanteltem Heckrotor in der Flosse, Hoehenflosse mit Endscheiben, Kennung T-361. Massstab 1,0.
 function buildSchulHeli(k = 1.0) {
@@ -297,6 +318,7 @@ function buildSchulHeli(k = 1.0) {
 }
 const COUGAR = flyAdd("Transporthelikopter Cougar", buildCougar(1.55), 1.55, { spec: { max: 42, acc: 10, up: 7, tilt: 0.16, tiltV: 0.003, turn: 0.7 },
   feet: [[-1.02 * 1.55, 0.75 * 1.55], [1.02 * 1.55, 0.75 * 1.55], [-0.1 * 1.55, -1.85 * 1.55], [0.1 * 1.55, -1.85 * 1.55]] });
+{ const p0 = COUGAR.pose; COUGAR.pose = (B, dt) => { p0(B, dt); if (typeof windeStep === "function") windeStep(B, dt || 0); }; }   // Seilwinde
 const SCHULHELI = flyAdd("Schulungshelikopter", buildSchulHeli(1.0), 1.0, { spec: { max: 50, acc: 15, up: 9, tilt: 0.22, tiltV: 0.004, turn: 1.0 } });
 // Standplatz am Boden (ohne Landeplatz-Markierung)
 function heliStand(H, x, y, z, h) { Object.assign(H, { x, y: y + 0.02, z, h, vx: 0, vy: 0, vz: 0, pitch: 0, roll: 0 }); H.home = { x, y: y + 0.02, z, h }; H.g.visible = true; batPose(H, 0); }

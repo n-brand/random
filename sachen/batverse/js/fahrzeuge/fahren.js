@@ -461,7 +461,7 @@ function carFrame(dt) {
       const c = Math.cos(w), s = Math.sin(w), dx = v.x - tt.position.x, dz = v.z - tt.position.z;
       v.x = tt.position.x + dx * c + dz * s; v.z = tt.position.z - dx * s + dz * c; v.h += w; if (v.on) player.yaw += w;
     }
-    if (v.on || v.towBy) continue;                                         // am Haken: Lage kommt aus towStep
+    if (v.on || v.towBy || v.windeBy || v.windeFall) continue;   // am Haken (Abschleppwagen) bzw. an der Seilwinde des Cougar (militaer.js)                                         // am Haken: Lage kommt aus towStep
     if (areaPending(v.x, v.z)) { const P = walking ? player.pos : camera.position; if (Math.hypot(P.x - v.x, P.z - v.z) < 80) areaEnsure(v.x, v.z); else continue; }   // Bereich noch nicht gebaut (kern/bereiche.js): warten, nah sofort bauen
     const lifting = L && L.state === "moving" && CAR_LIFT.inCar({ x: v.x, y: v.y, z: v.z }), atBay = (bay && Math.hypot(v.x - bay.x, v.z - bay.z) < 4) || GRAMP.inF(v.x, v.z, 1.5);   // Hebebuehne, Garagenrampe: jedes Bild
     let run = lifting || atBay || !v.settled || (vehFrame + v.idx) % 15 === 0;
