@@ -126,7 +126,7 @@ function vehRepair(v) {
 // TEST (Nicolas 2026-11-12, "zum Testen"): Maus dreht im Zoom gleich schnell wie ohne (vorher / SHOT.zoom, also bei 6x sechsmal langsamer).
 // Zurueck: ZOOM_SENS_GLEICH = false (Vorschlag dazwischen: / Math.sqrt(SHOT.zoom)). Gleich in werkstatt.js.
 const ZOOM_SENS_GLEICH = true;
-const zoomK = () => ZOOM_SENS_GLEICH ? 1 : SHOT.zoom;
+const zoomK = () => ZOOM_SENS_GLEICH ? 1 : SHOT.zoom * (typeof khZoomK === "function" ? khZoomK() : 1);   // Kampfhubschrauber-Zoom (militaer.js)
 // TEST (Nicolas 2026-11-11, "nur zum Testen"): nach einem Schuss nach 0,35 s automatisch auf 1x rauszoomen. Gefaellt es nicht: AUTO_UNZOOM = false
 // bzw. die zwei markierten Stellen entfernen (siehe CLAUDE.md).
 const AUTO_UNZOOM = true;

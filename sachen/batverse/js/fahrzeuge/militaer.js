@@ -490,11 +490,14 @@ function khWaffen(B, dt) { const W = B.waffen; if (!W) return; const an = B.on &
   const el = document.getElementById("kh-visier") || (() => { const e = document.createElement("div"); e.id = "kh-visier"; e.hidden = true; e.innerHTML = "<i></i><span></span>"; document.body.appendChild(e);
     const st = document.createElement("style"); st.textContent = "#kh-visier{position:fixed;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border:2px solid rgba(120,255,140,.85);border-radius:50%;pointer-events:none;z-index:6}#kh-visier i{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;background:#7cff8c;border-radius:50%}#kh-visier span{position:absolute;top:52px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 12px system-ui;color:#c8ffd0;text-shadow:0 1px 2px #000}#kh-visier[hidden]{display:none}"; document.head.appendChild(st); return e; })();
   el.hidden = !an; W.cd = Math.max(0, W.cd - dt); W.rcd = Math.max(0, W.rcd - dt);
+  // Zoom mit dem Mausrad (Nicolas 2026-11-19 "zoomen auch bitte"): 1x bis 6x auf die Bildmitte, weich; beim Aussteigen zurueck
+  if (an) { if (!W.fov0) W.fov0 = camera.fov; W.zt = W.zt || 1; W.z = (W.z || 1) + (W.zt - (W.z || 1)) * Math.min(1, dt * 8); const fv = W.fov0 / W.z; if (Math.abs(camera.fov - fv) > 0.01) { camera.fov = fv; camera.updateProjectionMatrix(); } }
+  else if (W.fov0) { camera.fov = W.fov0; camera.updateProjectionMatrix(); W.fov0 = null; W.z = W.zt = 1; }
   if (an) { const ziel = khZiel(); B.g.updateMatrixWorld(true);
     // Turm zum Ziel drehen (lokale Richtung im Hubschrauber)
     W.turm.parent.updateMatrixWorld(true); const loc = W.turm.parent.worldToLocal(ziel.clone()).sub(W.turm.position); const yaw = Math.atan2(-loc.x, -loc.z), pit = Math.atan2(loc.y, Math.hypot(loc.x, loc.z));
     W.turm.rotation.y += (Math.max(-1.6, Math.min(1.6, yaw)) - W.turm.rotation.y) * Math.min(1, dt * 8); W.rohr.rotation.x += (Math.max(-1.0, Math.min(0.25, pit)) - W.rohr.rotation.x) * Math.min(1, dt * 8);
-    el.querySelector("span").textContent = "Linksklick/Q Kanone · Rechtsklick/X Rakete" + (W.rcd > 0 ? " (lädt)" : "");
+    el.querySelector("span").textContent = "Linksklick/Q Kanone · Rechtsklick/X Rakete" + (W.rcd > 0 ? " (lädt)" : "") + " · Mausrad Zoom " + (W.z || 1).toFixed(1).replace(".", ",") + "×";
     if (W.kanone && W.cd === 0) { W.cd = 0.1; const m = W.mund.getWorldPosition(new THREE.Vector3()), d = ziel.clone().sub(m).normalize(); d.x += (Math.random() - 0.5) * 0.012; d.y += (Math.random() - 0.5) * 0.012; d.z += (Math.random() - 0.5) * 0.012; d.normalize();
       const o = new THREE.Mesh(KH_G.spur, KH_M.spur); o.position.copy(m); o.lookAt(m.clone().add(d)); o.userData.dynamic = true; scene.add(o); W.kugeln.push({ o, p: m.clone(), d, t: 0 }); khFx(m.clone().addScaledVector(d, 0.3), 0.18, 0.05, KH_M.blitz);
       if (typeof shotSound === "function" && Math.random() < 0.5) shotSound(0.15, 0.12); }
@@ -516,3 +519,5 @@ addEventListener("mousedown", e => { if (!(typeof FLY !== "undefined" && FLY ===
 addEventListener("mouseup", e => { if (e.button === 0) KAMPFHELI.waffen.kanone = false; }, true);
 addEventListener("keydown", e => { if (!(typeof FLY !== "undefined" && FLY === KAMPFHELI && KAMPFHELI.on) || e.repeat) return; if (e.code === "KeyQ") KAMPFHELI.waffen.kanone = true; else if (e.code === "KeyX") KAMPFHELI.waffen.rak = true; });
 addEventListener("keyup", e => { if (e.code === "KeyQ") KAMPFHELI.waffen.kanone = false; });
+addEventListener("wheel", e => { if (!(typeof FLY !== "undefined" && FLY === KAMPFHELI && KAMPFHELI.on)) return; e.preventDefault(); const W = KAMPFHELI.waffen; W.zt = Math.max(1, Math.min(6, (W.zt || 1) * (e.deltaY < 0 ? 1.25 : 0.8))); if (W.zt < 1.05) W.zt = 1; }, { passive: false });
+const khZoomK = () => typeof FLY !== "undefined" && FLY === KAMPFHELI && KAMPFHELI.on ? (KAMPFHELI.waffen.z || 1) : 1;   // feinere Maus beim Zoomen (bedienung.js ueber zoomK)

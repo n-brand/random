@@ -43,7 +43,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Ton an/aus im Fahrzeug | N |
 | Container-Aufzug im Auto | L |
 | Seilwinde (Cougar) | im Flug **H** = Haken ablassen; über ein Fahrzeug fliegen, es wird eingehängt und mitgenommen; **H** nochmals = absetzen |
-| Kampfhubschrauber | fliegt wie The Bat; im Flug **Linksklick oder Q** = Kanone (halten), **Rechtsklick oder X** = Rakete (alle 0,6 s); Ziel ist die Bildmitte |
+| Kampfhubschrauber | fliegt wie The Bat; im Flug **Linksklick oder Q** = Kanone (halten), **Rechtsklick oder X** = Rakete (alle 0,6 s), **Mausrad** = Zoom 1× bis 6×; Ziel ist die Bildmitte |
 | Polizei-Helikopter | wie The Bat: Rechtsklick einsteigen, W/S vor/zurück, A/D drehen, Leertaste steigen, C sinken, V Kamera/Cockpit, Shift aussteigen (gelandet) |
 | Gleitumhang | zu Fuss im Fall (mehr als 3 m über dem Boden) **Leertaste** = Umhang auf, Maus lenkt, nach unten schauen = Sturzflug; Leertaste nochmal oder Landen = zu |
 | Drift | im Auto **Q** halten und lenken (ab ca. 25 km/h): Heck bricht aus, Reifenspuren und Qualm; nicht bei Motorrädern und Panzern |
@@ -71,6 +71,8 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
+
+- **Kampfhubschrauber: Zoom** (Nicolas 2026-11-19: "zoomen auch bitte"): militaer.js – im Flug Mausrad zoomt 1× bis 6× auf die Bildmitte (je Raste 1,25, weich), Anzeige im Visier; beim Aussteigen zurück auf das alte Sichtfeld. Die Maus wird beim Zoomen feiner wie beim Panzer (schiessen.js `zoomK` mit `khZoomK`, gleiche Einstellung). Geprüft in der Werkstatt: 5 Rasten = 3,1×, Sichtfeld 45° → 14,8°, nach dem Aussteigen 45°.
 
 - **Kampfhubschrauber: Kamera höher, Visier frei** (Nicolas 2026-11-19, Bild: Visier sass mitten auf dem Hubschrauber; Vorschlag "Kamera höher" gewählt): the-bat.js `batCamera` kennt je Fluggerät `camHoch` (m) – die Kamera schaut so viel über das Fluggerät und steigt um 30 % davon mit. Kampfhubschrauber 5,5 m: Er sitzt im unteren Bilddrittel (ca. 26 % unter der Mitte), das Visier in der Bildmitte zeigt frei aufs Ziel vor ihm. Andere Fluggeräte unverändert (0). Bild geprüft in der Werkstatt.
 
