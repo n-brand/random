@@ -122,6 +122,12 @@ body.person #ui { opacity: .35; }
 /* Handys als Gegenstand (Nicolas 2026-11-18, N32): unten rechts im Hochformat, Browser quer ueber den Bildschirm, zwei Modelle */
 #handy { align-items: flex-end; padding-bottom: 24px; }
 #handy.quer { align-items: center; justify-content: center; padding: 12px; }
+/* Hochformat (Nicolas 2026-11-19, Bild: "Handy im Hochformat soll leicht aus dem Bildschirm ragen und dafuer weniger Platz verbrauchen, ausserdem soll der Bildschirm hier nicht dunkler werden"):
+   keine Abdunklung, Klicks neben dem Handy gehen durch; schmaler und 140 px nach unten aus dem Bild; Inhalt unten mit Platz, damit alles erreichbar bleibt */
+#handy:not(.quer) { background: none; pointer-events: none; padding-bottom: 0; --h-weg: 140px; }
+#handy:not(.quer) .h-phone { pointer-events: auto; width: min(300px, 86vw); height: min(620px, 84vh); transform: translateY(var(--h-weg)); }
+#handy:not(.quer) .h-screen { padding-bottom: var(--h-weg); }
+#handy:not(.quer) .dg-btns { bottom: var(--h-weg); }
 .h-phone.quer { width: min(1040px, 94vw); height: min(620px, 86vh); border-radius: 30px; border-width: 10px; }
 .h-phone.quer .h-page { max-width: 760px; margin: 0 auto; }
 .h-modell { font-size: 11px; opacity: .6; margin-right: auto; padding-right: 8px; }

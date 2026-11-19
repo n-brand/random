@@ -70,6 +70,13 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Handy im Hochformat ragt aus dem Bild, ohne Abdunklung** (Nicolas 2026-11-19, Bild: "Handy im Hochformat soll leicht aus dem Bildschirm ragen und dafür weniger Platz verbrauchen, ausserdem soll hier ausnahmsweise der Bildschirm nicht dunkler werden"): style.css und werkstatt/person.css `#handy:not(.quer)`.
+  - Kein dunkler Hintergrund mehr; Klicks neben dem Handy gehen durch.
+  - Das Handy ist 300 statt 360 px breit und 140 px nach unten aus dem Bild geschoben (`--h-weg`).
+  - Damit unten nichts verloren geht, hat der Inhalt 140 px Platz zum Scrollen, und die Wisch-Knöpfe von Gotham Hearts sitzen entsprechend höher.
+  - Querformat (Internet, Bank, Läden) unverändert.
+  - Geprüft in der Werkstatt: Hintergrund durchsichtig, Unterkante 72 px unter dem Fensterrand, alle sechs Apps sichtbar (Bild).
+
 - **Kalender-App, verbunden mit Gotham Hearts** (Nicolas 2026-11-19: "mach eine Kalender-App, die mit der Hearts-App verbunden ist"): neu `js/ui/kalender.js` (Spiel-FILES und Werkstatt nach ui/dating.js, ASSETS, BV_KEEP), App "Kalender" auf beiden Handys.
   - Echtes Datum (wie das Glücksrad). Monatsansicht mit Blättern, heute umrandet, gewählter Tag blau, farbige Punkte je Termin-Art. Darunter die Termine des gewählten Tages und "Demnächst" (nächste 5 in 30 Tagen).
   - Termin-Arten:
