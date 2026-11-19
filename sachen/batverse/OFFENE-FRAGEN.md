@@ -122,7 +122,7 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 44. **Tresor-Code:** Alle Tresore starten mit dem Code 0000 (Werkstatt zum Testen). Im Spiel: soll man fremde Codes irgendwo finden können (Zettel, Laptop, USB-Stick N39)?
     - *Bis dahin:* 0000, im Spiel noch keine Tresore.
 
-45. **Waffenläden im Spiel (N37):** In der Werkstatt sind Guns & Ammo jetzt 28 x 20 m und Gotham Arms 56 x 36 m. Sollen sie im Spiel auch so gross werden? Dort stehen Nachbarhäuser dicht daneben, ein grösserer Laden müsste Füllbauten verdrängen. Bis dahin: im Spiel unverändert 20 x 15 m. (2026-11-19: Personalbereich von Guns & Ammo und Schiessstand von Gotham Arms gibt es deshalb nur in der Werkstatt; im Spiel kämen sie mit, sobald die Läden gross genug sind.)
+45. **(erledigt 2026-11-19: "Ja, vergrössern" – im Spiel 28 x 20 und 56 x 36 m, FB-0188 entfällt)** **Waffenläden im Spiel (N37):** In der Werkstatt sind Guns & Ammo jetzt 28 x 20 m und Gotham Arms 56 x 36 m. Sollen sie im Spiel auch so gross werden? Dort stehen Nachbarhäuser dicht daneben, ein grösserer Laden müsste Füllbauten verdrängen. Bis dahin: im Spiel unverändert 20 x 15 m. (2026-11-19: Personalbereich von Guns & Ammo und Schiessstand von Gotham Arms gibt es deshalb nur in der Werkstatt; im Spiel kämen sie mit, sobald die Läden gross genug sind.)
 
 46. **Geld aus dem Bankautomaten (N18):** Je Schein 50 $, in 20 s kommen ca. 240 Scheine (bis 12 000 $, wenn man alles einsammelt). Passt der Betrag? Soll danach die Polizei kommen (Fahndung)? Bis dahin: 50 $ je Schein, keine Polizei, nach 3 min ist der Automat wieder heil.
 

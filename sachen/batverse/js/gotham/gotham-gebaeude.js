@@ -4,7 +4,7 @@
 // sichtbar bis zur Kamera-Fernebene, Skyline auch von der Manor), ohne Schattenwurf (Schatten nur nah, Task 3). Register: Art "Füllbau".
 "use strict";
 // Nicolas 2026-11-16: FB-0563 verdeckte das Polizeipraesidium (dort jetzt Vorplatz, gotham-polizei.js)
-const GGEB_SKIP = new Set(["FB-0563"]);
+const GGEB_SKIP = new Set(["FB-0563", "FB-0188"]);   // FB-0188: Platz fuer den vergroesserten Waffenladen Gotham Arms (2026-11-19)
 const GGEB = { list: [], done: false, Y: GOT.STR, CC: 128, cells: null, tris: 0, meshes: [], fromCache: false, _n: -1 };
 const ggebCKey = (i, k) => i * 100000 + k;
 async function ggebCacheLoad(ck) {

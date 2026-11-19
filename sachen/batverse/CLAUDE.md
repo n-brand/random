@@ -74,6 +74,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Waffenläden im Spiel vergrössert** (Nicolas 2026-11-19: "Ja, vergrössern", OFFENE-FRAGEN 45): gotham/daten.js – Guns & Ammo (waffen-1) 28 x 20 x 8 m, Gotham Arms (waffen-2) 56 x 36 x 13 m wie in der Werkstatt. Vorher geprüft: keine Strasse und kein Gehsteig im neuen Grundriss; der Füllbau FB-0188 lag im Weg und entfällt (gotham-gebaeude.js `GGEB_SKIP`). Damit gibt es im Spiel auch den Personalbereich von Guns & Ammo und den Schiessstand von Gotham Arms (6 Bahnen). Gotham Arms steht im Spiel mit der Schmalseite zur Strasse (Front zur nächsten Fahrbahn): 52 m tiefer Verkaufsraum, Schiessstand hinten quer. Geprüft im Spiel: beide begehbar – Guns & Ammo durch die Personaltür in den Hinterraum, Gotham Arms durch den Laden und die Tür SCHIESSSTAND bis an die Schusslinie. Kein Bild (Vorschau).
+
 - **Prüfrunde im Spiel: Keilsperre, Börse, Waffenläden; Fehler bei den Läden behoben** ("Ja, weiter"):
   - Keilsperre (Präsidium): hochgefahren Rampe 0,05 → 0,85 m begehbar, steile Kante hält Person (1,35 m vor der Mitte) und Auto (r 1 m) auf, eingefahren flach. In Ordnung.
   - Börse: über die Stufen (je 20 cm) durch die Tür bis an den mittleren Handelsposten; an der Fassade 0,5 m davor Schluss. In Ordnung.
