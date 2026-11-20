@@ -91,13 +91,15 @@ const GOTHAM = {
   // (wasser.kuesteAlt, letzter Punkt; davor deren Verlaengerung nach Osten); der Sueden bleibt die bestehende Kueste (kueste + kuesteAlt). Ausserhalb = Meer.
   // Die Insel umschliesst die ganze heutige Spielwelt (heute: Kreis LIMIT_WORLD 4,3 km um die Manor, sonst gaebe es dort ploetzlich Meer); neu zu bauen ist das
   // Land ausserhalb dieses Kreises (vor allem Festland Nord ueber dem Westkanal), zuerst nur Gelaende in Kacheln ohne Baeume.
+  // Nicolas 2026-11-20 (Bild mit roter Linie): "in der vertikalen Mitte horizontal schneiden und noch hoeher ziehen" – Kueste noerdlich von z -2200 um 3000 m nach Norden
+  // verschoben, dazwischen gerade Kuesten (je zwei Punkte auf x der Schnittstelle).
   welt: {
-    umriss: [[-5200, 600], [-5750, 250], [-6150, -500], [-6250, -1500], [-6050, -2500], [-6350, -3500], [-6000, -4600], [-5200, -5500], [-4100, -6150], [-2900, -6450],
-      [-1700, -6250], [-700, -6500], [500, -6150], [1700, -5600], [2900, -4800], [3900, -3700], [4500, -2500], [4800, -1100], [5150, 300], [5100, 1700], [4700, 3080],
-      [3200, 2620], [1726, 2154]],
+    umriss: [[-5200, 600], [-5750, 250], [-6150, -500], [-6250, -1500], [-6110, -2200], [-6110, -5200], [-6050, -5500], [-6350, -6500], [-6000, -7600], [-5200, -8500],
+      [-4100, -9150], [-2900, -9450], [-1700, -9250], [-700, -9500], [500, -9150], [1700, -8600], [2900, -7800], [3900, -6700], [4500, -5500], [4564, -5200],
+      [4564, -2200], [4800, -1100], [5150, 300], [5100, 1700], [4700, 3080], [3200, 2620], [1726, 2154]],
     heute: { x: -323, z: 1318, r: 4300 },
-    namen: [{ x: -2300, z: -4300, text: "Festland Nord (neu)", sub: "Gelände in Kacheln, noch ohne Bäume" }, { x: -5300, z: -3000, text: "Festland West (neu)" },
-      { x: 3300, z: -2600, text: "Festland Ost (neu)" }, { x: -900, z: -7300, text: "Meer" }, { x: -6900, z: -1800, text: "Meer" }, { x: 6000, z: 0, text: "Meer" },
+    namen: [{ x: -2300, z: -5800, text: "Festland Nord (neu)", sub: "Gelände in Kacheln, noch ohne Bäume" }, { x: -5300, z: -3600, text: "Festland West (neu)" },
+      { x: 3300, z: -3600, text: "Festland Ost (neu)" }, { x: -900, z: -10300, text: "Meer" }, { x: -6900, z: -1800, text: "Meer" }, { x: 6000, z: 0, text: "Meer" },
       { x: -2600, z: 1650, text: "Hafen (N53: später neu, viel grösser, mit Docks)", klein: true }],
   },
   // Arkham-Insel mit Faehre und Anlegern (Nicolas 2026-11-12): wie die Militaerinsel erst spaeter, darum hier entfernt (siehe PLAN-GOTHAM.md "Spaeter")
