@@ -11,6 +11,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 - **Plinko** und **Hi-Lo** (2026-11-19, Automaten neben Crash und Mines).
 - **Craps** (2026-11-19, Craps-Tisch im realistischen Casino: Pass, Don't Pass, Field).
 - **Baccarat** (2026-11-20, ovale Tische im 2. Stock des Gotham-Casinos).
+- **Würfel, Limbo, Münzwurf** (2026-11-20, Automat "Quick Games").
 
 ## Von Nicolas gewünscht (Plan N29)
 
