@@ -153,5 +153,5 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
    - *Bis dahin:* kein Abgang, man steigt an der nächsten Station aus.
 58. **Verspätung, wie stark:** Wer in der Tür steht, hält sie auf (jedes Mal mindestens 3 s mehr). Verspätet hält die U-Bahn nur 12 statt 20 s und fährt bis 77 statt 58 km/h. Passt das, oder soll sie langsamer aufholen?
    - *Bis dahin:* so.
-59. **Insel-Welt (PLAN-GOTHAM N54):** Wie gross soll die ganze Insel werden (Gotham heute ca. 2,7 x 2,8 km, Festland mit Wayne Manor im Westen/Süden), wie weit nach Norden das neue Festland, und soll Wayne Manor mit auf der Insel liegen oder bleibt das Meer im Süden wie heute?
-   - *Bis dahin:* nichts gebaut, erst Planung auf der Planungskarte (gotham/index.html).
+59. **Insel-Welt (PLAN-GOTHAM N54), Entwurf auf der Planungskarte:** Die Insel misst ca. 11,5 x 9,6 km (ca. 79 km², heute bebaut: Kreis mit 4,3 km Radius um Wayne Manor). Die Südküste bleibt wie heute, Wayne Manor liegt mit auf der Insel. Passt die Grösse, und soll die Küste irgendwo anders verlaufen (Buchten, Halbinseln)? Mit "nach oben" habe ich auf der Planungskarte oben gemeint: Laut Kompass ist das im Spiel eher Nordwesten (Norden im Spiel zeigt auf der Karte nach rechts). War der Norden im Spiel gemeint?
+   - *Bis dahin:* Entwurf wie gezeichnet (Ebene "Insel-Welt" auf der Planungskarte), im Spiel noch nichts gebaut.

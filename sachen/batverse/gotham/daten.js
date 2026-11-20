@@ -85,6 +85,21 @@ const GOTHAM = {
     kueste: [[-5200, 600], [-4500, 560], [-4100, 640], [-3700, 700], [-3200, 1000], [-2400, 1550], [-1650, 1420], [-1100, 1620]],
     kuesteAlt: [[-573, 1451], [103, 1658], [780, 1864], [1726, 2154]],
   },
+  // Ganze Welt als eine grosse Insel (PLAN-GOTHAM N54, Nicolas 2026-11-20: "das Ganze soll eine riesige Insel werden (auch Festland); Festland soll nach oben hin
+  // schon mal ohne Baeume einfach mal so in Kacheln gebaut werden und drumherum Wasser – erst aber in der Planungskarte planen"). ENTWURF, im Spiel noch nichts davon.
+  // umriss: neue Kueste vom Westende der heutigen Kueste (wasser.kueste[0]) nach Norden, ueber den Norden nach Osten und zurueck bis zum Ostende der Manor-Kueste
+  // (wasser.kuesteAlt, letzter Punkt; davor deren Verlaengerung nach Osten); der Sueden bleibt die bestehende Kueste (kueste + kuesteAlt). Ausserhalb = Meer.
+  // Die Insel umschliesst die ganze heutige Spielwelt (heute: Kreis LIMIT_WORLD 4,3 km um die Manor, sonst gaebe es dort ploetzlich Meer); neu zu bauen ist das
+  // Land ausserhalb dieses Kreises (vor allem Festland Nord ueber dem Westkanal), zuerst nur Gelaende in Kacheln ohne Baeume.
+  welt: {
+    umriss: [[-5200, 600], [-5750, 250], [-6150, -500], [-6250, -1500], [-6050, -2500], [-6350, -3500], [-6000, -4600], [-5200, -5500], [-4100, -6150], [-2900, -6450],
+      [-1700, -6250], [-700, -6500], [500, -6150], [1700, -5600], [2900, -4800], [3900, -3700], [4500, -2500], [4800, -1100], [5150, 300], [5100, 1700], [4700, 3080],
+      [3200, 2620], [1726, 2154]],
+    heute: { x: -323, z: 1318, r: 4300 },
+    namen: [{ x: -2300, z: -4300, text: "Festland Nord (neu)", sub: "Gelände in Kacheln, noch ohne Bäume" }, { x: -5300, z: -3000, text: "Festland West (neu)" },
+      { x: 3300, z: -2600, text: "Festland Ost (neu)" }, { x: -900, z: -7300, text: "Meer" }, { x: -6900, z: -1800, text: "Meer" }, { x: 6000, z: 0, text: "Meer" },
+      { x: -2600, z: 1650, text: "Hafen (N53: später neu, viel grösser, mit Docks)", klein: true }],
+  },
   // Arkham-Insel mit Faehre und Anlegern (Nicolas 2026-11-12): wie die Militaerinsel erst spaeter, darum hier entfernt (siehe PLAN-GOTHAM.md "Spaeter")
   inseln: [
   ],

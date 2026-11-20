@@ -219,7 +219,16 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | Nr | Was | Stand |
 |----|-----|-------|
 | N53 | **Hafen neu planen, viel grösser, mit Docks** (Nicolas 2026-11-20: "Hafen will ich später nochmal anpassen und neu planen – soll viel grösser werden mit Docks"; Luftbild eines grossen Containerhafens als Vorbild, nur im Chat): mehrere Hafenbecken mit langen Kais, viele Containerbrücken je Kai, grosse Containerlager in Blöcken, Bahngleise mit Güterzügen am Rand, Lkw-Abfertigung, Lagerhallen, mehrere Schiffe am Kai | offen – zuerst auf der Planungskarte planen (hängt an N54) |
-| N54 | **Ganze Welt als riesige Insel** (Nicolas 2026-11-20: "das Ganze soll eine riesige Insel werden (auch Festland); Festland soll nach oben hin schon mal ohne Bäume einfach mal so in Kacheln gebaut werden und drumherum Wasser – erst aber in der Planungskarte planen"): Gotham und das Festland zusammen als eine Insel mit Meer rundherum; das Festland nach Norden erweitern, zuerst nur Gelände in Kacheln (ohne Bäume); Umriss, Grösse und Küste zuerst auf der Planungskarte (gotham/index.html, daten.js) festlegen | offen – Planung zuerst (OFFENE-FRAGEN 59) |
+| N54 | **Ganze Welt als riesige Insel** (Nicolas 2026-11-20: "das Ganze soll eine riesige Insel werden (auch Festland); Festland soll nach oben hin schon mal ohne Bäume einfach mal so in Kacheln gebaut werden und drumherum Wasser – erst aber in der Planungskarte planen"): Gotham und das Festland zusammen als eine Insel mit Meer rundherum; das Festland nach Norden erweitern, zuerst nur Gelände in Kacheln (ohne Bäume); Umriss, Grösse und Küste zuerst auf der Planungskarte (gotham/index.html, daten.js) festlegen | Entwurf auf der Planungskarte 2026-11-20 (gotham/daten.js `welt`, Ebene "Insel-Welt"): ca. 11,5 x 9,6 km, ca. 79 km²; Südküste wie heute, neue Küste im Westen, Norden und Osten so, dass die ganze heutige Spielwelt (Kreis 4,3 km um die Manor) drin liegt; neu ist das Land ausserhalb (schraffiert), vor allem Festland Nord über dem Westkanal. Bauschritte siehe unten "Insel-Welt", Fragen OFFENE-FRAGEN 59 |
+
+### Insel-Welt: Bauschritte (Vorschlag, N54)
+
+| Schritt | Was |
+|---------|-----|
+| I1 | Planung auf der Planungskarte (Umriss, Grösse) – **Entwurf steht**, wartet auf Nicolas (OFFENE-FRAGEN 59) |
+| I2 | Spielwelt grösser: `LIMIT_WORLD` und Kachel-Reichweite bis an die neue Küste, Meer rundherum bis zum Weltrand (Wasserfläche, Meeresgrund), Küste als Strand bzw. Steilufer |
+| I3 | Festland Nord, West und Ost: nur Gelände in Kacheln (gleiche Höhenformel wie heute, an der Kreisgrenze nahtlos), ohne Bäume, ohne Strassen und Gebäude; Brücken über den Westkanal kommen später |
+| I4 | später: Strassen, Orte, Bäume; Hafen neu (N53) an der Südspitze bzw. an der neuen Küste |
 
 ## Nicht Teil von Wayne Manor
 

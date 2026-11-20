@@ -185,7 +185,7 @@
       return !end ? [q] : i === 0 ? [q, lead] : [lead, q]; });
 
     // ---------- Ebenen ----------
-    const LAYERS = [["bezirke", "Bezirke (Wohlstand)", true], ["gebaeude", "Gebäude (automatisch gefüllt)", true], ["neben", "Nebenstrassen und Gassen", true],
+    const LAYERS = [["welt", "Insel-Welt mit Festland Nord (Entwurf N54)", true], ["bezirke", "Bezirke (Wohlstand)", true], ["gebaeude", "Gebäude (automatisch gefüllt)", true], ["neben", "Nebenstrassen und Gassen", true],
       ["strassen", "Hauptstrassen und Brücken", true], ["kanal", "Kanalisation (unter Hauptstrassen)", true], ["gulli", "Gullideckel (Spezialwerkzeug)", true],
       ["ubahn", "U-Bahn (4 Ringe)", true], ["bus", "Bus", false], ["orte", "Orte", true], ["namen", "Namen", true], ["konflikt", "Konflikte (rot)", true]];
     const L = {}; const base = el("g", {});
@@ -212,6 +212,28 @@
     el("polygon", { points: pts(insel), fill: "none", stroke: "#b8a77c", "stroke-width": 14, "stroke-linejoin": "round" }, base).dataset.info = "<b>Kies/Sand am Ufer</b><br>knapp über dem Wasser am Fuss der Kaimauer, dann wird der Fluss weich tiefer";
     el("polygon", { points: pts(insel), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 3 }, base);
     for (const i of G.inseln) el("path", { d: path(smooth(i.poly, 10, true), true), fill: "#3a3f45", stroke: "#58606a", "stroke-width": 5 }, base);
+
+    // Insel-Welt (Entwurf, PLAN-GOTHAM N54, Nicolas 2026-11-20): die ganze Welt als eine grosse Insel mit Meer rundherum. Neue Kueste (welt.umriss) + bestehende
+    // Suedkueste (kuesteAlt und kueste, rueckwaerts). Schraffiert = neu zu bauendes Land (Insel ohne die heutige Spielwelt und ohne Gotham mit Fluessen),
+    // gestrichelt = Grenze der heutigen Spielwelt (LIMIT_WORLD um Wayne Manor). Eigene Ebene; "Alles zeigen" zeigt dann die ganze Insel.
+    if (G.welt) { const GW = G.welt, Wg = L.welt, WU = [...smooth(GW.umriss, 30), ...[...WA.kuesteAlt].reverse().slice(1), ...smooth(WA.kueste, 20).reverse()], H = GW.heute;
+      const xs = WU.map(q => q[0]), zs = WU.map(q => q[1]), bx0 = Math.min(...xs), bx1 = Math.max(...xs), bz0 = Math.min(...zs), bz1 = Math.max(...zs);
+      GW.ansicht = { x0: bx0 - 1600, z0: bz0 - 1600, x1: bx1 + 1600, z1: bz1 + 900 };
+      const hp = el("pattern", { id: "neuLand", width: 120, height: 120, patternUnits: "userSpaceOnUse", patternTransform: "rotate(35)" }, defs); el("rect", { width: 120, height: 120, fill: "#3b4a30" }, hp); el("rect", { width: 120, height: 34, fill: "#4c5e3c" }, hp);
+      const mk = el("mask", { id: "maskNeu", maskUnits: "userSpaceOnUse", x: -40000, y: -40000, width: 80000, height: 80000 }, defs);
+      el("path", { d: path(WU, true), fill: "#fff" }, mk); el("circle", { cx: H.x, cy: H.z, r: H.r, fill: "#000" }, mk);
+      el("polygon", { points: pts(insel), fill: "#000", stroke: "#000", "stroke-width": 1000, "stroke-linejoin": "round" }, mk);
+      let fl = 0; for (let i = 0, j = WU.length - 1; i < WU.length; j = i++) fl += WU[j][0] * WU[i][1] - WU[i][0] * WU[j][1]; fl = Math.abs(fl) / 2e6;
+      el("path", { d: "M-40000 -40000H40000V40000H-40000Z" + path(WU, true), fill: WATER, "fill-rule": "evenodd" }, Wg).dataset.info = "<b>Meer</b><br>rund um die grosse Insel (Entwurf N54)";
+      el("path", { d: path(WU, true), fill: "url(#neuLand)", mask: "url(#maskNeu)" }, Wg).dataset.info = "<b>Neues Land (Entwurf N54)</b><br>zuerst nur Gelände in Kacheln, ohne Bäume, ohne Strassen";
+      el("path", { d: path(WU, true), fill: "none", stroke: "#b8a77c", "stroke-width": 16, "stroke-linejoin": "round" }, Wg).dataset.info = `<b>Küste der Insel-Welt (Entwurf)</b><br>ca. ${((bx1 - bx0) / 1000).toFixed(1)} × ${((bz1 - bz0) / 1000).toFixed(1)} km, Fläche ca. ${Math.round(fl)} km²`;
+      el("circle", { cx: H.x, cy: H.z, r: H.r, fill: "none", stroke: "#ffd54a", "stroke-width": 12, "stroke-dasharray": "90 60" }, Wg).dataset.info = "<b>Heutige Spielwelt</b><br>bis 4,3 km um Wayne Manor (LIMIT_WORLD); ausserhalb kommt das neue Land dazu";
+      for (const t of GW.namen) { const fs = t.klein ? 110 : 250, tx = el("text", { x: t.x, y: t.z, "font-size": fs, fill: t.text === "Meer" ? "#9cc3e6aa" : "#fff9", "text-anchor": "middle", "font-weight": 700, "font-style": t.text === "Meer" ? "italic" : "normal", "pointer-events": "none" }, Wg); tx.textContent = t.text;
+        if (t.sub) { const s2 = el("text", { x: t.x, y: t.z + 210, "font-size": 140, fill: "#fff8", "text-anchor": "middle", "pointer-events": "none" }, Wg); s2.textContent = t.sub; } }
+      // Massstab 1 km unten links der Insel
+      const mx = bx0 + 200, mz = bz1 + 500; el("path", { d: `M${mx} ${mz}H${mx + 1000}M${mx} ${mz - 60}V${mz + 60}M${mx + 1000} ${mz - 60}V${mz + 60}`, stroke: "#fff", "stroke-width": 14, fill: "none" }, Wg);
+      el("text", { x: mx + 500, y: mz - 50, "font-size": 80, fill: "#fff", "text-anchor": "middle" }, Wg).textContent = "1 km"; }
+    const ANS = () => G.welt && G.welt.ansicht && L.welt && L.welt.style.display !== "none" ? G.welt.ansicht : G.ansicht;   // Bereich fuer "Alles zeigen", Zoom und Verschieben
 
     // Bezirke
     for (const b of G.bezirke) {
@@ -580,10 +602,10 @@
     const rot = (x, z, a) => { const c = Math.cos(a * Math.PI / 180), n = Math.sin(a * Math.PI / 180); return [x * c - z * n, x * n + z * c]; };
     const wrap = document.getElementById("wrap"), tip = document.getElementById("tip"), info = document.getElementById("info");
     let vb = { x: G.ansicht.x0, y: G.ansicht.z0, w: G.ansicht.x1 - G.ansicht.x0, h: G.ansicht.z1 - G.ansicht.z0 };
-    const fit = () => { const r = wrap.getBoundingClientRect(), a = G.ansicht; if (!r.width || !r.height) return; const W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
+    const fit = () => { const r = wrap.getBoundingClientRect(), a = ANS(); if (!r.width || !r.height) return; const W = a.x1 - a.x0, H = a.z1 - a.z0, k = Math.max(W / r.width, H / r.height);
       vb = { w: r.width * k, h: r.height * k }; vb.x = (a.x0 + a.x1) / 2 - vb.w / 2; vb.y = (a.z0 + a.z1) / 2 - vb.h / 2; apply(); };
     // Karte nicht aus dem Bild schieben: Ausschnitt bleibt im Bereich der Startansicht (plus 25 % Rand); groesser als der Bereich = mittig
-    const keepIn = () => { const a = G.ansicht, mx = (a.x1 - a.x0) * .25, mz = (a.z1 - a.z0) * .25, X0 = a.x0 - mx, X1 = a.x1 + mx, Z0 = a.z0 - mz, Z1 = a.z1 + mz;
+    const keepIn = () => { const a = ANS(), mx = (a.x1 - a.x0) * .25, mz = (a.z1 - a.z0) * .25, X0 = a.x0 - mx, X1 = a.x1 + mx, Z0 = a.z0 - mz, Z1 = a.z1 + mz;
       vb.x = vb.w >= X1 - X0 ? (X0 + X1) / 2 - vb.w / 2 : clamp(vb.x, X0, X1 - vb.w);
       vb.y = vb.h >= Z1 - Z0 ? (Z0 + Z1) / 2 - vb.h / 2 : clamp(vb.y, Z0, Z1 - vb.h); };
     function apply() {
@@ -622,7 +644,7 @@
     const toWorld = (cx, cy) => { const r = wrap.getBoundingClientRect(), ox = ((cx - r.left) / r.width - 0.5) * vb.w, oz = ((cy - r.top) / r.height - 0.5) * vb.h, [a, b] = rot(ox, oz, -rotA);
       return [vb.x + vb.w / 2 + a, vb.y + vb.h / 2 + b]; };
     // Zoomgrenzen: hoechstens 1,5-mal die Startansicht (ganz Gotham), am naechsten ca. 40 m Bildbreite
-    const zoom = (f, cx, cy) => { const r = wrap.getBoundingClientRect(), a = G.ansicht, maxW = 1.5 * r.width * Math.max((a.x1 - a.x0) / r.width, (a.z1 - a.z0) / r.height);
+    const zoom = (f, cx, cy) => { const r = wrap.getBoundingClientRect(), a = ANS(), maxW = 1.5 * r.width * Math.max((a.x1 - a.x0) / r.width, (a.z1 - a.z0) / r.height);
       f = clamp(f, 40 / vb.w, maxW / vb.w); if (Math.abs(f - 1) < 1e-6) return; const [wx, wy] = toWorld(cx, cy), m = vb.x + vb.w / 2, n = vb.y + vb.h / 2;
       vb.w *= f; vb.h *= f; vb.x = wx - (wx - m) * f - vb.w / 2; vb.y = wy - (wy - n) * f - vb.h / 2; apply(); };
     wrap.addEventListener("wheel", ev => { ev.preventDefault(); zoom(ev.deltaY > 0 ? 1.18 : 1 / 1.18, ev.clientX, ev.clientY); }, { passive: false });
