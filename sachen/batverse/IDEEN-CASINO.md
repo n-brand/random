@@ -10,6 +10,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 - **Blackjack** (2026-11-19, an allen Blackjack-Tischen, 3:2, Dealer bis 17).
 - **Plinko** und **Hi-Lo** (2026-11-19, Automaten neben Crash und Mines).
 - **Craps** (2026-11-19, Craps-Tisch im realistischen Casino: Pass, Don't Pass, Field).
+- **Baccarat** (2026-11-20, ovale Tische im 2. Stock des Gotham-Casinos).
 
 ## Von Nicolas gewünscht (Plan N29)
 
