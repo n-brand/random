@@ -63,3 +63,45 @@ addEventListener("keydown", e => { if (["F1", "F3", "F6", "F7", "F10"].includes(
 addEventListener("mousemove", e => { if (modus !== "person" || document.pointerLockElement !== renderer.domElement) return; const k = 0.0025 * 0.5; PERSON.yaw -= e.movementX * k; PERSON.pitch = Math.max(-1.5, Math.min(1.5, PERSON.pitch - e.movementY * k)); });
 document.addEventListener("pointerlockchange", () => { if (!document.pointerLockElement) dragging = false; });
 walking = modus === "drive" || modus === "person";   // beim Laden: Orbit, kein Mausrad-Wechsel in der Hotbar
+
+// ---- Teleport-Menue und Einsteigen als Person (Nicolas 2026-11-20: "in der Werkstatt soll das Teleportmenue auch gehen und ich will so einsteigen koennen und im Menue bei 4
+// bleiben, ohne dass es zu Fahren geht, weil ich noch in Person bin"). Taste T (wie im Spiel): Orte (Projekt, Casino, Spielfiguren, Groessenvergleich, Gebaeude) und Fahrzeuge.
+// Jedes Ziel setzt dich als Person (4) dorthin; ein Fahrzeug wird geladen und du stehst an der Fahrerseite. Einsteigen: davor stehen, Rechtsklick oder F. Aussteigen (F, E;
+// bei Fluggeraeten Shift wie bisher) bringt dich als Person neben das Fahrzeug zurueck statt in die Ansicht 1.
+const WKP = { hier: null, zuFuss: false };   // hier = { x, y, z, yaw } fuer den naechsten personStart; zuFuss = als Person eingestiegen
+{ const ps = personStart; personStart = function () { ps(); const H = WKP.hier; if (!H) return; WKP.hier = null; PERSON.pos.set(H.x, H.y || 0.15, H.z); PERSON.yaw = H.yaw; PERSON.pitch = -0.08; PERSON.vy = 0; }; }
+// Platz an der Fahrerseite (links) des aktiven Fahrzeugs, Blick zum Fahrzeug
+function wkNeben() { if (!AKT) return null; const F = AKT.flug ? AKT.F : null, x = F ? F.x : AKT.x, z = F ? F.z : AKT.z, h = F ? (F.h || 0) : AKT.h, s = AKT.size, w = s.x * 0.5 + 1.2;   // Breite (Modell ungedreht gemessen)
+  const lx = -Math.cos(h), lz = Math.sin(h); return { x: x + lx * w, y: 0.15, z: z + lz * w, yaw: Math.atan2(lx, lz) }; }
+function wkAlsPerson(H) { WKP.hier = H; if (modus === "person") personStart(); else setModus("person"); }
+// nahe genug zum Einsteigen? (Person steht in der um 1,8 m vergroesserten Box des Fahrzeugs)
+function wkNahFahrzeug() { if (modus !== "person" || !AKT || !AKT.g) return false; const b = new THREE.Box3().setFromObject(AKT.g).expandByScalar(1.8); return b.containsPoint(new THREE.Vector3(PERSON.pos.x, Math.max(b.min.y, Math.min(b.max.y, PERSON.pos.y + 1)), PERSON.pos.z)); }
+function wkEinsteigen() { if (!wkNahFahrzeug()) { toast("Zu weit weg vom Fahrzeug"); return; } WKP.zuFuss = true; setModus("drive"); toast("Eingestiegen – F oder E: aussteigen"); }
+// Aussteigen: statt Ansicht 1 wieder als Person neben das Fahrzeug
+{ const sm = setModus; setModus = function (m) { if (WKP.zuFuss && modus === "drive" && m !== "drive") { WKP.zuFuss = false; if (m === "orbit") { const H = wkNeben(); sm("person"); if (H) { WKP.hier = H; personStart(); } return; } } if (m !== "drive") WKP.zuFuss = false; return sm(m); }; }
+// Tasten: F in Person = einsteigen (nur nahe), im Fahrzeug nach Einsteigen als Person: E steigt auch aus
+addEventListener("keydown", e => { if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA")) return;
+  if (e.code === "KeyT" && !e.repeat) { e.preventDefault(); e.stopImmediatePropagation(); wkTpToggle(); return; }
+  if (WKTP.el && !WKTP.el.hidden && e.code === "Escape") { e.stopImmediatePropagation(); wkTpToggle(false); return; }
+  if (modus === "person" && e.code === "KeyF" && !e.repeat && !personBusy()) { e.stopImmediatePropagation(); wkEinsteigen(); return; }
+  if (modus === "drive" && WKP.zuFuss && (e.code === "KeyE" || e.code === "KeyF") && !e.repeat && !(AKT && AKT.flug)) { e.stopImmediatePropagation(); setModus("orbit"); } }, true);
+// Rechtsklick in Person auf das Fahrzeug = einsteigen (wenn nichts anderes im Ziel ist)
+renderer.domElement.addEventListener("mousedown", e => { if (modus !== "person" || e.button !== 2 || PERSON.aim || (typeof weaponHeld === "function" && weaponHeld()) || !AKT || !AKT.g) return;
+  const rc = new THREE.Raycaster(); rc.setFromCamera({ x: 0, y: 0 }, camera); rc.far = 5; if (rc.intersectObject(AKT.g, true)[0]) { if (document.pointerLockElement) document.exitPointerLock(); wkEinsteigen(); } });
+// Hinweis beim Draufschauen
+{ const st = personStep; personStep = function (dt) { st(dt); if (PERSON.aim || !AKT || !AKT.g) return; const rc = new THREE.Raycaster(); rc.setFromCamera({ x: 0, y: 0 }, camera); rc.far = 5; const h = $("w-hint");
+  if (rc.intersectObject(AKT.g, true)[0] && !personBusy()) { const t = "Rechtsklick oder F: einsteigen (" + AKT.m.name + ")"; h.hidden = false; if (h.textContent !== t) h.textContent = t; } }; }
+// Menue
+const WKTP = { el: null };
+function wkTpToggle(auf) { if (!WKTP.el) wkTpBau(); const el = WKTP.el; auf = auf === undefined ? el.hidden : auf; el.hidden = !auf; if (auf && document.pointerLockElement) document.exitPointerLock(); }
+function wkTpOrt(fn) { fn(); const t = controls.target.clone(), c = camera.position.clone(), d = new THREE.Vector3(c.x - t.x, 0, c.z - t.z), L = d.length() || 1; d.divideScalar(L);
+  const a = Math.min(L * 0.35, 14), p = { x: t.x + d.x * a, y: 0.15, z: t.z + d.z * a, yaw: Math.atan2(-(-d.x), -(-d.z)) }; wkAlsPerson(p); }
+function wkTpBau() { const el = WKTP.el = document.createElement("div"); el.id = "wk-tp"; el.hidden = true; document.body.appendChild(el);
+  const st = document.createElement("style"); st.textContent = "#wk-tp{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;background:#15171bf2;border:1px solid #3a3d44;border-radius:12px;padding:14px 16px;color:#e8eaee;font:14px system-ui;width:min(560px,92vw);max-height:80vh;overflow:auto;box-shadow:0 12px 40px #0008}#wk-tp[hidden]{display:none}#wk-tp h3{margin:10px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#9aa0a8}#wk-tp .wk-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}#wk-tp button{font:13px system-ui;text-align:left;padding:7px 10px;border-radius:8px;border:1px solid #3a3d44;background:#22252b;color:#e8eaee;cursor:pointer}#wk-tp button:hover{background:#2f333a}#wk-tp .wk-k{float:right;opacity:.6;font-size:12px}";
+  document.head.appendChild(st);
+  const ORTE = [["Aktuelles Projekt", () => { WKP.hier = null; if (modus === "person") personStart(); else setModus("person"); }], ["Casino (realistisch)", () => wkTpOrt(casino2Zeigen)], ["Spielfiguren", () => wkTpOrt(figurZeigen)], ["Grössenvergleich", () => wkTpOrt(groesseZeigen)]];
+  if (typeof WG_ZIEL !== "undefined") for (const id in WG_ZIEL) ORTE.push([WG_NAME[id], () => wkTpOrt(() => gebZeigen(id))]);
+  el.innerHTML = '<span class="wk-k">T oder Esc schliesst</span><b>Teleport (Werkstatt)</b><h3>Orte</h3><div class="wk-g wk-o"></div><h3>Fahrzeuge – du stehst daneben, Rechtsklick oder F: einsteigen</h3><div class="wk-g wk-f"></div>';
+  const go = fn => () => { wkTpToggle(false); fn(); };
+  for (const [n, fn] of ORTE) { const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.onclick = go(fn); el.querySelector(".wk-o").appendChild(b); }
+  MODELLE.forEach((m, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = m.name; b.onclick = go(() => { if (modus === "drive") setModus("orbit"); pick.value = String(i); laden(i); wkAlsPerson(wkNeben()); toast(m.name + " – Rechtsklick oder F: einsteigen"); }); el.querySelector(".wk-f").appendChild(b); }); }

@@ -309,7 +309,7 @@ MODELLE.forEach((m, i) => { const o = document.createElement("option"); o.value 
 { const og = document.createElement("optgroup"); og.label = "Gebäude-Vorlagen (kommen mit G3)"; const o = document.createElement("option"); o.disabled = true; o.textContent = "noch keine"; og.appendChild(o); pick.appendChild(og); }
 pick.onchange = () => pick.value === "projekt" ? projektZeigen() : pick.value === "casino2" ? casino2Zeigen() : pick.value === "figur" ? figurZeigen() : pick.value === "groesse" ? groesseZeigen() : pick.value.startsWith("geb:") ? gebZeigen(pick.value.slice(4)) : laden(+pick.value);
 let modus = "orbit";
-const setModus = m => { const war = modus; modus = m;
+let setModus = m => { const war = modus; modus = m;   // let: person.js haengt das Aussteigen als Person an
   if (AKT && AKT.flug && war === "drive" && m !== "drive") world.userData.car.leave(); for (const [id, k] of [["m-orbit", "orbit"], ["m-drive", "drive"], ["m-spin", "spin"], ["m-person", "person"], ["m-geist", "geist"]]) $(id)?.setAttribute("aria-pressed", String(m === k));
   if (war === "person" && m !== "person" && typeof personEnd === "function") personEnd(); if (war === "geist" && m !== "geist" && typeof geistEnd === "function") geistEnd(); walking = m === "drive" || m === "person";   // Person-Modus (person.js)
   document.body.classList.toggle("drive", m === "drive"); if (m !== "drive") $nitro.hidden = true; controls.enabled = m !== "drive" && m !== "person" && m !== "geist"; $speed.hidden = m !== "drive";
