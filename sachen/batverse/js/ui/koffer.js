@@ -26,7 +26,7 @@ function buildKoffer(o = {}) {
   g.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); g.userData = { hinge, inn }; g.name = "Koffer"; return g;
 }
 // Inventar: Koffer mit Kennung hinzufuegen (eigener Platz, Stapel 1)
-function kofferGive(k) { for (let i = 0; i < 36; i++) if (!INV.slots[i]) { INV.slots[i] = { id: "koffer", n: 1, k }; invSave(); invRender(); return true; } toast("Kein Platz im Inventar für den Koffer"); return false; }
+function kofferGive(k, id = "koffer") { for (let i = 0; i < 36; i++) if (!INV.slots[i]) { INV.slots[i] = { id, n: 1, k }; invSave(); invRender(); return true; } toast("Kein Platz im Inventar für " + INV_ITEMS[id].name); return false; }
 function kofferBox(k, init, cash) { const B = invBox("koffer-" + k, "Koffer", 12, init || [], 6); if (cash && B.cash === undefined) B.cash = cash; if (B.cash === undefined) B.cash = 0; B.self = k; return B; }
 function kofferActions(B) { const K = typeof KONTO !== "undefined" ? KONTO : null, a = [];
   if (B.cash > 0) a.push({ label: "Bargeld nehmen (" + kontoFmt(B.cash) + ")", fn: () => { kontoBar(B.cash, "Aus dem Koffer"); B.cash = 0; B.save(); B.actions = kofferActions(B); invRender(); } });
@@ -40,8 +40,8 @@ function kofferWelt(parent, k, pos, rotY = 0, o = {}) {
   const W = { k, g, B, gate: null }; KOFFER.welt.push(W); g.updateMatrixWorld(true); const p = g.getWorldPosition(new THREE.Vector3());
   if (typeof gates !== "undefined") { W.gate = { name: "Koffer", g, call: () => { if (typeof invBoxFront === "function" && !invBoxFront(g, 2.4)) return; kofferOpen(k); }, verbs: ["öffnen · linke Maus halten: aufnehmen", "öffnen · linke Maus halten: aufnehmen"], a: [p.x, p.z], b: [p.x, p.z], near: 2.5 }; gates.push(W.gate); }
   return W; }
-function kofferNehmen(W) { if (!kofferGive(W.k)) return; W.g.parent && W.g.parent.remove(W.g); KOFFER.welt.splice(KOFFER.welt.indexOf(W), 1); if (W.gate && typeof gates !== "undefined") { const i = gates.indexOf(W.gate); if (i >= 0) gates.splice(i, 1); }
-  try { localStorage.setItem("wm-koffer-weg-" + W.k, "1"); } catch (e) {} toast("Koffer aufgenommen"); }
+function kofferNehmen(W) { if (!kofferGive(W.k, W.id)) return; W.g.parent && W.g.parent.remove(W.g); KOFFER.welt.splice(KOFFER.welt.indexOf(W), 1); if (W.gate && typeof gates !== "undefined") { const i = gates.indexOf(W.gate); if (i >= 0) gates.splice(i, 1); }
+  try { localStorage.setItem("wm-koffer-weg-" + W.k, "1"); } catch (e) {} toast((W.id === "sporttasche" ? "Sporttasche" : "Koffer") + " aufgenommen"); }
 // Aufnehmen: linke Maus auf einem Koffer halten (Bildmitte, bis 2,5 m), Kreis in der Mitte; Loslassen oder Wegschauen bricht ab
 const KOFFER_RC = new THREE.Raycaster();
 function kofferZiel() { if (!KOFFER.welt.length) return null; KOFFER_RC.setFromCamera({ x: 0, y: 0 }, camera); KOFFER_RC.far = 2.5; const h = KOFFER_RC.intersectObjects(KOFFER.welt.map(w => w.g), true)[0]; if (!h) return null; let o = h.object; while (o && !KOFFER.welt.some(w => w.g === o)) o = o.parent; return KOFFER.welt.find(w => w.g === o) || null; }
@@ -49,11 +49,54 @@ function kofferHoldStart(W) { const el = holdRingEl(); KOFFER.hold = { W, t: 0, 
 function kofferHoldEnd(done) { const H = KOFFER.hold; if (!H) return; H.el.hidden = true; KOFFER.hold = null; if (done) kofferNehmen(H.W); }
 function kofferStep(dt) { const H = KOFFER.hold; if (!H) return; if (kofferZiel() !== H.W) return kofferHoldEnd(false); H.t += dt; H.el.querySelector(".hr-fg").style.strokeDashoffset = String(100 - Math.min(100, H.t / 0.8 * 100)); if (H.t >= 0.8) kofferHoldEnd(true); }
 addEventListener("mousedown", e => { if (e.button === 0 && document.pointerLockElement && (typeof onFoot !== "function" || onFoot()) && !(typeof weaponHeld === "function" && weaponHeld())) { const W = kofferZiel(); if (W) kofferHoldStart(W); }
-  if (e.button === 2 && document.pointerLockElement && typeof invHeld === "function" && invHeld() === "koffer") { const S = INV.slots[INV.sel]; if (S && !S.k) { S.k = "k" + Date.now().toString(36); invSave(); }   // Koffer ohne Kennung bekommt eine (leer)
-    if (S && S.k) { e.preventDefault(); e.stopImmediatePropagation(); if (document.pointerLockElement) document.exitPointerLock(); kofferOpen(S.k); } } }, true);
+  if (e.button === 2 && document.pointerLockElement && typeof invHeld === "function" && (invHeld() === "koffer" || invHeld() === "sporttasche")) { const S = INV.slots[INV.sel]; if (S && !S.k) { S.k = "k" + Date.now().toString(36); invSave(); }   // Koffer ohne Kennung bekommt eine (leer)
+    if (S && S.k) { e.preventDefault(); e.stopImmediatePropagation(); if (document.pointerLockElement) document.exitPointerLock(); S.id === "sporttasche" ? tascheOpen(S) : kofferOpen(S.k); } } }, true);
 addEventListener("mouseup", e => { if (e.button === 0 && KOFFER.hold) kofferHoldEnd(false); });
 // in der Hand: Koffer zu, am Griff gehalten
 if (typeof HAND3D !== "undefined") HAND3D.koffer = () => { const g = new THREE.Group(), m = buildKoffer({ offen: false }); m.rotation.set(Math.PI / 2, 0.25, 0); m.position.set(0, -0.05, 0.05); m.scale.setScalar(0.8); g.add(m); g.position.y = -0.1; return g; };
+
+// ---- Sporttasche (Nicolas 2026-11-20: "mach auf den Tisch eine Tasche in der Werkstatt – eine längliche Sporttasche – kann man in Hand, Schulter oder sogar über Rücken anziehen").
+// Gegenstand "sporttasche" (Stapel 1, Kennung k wie der Koffer, Inhalt im Behaelter "tasche-<k>", 18 Plaetze). In der Welt: tascheWelt(parent, k, pos, rotY, { init }) – Rechtsklick
+// oeffnet (von allen Seiten), linke Maus 0,8 s halten nimmt sie auf (wie der Koffer). Tragen: in der Hand (gewaehlter Hotbar-Platz, am Griff), oder auf dem Ausruestungsplatz
+// "Ruecken" (inventar.js INV.equip.ruecken, Feld trag = "schulter" | "ruecken"): ueber der linken Schulter (Gurt, Tasche an der Huefte) bzw. quer auf dem Ruecken (zwei Gurte
+// ueber die Schultern). Sichtbar an der Figur in der dritten Person (figur.js dpStep -> tascheTrag). In der Hand: Rechtsklick oeffnet, Linksklick haengt sie um.
+function buildSporttasche() { const g = new THREE.Group(), L = 0.64, Rr = 0.15, SY = 0.92, SZ = 0.8, H = 2 * Rr * SY, M = (c, r = 0.8, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+  const stoff = M(0x1b1e24, 0.88), ende = M(0x2e333c, 0.8), gold = M(0xc9a23a, 0.45, 0.3), gurt = M(0x0e0f12, 0.7), met = M(0xb8bcc2, 0.3, 0.85);
+  const b = new THREE.Group(); b.scale.set(1, SY, SZ); b.position.y = H / 2; g.add(b);   // Koerper: Zylinder quer (x), etwas flach gedrueckt
+  const zyl = (r, l, m, x) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, l, 28), m); c.rotation.z = Math.PI / 2; c.position.x = x; b.add(c); return c; };
+  zyl(Rr, L - 0.08, stoff, 0); for (const sx of [-1, 1]) { zyl(Rr * 1.01, 0.04, ende, sx * (L / 2 - 0.02)); zyl(Rr * 1.03, 0.014, gold, sx * (L / 2 - 0.075)); zyl(Rr * 1.015, 0.03, gurt, sx * 0.13); }   // Enden, Goldstreifen, Griffbaender
+  const box = (m, w, h, d, x, y, z) => { const q = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); q.position.set(x, y, z); g.add(q); return q; };
+  box(gurt, L - 0.12, 0.008, 0.03, 0, H + 0.002, 0); box(met, 0.03, 0.01, 0.018, 0.16, H + 0.008, 0);   // Reissverschluss mit Zipper
+  box(gold, 0.13, 0.05, 0.004, 0, H * 0.5, -Rr * SZ - 0.002);   // Schild vorne
+  for (const sx of [-1, 1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.011, 6, 16, Math.PI), gurt); t.rotation.y = Math.PI / 2; t.position.set(sx * 0.13, H - 0.05, 0); t.scale.set(1, 0.9, 0.95); g.add(t);   // Griffe
+    const ri = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.004, 6, 12), met); ri.rotation.y = Math.PI / 2; ri.position.set(sx * (L / 2 + 0.006), H * 0.8, 0); g.add(ri); }   // Ringe fuer den Schultergurt
+  { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 10), gurt); w.rotation.z = Math.PI / 2; w.position.y = H - 0.05 + 0.088; g.add(w); }   // Griffwickel oben
+  g.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); g.userData.H = H; g.name = "Sporttasche"; return g; }
+function tascheBox(k, init) { const B = invBox("tasche-" + k, "Sporttasche", 18, init || [], 6); B.self = k; return B; }
+function tascheOpen(S) { if (!S.k) { S.k = "t" + Date.now().toString(36); invSave(); } invBoxOpen(tascheBox(S.k)); }
+function tascheWelt(parent, k, pos, rotY = 0, o = {}) {
+  try { if (localStorage.getItem("wm-koffer-weg-" + k)) { tascheBox(k, o.init); return null; } } catch (e) {}   // schon aufgenommen
+  const g = buildSporttasche(); g.position.copy(pos); g.rotation.y = rotY; parent.add(g); tascheBox(k, o.init);
+  const W = { k, g, id: "sporttasche", gate: null }; KOFFER.welt.push(W); g.updateMatrixWorld(true); const p = g.getWorldPosition(new THREE.Vector3());
+  if (typeof gates !== "undefined") { W.gate = { name: "Sporttasche", g, call: () => tascheOpen({ k }), verbs: ["öffnen · linke Maus halten: aufnehmen", "öffnen · linke Maus halten: aufnehmen"], a: [p.x, p.z], b: [p.x, p.z], near: 2.5 }; gates.push(W.gate); }
+  return W; }
+// in der Hand: am Griff, Tasche haengt darunter (Laenge nach vorne); Ich-Sicht kleiner und weiter unten
+if (typeof HAND3D !== "undefined") HAND3D.sporttasche = () => { const g = new THREE.Group(), m = buildSporttasche(), dp = typeof dpAn === "function" && dpAn(), H = m.userData.H;
+  m.rotation.y = Math.PI / 2; m.position.y = -(H + 0.13); if (dp) { m.position.y -= 0.02; g.add(m); return g; } const w = new THREE.Group(); w.add(m); w.scale.setScalar(0.42); w.position.set(0.02, -0.02, 0.05); w.rotation.set(0.15, -0.5, 0.05); g.add(w); return g; };
+// Linksklick mit der Tasche in der Hand: umhaengen (auf den Platz Ruecken, eine umgehaengte kommt in die Hand)
+addEventListener("mousedown", e => { if (e.button !== 0 || !document.pointerLockElement || typeof invHeld !== "function" || invHeld() !== "sporttasche" || (typeof onFoot === "function" && !onFoot()) || kofferZiel()) return;
+  const S = INV.slots[INV.sel], alt = INV.equip.ruecken; INV.equip.ruecken = S; INV.slots[INV.sel] = alt || null; invSave(); invRender(); toast("Sporttasche umgehängt (" + (S.trag === "ruecken" ? "Rücken" : "Schulter") + ") – wechseln im Inventar, Platz Rücken"); });
+// umgehaengt an der Figur (dritte Person): an den Rumpf gehaengt, neu gebaut nur bei Wechsel
+function tascheTrag(F) { const S = typeof INV !== "undefined" && INV.equip ? INV.equip.ruecken : null, U = F.userData, mode = S ? (S.trag === "ruecken" ? "ruecken" : "schulter") : null;
+  if (U.taschMode === mode) return; U.taschMode = mode; if (U.taschG) U.rumpf.remove(U.taschG); U.taschG = null; if (!mode) return;
+  const g = new THREE.Group(), t = buildSporttasche(), H = t.userData.H, gm = new THREE.MeshStandardMaterial({ color: 0x0e0f12, roughness: 0.7 }), V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const band = (A, C, w = 0.045) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, A.distanceTo(C), 0.012), gm); m.position.copy(A).add(C).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(V(0, 1, 0), C.clone().sub(A).normalize()); m.castShadow = true; g.add(m); };
+  if (mode === "ruecken") { t.rotation.y = Math.PI; t.position.set(0, 0.17, 0.28); g.add(t);   // quer auf dem Ruecken, Schild nach aussen
+    for (const sx of [-1, 1]) { const top = V(sx * 0.11, 0.17 + H - 0.02, 0.22), sh = V(sx * 0.13, 0.6, 0.02), vo = V(sx * 0.14, 0.52, -0.17), un = V(sx * 0.17, 0.22, -0.15), se = V(sx * 0.22, 0.2, 0.08), bo = V(sx * 0.2, 0.2, 0.2);
+      band(top, sh); band(sh, vo); band(vo, un); band(un, se); band(se, bo); } }
+  else { t.rotation.y = Math.PI / 2; t.position.set(-0.36, -0.12, 0.06); g.add(t);   // ueber der linken Schulter, Tasche an der Huefte (Laenge nach vorne)
+    const sh = V(-0.2, 0.62, 0), vo = V(-0.36, -0.12 + H * 0.8, -0.26), hi = V(-0.36, -0.12 + H * 0.8, 0.38); band(vo, V(-0.25, 0.5, -0.16)); band(V(-0.25, 0.5, -0.16), sh); band(sh, V(-0.25, 0.5, 0.15)); band(V(-0.25, 0.5, 0.15), hi); }
+  U.rumpf.add(g); U.taschG = g; }
 
 // ---- Beute am Boden (N21 "Aufnehmen mit Kreis" fuer Geld und Gold; 2026-11-19): beuteAdd(pos, id, n) legt ein 3D-Modell (Geldbuendel bzw. Goldbarren) hin; darauf zielen
 // (bis 3 m, Bildmitte) und linke Maus halten: Kreis 0,6 s, dann ins Inventar (invAdd). Zum Beispiel beim Aufsprengen eines Geldtransporters (gotham-bus.js).

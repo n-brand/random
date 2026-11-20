@@ -132,6 +132,7 @@ function dpStep(dt, P, boden) { const an = dpAn(); if (!an) { if (DP.w) DP.w.vis
   const soll = waffe || ziel ? P.yaw : tempo > 0.4 ? Math.atan2(-mx, -mz) : DP.h, d = Math.atan2(Math.sin(soll - DP.h), Math.cos(soll - DP.h)); DP.h += d * Math.min(1, dt * 10);
   DP.w.visible = true; DP.w.position.set(p.x, p.y, p.z); DP.w.rotation.set(0, DP.h, 0); const gl = typeof GLEIT !== "undefined" && GLEIT.on; figurPose(F, dt, Math.min(tempo, 9), !boden && !gl);
   if (U.cape) batUmhang(F, dt, tempo, gl, !boden);
+  if (typeof tascheTrag === "function") tascheTrag(F);   // Sporttasche ueber der Schulter / auf dem Ruecken (koffer.js)
   const it = dpItem(), hebt = (waffe || ziel) && boden !== null;
   if (hebt) { U.armR.rotation.set(Math.PI / 2 + P.pitch, 0, 0.05); U.unterarmR.rotation.x = 0; if (waffe) { U.armL.rotation.set(Math.PI / 2 + P.pitch - 0.1, 0, -0.45); U.unterarmL.rotation.x = 0.3; } }
   if (it) it.rotation.set((hebt ? P.pitch : 0) - (U.armR.rotation.x + U.unterarmR.rotation.x), 0, 0);

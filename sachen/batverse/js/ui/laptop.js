@@ -155,9 +155,9 @@ function buildLaptop(id) {
 }
 function buildLaptopTisch() {
   const g = new THREE.Group(), holz = new THREE.MeshStandardMaterial({ color: 0x4a3122, roughness: 0.55 }), met = new THREE.MeshStandardMaterial({ color: 0x2a2d31, metalness: 0.6, roughness: 0.4 });
-  // Tisch nach links verlaengert (Nicolas 2026-11-17: Batarang-Etui neben die Laptops), x -1,35 .. 0,85
-  const top = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.04, 0.8), holz); top.position.set(-0.25, 0.74, 0); g.add(top);
-  for (const x of [-1.3, 0.8]) for (const sz of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), met); l.position.set(x, 0.36, sz * 0.35); g.add(l); }
+  // Tisch nach links verlaengert (Nicolas 2026-11-17: Batarang-Etui neben die Laptops), dann nach rechts fuer die Sporttasche (2026-11-20), x -1,35 .. 1,65
+  const top = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.04, 0.8), holz); top.position.set(0.15, 0.74, 0); g.add(top);
+  for (const x of [-1.3, 1.6]) for (const sz of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.72, 0.04), met); l.position.set(x, 0.36, sz * 0.35); g.add(l); }
   const A = buildLaptop("A"), B = buildLaptop("B"); A.position.set(-0.42, 0.76, 0.02); A.rotation.y = 0.08; B.position.set(0.42, 0.76, 0.0); B.rotation.y = -0.08; g.add(A, B);
   const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.095, 18), new THREE.MeshStandardMaterial({ color: 0xf1ede4, roughness: 0.4 })); mug.position.set(0.02, 0.81, 0.18); g.add(mug);
   const mouse = new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 10), new THREE.MeshStandardMaterial({ color: 0x111214, roughness: 0.5 })); mouse.scale.set(0.9, 0.45, 1.4); mouse.position.set(0.78, 0.775, -0.05); g.add(mouse);
