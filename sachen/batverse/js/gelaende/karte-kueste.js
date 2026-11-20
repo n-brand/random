@@ -70,8 +70,13 @@ const LAND_TS = [
   [[793, 29], [811, 90], [800, 156], [749, 190], [544, 228], [546, 252], [648, 273], [780, 246], [974, 159], [1117, 178], [1117, 120], [870, 120], [800, -20]],
   [[493, 13], [421, 123], [410, 231], [424, 328], [360, 369], [317, 336], [297, 339], [202, 239], [124, 186], [124, 120], [300, 100], [493, -60]]
 ];
-const LANDS = LAND_TS.map(pts => {
-  let p = pts.map(([t, s]) => [(s - t) * R2, (s + t) * R2]);
+// Kuestenstreifen oestlich der Manor (Nicolas 2026-11-20, Bild mit roter Linie auf der Planungskarte: "Rote Linie = neue Kueste", "ja, auch im Spiel"):
+// Land von der heutigen Kueste bis zur gezeichneten Linie (bis ca. 450 m ins Meer, z -1370 .. -4265, Ende an der Weltgrenze). Seeseite = rote Linie
+// (aus dem Bild ausgelesen, geglaettet; dort, wo sie weniger als ca. 30-120 m vor der Kueste lag, weich auf die alte Kueste zurueck), Landseite 40 m hinter der alten Kueste.
+// In x/z (Weltmeter), Land = innen. Planungskarte: gotham/daten.js wasser.spiel (gleich nachgezogen).
+const LAND_XZ = [[161,-1372], [162,-1445], [143,-1537], [133,-1649], [153,-1737], [211,-1828], [277,-1942], [323,-2023], [351,-2081], [380,-2140], [411,-2195], [435,-2253], [473,-2310], [504,-2381], [534,-2434], [559,-2481], [576,-2560], [588,-2656], [593,-2748], [575,-2842], [553,-2927], [526,-3023], [502,-3108], [479,-3201], [471,-3277], [471,-3344], [473,-3433], [463,-3537], [441,-3622], [386,-3700], [321,-3778], [253,-3856], [229,-3952], [222,-4046], [243,-4144], [274,-4238], [283,-4265], [99,-4253], [97,-4167], [111,-4078], [115,-4001], [92,-3924], [89,-3839], [108,-3745], [110,-3659], [98,-3578], [101,-3495], [112,-3413], [100,-3329], [89,-3250], [100,-3161], [114,-3064], [109,-2980], [95,-2915], [97,-2833], [106,-2730], [101,-2650], [94,-2580], [107,-2480], [117,-2383], [98,-2324], [87,-2255], [104,-2142], [113,-2047], [100,-1985], [100,-1903], [113,-1798], [106,-1721], [93,-1657], [103,-1559], [121,-1449], [121,-1367]];
+const LANDS = [...LAND_TS.map(pts => pts.map(([t, s]) => [(s - t) * R2, (s + t) * R2])), LAND_XZ].map(p0 => {
+  let p = p0;
   for (let k = 0; k < 3; k++) p = p.flatMap((a, i) => { const b = p[(i + 1) % p.length]; return [[a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]]; });
   const box = p.reduce((a, [x, z]) => [Math.min(a[0], x), Math.max(a[1], x), Math.min(a[2], z), Math.max(a[3], z)], [1e9, -1e9, 1e9, -1e9]);
   return { p, box };
