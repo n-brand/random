@@ -11,7 +11,7 @@ const INV_ITEMS = {
   granate: { name: "Handgranate", art: "Waffe", stack: 8, svg: '<ellipse cx="12" cy="15.5" rx="6.6" ry="7.6" fill="#4b5a3a" stroke="#2a3220" stroke-width=".6"/><path d="M6 13h12M6 17.5h12M9.4 8.5v14M14.6 8.5v14" stroke="#2f3826" stroke-width=".7"/><rect x="9.6" y="5" width="4.8" height="3.6" rx=".8" fill="#8a9096"/><path d="M14.4 6 Q20 6.5 19.6 13" stroke="#a8aeb4" stroke-width="1.3" fill="none"/><circle cx="8.2" cy="5.6" r="2.1" fill="none" stroke="#c9a640" stroke-width=".9"/>' },
   rauchbombe: { name: "Rauchbombe", art: "Waffe", stack: 8, svg: '<circle cx="13" cy="15.5" r="8" fill="#2c2f35" stroke="#5a5f68" stroke-width=".5"/><path d="M5.2 14.4 H20.8 V16.6 H5.2 Z" fill="#d9c23a"/><ellipse cx="10.4" cy="12" rx="2.2" ry="1.4" fill="#5a5f68" opacity=".6"/><rect x="11.4" y="4.6" width="3.2" height="3.4" rx=".4" fill="#8a8f96"/><path d="M14.6 5.6 L17.2 10.6" stroke="#8a8f96" stroke-width="1.2" stroke-linecap="round"/><circle cx="9.4" cy="4.6" r="1.9" fill="none" stroke="#8a8f96" stroke-width=".8"/>' },   // wie das 3D-Modell (waffen.js buildRauchbombe)
   munition: { name: "9-mm-Munition", art: "Munition", stack: 64, svg: '<g fill="#c99a3a" stroke="#7a5a1a"><rect x="5" y="9" width="4" height="12" rx="1"/><rect x="11" y="7" width="4" height="14" rx="1"/><rect x="17" y="9" width="4" height="12" rx="1"/></g><g fill="#a0a4aa"><rect x="5" y="6" width="4" height="4" rx="2"/><rect x="11" y="4" width="4" height="4" rx="2"/><rect x="17" y="6" width="4" height="4" rx="2"/></g>' },
-  bargeld: { name: "Geldscheine (100 $)", art: "Wert", stack: 100, svg: '<rect x="3" y="8" width="20" height="11" rx="1.5" fill="#cfe6c4" stroke="#3d6e36" stroke-width="1.3"/><circle cx="13" cy="13.5" r="2.8" fill="none" stroke="#3d6e36" stroke-width="1.2"/><rect x="5" y="6" width="16" height="1.6" fill="#a9cf9c"/><text x="6" y="12" font-size="3.6" font-weight="700" fill="#3d6e36">100</text>' },
+  bargeld: { name: "Bargeld", art: "Wert", stack: 10000, dollar: true, svg: '<rect x="3" y="8" width="20" height="11" rx="1.5" fill="#cfe6c4" stroke="#3d6e36" stroke-width="1.3"/><circle cx="13" cy="13.5" r="2.8" fill="none" stroke="#3d6e36" stroke-width="1.2"/><rect x="5" y="6" width="16" height="1.6" fill="#a9cf9c"/><text x="5.2" y="12.4" font-size="4.2" font-weight="700" fill="#3d6e36">$</text>' },
   goldbarren: { name: "Goldbarren", art: "Wert", stack: 16, svg: '<path d="M3 19 L7 9 H19 L23 19 Z" fill="#e0b03a" stroke="#8a6a1a"/><path d="M7 9 L9 12 H17 L19 9" fill="none" stroke="#f6d77a"/>' },
   nachtsicht: { name: "Nachtsichtbrille", art: "Ausrüstung", stack: 1, kopf: true, svg: '<path d="M3 13 Q3 9.6 6.4 9.6 H19.6 Q23 9.6 23 13 V14.6 Q23 17 20.6 17 H5.4 Q3 17 3 14.6 Z" fill="#2b2f2a" stroke="#121412" stroke-width=".6"/><circle cx="8.4" cy="13.4" r="3.4" fill="#1e5a2a" stroke="#0d0f0d" stroke-width="1"/><circle cx="17.6" cy="13.4" r="3.4" fill="#1e5a2a" stroke="#0d0f0d" stroke-width="1"/><circle cx="7.6" cy="12.6" r="1" fill="#8dff9d" opacity=".7"/><circle cx="16.8" cy="12.6" r="1" fill="#8dff9d" opacity=".7"/><rect x="11.6" y="7.4" width="2.8" height="2.4" fill="#3a3f39"/>' },   // Nachtsichtbrille (nachtsicht.js), Platz Kopf
   "handy-wayne": { name: "Wayne Phone X", art: "Gerät", stack: 1, svg: '<rect x="7.5" y="2.5" width="11" height="21" rx="2.6" fill="#0b0c0e" stroke="#c9a640" stroke-width=".8"/><rect x="8.8" y="4.6" width="8.4" height="15.4" rx="1" fill="#1a1408"/><path d="M10.2 9.4 L11.4 14 L13 10.6 L14.6 14 L15.8 9.4" fill="none" stroke="#f2c94c" stroke-width="1.1" stroke-linejoin="round"/><rect x="11.6" y="3.2" width="2.8" height=".7" rx=".35" fill="#333"/><path d="M8.8 18 H17.2" stroke="#c9302c" stroke-width=".7"/>' },   // Handy Wayne Enterprises (Gaming), handy.js
@@ -41,7 +41,7 @@ const INV_DESC = {
   granate: "Splitterhandgranate. Im Bogen werfen (Linksklick, rechte Maus = Wurfbahn). Prallt ab und explodiert nach 2,5 Sekunden; Fahrzeuge im Umkreis von 7 m nehmen Schaden.",
   rauchbombe: "Im Bogen werfen (Linksklick). Beim Aufprall entsteht eine dichte Rauchwolke, die etwa 12 Sekunden hält.",
   munition: "9-mm-Patronen. Noch ohne passende Waffe.",
-  bargeld: "Bargeld als Scheine zu je 100 $ (aus dem Geld-Feld neben der Hotbar genommen). Zurück aufs Geld-Feld legen = wieder Bargeld.",
+  bargeld: "Bargeld in Scheinen: die Zahl ist der Betrag in Dollar (1 Stück = 1 $, bis 10 000 $ je Platz). Vom Geld-Feld neben der Hotbar nehmen (Linksklick alles bis 10 000 $, Rechtsklick 100 $), zurück aufs Geld-Feld legen = wieder Bargeld.",
   goldbarren: "Feingold aus dem Tresor der Geheimbasis. Wertanlage.",
   nachtsicht: "Militärische Nachtsichtbrille. Im Inventar auf den Platz \"Kopf\" ziehen (oder Shift+Klick), oder in der Hand mit Linksklick aufsetzen. Taste B schaltet sie an und aus: im Dunkeln sieht man grün und hell.",
   "handy-wayne": "Gaming-Handy von Wayne Enterprises: schnell, schwarz mit Gold. In der Hand Rechtsklick (oder Taste P): unten rechts öffnen. Apps: Internet, Bank, Garage, Kontakte. Pfeiltasten und Enter wählen.",
@@ -78,8 +78,9 @@ const INV_TEST_ALLE = true;   // TEST: alle Gegenstaende besitzen (siehe Aufbau 
 const INV = { slots: new Array(36).fill(null), sel: 0, pick: -1, cursor: null, drag: null, box: null };   // box = offener Behaelter (Plaetze ab Index 100)
 INV.equip = { kopf: null, koerper: null, ruecken: null };   // Ausruestung (Nachtsichtbrille N28, Batsuit F3); Platz-Index 90 = Kopf, 91 = Koerper
 const INV_BOX0 = 100, INV_KOPF = 90, INV_KOERPER = 91, INV_RUECKEN = 92, invGet = i => i === INV_KOPF ? INV.equip.kopf : i === INV_KOERPER ? INV.equip.koerper : i === INV_RUECKEN ? INV.equip.ruecken : i >= INV_BOX0 ? (INV.box ? INV.box.slots[i - INV_BOX0] : null) : INV.slots[i], invSet = (i, v) => { if (i === INV_KOPF) INV.equip.kopf = v; else if (i === INV_KOERPER) INV.equip.koerper = v; else if (i === INV_RUECKEN) INV.equip.ruecken = v; else if (i >= INV_BOX0) { if (INV.box) INV.box.slots[i - INV_BOX0] = v; } else INV.slots[i] = v; };   // 0-8 Hotbar, 9-35 Inventar; Platz = { id, n }
-function invSave() { try { localStorage.setItem("wm-inv", JSON.stringify({ s: INV.slots, sel: INV.sel, c: INV.cursor, e: INV.equip })); } catch (e) {} }
-function invLoad() { try { const d = JSON.parse(localStorage.getItem("wm-inv") || "null"); if (d && Array.isArray(d.s) && d.s.length === 36) { INV.slots = d.s.map(q => q && INV_ITEMS[q.id] ? q : null); INV.sel = Math.min(INV_SEL_N - 1, d.sel | 0); INV.cursor = d.c && INV_ITEMS[d.c.id] && d.c.n > 0 ? d.c : null; if (d.e && d.e.kopf && INV_ITEMS[d.e.kopf.id]) INV.equip.kopf = d.e.kopf; if (d.e && d.e.koerper && INV_ITEMS[d.e.koerper.id]) INV.equip.koerper = d.e.koerper; if (d.e && d.e.ruecken && INV_ITEMS[d.e.ruecken.id]) INV.equip.ruecken = d.e.ruecken; return true; } } catch (e) {} return false; }
+function invSave() { try { localStorage.setItem("wm-inv", JSON.stringify({ s: INV.slots, sel: INV.sel, c: INV.cursor, e: INV.equip, g: 1 })); } catch (e) {} }
+function invLoad() { try { const d = JSON.parse(localStorage.getItem("wm-inv") || "null"); if (d && Array.isArray(d.s) && d.s.length === 36) { if (!d.g) { for (const q of [...d.s, d.c]) if (q && q.id === "bargeld") q.n *= 100; }   // vor 2026-11-20: Bargeld als Scheine zu 100 $
+    INV.slots = d.s.map(q => q && INV_ITEMS[q.id] ? q : null); INV.sel = Math.min(INV_SEL_N - 1, d.sel | 0); INV.cursor = d.c && INV_ITEMS[d.c.id] && d.c.n > 0 ? d.c : null; if (d.e && d.e.kopf && INV_ITEMS[d.e.kopf.id]) INV.equip.kopf = d.e.kopf; if (d.e && d.e.koerper && INV_ITEMS[d.e.koerper.id]) INV.equip.koerper = d.e.koerper; if (d.e && d.e.ruecken && INV_ITEMS[d.e.ruecken.id]) INV.equip.ruecken = d.e.ruecken; return true; } } catch (e) {} return false; }
 // Gegenstand hinzufuegen: zuerst auf vorhandene Stapel, dann in freie Plaetze (Hotbar zuerst). Rueckgabe: Anzahl, die Platz hatte
 function invAdd(id, n = 1) { const it = INV_ITEMS[id]; if (!it) return 0; let left = n;
   for (const s of INV.slots) if (left && s && s.id === id && s.n < it.stack) { const k = Math.min(left, it.stack - s.n); s.n += k; left -= k; }
@@ -155,9 +156,10 @@ function invUp(e) { const D = INV.drag; if (!D) return; INV.drag = null; const j
 // invBoxFront(obj, d, near): steht der Spieler vor der Front des Objekts (lokal -z, wie bei allen Modellen) und hoechstens near m entfernt? Sonst Meldung, false.
 const INV_BOXES = {};
 function invBox(id, name, n, init = [], cols = 9) { if (INV_BOXES[id]) return INV_BOXES[id]; const B = INV_BOXES[id] = { id, name, cols, slots: new Array(n).fill(null), onChange: null,
-    save() { try { localStorage.setItem("wm-box-" + id, JSON.stringify(B.cash !== undefined ? { s: B.slots, c: B.cash } : B.slots)); } catch (e) {} if (B.onChange) B.onChange(B); } };   // mit Bargeld (Koffer) als { s, c }
+    save() { try { localStorage.setItem("wm-box-" + id, JSON.stringify({ s: B.slots, c: B.cash, g: 1 })); } catch (e) {} if (B.onChange) B.onChange(B); } };   // mit Bargeld (Koffer) als { s, c }
   let d = null; try { d = JSON.parse(localStorage.getItem("wm-box-" + id) || "null"); } catch (e) {}
-  if (d && Array.isArray(d.s)) { B.cash = d.c || 0; d = d.s; }
+  let g1 = false; if (d && Array.isArray(d.s)) { if (d.c !== undefined) B.cash = d.c; g1 = d.g === 1; d = d.s; }
+  if (Array.isArray(d) && !g1) for (const q of d) if (q && q.id === "bargeld") q.n *= 100;   // alter Stand: Scheine zu 100 $ -> Dollar
   if (Array.isArray(d)) d.slice(0, n).forEach((q, k) => { if (q && INV_ITEMS[q.id] && q.n > 0) B.slots[k] = q; });
   else { let k = 0; for (const [iid, c] of init) { let left = c; while (left > 0 && k < n && INV_ITEMS[iid]) { const m = Math.min(left, INV_ITEMS[iid].stack); B.slots[k++] = { id: iid, n: m }; left -= m; } } }
   return B; }
@@ -170,9 +172,10 @@ function invBoxFront(obj, near = 2.6) { const p = obj.getWorldPosition(new THREE
 const INV_CUR = { el: null };
 function invCursorMove(e) { const el = INV_CUR.el; if (el && e) { el.style.left = e.clientX + "px"; el.style.top = e.clientY + "px"; } }
 function invCursorRender() { const el = INV_CUR.el || (INV_CUR.el = Object.assign(document.createElement("div"), { id: "inv-cursor" })); if (!el.parentNode) document.body.appendChild(el);
-  const C = INV.cursor; el.hidden = !C || !invIsOpen(); if (!el.hidden) el.innerHTML = '<svg viewBox="0 0 26 26" aria-hidden="true">' + INV_ITEMS[C.id].svg + '</svg>' + (C.n > 1 ? '<span class="inv-n">' + C.n + '</span>' : ""); }
+  const C = INV.cursor; el.hidden = !C || !invIsOpen(); if (!el.hidden) el.innerHTML = '<svg viewBox="0 0 26 26" aria-hidden="true">' + INV_ITEMS[C.id].svg + '</svg>' + (C.n > 1 ? '<span class="inv-n">' + invNum(C.n) + '</span>' : ""); }
+const invNum = n => n >= 10000 ? Math.round(n / 1000) + "k" : String(n);   // Anzahl im Platz (Bargeld bis 10 000 $)
 const invSlotHTML = (s, i) => '<button type="button" class="inv-slot' + (i === INV.sel && i < 9 ? " sel" : "") + (i === INV.pick ? " pick" : "") + '" data-i="' + i + '">' +
-  (i < 9 ? '<span class="inv-k">' + (i + 1) + '</span>' : "") + (s ? '<svg viewBox="0 0 26 26" aria-hidden="true">' + INV_ITEMS[s.id].svg + '</svg>' + (s.n > 1 ? '<span class="inv-n">' + s.n + '</span>' : "") : "") + '</button>';
+  (i < 9 ? '<span class="inv-k">' + (i + 1) + '</span>' : "") + (s ? '<svg viewBox="0 0 26 26" aria-hidden="true">' + INV_ITEMS[s.id].svg + '</svg>' + (s.n > 1 ? '<span class="inv-n">' + invNum(s.n) + '</span>' : "") : "") + '</button>';
 function invRender() {
   invBatIcon();
   const hb = document.getElementById("hotbar"), box = document.getElementById("inventar"); if (!hb) return;
@@ -184,7 +187,7 @@ function invRender() {
     eq.innerHTML = '<span>Ausrüstung</span>' + invSlotHTML(INV.equip.kopf, INV_KOPF).replace('class="inv-slot', 'title="Kopf" class="inv-slot kopf') + '<span class="inv-eq-k">Kopf' + (INV.equip.kopf ? " · B an/aus" : "") + '</span>' + invSlotHTML(INV.equip.koerper, INV_KOERPER).replace('class="inv-slot', 'title="Körper" class="inv-slot kopf') + '<span class="inv-eq-k">Körper' + (INV.equip.koerper ? " · Batman" : "") + '</span>' +
       invSlotHTML(INV.equip.ruecken, INV_RUECKEN).replace('class="inv-slot', 'title="Rücken" class="inv-slot kopf') + '<span class="inv-eq-k">Rücken' + (INV.equip.ruecken ? (INV.equip.ruecken.trag === "ruecken" ? " · auf dem Rücken" : " · über der Schulter") + ' <button type="button" class="inv-act" data-eq="trag">wechseln</button> <button type="button" class="inv-act" data-eq="auf">öffnen</button>' : "") + '</span>';
     box.querySelector(".inv-grid").innerHTML = INV.slots.slice(9).map((s, k) => invSlotHTML(s, k + 9)).join(""); box.querySelector(".inv-bar").innerHTML = INV.slots.slice(0, 9).map(invSlotHTML).join("");
-    const s = INV.cursor || (INV.sel < 9 ? INV.slots[INV.sel] : null); box.querySelector(".inv-info").textContent = s ? (INV.cursor ? "An der Maus: " : "") + INV_ITEMS[s.id].name + " · " + INV_ITEMS[s.id].art + (s.n > 1 ? " · " + s.n + " Stück" : "") : "";
+    const s = INV.cursor || (INV.sel < 9 ? INV.slots[INV.sel] : null); box.querySelector(".inv-info").textContent = s ? (INV.cursor ? "An der Maus: " : "") + INV_ITEMS[s.id].name + " · " + INV_ITEMS[s.id].art + (INV_ITEMS[s.id].dollar ? " · " + s.n.toLocaleString("de-CH") + " $" : s.n > 1 ? " · " + s.n + " Stück" : "") : "";
     const h = box.querySelector(".inv-hint"); if (h) h.textContent = "Ziehen oder klicken: verschieben · Rechtsklick: halber Stapel bzw. einzeln ablegen · Shift+Klick: " + (B ? B.name + " ↔ Inventar" : "Hotbar ↔ Inventar") + " · E, I oder Esc schliesst"; }
   invCursorRender(); invHandRender(); if (typeof kontoGeldRender === "function" && typeof KONTO !== "undefined") kontoGeldRender();
 }
@@ -197,7 +200,7 @@ function invTip() {
   const el = INV_TIP.el || (INV_TIP.el = Object.assign(document.createElement("div"), { id: "inv-tip" })); if (!el.parentNode) document.body.appendChild(el);
   const s = INV_TIP.i >= 0 && !INV.cursor ? invGet(INV_TIP.i) : null; if (!s) { el.hidden = true; return; }
   const it = INV_ITEMS[s.id], d = INV_DESC[s.id] || "", long = d.length > 110, txt = long && !INV_TIP.shift ? d.slice(0, d.lastIndexOf(" ", 100)) + " …" : d;
-  el.innerHTML = "<b>" + it.name + "</b><span class=\"tip-art\">" + it.art + (s.n > 1 ? " · " + s.n + " Stück" : "") + "</span>" + (d ? "<p>" + txt + "</p>" : "") + (long && !INV_TIP.shift ? "<i>Shift halten für mehr</i>" : "");
+  el.innerHTML = "<b>" + it.name + "</b><span class=\"tip-art\">" + it.art + (INV_ITEMS[s.id].dollar ? " · " + s.n.toLocaleString("de-CH") + " $" : s.n > 1 ? " · " + s.n + " Stück" : "") + "</span>" + (d ? "<p>" + txt + "</p>" : "") + (long && !INV_TIP.shift ? "<i>Shift halten für mehr</i>" : "");
   el.hidden = false; const W = el.offsetWidth, H = el.offsetHeight; el.style.left = Math.min(innerWidth - W - 8, INV_TIP.x + 14) + "px"; el.style.top = Math.max(8, Math.min(innerHeight - H - 8, INV_TIP.y + 16)) + "px";
 }
 for (const id of ["inventar", "hotbar"]) { const box = document.getElementById(id); if (!box) continue;
@@ -228,8 +231,8 @@ addEventListener("keyup", e => { if (e.key === "Shift" && INV_TIP.shift) { INV_T
 // Geld-Feld (#hb-geld .hg-bar) Linksklick = Stapel (bis 100 Scheine zu 100 $) an die Maus, Rechtsklick = ein Schein; mit Scheinen an der Maus Linksklick = alle zurueck, Rechtsklick = einer zurueck.
 function invGeldDown(e) { const h = e.target.closest && e.target.closest("#hb-geld .hg-bar"); if (!h || !invIsOpen() || typeof KONTO === "undefined" || (e.button !== 0 && e.button !== 2)) return; e.preventDefault(); e.stopPropagation(); const C = INV.cursor;
   if (C && C.id !== "bargeld") return toast("Auf das Geld-Feld passt nur Bargeld");
-  if (C) { const k = e.button === 0 ? C.n : 1; C.n -= k; if (!C.n) INV.cursor = null; kontoBar(k * 100); }
-  else { const max = Math.floor(KONTO.bar / 100), k = Math.min(max, e.button === 0 ? 100 : 1); if (!k) return toast("Zu wenig Bargeld (ein Schein = 100 $)"); kontoBar(-k * 100); INV.cursor = { id: "bargeld", n: k }; }
+  if (C) { const k = e.button === 0 ? C.n : Math.min(C.n, 100); C.n -= k; if (!C.n) INV.cursor = null; kontoBar(k); }
+  else { const max = Math.floor(KONTO.bar), k = Math.min(max, e.button === 0 ? 10000 : 100); if (!k) return toast("Kein Bargeld"); kontoBar(-k); INV.cursor = { id: "bargeld", n: k }; }
   INV.drag = null; invSave(); invRender(); invCursorMove(e); }
 addEventListener("pointerdown", invGeldDown, true); addEventListener("contextmenu", e => { if (invIsOpen() && e.target.closest && e.target.closest("#hb-geld")) e.preventDefault(); }, true);
 // Geld-Feld bei offenem Inventar ueber der dunklen Flaeche (#inventar z-index 40), damit man Bargeld nehmen und zuruecklegen kann

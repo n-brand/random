@@ -148,7 +148,7 @@ function gbusRaubAdd(b) { const k = GBUS.buses.filter(q => q.raub).length, hm = 
   b.raub = { k, hm, box: null, offen: 0, fuse: 0, fl, raum, auf: 0 }; const gt = { name: "Geldtransporter (Hecktür)", g: hm, call: () => gbusRaub(b), verbs: ["aufbrechen", "aufbrechen"], a: [0, 0], b: [0, 0], near: 3.2 }; b.raub.gate = gt;
   if (typeof gates !== "undefined") gates.push(gt); }
 function gbusRaubBox(b) { const R = b.raub; if (!R.box && typeof invBox === "function") R.box = invBox("geldtransporter-" + R.k, "Geldtransporter", 18, []); const B = R.box;
-  if (B && B.slots.every(q => !q)) { const n = 40 + Math.floor(Math.random() * 60), g = 1 + Math.floor(Math.random() * 3); B.slots[0] = { id: "bargeld", n: Math.min(100, n) }; if (n > 100) B.slots[1] = { id: "bargeld", n: n - 100 }; B.slots[2] = { id: "goldbarren", n: g }; B.save(); } return B; }
+  if (B && B.slots.every(q => !q)) { const n = 40 + Math.floor(Math.random() * 60), g = 1 + Math.floor(Math.random() * 3); B.slots[0] = { id: "bargeld", n: n * 100 }; B.slots[2] = { id: "goldbarren", n: g }; B.save(); } return B; }
 function gbusRaubOpen(b, wie) { const R = b.raub; R.offen = 120; b.hold = Math.max(b.hold, 120); b.v = 0; R.gate.verbs = ["ausräumen", "ausräumen"]; gbusRaubBox(b);
   if (typeof akteEintrag === "function") akteEintrag("Geldtransporter überfallen (" + wie + ")", "Fahndung +2", 2); toast("Hecktür " + wie + " – Rechtsklick: Inhalt"); }
 function gbusRaub(b) { const R = b.raub; if (R.offen > 0) { const B = gbusRaubBox(b); if (B && typeof invBoxOpen === "function") invBoxOpen(B); return; }
@@ -161,6 +161,6 @@ function gbusRaubStep(b, dt) { const R = b.raub; if (!R) return; b.g.updateMatri
   if (R.fuse > 0) { b.hold = Math.max(b.hold, 3); if ((R.fuse -= dt) <= 0) { R.fuse = 0; if (typeof fxBoom === "function") fxBoom(p.clone(), false); if (typeof aimSmoke === "function") aimSmoke(p.clone()); if (typeof shotSound === "function") shotSound(0.9, 0.8);
       const pl = typeof player !== "undefined" ? player.pos : null; if (pl && pl.distanceTo(p) < 3) toast("Viel zu nah an der Explosion!"); gbusRaubOpen(b, "aufgesprengt");
       if (typeof beuteAdd === "function") { const bk = new THREE.Vector3(-Math.sin(b.g.rotation.y), 0, -Math.cos(b.g.rotation.y)).negate(), q = new THREE.Vector3(bk.z, 0, -bk.x), n = 3 + Math.floor(Math.random() * 3);   // Geldbuendel fliegen heraus (N21)
-        for (let i = 0; i < n + (Math.random() < 0.35 ? 1 : 0); i++) { const d = 4.5 + Math.random() * 3, w = (Math.random() - 0.5) * 4, pos = b.g.position.clone().addScaledVector(bk, d).addScaledVector(q, w); pos.y = b.y + 0.02; beuteAdd(pos, i < n ? "bargeld" : "goldbarren", i < n ? 10 : 1); } } } }
+        for (let i = 0; i < n + (Math.random() < 0.35 ? 1 : 0); i++) { const d = 4.5 + Math.random() * 3, w = (Math.random() - 0.5) * 4, pos = b.g.position.clone().addScaledVector(bk, d).addScaledVector(q, w); pos.y = b.y + 0.02; beuteAdd(pos, i < n ? "bargeld" : "goldbarren", i < n ? 1000 : 1); } } } }
   if (R.offen > 0 && (R.offen -= dt) <= 0) { R.offen = 0; R.gate.verbs = ["aufbrechen", "aufbrechen"]; }
   const soll = R.offen > 0 ? 1 : 0; if (R.auf !== soll) { R.auf = soll > R.auf ? Math.min(1, R.auf + dt * 1.2) : Math.max(0, R.auf - dt * 0.8); for (const [piv, sx] of R.fl) piv.rotation.y = sx * 1.75 * R.auf; R.raum.visible = R.auf > 0.02; } }
