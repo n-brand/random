@@ -36,6 +36,28 @@ const GER_ART = {
   // U-Bahn-Bahnsteig: Tunnelrauschen, lauter wenn ein Zug nah ist (dyn); selten Durchsage-Gong, Bremsquietschen
   ubahn: { amb: [140, 320, 0.02], pause: [6, 16], dyn: p => gerZugNah(p), ev(c, t, v) { if (Math.random() < 0.5) { gerTon(c, 659, t, 1.2, 0.05, "triangle"); gerTon(c, 523, t + 0.5, 1.4, 0.05, "triangle"); gerTon(c, 392, t + 1.0, 1.8, 0.05, "triangle"); }
     else if (gerZugNah(player.pos) > 0.02) gerRausch1(c, t, 0.05, "bandpass", 3200, 2600, 1.2, 12); } },
+  // Garage (Tiefgaragen Wayne Tower, Parkhaeuser): Lueftung brummt; Autotuer, Verriegelung, Schritte mit Hall, entferntes Auto
+  garage: { amb: [90, 210, 0.022], pause: [2.5, 7], ev(c, t, v) { gerWahl(Math.random(), [
+    [0.3, () => { gerRausch1(c, t, 0.3 * v, "lowpass", 900, 80, 0.25); gerTon(c, 62, t, 0.3, 0.15 * v); gerRausch1(c, t + 0.12, 0.05 * v, "lowpass", 600, 100, 0.9); }],
+    [0.25, () => { gerTon(c, 2100, t, 0.07, 0.05 * v, "square"); gerTon(c, 2100, t + 0.13, 0.07, 0.05 * v, "square"); }],
+    [0.25, () => { const n = 4 + Math.floor(Math.random() * 5), d = 0.42 + Math.random() * 0.12; for (let i = 0; i < n; i++) { gerKlick(c, t + i * d, 0.12 * v, 1200, 0.05); gerKlick(c, t + i * d + 0.11, 0.04 * v, 1200, 0.08); } }],
+    [0.2, () => gerRausch1(c, t, 0.08 * v, "lowpass", 160, 420, 2.4)]])(); } },
+  // Basis (Batman-Basis unter dem Container, geheimer Wayne-Stock): Server-Summen; Rechner-Piepsen, Tippen, Tuer-Zischen, selten Radar-Ping
+  basis: { amb: [110, 2400, 0.018], pause: [1.2, 4], ev(c, t, v) { gerWahl(Math.random(), [
+    [0.35, () => { const n = 2 + Math.floor(Math.random() * 4); for (let i = 0; i < n; i++) gerTon(c, [1320, 1760, 2093, 1568][Math.floor(Math.random() * 4)], t + i * 0.09, 0.06, 0.03 * v); }],
+    [0.35, () => { const n = 6 + Math.floor(Math.random() * 10); let tt = t; for (let i = 0; i < n; i++) { gerKlick(c, tt, 0.07 * v, 3500, 0.02); tt += 0.06 + Math.random() * 0.12; } }],
+    [0.2, () => gerRausch1(c, t, 0.07 * v, "bandpass", 2500, 600, 0.7, 2)],
+    [0.1, () => { gerTon(c, 1200, t, 1.6, 0.05 * v); gerTon(c, 1200, t + 0.02, 1.2, 0.02 * v, "triangle"); }]])(); } },
+  // Kanalisation: Wasser rauscht; Tropfen, Ratten piepsen, Verkehr grollt oben
+  kanal: { amb: [260, 900, 0.035], pause: [0.8, 3], ev(c, t, v) { gerWahl(Math.random(), [
+    [0.6, () => { const n = Math.random() < 0.4 ? 2 : 1; for (let i = 0; i < n; i++) { const f = 900 + Math.random() * 900, tt = t + i * (0.3 + Math.random() * 0.5); gerTon(c, f, tt, 0.07, 0.05 * v); gerTon(c, f * 1.5, tt + 0.015, 0.05, 0.02 * v); } }],
+    [0.15, () => { const n = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) gerTon(c, 3200 + Math.random() * 900, t + i * 0.11, 0.05, 0.02 * v, "square"); }],
+    [0.25, () => gerRausch1(c, t, 0.1 * v, "lowpass", 90, 200, 3)]])(); } },
+  // Waffenladen (Verkaufsraum): Klimaanlage leise; Kasse, Repetieren, Tuerglocke
+  waffenladen: { amb: [220, 480, 0.01], pause: [2.5, 6], ev(c, t, v) { gerWahl(Math.random(), [
+    [0.35, () => { gerTon(c, 1050, t, 0.12, 0.04 * v, "square"); if (Math.random() < 0.5) gerKlick(c, t + 0.3, 0.12 * v, 900, 0.18); }],
+    [0.4, () => { gerKlick(c, t, 0.25 * v, 1500, 0.05); gerKlick(c, t + 0.16, 0.3 * v, 1100, 0.06); }],
+    [0.25, () => { gerTon(c, 1318, t, 0.9, 0.05 * v, "triangle"); gerTon(c, 1046, t + 0.3, 1.1, 0.05 * v, "triangle"); }]])(); } },
 };
 // naechster U-Bahn-Zug: 0 (fern) bis ca. 0,08 (nah und schnell)
 function gerZugNah(p) { if (typeof UB === "undefined" || !UB.trains) return 0; let best = 0; for (const t of UB.trains) { const P = t.r.P, n = P.length, q = P[Math.floor(((t.s / t.r.ds) % n + n) % n)]; if (!q) continue;
@@ -54,9 +76,18 @@ function gerStep() { const now = performance.now() / 1000; GER.t = now;
   if (now < GER.next) return; GER.next = now + A.pause[0] + Math.random() * (A.pause[1] - A.pause[0]); A.ev(c, c.currentTime + 0.02, 0.7 + Math.random() * 0.6); }
 setInterval(gerStep, 100);
 // Orte (der erste passende zaehlt): Schiessstand vor dem Waffenladen, damit der hintere Raum eigene Geraeusche hat
+const gerBautP = (p, pre) => { if (typeof bautAt !== "function") return false; const b = bautAt(p.x, p.y + 1, p.z); return !!b && String(b.id).startsWith(pre); };   // Prefix (z. B. GO-PARKHAUS)
 const gerBaut = (p, id) => { if (typeof bautAt !== "function") return false; const b = bautAt(p.x, p.y + 1, p.z); return !!b && b.id === id; };
 gerOrt({ name: "Schiessstand Gotham Arms", art: "schiessstand", drin(p) { const g = typeof scene !== "undefined" && scene.getObjectByName("Waffenladen waffen-2"); if (!g) return false; const l = g.worldToLocal(new THREE.Vector3(p.x, p.y, p.z)); const D = window.GORT_RANGE_D || 18.5; return l.z < -D && l.z > -D - 13 && Math.abs(l.x) < 27 && l.y > -1 && l.y < 5; } });
 gerOrt({ name: "Gotham Casino", art: "casino", drin: p => gerBaut(p, "GO-CASINO") });
 gerOrt({ name: "Börse", art: "boerse", drin: p => gerBaut(p, "GO-BOERSE") });
 gerOrt({ name: "U-Bahn", art: "ubahn", drin: p => typeof UB !== "undefined" && UB.done && p.y > UB.BED - 1 && p.y < UB.Y + 4 && typeof dkInRoom === "function" && dkInRoom(p.x, p.y + 0.5, p.z) });
 gerOrt({ name: "Casino (realistisch)", art: "casino", drin(p) { if (typeof CASINO2 === "undefined" || !CASINO2.g) return false; const C = CASINO2; return Math.abs(p.x - C.x) < C.W && Math.abs(p.z - C.z) < C.D && p.y < (C.H || 6) + 0.5; } });
+// weitere Orte (Garage und geheimer Stock vorne in der Liste, sonst gilt dort die U-Bahn-Erkennung "Raum in der Tiefe"; N43 "weiter mit den Bauideen aus dem Plan", 2026-11-20): Garagen, Basen, Kanal, Waffenlaeden; der Kanal liegt tiefer als alles andere unter der Strasse und kommt nach der U-Bahn
+GER.orte.unshift({ name: "Tiefgarage / Parkhaus", art: "garage", drin: p => gerBaut(p, "GO-WAYNE-TG1") || gerBaut(p, "GO-WAYNE-TG2") || gerBaut(p, "GO-WAYNE-ZUFAHRT") || gerBautP(p, "GO-PARKHAUS") });
+GER.orte.unshift({ name: "Geheimer Wayne-Stock", art: "basis", drin: p => gerBaut(p, "GO-WAYNE-GEHEIM") || gerBaut(p, "GO-WAYNE-GANG") });
+gerOrt({ name: "Batman-Basis", art: "basis", drin: p => typeof GCB !== "undefined" && GCB.done && GCB.c && Math.hypot(p.x - GCB.c[0], p.z - GCB.c[1]) < 30 && p.y < GCB.Y - 2 && p.y > GCB.Y - GCB.drop - 3 });
+function gerKanalNah(p, r = 7) { for (const S of KAN.sewers) { if (!S.bb) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const q of S.P) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); } S.bb = [x0 - r, z0 - r, x1 + r, z1 + r]; }
+  if (p.x < S.bb[0] || p.x > S.bb[2] || p.z < S.bb[1] || p.z > S.bb[3]) continue; for (const q of S.P) if (Math.abs(q[0] - p.x) < r && Math.abs(q[1] - p.z) < r) return true; } return false; }   // nah an einem Kanalstrang (Batcave u. a. liegen auch so tief)
+gerOrt({ name: "Kanalisation", art: "kanal", drin: p => typeof KAN !== "undefined" && KAN.done && p.y < KAN.Y + KAN.H + 0.5 && p.y > KAN.Y - 1 && gerKanalNah(p) });
+gerOrt({ name: "Waffenladen", art: "waffenladen", drin: p => p.y < (typeof GOT !== "undefined" ? GOT.STR + 3.5 : 1e9) && (gerBaut(p, "GO-WAFFEN-1") || gerBaut(p, "GO-WAFFEN-2")) });
