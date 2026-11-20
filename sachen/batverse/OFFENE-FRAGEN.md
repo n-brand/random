@@ -25,9 +25,9 @@ Bei jeder Frage steht, was bis zur Antwort gilt. Neue Fragen kommen unten dazu.
 
 Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, damit du sie ändern kannst.
 
-7. **Eingänge:** Wie kommt man zu Fuss hinunter?
+7. **(erledigt 2026-11-20: "mit Treppe" – je Bahnsteig ein Treppenabgang neben dem Gehsteig, Gang im Zwischengeschoss, Treppe auf den Bahnsteig; ein Bahnsteig ohne Platz, siehe 57)** **Eingänge:** Wie kommt man zu Fuss hinunter?
    - *Bis dahin:* Je Station ein gläserner Aufzug-Pavillon mit U-Schild auf dem nächsten freien Gehsteig. Rechtsklick fährt hinunter, ein zweiter Pavillon am Bahnsteigende fährt hinauf. Echte Treppen müssten Gehsteig und Gelände aufschneiden.
-8. **Mitfahren:** Sollen die Züge mitfahrbar sein, wie ein fahrender Aufzug, oder erst nur fahren?
+8. **(erledigt 2026-11-20: mitfahren, Abfahrtsanzeigen, Verspätung durch aufgehaltene Türen, Aufholen mit höherem Tempo)** **Mitfahren:** Sollen die Züge mitfahrbar sein, wie ein fahrender Aufzug, oder erst nur fahren?
    - *Bis dahin:* erst nur fahren, Mitfahren später.
 9. **Kreuzungen der Ringe:** An den 6 Umsteigestationen kreuzen sich zwei Ringe auf derselben Höhe (Bahnsteig 11 m unter der Strasse).
    - *Bis dahin:* Die Gleise kreuzen sich auf gleicher Höhe. Die Alternative wäre ein Ring eine Ebene tiefer.
@@ -52,7 +52,7 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 
 18. **Schiff:** ~~Liegt fest?~~ Beantwortet (2026-11-16: "Schiffe sollen fahrbar sein"): Das Containerschiff und ein Hafenschlepper sind fahrbar. Offen dazu: Die Kräne laden nur zum Schein um; sie warten am Kai, wenn das Schiff weg ist. Sollen sie steuerbar sein?
    - *Bis dahin:* nur Schein.
-19. **Umfang:** Laut Karte ist der Hafen 420 m lang. Gebaut ist ein gerader Kai von 190 m an der Inselspitze, denn danach knickt die Küste ab. Soll ein zweiter Kai um die Spitze herum dazukommen?
+19. **(ersetzt 2026-11-20: Nicolas "Hafen will ich später nochmal anpassen und neu planen – soll viel grösser werden mit Docks", Luftbild eines grossen Containerhafens; PLAN-GOTHAM N53)** **Umfang:** Laut Karte ist der Hafen 420 m lang. Gebaut ist ein gerader Kai von 190 m an der Inselspitze, denn danach knickt die Küste ab. Soll ein zweiter Kai um die Spitze herum dazukommen?
    - *Bis dahin:* ein Kai.
 
 ## Kanalisation (U1)
@@ -146,3 +146,12 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 55. **Autoschlüssel (N7) und Fahrzeuge stehlen (N9):** Sollen Fahrzeuge künftig nur mit Schlüssel fahren (Schlüssel als Gegenstand, gekaufte Fahrzeuge mit Schlüssel, im Autohaus hinten ein Schlüsseltresor), und fremde nur mit dem GateBreaker oder durch Kurzschliessen (z. B. 5 s Kreis)? Oder bleiben alle Fahrzeuge frei fahrbar und Schlüssel sind nur Beute? Bis dahin: alle Fahrzeuge frei fahrbar, keine Schlüssel.
 
 56. **(erledigt 2026-11-20: Nicolas "weglassen erst mal" – Rampen bleiben mittig)** **Rampe seitlich als Abzweig (N14, 2026-11-20):** Heute liegen alle Rampen der zweistöckigen Strassen mittig in der Fahrbahn (Park Row, Uferstrasse Nord, Wayne Circle): die beiden inneren Spuren tauchen ab, die äusseren bleiben oben. Im Filmbild zweigt der linke Fahrstreifen seitlich nach links ab, rechts geht es ebenerdig weiter. Daran hängen Fahrbahn und Markierung, Rampenwände und Brüstungen, Kollision, die Buswege (weichen der Rampe aus) und die Kanaldecken darunter. Möglich wären: (a) alle Rampen auf seitlich umbauen (grosser Umbau, alles neu prüfen), (b) nur eine neue Abfahrt seitlich an einer Stelle zusätzlich bauen (z. B. an der Park Row), die mittigen bleiben, (c) so lassen. Bis dahin: Rampen mittig wie gebaut; Leuchtröhren, Ampeln und Stromausfall unten sind schon da.
+
+## U-Bahn und Welt (2026-11-20)
+
+57. **Bahnsteig ohne eigenen Abgang:** Ring 4 Ost an "Umsteigen Zentrum / Ost" hat keinen Treppenabgang: Rundherum ist kein freier Streifen neben einem Gehsteig, dessen Gang nicht durch andere Gänge, Treppen, Kanäle oder Tiefgaragen müsste. Soll der Gang dort an einen anderen Gang anschliessen (Umsteigegang zwischen den Ringen), oder reicht es, an der nächsten Station auszusteigen?
+   - *Bis dahin:* kein Abgang, man steigt an der nächsten Station aus.
+58. **Verspätung, wie stark:** Wer in der Tür steht, hält sie auf (jedes Mal mindestens 3 s mehr). Verspätet hält die U-Bahn nur 12 statt 20 s und fährt bis 77 statt 58 km/h. Passt das, oder soll sie langsamer aufholen?
+   - *Bis dahin:* so.
+59. **Insel-Welt (PLAN-GOTHAM N54):** Wie gross soll die ganze Insel werden (Gotham heute ca. 2,7 x 2,8 km, Festland mit Wayne Manor im Westen/Süden), wie weit nach Norden das neue Festland, und soll Wayne Manor mit auf der Insel liegen oder bleibt das Meer im Süden wie heute?
+   - *Bis dahin:* nichts gebaut, erst Planung auf der Planungskarte (gotham/index.html).

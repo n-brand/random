@@ -214,6 +214,13 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | N42 | Idee: **Innenräume erst beim Betreten laden**, Module (z. B. gleiche Hotelzimmer), hinter geschlossenen Türen weniger laden | Idee |
 | N43 | Idee: **eigene Geräusche in Gebäuden** (z. B. im Casino Spielgeräusche und Klingeln) | teilweise 2026-11-19: Casino (ui/geraeusche.js); 2026-11-20 Garagen, Basen, Kanal, Waffenläden |
 
+## Phase 12 – Notizen 20.11.2026
+
+| Nr | Was | Stand |
+|----|-----|-------|
+| N53 | **Hafen neu planen, viel grösser, mit Docks** (Nicolas 2026-11-20: "Hafen will ich später nochmal anpassen und neu planen – soll viel grösser werden mit Docks"; Luftbild eines grossen Containerhafens als Vorbild, nur im Chat): mehrere Hafenbecken mit langen Kais, viele Containerbrücken je Kai, grosse Containerlager in Blöcken, Bahngleise mit Güterzügen am Rand, Lkw-Abfertigung, Lagerhallen, mehrere Schiffe am Kai | offen – zuerst auf der Planungskarte planen (hängt an N54) |
+| N54 | **Ganze Welt als riesige Insel** (Nicolas 2026-11-20: "das Ganze soll eine riesige Insel werden (auch Festland); Festland soll nach oben hin schon mal ohne Bäume einfach mal so in Kacheln gebaut werden und drumherum Wasser – erst aber in der Planungskarte planen"): Gotham und das Festland zusammen als eine Insel mit Meer rundherum; das Festland nach Norden erweitern, zuerst nur Gelände in Kacheln (ohne Bäume); Umriss, Grösse und Küste zuerst auf der Planungskarte (gotham/index.html, daten.js) festlegen | offen – Planung zuerst (OFFENE-FRAGEN 59) |
+
 ## Nicht Teil von Wayne Manor
 
 - **„Rampe und Polytrack game“** – klingt nach einem eigenen Spiel (Strecke mit Rampen, Stil wie Polytrack). Vorschlag: eigenes Projekt unter `sachen/`, eigener Plan.

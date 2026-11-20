@@ -28,9 +28,10 @@ function pushOut(p, feet) {
     }
   }
   // Kreise mehrmals aufloesen (Kreisketten an Waenden: genau zwischen zwei Kreisen schob einer Durchgang fast nur seitlich, beim Rennen rutschte man durch; Untergrund-Pruefung 2026-11-16)
+  let rmTop; const roomTop = () => rmTop ?? (rmTop = typeof dkInRoom === "function" ? (dkInRoom(p.x, feet + 0.5, p.z) || { y1: Infinity }).y1 : Infinity);   // Decke des Raums unter der Erde, in dem man steht
   for (let it = 0; it < 4; it++) { let moved = false;
   for (const [cx, cz, r, top] of nC) {
-    if (top !== undefined && (feet >= top || feet < top - 8)) continue;   // Hindernis mit Hoehe gilt nur auf seiner Ebene
+    if (top !== undefined && (feet >= top || feet < top - 8 || roomTop() < top - 1.5)) continue;   // Hindernis mit Hoehe gilt nur auf seiner Ebene; nicht in einem Raum darunter (U-Bahn-Gang unter Laternen, 2026-11-20)
     const dx = p.x - cx, dz = p.z - cz, d = Math.hypot(dx, dz), min = r + RADIUS;
     if (d < min - 1e-4 && d > 1e-6 && !(top === undefined && feet < terrainH(cx, cz) - 3)) { p.x = cx + dx / d * min; p.z = cz + dz / d * min; moved = true; }
   }

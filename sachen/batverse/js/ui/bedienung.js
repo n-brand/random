@@ -227,8 +227,10 @@ function walkStep(dt) {
   if (keys.has("KeyA") || keys.has("ArrowLeft")) mx -= 1;
   mx += moveStick.x; mz -= moveStick.y;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
+  if (typeof UBR !== "undefined" && UBR.on) return ubRideMove(dt, mx, mz, keys.has("ShiftLeft") || keys.has("ShiftRight"));   // in der U-Bahn mitfahren (gotham/gotham-ubahn-fahrt.js)
   if (typeof SKATE !== "undefined" && SKATE.on) return skateMove(dt);   // Skateboard (spieler/skateboard.js)
   updatePlayer(dt, mx, mz, keys.has("ShiftLeft") || keys.has("ShiftRight"));
+  if (typeof ubEinsteigenCheck === "function") ubEinsteigenCheck();   // an einer offenen U-Bahn-Tuer einsteigen
   if (typeof dpStep === "function") dpStep(dt, player, player.onGround);   // dritte Person (spieler/figur.js, Taste V)
 }
 $("btn-night").addEventListener("click", e => { e.currentTarget.blur(); daySet(night > 0.5 ? 0.25 : 0.75); });   // Tageszeit (kern/tageszeit.js): Mittag bzw. Mitternacht

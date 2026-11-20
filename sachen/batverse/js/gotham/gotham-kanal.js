@@ -157,7 +157,7 @@ function* kanSide(G, gk) {
     for (let i = 0; i < P.length && ok; i++) { const [x, z] = P[i]; if (GOT.edgeSD(x, z) > -16) { ok = false; rej.kai++; break; } const nearJ = Lt - S2[i] < 10;
       if (!nearJ && nearMain(x, z, KAN.HW + KAN.SHW + 1)) { ok = false; rej.haupt++; break; }
       if (nearSide(x, z, 2 * KAN.SHW + 3)) { ok = false; rej.neben = (rej.neben || 0) + 1; break; }   // kein zweiter Nebensammler daneben (verschiedene Hoehen gaeben Loecher)
-      if (!nearJ) for (const d of [-KAN.SHW, 0, KAN.SHW]) for (const y of [F[i] + 0.5, F[i] + KAN.SH - 0.3]) if (ok && dkInRoom(x + d * 0.7, y, z + d * 0.7)) { ok = false; rej.raum++; } }
+      if (!nearJ) for (const [px, pz] of i ? [[x, z], [(x + P[i - 1][0]) / 2, (z + P[i - 1][1]) / 2]] : [[x, z]]) for (const d of [-KAN.SHW, 0, KAN.SHW]) for (const y of [F[i] + 0.5, F[i] + KAN.SH - 0.3]) if (ok && dkInRoom(px + d * 0.7, y, pz + d * 0.7)) { ok = false; rej.raum++; } }   // auch zwischen den 4-m-Punkten (U-Bahn-Gaenge sind 2,6 m breit, 2026-11-20)
     if (!ok) continue;
     const n = P.length, N = P.map((p, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)], dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [-dz / l, dx / l]; });
     const S = { id: r.id || "neben", name: r.name || "einer Nebenstrasse", P, N, F, side: true, hw: KAN.SHW, main: m.si, C: F.map(f => f + KAN.SH) }, si = KAN.sewers.length; KAN.sewers.push(S);
