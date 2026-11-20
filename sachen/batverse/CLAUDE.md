@@ -75,6 +75,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Insel-Welt breiter** (Nicolas 2026-11-20: "jetzt noch links und rechts ziehen"): gotham/daten.js `welt.umriss` – senkrecht bei x -5500 und 4100 (knapp ausserhalb der heutigen Spielwelt) geschnitten, Küste links davon 3 000 m nach links, rechts davon 3 000 m nach rechts, oben und unten gerade Stücke dazwischen; Namen nachgezogen. Jetzt ca. 17,5 x 12,6 km, 165 km². Bild der Planungskarte geprüft.
+
 - **Insel-Welt höher** (Nicolas 2026-11-20, Bild mit roter Linie: "Insel in der vertikalen Mitte horizontal schneiden und noch höher ziehen"): gotham/daten.js `welt.umriss` – Küste nördlich von z -2200 (ca. 750 m über Gotham) um 3 000 m nach Norden, dazwischen gerade Küsten; Namen nachgezogen. Jetzt ca. 11,5 x 12,6 km, 111 km². Bild der Planungskarte geprüft. "Passt, weiter mit I2" gilt für diesen Stand.
 
 - **Insel-Welt geplant (N54)** (Nicolas 2026-11-20: "Ja, Insel planen"): gotham/daten.js `GOTHAM.welt` (umriss, heute, namen) und Planungskarte gotham/index.html, neue Ebene "Insel-Welt mit Festland Nord (Entwurf N54)": Meer rund um die Insel, neues Land schraffiert (Insel ohne die heutige Spielwelt und ohne Gotham mit Flüssen, SVG-Maske), heutige Spielwelt als gelb gestrichelter Kreis (LIMIT_WORLD 4,3 km um die Manor), Namen Festland Nord/West/Ost, Meer, Hafen (N53), Massstab 1 km; Hinweis an der Küste mit Grösse und Fläche. "Alles zeigen" und die Zoomgrenzen nehmen bei eingeschalteter Ebene die ganze Insel (`ANS`). Entwurf: ca. 11,5 x 9,6 km, 79 km², Südküste wie heute. Im Spiel nichts geändert (das Spiel liest `welt` nicht). Bauschritte I1-I4 in PLAN-GOTHAM.md, Fragen OFFENE-FRAGEN 59. Geprüft: Bild der Planungskarte, keine Konflikte.
