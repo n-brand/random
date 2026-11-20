@@ -73,7 +73,8 @@ function atmFit() { const a = document.querySelector("#bank .atm"); if (!a) retu
 addEventListener("resize", () => { if (kontoIsOpen()) atmFit(); });
 // Bankautomat-Fenster (Maus frei wie beim Inventar)
 const kontoIsOpen = () => { const b = document.getElementById("bank"); return b && !b.hidden; };
-function kontoOpen() { const b = document.getElementById("bank"); if (!b || !b.hidden) return; if (typeof atmBrokenNear === "function" && typeof player !== "undefined" && atmBrokenNear(player.pos.x, player.pos.z)) return toast("Dieser Bankautomat ist zerstört"); if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear();
+function kontoOpen() { const b = document.getElementById("bank"); if (!b || !b.hidden) return; if (typeof atmWerkzeug === "function" && atmWerkzeug()) return;   // Werkzeug in der Hand: aufbrechen (N18)
+  if (typeof atmBrokenNear === "function" && typeof player !== "undefined" && atmBrokenNear(player.pos.x, player.pos.z)) return toast("Dieser Bankautomat ist zerstört"); if (typeof dragging !== "undefined" && dragging) { dragging = false; document.body.classList.remove("looking"); if (document.pointerLockElement) document.exitPointerLock(); } keys.clear();
   clearTimeout(ATM.t); ATM.page = "start"; b.hidden = false; kontoRender(); }
 // Bargeld dazu (z. B. Tresor der Geheimbasis) bzw. abziehen; Anzeige und Speicher nachfuehren
 function kontoBar(n, grund) { KONTO.bar = Math.max(0, KONTO.bar + Math.round(n)); kontoSave(); kontoRender(); if (grund) toast(grund + ": " + (n > 0 ? "+" : "") + kontoFmt(n) + " Bargeld"); }

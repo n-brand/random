@@ -67,10 +67,11 @@ function atmCrackTex() { if (ATM_CRACK) return ATM_CRACK; ATM_CRACK = canvasTex(
 function atmShot(p, dmg) { for (const A of ATM_BRK.list) { if (A.broken || !atmBox(A).containsPoint(p)) continue; A.dmg += dmg || 10;
     if (A.holes.length < 12) { const m = new THREE.Mesh(new THREE.CircleGeometry(0.012 + Math.random() * 0.008, 10), new THREE.MeshBasicMaterial({ color: 0x0a0a0a })); const l = A.g.worldToLocal(p.clone()); m.position.set(THREE.MathUtils.clamp(l.x, -0.38, 0.38), THREE.MathUtils.clamp(l.y, 0.1, 1.95), -0.415); m.rotation.y = Math.PI; A.g.add(m); A.holes.push(m); }   // Einschussloch an der Front
     if (A.dmg >= ATM_BRK.hp) atmBreak(A); return true; } return false; }
-function atmBreak(A) { A.broken = true; A.t = 0; A.emit = 0; A.screen.userData.mat0 = A.screen.material; A.screen.material = new THREE.MeshBasicMaterial({ map: atmCrackTex() });
+function atmBreak(A, how) { A.broken = true; if (A.charge) { A.charge.parent && A.charge.parent.remove(A.charge); A.charge = null; } A.fuse = 0; A.t = 0; A.emit = 0; A.screen.userData.mat0 = A.screen.material; A.screen.material = new THREE.MeshBasicMaterial({ map: atmCrackTex() });
   if (A.sign) { A.sign.userData.mat0 = A.sign.material; A.sign.material = A.sign.material.clone(); A.sign.material.emissiveIntensity = 0.04; A.sign.material.color.setHex(0x555a66); }
   if (A.flap) { A.flap.userData.r0 = A.flap.rotation.x; A.flap.rotation.x = -1.1; A.flap.position.z -= 0.03; }   // Klappe der Geldausgabe aufgerissen
-  if (typeof toast === "function") toast("Bankautomat aufgebrochen – Geld fliegt heraus!"); if (typeof akteEintrag === "function") akteEintrag("Bankautomat aufgebrochen (Sachbeschädigung, Diebstahl)", "Fahndung +2", 2); }
+  const wie = how === "spreng" ? "gesprengt" : how === "brech" ? "aufgehebelt" : "aufgebrochen", fa = how === "spreng" ? 3 : 2;
+  if (typeof toast === "function") toast("Bankautomat " + wie + " – Geld fliegt heraus!"); if (typeof akteEintrag === "function") akteEintrag("Bankautomat " + wie + " (Sachbeschädigung, Diebstahl)", "Fahndung +" + fa, fa); }
 function atmRepair(A) { A.broken = false; A.dmg = 0; A.screen.material = A.screen.userData.mat0; if (A.sign) A.sign.material = A.sign.userData.mat0;
   if (A.flap) { A.flap.rotation.x = A.flap.userData.r0; A.flap.position.z += 0.03; } for (const m of A.holes) A.g.remove(m); A.holes = []; }
 function atmBrokenNear(x, z, r = 3) { const v = new THREE.Vector3(); return ATM_BRK.list.some(A => { if (!A.broken) return false; A.g.getWorldPosition(v); return Math.hypot(v.x - x, v.z - z) < r; }); }
@@ -78,7 +79,7 @@ function atmNoteMesh() { if (ATM_BRK.im) return ATM_BRK.im; const tex = canvasTe
     c.fillStyle = "#3f6b3a"; c.beginPath(); c.ellipse(w / 2, h / 2, 11, 14, 0, 0, Math.PI * 2); c.fill(); c.font = "bold 14px Arial"; c.textAlign = "center"; c.fillText("50", 15, 17); c.fillText("50", w - 15, h - 8); });
   const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.156, 0.066), new THREE.MeshStandardMaterial({ map: typeof geldScheinTex === "function" ? geldScheinTex(50) : tex, side: THREE.DoubleSide, roughness: 0.9 }), ATM_BRK.max); im.count = 0; im.frustumCulled = false; im.userData.dynamic = true; scene.add(im); ATM_BRK.im = im; return im; }
 const ATM_Q = new THREE.Quaternion(), ATM_E = new THREE.Euler(), ATM_M = new THREE.Matrix4(), ATM_S = new THREE.Vector3(1, 1, 1);
-function atmBreakStep(dt) { const N = ATM_BRK.notes;
+function atmBreakStep(dt) { const N = ATM_BRK.notes; atmFuseStep(dt);
   for (const A of ATM_BRK.list) { if (!A.broken) continue; A.t += dt;
     if (A.t < ATM_BRK.dauer) { A.emit += dt * ATM_BRK.rate; A.g.updateMatrixWorld(true); const o = A.cash.getWorldPosition(new THREE.Vector3()), q = A.g.getWorldQuaternion(new THREE.Quaternion()), fw = new THREE.Vector3(0, 0, -1).applyQuaternion(q), sd = new THREE.Vector3(1, 0, 0).applyQuaternion(q), y0 = A.g.getWorldPosition(new THREE.Vector3()).y;
       while (A.emit >= 1) { A.emit--; if (N.length >= ATM_BRK.max) N.shift(); const sp = 1.6 + Math.random() * 2.2, s = (Math.random() - 0.5) * 1.6;
@@ -149,3 +150,18 @@ function buildBankautomat(o = {}) {
   if (!big && cashP) atmRegister(g, scrM, sf, cashP, flap);   // aufbrechbar (N18)
   g.name = o.name || "Bankautomat"; return g;
 }
+// ---- Bankautomat mit Werkzeug aufbrechen (N18 "aufbrechen mit Werkzeug", 2026-11-20 "weiter mit den Bauideen aus dem Plan"): Werkzeug in der Hand, Rechtsklick am Automaten
+// (konto.js kontoOpen fragt zuerst atmWerkzeug). Brechstange: Kreis ATM_BRK.brech s (Geldklappe aufhebeln, Fahndung +2). Sprenggas: Ladung an die Geldklappe, Zuendung nach 3 s
+// (wie beim Geldtransporter), Explosion, Fahndung +3. Danach wie beim Beschuss: 20 s Geldscheine, nach 3 min wieder heil. Nur die neuen Automaten-Modelle (ATM_BRK.list).
+ATM_BRK.brech = 8;
+function atmNah(r = 2.6) { const pl = typeof player !== "undefined" ? player.pos : camera.position, v = new THREE.Vector3(); let best = null, bd = r;
+  for (const A of ATM_BRK.list) { A.g.getWorldPosition(v); const d = Math.hypot(v.x - pl.x, v.z - pl.z); if (d < bd) { bd = d; best = A; } } return best; }
+function atmWerkzeug() { const held = typeof invHeld === "function" ? invHeld() : null; if (held !== "brechstange" && held !== "sprenggas") return false; const A = atmNah(); if (!A) return false;
+  if (A.broken) { toast("Der Automat ist schon aufgebrochen"); return true; } if (A.fuse > 0) { toast("Zündung läuft – weg da!"); return true; }
+  if (held === "brechstange") { if (typeof tresorHold === "function") tresorHold(null, ATM_BRK.brech, "Geldklappe aufhebeln", () => atmBreak(A, "brech")); else atmBreak(A, "brech"); return true; }
+  if (!invTake("sprenggas", 1)) return true; const m = typeof TRESOR_M !== "undefined" ? TRESOR_M.gas : new THREE.MeshStandardMaterial({ color: 0xc8331f }), c = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.2, 14), m);
+  c.rotation.z = Math.PI / 2; if (A.flap) { c.position.copy(A.flap.position); c.position.y -= 0.06; c.position.z -= 0.05; A.flap.parent.add(c); } else { c.position.set(0, 0.9, -0.48); A.g.add(c); } A.charge = c; A.fuse = 3;
+  toast("Gasladung an der Geldklappe – Zündung in 3 s, Abstand halten!"); return true; }
+function atmFuseStep(dt) { for (const A of ATM_BRK.list) { if (!(A.fuse > 0)) continue; A.fuse -= dt; if (A.charge && typeof TRESOR_M !== "undefined") A.charge.material = Math.floor(A.fuse * 6) % 2 ? TRESOR_M.gas : TRESOR_M.gelb;
+  if (A.fuse > 0) continue; const p = (A.charge || A.g).getWorldPosition(new THREE.Vector3()); if (typeof fxBoom === "function") fxBoom(p.clone(), false); if (typeof aimSmoke === "function") aimSmoke(p.clone()); if (typeof shotSound === "function") shotSound(0.9, 0.8);
+  const pl = typeof player !== "undefined" ? player.pos : null; if (pl && Math.hypot(pl.x - p.x, pl.z - p.z) < 3) toast("Viel zu nah an der Explosion!"); atmBreak(A, "spreng"); } }
