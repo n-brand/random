@@ -94,11 +94,14 @@ const GOTHAM = {
   // Nicolas 2026-11-20 (Bild mit roter Linie): "in der vertikalen Mitte horizontal schneiden und noch hoeher ziehen" – Kueste noerdlich von z -2200 um 3000 m nach Norden
   // verschoben, dazwischen gerade Kuesten (je zwei Punkte auf x der Schnittstelle). Danach ("jetzt noch links und rechts ziehen"): senkrecht bei x -5500 und 4100 (knapp
   // ausserhalb der heutigen Spielwelt) geschnitten, Kueste links davon 3000 m nach links, rechts davon 3000 m nach rechts, oben gerade Stuecke dazwischen.
+  // Dann ("jetzt abrunden"): fein unterteilt (100 m), dreimal Gauss-geglaettet (sigma 900 m), Enden fest an der Suedkueste, mind. 400 m ausserhalb der heutigen Welt, alle ca. 700 m ein Punkt.
   welt: {
-    umriss: [[-5200, 600], [-5500, 409], [-8500, 409], [-8750, 250], [-9150, -500], [-9250, -1500], [-9110, -2200], [-9110, -5200], [-9050, -5500], [-9350, -6500],
-      [-9000, -7600], [-8500, -8162], [-5500, -8162], [-5200, -8500], [-4100, -9150], [-2900, -9450], [-1700, -9250], [-700, -9500], [500, -9150], [1700, -8600],
-      [2900, -7800], [3900, -6700], [4100, -6300], [7100, -6300], [7500, -5500], [7564, -5200], [7564, -2200], [7800, -1100], [8150, 300], [8100, 1700],
-      [7700, 3080], [7100, 2896], [4100, 2896], [3200, 2620], [1726, 2154]],
+    umriss: [[-5200, 600], [-5910, 440], [-6660, 400], [-7410, 240], [-8070, -50], [-8630, -580], [-8930, -1250], [-9060, -1950], [-9110, -2720], [-9120, -3500],
+      [-9120, -4290], [-9110, -5080], [-9070, -5830], [-8940, -6520], [-8640, -7180], [-8070, -7710], [-7390, -8010], [-6700, -8200], [-5990, -8370], [-5270, -8570],
+      [-4550, -8800], [-3820, -9010], [-3060, -9170], [-2290, -9260], [-1520, -9280], [-750, -9230], [10, -9090], [740, -8860], [1460, -8540], [2140, -8150],
+      [2790, -7720], [3430, -7280], [4070, -6900], [4730, -6590], [5400, -6350], [6120, -6070], [6720, -5680], [7150, -5130], [7400, -4400], [7530, -3670],
+      [7620, -2890], [7700, -2100], [7780, -1400], [7860, -700], [7930, 80], [7920, 830], [7770, 1590], [7380, 2250], [6750, 2640], [6010, 2790],
+      [5280, 2820], [4510, 2760], [3750, 2650], [3000, 2510], [2300, 2330], [1726, 2154]],
     heute: { x: -323, z: 1318, r: 4300 },
     namen: [{ x: -2300, z: -5800, text: "Festland Nord (neu)", sub: "Gelände in Kacheln, noch ohne Bäume" }, { x: -6800, z: -3600, text: "Festland West (neu)" },
       { x: 4800, z: -3600, text: "Festland Ost (neu)" }, { x: -900, z: -10300, text: "Meer" }, { x: -9900, z: -1800, text: "Meer" }, { x: 9000, z: 0, text: "Meer" },

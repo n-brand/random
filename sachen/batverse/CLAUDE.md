@@ -75,6 +75,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Insel-Welt abgerundet** (Nicolas 2026-11-20: "und jetzt abrunden"): gotham/daten.js `welt.umriss` – Küste in 100-m-Punkte unterteilt, dreimal Gauss-geglättet (Sigma ca. 900 m), Enden fest an der bestehenden Südküste, mindestens 400 m ausserhalb der heutigen Spielwelt (kein Punkt musste verschoben werden), dann alle ca. 700 m ein Punkt (56). Jetzt ca. 17,1 x 12,1 km, 158 km². Bild der Planungskarte geprüft.
+
 - **Insel-Welt breiter** (Nicolas 2026-11-20: "jetzt noch links und rechts ziehen"): gotham/daten.js `welt.umriss` – senkrecht bei x -5500 und 4100 (knapp ausserhalb der heutigen Spielwelt) geschnitten, Küste links davon 3 000 m nach links, rechts davon 3 000 m nach rechts, oben und unten gerade Stücke dazwischen; Namen nachgezogen. Jetzt ca. 17,5 x 12,6 km, 165 km². Bild der Planungskarte geprüft.
 
 - **Insel-Welt höher** (Nicolas 2026-11-20, Bild mit roter Linie: "Insel in der vertikalen Mitte horizontal schneiden und noch höher ziehen"): gotham/daten.js `welt.umriss` – Küste nördlich von z -2200 (ca. 750 m über Gotham) um 3 000 m nach Norden, dazwischen gerade Küsten; Namen nachgezogen. Jetzt ca. 11,5 x 12,6 km, 111 km². Bild der Planungskarte geprüft. "Passt, weiter mit I2" gilt für diesen Stand.
