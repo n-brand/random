@@ -13,6 +13,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 - **Baccarat** (2026-11-20, ovale Tische im 2. Stock des Gotham-Casinos).
 - **Würfel, Limbo, Münzwurf** (2026-11-20, Automat "Quick Games").
 - **Video-Poker** (2026-11-20, Jacks or Better).
+- **Keno** und **Turm** (2026-11-20, Reiter im Quick-Games-Automaten).
 
 ## Von Nicolas gewünscht (Plan N29)
 
