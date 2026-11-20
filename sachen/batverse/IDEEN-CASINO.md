@@ -15,6 +15,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 - **Video-Poker** (2026-11-20, Jacks or Better).
 - **Keno** und **Turm** (2026-11-20, Reiter im Quick-Games-Automaten).
 - **Rubbellos** (2026-11-20, Reiter im Quick-Games-Automaten).
+- **Pferderennen** (2026-11-20, Automat "Gotham Derby").
 
 ## Von Nicolas gewünscht (Plan N29)
 
