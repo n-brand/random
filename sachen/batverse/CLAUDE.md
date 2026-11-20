@@ -60,7 +60,7 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 | Skateboard | in der Hand linke Maus halten (0,6 s, Kreis) = aufsteigen; W anschieben (Shift schneller), S bremsen, A/D und Maus lenken, Leertaste Ollie, Linksklick absteigen |
 | Bat-Knopf | in der Hand Linksklick = Batsignal an/aus (rote LED am Gerät leuchtet, solange es an ist) |
 | Eigenes Hintergrundbild | Handy: App Einstellungen > Eigenes Bild hochladen; Laptop: Einstellungen > Personalisierung > Eigenes Bild hochladen |
-| Bankautomat aufbrechen | mit einer Schusswaffe darauf schiessen (ca. 15 Pistolentreffer); danach fliegen 20 s Geldscheine heraus, darüberlaufen sammelt sie (je 50 $ Bargeld); nach 3 min wieder heil |
+| Bankautomat aufbrechen | Brechstange in der Hand + Rechtsklick, stehen bleiben bis der Kreis voll ist (8 s); oder Sprenggas in der Hand + Rechtsklick (Zündung nach 3 s, Abstand halten); oder mit einer Schusswaffe darauf schiessen (ca. 15 Pistolentreffer); danach fliegen 20 s Geldscheine heraus, darüberlaufen sammelt sie (je 50 $ Bargeld); nach 3 min wieder heil |
 | Crash | zwei Einsätze (je "dabei", − / + Betrag), STARTEN zahlt beide; jeder hat seinen eigenen AUSZAHLEN-Knopf, Leertaste = starten bzw. nächsten Einsatz auszahlen; nach dem letzten Auszahlen fliegt das Flugzeug bis zum Absturzpunkt weiter |
 | Handgranate | in der Hand: rechte Maus = Wurfbahn, Linksklick = werfen; explodiert nach 2,5 s |
 | Zigaretten | in der Hand Linksklick = anzünden (braucht ein Feuerzeug im Inventar), brennt ca. 40 s; nochmal Linksklick = ausdrücken; jede angezündete ist verbraucht |
