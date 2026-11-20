@@ -14,6 +14,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 - **Würfel, Limbo, Münzwurf** (2026-11-20, Automat "Quick Games").
 - **Video-Poker** (2026-11-20, Jacks or Better).
 - **Keno** und **Turm** (2026-11-20, Reiter im Quick-Games-Automaten).
+- **Rubbellos** (2026-11-20, Reiter im Quick-Games-Automaten).
 
 ## Von Nicolas gewünscht (Plan N29)
 
