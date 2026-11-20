@@ -177,6 +177,13 @@ function casinoInnen({ g, M, box, cyl, gold, black, red, rouTex, BW, BD, Z0, HG,
     for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; chairs.push([x + Math.cos(a) * 2.35, y, z + Math.sin(a) * 1.6, -a - Math.PI / 2]); } chipL.push([x, y + 0.815, z, [[100, 5, -0.4, 0.1], [1000, 3, 0.3, -0.1], [10, 8, 0, 0.25], [10000, 1, 0.5, 0.2]]]); };
   for (const sx of [-1, 1]) { rouTable(sx * 8, IC - 4, 0, sx); bjTable(sx * 8, IC + 5, 0); pokerTable(sx * 10, IC - 3, FL2); }
   rouTable(-11, IZ1 - 7, FL2, -1); bjTable(12, IZ1 - 6.5, FL2);
+  // Craps-Tisch im Erdgeschoss (Nicolas 2026-11-20 "mach die naechsten Schritte alle"): Mitte zwischen Gluecksrad und Treppe, auf Hoehe der Roulette-Tische; erhoehter Rand, Croupier zur Treppe hin, zwei Wuerfel
+  { const x = 0, z = IC - 4, y = 0; box(4.4, 0.85, 2.0, wood, x, y + 0.425, z); const ft = new THREE.Mesh(new THREE.PlaneGeometry(4.1, 1.7), felt); ft.rotation.x = -Math.PI / 2; ft.position.set(x, y + 0.86, z); g.add(ft);
+    for (const dz of [-0.95, 0.95]) box(4.4, 0.22, 0.12, wood, x, y + 0.96, z + dz); for (const dx of [-2.15, 2.15]) box(0.12, 0.22, 2.0, wood, x + dx, y + 0.96, z);
+    const lin = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.05), new THREE.MeshBasicMaterial({ color: 0xf2e6c0 })); lin.rotation.x = -Math.PI / 2; lin.position.set(x, y + 0.865, z - 0.3); g.add(lin);
+    const wm = M({ color: 0xf8f6f0, roughness: 0.3 }); for (const [dx, dz, r] of [[0.5, 0.1, 0.4], [0.68, 0.18, 1.1]]) { const w = box(0.09, 0.09, 0.09, wm, x + dx, y + 0.91, z + dz); if (w) w.rotation.y = r; }
+    C.push([4.4, 1.1, 2.0, x, z, y]); CAS.personal.push([x, y, z + 1.3, 0, "croupier"]); for (const dx of [-1.4, 0, 1.4]) stools.push([x + dx, y + 0.38, z - 1.45]); chipL.push([x - 1.2, y + 0.865, z + 0.4, [[100, 5, 0, 0], [1000, 3, 0.12, 0.04], [10, 6, -0.1, 0.05]]]);
+    const hm = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.4, 2.4), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(x, y + 0.7, z); g.add(hm); CAS.gates.push({ name: "Craps", m: hm, call: () => typeof cgOpen === "function" && cgOpen("craps"), verbs: ["spielen", "spielen"], near: 3.5 }); }
   // Bar hinten links: Theke, Regal mit Flaschen, Hocker
   { const bw = 13, bx = -IX + 1.5 + bw / 2, bz = IZ1 - 3.4; box(bw, 1.1, 0.9, wood, bx, 0.55, bz); box(bw + 0.2, 0.08, 1.1, gold, bx, 1.14, bz); C.push([bw, 1.2, 0.9, bx, bz]);
     box(bw, 2.8, 0.5, wood, bx, 1.4, IZ1 - 0.3); const glow = new THREE.Mesh(new THREE.PlaneGeometry(bw - 0.4, 2.2), new THREE.MeshBasicMaterial({ color: 0xffb860 })); glow.position.set(bx, 1.55, IZ1 - 0.56); glow.rotation.y = Math.PI; g.add(glow); C.push([bw, 2.8, 0.6, bx, IZ1 - 0.3]);
