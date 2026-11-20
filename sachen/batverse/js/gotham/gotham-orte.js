@@ -74,6 +74,10 @@ function* gortGen() {
       const P = (a, b) => [C[0] + R[0] * a, C[1] + b, C[2] + R[2] * a];
       gbvQuad(gbvBucket(out, "schild"), P(-w / 2, -h / 2), P(w / 2, -h / 2), P(w / 2, h / 2), P(-w / 2, h / 2), ow, [[sg.u0, sg.v0], [sg.u1, sg.v0], [sg.u1, sg.v1], [sg.u0, sg.v1]]); };
     const sideLen = k => f.side(k)[6];
+    // Muelleimer im Spiel (N26, "weiter mit den Bauideen aus dem Plan", 2026-11-20): neben jedem Strassen-Bankautomaten und neben dem Eingang von Fast Food, Bars und Restaurants; Inhalt wie in der Werkstatt
+    if (typeof muellAdd === "function" && (kind === "atm" || /^(fastfood|bar)-/.test(o.id))) { const [As, At, ds, dt, os, ot, len] = f.side(front), atm = kind === "atm", u = len / 2 + Math.min(4, len / 2 - 2);
+      const s = atm ? L1 / 2 + ds * 1.25 + os * 0.15 : As + ds * u - os * 0.7, t = atm ? L2 / 2 + dt * 1.25 + ot * 0.15 : At + dt * u - ot * 0.7, y = atm ? Y : Y + 0.05, p = f.W(s, t, y), ow = f.dirW(os, ot);
+      const U = muellAdd(scene, "eimer", "gotham-" + o.id, new THREE.Vector3(p[0], p[1], p[2]), Math.atan2(-ow[0], -ow[2])); U.weit = 120; box(s, t, 0.45, 0.45, y, y + 0.9); }
     const shell = (type, glas, N, Hh, ins = 0) => { const P = ins ? (() => { const p = f.W(ins, ins, 0); return [p[0], p[2]]; })() : P0;
       gbvShell({ P0: P, e1: [ax, az], e2, L1: L1 - 2 * ins, L2: L2 - 2 * ins, front, type, N, H: Hh, glas, seed, fire: [0, 0, 0, 0], y: Y }, out); return ins; };
     if (kind !== "atm" && kind !== "stadion") gbvBox(out, "beton", f, L1 / 2, L2 / 2, L1, L2, Y, Y + 0.05);
