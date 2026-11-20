@@ -6,15 +6,19 @@
 function buildPolizeiHeli() {
   const g = new THREE.Group(), M2 = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.4, metalness: 0.3, ...o });
   const blau = M2(0x16233f, { metalness: 0.45, roughness: 0.3 }), weiss = M2(0xeef0f2, { roughness: 0.35 }), dunkel = M2(0x1a1c20, { roughness: 0.6 }), metall = M2(0x9aa0a8, { metalness: 0.7, roughness: 0.3 }),
-    glas = M2(0x0c141c, { metalness: 0.7, roughness: 0.06, transparent: true, opacity: 0.75 }), gelb = M2(0xe8c547, { roughness: 0.4 });
+    glas = glasKanzel(0x1d2c3c, 0.45), gelb = M2(0xe8c547, { roughness: 0.4 });
   const add = (geo, m, x, y, z, rx = 0, ry = 0, rz = 0, par = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); o.castShadow = true; par.add(o); return o; };
   const tf = T => f => { if (f >= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (f >= T[i][0]) { const [f0, a] = T[i - 1], [f1, b] = T[i]; return a + (b - a) * (f0 - f) / (f0 - f1); } return T[T.length - 1][1]; };
   const yb = tf([[2.45, 1.15], [2.2, 0.78], [1.6, 0.62], [-1.3, 0.62], [-2.5, 1.45]]), yt = tf([[2.45, 1.3], [2.15, 1.75], [1.4, 2.05], [0.9, 2.12], [-1.3, 2.12], [-2.5, 1.95]]), wd = tf([[2.45, 0.22], [2.2, 0.55], [1.6, 0.8], [-1.3, 0.82], [-2.5, 0.3]]);
   const sec = (f, s = 1, a0 = -Math.PI / 2, a1 = Math.PI / 2, n = 10) => { const b = yb(f), t = yt(f), h = t - b, w = wd(f) * s, P = []; for (let q = 0; q <= n; q++) { const a = a0 + (a1 - a0) * q / n; P.push([Math.max(0, Math.cos(a) * w), b + h / 2 + Math.sin(a) * h / 2 * s]); } if (a0 > -Math.PI / 2 + 1e-6) P.unshift([0, P[0][1]]); if (a1 < Math.PI / 2 - 1e-6) P.push([0, P[P.length - 1][1]]); return P; };
   const FS = []; for (let f = 2.45; f > -2.5; f -= 0.15) FS.push(+f.toFixed(3)); FS.push(-2.5);
-  loftIn(g, FS.map(f => [f, sec(f)]), blau);
+  // Rumpf unter der Kanzel offen (Wanne, Boden 0,95 m), damit man durch das Glas Sitze und Brett sieht (Nicolas 2026-11-20: Cockpithauben ueberarbeiten)
+  const FK = FS.filter(f => f <= 2.38 && f >= 0.95), KA = FK[0], KB = FK[FK.length - 1];
+  const wanne = f => { const P = sec(f, 1, -Math.PI / 2, -0.15, 10); P.pop(); const [x, y] = P[P.length - 1]; return [...P, [x - 0.05, y], [x - 0.05, 0.95], [0, 0.95]]; };
+  loftIn(g, FS.filter(f => f >= KA).map(f => [f, sec(f)]), blau); loftIn(g, FK.map(f => [f, wanne(f)]), blau); loftIn(g, FS.filter(f => f <= KB).map(f => [f, sec(f)]), blau);
+  cockpitInnen(g, [[-0.33, 0.95, -1.3], [0.33, 0.95, -1.3]], [1.55, -2.0, 1.1]);
   loftIn(g, FS.map(f => [f, sec(f, 1.01, -Math.PI / 2, -0.35, 6)]), weiss);                                                                              // Unterseite weiss
-  loftIn(g, FS.filter(f => f <= 2.38 && f >= 0.95).map(f => [f, sec(f, 1.012, -0.15, Math.PI / 2, 8)]), glas);                                                // Glaskanzel
+  loftGlatt(g, FK.map(f => [f, bogenVoll(sec(f, 1.012, -0.15, Math.PI / 2, 8).slice(1))]), glas, true);                                                // Glaskanzel
   for (const sd of [-1, 1]) { add(new THREE.BoxGeometry(0.03, 0.8, 0.05), blau, sd * 0.79, 1.55, -1.0); add(new THREE.BoxGeometry(0.03, 0.03, 1.4), blau, sd * 0.8, 1.98, -0.45);
     for (const z of [-0.95, 0.35, 1.25]) add(new THREE.BoxGeometry(0.01, 1.15, 0.025), dunkel, sd * 0.81, 1.4, z); add(new THREE.BoxGeometry(0.02, 0.45, 0.62), glas, sd * 0.81, 1.62, 0.8);
     add(new THREE.BoxGeometry(0.04, 0.04, 2.0), metall, sd * 0.82, 1.99, 0.6); add(new THREE.BoxGeometry(0.05, 0.05, 0.14), metall, sd * 0.83, 1.3, 0.38); }

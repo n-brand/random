@@ -13,7 +13,7 @@ const BAT_KX = 5.18 / 5.28, BAT_KZ = 9.14 / 10.45, BAT_ZC = 1.2;   // BAT_ZC: Dr
 function buildTheBat() {
   const g = new THREE.Group();
   const armor = M(0x2c2e33, { metalness: 0.45, roughness: 0.55, flatShading: true }), dark = M(0x18191c, { metalness: 0.5, roughness: 0.5, flatShading: true });
-  const frameM = M(0x3a3d43, { metalness: 0.6, roughness: 0.4, flatShading: true }), glassM = M(0x0c141c, { metalness: 0.7, roughness: 0.08, transparent: true, opacity: 0.55 });
+  const frameM = M(0x3a3d43, { metalness: 0.6, roughness: 0.4, flatShading: true }), glassM = glasKanzel(0x1d2c38, 0.5);   // getoent, klar lackiert (2026-11-20)
   const hexT = canvasTex(64, 56, (c, w, h) => { c.fillStyle = "#3a3d43"; c.fillRect(0, 0, w, h); c.fillStyle = "#0b0c0e"; for (let r = 0; r < 5; r++) for (let k = -1; k < 5; k++) { const cx = k * 16 + (r % 2) * 8, cy = r * 14; c.beginPath(); for (let a = 0; a < 6; a++) c.lineTo(cx + 6 * Math.cos(a * Math.PI / 3), cy + 6 * Math.sin(a * Math.PI / 3)); c.fill(); } });
   hexT.repeat.set(3, 3); const hexM = M(0xffffff, { map: hexT, metalness: 0.4, roughness: 0.6 });
   const thrustM = M(0x111214, { emissive: 0xff7a20, emissiveIntensity: 0, side: THREE.DoubleSide });

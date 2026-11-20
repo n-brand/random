@@ -222,11 +222,15 @@ function milHeliTeile(k) { const g = new THREE.Group(), i = new THREE.Group(); i
 // Bugrad, zwei Triebwerke oben mit Einlaessen und Auspuffen, Seilwinde ueber der Tuer, Vierblattrotor, Heckausleger mit Leitwerk links (Heckrotor) und Hoehenflosse rechts,
 // Hecksporn, Antennen, Schweizerkreuz-Hoheitszeichen und Kennung T-301. Massstab 1,55 (Rotor ca. 15,6 m).
 function buildCougar(k = 1.55) {
-  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, glasH = M(0x0c141c, { metalness: 0.7, roughness: 0.08, transparent: true, opacity: 0.8, flatShading: true });
+  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, glasH = glasKanzel(0x22323c, 0.5);
   const yb = tabF([[2.55, 1.05], [2.3, 0.72], [1.7, 0.55], [-2.3, 0.55], [-4.2, 1.5]]), yt = tabF([[2.55, 1.2], [2.3, 1.55], [1.5, 1.95], [1.1, 2.05], [-2.3, 2.05], [-4.2, 1.88]]), wd = tabF([[2.55, 0.25], [2.3, 0.6], [1.7, 0.82], [-2.3, 0.86], [-4.2, 0.28]]);
   const sec = (f, s = 1, y0 = 0) => { const b = yb(f), t = yt(f), h = t - b, w = wd(f) * s; return [[0, b + y0 * h], [w * 0.8, b + y0 * h], [w, b + Math.max(y0, 0.15) * h], [w, b + 0.78 * h], [w * 0.72, t + (s - 1) * 0.5], [0, t + (s - 1) * 0.5]]; };
-  const FS = [2.55, 2.45, 2.3, 2.1, 1.9, 1.7, 1.5, 1.3, 1.1, 0.5, -0.5, -1.5, -2.3, -2.8, -3.3, -3.8, -4.2]; loftIn(i, FS.map(f => [f, sec(f)]), oliv);
-  loftIn(i, [2.45, 2.3, 2.1, 1.9, 1.7, 1.5, 1.35].map(f => [f, sec(f, 1.015, 0.45)]), glasH);                                                    // Cockpitverglasung
+  const FS = [2.55, 2.45, 2.3, 2.1, 1.9, 1.7, 1.5, 1.3, 1.1, 0.5, -0.5, -1.5, -2.3, -2.8, -3.3, -3.8, -4.2], FK = [2.45, 2.3, 2.1, 1.9, 1.7, 1.5, 1.35];
+  // Rumpf unter der Verglasung offen (Wanne mit Boden 0,8 m), damit man durch das Glas hineinsieht (Nicolas 2026-11-20: Cockpithauben ueberarbeiten)
+  const wanne = f => { const b = yb(f), h = yt(f) - b, w = wd(f); return [[0, b], [w * 0.8, b], [w, b + 0.15 * h], [w, b + 0.45 * h], [w - 0.05, b + 0.45 * h], [w - 0.05, 0.8], [0, 0.8]]; };
+  loftIn(i, [2.55, 2.45].map(f => [f, sec(f)]), oliv); loftIn(i, FK.map(f => [f, wanne(f)]), oliv); loftIn(i, [1.35, ...FS.filter(f => f < 1.35)].map(f => [f, sec(f)]), oliv);
+  loftGlatt(i, FK.map(f => [f, bogenVoll(sec(f, 1.015, 0.45).slice(2))]), glasH, true);                                                       // Cockpitverglasung
+  cockpitInnen(i, [[-0.4, 0.8, -1.75], [0.4, 0.8, -1.75]], [1.45, -2.25, 1.2]);
   for (const x of [0, -0.45, 0.45]) { const b = add(new THREE.BoxGeometry(0.05, 0.05, 1.0), oliv2, x, 1.75, -1.95, -0.62); }                // Rahmenstreben
   for (const sd of [-1, 1]) { add(new THREE.BoxGeometry(0.03, 0.55, 0.05), oliv2, sd * 0.84, 1.55, -1.35); add(new THREE.BoxGeometry(0.03, 0.3, 0.4), glasH, sd * 0.835, 0.85, -2.0); }   // Tuersaeule, Kinnfenster
   add(new THREE.BoxGeometry(0.04, 0.35, 0.04), stahl, 0, 2.22, -1.4, 0.4); add(new THREE.BoxGeometry(0.04, 0.3, 0.04), stahl, 0, 0.42, -1.9, -0.4);   // Drahtschneider
@@ -285,11 +289,16 @@ addEventListener("keydown", e => { if (e.code !== "KeyH" || e.repeat || !(typeof
 // Leichter Transport- und Schulungshelikopter: runder Rumpf mit grosser Verglasung, Schiebetueren hinten, Kufen, Triebwerke unter einer Verkleidung, Vierblattrotor,
 // Heckausleger mit ummanteltem Heckrotor in der Flosse, Hoehenflosse mit Endscheiben, Kennung T-361. Massstab 1,0.
 function buildSchulHeli(k = 1.0) {
-  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, olivR = M(MIL_OLIV, { roughness: 0.6, metalness: 0.2 }), glasH = M(0x0c141c, { metalness: 0.7, roughness: 0.06, transparent: true, opacity: 0.78 });
+  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, olivR = M(MIL_OLIV, { roughness: 0.6, metalness: 0.2 }), glasH = glasKanzel(0x22323c, 0.45);
   const yb = tabF([[2.4, 1.15], [2.15, 0.78], [1.6, 0.62], [-1.3, 0.62], [-2.5, 1.45]]), yt = tabF([[2.4, 1.3], [2.1, 1.75], [1.4, 2.05], [0.9, 2.12], [-1.3, 2.12], [-2.5, 1.95]]), wd = tabF([[2.4, 0.22], [2.15, 0.55], [1.6, 0.78], [-1.3, 0.8], [-2.5, 0.3]]);
   const sec = (f, s = 1, y0 = 0) => { const b = yb(f), t = yt(f), h = t - b, w = wd(f) * s, n = 9, P = [], a0 = y0 > 0 ? Math.asin((y0 - 0.5) * 2 / s) : -Math.PI / 2; for (let q = 0; q <= n; q++) { const a = a0 + (Math.PI / 2 - a0) * q / n; P.push([Math.max(0, Math.cos(a) * w), b + h / 2 + Math.sin(a) * h / 2 * s]); } if (y0 > 0) P.unshift([0, P[0][1]]); return P; };
-  const FS = []; for (let f = 2.4; f > -2.5; f -= 0.16) FS.push(+f.toFixed(3)); FS.push(-2.5); loftIn(i, FS.map(f => [f, sec(f)]), olivR);
-  loftIn(i, FS.filter(f => f <= 2.32 && f >= 0.95).map(f => [f, sec(f, 1.012, 0.42)]), glasH);
+  const FS = []; for (let f = 2.4; f > -2.5; f -= 0.16) FS.push(+f.toFixed(3)); FS.push(-2.5); const FK = FS.filter(f => f <= 2.32 && f >= 0.95), KA = FK[0], KB = FK[FK.length - 1];
+  // Rumpf unter der Kanzel als Wanne (Bruestung auf Hoehe 0,42 des Querschnitts, Boden 0,85 m); Kanzel glatt darauf (Nicolas 2026-11-20: Cockpithauben ueberarbeiten)
+  const wanne = f => { const b = yb(f), h = yt(f) - b, w = wd(f), a1 = Math.asin((0.42 - 0.5) * 2), P = []; for (let q = 0; q <= 7; q++) { const a = -Math.PI / 2 + (a1 + Math.PI / 2) * q / 7; P.push([Math.max(0, Math.cos(a) * w), b + h / 2 + Math.sin(a) * h / 2]); }
+    const [x, y] = P[7]; return [...P, [x - 0.05, y], [x - 0.05, 0.85], [0, 0.85]]; };
+  loftIn(i, FS.filter(f => f >= KA).map(f => [f, sec(f)]), olivR); loftIn(i, FK.map(f => [f, wanne(f)]), olivR); loftIn(i, FS.filter(f => f <= KB).map(f => [f, sec(f)]), olivR);
+  loftGlatt(i, FK.map(f => [f, bogenVoll(sec(f, 1.012, 0.42).slice(1))]), glasH, true);
+  cockpitInnen(i, [[-0.33, 0.85, -1.3], [0.33, 0.85, -1.3]], [1.5, -1.95, 1.0]);
   for (const sd of [-1, 1]) { add(new THREE.BoxGeometry(0.03, 0.75, 0.05), oliv2, sd * 0.77, 1.55, -1.0); add(new THREE.BoxGeometry(0.03, 0.03, 1.4), oliv2, sd * 0.79, 1.95, -0.45);
     for (const z of [-0.95, 0.3, 1.2]) add(new THREE.BoxGeometry(0.01, 1.1, 0.025), dunkel, sd * 0.8, 1.4, z); add(new THREE.BoxGeometry(0.02, 0.4, 0.6), glasH, sd * 0.8, 1.6, 0.75); add(new THREE.BoxGeometry(0.04, 0.04, 2.0), stahl, sd * 0.81, 1.98, 0.6);
     add(new THREE.BoxGeometry(0.05, 0.05, 0.14), stahl, sd * 0.82, 1.3, 0.35); }
@@ -429,21 +438,48 @@ function drohneStep(dt) { if (DROHNE.stand) return; if (!DROHNE.c) { if (typeof 
 // Waffen im Flug (khWaffen aus pose): Linksklick oder Q = Kanone (Dauerfeuer, Leuchtspur, 10 Schuss/s, Treffer an Fahrzeugen ueber gunDamage), Rechtsklick oder X = Rakete
 // (Rauchspur, Explosion fxBoom, Fahrzeuge im Umkreis 6 m vehHit; alle 0,6 s). Ziel = Bildmitte; Visier und Anzeige (#kh-visier). In der Werkstatt ohne Fahrzeugschaden (dort nur Blitz).
 function buildKampfheli(k = 1.4) {
-  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K, grau = M(0x3c4436, { roughness: 0.7, metalness: 0.2, flatShading: true }), glasH = M(0x0c141c, { metalness: 0.7, roughness: 0.06, transparent: true, opacity: 0.75 });
-  const yb = tabF([[2.75, 1.05], [2.4, 0.8], [1.8, 0.62], [-1.0, 0.66], [-1.9, 1.15]]), yt = tabF([[2.75, 1.18], [2.4, 1.42], [1.9, 1.55], [0.9, 1.72], [-0.2, 1.92], [-1.9, 1.72]]), wd = tabF([[2.75, 0.16], [2.4, 0.36], [1.9, 0.46], [-1.0, 0.5], [-1.9, 0.3]]);
-  const FS = []; for (let f = 2.75; f > -1.9; f -= 0.12) FS.push(+f.toFixed(2)); FS.push(-1.9);
-  loftIn(i, FS.map(f => { const b = yb(f), t = yt(f), w = wd(f), h = t - b; return [f, [[0, b], [w * 0.7, b], [w, b + 0.25 * h], [w, b + 0.75 * h], [w * 0.6, t], [0, t]]]; }), grau);
-  // Tandem-Cockpit: zwei Glaskuppeln mit Rahmen, Sensorkugel an der Nase
-  for (const [z, y, sx, sy, sz] of [[-1.75, 1.6, 0.4, 0.34, 0.62], [-0.75, 1.85, 0.44, 0.38, 0.64]]) { const c = add(new THREE.SphereGeometry(1, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), glasH, 0, y, z); c.scale.set(sx, sy, sz);
-    add(new THREE.BoxGeometry(0.05, 0.05, sz * 2), oliv2, 0, y + sy - 0.02, z); const r = add(new THREE.TorusGeometry(1, 0.03, 6, 20, Math.PI), oliv2, 0, y, z, 0, Math.PI / 2, 0); r.scale.set(sz, sy, sx); }
-  add(new THREE.SphereGeometry(0.22, 14, 10), dunkel, 0, 1.0, -2.68); for (const sx of [-0.08, 0.08]) add(new THREE.CircleGeometry(0.06, 12), glasH, sx, 1.02, -2.9, 0, Math.PI, 0);
+  const { g, i, K, add, blitz } = milHeliTeile(k), { oliv, oliv2, dunkel, stahl, gummi } = K;
+  // glatt schattiert (vorher flatShading und sechseckige Querschnitte = eckig); Glas getoent mit Spiegelung, beidseitig
+  const grau = M(0x3d4637, { roughness: 0.55, metalness: 0.3 }), grau2 = M(0x323a2e, { roughness: 0.6, metalness: 0.3 }), rahmen = M(0x2a3127, { roughness: 0.5, metalness: 0.35 }),
+    glasH = glasKanzel(0x1d2c38, 0.55);
+  // Profile weich: Tabelle linear abtasten, dann geglaettet (sonst Knicke an den Stuetzstellen)
+  const weich = T => { const F0 = T[0][0], F1 = T[T.length - 1][0], N = 120, f = tabF(T); let v = Array.from({ length: N + 1 }, (_, q) => f(F0 + (F1 - F0) * q / N));
+    for (let it = 0; it < 6; it++) v = v.map((x, q) => q && q < N ? (v[q - 1] + 2 * x + v[q + 1]) / 4 : x); return ff => { const u = Math.max(0, Math.min(N, (ff - F0) / (F1 - F0) * N)), q = Math.min(N - 1, Math.floor(u)), r = u - q; return v[q] * (1 - r) + v[q + 1] * r; }; };
+  // Rumpf: schlank, unten rund, oben bis zur Kanzelbruestung; Querschnitt "Superellipse" (abgerundetes Rechteck)
+  const yb = weich([[2.82, 1.08], [2.55, 0.84], [2.1, 0.68], [1.0, 0.62], [-0.6, 0.64], [-1.5, 0.82], [-2.0, 1.22]]),
+    yt = weich([[2.82, 1.16], [2.55, 1.3], [2.1, 1.4], [1.3, 1.46], [0.9, 1.56], [0.2, 1.62], [-0.1, 1.76], [-1.0, 1.84], [-1.6, 1.78], [-2.0, 1.66]]),
+    wd = weich([[2.82, 0.1], [2.55, 0.3], [2.1, 0.41], [1.0, 0.46], [0.0, 0.52], [-1.0, 0.5], [-1.6, 0.4], [-2.0, 0.24]]);
+  const sup = (w, b, t, n = 2.6, N = 12) => { const P = []; for (let q = 0; q <= N; q++) { const th = -Math.PI / 2 + Math.PI * q / N, c = Math.cos(th), sn = Math.sin(th); P.push([w * Math.pow(Math.abs(c), 2 / n), (b + t) / 2 + (t - b) / 2 * Math.sign(sn) * Math.pow(Math.abs(sn), 2 / n)]); } return P; };
+  const FS = []; for (let f = 2.82; f > -2.0; f -= 0.08) FS.push(+f.toFixed(2)); FS.push(-2.0);
+  const KA = 2.42, KB = -0.12, rand = f => sup(wd(f), yb(f), yt(f))[9], boden = f => yb(f) + 0.28;   // Kanzel von f KA bis KB; Bruestung = Punkt bei 45 Grad
+  const wanne = f => { const P = sup(wd(f), yb(f), yt(f)).slice(0, 10), [x, y] = P[9]; return [...P, [x - 0.05, y], [x - 0.05, boden(f)], [0, boden(f)]]; };
+  loftGlatt(i, [...FS.filter(f => f > KA), KA].map(f => [f, sup(wd(f), yb(f), yt(f))]), grau);
+  loftGlatt(i, [KA, ...FS.filter(f => f < KA && f > KB), KB].map(f => [f, wanne(f)]), grau);
+  loftGlatt(i, [KB, ...FS.filter(f => f < KB)].map(f => [f, sup(wd(f), yb(f), yt(f))]), grau);
+  // Tandem-Kanzel: ein durchgehendes Glas auf der Bruestung, vorne (Schuetze) tiefer, hinten (Pilot) hoeher, dazwischen Stufe; Rahmen: Bogen vorne, Trennbogen, Bogen hinten,
+  // Mittelsteg oben, Bruestungsleisten. Sitze und Instrumentenbretter darunter (durch das Glas sichtbar).
+  const yc = weich([[2.42, 1.33], [2.22, 1.62], [1.95, 1.84], [1.6, 1.92], [1.3, 1.93], [1.15, 2.02], [0.85, 2.17], [0.55, 2.2], [0.3, 2.12], [0.08, 1.9], [-0.12, 1.76]]);
+  const ys = f => rand(f)[1], wc = f => rand(f)[0];
+  const bogen = (f, d = 0, N = 14) => { const P = [], w = wc(f) + d, b = ys(f), t = yc(f) + d; for (let q = 0; q <= N; q++) { const ph = Math.PI * q / N, c = Math.cos(ph), sn = Math.sin(ph); P.push([w * Math.sign(c) * Math.pow(Math.abs(c), 2 / 2.4), b + (t - b) * Math.pow(sn, 2 / 2.4)]); } return P; };
+  const FC = []; for (let f = 2.42; f > -0.12; f -= 0.06) FC.push(+f.toFixed(2)); FC.push(-0.12);
+  loftGlatt(i, FC.map(f => [f, bogen(f)]), glasH, true);
+  const rohrLinie = (P3, r = 0.024) => add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(P3.map(([x, y, z]) => new THREE.Vector3(x, y, z))), Math.max(8, P3.length * 2), r, 6), rahmen, 0, 0, 0);
+  for (const f of [2.3, 1.22, 0.02]) rohrLinie(bogen(f, 0.012).map(([x, y]) => [x, y, -f]), f === 1.22 ? 0.03 : 0.024);
+  rohrLinie(FC.filter((_, q) => q % 2 === 0).map(f => [0, yc(f) + 0.012, -f]), 0.02);   // Mittelsteg
+  for (const sd of [-1, 1]) rohrLinie(FC.filter((_, q) => q % 3 === 0).map(f => [sd * (wc(f) + 0.01), ys(f) + 0.01, -f]), 0.022);   // Bruestung
+  cockpitInnen(i, [[0, boden(1.5), -1.5], [0, boden(0.55), -0.55]], null); for (const f of [1.5, 0.55]) cockpitInnen(i, [], [boden(f) + 0.62, -f - 0.5, 0.5]);   // Schuetze vorne, Pilot hinten (erhoeht)
+  // Sensorturm an der Nase: Kugel mit Haube und zwei Fenstern
+  add(new THREE.SphereGeometry(0.21, 24, 16), grau2, 0, 1.0, -2.76); add(new THREE.CylinderGeometry(0.12, 0.17, 0.12, 20), grau2, 0, 1.2, -2.7);
+  for (const sx of [-0.08, 0.08]) { const w = add(new THREE.CircleGeometry(0.055, 16), M(0x0a2030, { metalness: 0.6, roughness: 0.1, emissive: 0x05121a }), sx, 1.02, -2.965, 0, Math.PI, 0); w.castShadow = false; }
   // Kanonenturm unter der Nase (dreht zum Ziel)
   const turm = new THREE.Group(); turm.position.set(0, 0.55, -2.05); i.add(turm); add(new THREE.SphereGeometry(0.17, 12, 10), dunkel, 0, 0, 0, 0, 0, 0, turm);
   const rohr = new THREE.Group(); turm.add(rohr); add(new THREE.CylinderGeometry(0.05, 0.05, 0.25, 10), stahl, 0, 0, -0.22, Math.PI / 2, 0, 0, rohr); add(new THREE.CylinderGeometry(0.025, 0.03, 0.85, 8), stahl, 0, 0, -0.65, Math.PI / 2, 0, 0, rohr);
   add(new THREE.CylinderGeometry(0.04, 0.04, 0.08, 8), dunkel, 0, 0, -1.08, Math.PI / 2, 0, 0, rohr); const mund = new THREE.Object3D(); mund.position.set(0, 0, -1.12); rohr.add(mund);
   // Stummelfluegel mit Raketenbehaelter (innen) und zwei Lenkwaffen (aussen)
   const starts = [];
-  for (const sd of [-1, 1]) { const w = add(new THREE.BoxGeometry(1.15, 0.08, 0.75), grau, sd * 1.05, 1.18, 0.2, 0, 0, sd * 0.1);
+  const flG = (() => { const sh = new THREE.Shape(); sh.moveTo(-0.58, -0.38); sh.lineTo(0.58, -0.3); sh.quadraticCurveTo(0.63, 0, 0.58, 0.3); sh.lineTo(-0.58, 0.38); sh.lineTo(-0.58, -0.38);
+    const ge = new THREE.ExtrudeGeometry(sh, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 3, curveSegments: 8 }); ge.translate(0, 0, -0.02); ge.rotateX(Math.PI / 2); return ge; })();
+  for (const sd of [-1, 1]) { const w = add(flG, grau, sd * 1.05, 1.18, 0.2, 0, sd < 0 ? Math.PI : 0, sd * 0.1);
     add(new THREE.BoxGeometry(0.06, 0.22, 0.4), oliv2, sd * 0.95, 1.02, 0.15); add(new THREE.BoxGeometry(0.06, 0.22, 0.4), oliv2, sd * 1.45, 1.06, 0.15);
     const pod = add(new THREE.CylinderGeometry(0.17, 0.17, 1.0, 14), oliv2, sd * 0.95, 0.8, 0.1, Math.PI / 2, 0, 0); add(new THREE.CircleGeometry(0.16, 14), dunkel, sd * 0.95, 0.8, -0.41, 0, Math.PI, 0);
     for (let q = 0; q < 7; q++) { const a = q / 6 * Math.PI * 2, r = q ? 0.09 : 0; add(new THREE.CircleGeometry(0.03, 8), M(0x101010), sd * 0.95 + Math.cos(a) * r, 0.8 + Math.sin(a) * r, -0.415, 0, Math.PI, 0); }
@@ -451,15 +487,19 @@ function buildKampfheli(k = 1.4) {
     add(new THREE.BoxGeometry(0.06, 0.05, 1.0), stahl, sd * 1.45, 0.92, 0.15); for (const dx of [-0.11, 0.11]) { add(new THREE.CylinderGeometry(0.055, 0.055, 1.05, 10), M(0xdcdcd4, { roughness: 0.5 }), sd * 1.45 + dx, 0.84, 0.1, Math.PI / 2, 0, 0);
       add(new THREE.ConeGeometry(0.055, 0.16, 10), dunkel, sd * 1.45 + dx, 0.84, -0.5, -Math.PI / 2, 0, 0); } }
   // Triebwerke seitlich oben mit Einlass und Auspuff, Getriebe, Mast, Rotor
-  for (const sd of [-1, 1]) { add(new THREE.CylinderGeometry(0.2, 0.22, 1.4, 12), grau, sd * 0.55, 1.88, 0.25, Math.PI / 2, 0, 0); add(new THREE.CircleGeometry(0.17, 12), dunkel, sd * 0.55, 1.88, -0.46, 0, Math.PI, 0);
+  const gond = new THREE.LatheGeometry([[0.0, -0.72], [0.17, -0.7], [0.21, -0.62], [0.235, -0.4], [0.24, 0.1], [0.22, 0.5], [0.16, 0.7], [0.0, 0.72]].map(([r, y]) => new THREE.Vector2(r, y)), 24);
+  for (const sd of [-1, 1]) { add(gond, grau, sd * 0.55, 1.88, 0.25, Math.PI / 2, 0, 0); add(new THREE.CircleGeometry(0.165, 20), dunkel, sd * 0.55, 1.88, -0.475, 0, Math.PI, 0); add(new THREE.TorusGeometry(0.19, 0.025, 8, 24), rahmen, sd * 0.55, 1.88, -0.46);
+    add(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 12), grau, sd * 0.3, 1.8, 0.25, Math.PI / 2, 0, 0);
     add(new THREE.CylinderGeometry(0.13, 0.11, 0.35, 10), dunkel, sd * 0.68, 1.95, 1.05, Math.PI / 2 - 0.3, sd * 0.5, 0); }
-  add(new THREE.BoxGeometry(0.7, 0.3, 1.1), grau, 0, 2.02, 0.1); add(new THREE.CylinderGeometry(0.08, 0.11, 0.4, 10), stahl, 0, 2.35, 0.0);
+  { const v = add(new THREE.SphereGeometry(1, 28, 16), grau, 0, 1.92, 0.15); v.scale.set(0.42, 0.3, 0.85); } add(new THREE.CylinderGeometry(0.08, 0.11, 0.4, 10), stahl, 0, 2.35, 0.0);
   const rotor = new THREE.Group(); rotor.position.set(0, 2.58, 0.0); i.add(rotor); add(new THREE.CylinderGeometry(0.2, 0.22, 0.14, 14), dunkel, 0, 0, 0, 0, 0, 0, rotor);
-  for (let q = 0; q < 4; q++) { const b = add(new THREE.BoxGeometry(0.26, 0.035, 4.4), dunkel, 0, 0.02, 0, 0, q * Math.PI / 2, 0, rotor); b.geometry.translate(0, 0, 2.35); }
+  const blatt = (() => { const sh = new THREE.Shape(); sh.moveTo(-0.11, 0.15); sh.lineTo(0.15, 0.15); sh.lineTo(0.13, 4.35); sh.lineTo(0.02, 4.55); sh.lineTo(-0.11, 4.4); sh.lineTo(-0.11, 0.15);
+    const ge = new THREE.ExtrudeGeometry(sh, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.01, bevelSegments: 1 }); ge.rotateX(Math.PI / 2); ge.translate(0, 0.035, 0); return ge; })();
+  for (let q = 0; q < 4; q++) add(blatt, dunkel, 0, 0.02, 0, 0, q * Math.PI / 2, 0, rotor);
   // Heck: Ausleger, Leitwerk, Heckrotor, Hoehenflosse, Spornrad
-  add(new THREE.CylinderGeometry(0.24, 0.13, 3.8, 12), grau, 0, 1.55, 3.6, Math.PI / 2 - 0.03, 0, 0);
-  { const fin = new THREE.Shape(); fin.moveTo(0, 0); fin.lineTo(0.8, 0); fin.lineTo(1.2, 1.2); fin.lineTo(0.75, 1.25); fin.lineTo(0, 0.2); const fg = new THREE.ExtrudeGeometry(fin, { depth: 0.08, bevelEnabled: false }); fg.translate(0, 0, -0.04); add(fg, grau, 0, 1.5, 4.95, 0, -Math.PI / 2); }
-  add(new THREE.BoxGeometry(1.5, 0.05, 0.4), grau, 0, 1.6, 5.1);
+  { const b = add(new THREE.CylinderGeometry(0.24, 0.12, 3.8, 24), grau, 0, 1.56, 3.6, Math.PI / 2 - 0.03, 0, 0); b.scale.set(1, 1, 1.25); }
+  { const fin = new THREE.Shape(); fin.moveTo(0, 0); fin.lineTo(0.8, 0); fin.lineTo(1.2, 1.2); fin.lineTo(0.75, 1.25); fin.lineTo(0, 0.2); const fg = new THREE.ExtrudeGeometry(fin, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.03, bevelSegments: 3 }); fg.translate(0, 0, -0.025); add(fg, grau, 0, 1.5, 4.95, 0, -Math.PI / 2); }
+  { const sh = new THREE.Shape(); sh.moveTo(-0.75, -0.14); sh.lineTo(0.75, -0.14); sh.lineTo(0.75, 0.18); sh.lineTo(-0.75, 0.18); sh.lineTo(-0.75, -0.14); const ge = new THREE.ExtrudeGeometry(sh, { depth: 0.02, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.03, bevelSegments: 3 }); ge.rotateX(Math.PI / 2); add(ge, grau, 0, 1.6, 5.1); }
   const heck = new THREE.Group(); heck.position.set(-0.13, 2.45, 5.85); heck.rotation.y = Math.PI / 2; i.add(heck); for (let q = 0; q < 4; q++) add(new THREE.BoxGeometry(0.1, 1.1, 0.02), dunkel, 0, 0, 0, 0, 0, q * Math.PI / 4, heck);
   for (const sd of [-1, 1]) { add(new THREE.CylinderGeometry(0.035, 0.035, 0.6, 8), stahl, sd * 0.55, 0.45, -1.0, 0, 0, sd * 0.35); add(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 14), gummi, sd * 0.68, 0.2, -1.0, 0, 0, Math.PI / 2); }
   add(new THREE.CylinderGeometry(0.03, 0.03, 1.15, 8), stahl, 0, 0.75, 5.0, 0.5, 0, 0); add(new THREE.CylinderGeometry(0.12, 0.12, 0.08, 12), gummi, 0, 0.12, 5.25, 0, 0, Math.PI / 2);

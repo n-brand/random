@@ -129,7 +129,8 @@ function invQuick(i) { const S = invGet(i); if (!S) return; const nb = INV.box ?
   if (!S.n) invSet(i, null); }
 // Stapel an der Maus zurueck ins Inventar (beim Schliessen, beim Laden); ohne Platz bleibt der Rest an der Maus gespeichert
 function invReturnCursor() { const C = INV.cursor; if (!C) return; INV.cursor = null;
-  if (C.k) { const i = INV.slots.indexOf(null); if (i >= 0) INV.slots[i] = C; else { INV.cursor = C; toast("Kein Platz im Inventar für " + INV_ITEMS[C.id].name); } invSave(); return; }   // Koffer/Tasche mit Kennung (Inhalt) als Ganzes zurueck const put = invAdd(C.id, C.n);
+  if (C.k) { const i = INV.slots.indexOf(null); if (i >= 0) INV.slots[i] = C; else { INV.cursor = C; toast("Kein Platz im Inventar für " + INV_ITEMS[C.id].name); } invSave(); return; }   // Koffer/Tasche mit Kennung (Inhalt) als Ganzes zurueck
+  const put = invAdd(C.id, C.n);
   if (put < C.n) { INV.cursor = { id: C.id, n: C.n - put }; invSave(); toast("Kein Platz im Inventar für " + INV_ITEMS[C.id].name); } }
 // Ziehen ueber mehrere Plaetze mit Stapel an der Maus: links gleichmaessig verteilen (Vorschau live), rechts je einen
 const invSnap = () => ({ a: INV.slots.map(q => q && { ...q }), b: INV.box ? INV.box.slots.map(q => q && { ...q }) : null }), invSnapGet = (sn, j) => j === INV_KOPF ? INV.equip.kopf : j === INV_KOERPER ? INV.equip.koerper : j === INV_RUECKEN ? INV.equip.ruecken : j >= INV_BOX0 ? sn.b && sn.b[j - INV_BOX0] : sn.a[j];

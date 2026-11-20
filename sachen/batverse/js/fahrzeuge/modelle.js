@@ -1300,6 +1300,24 @@ function loftIn(g, st, m) {
   for (const [k, s] of [[0, 1], [R.length - 1, -1]]) { const r = R[k], c = r.reduce((q, p) => [q[0] + p[0] / n, q[1] + p[1] / n, q[2] + p[2] / n], [0, 0, 0]); for (let j = 0; j < n; j++) s > 0 ? tri(c, r[j], r[(j + 1) % n]) : tri(c, r[(j + 1) % n], r[j]); }
   const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals(); const o = new THREE.Mesh(geo, m); o.castShadow = !(m && m.transparent); g.add(o); return o;   // Lofts werfen Schatten (2026-11-19: Kampfheli-Rumpf fehlte im Schatten)
 }
+// Glatter Loft (gemeinsame Punkte, weiche Normalen; Nicolas 2026-11-20 "zu eckig"): st = [[f, Profil]], Profil = halber Querschnitt von unten Mitte nach oben Mitte (x >= 0),
+// wird gespiegelt. offen = Profil ist schon der ganze Bogen (z. B. Kanzel von Bruestung links ueber oben nach rechts), ohne Schliessen und ohne Deckel.
+function loftGlatt(par, st, m, offen) { const rows = st.map(([f, h]) => offen ? h.map(([x, y]) => [x, y, -f]) : [...h, ...h.slice(1, -1).reverse().map(([x, y]) => [-x, y])].map(([x, y]) => [x, y, -f]));
+  const n = rows[0].length, pos = rows.flat(2), idx = [];
+  for (let r = 0; r < rows.length - 1; r++) for (let j = 0; j < (offen ? n - 1 : n); j++) { const A = r * n + j, B = r * n + (j + 1) % n, C = (r + 1) * n + (j + 1) % n, Dd = (r + 1) * n + j; idx.push(A, C, Dd, A, B, C); }
+  if (!offen) for (const [r, sg] of [[0, 1], [rows.length - 1, -1]]) { const c = pos.length / 3, R0 = rows[r]; pos.push(...R0.reduce((q, v) => [q[0] + v[0] / n, q[1] + v[1] / n, q[2] + v[2] / n], [0, 0, 0])); const b0 = pos.length / 3; pos.push(...R0.flat());
+    for (let j = 0; j < n; j++) sg > 0 ? idx.push(c, b0 + (j + 1) % n, b0 + j) : idx.push(c, b0 + j, b0 + (j + 1) % n); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  const o = new THREE.Mesh(geo, m); o.castShadow = !m.transparent; o.receiveShadow = !m.transparent; par.add(o); return o; }
+// Halber Bogen (Bruestung aussen -> oben Mitte) zu ganzem Bogen (links -> oben -> rechts)
+const bogenVoll = A => [...A.map(([x, y]) => [-x, y]), ...A.slice(0, -1).reverse()];
+// Kanzelglas: getoent, klar lackiert (Spiegelung), durchsichtig, beidseitig; Farbe je Fluggeraet
+const glasKanzel = (c = 0x1d2c38, op = 0.55) => new THREE.MeshPhysicalMaterial({ color: c, metalness: 0.2, roughness: 0.04, transparent: true, opacity: op, clearcoat: 1, clearcoatRoughness: 0.03, side: THREE.DoubleSide, depthWrite: false });
+// Sitze und Instrumentenbrett unter der Kanzel: sitze = [[x, y (Boden), z]], brett = [y, z, Breite]
+function cockpitInnen(par, sitze, brett) { const m = new THREE.MeshStandardMaterial({ color: 0x1a1c1f, roughness: 0.75 }), mb = new THREE.MeshStandardMaterial({ color: 0x121417, roughness: 0.4 }), sch = new THREE.MeshStandardMaterial({ color: 0x0b2a3a, emissive: 0x06202c, roughness: 0.3 });
+  const box = (w, h, d, x, y, z, rx = 0, mm = m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mm); o.position.set(x, y, z); o.rotation.x = rx; par.add(o); return o; };
+  for (const [x, y, z] of sitze) { box(0.44, 0.1, 0.44, x, y + 0.32, z); box(0.44, 0.6, 0.1, x, y + 0.62, z + 0.24, -0.15); box(0.24, 0.16, 0.08, x, y + 0.98, z + 0.28, -0.15); box(0.3, 0.27, 0.36, x, y + 0.13, z); }   // Sitzflaeche, Lehne, Kopfstuetze, Sockel
+  if (brett) { const [y, z, w] = brett; box(w, 0.2, 0.08, 0, y, z, -0.5, mb); for (const dx of [-w / 4, w / 4]) box(w * 0.3, 0.13, 0.01, dx, y + 0.01, z - 0.045, -0.5, sch); } }   // Brett mit zwei Bildschirmen
 const tabF = T => f => { if (f >= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (f >= T[i][0]) { const [f0, a] = T[i - 1], [f1, b] = T[i]; return a + (b - a) * (f0 - f) / (f0 - f1); } return T[T.length - 1][1]; };
 // ---- Rolls-Royce Spectre (Nicolas 2026-11-10, Fotos vorne und oben; stilisiert, ohne Logos/Schriftzug): grosses Coupe mit einer Tuer je Seite,
 // von oben rund (schmale Nase und Heck, breite Hueften), Fastback, zweifarbig Gold mit schwarzer Haube, schwarzem Dach und schwarzem Heckdeckel,

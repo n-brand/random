@@ -11,7 +11,7 @@ const JET_Y = 2.0, JET_VS = 42, JET_VR = 34, JET_LIM = 1400;           // Drehpu
 function buildJet() {
   const g = new THREE.Group(), body = new THREE.Group(); body.position.y = -JET_Y; g.add(body);     // body: Modell mit Radunterkante bei y 0
   const paint = M(0x7d848b, { metalness: 0.3, roughness: 0.6, flatShading: true }), panel = M(0x636a71, { metalness: 0.3, roughness: 0.65, flatShading: true });
-  const black = M(0x08090b, { roughness: 0.8 }), nozM = M(0x3a3c40, { metalness: 0.6, roughness: 0.45, flatShading: true }), glass = M(0x4a3c14, { metalness: 0.85, roughness: 0.06, transparent: true, opacity: 0.72 });
+  const black = M(0x08090b, { roughness: 0.8 }), nozM = M(0x3a3c40, { metalness: 0.6, roughness: 0.45, flatShading: true }), glass = glasKanzel(0x6a5418, 0.5);   // goldgetoent, klar lackiert (2026-11-20)
   const tireM = M(0x121212, { roughness: 0.9 }), rimM = M(0xb8bcc2, { metalness: 0.8, roughness: 0.3 }), glowM = M(0x141414, { emissive: 0xff7a20, emissiveIntensity: 0 });
   const flat = (pts, d, m, y, par = body) => { const sh = new THREE.Shape(); pts.forEach(([x, f], i) => i ? sh.lineTo(x, f) : sh.moveTo(x, f)); const bv = Math.min(0.05, d * 0.4);   // Fase: Kanten duenn und rund wie ein Profil (2026-11-11)
     return meshIn(par, new THREE.ExtrudeGeometry(sh, { depth: Math.max(0.01, d - 2 * bv), bevelEnabled: true, bevelThickness: bv, bevelSize: bv * 0.9, bevelSegments: 2 }).rotateX(-Math.PI / 2).translate(0, bv, 0), m, 0, y, 0); };   // Platte in (x, vorne), Dicke nach oben
