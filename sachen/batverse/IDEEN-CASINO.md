@@ -17,6 +17,7 @@ Eigene Umsetzung mit eigenen Namen und eigenem Aussehen (keine Nachbauten bestim
 - **Rubbellos** (2026-11-20, Reiter im Quick-Games-Automaten).
 - **Pferderennen** (2026-11-20, Automat "Gotham Derby").
 - **Lotterie** (2026-11-20, Lotto 6 aus 30, Ziehung je Spieltag).
+- **Bingo** (2026-11-20, Automat, 1-4 Karten, 30 Kugeln).
 
 ## Von Nicolas gewünscht (Plan N29)
 
