@@ -93,8 +93,8 @@ Nicolas 2026-11-12: Für die Planung jetzt nicht wichtig, aus der Karte entfernt
 
 ## Später (vorgemerkt, noch nicht in der Karte)
 
-- **Arkham-Insel** (Nicolas 2026-11-12: wie die Militärinsel erst später, aus der Karte entfernt): Arkham Asylum auf eigener Insel vor der Küste, nur mit der **Arkham-Fähre** erreichbar (Autofähre, Anleger in den Narrows und auf Arkham; vorher Insel bei ca. -3340 / 1800).
-- **Militärinsel im Osten** (Nicolas 2026-11-11: erst später, vorerst weglassen): im Meer, per Boot/Flug, Landebahn, Hangars, Hafen. Der Kampfjet bekommt dort seinen Platz (statt Hauptstrasse; entschieden, Nicolas 2026-11-12).
+- **Arkham-Insel** (**geplant 2026-11-23** auf der Planungskarte: bei ca. -3450 / 1900, ca. 840 x 600 m, 1,1 km vor den Narrows, Asylum mit Hauptbau, Hochsicherheit, Verwaltung, Werkstatt und Mauer, Autofähre von der Harbor Road; Daten `GOTHAM.arkham`, `arkhamFaehre`; im Spiel noch nicht) (Nicolas 2026-11-12: wie die Militärinsel erst später, aus der Karte entfernt): Arkham Asylum auf eigener Insel vor der Küste, nur mit der **Arkham-Fähre** erreichbar (Autofähre, Anleger in den Narrows und auf Arkham; vorher Insel bei ca. -3340 / 1800).
+- **Militärinsel im Osten** (**geplant 2026-11-23** auf der Planungskarte: ca. 2,8 km vor Festland Ost bei 11500 / -2500, ca. 3,3 x 1,1 km parallel zur Küste, Landebahn 2,6 km, Rollweg, vier Hangars, Tower, Hafen mit Pier; Daten `GOTHAM.militaerinsel`; im Spiel noch nicht) (Nicolas 2026-11-11: erst später, vorerst weglassen): im Meer, per Boot/Flug, Landebahn, Hangars, Hafen. Der Kampfjet bekommt dort seinen Platz (statt Hauptstrasse; entschieden, Nicolas 2026-11-12).
 - **Kameras (S5)**: später (Nicolas 2026-11-12).
 
 ## Phase 7 – Wayne Manor und Batcave
