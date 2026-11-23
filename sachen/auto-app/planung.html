@@ -163,7 +163,7 @@
   </div>
 
   <h2>4. Marke: Name und Logo (bitte eine wählen)</h2>
-  <p>33 Entwürfe für eine Supersportwagen-Marke (1–5 erster Satz, 6–11 zweiter, 12–17 dritter, 18–26 aufwändige Wappen mit vielen Details, 27–32 ganz schlicht, 33 Wayne Enterprises im Batverse-Design, 34–39 in der Art von 5 und 15). Die Logos sind als SVG gezeichnet und lassen sich danach noch anpassen. Die Namen habe ich nicht im Markenregister geprüft; vor einer echten Nutzung müsste man das tun.</p>
+  <p>33 Entwürfe für eine Supersportwagen-Marke (1–5 erster Satz, 6–11 zweiter, 12–17 dritter, 18–26 aufwändige Wappen mit vielen Details, 27–32 ganz schlicht, 33 Wayne Enterprises im Batverse-Design, 34–39 in der Art von 5 und 15, 40 Batman). Die Logos sind als SVG gezeichnet und lassen sich danach noch anpassen. Die Namen habe ich nicht im Markenregister geprüft; vor einer echten Nutzung müsste man das tun.</p>
   <p class="kl">Klick auf ein Logo: rechts gross ansehen (Klick auf ein anderes wechselt, nochmals auf dasselbe, Esc oder × schliesst). Die Leiste unten wechselt zwischen Logo und Schriftzug und ändert den Hintergrund des Schriftzugs.</p>
   <div class="logobereich"><div class="raster" id="logos">
     <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Veltaro">
@@ -381,6 +381,9 @@
     <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Kyra"><path d="M60 12 L16 60 L60 108 Z" fill="#a78bfa"/><path d="M60 12 L104 60 L60 108 Z" fill="#6d28d9"/><path d="M48 38 V82 M72 38 L52 60 L72 82" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/></svg></div>
       <span class="nr">OPTION 39 · WIE 5 / 15</span><p class="wort">KYRA</p><p class="kl">Raute in zwei Violetttönen mit einem weissen K – Kristall-Look, kühl und futuristisch.</p>
       <div class="farben"><span style="background:#a78bfa"></span><span style="background:#6d28d9"></span><span style="background:#ffffff"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Batman"><defs><radialGradient id="bmg" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#e8b400"/></radialGradient></defs><ellipse cx="60" cy="60" rx="54" ry="33" fill="#111214"/><ellipse cx="60" cy="60" rx="49" ry="28.5" fill="url(#bmg)"/><path d="M60 55 L62.2 48.8 L64 54.1 L73.2 51.4 L87.3 47 L104 59.8 L94.3 62.9 L89 72.6 L82 65.5 L75.8 75.2 L69.7 67.3 L60 77.8 L50.3 67.3 L44.2 75.2 L38 65.5 L31 72.6 L25.7 62.9 L16 59.8 L32.7 47 L46.8 51.4 L56 54.1 L57.8 48.8 L60 55 Z" fill="#111214"/></svg></div>
+      <span class="nr">OPTION 40 · BATVERSE</span><p class="wort">BATMAN</p><p class="kl">Die Fledermaus aus dem Batverse (gleiche Kontur wie das Batsignal über dem Polizeipräsidium) schwarz im gelben Oval mit dunklem Ring; Schriftzug fett in Gelb mit „Gotham City“.</p>
+      <div class="farben"><span style="background:#f2c21b"></span><span style="background:#111214"></span></div></div>
   </div>
   <aside id="detail" hidden aria-label="Logo gross"></aside></div>
 
@@ -397,7 +400,7 @@
 
   <h2>6. Offen (deine Entscheidung)</h2>
   <ul>
-    <li>Welche Marke (1–39), oder Mischung (z. B. Name von 1 mit Logo von 3)?</li>
+    <li>Welche Marke (1–40), oder Mischung (z. B. Name von 1 mit Logo von 3)?</li>
     <li>Modellname des Autos (z. B. Marke + Zahl wie „Veltaro V12“ oder ein eigener Name)?</li>
     <li>Fahrzeugbild: selbst gezeichnetes SVG (schnell) oder drehbares 3D-Modell mit three.js (aufwändiger)?</li>
     <li>Elektro oder Verbrenner? (Bestimmt Laden oder Tanken.)</li>
@@ -474,6 +477,7 @@
     NEXAR: { f: SANS, w: 600, ls: 14, hell: "#dbeafe", dunkel: "#0b1224", akz: "#3b82f6", tag: "AUTOMOTIVE" },
     SIORA: { f: SERIF, w: 400, ls: 16, hell: "#f3d58a", dunkel: "#1c1608", akz: "#e2b857", tag: "MAISON" },
     KYRA: { f: SANS, w: 300, ls: 22, hell: "#ede9fe", dunkel: "#1e0b3d", akz: "#a78bfa", tag: "ELECTRIC" },
+    BATMAN: { f: BLACK, w: 900, ls: 10, hell: "#f2c21b", dunkel: "#111214", akz: "#f2c21b", tag: "GOTHAM CITY" },
   };
   const ZUST = { ansicht: "logo", hg: "schwarz" }; let gezeichnetHg = null, eingepasst = false;
   try { const z = JSON.parse(localStorage.getItem("auto-planung-ansicht") || "null"); if (z) Object.assign(ZUST, z); } catch (e) {}
