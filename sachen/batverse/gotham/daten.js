@@ -182,11 +182,11 @@ const GOTHAM = {
     // Nahtstellen (Nicolas 2026-11-23, Punkte -5671/401, -4555/628, 3652/-221): Umriss beginnt im Westen genau dort, wo die Spielkueste den Kreis der heutigen Welt trifft
     // (gerades Altstueck leicht gezackt, Knick geglaettet), im Osten durch den Nahtpunkt gefuehrt (Versatz ueber 1,6 km weich verteilt).
     // vorgelagerte Inselchen (Madagaskar-Vergleich): [x, z, Radius, Zufall]
-    eilande: [[-10247,-1799,368,190], [-10490,-3411,126,864], [-7033,-9662,312,218], [-6999,-8098,254,286], [-1850,-9568,357,573], [-1041,-8313,241,568], [5785,-8647,205,730], [12085,526,248,770], [11953,1008,328,683], [16070,-7922,520,412]],
+    eilande: [[-10247,-1799,368,190], [-10490,-3411,126,864], [-7033,-9662,312,218], [-6999,-8098,254,286], [-1850,-9568,357,573], [-1041,-8313,241,568], [5785,-8647,205,730], [12085,526,248,770], [11953,1008,328,683], [16070,-7922,520,412], [17298,-10677,560,901], [16120,-11200,300,902], [18450,-11350,340,903], [17900,-9620,260,904], [16300,-9900,220,905], [18750,-10250,180,906]],
     heute: { x: -323, z: 1318, r: 4300 },
     // Namen (Nicolas 2026-11-23: "mach mir Vorschläge für die grosse Insel und für die kleinen, ich brauch Namen und möchte die auch so anzeigen"). VORSCHLAG, OFFENE-FRAGEN 63.
     name: "Gotham Island", nameVorschlaege: ["Gotham Island", "Grand Gotham", "New Gotham", "Wayne Island", "Isle of Ravens"],
-    eilandNamen: ["Fog Island", "Seal Rock", "Raven Island", "Crow’s Nest", "Lighthouse Key", "Smuggler’s Key", "Black Reef", "Storm Rock", "Hangman’s Isle", "Lantern Isle"],   // gleiche Reihenfolge wie eilande (Gull Rock 2026-11-23 entfernt, lag an Raven Island)
+    eilandNamen: ["Fog Island", "Seal Rock", "Raven Island", "Crow’s Nest", "Lighthouse Key", "Smuggler’s Key", "Black Reef", "Storm Rock", "Hangman’s Isle", "Lantern Isle", "Corsair Island", "Wreck Rock", "Driftwood Key", "Pelican Rock", "Shell Key", "Tern Rock"],   // gleiche Reihenfolge wie eilande (Gull Rock 2026-11-23 entfernt, lag an Raven Island)
     namen: [{ x: -2300, z: -5800, text: "Festland Nord (neu)", sub: "Gelände in Kacheln, noch ohne Bäume" }, { x: -6800, z: -3600, text: "Festland West (neu)" },
       { x: 4800, z: -3600, text: "Festland Ost (neu)" }, { x: -900, z: -10300, text: "Meer" }, { x: -11200, z: 1200, text: "Meer" }, { x: 13500, z: 600, text: "Meer" }, { x: 10200, z: 3700, text: "Festland Südost (neu)" }, { x: 6500, z: 6200, text: "Meer" },
       { x: -2600, z: 1650, text: "Hafen (N53: später neu, viel grösser, mit Docks)", klein: true }],

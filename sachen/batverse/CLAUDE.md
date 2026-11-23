@@ -77,6 +77,8 @@ Neue Tasten (z. B. Drift) hier eintragen, sobald sie gebaut sind.
 
 ## Änderungen
 
+- **Inselgruppe im Nordosten** (Nicolas 2026-11-23: "[17298, -10677] hier soll eine Inselgruppe hin, also noch mehr Inseln"): gotham/daten.js `welt.eilande` + 6 Inseln um 17298 / -10677: Corsair Island (Mitte, r 560 m), Wreck Rock, Driftwood Key, Pelican Rock, Shell Key, Tern Rock (r 180-340 m), Rand zu Rand mind. 300 m, Namen in `welt.eilandNamen` (Vorschlag). Säume fliessen ineinander (Goo-Filter). Gilt auch im Spiel (Abstandsfeld). Geprüft: Bild.
+
 - **Beschriftungen mit den Hauptschaltern, neue Insel Lantern Isle** (Nicolas 2026-11-23, Bild mit allen Schaltern aus: "mit Weiteres soll man auch hier die unnötigen Beschriftungen entfernen können"; "hier soll noch eine Insel hin [16070, -7922]"): gotham/index.html – Bezirksnamen tragen `data-mehr` (aus mit "Weiteres"), U-Bahn-Stationsnamen `data-mehr` und `data-weg` (aus mit "Weiteres" oder "Verkehr"), Fährnamen `data-weg`. gotham/daten.js: neues Inselchen [16070, -7922] r 520 m "Lantern Isle" (Name Vorschlag). karte-kueste.js `INSEL`: Rahmen und `WELT_R` schliessen jetzt auch die Inselchen ein (sonst fehlte ein Inselchen weit draussen im Spiel). Geprüft: Namen aus/an, Bild der neuen Insel. Dabei behoben: Kommentar mitten in der Zeile hatte die Karte lahmgelegt (Syntaxfehler, nur kurz im Arbeitsstand).
 
 - **Gull Rock entfernt** (Nicolas 2026-11-23, Bild: "Gull Rock ist dort fehl am Platz, überschneidet sich, entferne es komplett"): gotham/daten.js – Inselchen [-7199, -9438] (lag an Raven Island) aus `welt.eilande` und sein Name aus `welt.eilandNamen` entfernt; jetzt 9 Inselchen. Gilt auch im Spiel (Abstandsfeld der Insel).
