@@ -175,3 +175,6 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 
 66. **Granate gegen Automaten:** Sollen gesprengte Jeton- und Spielautomaten Jetons bzw. Geld auswerfen (wie der Bankautomat), und sollen sie nach einer Zeit wieder heil sein?
    - *Bis dahin:* nur zerstört (verkohlt bzw. Wrack, kein Spielen mehr), keine Beute, heil erst nach dem Neuladen; Akte "… gesprengt", Fahndung +1. Der Batman-Tresor hält der Granate stand, Tresore Stufe 1–4 fliegen auf.
+
+66. **Gebirge und Bahn nach deiner Zeichnung (Planungskarte):** Name **Kane Range**, Gipfel 1 050 bis 1 460 m, Schnee ab ca. 1 000 m; Bahnhöfe Port Westfield (Güter), Westfield, Gotham International Airport, Gotham Junction, Northgate, Kane Pass (Nord), Eastport, Eastport Harbor, Southcliff, Camp Ironwood. Deine Südlinie läuft durch einen Teil der heutigen Welt um Wayne Manor (Festland Nord, ca. 57 Streckenpunkte im Kreis) – soll sie im Spiel dort so gebaut werden? Und soll ich das Gebirge als Gelände ins Spiel bauen (wie Fort Graystone und Arkham)?
+   - *Bis dahin:* alles nur auf der Planungskarte; im Spiel sind die Berge der Insel-Welt weiter zufällige Gebirgszüge.

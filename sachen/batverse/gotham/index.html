@@ -296,11 +296,23 @@
           el("path", { d: path(Mi.hafen.pier, false), stroke: "#9a8f78", "stroke-width": 22, fill: "none", "data-bau": 1 }, Wg).dataset.info = "<b>Militärhafen</b><br>Pier für Boote";
           let cx = 0, cz = 0; Mi.umriss.forEach(q => { cx += q[0] / Mi.umriss.length; cz += q[1] / Mi.umriss.length; }); txt(cx, cz + 820, Mi.name, 110); txt(cx, cz + 940, Mi.sub, 55, "#fff8"); }
         // 2. Militaerbasis Camp Ironwood und Zugnetz (Nicolas 2026-11-23, Punkt 6096/3866; Entwurf)
+        // Gebirge Kane Range (Nicolas 2026-11-23, Entwurf): Fels, Hochgebirge mit Schnee, Grat, Gipfel mit Hoehe
+        { const Gb = G.gebirge; if (Gb) { const inf = "<b>" + Gb.name + " (Entwurf)</b><br>" + Gb.sub;
+          el("path", { d: path(smooth(Gb.umriss, 40, true), true), fill: "#6f6555", "fill-opacity": 0.8, stroke: "#4a4236", "stroke-width": 10 }, Wg).dataset.info = inf;
+          el("path", { d: path(smooth(Gb.hochgebirge, 40, true), true), fill: "#9b958b", "fill-opacity": 0.85, stroke: "#7d776d", "stroke-width": 6 }, Wg).dataset.info = "<b>Hochgebirge</b><br>Fels und Geröll · " + Gb.name;
+          for (const S of Gb.schnee || []) el("path", { d: path(smooth(S, 30, true), true), fill: "#f2f5f8", "fill-opacity": 0.92, stroke: "#d4dde5", "stroke-width": 5 }, Wg).dataset.info = "<b>Schnee</b><br>über ca. 1000 m · " + Gb.name;
+          el("path", { d: path(smooth(Gb.grat, 40, false), false), fill: "none", stroke: "#8a8f96", "stroke-width": 12, "stroke-dasharray": "60 30", "pointer-events": "none" }, Wg);
+          for (const [x, z, hm] of Gb.gipfel) { el("path", { d: "M" + x + " " + (z - 90) + "L" + (x + 80) + " " + (z + 50) + "L" + (x - 80) + " " + (z + 50) + "Z", fill: "#3a3a3a", stroke: "#fff", "stroke-width": 8 }, Wg).dataset.info = "<b>Gipfel</b><br>ca. " + hm + " m · " + Gb.name;
+            const t = el("text", { x, y: z + 140, "font-size": 70, fill: "#1b1d20", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, L.namen); t.textContent = hm + " m"; }
+          let cx = 0, cz = 0; Gb.grat.forEach(q => { cx += q[0] / Gb.grat.length; cz += q[1] / Gb.grat.length; }); const t = el("text", { x: cx, y: cz - 250, "font-size": 200, fill: "#2b2620", "text-anchor": "middle", "font-weight": 800, "letter-spacing": 30, "font-family": "Georgia, serif", "pointer-events": "none" }, L.namen); t.textContent = Gb.name.toUpperCase(); } }
         const M2 = G.militaerbasis2, ZN = G.zugnetz;
         if (ZN) { for (const Li of ZN.linien) { const d = path(Li.punkte, false), inf = "<b>" + Li.name + "</b><br>" + ZN.name + " · " + ZN.sub;
             el("path", { d, fill: "none", stroke: "#1b1d20", "stroke-width": 70, "stroke-linejoin": "round", "stroke-linecap": "round" }, L.bahn).dataset.info = inf;
             el("path", { d, fill: "none", stroke: Li.farbe, "stroke-width": 38, "stroke-linejoin": "round", "pointer-events": "none" }, L.bahn);
             el("path", { d, fill: "none", stroke: "#1b1d20", "stroke-width": 38, "stroke-dasharray": "10 50", "pointer-events": "none" }, L.bahn); }
+          for (const T of ZN.tunnel || []) { el("path", { d: path(T.punkte, false), fill: "none", stroke: "#1b1d20", "stroke-width": 70, "stroke-linecap": "butt" }, L.bahn).dataset.info = "<b>" + T.name + "</b><br>ca. " + (T.laenge / 1000).toFixed(1).replace(".", ",") + " km unter der Kane Range";
+            el("path", { d: path(T.punkte, false), fill: "none", stroke: "#c9a227", "stroke-width": 26, "stroke-dasharray": "50 40", "pointer-events": "none" }, L.bahn);
+            for (const q of [T.punkte[0], T.punkte[T.punkte.length - 1]]) el("circle", { cx: q[0], cy: q[1], r: 60, fill: "#1b1d20", stroke: "#c9a227", "stroke-width": 14, "pointer-events": "none" }, L.bahn); }
           for (const b of ZN.bahnhoefe) { el("rect", { x: b.x - 90, y: b.z - 40, width: 180, height: 80, rx: 10, fill: "#f2efe4", stroke: "#1b1d20", "stroke-width": 8 }, L.bahn).dataset.info = "<b>Bahnhof " + b.name + "</b><br>" + ZN.name;
             const t = el("text", { x: b.x, y: b.z + 160, "font-size": 95, fill: "#f2efe4", "text-anchor": "middle", "font-weight": 700, stroke: "#0b1a26", "stroke-width": 14, "paint-order": "stroke", "pointer-events": "none", "data-weg": 1 }, L.namen); t.textContent = "🚉 " + b.name; } }
         if (M2) { el("path", { d: path(M2.umriss, true), fill: "#3c4434", "fill-opacity": 0.85, stroke: "#c9ccd0", "stroke-width": 10, "stroke-dasharray": "40 20" }, Wg).dataset.info = "<b>" + M2.name + " (Entwurf)</b><br>" + M2.sub;
