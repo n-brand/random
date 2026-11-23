@@ -76,7 +76,7 @@ function wkNeben() { if (!AKT) return null; const F = AKT.flug ? AKT.F : null, x
 function wkAlsPerson(H) { WKP.hier = H; if (modus === "person") personStart(); else setModus("person"); }
 // nahe genug zum Einsteigen? (Person steht in der um 1,8 m vergroesserten Box des Fahrzeugs)
 function wkNahFahrzeug() { if (modus !== "person" || !AKT || !AKT.g) return false; const b = new THREE.Box3().setFromObject(AKT.g).expandByScalar(1.8); return b.containsPoint(new THREE.Vector3(PERSON.pos.x, Math.max(b.min.y, Math.min(b.max.y, PERSON.pos.y + 1)), PERSON.pos.z)); }
-function wkEinsteigen() { if (!wkNahFahrzeug()) { toast("Zu weit weg vom Fahrzeug"); return; } WKP.zuFuss = true; setModus("drive"); toast("Eingestiegen – F oder E: aussteigen"); }
+function wkEinsteigen() { const C = wkVehZiel(); if (C) { wkVehUebernehmen(C); return; } if (!wkNahFahrzeug()) { toast("Zu weit weg vom Fahrzeug"); return; } WKP.zuFuss = true; setModus("drive"); toast("Eingestiegen – F oder E: aussteigen"); }
 // Aussteigen: statt Ansicht 1 wieder als Person neben das Fahrzeug
 { const sm = setModus; setModus = function (m) { if (WKP.zuFuss && modus === "drive" && m !== "drive") { WKP.zuFuss = false; if (m === "orbit") { const H = wkNeben(); sm("person"); if (H) { WKP.hier = H; personStart(); } return; } } if (m !== "drive") WKP.zuFuss = false; return sm(m); }; }
 // Tasten: F in Person = einsteigen (nur nahe), im Fahrzeug nach Einsteigen als Person: E steigt auch aus
@@ -91,6 +91,22 @@ renderer.domElement.addEventListener("mousedown", e => { if (modus !== "person" 
 // Hinweis beim Draufschauen
 { const st = personStep; personStep = function (dt) { st(dt); if (PERSON.aim || !AKT || !AKT.g) return; const rc = new THREE.Raycaster(); rc.setFromCamera({ x: 0, y: 0 }, camera); rc.far = 5; const h = $("w-hint");
   if (rc.intersectObject(AKT.g, true)[0] && !personBusy()) { const t = "Rechtsklick oder F: einsteigen (" + AKT.m.name + ")"; h.hidden = false; if (h.textContent !== t) h.textContent = t; } }; }
+// Fahrzeuge der Gebaeude (Autohaus, Verwahrstelle, Polizei; VEH) – einsteigen (Nicolas 2026-11-23: "warum kann ich hier nicht einsteigen?"; vorher nur das oben gewaehlte Modell).
+// Das angeschaute Fahrzeug wird mit seinem eigenen Modell (Farbe) das aktive Fahrzeug; beim Modellwechsel bleibt es stehen, wo es zuletzt war.
+function wkVehZiel() { if (modus !== "person" || typeof VEH === "undefined") return null; const rc = new THREE.Raycaster(); rc.setFromCamera({ x: 0, y: 0 }, camera); rc.far = 5;
+  let best = null, bd = Infinity; for (const C of VEH) { if (!C.g || !C.g.visible || C.lazy || (AKT && C.g === AKT.g)) continue; const t = rc.intersectObject(C.g, true)[0]; if (t && t.distance < bd) { bd = t.distance; best = C; } } return best; }
+function wkVehIndex(C) { let i = MODELLE.findIndex(m => m.spec === C.spec); if (i < 0) i = MODELLE.findIndex(m => m.spec && C.spec && m.spec.name === C.spec.name); return i; }
+function wkVehUebernehmen(C) { const i = wkVehIndex(C); if (i < 0) { toast("Dieses Fahrzeug gibt es in der Werkstatt nicht zum Fahren"); return; }
+  const m = MODELLE[i], bau = m.bau, p = C.g.position.clone(), h = C.g.rotation.y;
+  m.bau = () => ({ g: C.g, wheels: C.wheels || [], turret: C.turret, gun: C.gun, gunMin: C.gunMin, beacon: C.beacon, monitor: C.monitor, dump: C.dumpG, wheelGlow: C.wheelGlow, folds: C.folds, glowM: C.glowM, jetM: C.jetM, flame: C.flame });
+  try { laden(i); } finally { m.bau = bau; }
+  AKT.vehC = C; AKT.x = p.x; AKT.z = p.z; AKT.y = p.y; AKT.h = h; setze(); pick.value = String(i);
+  WKP.zuFuss = true; setModus("drive"); toast("Eingestiegen (" + m.name + ") – F oder E: aussteigen"); }
+// Modellwechsel: ein uebernommenes Fahrzeug nicht wegwerfen, sondern stehen lassen (wieder Kulisse, wieder einsteigbar)
+{ const ld = laden; laden = function (i) { if (AKT && AKT.vehC) { engineStop(true); AKT.g.position.set(AKT.x, AKT.y || 0, AKT.z); AKT.g.rotation.set(0, AKT.h, 0); AKT = null; } return ld(i); }; }
+renderer.domElement.addEventListener("mousedown", e => { if (modus !== "person" || e.button !== 2 || PERSON.aim || (typeof weaponHeld === "function" && weaponHeld()) || personBusy()) return;
+  const C = wkVehZiel(); if (!C) return; e.stopImmediatePropagation(); if (document.pointerLockElement) document.exitPointerLock(); wkVehUebernehmen(C); }, true);
+{ const st = personStep; personStep = function (dt) { st(dt); if (PERSON.aim || personBusy()) return; const C = wkVehZiel(); if (!C) return; const h = $("w-hint"), i = wkVehIndex(C), t = "Rechtsklick oder F: einsteigen (" + (i >= 0 ? MODELLE[i].name : C.spec.name) + ")"; h.hidden = false; if (h.textContent !== t) h.textContent = t; }; }
 // Menue
 const WKTP = { el: null };
 function wkTpToggle(auf) { if (!WKTP.el) wkTpBau(); const el = WKTP.el; auf = auf === undefined ? el.hidden : auf; el.hidden = !auf; if (auf && document.pointerLockElement) document.exitPointerLock(); }
