@@ -110,6 +110,8 @@ body.touch.walk .bar a { display: none; }
 body.touch #car-speed { bottom: auto !important; top: calc(env(safe-area-inset-top, 0px) + 58px); font-size: 13px !important; }
 body.touch .hud { gap: 6px; right: 8px; }
 body.touch .hud button { padding: 8px 11px; font-size: .85rem; }
+/* Handy hochkant (Nicolas 2026-11-23 "das pruefen"): die Knopfleiste war bei 375 px 470 px breit, "Aktion" lag links ausserhalb; kleiner und notfalls seitlich wischen */
+@media (max-width: 520px) { body.touch .hud { gap: 4px; max-width: calc(100vw - 16px); overflow-x: auto; scrollbar-width: none; } body.touch .hud::-webkit-scrollbar { display: none; } body.touch .hud button { padding: 7px 7px; font-size: .74rem; flex: none; } }
 #veh-btns { display: none; position: fixed; right: 26px; bottom: calc(env(safe-area-inset-bottom, 0px) + 162px); flex-direction: column; gap: 8px; z-index: 5; }
 body.touch.walk.drive #veh-btns { display: flex; }
 #veh-btns button { width: 64px; height: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .12); color: var(--text); font: inherit; font-size: .75rem; touch-action: manipulation; }

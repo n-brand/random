@@ -1,6 +1,6 @@
 // CACHE und ASSETS erzeugt tools/sw-build.js (Pruefsumme ueber alle Offline-Dateien): nach Aenderungen "node tools/sw-build.js" ausfuehren
 // Grosse Dateien (z.B. GLB-Modelle) nicht vorladen, sie landen beim ersten Abruf im Cache
-const CACHE = "random-9ff348ee2c";
+const CACHE = "random-58746db523";
 const THREE = "https://unpkg.com/three@0.160.0/";
 const JSZIP = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
 // Google Fonts der Retro-Game-Hub-Praesentationen (CSS und Schriftdateien werden mitgespeichert)

@@ -221,7 +221,7 @@ function summonVehicle(v) {
     Object.assign(v, { v: 0, vy: 0, air: false, wet: false, settled: false, steer: 0, lean: 0, pitch: gr.pitch, roll: gr.roll, safe: { x: v.x, z: v.z, y: v.y, h: v.h } });
     carCircles(true); carPose(0); v.g.visible = true;
     CAR = prev;
-    toast(v.label + " steht vor dir (Rechtsklick einsteigen)");
+    toast(v.label + " steht vor dir (" + (typeof touch !== "undefined" && touch ? "Tippen" : "Rechtsklick") + ": einsteigen)");
     return true;
   }
   Object.assign(v, saved); CAR = prev;

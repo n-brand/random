@@ -378,7 +378,7 @@ function gortAutohaus(c) {
   GORT.lots = GORT.lots || {}; GORT.lots[o.id] = L(0, Z0 / 2);   // Lieferplatz (Handy-Kauf): Vorplatz vor der Ausfahrt
   // Ausstellung: Modelle des Shops auf Drehteller-Scheiben, schraeg zur Glasfront, Mittelgasse zur Ausfahrt frei
   const items = ((typeof HANDY_SHOPS !== "undefined" && HANDY_SHOPS[sid] && HANDY_SHOPS[sid].items) || []).map(i => i[0]).filter(k => typeof HANDY_CAT !== "undefined" && HANDY_CAT[k]);
-  const plaetze = []; for (let z = Z0 - 6; z > Z1 + 7; z -= 9) for (const sx of [-1, 1]) for (let x = TW / 2 + 4.5; x < W2 - 3; x += 8) plaetze.push([sx * x, z, sx * 0.45]);
+  const plaetze = []; for (let z = Z0 - 6; z > Z1 + 7; z -= 9) for (const sx of [-1, 1]) for (let x = TW / 2 + 4.5; x < W2 - 3; x += 8) plaetze.push([sx * x, z, -sx * 0.45]);   // schraeg zur Mittelgasse (Ausfahrt), nicht zur Glaswand (Nicolas 2026-11-23 "das pruefen")
   const werk = typeof WG_ZIEL !== "undefined";   // Werkstatt: Modelle gleich bauen (dort baut niemand spaeter)
   if (items.length) plaetze.slice(0, items.length + 2).forEach(([x, z, a], i) => { const k = items[i % items.length], K = HANDY_CAT[k], col = K.cols.length ? K.cols[(i + (teuer ? 0 : 1)) % K.cols.length] : undefined;
     add(new THREE.CylinderGeometry(3.1, 3.2, 0.1, 40), Mt(teuer ? 0x2a2b2e : 0x4a4f57, 0.25, 0.5, { emissive: farbe, emissiveIntensity: 0.05 }), x, 0.1, z);   // Scheibe (flach, befahrbar)
