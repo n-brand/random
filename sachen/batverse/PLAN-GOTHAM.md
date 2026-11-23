@@ -245,6 +245,10 @@ Entwurf auf der Planungskarte steht (gotham/daten.js `militaerbasis2`, `zugnetz`
 | M5 | Güterzug: Lok und Flachwagen fahren nach Fahrplan (wie die U-Bahn, gotham-ubahn.js), Halt an allen Bahnhöfen |
 | M6 | Panzer verladen: über die Kopframpe auf einen Flachwagen fahren, dort festmachen (fährt mit dem Zug mit), am Ziel wieder herunter; selbst mitfahren wie in der U-Bahn |
 
+### Häfen und Flughäfen (Nicolas 2026-11-23, Entwurf auf der Planungskarte)
+
+Gotham Harbor (Containerterminal an der Ostspitze plus Docks und Yachthafen mit Mole, wie das Vorbild-Bild; die Fläche ragt teils aufgeschüttet ins Wasser), Southcliff Harbor und Eastport Harbor (mittel, je 2 Docks, Yachthafen, Kräne), Marinehafen Fort Graystone (3 Piers, Bootshalle), Corsair Ferry Terminal (Fähre nach Eastport Harbor, 10,6 km, und 3 Bootsstege), Port Westfield in einer neuen Bucht der Westküste (grosser Containerhafen, 3 Docks, 12 Kräne, Containerlager, Hafenbahn). Gotham International Airport (2 Pisten 3,2 und 2,6 km, Terminal, Vorfeld, Frachthalle, Tower, Parkplätze, Bahnhof der Flughafenlinie ab Westfield), Corsair Airfield (Graspiste 900 m, 3 kleine Flugzeughallen, Fliegerclub). Daten: `haefen`, `faehreCorsair`, `flughaefen` in gotham/daten.js. Im Spiel noch nichts ausser der Bucht (Küste der Insel-Welt). Ersetzt die Planung von N53 (Hafen neu, viel grösser, mit Docks).
+
 ## Nicht Teil von Wayne Manor
 
 - **„Rampe und Polytrack game“** – klingt nach einem eigenen Spiel (Strecke mit Rampen, Stil wie Polytrack). Vorschlag: eigenes Projekt unter `sachen/`, eigener Plan.
