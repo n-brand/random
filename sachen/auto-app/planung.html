@@ -54,9 +54,14 @@
   body.schrift .logo, body.schrift #detail .gross-bild { background: none; padding: 0; }
   #leiste { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
     background: #15181dee; backdrop-filter: blur(10px); border: 1px solid var(--linie); border-radius: 16px; padding: 8px 12px; box-shadow: 0 10px 30px #0008; max-width: calc(100vw - 24px); }
-  #leiste .seg { display: flex; background: #0c0e11; border-radius: 10px; padding: 3px; }
-  #leiste .seg button { font: 600 13px system-ui; color: var(--leise); background: none; border: 0; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
-  #leiste .seg button[aria-pressed="true"] { background: var(--akzent); color: #06121a; }
+  /* Schalter Logo | Schriftzug: Pille gleitet animiert zur gewaehlten Seite (Nicolas 2026-11-23) */
+  #leiste .seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: #0c0e11; border-radius: 12px; padding: 3px; cursor: pointer; user-select: none; }
+  #leiste .seg .pille { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: linear-gradient(180deg, #5fd3ff, #2fb4ec); box-shadow: 0 2px 10px #3ec6ff55, inset 0 1px 0 #ffffff66;
+    transition: transform .38s cubic-bezier(.5, 1.6, .4, 1), width .3s; }
+  #leiste .seg.rechts .pille { transform: translateX(100%); }
+  #leiste .seg button { position: relative; z-index: 1; font: 600 13px system-ui; color: var(--leise); background: none; border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: color .3s; }
+  #leiste .seg button[aria-pressed="true"] { color: #06121a; }
+  #leiste .seg:active .pille { transform: scaleX(1.06); } #leiste .seg.rechts:active .pille { transform: translateX(100%) scaleX(1.06); }
   #leiste .hg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--leise); }
   #leiste .hg button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ffffff33; cursor: pointer; padding: 0; }
   #leiste .hg button[aria-pressed="true"] { border-color: var(--akzent); box-shadow: 0 0 0 2px #3ec6ff66; }
@@ -340,7 +345,7 @@
   <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
 </main>
 <nav id="leiste" aria-label="Ansicht">
-  <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-ansicht="logo" aria-pressed="true">Logo</button><button type="button" data-ansicht="schrift" aria-pressed="false">Schriftzug</button></div>
+  <div class="seg" role="switch" aria-label="Ansicht Logo oder Schriftzug" tabindex="0"><span class="pille" aria-hidden="true"></span><button type="button" data-ansicht="logo" aria-pressed="true">Logo</button><button type="button" data-ansicht="schrift" aria-pressed="false">Schriftzug</button></div>
   <button type="button" id="anim-btn" title="Logo wird zum Schriftzug (alle Kärtchen und die Detailansicht)">▶ Animation</button>
   <div class="hg aus" role="group" aria-label="Hintergrund des Schriftzugs"><span>Hintergrund</span>
     <button type="button" data-hg="schwarz" title="Schwarz" style="background:#0b0c0e" aria-pressed="true"></button>
@@ -448,10 +453,14 @@
     if (ZUST.ansicht === "schrift") requestAnimationFrame(() => einpassen(document)); }
   function anwenden() { document.body.classList.toggle("schrift", ZUST.ansicht === "schrift");
     document.querySelectorAll("#leiste [data-ansicht]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.ansicht === ZUST.ansicht)));
+    { const sg = document.querySelector("#leiste .seg"); sg.classList.toggle("rechts", ZUST.ansicht === "schrift"); sg.setAttribute("aria-checked", String(ZUST.ansicht === "schrift")); }
     document.querySelectorAll("#leiste [data-hg]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.hg === ZUST.hg)));
     document.querySelector("#leiste .hg").classList.toggle("aus", ZUST.ansicht !== "schrift");
     try { localStorage.setItem("auto-planung-ansicht", JSON.stringify(ZUST)); } catch (e) {} alleZeichnen(); }
-  document.getElementById("leiste").addEventListener("click", e => { const a = e.target.closest("[data-ansicht]"), h = e.target.closest("[data-hg]"); if (a) ZUST.ansicht = a.dataset.ansicht; if (h) ZUST.hg = h.dataset.hg; if (a || h) anwenden(); });
+  document.getElementById("leiste").addEventListener("click", e => { const h = e.target.closest("[data-hg]"), sg = e.target.closest(".seg");
+    if (sg) { const a = e.target.closest("[data-ansicht]"); ZUST.ansicht = a && a.dataset.ansicht !== ZUST.ansicht ? a.dataset.ansicht : ZUST.ansicht === "logo" ? "schrift" : "logo"; anwenden(); }   // Schalter: Klick wechselt immer die Seite
+    if (h) { ZUST.hg = h.dataset.hg; anwenden(); } });
+  document.querySelector("#leiste .seg").addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter" || e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); ZUST.ansicht = e.key === "ArrowLeft" ? "logo" : e.key === "ArrowRight" ? "schrift" : ZUST.ansicht === "logo" ? "schrift" : "logo"; anwenden(); } });
   // Detailansicht zeigt je nach Ansicht Logo oder Schriftzug
   { const z0 = zeige; zeige = function (k) { z0(k); det.querySelector(".gross-bild").appendChild(schriftzug(k)); if (ZUST.ansicht === "schrift") requestAnimationFrame(() => einpassen(det)); }; }
   anwenden();
