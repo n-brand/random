@@ -197,8 +197,13 @@
       mehr: { name: "Weiteres (Bezirke, Kanalisation)", ebenen: ["bezirke", "kanal", "gulli"] } };
     { const box = document.getElementById("layers"); for (const [k, H] of Object.entries(HAUPT)) { const lab = document.createElement("label"); lab.style.fontWeight = "700"; lab.innerHTML = `<input type="checkbox" checked> ${H.name}`; H.inp = lab.querySelector("input");
       H.inp.onchange = ev => { const an = ev.target.checked; svg.classList.toggle("ohne-" + k, !an); for (const q of H.ebenen) if (INP[q] && (an ? q !== "bus" : true)) { INP[q].checked = an; L[q].style.display = an ? "" : "none"; } };
-      box.appendChild(lab); } const hr = document.createElement("hr"); hr.style.cssText = "border:0;border-top:1px solid #3a3d44;margin:4px 0"; box.appendChild(hr);
-      const st = document.createElement("style"); st.textContent = "#map.ohne-bau [data-bau], #map.ohne-weg [data-weg], #map.ohne-mehr [data-mehr] { display: none }"; document.head.appendChild(st); }   // Bezirks- und Stationsnamen: data-mehr (Nicolas 2026-11-23: "mit Weiteres soll man auch die unnötigen Beschriftungen entfernen können")
+      box.appendChild(lab); }
+      // "Nur Karte" (Nicolas 2026-11-23: "in der Legende rechts einen Button, mit dem man alles ausser die Karte entfernt - auch Berge, Bahnhoefe, Gleise"): blendet alle Ebenen
+      // ausser der Insel-Welt aus und darin alles Gezeichnete (Gebaeude, Verkehr, Gebirge, Basen, Haefen, Beschriftungen, Kreis der heutigen Welt); nur Land und Wasser bleiben
+      { const btn = document.createElement("button"); btn.type = "button"; btn.textContent = "Nur Karte (alles andere aus)"; btn.style.cssText = "width:100%;margin:6px 0 2px;padding:6px 8px;border-radius:8px;border:1px solid #3a3d44;background:#22252b;color:#e8e8e8;font-weight:700;cursor:pointer";
+        btn.onclick = () => { const an = svg.classList.toggle("nur-karte"); btn.textContent = an ? "Alles wieder zeigen" : "Nur Karte (alles andere aus)"; btn.style.background = an ? "#3b4a2c" : "#22252b"; }; box.appendChild(btn); }
+      const hr = document.createElement("hr"); hr.style.cssText = "border:0;border-top:1px solid #3a3d44;margin:4px 0"; box.appendChild(hr);
+      const st = document.createElement("style"); st.textContent = "#map.ohne-bau [data-bau], #map.ohne-weg [data-weg], #map.ohne-mehr [data-mehr] { display: none } #map.nur-karte [data-layer]:not([data-layer=welt]), #map.nur-karte [data-bau], #map.nur-karte [data-weg], #map.nur-karte [data-mehr], #map.nur-karte [data-geb], #map.nur-karte [data-layer=welt] text { display: none }"; document.head.appendChild(st); }   // Bezirks- und Stationsnamen: data-mehr (Nicolas 2026-11-23: "mit Weiteres soll man auch die unnötigen Beschriftungen entfernen können")
     for (const [k, name, on] of LAYERS) {
       L[k] = el("g", { "data-layer": k }); if (!on) L[k].style.display = "none";
       const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" ${on ? "checked" : ""}> ${name}`; INP[k] = lab.querySelector("input");
@@ -272,7 +277,7 @@
       el("path", { d: path(WU, true), fill: "url(#neuLand)", mask: "url(#maskNeu)" }, Wg).dataset.info = "<b>Neues Land (Entwurf N54)</b><br>zuerst nur Gelände in Kacheln, ohne Bäume, ohne Strassen";
       { const ma = el("mask", { id: "maskAussen", maskUnits: "userSpaceOnUse", x: -40000, y: -40000, width: 80000, height: 80000 }, defs); el("rect", { x: -40000, y: -40000, width: 80000, height: 80000, fill: "#fff" }, ma); if (WA.spiel) el("circle", { cx: H.x, cy: H.z, r: H.r, fill: "#000" }, ma); }   // im Kreis gilt die Spiel-Kueste
       el("path", { d: KD, fill: "none", stroke: "#b8a77c", "stroke-width": 16, "stroke-linejoin": "round", mask: "url(#maskAussen)" }, Wg).dataset.info = `<b>Küste der Insel-Welt (Entwurf)</b><br>ca. ${((bx1 - bx0) / 1000).toFixed(1)} × ${((bz1 - bz0) / 1000).toFixed(1)} km, Fläche ca. ${Math.round(fl)} km²`;
-      el("circle", { cx: H.x, cy: H.z, r: H.r, fill: "none", stroke: "#ffd54a", "stroke-width": 12, "stroke-dasharray": "90 60" }, Wg).dataset.info = "<b>Heutige Spielwelt</b><br>bis 4,3 km um Wayne Manor (LIMIT_WORLD); ausserhalb kommt das neue Land dazu";
+      el("circle", { cx: H.x, cy: H.z, r: H.r, fill: "none", stroke: "#ffd54a", "stroke-width": 12, "stroke-dasharray": "90 60", "data-geb": 1 }, Wg).dataset.info = "<b>Heutige Spielwelt</b><br>bis 4,3 km um Wayne Manor (LIMIT_WORLD); ausserhalb kommt das neue Land dazu";
       for (const t of GW.namen) { const fs = t.klein ? 110 : 250, tx = el("text", { x: t.x, y: t.z, "font-size": fs, fill: t.text === "Meer" ? "#9cc3e6aa" : "#fff9", "text-anchor": "middle", "font-weight": 700, "font-style": t.text === "Meer" ? "italic" : "normal", "pointer-events": "none" }, Wg); tx.textContent = t.text;
         if (t.sub) { const s2 = el("text", { x: t.x, y: t.z + 210, "font-size": 140, fill: "#fff8", "text-anchor": "middle", "pointer-events": "none" }, Wg); s2.textContent = t.sub; } }
       // Arkham-Insel und Militaerinsel (Entwurf, Nicolas 2026-11-23): Saum, Land, Ufer, Bauten, Faehre bzw. Landebahn, Namen (ueber der heutigen Welt gezeichnet)
@@ -298,11 +303,11 @@
         // 2. Militaerbasis Camp Ironwood und Zugnetz (Nicolas 2026-11-23, Punkt 6096/3866; Entwurf)
         // Gebirge Kane Range (Nicolas 2026-11-23, Entwurf): Fels, Hochgebirge mit Schnee, Grat, Gipfel mit Hoehe
         { const Gb = G.gebirge; if (Gb) { const inf = "<b>" + Gb.name + " (Entwurf)</b><br>" + Gb.sub;
-          el("path", { d: path(smooth(Gb.umriss, 40, true), true), fill: "#6f6555", "fill-opacity": 0.8, stroke: "#4a4236", "stroke-width": 10 }, Wg).dataset.info = inf;
-          el("path", { d: path(smooth(Gb.hochgebirge, 40, true), true), fill: "#9b958b", "fill-opacity": 0.85, stroke: "#7d776d", "stroke-width": 6 }, Wg).dataset.info = "<b>Hochgebirge</b><br>Fels und Geröll · " + Gb.name;
-          for (const S of Gb.schnee || []) el("path", { d: path(smooth(S, 30, true), true), fill: "#f2f5f8", "fill-opacity": 0.92, stroke: "#d4dde5", "stroke-width": 5 }, Wg).dataset.info = "<b>Schnee</b><br>über ca. 1000 m · " + Gb.name;
-          el("path", { d: path(smooth(Gb.grat, 40, false), false), fill: "none", stroke: "#8a8f96", "stroke-width": 12, "stroke-dasharray": "60 30", "pointer-events": "none" }, Wg);
-          for (const [x, z, hm] of Gb.gipfel) { el("path", { d: "M" + x + " " + (z - 90) + "L" + (x + 80) + " " + (z + 50) + "L" + (x - 80) + " " + (z + 50) + "Z", fill: "#3a3a3a", stroke: "#fff", "stroke-width": 8 }, Wg).dataset.info = "<b>Gipfel</b><br>ca. " + hm + " m · " + Gb.name;
+          el("path", { d: path(smooth(Gb.umriss, 40, true), true), fill: "#6f6555", "fill-opacity": 0.8, stroke: "#4a4236", "stroke-width": 10, "data-geb": 1 }, Wg).dataset.info = inf;
+          el("path", { d: path(smooth(Gb.hochgebirge, 40, true), true), fill: "#9b958b", "fill-opacity": 0.85, stroke: "#7d776d", "stroke-width": 6, "data-geb": 1 }, Wg).dataset.info = "<b>Hochgebirge</b><br>Fels und Geröll · " + Gb.name;
+          for (const S of Gb.schnee || []) el("path", { d: path(smooth(S, 30, true), true), fill: "#f2f5f8", "fill-opacity": 0.92, stroke: "#d4dde5", "stroke-width": 5, "data-geb": 1 }, Wg).dataset.info = "<b>Schnee</b><br>über ca. 1000 m · " + Gb.name;
+          el("path", { d: path(smooth(Gb.grat, 40, false), false), fill: "none", stroke: "#8a8f96", "stroke-width": 12, "stroke-dasharray": "60 30", "pointer-events": "none", "data-geb": 1 }, Wg);
+          for (const [x, z, hm] of Gb.gipfel) { el("path", { d: "M" + x + " " + (z - 90) + "L" + (x + 80) + " " + (z + 50) + "L" + (x - 80) + " " + (z + 50) + "Z", fill: "#3a3a3a", stroke: "#fff", "stroke-width": 8, "data-geb": 1 }, Wg).dataset.info = "<b>Gipfel</b><br>ca. " + hm + " m · " + Gb.name;
             const t = el("text", { x, y: z + 140, "font-size": 70, fill: "#1b1d20", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, L.namen); t.textContent = hm + " m"; }
           let cx = 0, cz = 0; Gb.grat.forEach(q => { cx += q[0] / Gb.grat.length; cz += q[1] / Gb.grat.length; }); const t = el("text", { x: cx, y: cz - 250, "font-size": 200, fill: "#2b2620", "text-anchor": "middle", "font-weight": 800, "letter-spacing": 30, "font-family": "Georgia, serif", "pointer-events": "none" }, L.namen); t.textContent = Gb.name.toUpperCase(); } }
         const M2 = G.militaerbasis2, ZN = G.zugnetz;
@@ -315,7 +320,7 @@
             for (const q of [T.punkte[0], T.punkte[T.punkte.length - 1]]) el("circle", { cx: q[0], cy: q[1], r: 60, fill: "#1b1d20", stroke: "#c9a227", "stroke-width": 14, "pointer-events": "none" }, L.bahn); }
           for (const b of ZN.bahnhoefe) { el("rect", { x: b.x - 90, y: b.z - 40, width: 180, height: 80, rx: 10, fill: "#f2efe4", stroke: "#1b1d20", "stroke-width": 8 }, L.bahn).dataset.info = "<b>Bahnhof " + b.name + "</b><br>" + ZN.name;
             const t = el("text", { x: b.x, y: b.z + 160, "font-size": 95, fill: "#f2efe4", "text-anchor": "middle", "font-weight": 700, stroke: "#0b1a26", "stroke-width": 14, "paint-order": "stroke", "pointer-events": "none", "data-weg": 1 }, L.namen); t.textContent = "🚉 " + b.name; } }
-        if (M2) { el("path", { d: path(M2.umriss, true), fill: "#3c4434", "fill-opacity": 0.85, stroke: "#c9ccd0", "stroke-width": 10, "stroke-dasharray": "40 20" }, Wg).dataset.info = "<b>" + M2.name + " (Entwurf)</b><br>" + M2.sub;
+        if (M2) { el("path", { d: path(M2.umriss, true), fill: "#3c4434", "fill-opacity": 0.85, stroke: "#c9ccd0", "stroke-width": 10, "stroke-dasharray": "40 20", "data-bau": 1 }, Wg).dataset.info = "<b>" + M2.name + " (Entwurf)</b><br>" + M2.sub;
           el("path", { d: path(M2.panzerplatz, true), fill: "#4a4c45", stroke: "#1b1d20", "stroke-width": 4, "data-weg": 1 }, Wg).dataset.info = "<b>Panzer-Abstellplatz</b>";
           for (const q of M2.heliplaetze) { el("circle", { cx: q[0], cy: q[1], r: 45, fill: "#33363b", stroke: "#e8e8e8", "stroke-width": 5, "data-weg": 1 }, Wg).dataset.info = "<b>Heliplatz</b><br>Transporthelikopter (Cougar mit Seilwinde): Panzer zwischen Fort Graystone und hier";
             const t = el("text", { x: q[0], y: q[1] + 22, "font-size": 60, fill: "#e8e8e8", "text-anchor": "middle", "font-weight": 800, "pointer-events": "none", "data-weg": 1 }, Wg); t.textContent = "H"; }
@@ -353,7 +358,7 @@
       (GW.eilande || []).forEach(([x, z, r], i) => { const n = (GW.eilandNamen || [])[i]; if (!n) return; const t = el("text", { x, y: z + r + 170, "font-size": 95, fill: "#fff", "text-anchor": "middle", "font-weight": 700, stroke: "#0b1a26", "stroke-width": 14, "paint-order": "stroke", "pointer-events": "none" }, L.namen); t.textContent = n; });
       for (const gi of GW.grossInseln || []) { const t = el("text", { x: gi.mitte[0], y: gi.mitte[1], "font-size": 150, fill: "#fff", "text-anchor": "middle", "font-weight": 700, stroke: "#0b1a26", "stroke-width": 20, "paint-order": "stroke", "pointer-events": "none" }, L.namen); t.textContent = gi.name; }
       // Massstab 1 km unten links der Insel
-      const mx = bx0 + 200, mz = bz1 + 500; el("path", { d: `M${mx} ${mz}H${mx + 1000}M${mx} ${mz - 60}V${mz + 60}M${mx + 1000} ${mz - 60}V${mz + 60}`, stroke: "#fff", "stroke-width": 14, fill: "none" }, Wg);
+      const mx = bx0 + 200, mz = bz1 + 500; el("path", { d: `M${mx} ${mz}H${mx + 1000}M${mx} ${mz - 60}V${mz + 60}M${mx + 1000} ${mz - 60}V${mz + 60}`, stroke: "#fff", "stroke-width": 14, fill: "none", "data-geb": 1 }, Wg);
       el("text", { x: mx + 500, y: mz - 50, "font-size": 80, fill: "#fff", "text-anchor": "middle" }, Wg).textContent = "1 km"; }
     const ANS = () => G.welt && G.welt.ansicht && L.welt && L.welt.style.display !== "none" ? G.welt.ansicht : G.ansicht;   // Bereich fuer "Alles zeigen", Zoom und Verschieben
 
