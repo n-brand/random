@@ -12,7 +12,7 @@ Ergaenzt die globalen Regeln in `C:\Source\CLAUDE.md` (Git-Identitaet, Footer-Cr
 - `sw.js` – Service Worker (Offline-Cache)
 - `icon.svg` – App-Icon
 - `sachen/<name>/index.html` – eine "Sache" (Mini-Tool, Spielerei)
-- `tests/<name>/index.html` – ein Test/Experiment
+- Tests/Experimente liegen ebenfalls unter `sachen/<name>/` (ein Ordner `tests/` existiert nicht; "Test" bestimmt nur `type` in `ENTRIES`)
 - `pruefung/<name>/` – eine Pruefungsvorbereitung (siehe unten)
 - `blockbench/<name>/` – ein Minecraft-Modell oder Resource Pack (siehe unten): `cowboyhut/`, `halloween/`, `viewer/`, `lokal/` (nicht im Repo)
 - Änderungsprotokoll (frühere Einträge vor "# random"): `docs/AENDERUNGEN.md`. Batverse-Einträge und -Regeln: `sachen/batverse/CLAUDE.md`.
@@ -55,7 +55,7 @@ Modrinth (Suche "halloween", Resource Packs, nach Downloads), mit Lizenz:
 
 ## Neuen Eintrag hinzufuegen
 
-1. Ordner unter `sachen/` oder `tests/` anlegen, Einstieg ist immer `index.html`.
+1. Ordner unter `sachen/` anlegen (auch fuer Tests), Einstieg ist immer `index.html`.
 2. Im Array `ENTRIES` in `index.html` einen Eintrag ergaenzen:
 
 ```js
