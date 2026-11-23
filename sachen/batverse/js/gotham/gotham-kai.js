@@ -14,6 +14,9 @@ const KAI = { breite: 12, bruestung: 1.1, dicke: 0.5, fuss: GOT.WY - 0.6 };
   // Bruecken (G2c): dort hat die Bruestung eine Luecke (Fahrbahn plus Gehwege plus 1 m), auch ohne Kollision
   const BRL = GOTHAM_STADT.bruecken.map(b => { const P = b.pts.map(([x, z]) => GOT.toGame(x, z)); return { a: P[0], b: P[P.length - 1], r: b.w / 2 + 3.5 }; });
   const atBridge = (x, z) => BRL.some(q => { const dx = q.b[0] - q.a[0], dz = q.b[1] - q.a[1], L = dx * dx + dz * dz, t = Math.max(0, Math.min(1, ((x - q.a[0]) * dx + (z - q.a[1]) * dz) / L)); return Math.hypot(x - q.a[0] - dx * t, z - q.a[1] - dz * t) < q.r; });
+  // Gotham Marina (2026-11-23): Luecke in der Bruestung oben an der Rampe zu den Stegen (gotham-marina.js nimmt denselben Punkt: Kai-Ende A + 14 m, naechster Uferpunkt)
+  { const Hm = (GOTHAM.haefen || []).find(h => h.id === "gotham"); if (Hm) { const A = GOT.toGame(...Hm.kai[0]), Bk = GOT.toGame(...Hm.kai[1]), l = Math.hypot(Bk[0] - A[0], Bk[1] - A[1]), p = [A[0] + (Bk[0] - A[0]) / l * 14, A[1] + (Bk[1] - A[1]) / l * 14];
+    let q = P[0]; for (const e of P) if (Math.hypot(e[0] - p[0], e[1] - p[1]) < Math.hypot(q[0] - p[0], q[1] - p[1])) q = e; KAI.marinaRampe = q; BRL.push({ a: q, b: [q[0] + 0.01, q[1]], r: 1.7 }); } }   // b leicht versetzt: bei a = b teilte die Pruefung durch 0
   KAI.atBridge = atBridge; const gap = P.map(p => atBridge(p[0], p[1]));
   // Granit-Quader (Fugen), heller Deckstein; UV in Metern
   const tex = canvasTex(256, 256, (c, w, h) => { c.fillStyle = "#8d8a84"; c.fillRect(0, 0, w, h);
