@@ -5,6 +5,22 @@
 
 // ===================== Daten: Pfade in Kartenkoordinaten (x rechts, z unten = Sueden) =====================
 const SK = { paths: null, labels: null, view: GOTHAM.ansicht, WATER: "#1d3b55", LAND: "#2f3d28", OUT: "#11161b" };   // OUT: ausserhalb der Kartenansicht
+// Insel-Welt (Nicolas 2026-11-23: "die Map in Batverse (M) muss noch angepasst werden"): Kartengrenzen ueber die ganze Welt (Insel, Corsair Island mit Inselchen,
+// Fort Graystone, Arkham); Land/Wasser als Bild aus dem Spielgelaende selbst (25-m-Raster: im Gotham-Feld GOT, sonst seaD; Gebirge nach Hoehe der Kane Range gefaerbt).
+SK.W = { x0: -11300, x1: 20200, z0: -12600, z1: 7400 }; SK.WC = 25;
+function* skWorldGen() {
+  const V = SK.W, C = SK.WC, NX = Math.ceil((V.x1 - V.x0) / C), NZ = Math.ceil((V.z1 - V.z0) / C), cv = document.createElement("canvas"); cv.width = NX; cv.height = NZ;
+  const c = cv.getContext("2d"), im = c.createImageData(NX, NZ), d = im.data, set = (q, r, g, b) => { d[q] = r; d[q + 1] = g; d[q + 2] = b; d[q + 3] = 255; };
+  for (let k = 0; k < NZ; k++) { for (let i = 0; i < NX; i++) { const mx = V.x0 + (i + 0.5) * C, mz = V.z0 + (k + 0.5) * C, q = (k * NX + i) * 4, [x, z] = GOT.toGame(mx, mz);
+      let wasser; if (GOT.inField(mx, mz)) wasser = GOT.sdw(mx, mz) < 0 && GOT.sdi(mx, mz) > 0 && !(typeof XI !== "undefined" && XI && XI.d(x, z) < 0); else wasser = seaD(x, z) > 0;
+      if (wasser) { set(q, 0x1d, 0x3b, 0x55); continue; }   // eine Wasserfarbe (sonst sah man die Kante des Gotham-Felds)
+      let h = 0; if (typeof KANE !== "undefined" && KANE) { const dd = KANE.samp(KANE.D, x, z); if (dd !== null && dd < 500) h = kaneH(x, z, SEA_Y) - SEA_Y; }   // gleiche Hoehe wie im Spiel (Kane Range)
+      if (h > 960) set(q, 0xe9, 0xee, 0xf2); else if (h > 450) set(q, 0x8a, 0x85, 0x7c); else if (h > 160) set(q, 0x5d, 0x5a, 0x45); else set(q, 0x2f, 0x3d, 0x28); }
+    if (k % 20 === 19) yield; }
+  c.putImageData(im, 0, 0); SK.world = { cv, C };
+}
+function skWorld() { if (!SK.world) for (const _ of skWorldGen()); return SK.world; }
+const skDrawWorld = c => { const w = SK.world; if (!w) return; c.imageSmoothingEnabled = true; c.drawImage(w.cv, SK.W.x0, SK.W.z0, w.cv.width * w.C, w.cv.height * w.C); };
 // Pfade erst beim ersten Gebrauch bauen (ca. 1,5 ms; Review M6: nicht beim Laden)
 function skEnsure() { if (SK.paths) return;
   const G = GOTHAM, S = GOTHAM_STADT, paths = [], labels = [];
@@ -44,6 +60,12 @@ function skEnsure() { if (SK.paths) return;
   for (const b of G.bezirke) { let x = 0, z = 0, n = 0; for (const q of b.poly) if (GOT.sdi(q[0], q[1]) < 0) { x += q[0]; z += q[1]; n++; }
     if (n) labels.push({ x: x / n, z: z / n, text: b.name, bezirk: true }); }
   if (SK.casino) labels.push({ x: SK.casino.x, z: SK.casino.z - SK.casino.d / 2 - 10, text: "Casino", big: true });
+  { const Wd = G.welt || {}, mitte = P => { let x = 0, z = 0; for (const q of P) { x += q[0] / P.length; z += q[1] / P.length; } return [x, z]; };   // Insel-Welt
+    for (const gi of Wd.grossInseln || []) labels.push({ x: gi.mitte[0], z: gi.mitte[1], text: gi.name, welt: 1 });
+    (Wd.eilande || []).forEach(([x, z, r], i) => { const n = (Wd.eilandNamen || [])[i]; if (n) labels.push({ x, z: z + r + 60, text: n, welt: 2 }); });
+    for (const o of [G.militaerinsel, G.arkham]) if (o && o.umriss) { const [x, z] = mitte(o.umriss); labels.push({ x, z, text: o.name, welt: 1 }); }
+    if (G.gebirge) { const [x, z] = mitte(G.gebirge.grat); labels.push({ x, z, text: G.gebirge.name, welt: 1 }); for (const [x2, z2, hm] of G.gebirge.gipfel) labels.push({ x: x2, z: z2, text: "▲ " + hm + " m", welt: 2 }); }
+    if (Wd.name) labels.push({ x: -1200, z: -7600, text: Wd.name, welt: 1 }); }
   SK.paths = paths; SK.labels = labels;
 }
 
@@ -64,7 +86,7 @@ function* skWaterGen() {
   const V = SK.view, C = 8, NX = Math.ceil((V.x1 - V.x0) / C), NZ = Math.ceil((V.z1 - V.z0) / C), cv = document.createElement("canvas");
   cv.width = NX; cv.height = NZ; const c = cv.getContext("2d"), im = c.createImageData(NX, NZ), d = im.data;
   for (let k = 0; k < NZ; k++) { for (let i = 0; i < NX; i++) { const mx = V.x0 + (i + 0.5) * C, mz = V.z0 + (k + 0.5) * C, q = (k * NX + i) * 4;
-    if (GOT.sdw(mx, mz) < 0 && GOT.sdi(mx, mz) > 0) { d[q] = 0x1d; d[q + 1] = 0x3b; d[q + 2] = 0x55; d[q + 3] = 255; } } if (k % 60 === 59) yield; }
+    if (GOT.sdw(mx, mz) < 0 && GOT.sdi(mx, mz) > 0 && !(typeof XI !== "undefined" && XI && XI.d(...GOT.toGame(mx, mz)) < 0)) { d[q] = 0x1d; d[q + 1] = 0x3b; d[q + 2] = 0x55; d[q + 3] = 255; } } if (k % 60 === 59) yield; }
   c.putImageData(im, 0, 0); SK.water = { cv, C };
 }
 function skWater() { if (!SK.water) for (const _ of skWaterGen()); return SK.water; }
@@ -90,8 +112,8 @@ function* skBgGen() {
   skEnsure();
   const V = SK.view, s = SK.BGS, cv = document.createElement("canvas"); cv.width = Math.ceil((V.x1 - V.x0) * s); cv.height = Math.ceil((V.z1 - V.z0) * s);
   const c = cv.getContext("2d"); c.fillStyle = SK.LAND; c.fillRect(0, 0, cv.width, cv.height); yield;
-  if (!SK.water) yield* skWaterGen(); const w = SK.water;
-  c.setTransform(s, 0, 0, s, -V.x0 * s, -V.z0 * s); c.imageSmoothingEnabled = true; c.drawImage(w.cv, V.x0, V.z0, w.cv.width * w.C, w.cv.height * w.C); yield;
+  if (!SK.world) yield* skWorldGen(); if (!SK.water) yield* skWaterGen(); const w = SK.water;
+  c.setTransform(s, 0, 0, s, -V.x0 * s, -V.z0 * s); skDrawWorld(c); c.imageSmoothingEnabled = true; c.drawImage(w.cv, V.x0, V.z0, w.cv.width * w.C, w.cv.height * w.C); yield;
   for (let i = 0; i < SK.paths.length; i++) { skPaint(c, s, i, i + 1); yield; }
   SK.bg = cv; SK.bgDone = true;
 }
@@ -128,11 +150,11 @@ function skMiniStep() {
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, W);
   c.save(); c.beginPath(); c.arc(R, R, R - dpr, 0, Math.PI * 2); c.clip(); c.fillStyle = SK.OUT; c.fillRect(0, 0, W, W);
   c.translate(R, R); c.rotate(-P.ang); c.scale(k, k); c.translate(-P.mx, -P.mz);
-  c.imageSmoothingEnabled = true; c.drawImage(SK.bg, V.x0, V.z0, SK.bg.width / SK.BGS, SK.bg.height / SK.BGS);
+  skDrawWorld(c); c.imageSmoothingEnabled = true; c.drawImage(SK.bg, V.x0, V.z0, SK.bg.width / SK.BGS, SK.bg.height / SK.BGS);
   c.restore();
   const txt = (t, x, y, px, col) => { c.font = `700 ${px * dpr}px system-ui, sans-serif`; c.textAlign = "center"; c.textBaseline = "middle"; c.lineWidth = 3 * dpr; c.strokeStyle = "#000"; c.fillStyle = col; c.strokeText(t, x, y); c.fillText(t, x, y); };
   // ausserhalb der Karte: Pfeil am Rand Richtung Kartenmitte
-  if (P.mx < V.x0 || P.mx > V.x1 || P.mz < V.z0 || P.mz > V.z1) {
+  if (P.mx < SK.W.x0 || P.mx > SK.W.x1 || P.mz < SK.W.z0 || P.mz > SK.W.z1) {
     const a = Math.atan2((V.x0 + V.x1) / 2 - P.mx, -((V.z0 + V.z1) / 2 - P.mz)) - P.ang, r = R - 14 * dpr;
     c.save(); c.translate(R + Math.sin(a) * r, R - Math.cos(a) * r); c.rotate(a); c.fillStyle = "#e8c547"; c.strokeStyle = "#000"; c.lineWidth = 2 * dpr;
     c.beginPath(); c.moveTo(0, -9 * dpr); c.lineTo(7 * dpr, 6 * dpr); c.lineTo(-7 * dpr, 6 * dpr); c.closePath(); c.fill(); c.stroke(); c.restore(); }
@@ -149,7 +171,7 @@ function skMiniStep() {
 SK.big = { cx: 0, cz: 0, scale: 0.5, dirty: true, last: null, drag: null };
 {
   const box = document.getElementById("stadtkarte"), cv = box.querySelector("canvas");
-  const minS = () => { const V = SK.view; return Math.min(box.clientWidth / (V.x1 - V.x0), box.clientHeight / (V.z1 - V.z0)) * 0.95; };   // ganz heraus: ganze Ansicht sichtbar (Review)
+  const minS = () => { const V = SK.W; return Math.min(box.clientWidth / (V.x1 - V.x0), box.clientHeight / (V.z1 - V.z0)) * 0.95; };   // ganz heraus: ganze Ansicht sichtbar (Review)
   const clampS = s => Math.max(minS(), Math.min(8, s));
   const zoomAt = (f, x, y) => { const B = SK.big, r = box.getBoundingClientRect(), s2 = clampS(B.scale * f), ox = x - r.left - r.width / 2, oy = y - r.top - r.height / 2;
     B.cx += ox / B.scale - ox / s2; B.cz += oy / B.scale - oy / s2; B.scale = s2; B.dirty = true; };
@@ -185,25 +207,25 @@ function skBigStep() {
   const B = SK.big, box = document.getElementById("stadtkarte"), cv = box.querySelector("canvas"), P = skPos();
   const dpr = Math.min(2, devicePixelRatio || 1), W = Math.round(box.clientWidth * dpr), H = Math.round(box.clientHeight * dpr);
   if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; B.dirty = true; }
-  { const V = SK.view; B.scale = Math.max(B.scale, Math.min(box.clientWidth / (V.x1 - V.x0), box.clientHeight / (V.z1 - V.z0)) * 0.95); const hx = box.clientWidth / 2 / B.scale, hz = box.clientHeight / 2 / B.scale;   // nicht ueber den Rand der Ansicht schieben
+  { const V = SK.W; B.scale = Math.max(B.scale, Math.min(box.clientWidth / (V.x1 - V.x0), box.clientHeight / (V.z1 - V.z0)) * 0.95); const hx = box.clientWidth / 2 / B.scale, hz = box.clientHeight / 2 / B.scale;   // nicht ueber den Rand der Ansicht schieben
     B.cx = hx * 2 >= V.x1 - V.x0 ? (V.x0 + V.x1) / 2 : Math.max(V.x0 + hx, Math.min(V.x1 - hx, B.cx)); B.cz = hz * 2 >= V.z1 - V.z0 ? (V.z0 + V.z1) / 2 : Math.max(V.z0 + hz, Math.min(V.z1 - hz, B.cz)); }
   if (B.noWater && SK.water) B.dirty = true;
   const L = B.last; if (!B.dirty && L && Math.abs(L.mx - P.mx) * B.scale < 0.5 && Math.abs(L.mz - P.mz) * B.scale < 0.5 && Math.abs(L.ang - P.ang) < 0.009) return;
   B.last = { mx: P.mx, mz: P.mz, ang: P.ang };
-  const t0 = performance.now(), s = B.scale * dpr, V = SK.view;
+  const t0 = performance.now(), s = B.scale * dpr, V = SK.view; if (!SK.world) skWorld();
   if (B.dirty || !B.layer || B.layer.width !== W || B.layer.height !== H) {
     B.dirty = false; if (!B.layer) B.layer = document.createElement("canvas"); B.layer.width = W; B.layer.height = H;
     const c = B.layer.getContext("2d");
     c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = SK.OUT; c.fillRect(0, 0, W, H);   // ausserhalb der Ansicht: dunkel
-    c.setTransform(s, 0, 0, s, W / 2 - B.cx * s, H / 2 - B.cz * s); c.fillStyle = SK.LAND; c.fillRect(V.x0, V.z0, V.x1 - V.x0, V.z1 - V.z0);
+    c.setTransform(s, 0, 0, s, W / 2 - B.cx * s, H / 2 - B.cz * s); skDrawWorld(c);
     const w = SK.water || (TILES.loading() ? skWater() : null); B.noWater = !w;   // sonst bringt es die Hintergrund-Aufgabe (kein Ruckler, M5)
     if (w) { c.imageSmoothingEnabled = true; c.drawImage(w.cv, V.x0, V.z0, w.cv.width * w.C, w.cv.height * w.C); }
     skPaint(c, s);
     // Namen: Bezirke immer, grosse Orte ab 0,3 px/m, alle Orte ab 0,8 px/m (CSS-Pixel)
     c.setTransform(1, 0, 0, 1, 0, 0); c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
-    for (const l of SK.labels) { if (!l.bezirk && !(l.big ? B.scale >= 0.3 : B.scale >= 0.8)) continue;
+    for (const l of SK.labels) { if (l.welt ? B.scale < (l.welt === 1 ? 0 : 0.12) : l.bezirk ? B.scale < 0.1 : !(l.big ? B.scale >= 0.3 : B.scale >= 0.8)) continue;
       const x = W / 2 + (l.x - B.cx) * s, y = H / 2 + (l.z - B.cz) * s; if (x < -200 || y < -50 || x > W + 200 || y > H + 50) continue;
-      c.font = `${l.bezirk ? 700 : 600} ${(l.bezirk ? 15 : l.big ? 13 : 11) * dpr}px system-ui, sans-serif`;
+      c.font = `${l.bezirk || l.welt === 1 ? 700 : 600} ${(l.welt === 1 ? 16 : l.bezirk ? 15 : l.big ? 13 : 11) * dpr}px system-ui, sans-serif`;
       c.lineWidth = 4 * dpr; c.strokeStyle = "#000"; c.fillStyle = l.bezirk ? "rgba(255,255,255,.75)" : "#fff"; c.strokeText(l.text, x, y); c.fillText(l.text, x, y); }
     // Massstab unten links (1-2-5-Stufen, ca. 120 px)
     { const raw = 120 / B.scale, e = 10 ** Math.floor(Math.log10(raw)), m = raw / e >= 5 ? 5 : raw / e >= 2 ? 2 : 1, len = m * e, px = len * s, x0 = 16 * dpr, y0 = H - 22 * dpr;
