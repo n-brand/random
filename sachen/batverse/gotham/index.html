@@ -188,11 +188,18 @@
     const LAYERS = [["welt", "Insel-Welt mit Festland Nord (Entwurf N54)", true], ["bezirke", "Bezirke (Wohlstand)", true], ["gebaeude", "Gebäude (automatisch gefüllt)", true], ["neben", "Nebenstrassen und Gassen", true],
       ["strassen", "Hauptstrassen und Brücken", true], ["kanal", "Kanalisation (unter Hauptstrassen)", true], ["gulli", "Gullideckel (Spezialwerkzeug)", true],
       ["ubahn", "U-Bahn (4 Ringe)", true], ["bus", "Bus", false], ["orte", "Orte", true], ["namen", "Namen", true], ["konflikt", "Konflikte (rot)", true]];
-    const L = {}; const base = el("g", {});
+    const L = {}, INP = {}; const base = el("g", {});
+    // Hauptschalter (Nicolas 2026-11-23: "in der Legende rechts alle Gebäude ausschalten können, also Insel ohne Gebäude; Strassen, Wege etc. auch als eines schaltbar"):
+    // Gebäude = Ebenen gebaeude + orte + Bauten auf Arkham/Militärinsel + Gebäudenamen (data-bau); Strassen und Wege = neben + strassen + bus + Fähre, Rollweg, Landebahn (data-weg)
+    const HAUPT = { bau: { name: "Alle Gebäude", ebenen: ["gebaeude", "orte"] }, weg: { name: "Alle Strassen und Wege", ebenen: ["neben", "strassen", "bus"] } };
+    { const box = document.getElementById("layers"); for (const [k, H] of Object.entries(HAUPT)) { const lab = document.createElement("label"); lab.style.fontWeight = "700"; lab.innerHTML = `<input type="checkbox" checked> ${H.name}`; H.inp = lab.querySelector("input");
+      H.inp.onchange = ev => { const an = ev.target.checked; svg.classList.toggle("ohne-" + k, !an); for (const q of H.ebenen) if (INP[q] && (an ? q !== "bus" : true)) { INP[q].checked = an; L[q].style.display = an ? "" : "none"; } };
+      box.appendChild(lab); } const hr = document.createElement("hr"); hr.style.cssText = "border:0;border-top:1px solid #3a3d44;margin:4px 0"; box.appendChild(hr);
+      const st = document.createElement("style"); st.textContent = "#map.ohne-bau [data-bau], #map.ohne-weg [data-weg] { display: none }"; document.head.appendChild(st); }
     for (const [k, name, on] of LAYERS) {
       L[k] = el("g", { "data-layer": k }); if (!on) L[k].style.display = "none";
-      const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" ${on ? "checked" : ""}> ${name}`;
-      lab.querySelector("input").onchange = ev => { L[k].style.display = ev.target.checked ? "" : "none"; };
+      const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" ${on ? "checked" : ""}> ${name}`; INP[k] = lab.querySelector("input");
+      INP[k].onchange = ev => { L[k].style.display = ev.target.checked ? "" : "none"; };
       document.getElementById("layers").appendChild(lab);
     }
     svg.insertBefore(base, svg.firstChild);
@@ -262,19 +269,22 @@
         const txt = (x, z, t, fs, col = "#fff9") => { const e = el("text", { x, y: z, "font-size": fs, fill: col, "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, Wg); e.textContent = t; };
         const A = G.arkham, F = G.arkhamFaehre, Mi = G.militaerinsel;
         if (A) { insel(A, "<b>Arkham-Insel (Entwurf)</b><br>Arkham Asylum, nur mit der Autofähre (Harbor Road)");
-          el("path", { d: path(A.mauer, true), fill: "none", stroke: "#8a8f96", "stroke-width": 8, "stroke-dasharray": "30 12", "pointer-events": "none" }, Wg);
-          for (const [x, z, w, d, dr, n] of A.gebaeude) rect(x, z, w, d, dr, { fill: "#4a4c52", stroke: "#1b1d20", "stroke-width": 4 }).dataset.info = "<b>Arkham Asylum</b><br>" + n;
+          el("path", { d: path(A.mauer, true), fill: "none", stroke: "#8a8f96", "stroke-width": 8, "stroke-dasharray": "30 12", "pointer-events": "none", "data-bau": 1 }, Wg);
+          for (const [x, z, w, d, dr, n] of A.gebaeude) rect(x, z, w, d, dr, { fill: "#4a4c52", stroke: "#1b1d20", "stroke-width": 4, "data-bau": 1 }).dataset.info = "<b>Arkham Asylum</b><br>" + n;
           let cx = 0, cz = 0; A.umriss.forEach(q => { cx += q[0] / A.umriss.length; cz += q[1] / A.umriss.length; }); txt(cx, cz - 330, A.name, 90); txt(cx, cz + 380, A.sub, 50, "#fff8"); }
-        if (F) { el("path", { d: path(F.route, false), fill: "none", stroke: "#e8e2c8", "stroke-width": 14, "stroke-dasharray": "50 35", "stroke-linecap": "round" }, Wg).dataset.info = "<b>" + F.name + "</b><br>" + F.sub;
-          for (const q of [F.route[0], F.route[F.route.length - 1]]) el("circle", { cx: q[0], cy: q[1], r: 28, fill: "#e8e2c8", stroke: "#1b1d20", "stroke-width": 5 }, Wg).dataset.info = "<b>Fähranleger</b>"; }
+        if (F) { el("path", { d: path(F.route, false), fill: "none", stroke: "#e8e2c8", "stroke-width": 14, "stroke-dasharray": "50 35", "stroke-linecap": "round", "data-weg": 1 }, Wg).dataset.info = "<b>" + F.name + "</b><br>" + F.sub;
+          for (const q of [F.route[0], F.route[F.route.length - 1]]) el("circle", { cx: q[0], cy: q[1], r: 28, fill: "#e8e2c8", stroke: "#1b1d20", "stroke-width": 5, "data-weg": 1 }, Wg).dataset.info = "<b>Fähranleger</b>"; }
         if (Mi) { insel(Mi, "<b>Militärinsel (Entwurf)</b><br>Landebahn 2,6 km, Hangars, Tower, Hafen; Kampfjet");
-          const p = Mi.piste; rect(p.mitte[0], p.mitte[1], p.l, p.b, p.dreh, { fill: "#33363b", stroke: "#1b1d20", "stroke-width": 4 }).dataset.info = "<b>Landebahn</b><br>2,6 km x 60 m (Kampfjet)";
-          { const c = Math.cos(p.dreh), s2 = Math.sin(p.dreh), h = p.l / 2 - 60; el("path", { d: "M" + (p.mitte[0] - h * c) + " " + (p.mitte[1] - h * s2) + "L" + (p.mitte[0] + h * c) + " " + (p.mitte[1] + h * s2), stroke: "#e8e8e8", "stroke-width": 4, "stroke-dasharray": "40 30", fill: "none", "pointer-events": "none" }, Wg); }
-          el("path", { d: path(Mi.rollweg, false), stroke: "#3d4045", "stroke-width": 24, fill: "none", "pointer-events": "none" }, Wg);
-          for (const [x, z, w, d, dr] of Mi.hangars) rect(x, z, w, d, dr, { fill: "#6b7258", stroke: "#1b1d20", "stroke-width": 4 }).dataset.info = "<b>Hangar</b>";
-          el("circle", { cx: Mi.turm[0], cy: Mi.turm[1], r: 18, fill: "#c9ccd0", stroke: "#1b1d20", "stroke-width": 4 }, Wg).dataset.info = "<b>Tower</b>";
-          el("path", { d: path(Mi.hafen.pier, false), stroke: "#9a8f78", "stroke-width": 22, fill: "none" }, Wg).dataset.info = "<b>Militärhafen</b><br>Pier für Boote";
-          let cx = 0, cz = 0; Mi.umriss.forEach(q => { cx += q[0] / Mi.umriss.length; cz += q[1] / Mi.umriss.length; }); txt(cx + 900, cz, Mi.name, 110); txt(cx + 900, cz + 120, Mi.sub, 55, "#fff8"); } }
+          const p = Mi.piste; rect(p.mitte[0], p.mitte[1], p.l, p.b, p.dreh, { fill: "#33363b", stroke: "#1b1d20", "stroke-width": 4, "data-weg": 1 }).dataset.info = "<b>Landebahn</b><br>2,6 km x 60 m (Kampfjet)";
+          { const c = Math.cos(p.dreh), s2 = Math.sin(p.dreh), h = p.l / 2 - 60; el("path", { d: "M" + (p.mitte[0] - h * c) + " " + (p.mitte[1] - h * s2) + "L" + (p.mitte[0] + h * c) + " " + (p.mitte[1] + h * s2), stroke: "#e8e8e8", "stroke-width": 4, "stroke-dasharray": "40 30", fill: "none", "pointer-events": "none", "data-weg": 1 }, Wg); }
+          el("path", { d: path(Mi.rollweg, false), stroke: "#3d4045", "stroke-width": 24, fill: "none", "pointer-events": "none", "data-weg": 1 }, Wg);
+          for (const [x, z, w, d, dr] of Mi.hangars) rect(x, z, w, d, dr, { fill: "#6b7258", stroke: "#1b1d20", "stroke-width": 4, "data-bau": 1 }).dataset.info = "<b>Hangar</b>";
+          el("circle", { cx: Mi.turm[0], cy: Mi.turm[1], r: 18, fill: "#c9ccd0", stroke: "#1b1d20", "stroke-width": 4, "data-bau": 1 }, Wg).dataset.info = "<b>Tower</b>";
+          el("path", { d: path(Mi.hafen.pier, false), stroke: "#9a8f78", "stroke-width": 22, fill: "none", "data-bau": 1 }, Wg).dataset.info = "<b>Militärhafen</b><br>Pier für Boote";
+          let cx = 0, cz = 0; Mi.umriss.forEach(q => { cx += q[0] / Mi.umriss.length; cz += q[1] / Mi.umriss.length; }); txt(cx, cz + 820, Mi.name, 110); txt(cx, cz + 940, Mi.sub, 55, "#fff8"); } }
+      // Namen der Insel und der Inselchen (Vorschlag, OFFENE-FRAGEN 63)
+      if (GW.name) { const t = el("text", { x: -1200, y: -7600, "font-size": 520, fill: "#ffffff30", "text-anchor": "middle", "font-weight": 800, "letter-spacing": 60, "font-family": "Georgia, serif", "pointer-events": "none" }, L.namen); t.textContent = GW.name.toUpperCase(); }
+      (GW.eilande || []).forEach(([x, z, r], i) => { const n = (GW.eilandNamen || [])[i]; if (!n) return; const t = el("text", { x, y: z + r + 170, "font-size": 95, fill: "#fff", "text-anchor": "middle", "font-weight": 700, stroke: "#0b1a26", "stroke-width": 14, "paint-order": "stroke", "pointer-events": "none" }, L.namen); t.textContent = n; });
       // Massstab 1 km unten links der Insel
       const mx = bx0 + 200, mz = bz1 + 500; el("path", { d: `M${mx} ${mz}H${mx + 1000}M${mx} ${mz - 60}V${mz + 60}M${mx + 1000} ${mz - 60}V${mz + 60}`, stroke: "#fff", "stroke-width": 14, fill: "none" }, Wg);
       el("text", { x: mx + 500, y: mz - 50, "font-size": 80, fill: "#fff", "text-anchor": "middle" }, Wg).textContent = "1 km"; }
@@ -586,8 +596,8 @@
       if (o.markiert) {   // kleine, wichtige Orte (z. B. Batman-Container) gut sichtbar: Ring, Linie und Name
         el("circle", { cx: o.x, cy: o.z, r: 34, fill: "none", stroke: T.farbe, "stroke-width": 6, "stroke-dasharray": "10 6", "pointer-events": "none" }, L.orte);
         el("path", { d: `M${o.x - 24} ${o.z - 24}L${o.x - 90} ${o.z - 90}`, stroke: T.farbe, "stroke-width": 4, "pointer-events": "none" }, L.orte);
-        el("text", { x: o.x - 96, y: o.z - 98, "font-size": 34, fill: T.farbe, "text-anchor": "end", "font-weight": 800, stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "") + " (Batman)"; }
-      if (big) el("text", { x: o.x, y: o.z - D / 2 - 10, "font-size": o.typ === "wahrzeichen" || o.w > 150 ? 40 : 26, fill: "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "");
+        el("text", { x: o.x - 96, y: o.z - 98, "font-size": 34, fill: T.farbe, "text-anchor": "end", "font-weight": 800, stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none", "data-bau": 1 }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "") + " (Batman)"; }
+      if (big) el("text", { x: o.x, y: o.z - D / 2 - 10, "font-size": o.typ === "wahrzeichen" || o.w > 150 ? 40 : 26, fill: "#fff", "text-anchor": "middle", stroke: "#000", "stroke-width": 5, "paint-order": "stroke", "pointer-events": "none", "data-bau": 1 }, L.namen).textContent = o.name.replace(/ \(.*\)$/, "");
     }
     for (const [k, T] of Object.entries(TYPEN)) {
       if (!counts[k]) continue;
