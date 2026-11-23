@@ -350,32 +350,32 @@
   // ---- Schriftzuege je Marke: Schrift, Gewicht, Abstand, kursiv, Farbe auf dunklem / hellem Grund, Akzent, Unterzeile ----
   const SANS = "Bahnschrift, 'Segoe UI', system-ui, sans-serif", SERIF = "Georgia, 'Times New Roman', serif", PAL = "'Palatino Linotype', Palatino, Georgia, serif", ROM = "'Times New Roman', Times, serif", BLACK = "'Arial Black', 'Segoe UI Black', sans-serif", IMP = "Impact, 'Arial Black', sans-serif";
   const WM = {
-    VELTARO: { f: SANS, w: 600, ls: 14, hell: "#e7ebef", dunkel: "#1d2430", akz: "#3ec6ff", tag: "AUTOMOBILI" },
-    ARCANIS: { f: SERIF, w: 700, ls: 10, hell: "#e6c879", dunkel: "#2a2312", akz: "#d7b46a", tag: "ELECTRIC HYPERCARS" },
-    VYREX: { f: IMP, w: 400, ls: 6, it: 1, hell: "#f1f3f5", dunkel: "#16191e", akz: "#e0313b", tag: "PERFORMANCE" },
-    SOLENNE: { f: PAL, w: 400, ls: 8, it: 1, hell: "#f6e3d3", dunkel: "#3a241a", akz: "#e48a4f", tag: "GRAN TURISMO" },
-    KAIRON: { f: SANS, w: 300, ls: 18, hell: "#e9fbf6", dunkel: "#0f2a27", akz: "#33d1b0", tag: "MOTORS" },
-    NOCTIS: { f: "'Segoe UI Light', 'Segoe UI', sans-serif", w: 300, ls: 20, hell: "#e3e5ee", dunkel: "#1c1830", akz: "#8e6cf0", tag: "NIGHT ENGINEERING" },
-    STRATON: { f: BLACK, w: 900, ls: 4, hell: "#e9ecef", dunkel: "#1b1d20", akz: "#f26b1d", tag: "RACING" },
-    AERIQ: { f: "'Segoe UI', system-ui, sans-serif", w: 200, ls: 12, it: 1, hell: "#eaf4ff", dunkel: "#0d1724", akz: "#3b82f6", tag: "AERODYNAMICS" },
+    VELTARO: { f: SANS, w: 600, ls: 14, hell: "#e7ebef", dunkel: "#1d2430", akz: "#3ec6ff", tag: "AUTOMOBILI", deko: "oben" },
+    ARCANIS: { f: SERIF, w: 700, ls: 10, hell: "#e6c879", dunkel: "#2a2312", akz: "#d7b46a", tag: "ELECTRIC HYPERCARS", deko: "blitz" },
+    VYREX: { f: IMP, w: 400, ls: 6, it: 1, hell: "#f1f3f5", dunkel: "#16191e", akz: "#e0313b", tag: "PERFORMANCE", hl: -1 },
+    SOLENNE: { f: PAL, w: 400, ls: 8, it: 1, hell: "#f6e3d3", dunkel: "#3a241a", akz: "#e48a4f", tag: "GRAN TURISMO", deko: "sonne" },
+    KAIRON: { f: SANS, w: 300, ls: 18, hell: "#e9fbf6", dunkel: "#0f2a27", akz: "#33d1b0", tag: "MOTORS", hl: 0 },
+    NOCTIS: { f: "'Segoe UI Light', 'Segoe UI', sans-serif", w: 300, ls: 20, hell: "#e3e5ee", dunkel: "#1c1830", akz: "#8e6cf0", tag: "NIGHT ENGINEERING", deko: "mond" },
+    STRATON: { f: BLACK, w: 900, ls: 4, hell: "#e9ecef", dunkel: "#1b1d20", akz: "#f26b1d", tag: "RACING", deko: "winkel" },
+    AERIQ: { f: "'Segoe UI', system-ui, sans-serif", w: 200, ls: 12, it: 1, hell: "#eaf4ff", dunkel: "#0d1724", akz: "#3b82f6", tag: "AERODYNAMICS", deko: "schwung" },
     MONZARI: { f: ROM, w: 700, ls: 8, hell: "#e9c66d", dunkel: "#1d1d1f", trikolore: 1, tag: "AUTOMOBILI" },
-    ZEPHRA: { f: "'Trebuchet MS', 'Segoe UI', sans-serif", w: 700, ls: 8, verlauf: ["#22d3ee", "#e040fb"], hell: "#f2e9ff", dunkel: "#120d1c", tag: "ELECTRIC" },
-    ORVANT: { f: SERIF, w: 400, ls: 22, hell: "#f3e7cf", dunkel: "#2a2416", akz: "#d9c39a", tag: "MAISON AUTOMOBILE" },
-    TALVOR: { f: SANS, w: 700, ls: 12, hell: "#e6edf3", dunkel: "#101820", akz: "#7fb2d6", tag: "ALPINE" },
-    FEROX: { f: IMP, w: 400, ls: 3, it: 1, hell: "#f2f2f2", dunkel: "#141414", akz: "#e3262f", tag: "HYPERCAR" },
-    LUMORA: { f: "'Segoe UI', system-ui, sans-serif", w: 300, ls: 24, hell: "#eaf6ff", dunkel: "#0b1118", akz: "#7dd3fc", tag: "LIGHT · SPEED" },
-    AXION: { f: "Consolas, 'Cascadia Mono', monospace", w: 700, ls: 10, hell: "#c6f432", dunkel: "#111409", akz: "#7fa61a", tag: "TECHNIK" },
-    HALVORA: { f: PAL, w: 600, ls: 6, it: 1, hell: "#e2b857", dunkel: "#2a210f", akz: "#fff3d1", tag: "ENDURANCE" },
-    DRAXEN: { f: BLACK, w: 900, ls: 6, hell: "#d6fff1", dunkel: "#08140f", akz: "#14b88a", tag: "MOTORWORKS" },
-    CASTELLARO: { f: SERIF, w: 700, ls: 8, hell: "#e9c66d", dunkel: "#161616", akz: "#b5121b", tag: "VALCORE" },
-    NORDHEIM: { f: ROM, w: 700, ls: 10, hell: "#dfe4ea", dunkel: "#0e1d3a", akz: "#d8ad4c", tag: "AUTOMOBILE · 1958" },
-    AURELIUS: { f: SERIF, w: 700, ls: 12, hell: "#e9c66d", dunkel: "#3b0a0e", akz: "#9e161d", tag: "IMPERIAL MOTORS" },
-    VALDORO: { f: PAL, w: 700, ls: 6, it: 1, hell: "#e9c66d", dunkel: "#1a2c5c", akz: "#8e1b1f", tag: "CORSE" },
-    KRONSTEIN: { f: ROM, w: 700, ls: 10, hell: "#efe9da", dunkel: "#141416", akz: "#9b1c22", tag: "GEGRÜNDET 1949" },
-    ALTAVERDE: { f: SERIF, w: 400, ls: 14, hell: "#e9c66d", dunkel: "#0b2419", akz: "#1f5a3f", tag: "GRAND TOURING" },
-    LEONIDA: { f: SERIF, w: 700, ls: 12, hell: "#e9c66d", dunkel: "#14060a", akz: "#e3b85a", tag: "AUTOMOBILI" },
-    STELLAMARE: { f: PAL, w: 400, ls: 6, it: 1, hell: "#e9c66d", dunkel: "#081a30", akz: "#5d8fc4", tag: "CANTIERE AUTOMOBILI" },
-    HOHENWALD: { f: ROM, w: 700, ls: 10, hell: "#e9c66d", dunkel: "#123d22", akz: "#3fae62", tag: "AUTOMOBILWERKE" },
+    ZEPHRA: { f: "'Trebuchet MS', 'Segoe UI', sans-serif", w: 700, ls: 8, verlauf: ["#22d3ee", "#e040fb"], hell: "#f2e9ff", dunkel: "#120d1c", tag: "ELECTRIC", deko: "komet" },
+    ORVANT: { f: SERIF, w: 400, ls: 22, hell: "#f3e7cf", dunkel: "#2a2416", akz: "#d9c39a", tag: "MAISON AUTOMOBILE", deko: "orbit" },
+    TALVOR: { f: SANS, w: 700, ls: 12, hell: "#e6edf3", dunkel: "#101820", akz: "#7fb2d6", tag: "ALPINE", deko: "gipfel" },
+    FEROX: { f: IMP, w: 400, ls: 3, it: 1, hell: "#f2f2f2", dunkel: "#141414", akz: "#e3262f", tag: "HYPERCAR", hl: -1, deko: "krallen" },
+    LUMORA: { f: "'Segoe UI', system-ui, sans-serif", w: 300, ls: 24, hell: "#eaf6ff", dunkel: "#0b1118", akz: "#7dd3fc", tag: "LIGHT · SPEED", deko: "led" },
+    AXION: { f: "Consolas, 'Cascadia Mono', monospace", w: 700, ls: 10, hell: "#c6f432", dunkel: "#111409", akz: "#7fa61a", tag: "TECHNIK", hl: 0, deko: "delta" },
+    HALVORA: { f: PAL, w: 600, ls: 6, it: 1, hell: "#e2b857", dunkel: "#2a210f", akz: "#fff3d1", tag: "ENDURANCE", deko: "acht" },
+    DRAXEN: { f: BLACK, w: 900, ls: 6, hell: "#d6fff1", dunkel: "#08140f", akz: "#14b88a", tag: "MOTORWORKS", hl: 3 },
+    CASTELLARO: { f: SERIF, w: 700, ls: 8, hell: "#e9c66d", dunkel: "#161616", akz: "#b5121b", tag: "VALCORE", wappen: 1 },
+    NORDHEIM: { f: ROM, w: 700, ls: 10, hell: "#dfe4ea", dunkel: "#0e1d3a", akz: "#d8ad4c", tag: "AUTOMOBILE · 1958", wappen: 1 },
+    AURELIUS: { f: SERIF, w: 700, ls: 12, hell: "#e9c66d", dunkel: "#3b0a0e", akz: "#9e161d", tag: "IMPERIAL MOTORS", wappen: 1 },
+    VALDORO: { f: PAL, w: 700, ls: 6, it: 1, hell: "#e9c66d", dunkel: "#1a2c5c", akz: "#8e1b1f", tag: "CORSE", wappen: 1 },
+    KRONSTEIN: { f: ROM, w: 700, ls: 10, hell: "#efe9da", dunkel: "#141416", akz: "#9b1c22", tag: "GEGRÜNDET 1949", wappen: 1 },
+    ALTAVERDE: { f: SERIF, w: 400, ls: 14, hell: "#e9c66d", dunkel: "#0b2419", akz: "#1f5a3f", tag: "GRAND TOURING", wappen: 1 },
+    LEONIDA: { f: SERIF, w: 700, ls: 12, hell: "#e9c66d", dunkel: "#14060a", akz: "#e3b85a", tag: "AUTOMOBILI", wappen: 1 },
+    STELLAMARE: { f: PAL, w: 400, ls: 6, it: 1, hell: "#e9c66d", dunkel: "#081a30", akz: "#5d8fc4", tag: "CANTIERE AUTOMOBILI", wappen: 1 },
+    HOHENWALD: { f: ROM, w: 700, ls: 10, hell: "#e9c66d", dunkel: "#123d22", akz: "#3fae62", tag: "AUTOMOBILWERKE", wappen: 1 },
   };
   const ZUST = { ansicht: "logo", hg: "schwarz" };
   try { const z = JSON.parse(localStorage.getItem("auto-planung-ansicht") || "null"); if (z) Object.assign(ZUST, z); } catch (e) {}
@@ -388,13 +388,41 @@
     const akz = hg === "marke" ? farbe : (W.akz || farbe), fill = W.verlauf && hg !== "marke" ? "url(#" + id + ")" : farbe;
     const d = document.createElement("div"); d.className = "wm" + (hg === "carbon" ? " carbon" : ""); if (hg !== "carbon") d.style.background = bg;
     d.innerHTML = '<svg viewBox="0 0 320 140" aria-label="Schriftzug ' + name + '">' + (W.verlauf ? '<defs><linearGradient id="' + id + '" x1="0" x2="1"><stop offset="0" stop-color="' + W.verlauf[0] + '"/><stop offset="1" stop-color="' + W.verlauf[1] + '"/></linearGradient></defs>' : "") +
-      '<text class="n" x="160" y="80" text-anchor="middle" font-family="' + W.f.replace(/"/g, "'") + '" font-weight="' + W.w + '" font-size="56" letter-spacing="' + W.ls + '"' + (W.it ? ' font-style="italic"' : "") + ' fill="' + fill + '">' + name + '</text>' +
-      (W.trikolore ? '<rect class="b" x="130" y="94" width="20" height="4" fill="#1f8a52"/><rect class="b" x="150" y="94" width="20" height="4" fill="#f4f1e8"/><rect class="b" x="170" y="94" width="20" height="4" fill="#d0242f"/>' : '<rect class="b" x="130" y="94" width="60" height="3" rx="1.5" fill="' + akz + '"/>') +
-      (W.tag ? '<text x="160" y="118" text-anchor="middle" font-family="' + SANS.replace(/"/g, "'") + '" font-weight="600" font-size="10.5" letter-spacing="5" fill="' + farbe + '" opacity=".75">' + W.tag + '</text>' : "") + '</svg>';
+      '<text class="n" x="160" y="' + (W.wappen ? 96 : 80) + '" text-anchor="middle" font-family="' + W.f.replace(/"/g, "'") + '" font-weight="' + W.w + '" font-size="56" letter-spacing="' + W.ls + '"' + (W.it ? ' font-style="italic"' : "") + ' fill="' + fill + '">' + (W.hl === undefined ? name : [...name].map((c, i) => (i === (W.hl < 0 ? name.length + W.hl : W.hl) ? '<tspan fill="' + akz + '">' + c + '</tspan>' : c)).join("")) + '</text>' +
+      (W.trikolore ? '<rect class="b" x="130" y="94" width="20" height="4" fill="#1f8a52"/><rect class="b" x="150" y="94" width="20" height="4" fill="#f4f1e8" stroke="#00000033" stroke-width=".6"/><rect class="b" x="170" y="94" width="20" height="4" fill="#d0242f"/>' : W.wappen || W.deko ? "" : '<rect class="b" x="130" y="94" width="60" height="3" rx="1.5" fill="' + akz + '"/>') +
+      (W.tag ? '<text class="tag" x="160" y="' + (W.wappen ? 126 : 118) + '" text-anchor="middle" font-family="' + SANS.replace(/"/g, "'") + '" font-weight="600" font-size="10.5" letter-spacing="5" fill="' + farbe + '" opacity=".75">' + W.tag + '</text>' : "") + '</svg>';
+    d.dataset.akz = akz; d.dataset.farbe = farbe; d.dataset.name = name; if (W.wappen) d._wappen = k.querySelector(".logo svg");
     return d; }
+  // Zeichen am Schriftzug (nach dem Einpassen, braucht die gemessene Lage der Schrift)
+  const NS = "http://www.w3.org/2000/svg";
+  function deko(wm) { const svg = wm.querySelector("svg"), t = svg.querySelector(".n"), W = WM[wm.dataset.name] || {}, a = wm.dataset.akz, f = wm.dataset.farbe; if (svg.dataset.deko) return; svg.dataset.deko = 1;
+    const b = t.getBBox(), cx = b.x + b.width / 2, top = b.y + b.height * 0.18, bot = b.y + b.height * 0.92, L = (d, extra = "") => svg.insertAdjacentHTML("beforeend", d.split("$A").join(a).split("$F").join(f) + extra);
+    const ch = i => { try { return t.getExtentOfChar(i); } catch (e) { return null; } };
+    switch (W.deko) {
+      case "oben": L('<rect x="' + b.x + '" y="' + (top - 9) + '" width="' + b.width + '" height="2.5" rx="1.2" fill="$A"/>'); break;
+      case "blitz": L('<path d="M' + (cx + 3) + ' ' + (bot + 2) + ' l-9 10 h7 l-4 9 l12 -12 h-7 l4 -7 z" fill="$A"/><path d="M' + (cx - 46) + ' ' + (bot + 12) + ' H' + (cx - 14) + ' M' + (cx + 14) + ' ' + (bot + 12) + ' H' + (cx + 46) + '" stroke="$A" stroke-width="1.4"/>'); break;
+      case "sonne": L('<path d="M' + (cx - 16) + ' ' + (top - 4) + ' A16 16 0 0 1 ' + (cx + 16) + ' ' + (top - 4) + ' Z" fill="$A"/><path d="M' + (cx - 26) + ' ' + (top - 3) + ' H' + (cx + 26) + '" stroke="$F" stroke-width="1.2"/>'); break;
+      case "mond": L('<path d="M' + (cx + 4) + ' ' + (top - 22) + ' a10 10 0 1 0 8 14 a8 8 0 1 1 -8 -14 z" fill="$F"/><path d="M' + (cx - 30) + ' ' + (bot + 10) + ' H' + (cx + 30) + ' M' + (cx - 20) + ' ' + (bot + 15) + ' H' + (cx + 20) + '" stroke="$A" stroke-width="1.8" stroke-linecap="round"/>'); break;
+      case "winkel": for (let i = 0; i < 3; i++) L('<path d="M' + (cx - 12) + ' ' + (bot + 16 - i * 5) + ' L' + cx + ' ' + (bot + 8 - i * 5) + ' L' + (cx + 12) + ' ' + (bot + 16 - i * 5) + '" fill="none" stroke="' + (i ? "$F" : "$A") + '" stroke-width="2.2"' + (i === 2 ? ' opacity=".5"' : "") + '/>'); break;
+      case "schwung": L('<path d="M' + (b.x + 10) + ' ' + (bot + 14) + ' C' + (cx - 30) + ' ' + (bot + 2) + ' ' + (cx + 40) + ' ' + (bot + 2) + ' ' + (b.x + b.width - 6) + ' ' + (bot + 6) + ' C' + (cx + 30) + ' ' + (bot + 8) + ' ' + (cx - 20) + ' ' + (bot + 10) + ' ' + (b.x + 10) + ' ' + (bot + 14) + ' Z" fill="$A"/>'); break;
+      case "komet": { const e = ch(wm.dataset.name.length - 1); if (e) L('<circle cx="' + (e.x + e.width + 7) + '" cy="' + (e.y + e.height * 0.3) + '" r="4.5" fill="#e040fb"/><path d="M' + (b.x - 4) + ' ' + (bot + 10) + ' Q' + cx + ' ' + (bot + 18) + ' ' + (e.x + e.width + 6) + ' ' + (e.y + e.height * 0.32) + '" fill="none" stroke="#22d3ee" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>'); break; }
+      case "orbit": { const e = ch(0), gw = (+t.getAttribute("font-size")) * 0.78; if (e) { const ox = e.x + gw / 2, oy = e.y + e.height * 0.56; L('<ellipse cx="' + ox + '" cy="' + oy + '" rx="' + (gw * 0.85) + '" ry="' + (e.height * 0.2) + '" fill="none" stroke="$A" stroke-width="1.8" transform="rotate(-20 ' + ox + ' ' + oy + ')"/><circle cx="' + (ox + gw * 0.78) + '" cy="' + (oy - e.height * 0.24) + '" r="2.6" fill="$A"/>'); } L('<path d="M' + (cx - 26) + ' ' + (bot + 10) + ' H' + (cx + 26) + '" stroke="$A" stroke-width="1.2"/>'); break; }
+      case "gipfel": L('<path d="M' + (cx - 60) + ' ' + (bot + 12) + ' H' + (cx - 12) + ' L' + cx + ' ' + (bot + 2) + ' L' + (cx + 12) + ' ' + (bot + 12) + ' H' + (cx + 60) + '" fill="none" stroke="$A" stroke-width="2.2" stroke-linejoin="round"/><path d="M' + (cx - 4) + ' ' + (bot + 5.5) + ' L' + cx + ' ' + (bot + 2) + ' L' + (cx + 4) + ' ' + (bot + 5.5) + '" fill="none" stroke="$F" stroke-width="2.2"/>'); break;
+      case "krallen": { const e = ch(wm.dataset.name.length - 1), x0 = e ? e.x + e.width + 8 : b.x + b.width + 8; for (let i = 0; i < 3; i++) L('<path d="M' + (x0 + i * 6) + ' ' + (top + 2) + ' q5 ' + (b.height * 0.35) + ' 0 ' + (b.height * 0.66) + '" fill="none" stroke="$A" stroke-width="2.4" stroke-linecap="round"/>'); break; }
+      case "led": for (const sd of [-1, 1]) L('<path d="M' + (cx + sd * 64) + ' ' + (top - 17) + ' L' + (cx + sd * 18) + ' ' + (top - 12) + ' L' + (cx + sd * 15) + ' ' + (top - 8) + '" fill="none" stroke="$A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'); L('<circle cx="' + cx + '" cy="' + (bot + 11) + '" r="2.6" fill="$A"/>'); break;
+      case "delta": L('<path d="M' + cx + ' ' + (bot + 3) + ' L' + (cx + 10) + ' ' + (bot + 16) + ' L' + cx + ' ' + (bot + 12) + ' L' + (cx - 10) + ' ' + (bot + 16) + ' Z" fill="$A"/>'); break;
+      case "acht": L('<path d="M' + (cx - 22) + ' ' + (bot + 11) + ' c0 -7 11 -7 22 0 c11 7 22 7 22 0 c0 -7 -11 -7 -22 0 c-11 7 -22 7 -22 0 z" fill="none" stroke="$A" stroke-width="1.8"/><circle cx="' + (cx + 22) + '" cy="' + (bot + 11) + '" r="2" fill="$F"/>'); break;
+    }
+    if (W.wappen && wm._wappen) { const k2 = wm._wappen.cloneNode(true), h = 40, suf = "-w" + (++uid);
+      k2.querySelectorAll("[id]").forEach(el => { const o = el.id, n = o + suf; el.id = n; k2.querySelectorAll("*").forEach(x => { for (const at of [...x.attributes]) { if (at.value.includes("#" + o + ")")) x.setAttribute(at.name, at.value.split("#" + o + ")").join("#" + n + ")")); if ((at.name === "href" || at.name === "xlink:href") && at.value === "#" + o) x.setAttribute(at.name, "#" + n); } }); });   // eigene Kennungen: das Original ist in der Schriftzug-Ansicht ausgeblendet, Verlaeufe dort wuerden nicht gezeichnet
+      k2.setAttribute("x", 160 - h / 2); k2.setAttribute("y", Math.max(2, top - h - 8)); k2.setAttribute("width", h); k2.setAttribute("height", h); k2.style.cssText = "width:" + h + "px;height:" + h + "px"; svg.insertBefore(k2, svg.firstChild);
+      const tg = svg.querySelector(".tag"); if (tg) { const g = tg.getBBox(); L('<path d="M' + (g.x - 30) + ' ' + (g.y + g.height / 2) + ' H' + (g.x - 8) + ' M' + (g.x + g.width + 4) + ' ' + (g.y + g.height / 2) + ' H' + (g.x + g.width + 26) + '" stroke="$A" stroke-width="1.2"/><circle cx="' + (g.x - 33) + '" cy="' + (g.y + g.height / 2) + '" r="1.6" fill="$A"/><circle cx="' + (g.x + g.width + 29) + '" cy="' + (g.y + g.height / 2) + '" r="1.6" fill="$A"/>'); } }
+    // Unterzeile unter die Zeichen schieben, falls sie darunter liegen
+    const tg = svg.querySelector(".tag"); if (tg && W.deko && ["blitz", "mond", "winkel", "gipfel", "led", "delta", "acht", "orbit", "schwung", "komet"].includes(W.deko)) { tg.setAttribute("y", Math.min(136, bot + 30)); }
+  }
   // Schrift auf die Breite einpassen (erst messbar, wenn sichtbar)
-  function einpassen(root) { root.querySelectorAll(".wm svg").forEach(svg => { const t = svg.querySelector(".n"); if (!t || !t.getBBox) return; t.setAttribute("font-size", 56); const w = t.getBBox().width; if (w > 296) t.setAttribute("font-size", (56 * 296 / w).toFixed(1));
-    const b = t.getBBox(); svg.querySelectorAll(".b").forEach(r => { const y = b.y + b.height + 8; r.setAttribute("y", Math.min(100, y).toFixed(1)); }); }); }
+  function einpassen(root) { root.querySelectorAll(".wm svg").forEach(svg => { const t = svg.querySelector(".n"); if (!t || !t.getBBox) return; const W0 = WM[svg.parentNode.dataset.name] || {}, F0 = W0.wappen ? 40 : 56, B0 = W0.wappen ? 270 : 296; t.setAttribute("font-size", F0); const w = t.getBBox().width; if (w > B0) t.setAttribute("font-size", (F0 * B0 / w).toFixed(1));
+    const b = t.getBBox(); svg.querySelectorAll(".b").forEach(r => { const y = b.y + b.height + 8; r.setAttribute("y", Math.min(100, y).toFixed(1)); }); deko(svg.parentNode); }); }
   function alleZeichnen() { document.querySelectorAll("#logos .karte").forEach(k => { const lg = k.querySelector(".logo"); lg.querySelector(".wm")?.remove(); lg.appendChild(schriftzug(k)); });
     const a = document.querySelector("#logos .karte.aktiv"); if (a && !det.hidden) { const gb = det.querySelector(".gross-bild"); gb.querySelector(".wm")?.remove(); gb.appendChild(schriftzug(a)); }
     if (ZUST.ansicht === "schrift") requestAnimationFrame(() => einpassen(document)); }
