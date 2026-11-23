@@ -226,8 +226,8 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | Schritt | Was |
 |---------|-----|
 | I1 | Planung auf der Planungskarte (Umriss, Grösse) – **Entwurf steht**, wartet auf Nicolas (OFFENE-FRAGEN 59) |
-| I2 | Spielwelt grösser: `LIMIT_WORLD` und Kachel-Reichweite bis an die neue Küste, Meer rundherum bis zum Weltrand (Wasserfläche, Meeresgrund), Küste als Strand bzw. Steilufer |
-| I3 | Festland Nord, West und Ost: nur Gelände in Kacheln (gleiche Höhenformel wie heute, an der Kreisgrenze nahtlos), ohne Bäume, ohne Strassen und Gebäude; Brücken über den Westkanal kommen später |
+| I2 | **gebaut 2026-11-23** – Spielwelt grösser: `LIMIT_WORLD` und Kachel-Reichweite bis an die neue Küste, Meer rundherum bis zum Weltrand (Wasserfläche, Meeresgrund), Küste als Strand bzw. Steilufer |
+| I3 | **gebaut 2026-11-23** (Berge nur in Gebirgszügen, Küste Steilufer oder Sandstrand) – Festland Nord, West und Ost: nur Gelände in Kacheln (gleiche Höhenformel wie heute, an der Kreisgrenze nahtlos), ohne Bäume, ohne Strassen und Gebäude; Brücken über den Westkanal kommen später |
 | I4 | später: Strassen, Orte, Bäume; Hafen neu (N53) an der Südspitze bzw. an der neuen Küste |
 
 ## Nicht Teil von Wayne Manor

@@ -63,7 +63,7 @@ function fernTerrainH(x, z) {
   const d = H(i + 1, k + 1); return d + (c - d) * (1 - u) + (b - d) * (1 - v);
 }
 { const terrainH0 = terrainH, E = T_A + T_B;
-  terrainH = (x, z) => inGothamG(x, z) ? gothamTerrainH(x, z) : Math.abs(x) < E && Math.abs(z) < E ? terrainH0(x, z) : fernTerrainH(x, z); }
+  terrainH = (x, z) => inGothamG(x, z) ? gothamTerrainH(x, z) : Math.abs(x) < E && Math.abs(z) < E ? terrainH0(x, z) : Math.abs(x) < FR_R - FR_S && Math.abs(z) < FR_R - FR_S ? fernTerrainH(x, z) : inselTerrainH(x, z); }   // Insel-Welt ausserhalb des Fernrings (I2)
 
 // Farben: Wiese/Wald, Fels an steilen Stellen und hoch oben, Kies am Ufer, Flussgrund; Insel (Strassenebene) vorerst helle Wiese (Stadt kommt mit G2/G3)
 const GR_COL = (() => { const C = h => new THREE.Color(h);

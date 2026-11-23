@@ -5,7 +5,7 @@
 // ===================== Laufmodus =====================
 const touch = matchMedia("(pointer: coarse)").matches;
 document.body.classList.toggle("touch", touch);
-const EYE = 1.62, BODY = 1.8, RADIUS = 0.3, STEP = 0.45, WALK = 4.6, RUN = 9, JUMP = 6.4, GRAVITY = 22, LIMIT = LIMIT_WORLD;
+const EYE = 1.62, BODY = 1.8, RADIUS = 0.3, STEP = 0.45, WALK = 4.6, RUN = 9, JUMP = 6.4, GRAVITY = 22, LIMIT = WELT_R;   // Insel-Welt (I2): bis hinter die Inselkueste
 const START = { x: 22, z: 0, yaw: Math.PI / 2 };                        // Blick nach Westen auf das Rondell (Ostrand des Plateaus)
 const player = { pos: new THREE.Vector3(START.x, 0, START.z), vy: 0, yaw: START.yaw, pitch: 0.05, onGround: true, jump: false };
 const keys = new Set();

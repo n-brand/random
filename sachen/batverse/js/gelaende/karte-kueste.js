@@ -90,11 +90,51 @@ function landSD(L, x, z) {                                                // Abs
   }
   return inside ? -m : m;
 }
-const seaD = (x, z) => {
+const seaD0 = (x, z) => {
   let v = seaBase(x, z);
   for (const L of LANDS) if (x > L.box[0] - 80 && x < L.box[1] + 80 && z > L.box[2] - 80 && z < L.box[3] + 80) v = Math.min(v, landSD(L, x, z));
   return v;
 };
+// ===================== Insel-Welt (PLAN-GOTHAM N54, Schritte I2/I3; Nicolas 2026-11-20 "Passt, weiter mit I2", 2026-11-23 "mach die anderen offenen Punkte") =====================
+// Die ganze Welt ist eine grosse Insel (Umriss auf der Planungskarte: gotham/daten.js welt.umriss + wasser.kuesteAlt + wasser.kueste, Inselchen welt.eilande; Kartenkoordinaten,
+// hier ueber die Manor-Lage in Weltmeter umgerechnet). Daraus einmal ein Abstandsfeld (50-m-Raster, Rand gefuellt per Zeilen, Abstand exakt per EDT, ca. 0,1 s):
+// INSEL.d(x, z) = Abstand zur Inselkueste in m, > 0 = Meer. seaD gilt innerhalb der heutigen Welt (Kreis LIMIT_WORLD) unveraendert (seaD0), dahinter bis 400 m weich
+// die Inselkueste. Damit bauen dieselben Formeln wie heute (genH0: Huegel, Berge, Steilkueste, Meeresgrund -50) das neue Festland: ohne Baeume, ohne Strassen.
+const INSEL = (() => { try {
+  const W = typeof GOTHAM !== "undefined" && GOTHAM.welt, WA = W && GOTHAM.wasser, L0 = GOTHAM.manorLage; if (!W || !W.umriss || !WA || !L0) return null;
+  const a = L0.dreh * Math.PI / 180, ct = Math.cos(a), st = Math.sin(a), inv = ([X, Z]) => { const dx = X - L0.x, dz = Z - L0.z; return [dx * ct + dz * st, -dx * st + dz * ct]; };
+  const P = [...W.umriss, ...[...WA.kuesteAlt].reverse().slice(1), ...[...WA.kueste].reverse()].map(inv), EI = (W.eilande || []).map(([x, z, r]) => [...inv([x, z]), r]);
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, rmax = 0; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); rmax = Math.max(rmax, Math.hypot(x, z)); }
+  const G = 50, M = 3000; x0 = Math.floor((x0 - M) / G) * G; z0 = Math.floor((z0 - M) / G) * G; const nx = Math.ceil((x1 + M - x0) / G) + 1, nz = Math.ceil((z1 + M - z0) / G) + 1, N = nx * nz;
+  const land = new Uint8Array(N);
+  for (let k = 0; k < nz; k++) { const z = z0 + k * G, xs = [];   // Zeile fuellen (gerade-ungerade)
+    for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [ax, az] = P[j], [bx, bz] = P[i]; if ((az > z) !== (bz > z)) xs.push(ax + (bx - ax) * (z - az) / (bz - az)); }
+    xs.sort((u, v) => u - v); for (let q = 0; q + 1 < xs.length; q += 2) { const i0 = Math.max(0, Math.ceil((xs[q] - x0) / G)), i1 = Math.min(nx - 1, Math.floor((xs[q + 1] - x0) / G)); for (let i = i0; i <= i1; i++) land[k * nx + i] = 1; }
+    for (const [ex, ez, er] of EI) { const dz = z - ez; if (Math.abs(dz) >= er) continue; const w = Math.sqrt(er * er - dz * dz), i0 = Math.max(0, Math.ceil((ex - w - x0) / G)), i1 = Math.min(nx - 1, Math.floor((ex + w - x0) / G)); for (let i = i0; i <= i1; i++) land[k * nx + i] = 1; } }
+  // exakter euklidischer Abstand (Felzenszwalb) zu den Zellen der anderen Art
+  const edt = ziel => { const INF = 1e20, f = new Float64Array(N); for (let q = 0; q < N; q++) f[q] = land[q] === ziel ? 0 : INF;
+    const n = Math.max(nx, nz), g = new Float64Array(n), d = new Float64Array(n), v = new Int32Array(n), zz = new Float64Array(n + 1);
+    const pass = (len, get, set) => { for (let q = 0; q < len; q++) g[q] = get(q); let kk = 0; v[0] = 0; zz[0] = -INF; zz[1] = INF;
+      for (let q = 1; q < len; q++) { let sx; do { const r = v[kk]; sx = ((g[q] + q * q) - (g[r] + r * r)) / (2 * q - 2 * r); if (sx <= zz[kk]) kk--; else break; } while (kk >= 0); kk++; v[kk] = q; zz[kk] = sx; zz[kk + 1] = INF; }
+      kk = 0; for (let q = 0; q < len; q++) { while (zz[kk + 1] < q) kk++; const r = v[kk]; d[q] = (q - r) * (q - r) + g[r]; } for (let q = 0; q < len; q++) set(q, d[q]); };
+    for (let k = 0; k < nz; k++) pass(nx, q => f[k * nx + q], (q, val) => { f[k * nx + q] = val; });
+    for (let i = 0; i < nx; i++) pass(nz, q => f[q * nx + i], (q, val) => { f[q * nx + i] = val; });
+    return f; };
+  const zuLand = edt(1), zuMeer = edt(0), D = new Float32Array(N);
+  for (let q = 0; q < N; q++) D[q] = land[q] ? -(Math.sqrt(zuMeer[q]) * G - G / 2) : Math.sqrt(zuLand[q]) * G - G / 2;
+  const d = (x, z) => { const fx = (x - x0) / G, fz = (z - z0) / G; if (fx < 0 || fz < 0 || fx >= nx - 1 || fz >= nz - 1) return 3000; const i = Math.floor(fx), k = Math.floor(fz), u = fx - i, w = fz - k, q = k * nx + i;
+    return (D[q] * (1 - u) + D[q + 1] * u) * (1 - w) + (D[q + nx] * (1 - u) + D[q + nx + 1] * u) * w; };
+  return { d, x0, z0, x1: x0 + (nx - 1) * G, z1: z0 + (nz - 1) * G, rmax, G };
+} catch (e) { console.warn("Insel-Welt:", e); return null; } })();
+const INSEL_R0 = LIMIT_WORLD, INSEL_RB = 400;   // innerhalb heutige Kueste, dann 400 m Uebergang zur Inselkueste
+const seaD = (x, z) => { if (!INSEL) return seaD0(x, z); const r2 = x * x + z * z; if (r2 < INSEL_R0 * INSEL_R0) return seaD0(x, z);
+  const w = sst(INSEL_R0, INSEL_R0 + INSEL_RB, Math.sqrt(r2)), di = INSEL.d(x, z); return w >= 1 ? di : lerp(seaD0(x, z), di, w); };
+// Neues Festland (ausserhalb der heutigen Welt): Berge nur in einzelnen Gebirgszuegen (sonst wuerde die Bergformel des Horizonts die ganze Insel zu einem
+// Felsplateau von 150-200 m machen), dazwischen gruene Huegel; Kueste abwechselnd Steilufer (wie heute) und flacher Sandstrand (inselStrand, genH0).
+const inselBerg = (x, z) => { const r = Math.hypot(x, z); return r < INSEL_R0 ? 1 : lerp(1, sst(0.5, 0.72, fbm(x / 2000 + 5, z / 2000 + 8)), sst(INSEL_R0, INSEL_R0 + 900, Math.hypot(x, z))); };
+const inselStrand = (x, z) => { const r2 = x * x + z * z; if (r2 < INSEL_R0 * INSEL_R0) return 0; return sst(INSEL_R0, INSEL_R0 + INSEL_RB, Math.sqrt(r2)) * sst(0.46, 0.6, fbm(x / 2200 + 31, z / 2200 + 17)); };
+// Laufen, Fahren, Fliegen bis hinter die Inselkueste (vorher Kreis LIMIT_WORLD)
+const WELT_R = INSEL ? Math.ceil(INSEL.rmax + 1500) : LIMIT_WORLD;
 // ===================== E2/B2: Wasserhoehlen und Felsnadeln an der Steilkueste =====================
 const coastPt = t => { const s = coastS(t); return [(s - t) * R2, (s + t) * R2]; };
 const coastN = t => { const k = coastSlope(t), l = Math.hypot(1, k), ns = 1 / l, nt = -k / l; return [(ns - nt) * R2, (ns + nt) * R2]; };   // Normale zum Meer
