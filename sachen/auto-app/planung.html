@@ -57,11 +57,13 @@
   /* Schalter Logo | Schriftzug: Pille gleitet animiert zur gewaehlten Seite (Nicolas 2026-11-23) */
   #leiste .seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; background: #0c0e11; border-radius: 12px; padding: 3px; cursor: pointer; user-select: none; }
   #leiste .seg .pille { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 9px; background: linear-gradient(180deg, #5fd3ff, #2fb4ec); box-shadow: 0 2px 10px #3ec6ff55, inset 0 1px 0 #ffffff66;
-    transition: transform .38s cubic-bezier(.5, 1.6, .4, 1), width .3s; }
+    will-change: transform; transition: transform var(--dauer, .45s) var(--gleit, cubic-bezier(.22, 1, .36, 1)); }
+  @supports (transition-timing-function: linear(0, 1)) { #leiste .seg .pille { --gleit: linear(0, 0.0183, 0.0661, 0.1341, 0.2146, 0.3017, 0.3905, 0.4776, 0.5603, 0.637, 0.7064, 0.768, 0.8218, 0.8679, 0.9066, 0.9385, 0.9643, 0.9847, 1.0003, 1.0119, 1.02, 1.0254, 1.0284, 1.0297, 1.0296, 1.0285, 1.0267, 1.0245, 1.0219, 1.0193, 1.0166, 1.0141, 1.0118, 1.0096, 1.0077, 1.006, 1.0045, 1.0032, 1.0022, 1.0014, 1); --dauer: .6s; } }
+  @media (prefers-reduced-motion: reduce) { #leiste .seg .pille { transition-duration: .01s; } }
   #leiste .seg.rechts .pille { transform: translateX(100%); }
-  #leiste .seg button { position: relative; z-index: 1; font: 600 13px system-ui; color: var(--leise); background: none; border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: color .3s; }
+  #leiste .seg button { position: relative; z-index: 1; font: 600 13px system-ui; color: var(--leise); background: none; border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: color .35s cubic-bezier(.22, 1, .36, 1); }
   #leiste .seg button[aria-pressed="true"] { color: #06121a; }
-  #leiste .seg:active .pille { transform: scaleX(1.06); } #leiste .seg.rechts:active .pille { transform: translateX(100%) scaleX(1.06); }
+
   #leiste .hg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--leise); }
   #leiste .hg button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ffffff33; cursor: pointer; padding: 0; }
   #leiste .hg button[aria-pressed="true"] { border-color: var(--akzent); box-shadow: 0 0 0 2px #3ec6ff66; }
@@ -144,7 +146,7 @@
   </div>
 
   <h2>4. Marke: Name und Logo (bitte eine wählen)</h2>
-  <p>32 eigene Entwürfe für eine Supersportwagen-Marke (1–5 erster Satz, 6–11 zweiter, 12–17 dritter, 18–26 aufwändige Wappen mit vielen Details, 27–32 ganz schlicht). Die Logos sind als SVG gezeichnet und lassen sich danach noch anpassen. Die Namen habe ich nicht im Markenregister geprüft; vor einer echten Nutzung müsste man das tun.</p>
+  <p>33 Entwürfe für eine Supersportwagen-Marke (1–5 erster Satz, 6–11 zweiter, 12–17 dritter, 18–26 aufwändige Wappen mit vielen Details, 27–32 ganz schlicht, 33 Wayne Enterprises im Batverse-Design, 34–39 in der Art von 5 und 15). Die Logos sind als SVG gezeichnet und lassen sich danach noch anpassen. Die Namen habe ich nicht im Markenregister geprüft; vor einer echten Nutzung müsste man das tun.</p>
   <p class="kl">Klick auf ein Logo: rechts gross ansehen (Klick auf ein anderes wechselt, nochmals auf dasselbe, Esc oder × schliesst). Die Leiste unten wechselt zwischen Logo und Schriftzug und ändert den Hintergrund des Schriftzugs.</p>
   <div class="logobereich"><div class="raster" id="logos">
     <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Veltaro">
@@ -339,6 +341,29 @@
     <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Sevo"><circle cx="60" cy="60" r="30" fill="none" stroke="#f2f2f0" stroke-width="5"/><circle cx="72" cy="48" r="9" fill="#f2f2f0"/></svg></div>
       <span class="nr">OPTION 32 · SCHLICHT</span><p class="wort">SEVO</p><p class="kl">Kreis mit einem Punkt aus der Mitte gerückt – wie ein Rad mit Schwung oder ein Blick nach vorne.</p>
       <div class="farben"><span style="background:#f2f2f0"></span><span style="background:#111214"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Wayne Enterprises"><defs><linearGradient id="wes" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f2ee"/><stop offset="1" stop-color="#a9aaa8"/></linearGradient></defs>
+      <rect x="6" y="56" width="30" height="5" fill="url(#wes)"/><rect x="84" y="56" width="30" height="5" fill="url(#wes)"/>
+      <path d="M38 34 H82 L78 78 L60 88 L42 78 Z" fill="url(#wes)"/><text x="60" y="74" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="34" fill="#3c3e42">W</text></svg></div>
+      <span class="nr">OPTION 33 · BATVERSE</span><p class="wort">WAYNE ENTERPRISES</p><p class="kl">Die Firma von Bruce Wayne im Design aus dem Batverse, wie das Schild am Wayne Tower: silbernes Wappenschild mit dunklem Serifen-W und Seitenbalken, im Schriftzug fette silberne Buchstaben.</p>
+      <div class="farben"><span style="background:#e2e2de"></span><span style="background:#a9aaa8"></span><span style="background:#3c3e42"></span><span style="background:#0b0c0e"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Velor"><path d="M60 10 L103 35 V85 L60 110 L17 85 V35 Z" fill="#0e1a2e" stroke="#8fb8ff" stroke-width="4"/><path d="M38 38 H54 L60 84 Z" fill="#5d8ff0"/><path d="M82 38 H66 L60 84 Z" fill="#b9d2ff"/></svg></div>
+      <span class="nr">OPTION 34 · WIE 5 / 15</span><p class="wort">VELOR</p><p class="kl">Sechseck-Abzeichen, darin ein V aus zwei Flächen in zwei Blautönen – wie gefaltetes Blech, ähnlich Axion.</p>
+      <div class="farben"><span style="background:#8fb8ff"></span><span style="background:#5d8ff0"></span><span style="background:#0e1a2e"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Rivon"><path d="M60 10 L98 22 V58 C98 84 80 100 60 110 C40 100 22 84 22 58 V22 Z" fill="#2a1608" stroke="#ff8a3d" stroke-width="4"/><rect x="40" y="32" width="10" height="56" fill="#fff1e6"/><path d="M50 37 H66 A13 13 0 0 1 66 63 H50" fill="none" stroke="#ff8a3d" stroke-width="10"/><path d="M62 63 L80 88" stroke="#ff8a3d" stroke-width="10" stroke-linecap="square"/></svg></div>
+      <span class="nr">OPTION 35 · WIE 5 / 15</span><p class="wort">RIVON</p><p class="kl">Wappen wie Kairon, aber mit R aus hellem Balken und orangem Bogen – warm, sportlich, klar.</p>
+      <div class="farben"><span style="background:#ff8a3d"></span><span style="background:#fff1e6"></span><span style="background:#2a1608"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Tavex"><circle cx="60" cy="60" r="46" fill="#1a0c0e" stroke="#ff5a5f" stroke-width="4"/><path d="M38 32 L90 60 L52 60 Z" fill="#ff9a9d"/><path d="M38 88 L90 60 L52 60 Z" fill="#c2363b"/></svg></div>
+      <span class="nr">OPTION 36 · WIE 5 / 15</span><p class="wort">TAVEX</p><p class="kl">Kreis mit einem nach vorne zeigenden Delta, oben hell, unten dunkel gefaltet – Richtung und Tempo.</p>
+      <div class="farben"><span style="background:#ff5a5f"></span><span style="background:#ff9a9d"></span><span style="background:#1a0c0e"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Nexar"><path d="M22 46 L60 24 V38 L22 60 Z" fill="#7dd3fc"/><path d="M98 46 L60 24 V38 L98 60 Z" fill="#38a5e8"/><path d="M22 74 L60 52 V66 L22 88 Z" fill="#3b82f6"/><path d="M98 74 L60 52 V66 L98 88 Z" fill="#1d4ed8"/></svg></div>
+      <span class="nr">OPTION 37 · WIE 5 / 15</span><p class="wort">NEXAR</p><p class="kl">Zwei gefaltete Winkel übereinander in vier Blautönen – wie Rang-Abzeichen, technisch und schnell.</p>
+      <div class="farben"><span style="background:#7dd3fc"></span><span style="background:#3b82f6"></span><span style="background:#1d4ed8"></span><span style="background:#0b1224"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Siora"><rect x="14" y="14" width="92" height="92" rx="20" fill="#1c1608" stroke="#e2b857" stroke-width="3"/><g transform="translate(120 0) scale(-1 1)"><path d="M36 34 H84 L76 48 H36 Z" fill="#f3d58a"/><path d="M44 53 H84 V67 H36 Z" fill="#c9962e"/><path d="M36 72 H84 V86 H28 Z" fill="#f3d58a"/></g></svg></div>
+      <span class="nr">OPTION 38 · WIE 5 / 15</span><p class="wort">SIORA</p><p class="kl">Abgerundetes Quadrat mit drei versetzten Goldbalken, die zusammen ein S ergeben – edel, aber modern.</p>
+      <div class="farben"><span style="background:#e2b857"></span><span style="background:#f3d58a"></span><span style="background:#1c1608"></span></div></div>
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Kyra"><path d="M60 12 L16 60 L60 108 Z" fill="#a78bfa"/><path d="M60 12 L104 60 L60 108 Z" fill="#6d28d9"/><path d="M48 38 V82 M72 38 L52 60 L72 82" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/></svg></div>
+      <span class="nr">OPTION 39 · WIE 5 / 15</span><p class="wort">KYRA</p><p class="kl">Raute in zwei Violetttönen mit einem weissen K – Kristall-Look, kühl und futuristisch.</p>
+      <div class="farben"><span style="background:#a78bfa"></span><span style="background:#6d28d9"></span><span style="background:#ffffff"></span></div></div>
   </div>
   <aside id="detail" hidden aria-label="Logo gross"></aside></div>
 
@@ -355,7 +380,7 @@
 
   <h2>6. Offen (deine Entscheidung)</h2>
   <ul>
-    <li>Welche Marke (1–32), oder Mischung (z. B. Name von 1 mit Logo von 3)?</li>
+    <li>Welche Marke (1–39), oder Mischung (z. B. Name von 1 mit Logo von 3)?</li>
     <li>Modellname des Autos (z. B. Marke + Zahl wie „Veltaro V12“ oder ein eigener Name)?</li>
     <li>Fahrzeugbild: selbst gezeichnetes SVG (schnell) oder drehbares 3D-Modell mit three.js (aufwändiger)?</li>
     <li>Elektro oder Verbrenner? (Bestimmt Laden oder Tanken.)</li>
@@ -425,8 +450,15 @@
     ISTRA: { f: SANS, w: 400, ls: 18, hell: "#f2f2f0", dunkel: "#111214", akz: "#e0313b", tag: "RACING" },
     MARE: { f: "'Segoe UI Light', 'Segoe UI', sans-serif", w: 300, ls: 22, hell: "#cfe4f3", dunkel: "#0d1820", akz: "#9ec9e8", tag: "RIVIERA" },
     SEVO: { f: SANS, w: 500, ls: 20, hell: "#f2f2f0", dunkel: "#111214", akz: "#f2f2f0", tag: "AUTOMOBILE" },
+    "WAYNE ENTERPRISES": { f: "Arial, Helvetica, sans-serif", w: 900, ls: 3, hell: "#e8e8e4", dunkel: "#2a2b2e", akz: "#a9aaa8", verlauf: ["#f2f2ee", "#a9aaa8"], tag: "GOTHAM CITY" },
+    VELOR: { f: SANS, w: 600, ls: 14, hell: "#dbe7ff", dunkel: "#0e1a2e", akz: "#8fb8ff", tag: "MOTORS" },
+    RIVON: { f: SANS, w: 700, ls: 12, hell: "#fff1e6", dunkel: "#2a1608", akz: "#ff8a3d", tag: "PERFORMANCE" },
+    TAVEX: { f: SANS, w: 700, ls: 10, it: 1, hell: "#ffe3e4", dunkel: "#1a0c0e", akz: "#ff5a5f", tag: "RACING" },
+    NEXAR: { f: SANS, w: 600, ls: 14, hell: "#dbeafe", dunkel: "#0b1224", akz: "#3b82f6", tag: "AUTOMOTIVE" },
+    SIORA: { f: SERIF, w: 400, ls: 16, hell: "#f3d58a", dunkel: "#1c1608", akz: "#e2b857", tag: "MAISON" },
+    KYRA: { f: SANS, w: 300, ls: 22, hell: "#ede9fe", dunkel: "#1e0b3d", akz: "#a78bfa", tag: "ELECTRIC" },
   };
-  const ZUST = { ansicht: "logo", hg: "schwarz" };
+  const ZUST = { ansicht: "logo", hg: "schwarz" }; let gezeichnetHg = null, eingepasst = false;
   try { const z = JSON.parse(localStorage.getItem("auto-planung-ansicht") || "null"); if (z) Object.assign(ZUST, z); } catch (e) {}
   const hex = c => { const m = /#([0-9a-f]{6})/i.exec(c || ""); return m ? m[1] : null; }, lum = c => { const h = hex(c); if (!h) return 0; const v = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
   const markenfarbe = k => { const sp = [...k.querySelectorAll(".farben span")].map(x => x.style.background).map(c => { const m = /rgb\((\d+), (\d+), (\d+)\)/.exec(c); return m ? "#" + [m[1], m[2], m[3]].map(n => (+n).toString(16).padStart(2, "0")).join("") : c; }); return sp.find(c => { const l = lum(c); return l > 0.08 && l < 0.85; }) || sp[0] || "#333"; };
@@ -480,7 +512,9 @@
     { const sg = document.querySelector("#leiste .seg"); sg.classList.toggle("rechts", ZUST.ansicht === "schrift"); sg.setAttribute("aria-checked", String(ZUST.ansicht === "schrift")); }
     document.querySelectorAll("#leiste [data-hg]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.hg === ZUST.hg)));
     document.querySelector("#leiste .hg").classList.toggle("aus", ZUST.ansicht !== "schrift");
-    try { localStorage.setItem("auto-planung-ansicht", JSON.stringify(ZUST)); } catch (e) {} alleZeichnen(); }
+    try { localStorage.setItem("auto-planung-ansicht", JSON.stringify(ZUST)); } catch (e) {}
+    if (gezeichnetHg !== ZUST.hg) { gezeichnetHg = ZUST.hg; eingepasst = ZUST.ansicht === "schrift"; alleZeichnen(); }   // neu bauen nur bei neuem Hintergrund
+    else if (ZUST.ansicht === "schrift" && !eingepasst) { eingepasst = true; requestAnimationFrame(() => einpassen(document)); } }
   document.getElementById("leiste").addEventListener("click", e => { const h = e.target.closest("[data-hg]"), sg = e.target.closest(".seg");
     if (sg) { const a = e.target.closest("[data-ansicht]"); ZUST.ansicht = a && a.dataset.ansicht !== ZUST.ansicht ? a.dataset.ansicht : ZUST.ansicht === "logo" ? "schrift" : "logo"; anwenden(); }   // Schalter: Klick wechselt immer die Seite
     if (h) { ZUST.hg = h.dataset.hg; anwenden(); } });
@@ -517,7 +551,7 @@
     const at = document.createElement("div"); at.className = "a-text"; at.innerHTML = lockupText(W, name, W.verlauf && hg !== "marke" ? "url" : farbe, farbe, id);
     d.append(al, at); return d; };
   einpassen = function (root) { root.querySelectorAll(".wm.lock .an").forEach(t => { t.setAttribute("font-size", 48); const w = t.getBBox().width; if (w > 296) t.setAttribute("font-size", (48 * 296 / w).toFixed(1)); }); };
-  anwenden();
+  gezeichnetHg = null; anwenden();
   document.getElementById("anim-btn").addEventListener("click", () => {
     const vh = innerHeight; document.querySelectorAll("#logos .karte").forEach((k, i) => { const r = k.getBoundingClientRect(), lg = k.querySelector(".logo"); if (r.bottom < -200 || r.top > vh + 200) return; setTimeout(() => animiere(k, lg), Math.max(0, Math.min(8, Math.round(r.top / 260))) * 90); });
     const ak = document.querySelector("#logos .karte.aktiv"); if (ak && !det.hidden) animiere(ak, det.querySelector(".gross-bild")); });
