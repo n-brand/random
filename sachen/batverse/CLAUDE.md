@@ -14,6 +14,8 @@ Gilt zusätzlich zu `C:\Source\CLAUDE.md` und `C:\Source\random\CLAUDE.md`.
 - Vor jeder Umsetzung prüfen, ob sie nur fürs Spiel gilt oder auch für die Werkstatt (siehe `C:\Source\random\CLAUDE.md`, Abschnitt Batverse).
 - Neue Einträge zum Stand (was gebaut wurde) kommen ab 2026-11-18 oben in **"Änderungen"** dieser Datei, nicht mehr in `C:\Source\random\CLAUDE.md` (dort steht die Geschichte bis 2026-11-17).
 
+- **Offline-Cache** (seit 2026-11-23): nach Änderungen `node tools/sw-build.js` im Projektordner ausführen (erzeugt `ASSETS` und `CACHE` in `sw.js`); neue Werkstatt-/Planungsdateien für offline in `BV_KEEP` eintragen. Kein `CACHE`-Hochzählen von Hand mehr.
+
 ## Wichtige Dateien
 
 | Datei | Inhalt |

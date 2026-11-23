@@ -24,7 +24,7 @@ Ergaenzt die globalen Regeln in `C:\Source\CLAUDE.md` (Git-Identitaet, Footer-Cr
 - Fortschritt (gewusste Karten, bestes Quiz-Ergebnis) liegt nur im Browser (`localStorage`).
 - Sichtbare Texte hier mit echten Umlauten (Nicolas' Bezeichnung "Pruefungsvorbereitung" mit ue nur im Code).
 - **Antworten gemischt:** Quiz und Prüfung mischen pro Durchgang auch die Antworten jeder Frage (`mitReihenfolge`: Feld `reihenfolge` = Original-Indizes in Anzeige-Reihenfolge). `richtig` in `inhalt.js` zeigt weiter auf die Original-Indizes. Die Lösungen nach der Prüfung zeigen die Antworten in derselben Reihenfolge wie beim Beantworten. Darum keine Antworten wie „alle oben genannten“ in `inhalt.js`.
-- **Offline:** Seite und `inhalt.js` stehen in `ASSETS` in `sw.js`; nach jeder Änderung `CACHE` hochzählen. Geprüft 2026-11-04 mit gestopptem Server: Prüfung, Quiz, Haus 3D und Startseite laufen aus dem Speicher.
+- **Offline:** Seite und `inhalt.js` stehen in `ASSETS` in `sw.js`; nach jeder Änderung `node tools/sw-build.js` ausführen (setzt `CACHE` neu). Geprüft 2026-11-04 mit gestopptem Server: Prüfung, Quiz, Haus 3D und Startseite laufen aus dem Speicher.
 - **Kein Zoomen** auf Pruefungsseiten (Wunsch von Nicolas, 2026-11-04: in der PWA aus Versehen gezoomt): Viewport `maximum-scale=1, user-scalable=no` (Android), `touch-action: manipulation` auf `html` (kein Doppeltipp-Zoom) und ein kleines Skript gegen Kneif-Zoom auf iPhone/iPad (`gesturestart`/`gesturechange` und Zwei-Finger-`touchmove` abfangen; iOS ignoriert `user-scalable=no`). Neue Pruefungsseiten genauso.
 
 ## Blockbench (eigener Bereich auf der Startseite)
@@ -64,12 +64,12 @@ Modrinth (Suche "halloween", Resource Packs, nach Downloads), mit Lizenz:
 
    `type` ist `"sache"` oder `"test"`. Sortiert wird nach `date` (neueste zuerst).
    Optional `img: "sachen/name/vorschau.webp"` fuer ein Vorschaubild auf der Karte (16:10, ca. 960x600, WebP, unter 100 KB).
-3. Die Seite des Eintrags in `ASSETS` in `sw.js` aufnehmen und `CACHE` hochzaehlen (`random-v2`, `random-v3`, ...), sonst sehen installierte Clients die Aenderung nicht.
+3. `node tools/sw-build.js` ausfuehren: das Skript nimmt href und img aller Eintraege aus `index.html` in `ASSETS` von `sw.js` auf und setzt `CACHE` auf eine Pruefsumme der Offline-Dateien (seit 2026-11-23 statt `random-v2`, `random-v3`, ... von Hand), sonst sehen installierte Clients die Aenderung nicht. Zusatzdateien eines Eintrags (z.B. `inhalt.js`, Icons) gehoeren in `ASSETS_EXTRA` in `sw.js`, Batverse-Dateien fuer offline in `BV_KEEP`; `--check` zeigt nur, was sich aendern wuerde.
    Grosse Dateien (z.B. GLB-Modelle) gehoeren in `LAZY`, sie werden nach der Aktivierung im Hintergrund geladen.
 
 ### Retro Game Hub (Präsentationen, `sachen/retro-hub/`, `sachen/retro-hub-titel/`)
 
-- Zwei einzelne, unveränderte HTML-Dateien (alles eingebettet, einzige externe Abhängigkeit: Google Fonts "Press Start 2P" und "VT323"). Nicht anfassen; neue Fassung = Datei ersetzen und `CACHE` in `sw.js` hochzählen.
+- Zwei einzelne, unveränderte HTML-Dateien (alles eingebettet, einzige externe Abhängigkeit: Google Fonts "Press Start 2P" und "VT323"). Nicht anfassen; neue Fassung = Datei ersetzen und `node tools/sw-build.js` ausfuehren (setzt `CACHE` in `sw.js` neu).
 - Offline: beide Seiten stehen in `LAZY` in `sw.js` (werden nach der Aktivierung im Hintergrund gespeichert). Die Schriften holt der Service Worker beim Aktivieren selbst (CSS lesen, genannte `.woff2`-Dateien speichern, `FONTS_CSS`); zusätzlich werden Fonts-Antworten bei jedem Abruf mitgespeichert, auch undurchsichtige (Stylesheet per `<link>`). Geprüft mit gestopptem Server: Seiten und Schriften laden.
 
 ## Eigene PWAs
