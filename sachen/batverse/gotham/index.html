@@ -237,6 +237,7 @@
       el("path", { d: "M-40000 -40000H40000V40000H-40000Z" + path(WU, true), fill: WATER, "fill-rule": "evenodd" }, Wg).dataset.info = "<b>Meer</b><br>rund um die grosse Insel (Entwurf N54)";
       // Inselchen (Umriss aus Radius und festem Zufall) und Flachwasser-Saum an allen Kuesten (heller, nur ueber dem Meer: Clip = Meer ohne Insel)
       const EIL = (GW.eilande || []).map(([x, z, r, sd]) => { let q = sd + 1; const rn = () => { q = (q * 16807) % 2147483647; return q / 2147483647; }, n = 14, a0 = rn() * 6.28, f = [rn(), rn(), rn()]; return Array.from({ length: n }, (_, k) => { const a = a0 + k / n * 6.2832, rr = r * (0.75 + 0.25 * Math.sin(a * 2 + f[0] * 6) + 0.15 * Math.sin(a * 3 + f[1] * 6) + 0.1 * (f[2] - 0.5) * Math.sin(a * 5)); return [x + Math.cos(a) * rr, z + Math.sin(a) * rr * (0.7 + f[0] * 0.5)]; }); });
+      for (const gi of GW.grossInseln || []) EIL.push(gi.umriss);   // grosse Inseln mit eigenem Umriss (Corsair Island, 2026-11-23)
       const cm = el("clipPath", { id: "clipMeer" }, defs); el("path", { d: "M-40000 -40000H40000V40000H-40000Z" + path(WU, true), "clip-rule": "evenodd" }, cm);
       // echte Kueste = landseitig liegt Land (nicht Fluss oder Hafenbecken): suedlich von Gotham laeuft die Grenze zum Meer quer durchs Wasser, dort kein Sand und kein Saum
       let ar = 0; for (let i = 0, j = WU.length - 1; i < WU.length; j = i++) ar += WU[j][0] * WU[i][1] - WU[i][0] * WU[j][1]; const sg = ar > 0 ? 1 : -1, RUNS = []; let run = [];
@@ -290,6 +291,7 @@
       // Namen der Insel und der Inselchen (Vorschlag, OFFENE-FRAGEN 63)
       if (GW.name) { const t = el("text", { x: -1200, y: -7600, "font-size": 520, fill: "#ffffff30", "text-anchor": "middle", "font-weight": 800, "letter-spacing": 60, "font-family": "Georgia, serif", "pointer-events": "none" }, L.namen); t.textContent = GW.name.toUpperCase(); }
       (GW.eilande || []).forEach(([x, z, r], i) => { const n = (GW.eilandNamen || [])[i]; if (!n) return; const t = el("text", { x, y: z + r + 170, "font-size": 95, fill: "#fff", "text-anchor": "middle", "font-weight": 700, stroke: "#0b1a26", "stroke-width": 14, "paint-order": "stroke", "pointer-events": "none" }, L.namen); t.textContent = n; });
+      for (const gi of GW.grossInseln || []) { const t = el("text", { x: gi.mitte[0], y: gi.mitte[1], "font-size": 150, fill: "#fff", "text-anchor": "middle", "font-weight": 700, stroke: "#0b1a26", "stroke-width": 20, "paint-order": "stroke", "pointer-events": "none" }, L.namen); t.textContent = gi.name; }
       // Massstab 1 km unten links der Insel
       const mx = bx0 + 200, mz = bz1 + 500; el("path", { d: `M${mx} ${mz}H${mx + 1000}M${mx} ${mz - 60}V${mz + 60}M${mx + 1000} ${mz - 60}V${mz + 60}`, stroke: "#fff", "stroke-width": 14, fill: "none" }, Wg);
       el("text", { x: mx + 500, y: mz - 50, "font-size": 80, fill: "#fff", "text-anchor": "middle" }, Wg).textContent = "1 km"; }

@@ -104,14 +104,18 @@ const INSEL = (() => { try {
   const W = typeof GOTHAM !== "undefined" && GOTHAM.welt, WA = W && GOTHAM.wasser, L0 = GOTHAM.manorLage; if (!W || !W.umriss || !WA || !L0) return null;
   const a = L0.dreh * Math.PI / 180, ct = Math.cos(a), st = Math.sin(a), inv = ([X, Z]) => { const dx = X - L0.x, dz = Z - L0.z; return [dx * ct + dz * st, -dx * st + dz * ct]; };
   const P = [...W.umriss, ...[...WA.kuesteAlt].reverse().slice(1), ...[...WA.kueste].reverse()].map(inv), EI = (W.eilande || []).map(([x, z, r]) => [...inv([x, z]), r]);
+  const GI = (W.grossInseln || []).map(o => o.umriss.map(inv));   // grosse Inseln mit Umriss (Corsair Island, 2026-11-23)
   let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, rmax = 0; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); rmax = Math.max(rmax, Math.hypot(x, z)); }
-  for (const [x, z, r] of EI) { x0 = Math.min(x0, x - r); x1 = Math.max(x1, x + r); z0 = Math.min(z0, z - r); z1 = Math.max(z1, z + r); rmax = Math.max(rmax, Math.hypot(x, z) + r); }   // Inselchen weit draussen mit in den Rahmen (2026-11-23)
+  for (const [x, z, r] of EI) { x0 = Math.min(x0, x - r); x1 = Math.max(x1, x + r); z0 = Math.min(z0, z - r); z1 = Math.max(z1, z + r); rmax = Math.max(rmax, Math.hypot(x, z) + r); }
+  for (const Q of GI) for (const [x, z] of Q) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); rmax = Math.max(rmax, Math.hypot(x, z)); }   // Inselchen weit draussen mit in den Rahmen (2026-11-23)
   const G = 50, M = 3000; x0 = Math.floor((x0 - M) / G) * G; z0 = Math.floor((z0 - M) / G) * G; const nx = Math.ceil((x1 + M - x0) / G) + 1, nz = Math.ceil((z1 + M - z0) / G) + 1, N = nx * nz;
   const land = new Uint8Array(N);
   for (let k = 0; k < nz; k++) { const z = z0 + k * G, xs = [];   // Zeile fuellen (gerade-ungerade)
     for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [ax, az] = P[j], [bx, bz] = P[i]; if ((az > z) !== (bz > z)) xs.push(ax + (bx - ax) * (z - az) / (bz - az)); }
     xs.sort((u, v) => u - v); for (let q = 0; q + 1 < xs.length; q += 2) { const i0 = Math.max(0, Math.ceil((xs[q] - x0) / G)), i1 = Math.min(nx - 1, Math.floor((xs[q + 1] - x0) / G)); for (let i = i0; i <= i1; i++) land[k * nx + i] = 1; }
-    for (const [ex, ez, er] of EI) { const dz = z - ez; if (Math.abs(dz) >= er) continue; const w = Math.sqrt(er * er - dz * dz), i0 = Math.max(0, Math.ceil((ex - w - x0) / G)), i1 = Math.min(nx - 1, Math.floor((ex + w - x0) / G)); for (let i = i0; i <= i1; i++) land[k * nx + i] = 1; } }
+    for (const [ex, ez, er] of EI) { const dz = z - ez; if (Math.abs(dz) >= er) continue; const w = Math.sqrt(er * er - dz * dz), i0 = Math.max(0, Math.ceil((ex - w - x0) / G)), i1 = Math.min(nx - 1, Math.floor((ex + w - x0) / G)); for (let i = i0; i <= i1; i++) land[k * nx + i] = 1; }
+    for (const Q of GI) { const ys = []; for (let i = 0, j = Q.length - 1; i < Q.length; j = i++) { const [ax, az] = Q[j], [bx, bz] = Q[i]; if ((az > z) !== (bz > z)) ys.push(ax + (bx - ax) * (z - az) / (bz - az)); }
+      ys.sort((u, v) => u - v); for (let q = 0; q + 1 < ys.length; q += 2) { const i0 = Math.max(0, Math.ceil((ys[q] - x0) / G)), i1 = Math.min(nx - 1, Math.floor((ys[q + 1] - x0) / G)); for (let i = i0; i <= i1; i++) land[k * nx + i] = 1; } } }
   // exakter euklidischer Abstand (Felzenszwalb) zu den Zellen der anderen Art
   const edt = ziel => { const INF = 1e20, f = new Float64Array(N); for (let q = 0; q < N; q++) f[q] = land[q] === ziel ? 0 : INF;
     const n = Math.max(nx, nz), g = new Float64Array(n), d = new Float64Array(n), v = new Int32Array(n), zz = new Float64Array(n + 1);
