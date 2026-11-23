@@ -77,6 +77,10 @@
   @media (prefers-reduced-motion: reduce) { .anim, .a-logo, .a-text, .a-glanz { animation-duration: .01s !important; animation-delay: 0s !important; } }
   #leiste #anim-btn { font: 700 13px system-ui; color: #06121a; background: linear-gradient(90deg, #3ec6ff, #8e6cf0); border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer; }
   #leiste #anim-btn:active { transform: scale(.97); }
+  /* Schriftzug = Endbild der Animation (Nicolas 2026-11-23: "Schriftzug soll gleich aussehen wie der Text am Ende der Animation") */
+  .wm.lock { position: relative; overflow: hidden; }
+  .wm.lock .a-logo { animation: none; transform: translate(-112%, -50%) scale(.6); }
+  .wm.lock .a-text { animation: none; opacity: 1; clip-path: none; transform: translate(0, -50%); }
   @media (max-width: 900px) { body.detail .logobereich { grid-template-columns: 1fr; } #detail { position: fixed; inset: 10px; max-height: none; z-index: 20; } }
   .nr { color: var(--leise); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
   /* Bildschirm-Skizzen */
@@ -468,6 +472,19 @@
     a.append(al, at, gl); ziel.appendChild(a);
     requestAnimationFrame(() => { const t = at.querySelector(".an"); if (t && t.getBBox) { const w = t.getBBox().width; if (w > 296) t.setAttribute("font-size", (48 * 296 / w).toFixed(1)); } });
     a.addEventListener("animationend", e => { if (e.animationName === "a-weg") a.remove(); }); }
+  // Schriftzug-Ansicht als festes Endbild der Animation: Logo links, Name und Unterzeile rechts; Schriftfarbe passend zum Hintergrund
+  function lockupText(W, name, fill, tagFarbe, id) { return '<svg viewBox="0 0 300 84">' + (W.verlauf && fill === "url" ? '<defs><linearGradient id="' + id + '" x1="0" x2="1"><stop offset="0" stop-color="' + W.verlauf[0] + '"/><stop offset="1" stop-color="' + W.verlauf[1] + '"/></linearGradient></defs>' : "") +
+      '<text class="an" x="0" y="54" font-family="' + W.f.replace(/"/g, "'") + '" font-weight="' + W.w + '" font-size="48" letter-spacing="' + Math.round(W.ls * 0.8) + '"' + (W.it ? ' font-style="italic"' : "") + ' fill="' + (fill === "url" ? "url(#" + id + ")" : fill) + '">' + name + '</text>' +
+      (W.tag ? '<text x="2" y="76" font-family="' + SANS.replace(/"/g, "'") + '" font-weight="600" font-size="10" letter-spacing="4" fill="' + tagFarbe + '" opacity=".7">' + W.tag + '</text>' : "") + '</svg>'; }
+  schriftzug = function (k) { const name = k.querySelector(".wort").textContent.trim(), W = WM[name] || { f: SANS, w: 700, ls: 8, hell: "#eee", dunkel: "#111" }, id = "lk" + (++uid);
+    const hg = ZUST.hg, bg = hg === "schwarz" ? "#0b0c0e" : hg === "grau" ? "#2b2f36" : hg === "weiss" ? "#f6f5f1" : hg === "marke" ? markenfarbe(k) : "#16181b", hellGrund = lum(bg) > 0.5;
+    let farbe = hellGrund ? W.dunkel : W.hell; if (hg === "marke" && Math.abs(lum(farbe) - lum(bg)) < 0.35) farbe = hellGrund ? "#111" : "#fff";
+    const d = document.createElement("div"); d.className = "wm lock" + (hg === "carbon" ? " carbon" : ""); if (hg !== "carbon") d.style.background = bg; d.dataset.name = name;
+    const al = document.createElement("div"); al.className = "a-logo"; const lg = eigeneIds(k.querySelector(".logo svg").cloneNode(true)); lg.removeAttribute("style"); al.appendChild(lg);
+    const at = document.createElement("div"); at.className = "a-text"; at.innerHTML = lockupText(W, name, W.verlauf && hg !== "marke" ? "url" : farbe, farbe, id);
+    d.append(al, at); return d; };
+  einpassen = function (root) { root.querySelectorAll(".wm.lock .an").forEach(t => { t.setAttribute("font-size", 48); const w = t.getBBox().width; if (w > 296) t.setAttribute("font-size", (48 * 296 / w).toFixed(1)); }); };
+  anwenden();
   document.getElementById("anim-btn").addEventListener("click", () => {
     const vh = innerHeight; document.querySelectorAll("#logos .karte").forEach((k, i) => { const r = k.getBoundingClientRect(), lg = k.querySelector(".logo"); if (r.bottom < -200 || r.top > vh + 200) return; setTimeout(() => animiere(k, lg), Math.max(0, Math.min(8, Math.round(r.top / 260))) * 90); });
     const ak = document.querySelector("#logos .karte.aktiv"); if (ak && !det.hidden) animiere(ak, det.querySelector(".gross-bild")); });
