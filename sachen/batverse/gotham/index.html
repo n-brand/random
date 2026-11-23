@@ -191,7 +191,10 @@
     const L = {}, INP = {}; const base = el("g", {});
     // Hauptschalter (Nicolas 2026-11-23: "in der Legende rechts alle Gebäude ausschalten können, also Insel ohne Gebäude; Strassen, Wege etc. auch als eines schaltbar"):
     // Gebäude = Ebenen gebaeude + orte + Bauten auf Arkham/Militärinsel + Gebäudenamen (data-bau); Strassen und Wege = neben + strassen + bus + Fähre, Rollweg, Landebahn (data-weg)
-    const HAUPT = { bau: { name: "Alle Gebäude", ebenen: ["gebaeude", "orte"] }, weg: { name: "Alle Strassen und Wege", ebenen: ["neben", "strassen", "bus"] } };
+    // 2026-11-23 (Nicolas, Bild mit beiden Schaltern aus: "anstatt Strassen ausblenden soll es Verkehr sein, und die einzelnen Armutsebenen etc. sollen unter Weiteres auch
+    // ausschaltbar sein mit der Kanalisation"): "Verkehr" schliesst die U-Bahn ein, neuer Schalter "Weiteres" fuer Bezirke (Wohlstand), Kanalisation und Gullideckel
+    const HAUPT = { bau: { name: "Alle Gebäude", ebenen: ["gebaeude", "orte"] }, weg: { name: "Verkehr (Strassen, Wege, U-Bahn, Bus)", ebenen: ["neben", "strassen", "ubahn", "bus"] },
+      mehr: { name: "Weiteres (Bezirke, Kanalisation)", ebenen: ["bezirke", "kanal", "gulli"] } };
     { const box = document.getElementById("layers"); for (const [k, H] of Object.entries(HAUPT)) { const lab = document.createElement("label"); lab.style.fontWeight = "700"; lab.innerHTML = `<input type="checkbox" checked> ${H.name}`; H.inp = lab.querySelector("input");
       H.inp.onchange = ev => { const an = ev.target.checked; svg.classList.toggle("ohne-" + k, !an); for (const q of H.ebenen) if (INP[q] && (an ? q !== "bus" : true)) { INP[q].checked = an; L[q].style.display = an ? "" : "none"; } };
       box.appendChild(lab); } const hr = document.createElement("hr"); hr.style.cssText = "border:0;border-top:1px solid #3a3d44;margin:4px 0"; box.appendChild(hr);
