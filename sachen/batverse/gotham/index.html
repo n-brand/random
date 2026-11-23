@@ -287,8 +287,8 @@
           let cx = 0, cz = 0; A.umriss.forEach(q => { cx += q[0] / A.umriss.length; cz += q[1] / A.umriss.length; }); txt(cx, cz - 330, A.name, 90); txt(cx, cz + 380, A.sub, 50, "#fff8"); }
         if (F) { el("path", { d: path(F.route, false), fill: "none", stroke: "#e8e2c8", "stroke-width": 14, "stroke-dasharray": "50 35", "stroke-linecap": "round", "data-weg": 1 }, Wg).dataset.info = "<b>" + F.name + "</b><br>" + F.sub;
           for (const q of [F.route[0], F.route[F.route.length - 1]]) el("circle", { cx: q[0], cy: q[1], r: 28, fill: "#e8e2c8", stroke: "#1b1d20", "stroke-width": 5, "data-weg": 1 }, Wg).dataset.info = "<b>Fähranleger</b>"; }
-        if (Mi) { insel(Mi, "<b>Militärinsel (Entwurf)</b><br>Landebahn 2,6 km, Hangars, Tower, Hafen; Kampfjet");
-          const p = Mi.piste; rect(p.mitte[0], p.mitte[1], p.l, p.b, p.dreh, { fill: "#33363b", stroke: "#1b1d20", "stroke-width": 4, "data-weg": 1 }).dataset.info = "<b>Landebahn</b><br>2,6 km x 60 m (Kampfjet)";
+        if (Mi) { insel(Mi, "<b>Militärinsel (Entwurf)</b><br>Landebahn 1,5 km, Hangars, Tower, Hafen; Kampfjet");
+          const p = Mi.piste; rect(p.mitte[0], p.mitte[1], p.l, p.b, p.dreh, { fill: "#33363b", stroke: "#1b1d20", "stroke-width": 4, "data-weg": 1 }).dataset.info = "<b>Landebahn</b><br>1,5 km x 60 m (Kampfjet)";
           { const c = Math.cos(p.dreh), s2 = Math.sin(p.dreh), h = p.l / 2 - 60; el("path", { d: "M" + (p.mitte[0] - h * c) + " " + (p.mitte[1] - h * s2) + "L" + (p.mitte[0] + h * c) + " " + (p.mitte[1] + h * s2), stroke: "#e8e8e8", "stroke-width": 4, "stroke-dasharray": "40 30", fill: "none", "pointer-events": "none", "data-weg": 1 }, Wg); }
           el("path", { d: path(Mi.rollweg, false), stroke: "#3d4045", "stroke-width": 24, fill: "none", "pointer-events": "none", "data-weg": 1 }, Wg);
           for (const [x, z, w, d, dr] of Mi.hangars) rect(x, z, w, d, dr, { fill: "#6b7258", stroke: "#1b1d20", "stroke-width": 4, "data-bau": 1 }).dataset.info = "<b>Hangar</b>";
