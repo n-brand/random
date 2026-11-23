@@ -7,6 +7,15 @@
 // Fahren nur auf Wasser (Hoehlensee, Wassertunnel, Meer), geschlossene Felstore und Stege sperren (BOAT_BLOCKS).
 // Mehrere Boote (Nicolas 2026-11-16, Phase 7): BOATS = alle, BOAT = das aktive bzw. zuletzt benutzte; je Boot eine Spezifikation b.spec
 // (Tempo, Rumpfpunkte fuer die Wasserpruefung, Sitz, Kamera, Ton). Das U-Boot (spec.sub) taucht: Leertaste hoch, C runter (fahrzeuge/boote.js).
+// Schnellzone (Nicolas 2026-11-23: "von der Batcave soll man mit dem Boot schnell zur Militaerinsel kommen - eine Wasserzone 400 m von allem Festland etc. weg, wo man
+// automatisch schneller fahren kann"): Abstand zum naechsten Land = kleinster von seaD (Manor-Kueste, Insel-Welt mit Inselchen und grossen Inseln) und dem Gotham-Feld
+// (Abstand zur Stadtinsel GOT.di, im Gotham-Wasser zum Festland -GOT.dw). Ab 400 m weich bis 600 m: Hoechsttempo und Beschleunigung x BOAT_ZONE_K. Getaucht nicht (U-Boot).
+const BOAT_ZONE_K = 3, BOAT_ZONE = { t: 0, d: 0, k: 1, an: false };
+function boatLandD(x, z) { let d = seaD(x, z); if (typeof GOT !== "undefined") { const di = GOT.di(x, z); if (di < 1e4) { d = Math.min(d, di); const dw = GOT.dw(x, z); if (dw < 0) d = Math.min(d, -dw); } } return d; }
+function boatZone(B, dt) { const Z = BOAT_ZONE; Z.t -= dt; if (Z.t <= 0) { Z.t = 0.25; Z.d = boatLandD(B.x, B.z); }
+  const under = B.spec.sub && B.y < SEA_Y - 1, ziel = under ? 1 : 1 + (BOAT_ZONE_K - 1) * sst(400, 600, Z.d); Z.k += (ziel - Z.k) * Math.min(1, dt * 1.5);
+  const an = ziel > 1.5; if (an !== Z.an) { Z.an = an; toast(an ? "Schnellzone: weit vor der Küste – Boot " + BOAT_ZONE_K + "-mal so schnell" : "Schnellzone verlassen"); }
+  return Z.k; }
 const BOAT_SPEC_STD = { name: "Boot", max: 14, acc: 5, rev: 3, turn: 0.9, enter: 4.5, trim: 0.105, camD: 8.5, camH: 1.4, seat: [1.6, 0.95], engine: "Boot",
   hull: [[0, 0], [0, -3.6], [0, 3.0], [-1.15, -1.6], [1.15, -1.6], [-1.1, 3.0], [1.1, 3.0]] };
 let BOAT = world.userData.boat; Object.assign(BOAT, { name: "Boot", spec: BOAT_SPEC_STD, y: SEA_Y });
@@ -25,7 +34,7 @@ function boatWater(x, z, y = SEA_Y) {
     const [ax, az] = t.a, [bx, bz] = t.b, dx = bx - ax, dz = bz - az, k = clamp01(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz));
     if (Math.hypot(x - ax - dx * k, z - az - dz * k) < 1.2) return false;
   }
-  return Math.hypot(x, z) < 900;
+  return Math.hypot(x, z) < (typeof WELT_R !== "undefined" ? WELT_R - 60 : 900);   // ganze Insel-Welt (2026-11-23, vorher 900 m um die Manor; das Gotham-Becken liegt hoeher und sperrt ueber terrainH)
 }
 // Grund unter dem Wasser (U-Boot): Hoehlengrund bzw. Gelaende
 const boatFloor = (x, z) => caveAt(x, z) !== 0 ? BED : terrainH(x, z);
@@ -87,9 +96,10 @@ function boatStep(dt) {
   if (keys.has("KeyD") || keys.has("ArrowRight")) st -= 1;
   th -= moveStick.y; st -= moveStick.x;
   look(lookStick.x * 2.6 * dt, lookStick.y * 1.8 * dt);
-  B.v += th * sp.acc * dt;                                                  // nur W, kein Shift (Nicolas 2026-11-09)
+  const zk = boatZone(B, dt), vmax = sp.max * zk;                           // Schnellzone weit vor der Kueste (2026-11-23)
+  B.v += th * sp.acc * zk * dt;                                             // nur W, kein Shift (Nicolas 2026-11-09)
   if (!th) B.v *= Math.pow(0.35, dt);
-  B.v = Math.max(-sp.rev, Math.min(sp.max, B.v));
+  B.v = Math.max(-sp.rev, Math.min(vmax, B.v));
   // U-Boot: Tiefe (Leertaste hoch, C runter), getaucht langsamer; nur so tief, wie der Grund unter dem ganzen Rumpf erlaubt
   if (sp.sub) { const up = (keys.has("Space") || jumpHeld ? 1 : 0) - (keys.has("KeyC") || downHeld ? 1 : 0); B.vy = (B.vy || 0) + (up * sp.sub.climb - (B.vy || 0)) * Math.min(1, dt * 1.5);
     const ny = Math.min(sp.sub.top, B.y + B.vy * dt); if (boatFree(B.x, B.z, B.h, B, ny)) B.y = ny; else B.vy = 0;   // nicht in den Grund und nicht unter einem Steg auftauchen
