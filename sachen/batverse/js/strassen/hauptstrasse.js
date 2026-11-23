@@ -62,11 +62,12 @@ function genH0(x, z) {
   // bis 600 m vom Gotham-Wasser keine Berge, bis 900 m weich zurueck. Die normalen Huegel bleiben.
   { const fl = xiFlach(x, z); if (fl > 0) h *= 1 - 0.8 * fl; }   // Fort Graystone eben (XI, 2026-11-23)
   h += (1 - xiFlach(x, z)) * 170 * sst(700, 1300, Math.hypot(x, z)) * (0.45 + 0.8 * fbm(x / 260 + 11, z / 260 + 2)) * sst(-60, -320, sd) * sst(600, 900, GOT.dw(x, z)) * inselBerg(x, z);   // Insel-Welt: ausserhalb der heutigen Welt nur Gebirgszuege
+  h = kaneH(x, z, h);   // Kane Range (Gebirge der Insel-Welt, 2026-11-23)
   // Steilkueste: oben leicht erhoehte Felskante, dann ca. 32 m senkrecht hinab, am Fuss ein flacher Felssockel, weiter draussen tiefer
   // Klippe mindestens so breit wie ca. 1,6 Rasterzellen (draussen ist das Raster grob, sonst springt die Kante zackig von Zelle zu Zelle)
   const cw = Math.max(4, 1.6 * Math.max(gridStep(x), gridStep(z)));
   h = h * lerp(1 - sst(-25, -3, sd), 1 - sst(-0.62 * cw, 0.38 * cw, sd), ch) + 1.0 * sst(-30, -8, sd) * (1 - sst(-0.75 * cw, -0.25 * cw, sd)) - 46 * sst(-0.62 * cw, 0.38 * cw, sd) - 4 * sst(14, 60, sd);   // Klippe bis Grund -46 (12 m Wasser wie in Gotham, Nicolas 2026-11-16), draussen -50
-  { const bw = inselStrand(x, z); if (bw > 0) { const hb = sd < 0 ? Math.min(h, SEA_Y + 1.2 - sd * 0.09) : Math.max(SEA_Y - 16, SEA_Y + 1.2 - sd * 0.08); h = lerp(h, hb, bw); } }   // Sandstrand statt Klippe (Insel-Welt)
+  { const bw = inselStrand(x, z) * sst(-600, -200, sd); if (bw > 0) { const hb = sd < 0 ? Math.min(h, SEA_Y + 1.2 - sd * 0.09) : Math.max(SEA_Y - 16, SEA_Y + 1.2 - sd * 0.08); h = lerp(h, hb, bw); } }   // Sandstrand statt Klippe (Insel-Welt)
   for (const L of LAKES) h *= sst(1.0, 2.4, lakeD(L, x, z));                          // Seeufer flach
   // (A4: der alte Nordhang mit Felskante beim alten Wasserfall ist weg; die Plateau-Erweiterung mit Felswand uebernimmt, Wasserfall neu in A7)
   for (const L of LAKES) h -= L.depth * sst(1.0, 0.55, lakeD(L, x, z));

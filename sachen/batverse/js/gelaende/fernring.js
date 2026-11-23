@@ -28,7 +28,7 @@ function fernBuild() {
     P.set([x, h, z], q * 3); U[q * 2] = x / 10; U[q * 2 + 1] = -z / 10;
     const sl = Math.hypot(H(i + 1, j) - H(i - 1, j), H(i, j + 1) - H(i, j - 1)) / (2 * FR_S);   // Steigung (tan)
     c.copy(cA).lerp(cB, vnoise(x / 400, z / 400)).lerp(cF, 0.55 * sst(0.45, 0.7, vnoise(x / 300 + 7, z / 300 + 3)));   // Wiese, dunklere Waldflaechen
-    c.lerp(cRock, Math.max(sst(0.45, 0.9, sl), sst(90, 160, h))).lerp(cSnow, sst(190, 240, h));
+    c.lerp(cRock, Math.max(sst(0.45, 0.9, sl), sst(90, 160, h))).lerp(cSnow, sst(880, 1000, h + 60 * vnoise(x / 90, z / 90)));
     if (h < SEA_Y + 2) c.lerp(cBed, sst(SEA_Y + 2, SEA_Y - 2, h));
     Cc.set([c.r, c.g, c.b], q * 3);
   }
@@ -72,7 +72,7 @@ function irBuild() {
     P.set([x, h, z], q * 3); U[q * 2] = x / 10; U[q * 2 + 1] = -z / 10;
     const sl = Math.hypot(H(i + 1, k) - H(i - 1, k), H(i, k + 1) - H(i, k - 1)) / (2 * S);
     c.copy(cA).lerp(cB, vnoise(x / 400, z / 400)).lerp(cF, 0.55 * sst(0.45, 0.7, vnoise(x / 300 + 7, z / 300 + 3)));   // wie der Fernring (ohne Wald: nur dunklere Wiese)
-    c.lerp(cRock, Math.max(sst(0.45, 0.9, sl), sst(90, 160, h))).lerp(cSnow, sst(190, 240, h)); c.lerp(cSand, inselStrand(x, z) * sst(SEA_Y + 5, SEA_Y + 2.5, h)); if (h < SEA_Y + 0.5) c.lerp(cBed, sst(SEA_Y + 0.5, SEA_Y - 3, h));   // Sand am Strand
+    c.lerp(cRock, Math.max(sst(0.45, 0.9, sl), sst(90, 160, h))).lerp(cSnow, sst(880, 1000, h + 60 * vnoise(x / 90, z / 90))); c.lerp(cSand, inselStrand(x, z) * sst(SEA_Y + 5, SEA_Y + 2.5, h)); if (h < SEA_Y + 0.5) c.lerp(cBed, sst(SEA_Y + 0.5, SEA_Y - 3, h));   // Sand am Strand
     Cc.set([c.r, c.g, c.b], q * 3); }
   for (let k = 0; k < nz - 1; k++) for (let i = 0; i < nx - 1; i++) { const x = x0 + i * S, z = z0 + k * S;
     if (irInnen(x, z) && irInnen(x + S, z) && irInnen(x, z + S) && irInnen(x + S, z + S)) continue;   // Fernring

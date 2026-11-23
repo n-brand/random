@@ -132,13 +132,13 @@ const INSEL = (() => { try {
   return { d, x0, z0, x1: x0 + (nx - 1) * G, z1: z0 + (nz - 1) * G, rmax, G };
 } catch (e) { console.warn("Insel-Welt:", e); return null; } })();
 // Inseln innerhalb der heutigen Welt (Nicolas 2026-11-23: "bau das Terrain, also Land, nur ohne Gebaeude"): Fort Graystone (Militaerinsel, im Meer suedlich von Gotham) und
-// die Arkham-Insel (im Gotham-Wasser) aus gotham/daten.js. Eigenes Abstandsfeld (25-m-Raster, Abstand zu den Umriss-Kanten, > 0 = Meer); seaD nimmt das Minimum, damit bauen
+// die Arkham-Insel (im Gotham-Wasser) aus gotham/daten.js. Eigenes Abstandsfeld (40-m-Raster, Abstand zu den Umriss-Kanten, > 0 = Meer); seaD nimmt das Minimum, damit bauen
 // genH0 (Klippe, Grund, Huegel), Boote und Baeume-Sperren sie wie Kueste. flach (0..1): Fort Graystone eben (Landebahn spaeter), ohne Berge; Arkham felsig mit Huegeln.
 const XI = (() => { try {
   const G0 = typeof GOTHAM !== "undefined" ? GOTHAM : null, L0 = G0 && G0.manorLage; if (!L0) return null;
   const a = L0.dreh * Math.PI / 180, ct = Math.cos(a), st = Math.sin(a), inv = ([X, Z]) => { const dx = X - L0.x, dz = Z - L0.z; return [dx * ct + dz * st, -dx * st + dz * ct]; };
   const IS = [[G0.militaerinsel, 0.85], [G0.arkham, 0]].filter(([o]) => o && o.umriss).map(([o, flach]) => ({ P: o.umriss.map(inv), flach }));
-  if (!IS.length) return null; const G = 25, M = 700, OUT = [];
+  if (!IS.length) return null; const G = 40, M = 700, OUT = [];
   for (const I of IS) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of I.P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
     x0 = Math.floor((x0 - M) / G) * G; z0 = Math.floor((z0 - M) / G) * G; const nx = Math.ceil((x1 + M - x0) / G) + 1, nz = Math.ceil((z1 + M - z0) / G) + 1, D = new Float32Array(nx * nz), P = I.P, n = P.length;
     for (let k = 0; k < nz; k++) { const z = z0 + k * G, xs = []; for (let i = 0, j = n - 1; i < n; j = i++) { const [ax, az] = P[j], [bx, bz] = P[i]; if ((az > z) !== (bz > z)) xs.push(ax + (bx - ax) * (z - az) / (bz - az)); } xs.sort((u, v) => u - v);
@@ -157,7 +157,37 @@ const seaDb = (x, z) => { if (!INSEL) return seaD0(x, z); const r2 = x * x + z *
   const w = sst(INSEL_R0, INSEL_R0 + INSEL_RB, Math.sqrt(r2)), di = INSEL.d(x, z); return w >= 1 ? di : lerp(seaD0(x, z), di, w); };
 // Neues Festland (ausserhalb der heutigen Welt): Berge nur in einzelnen Gebirgszuegen (sonst wuerde die Bergformel des Horizonts die ganze Insel zu einem
 // Felsplateau von 150-200 m machen), dazwischen gruene Huegel; Kueste abwechselnd Steilufer (wie heute) und flacher Sandstrand (inselStrand, genH0).
-const inselBerg = (x, z) => { const r = Math.hypot(x, z); return r < INSEL_R0 ? 1 : lerp(1, sst(0.5, 0.72, fbm(x / 2000 + 5, z / 2000 + 8)), sst(INSEL_R0, INSEL_R0 + 900, Math.hypot(x, z))); };
+// 2026-11-23 (Nicolas: "bau das Gebirge auch ins Spiel"): ausserhalb der heutigen Welt keine zufaelligen Gebirgszuege mehr, die Berge macht die Kane Range (KANE)
+const inselBerg = (x, z) => { const r = Math.hypot(x, z); return r < INSEL_R0 ? 1 : 1 - sst(INSEL_R0, INSEL_R0 + 900, r); };
+// Kane Range aus gotham/daten.js (gebirge: umriss, grat, gipfel [x, z, Hoehe ueber Meer]): 50-m-Raster mit Abstand zum Rand (> 0 = ausserhalb), Abstand zum Grat und
+// Gipfelhoehe (gewichtet nach Abstand zu den Gipfeln). kaneH(x, z, h): innen Hoehe = Gipfelhoehe x (Anteil Randabstand / (Randabstand + Gratabstand))^1,15 mit Rippen
+// und Taelern (Rauschen), aussen 500 m Vorberge; nie tiefer als das bisherige Gelaende.
+const KANE = (() => { try {
+  const G0 = typeof GOTHAM !== "undefined" ? GOTHAM : null, Gb = G0 && G0.gebirge, L0 = G0 && G0.manorLage; if (!Gb || !L0) return null;
+  const a = L0.dreh * Math.PI / 180, ct = Math.cos(a), st = Math.sin(a), inv = ([X, Z]) => { const dx = X - L0.x, dz = Z - L0.z; return [dx * ct + dz * st, -dx * st + dz * ct]; };
+  const P = Gb.umriss.map(inv), GR = Gb.grat.map(inv), GP = Gb.gipfel.map(([X, Z, hm]) => [...inv([X, Z]), hm]), C = 75, M = 700;
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+  x0 = Math.floor((x0 - M) / C) * C; z0 = Math.floor((z0 - M) / C) * C; const nx = Math.ceil((x1 + M - x0) / C) + 1, nz = Math.ceil((z1 + M - z0) / C) + 1, N = nx * nz;
+  const D = new Float32Array(N), DG = new Float32Array(N), HP = new Float32Array(N), PK = new Float32Array(N), n = P.length;
+  const segD2 = (x, z, ax, az, bx, bz) => { const ex = bx - ax, ez = bz - az, L = ex * ex + ez * ez; let u = L ? ((x - ax) * ex + (z - az) * ez) / L : 0; u = u < 0 ? 0 : u > 1 ? 1 : u; const dx = x - ax - u * ex, dz = z - az - u * ez; return dx * dx + dz * dz; };
+  for (let k = 0; k < nz; k++) { const z = z0 + k * C, xs = []; for (let i = 0, j = n - 1; i < n; j = i++) { const [ax, az] = P[j], [bx, bz] = P[i]; if ((az > z) !== (bz > z)) xs.push(ax + (bx - ax) * (z - az) / (bz - az)); }
+    for (let i = 0; i < nx; i++) { const x = x0 + i * C, q = k * nx + i; let m = 1e18; for (let p = 0, j = n - 1; p < n; j = p++) m = Math.min(m, segD2(x, z, P[j][0], P[j][1], P[p][0], P[p][1]));
+      let inn = false; for (const v of xs) if (v < x) inn = !inn; D[q] = inn ? -Math.sqrt(m) : Math.sqrt(m);
+      let g = 1e18; for (let p = 1; p < GR.length; p++) g = Math.min(g, segD2(x, z, GR[p - 1][0], GR[p - 1][1], GR[p][0], GR[p][1])); DG[q] = Math.sqrt(g);
+      let ws = 0, hs = 0; for (const [gx, gz, hm] of GP) { const w = 1 / (1 + ((x - gx) ** 2 + (z - gz) ** 2) / 4e5); ws += w; hs += w * hm; } HP[q] = hs / ws;
+      let pk = 0; for (const [gx, gz, hm] of GP) pk = Math.max(pk, hm * Math.exp(-((x - gx) ** 2 + (z - gz) ** 2) / (2 * 520 * 520))); PK[q] = pk; } }   // Gipfel als eigene Kuppen (sigma 520 m)
+  const samp = (F, x, z) => { const fx = (x - x0) / C, fz = (z - z0) / C; if (fx < 0 || fz < 0 || fx >= nx - 1 || fz >= nz - 1) return null; const i = Math.floor(fx), k = Math.floor(fz), u = fx - i, w = fz - k, q = k * nx + i;
+    return (F[q] * (1 - u) + F[q + 1] * u) * (1 - w) + (F[q + nx] * (1 - u) + F[q + nx + 1] * u) * w; };
+  return { samp, D, DG, HP, PK, box: [x0, z0, x0 + (nx - 1) * C, z0 + (nz - 1) * C] };
+} catch (e) { console.warn("Kane Range:", e); return null; } })();
+function kaneH(x, z, h) { if (!KANE) return h; const d = KANE.samp(KANE.D, x, z); if (d === null || d > 500) return h;
+  if (d > 0) return h + 70 * sst(500, 0, d) * (0.6 + 0.8 * fbm(x / 300 + 3, z / 300 + 5));   // Vorberge
+  const di = -d, dg = KANE.samp(KANE.DG, x, z), hp = KANE.samp(KANE.HP, x, z) + SEA_Y, r = di / (di + dg + 1);
+  const rippe = 1 - Math.abs(2 * vnoise(x / 520 + 17, z / 520 + 4) - 1), tal = sst(0.35, 0.8, vnoise(x / 900 + 9, z / 900 + 21));
+  const k = Math.pow(r, 1.15) * (0.78 + 0.3 * rippe) * (1 - 0.28 * tal * (1 - r)) + 0.05 * (fbm(x / 140 + 1, z / 140 + 2) - 0.5);
+  const pk = KANE.samp(KANE.PK, x, z) * (0.88 + 0.14 * rippe) * sst(0, 250, di);
+  return Math.max(h, h + 70 * (1 - sst(0, 400, di)) + (hp - h) * Math.max(0, k), SEA_Y + pk); }
+
 const inselStrand = (x, z) => { const r2 = x * x + z * z; if (r2 < INSEL_R0 * INSEL_R0) return 0; return sst(INSEL_R0, INSEL_R0 + INSEL_RB, Math.sqrt(r2)) * sst(0.46, 0.6, fbm(x / 2200 + 31, z / 2200 + 17)); };
 // Laufen, Fahren, Fliegen bis hinter die Inselkueste (vorher Kreis LIMIT_WORLD)
 const WELT_R = INSEL ? Math.ceil(INSEL.rmax + 1500) : LIMIT_WORLD;
