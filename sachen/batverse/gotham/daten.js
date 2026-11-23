@@ -400,7 +400,9 @@ const GOTHAM = {
       .map(([x, z], i) => ({ id: "BS-" + String(i + 1).padStart(2, "0"), typ: "baustelle", name: "Baustelle BS-" + String(i + 1).padStart(2, "0") + " (Platzhalter)",   // klare ID (Nicolas 2026-11-12)
         x, z, w: 60, d: 50, status: "baustelle" })),
     // --- Bestehend ---
-    { id: "manor", typ: "manor", name: "Wayne Manor (besteht)", x: -346, z: 1307, dreh: 62, w: 70, d: 95, status: "gebaut", aussen: true },
+    { id: "manor", typ: "manor", name: "Wayne Manor (besteht)", x: -346, z: 1307, dreh: 62, w: 70, d: 95, status: "gebaut", aussen: true,
+      // Umriss von oben = Grundriss des Hauses im Spiel (js/haus/haus.js HOUSE_PX mit den sechs Ecktuermen, ueber mp und manorLage umgerechnet; Nicolas 2026-11-23 Punkt -331/1274: "genauer machen")
+      umriss: [[-370.5,1273.9], [-365.3,1271.2], [-364,1273.7], [-356.4,1269.6], [-357.1,1268.4], [-344.5,1261.7], [-343.9,1263], [-336.1,1258.8], [-337.4,1256.4], [-332.3,1253.6], [-329.2,1259.5], [-334.3,1262.2], [-321.2,1286.9], [-316.6,1284.5], [-313.5,1290.3], [-308,1287.4], [-298.9,1304.5], [-298,1304], [-295.2,1309.3], [-300.5,1312.2], [-303.3,1306.9], [-306.2,1308.4], [-315.3,1291.2], [-318.3,1292.8], [-319.7,1290.2], [-327.3,1294.2], [-326.6,1295.5], [-339,1302], [-339.8,1300.4], [-347.2,1304.4], [-345.8,1307], [-349,1308.7], [-339.6,1326.4], [-342.6,1328], [-339.8,1333.3], [-344.7,1335.9], [-345.2,1335], [-368.9,1347.6], [-368.4,1348.5], [-373.9,1351.4], [-376.7,1346.1], [-375.6,1345.5], [-379.7,1337.9], [-380.7,1338.5], [-388.7,1323.5], [-387.7,1322.9], [-391.9,1315], [-393.3,1315.7], [-395.9,1310.8], [-391,1308.2], [-390.2,1309.6], [-377.2,1302.6], [-374.6,1307.4], [-356.8,1297.9], [-366.6,1279.4], [-367.4,1279.7]] },
   ],
 
   // Seitenansicht (gotham/schnitt.html): senkrechter Schnitt von West nach Ost, waagrecht NICHT massstaeblich, senkrecht in Metern.
