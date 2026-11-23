@@ -102,6 +102,6 @@ function spielautomatInstanzen(parent, liste) {
     for (let v = 0; v < (isScr ? 3 : 1); v++) { const sub = isScr ? liste.filter((_, i) => i % 3 === v) : liste; if (!sub.length) continue;
       const mat = isScr ? new THREE.MeshBasicMaterial({ map: screens[v] }) : m.material, im = new THREE.InstancedMesh(m.geometry, mat, sub.length);
       sub.forEach((t, i) => { O.position.set(t[0], t[1], t[2]); O.rotation.set(0, t[3] || 0, 0); O.scale.setScalar(1); O.updateMatrix(); O.matrix.multiply(m.matrixWorld); im.setMatrixAt(i, O.matrix); if (m.userData.tint) im.setColorAt(i, col.set(t[4] ?? 0x6a1ab0)); });
-      if (im.instanceColor) im.instanceColor.needsUpdate = true; im.castShadow = m.castShadow; im.receiveShadow = true; parent.add(im); out.push(im); } }
+      if (im.instanceColor) im.instanceColor.needsUpdate = true; im.userData.scr = isScr ? v : -1; im.castShadow = m.castShadow; im.receiveShadow = true; parent.add(im); out.push(im); } }
   return out;
 }

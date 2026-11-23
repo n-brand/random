@@ -43,6 +43,7 @@ let aimedBay = null;
 const bayFree = (b, me) => !VEH.some(v => v !== me && Math.abs(v.x - b.x) < b.w / 2 + 0.4 && Math.abs(v.z - b.z) < b.d / 2 + 0.4 && Math.abs(v.y - GY - HILL) < 2);
 function findAimedBay() {
   const C = CAR, bays = world.userData.bays;
+  if (walking && !ghost && C && C.on && typeof gpaFindBay === "function" && !(bays && C.y <= HILL - 2 && inPoly(GARAGE, C.x, C.z))) return gpaFindBay(C, document.pointerLockElement ? gateCenter : bayMouse);   // Stellplaetze in Gotham (gotham-parkautos.js, Nicolas 2026-11-23)
   if (!walking || ghost || !C || !C.on || !bays || C.y > HILL - 2 || !inPoly(GARAGE, C.x, C.z)) return null;
   gateRay.setFromCamera(document.pointerLockElement ? gateCenter : bayMouse, camera); bayPlane.constant = -(GY + HILL);
   if (!gateRay.ray.intersectPlane(bayPlane, bayPt) || bayPt.distanceTo(camera.position) > 45) return null;
@@ -50,11 +51,11 @@ function findAimedBay() {
   return null;
 }
 function parkInBay(b) {
-  const C = CAR; C.x = b.x; C.z = b.z; C.h = b.h; C.y = GY + HILL; carNear();
+  const C = CAR; C.x = b.x; C.z = b.z; C.h = b.h; C.y = b.y ?? GY + HILL; carNear();
   const gr = carGround(C.y + 0.3); C.y = gr.y;
   Object.assign(C, { v: 0, vy: 0, air: false, wet: false, settled: false, steer: 0, lean: 0, pitch: gr.pitch, roll: gr.roll, safe: { x: C.x, z: C.z, y: C.y, h: C.h } });
   player.yaw = C.h; player.pitch = -0.12; carPose(0); baySign.visible = false; aimedBay = null;
-  toast("Eingeparkt auf Platz " + b.n);
+  toast(b.y != null ? "Eingeparkt (" + b.name + ")" : "Eingeparkt auf Platz " + b.n);
 }
 function enterVehicle(v) { if (v && v.lazy) vehReal(v); const ok = v && v.isShip ? useShip(v) : BOATS.includes(v) ? useBoat(v) : FLYS.includes(v) ? ((FLY = v), useFly()) : v === JET ? useJet() : useCar(v); if (!ok) toast("Näher hingehen zum Einsteigen"); }
 const vehName = v => v.isShip ? v.label : BOATS.includes(v) ? v.name : FLYS.includes(v) ? v.name : v === JET ? "Kampfjet" : v.label.replace(/ \(.*\)$/, "");
@@ -93,9 +94,9 @@ function updateGates(dt) {
   if (gateHintClock < 0.15) return;
   gateHintClock = 0;
   aimedGate = findAimedGate(); aimedVeh = aimedGate ? null : findAimedVehicle(); aimedBay = aimedGate ? null : findAimedBay();
-  baySign.visible = !!aimedBay; if (aimedBay) baySign.position.set(aimedBay.x, GY + HILL + 1.6, aimedBay.z);
+  baySign.visible = !!aimedBay; if (aimedBay) baySign.position.set(aimedBay.x, (aimedBay.y ?? GY + HILL) + 1.6, aimedBay.z);
   const hint = $("door-hint"), txt = aimedGate ? (touch ? "Tippen: " : aimedGate.call || !document.body.classList.contains("drive") ? "Rechtsklick: " : "Rechtsklick/E: ") + aimedGate.name + " " + (aimedGate.verbs || ["öffnen", "schließen"])[aimedGate.target ? 1 : 0] : "";
-  const vtxt = !aimedGate && aimedVeh ? (touch ? "Tippen: " : "Rechtsklick: ") + "einsteigen (" + vehName(aimedVeh) + ")" : aimedBay ? (touch ? "Tippen: " : "Rechtsklick: ") + "einparken (Platz " + aimedBay.n + ")" : "", show = !!(aimedGate || aimedVeh || aimedBay);
+  const vtxt = !aimedGate && aimedVeh ? (touch ? "Tippen: " : "Rechtsklick: ") + "einsteigen (" + vehName(aimedVeh) + ")" : aimedBay ? (touch ? "Tippen: " : "Rechtsklick: ") + "einparken (" + (aimedBay.y != null ? aimedBay.name : "Platz " + aimedBay.n) + ")" : "", show = !!(aimedGate || aimedVeh || aimedBay);
   if (hint.hidden !== !show) hint.hidden = !show;
   const armed = show && typeof weaponHeld === "function" && weaponHeld() && onFoot(), ht = armed ? "Waffe in der Hand: Rechtsklick zielt (Mausrad: anderer Platz)" : txt || vtxt;   // S2
   if (show && hint.textContent !== ht) hint.textContent = ht;

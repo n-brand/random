@@ -166,3 +166,9 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 
 64. **2. Militärbasis und Zugnetz (Planungskarte):** Name **Camp Ironwood**, Bahnhöfe Westfield, Northgate, Eastport, Southcliff, Gotham North Junction. Soll der Zug auch in die Stadt Gotham hinein (dafür müsste eine Strecke durch die heutige Welt um Wayne Manor bzw. über eine Brücke), oder reicht der Anschluss am Rand? Und soll ich mit M2 (Basis und Fort Graystone im Spiel) anfangen?
    - *Bis dahin:* Strecken nur auf dem neuen Festland, ausserhalb der heutigen Welt (dort ändere ich nichts ohne Rückfrage); im Spiel noch nichts gebaut.
+
+65. **Parkautos (Parkhäuser, Parkplätze):** Welche Autos sollen dort stehen (bisher G-Klasse, Rolls-Royce, Nachtfalke, Taxi, Aventador, DeLorean, Motorrad; Spectre nicht, sein Aufbau kostet 47 ms)? Sollen fremde Autos verschlossen sein (N7 Autoschlüssel), und soll das Wegfahren in die Akte kommen (Fahndung)?
+   - *Bis dahin:* alle offen und ohne Folgen; von weitem stehen einfache Kastenautos, ab 26 m auf gleicher Ebene das echte Modell.
+
+66. **Granate gegen Automaten:** Sollen gesprengte Jeton- und Spielautomaten Jetons bzw. Geld auswerfen (wie der Bankautomat), und sollen sie nach einer Zeit wieder heil sein?
+   - *Bis dahin:* nur zerstört (verkohlt bzw. Wrack, kein Spielen mehr), keine Beute, heil erst nach dem Neuladen; Akte "… gesprengt", Fahndung +1. Der Batman-Tresor hält der Granate stand, Tresore Stufe 1–4 fliegen auf.

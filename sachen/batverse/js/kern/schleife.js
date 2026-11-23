@@ -47,7 +47,7 @@ function frame() {
     CAR_LIFT.update(dt);
     if (walking && !ghost && !CAR.on && CAR_LIFT.L.state === "moving" && CAR_LIFT.inCar(player.pos)) { player.pos.y = CAR_LIFT.L.y; player.vy = 0; player.onGround = true; camera.position.y = CAR_LIFT.L.y + EYE; }
   }
-  carFrame(dt);
+  carFrame(dt); if (typeof gpaFrame === "function") gpaFrame(dt);   // Parkautos nah echt, fern als Instanz (gotham-parkautos.js)
   shotsStep(dt); wasserFrame(dt);                                                             // Panzer: Schiessen, Granaten, Explosionen, Wracks (schiessen.js)
   if (typeof ggebCollStep === "function") ggebCollStep();   // Gebaeude: Kollision nur in der Naehe (gotham-gebaeude.js)
   if (typeof gbstCollStep === "function") gbstCollStep();                                      // Baustellen: Kollision nur in der Naehe (gotham-baustellen.js)

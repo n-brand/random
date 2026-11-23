@@ -59,6 +59,7 @@ function teleportToPoint(p) {
     const vs = world.userData.vehicles || [];
     vehList.textContent = ""; vehGroup.textContent = "";
     vs.forEach((v, i) => {
+      if (v.park) return;   // geparkte Autos in Gotham (gotham-parkautos.js) nicht im Menue
       const b = document.createElement("button"); b.type = "button";
       const col = "#" + v.color.toString(16).padStart(6, "0"); b.append(icon(v.spec.bike ? "bike" : "car", col), v.label);
       b.addEventListener("click", () => { closeTp(); summonVehicle(v); }); vehList.appendChild(b);

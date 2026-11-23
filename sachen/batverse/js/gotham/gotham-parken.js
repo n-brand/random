@@ -44,6 +44,9 @@ function* gpkGen() {
     if (typeof addVehicle === "function" && typeof SPEC_TAXI !== "undefined") { const n = nrm(0, -1), hFwd = Math.atan2(-n[0], -n[2]), n2 = nrm(0, 1), hBack = Math.atan2(-n2[0], -n2[2]);
       for (let i = 0; i < 6; i++) { const [s, t] = at(hw0 + 3 + i * (hw1 - hw0 - 6) / 5, hd0 + 6), p = f.W(s, t, 0); addVehicle(SPEC_TAXI, () => buildTaxi(), p[0], p[2], Y, hFwd, "Gotham Taxi (Depot)", 0xf2c200); }
       for (let i = 0; i < 6; i++) { const [s, t] = at(4.6 + i * 3.2, D - 18), p = f.W(s, t, 0); addVehicle(SPEC_TAXI, () => buildTaxi(), p[0], p[2], Y, hBack, "Gotham Taxi (Depot)", 0xf2c200); } }
+    if (typeof gpaBay === "function") { const n = nrm(0, -1), hFwd = Math.atan2(-n[0], -n[2]), n2 = nrm(0, 1), hBack = Math.atan2(-n2[0], -n2[2]);   // Stellplaetze mit P: Hof (alle Linien) und Halle
+      for (let u = 4.6; u < Wd - 4; u += 3.2) { const [s, t] = at(u, D - 18), p = f.W(s, t, 0); gpaBay(p[0], Y, p[2], hBack, 3, 6, "Taxi-Depot Hof"); }
+      for (let i = 0; i < 6; i++) { const [s, t] = at(hw0 + 3 + i * (hw1 - hw0 - 6) / 5, hd0 + 6), p = f.W(s, t, 0); gpaBay(p[0], Y, p[2], hFwd, 3, 6, "Taxi-Depot Halle"); } }
     bautAdd({ id: "GO-TAXI", name: "Taxi-Depot", art: "Gebäude", poly: [P(0, 0, 0), P(Wd, 0, 0), P(Wd, D, 0), P(0, D, 0)].map(p => [p[0], p[2]]), y0: Y - 1, y1: Y + 7, info: "Gotham Cab Co. · 12 Taxis" });
     yield; }
   // ---------- V4 Parkhaeuser ----------
@@ -58,7 +61,9 @@ function* gpkGen() {
       for (const [s, t, ls, lt] of [[L1 / 2, 0.15, L1, 0.3], [L1 / 2, L2 - 0.15, L1, 0.3], [0.15, L2 / 2, 0.3, L2], [L1 - 0.15, L2 / 2, 0.3, L2]]) { gbvBox(out, "beton", f, s, t, ls, lt, y, y + 1); dkB(f, s, t, ls, lt, y, y + 1, { floor: 0 }); }
       // Parklinien und geparkte Autos (zwei Reihen quer, Fahrgasse in der Mitte)
       for (let s = 2.5; s < L1 - 2.5; s += 2.6) { for (const [t0, t1] of [[lane + 0.5, lane + 5.5], [L2 - 5.5, L2 - 0.5]]) { const p0 = f.W(s, t0, y + 0.02), p1 = f.W(s + 0.1, t0, y + 0.02), p2 = f.W(s + 0.1, t1, y + 0.02), p3 = f.W(s, t1, y + 0.02); quadKey("linie", p0, p1, p2, p3, [0, 1, 0]);
-          if (((s * 7 + lv * 3 + t0) | 0) % 3 !== 0 && s + 2.6 < L1 - 2.5) { const c = f.W(s + 1.3, (t0 + t1) / 2, y); cars.push([c[0], y, c[2], PAL[((s * 13 + lv * 5 + t0) | 0) % PAL.length]]); } } } }
+          if (s + 2.6 < L1 - 2.5) { const c = f.W(s + 1.3, (t0 + t1) / 2, y), fw = f.dirW(0, t0 < L2 / 2 ? 1 : -1), h = Math.atan2(-fw[0], -fw[2]);   // Front zur Fahrgasse
+            if (typeof gpaBay === "function") gpaBay(c[0], y, c[2], h, 2.5, 5, "Parkhaus Ebene " + lv);   // Stellplatz mit P (gotham-parkautos.js)
+            if (((s * 7 + lv * 3 + t0) | 0) % 3 !== 0) { if (typeof gpaSlot === "function") cars.push(gpaSlot(c[0], y, c[2], h, null, null, "Parkhaus")); else cars.push([c[0], y, c[2], PAL[((s * 13 + lv * 5 + t0) | 0) % PAL.length]]); } } } } }
     // Rampen (je Ebene eine, uebereinander, alle in +s): dkAdd mit Neigung g entlang s
     for (let lv = 0; lv < NL - 1; lv++) { const y0 = Y + lv * LH + (lv ? 0 : 0.02), y1 = Y + (lv + 1) * LH, o = gbvBucket(out, "beton"), tA = 0.4, tB = lane;
       gbvQuad(o, f.W(rA0, tA, y0), f.W(rA1, tA, y1), f.W(rA1, tB, y1), f.W(rA0, tB, y0), [0, 1, 0], [[0, 0], [7, 0], [7, 1.3], [0, 1.3]]); gbvQuad(o, f.W(rA0, tA, y0 - 0.3), f.W(rA1, tA, y1 - 0.3), f.W(rA1, tB, y1 - 0.3), f.W(rA0, tB, y0 - 0.3), [0, -1, 0], [[0, 0], [7, 0], [7, 1.3], [0, 1.3]]);
@@ -87,6 +92,7 @@ function* gpkGen() {
     const m = new THREE.Mesh(geo, M[key] || GM[key]); m.castShadow = key !== "linie" && key !== "dunkel"; m.receiveShadow = true; m.name = "Parken " + key; grp.add(m); }
   scene.add(grp); yield;
   // geparkte Autos (Karosserie + Kabine, eine Instanz-Liste je Teil)
+  if (cars.length && typeof gpaLod === "function") { gpaLod(cars, "Parkhaus Autos"); cars.length = 0; }   // fahrbar und zerstoerbar, nah echt (Nicolas 2026-11-23)
   if (cars.length) { const body = new THREE.BoxGeometry(1.8, 0.75, 4.3), cab = new THREE.BoxGeometry(1.6, 0.6, 2.2); body.translate(0, 0.55, 0); cab.translate(0, 1.2, 0.2);
     const mb = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.4 }), mc = new THREE.MeshStandardMaterial({ color: 0x1a222c, roughness: 0.15, metalness: 0.6 }), ib = new THREE.InstancedMesh(body, mb, cars.length), ic = new THREE.InstancedMesh(cab, mc, cars.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(e2[0], e2[1])), cc = new THREE.Color();
     cars.forEach(([x, y, z, h], i) => { m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(1, 1, 1)); ib.setMatrixAt(i, m4); ic.setMatrixAt(i, m4); ib.setColorAt(i, cc.set(h)); }); ib.castShadow = ic.castShadow = true; ib.name = "Parkhaus Autos"; scene.add(ib, ic); }

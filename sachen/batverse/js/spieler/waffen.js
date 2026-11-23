@@ -198,6 +198,7 @@ function granateStep(P, dt) { P.v.y -= 9.8 * dt; const a = P.m.position.clone(),
   aimSmoke(p); if (typeof shotSound === "function") shotSound(0.7, 0.7);
   if (typeof VEH !== "undefined" && typeof vehHit === "function") for (const v of VEH) if (!v.dead && v.g && v.g.visible && Math.hypot(v.x - p.x, v.z - p.z) < 7) vehHit(v, p.clone());
   if (typeof atmShot === "function") for (const q of [[0, 0], [0.8, 0], [-0.8, 0], [0, 0.8], [0, -0.8]]) atmShot(new THREE.Vector3(p.x + q[0], p.y + 0.8, p.z + q[1]), 160);
+  if (typeof zerstBoom === "function") zerstBoom(p);   // Jeton-/Spielautomaten, Tresore (gotham-parkautos.js)
   const pl = typeof player !== "undefined" ? player.pos : typeof PERSON !== "undefined" ? PERSON.pos : null; if (pl && pl.distanceTo(p) < 5 && typeof toast === "function") toast("Zu nah an der Explosion!");
   return true; }
 function aimSmoke(p) { const S = { t: 0, s: [] }; for (let k = 0; k < 26; k++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: AIM_M.smokeT, transparent: true, depthWrite: false, opacity: 0.75 }));

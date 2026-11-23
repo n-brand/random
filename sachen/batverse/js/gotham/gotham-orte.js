@@ -81,12 +81,16 @@ function* gortGen() {
     const shell = (type, glas, N, Hh, ins = 0) => { const P = ins ? (() => { const p = f.W(ins, ins, 0); return [p[0], p[2]]; })() : P0;
       gbvShell({ P0: P, e1: [ax, az], e2, L1: L1 - 2 * ins, L2: L2 - 2 * ins, front, type, N, H: Hh, glas, seed, fire: [0, 0, 0, 0], y: Y }, out); return ins; };
     if (kind !== "atm" && kind !== "stadion") gbvBox(out, "beton", f, L1 / 2, L2 / 2, L1, L2, Y, Y + 0.05);
-    if (kind === "atm") { gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1, col(0x23415e)); gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.4, 1.0, Y + 2.1, Y + 2.3, col(0xd9dde2)); sign(front, sideLen(front) / 2, Y + 1.75, 1.1, 0.12, L1 / 2 - 0.45 - (front % 2 ? L1 / 2 - 0.45 : 0)); box(L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1);
+    if (kind === "atm" && typeof buildBankautomat === "function") { const [x, z] = Wp(L1 / 2, L2 / 2), [, , , , os, ot] = f.side(front), ow = f.dirW(os, ot), h = Math.atan2(-ow[0], -ow[2]), am = buildBankautomat();   // echtes Modell statt Saeule (PLAN-BANKAUTOMAT A4, 2026-11-23): aufbrechbar, Granate
+      am.position.set(x, Y, z); am.rotation.y = h; scene.add(am); dkAdd({ cx: x, cy: Y + 1.18, cz: z, ux: Math.cos(h), uz: -Math.sin(h), hl: 0.42, hw: 0.5, hh: 1.18, m: 0.05 });
+      if (typeof kontoOpen === "function") { const hm = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, 1.2), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(x, Y + 1.2, z); scene.add(hm); gates.push({ name: "Bankautomat", g: hm, call: () => kontoOpen(), verbs: ["benutzen", "benutzen"], a: [x, z], b: [x, z], near: 4 }); } }
+    else if (kind === "atm") { gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1, col(0x23415e)); gbvBox(out, "farbe", f, L1 / 2, L2 / 2, 1.4, 1.0, Y + 2.1, Y + 2.3, col(0xd9dde2)); sign(front, sideLen(front) / 2, Y + 1.75, 1.1, 0.12, L1 / 2 - 0.45 - (front % 2 ? L1 / 2 - 0.45 : 0)); box(L1 / 2, L2 / 2, 1.3, 0.9, Y, Y + 2.1);
       if (typeof kontoOpen === "function") { const hm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 1.6), new THREE.MeshBasicMaterial({ visible: false })), hp = Wp(L1 / 2, L2 / 2); hm.position.set(hp[0], Y + 1.2, hp[1]); scene.add(hm);   // S3: Rechtsklick/E oeffnet den Bankautomaten
         gates.push({ name: "Bankautomat", g: hm, call: () => kontoOpen(), verbs: ["benutzen", "benutzen"], a: hp, b: hp, near: 4 }); } }
     else if (kind === "stadion") gortStadion(out, f, o, front, Y, box, sign, M);
     else if (kind === "kirche") gortKirche(out, f, o, front, Y, box, sign, M, col);
     else if (o.id === "waffen-1" || o.id === "waffen-2") { gortWaffenladen({ out, f, o, front, Y, box, L1, L2, H, seed, P0, ax, az, e2 }); sign(front, sideLen(front) / 2, Y + 4.1, Math.min((sideLen(front) - 3) * 0.85, 12), 0.15, 1.5); }   // begehbar (2026-11-19)
+    else if (o.id === "auto-billig" || o.id === "auto-teuer") gortAutohaus({ f, o, front, Y });   // Glas-Showroom mit fahrbaren Modellen (2026-11-23)
     else {
       const ins = kind === "laden" || kind === "krippe" || kind === "atm" ? 1.5 : 4, type = { portal: "buero", kh: "kratzer", turm: "kratzer", laden: "laden", miet: "miet", halle: "lager", krippe: "laden", fabrik: "fabrik" }[kind];
       const glas = kind === "turm" || kind === "kh" || kind === "halle", N = Math.max(1, Math.round(H / GH)), Hb = kind === "halle" || kind === "fabrik" ? H : N * GH;
@@ -112,7 +116,7 @@ function* gortGen() {
     if (false && (o.id === "waffen-1" || o.id === "waffen-2")) { const sd = f.side(front), u = sd[6] / 2, hp = Wp(sd[0] + sd[2] * u + sd[4], sd[1] + sd[3] * u + sd[5]), hm = new THREE.Mesh(new THREE.BoxGeometry(4, 3.5, 4), new THREE.MeshBasicMaterial({ visible: false }));   // Waffenladen oeffnet den Shop im Handy
       hm.position.set(hp[0], Y + 1.75, hp[1]); scene.add(hm); const sid = o.id === "waffen-1" ? "waffen" : "arms";
       gates.push({ name: (sid === "waffen" ? "Guns & Ammo" : "Gotham Arms") + " (Shop)", g: hm, call: () => typeof handyShop === "function" && handyShop(sid), verbs: ["Waffen ansehen", "Waffen ansehen"], a: hp, b: hp, near: 8 }); }
-    if (o.id === "auto-billig" || o.id === "auto-teuer") { const sd = f.side(front), u = sd[6] / 2, P = (d, h) => Wp(sd[0] + sd[2] * u + sd[4] * d, sd[1] + sd[3] * u + sd[5] * d);   // S4: Autohaus oeffnet den Shop, Lieferplatz vor der Front
+    if (false && (o.id === "auto-billig" || o.id === "auto-teuer")) { const sd = f.side(front), u = sd[6] / 2, P = (d, h) => Wp(sd[0] + sd[2] * u + sd[4] * d, sd[1] + sd[3] * u + sd[5] * d);   // S4: Autohaus oeffnet den Shop, Lieferplatz vor der Front
       GORT.lots = GORT.lots || {}; GORT.lots[o.id] = P(9); const hp = P(1), hm = new THREE.Mesh(new THREE.BoxGeometry(5, 3.5, 5), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(hp[0], Y + 1.75, hp[1]); scene.add(hm);
       gates.push({ name: (o.id === "auto-billig" ? "Budget Cars" : "Prestige Motors") + " (Shop)", g: hm, call: () => typeof handyShop === "function" && handyShop(o.id === "auto-billig" ? "billig" : "teuer"), verbs: ["Fahrzeuge ansehen", "Fahrzeuge ansehen"], a: hp, b: hp, near: 8 }); }
     GORT.list.push(o.id); yield;
@@ -326,6 +330,69 @@ function scheibeShot(a, b) { if (!SCHEIBEN.length) return; const d = b.clone().s
   const h = new THREE.Mesh(SCH_LOCH.g, SCH_LOCH.m); h.position.set(lp.x, lp.y, 0.004); B.s.add(h); B.holes.push(h); if (B.holes.length > 40) B.s.remove(B.holes.shift());
   const h2 = h.clone(); h2.position.z = -0.004; h2.rotation.y = Math.PI; B.s.add(h2); B.holes.push(h2); if (B.holes.length > 80) B.s.remove(B.holes.shift());
   scheibeAnzeige(B); if (typeof toast === "function") toast("Bahn " + B.nr + ": " + B.last + " · Summe " + B.pkt); }
+// Autohaus als Glas-Showroom (Nicolas 2026-11-23: "Bau das Autohaus so um, dass man von aussen wirklich reinschauen kann, sehr viel Glas, und stelle ein paar der Modelle auf;
+// die Autos im Autohaus soll man auch fahren koennen"). Vorne Vorplatz mit Stellplaetzen (P) und Kundenautos, dahinter die Halle: Front und Seiten ganz aus Glas
+// mit schlanken Pfosten, 7,5 m breite Ausfahrt in der Mitte der Front, weisses Dachband mit Schild, Rueckwand mit Markenwand und Empfangstheke (Rechtsklick = Shop im Handy).
+// Innen heller Fliesenboden, Lichtfelder an der Decke, flache Drehteller-Scheiben; darauf die Modelle des Shops (HANDY_SHOPS) als fahrbare Fahrzeuge (addVehicle, im Spiel spaet gebaut).
+// Lokal: x laengs der Front, z nach aussen (zur Strasse), Ursprung = Mitte der Grundstuecksfront am Boden.
+function gortAutohaus(c) {
+  const { f, o, front, Y } = c, teuer = o.id === "auto-teuer", sid = teuer ? "teuer" : "billig", Fl = f.side(front)[6], Dp = f.side((front + 1) % 4)[6], name = teuer ? "Prestige Motors" : "Budget Cars";
+  const [As, At, ds, dt, os, ot] = f.side(front), um = Fl / 2, O = f.W(As + ds * um, At + dt * um, Y), ow = f.dirW(os, ot);
+  const g = new THREE.Group(); g.name = "Autohaus " + o.id; g.position.set(O[0], O[1], O[2]); g.rotation.y = Math.atan2(ow[0], ow[2]); g.userData.keep = true; scene.add(g);
+  const ry = g.rotation.y, UP = new THREE.Vector3(0, 1, 0), L = (x, z) => { const v = new THREE.Vector3(x, 0, z).applyAxisAngle(UP, ry); return [O[0] + v.x, O[2] + v.z]; }, lx = [Math.cos(ry), -Math.sin(ry)];
+  const hOf = a => { const v = new THREE.Vector3(Math.sin(a), 0, Math.cos(a)).applyAxisAngle(UP, ry); return Math.atan2(-v.x, -v.z); };   // lokale Richtung (0 = zur Strasse) -> Fahrzeug-h (vorne = -sin h, -cos h)
+  const koll = (x, z, bx, bz, y0, y1, fl = 1) => { const [cx, cz] = L(x, z); dkAdd({ cx, cy: Y + (y0 + y1) / 2, cz, ux: lx[0], uz: lx[1], hl: bx / 2, hw: bz / 2, hh: (y1 - y0) / 2, m: 0.15, floor: fl }); };
+  const Mt = (col, r = 0.5, m = 0.1, x = {}) => new THREE.MeshStandardMaterial({ color: col, roughness: r, metalness: m, ...x });
+  const add = (geo, m, x, y, z, rot = 0) => { const q = new THREE.Mesh(geo, m); q.position.set(x, y, z); q.rotation.y = rot; q.castShadow = q.receiveShadow = !m.transparent; g.add(q); return q; };
+  const FC = Math.min(14, Dp * 0.3), W2 = Fl / 2 - 1.2, Z0 = -FC, Z1 = -(Dp - 1.2), D = Z0 - Z1, Hs = teuer ? 8 : 7, TW = 7.5;   // Halle von z Z0 (Glasfront) bis Z1 (Rueckwand)
+  const farbe = teuer ? 0xc9a24a : 0xf2b134, weiss = Mt(0xf4f4f2, 0.35, 0.05, { emissive: 0x2a2a28 }), alu = Mt(0x5a5f66, 0.35, 0.7), dunkel = Mt(0x1e2024, 0.6, 0.2);
+  const glas = Mt(0xcfe6f2, 0.05, 0.3, { transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide }), licht = new THREE.MeshBasicMaterial({ color: 0xfff8ea });
+  // Boden: Vorplatz (Asphalt) und Hallenboden (helle Fliesen, glaenzend)
+  const fliesen = canvasTex(256, 256, (q, w, h) => { q.fillStyle = teuer ? "#e9e6e0" : "#d9dbde"; q.fillRect(0, 0, w, h); q.strokeStyle = "rgba(90,90,90,.35)"; q.lineWidth = 2; for (let k = 0; k <= 256; k += 128) { q.beginPath(); q.moveTo(k, 0); q.lineTo(k, h); q.stroke(); q.beginPath(); q.moveTo(0, k); q.lineTo(w, k); q.stroke(); } });
+  fliesen.wrapS = fliesen.wrapT = THREE.RepeatWrapping; fliesen.repeat.set(W2 / 1.2, D / 2.4);
+  add(new THREE.BoxGeometry(W2 * 2, 0.04, D), Mt(0xffffff, 0.15, 0.05, { map: fliesen, emissive: 0x222222 }), 0, 0.07, (Z0 + Z1) / 2);
+  add(new THREE.BoxGeometry(Fl - 0.6, 0.03, FC - 0.4), Mt(0x3a3c40, 0.9), 0, 0.065, Z0 / 2);
+  // Glasfront mit Ausfahrt, Glasseiten, Pfosten alle ca. 3 m, Rueckwand, Dach mit Dachband
+  const pf = (x, z) => add(new THREE.BoxGeometry(0.14, Hs - 1.4, 0.14), alu, x, (Hs - 1.4) / 2, z);
+  const glasWand = (x0, z0, x1, z1) => { const len = Math.hypot(x1 - x0, z1 - z0), a = Math.atan2(-(z1 - z0), x1 - x0); add(new THREE.BoxGeometry(len, Hs - 1.4, 0.03), glas, (x0 + x1) / 2, (Hs - 1.4) / 2, (z0 + z1) / 2, a);
+    const n = Math.max(1, Math.round(len / 3)); for (let k = 0; k <= n; k++) pf(x0 + (x1 - x0) * k / n, z0 + (z1 - z0) * k / n); };
+  glasWand(-W2, Z0, -TW / 2, Z0); glasWand(TW / 2, Z0, W2, Z0); glasWand(-W2, Z1, -W2, Z0); glasWand(W2, Z0, W2, Z1);
+  koll(-(W2 + TW / 2) / 2, Z0, W2 - TW / 2, 0.3, 0, Hs, 0); koll((W2 + TW / 2) / 2, Z0, W2 - TW / 2, 0.3, 0, Hs, 0); koll(-W2, (Z0 + Z1) / 2, 0.3, D, 0, Hs, 0); koll(W2, (Z0 + Z1) / 2, 0.3, D, 0, Hs, 0);
+  for (const sx of [-1, 1]) { add(new THREE.BoxGeometry(0.3, Hs - 1.4, 0.3), alu, sx * TW / 2, (Hs - 1.4) / 2, Z0); add(new THREE.BoxGeometry(2.2, Hs - 1.6, 0.04), glas, sx * (TW / 2 + 1.2), (Hs - 1.6) / 2, Z0 - 0.4); }   // Ausfahrt: Rahmen, offene Schiebefluegel innen
+  add(new THREE.BoxGeometry(W2 * 2, Hs - 1.4, 0.3), weiss, 0, (Hs - 1.4) / 2, Z1); koll(0, Z1, W2 * 2, 0.3, 0, Hs, 0);
+  // Dach als Rahmen-Band (1,4 m) und Deckenplatte (von unten hell)
+  add(new THREE.BoxGeometry(W2 * 2 + 0.6, 1.4, D + 0.6), weiss, 0, Hs - 0.7, (Z0 + Z1) / 2); koll(0, (Z0 + Z1) / 2, W2 * 2 + 0.6, D + 0.6, Hs - 1.4, Hs);
+  add(new THREE.BoxGeometry(W2 * 2 + 0.7, 0.18, 0.1), Mt(farbe, 0.4, 0.4, { emissive: farbe, emissiveIntensity: 0.25 }), 0, Hs - 1.45, Z0 + 0.36);   // Lichtkante in Markenfarbe
+  add(new THREE.BoxGeometry(W2 * 2 - 0.4, 0.02, D - 0.4), Mt(0xf0f0ee, 0.8, 0, { emissive: 0x8c8c88 }), 0, Hs - 1.42, (Z0 + Z1) / 2);
+  for (let z = Z0 - 2.5; z > Z1 + 1.5; z -= 4) for (let x = -W2 + 3; x < W2 - 2; x += 5) add(new THREE.BoxGeometry(2.4, 0.03, 0.5), licht, x, Hs - 1.45, z);
+  // Markenwand mit Schild hinten, Schild aussen auf dem Dachband, Empfangstheke, Pflanzen
+  const sch = canvasTex(1024, 192, (q, w, h) => { q.fillStyle = teuer ? "#111214" : "#1d2a3a"; q.fillRect(0, 0, w, h); q.fillStyle = teuer ? "#e8c56a" : "#f2b134"; q.font = teuer ? "600 92px Georgia, serif" : "bold 96px Arial, sans-serif"; q.textAlign = "center"; q.textBaseline = "middle"; q.fillText(name.toUpperCase(), w / 2, h / 2 + 4); });
+  const schM = new THREE.MeshStandardMaterial({ map: sch, emissive: 0xffffff, emissiveMap: sch, emissiveIntensity: 0.4 });
+  add(new THREE.BoxGeometry(Math.min(20, W2 * 1.2), Math.min(20, W2 * 1.2) * 0.1875, 0.1), schM, 0, Hs * 0.5, Z1 + 0.2);
+  { const sw = Math.min(16, W2 * 1.1), s2 = new THREE.Mesh(new THREE.PlaneGeometry(sw, 1.2), schM); s2.position.set(0, Hs - 0.7, Z0 + 0.32); g.add(s2); }
+  const tz = Z1 + 3.2, tx = W2 * 0.55; add(new THREE.BoxGeometry(4.2, 1.05, 1.0), Mt(farbe, 0.35, 0.3), tx, 0.52, tz); add(new THREE.BoxGeometry(4.3, 0.05, 1.1), dunkel, tx, 1.08, tz); koll(tx, tz, 4.2, 1.0, 0, 1.1);
+  for (const x of [tx - 1.2, tx + 1.2]) add(new THREE.BoxGeometry(0.5, 0.32, 0.03), Mt(0x101418, 0.3, 0, { emissive: 0x1a3a5a }), x, 1.3, tz - 0.25);   // zwei Bildschirme auf der Theke
+  for (const [x, z] of [[-W2 + 1, Z0 - 1], [W2 - 1, Z0 - 1], [-W2 + 1, Z1 + 1], [W2 - 1, Z1 + 1]]) { add(new THREE.CylinderGeometry(0.35, 0.28, 0.6, 12), dunkel, x, 0.3, z); add(new THREE.IcosahedronGeometry(0.6, 0), Mt(0x2f6b34, 0.8), x, 1.05, z); koll(x, z, 0.8, 0.8, 0, 1.2); }
+  if (typeof gates !== "undefined") { const [hx, hz] = L(tx, tz + 1.2), hm = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.6, 2), new THREE.MeshBasicMaterial({ visible: false })); hm.position.set(hx, Y + 0.8, hz); scene.add(hm);
+    gates.push({ name: name + " (Theke)", g: hm, call: () => typeof handyShop === "function" && handyShop(sid), verbs: ["Fahrzeuge kaufen", "Fahrzeuge kaufen"], a: [hx, hz], b: [hx, hz], near: 4 }); }
+  GORT.lots = GORT.lots || {}; GORT.lots[o.id] = L(0, Z0 / 2);   // Lieferplatz (Handy-Kauf): Vorplatz vor der Ausfahrt
+  // Ausstellung: Modelle des Shops auf Drehteller-Scheiben, schraeg zur Glasfront, Mittelgasse zur Ausfahrt frei
+  const items = ((typeof HANDY_SHOPS !== "undefined" && HANDY_SHOPS[sid] && HANDY_SHOPS[sid].items) || []).map(i => i[0]).filter(k => typeof HANDY_CAT !== "undefined" && HANDY_CAT[k]);
+  const plaetze = []; for (let z = Z0 - 6; z > Z1 + 7; z -= 9) for (const sx of [-1, 1]) for (let x = TW / 2 + 4.5; x < W2 - 3; x += 8) plaetze.push([sx * x, z, sx * 0.45]);
+  const werk = typeof WG_ZIEL !== "undefined";   // Werkstatt: Modelle gleich bauen (dort baut niemand spaeter)
+  if (items.length) plaetze.slice(0, items.length + 2).forEach(([x, z, a], i) => { const k = items[i % items.length], K = HANDY_CAT[k], col = K.cols.length ? K.cols[(i + (teuer ? 0 : 1)) % K.cols.length] : undefined;
+    add(new THREE.CylinderGeometry(3.1, 3.2, 0.1, 40), Mt(teuer ? 0x2a2b2e : 0x4a4f57, 0.25, 0.5, { emissive: farbe, emissiveIntensity: 0.05 }), x, 0.1, z);   // Scheibe (flach, befahrbar)
+    if (typeof addVehicle !== "function") return; const [wx, wz] = L(x, z), h = hOf(a);
+    const C = addVehicle(K.spec(), werk ? K.build(col) : () => K.build(col), wx, wz, Y + 0.15, h, K.art + " (" + name + ")", col ?? 0x16181b); C.autohaus = o.id; });
+  // Vorplatz: Stellplaetze mit P (Reihe vor der Halle, Mittelgasse frei) und einige Kundenautos
+  const kund = []; for (const sx of [-1, 1]) for (let x = TW / 2 + 2; x + 3 < W2 - 0.5; x += 3) { const bx = sx * (x + 1.5), bz = Z0 + 3.3, [wx, wz] = L(bx, bz), h = hOf(Math.PI);   // Front zur Halle
+    add(new THREE.BoxGeometry(0.12, 0.02, 5), Mt(0xe8e8e0, 0.8), sx * x, 0.09, bz); if (typeof gpaBay === "function") gpaBay(wx, Y, wz, h, 2.6, 5, name + " Kundenparkplatz");
+    if (!werk && typeof gpaSlot === "function" && gpaRnd(wx, wz) < 0.45) kund.push(gpaSlot(wx, Y, wz, h, null, null, "Kundenparkplatz")); }
+  if (kund.length && typeof gpaLod === "function") gpaLod(kund, "Autohaus Kundenautos");
+  // Fahnen an der Strasse
+  for (const sx of [-1, 1]) for (const k of [0, 1, 2]) { const x = sx * (W2 - 1.5 - k * 2.2); add(new THREE.CylinderGeometry(0.05, 0.06, 7, 8), alu, x, 3.5, -0.8); add(new THREE.BoxGeometry(0.03, 2.4, 1), Mt(k % 2 ? 0xffffff : farbe, 0.7, 0, { side: THREE.DoubleSide }), x, 5.6, -1.3); koll(x, -0.8, 0.2, 0.2, 0, 7, 0); }
+  return { Hs, FC };
+}
 function gortHinterraum(c) {
   const { add, koll, Mt, W2, D, Dv, Hi, arms, licht, holz, dunkel, weiss } = c, ds = arms ? -1 : 1, tw = 0.75, tx = ds * (W2 - 1.4), zw = -D - 0.15, T = Dv - D - 0.3, zm = -D - 0.3 - T / 2;
   const wandM = Mt(0xf2eee6, 0.8, 0, { emissive: 0x403e3a });
