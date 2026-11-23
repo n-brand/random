@@ -257,8 +257,10 @@
         const rand = (q) => Math.hypot(q[0] - H.x, q[1] - H.z) > H.r - 40, KS = [];
         for (const r of WA.spiel) { let run = []; for (let i = 0; i <= r.length; i++) { const q = r[i % r.length], q0 = r[(i - 1 + r.length) % r.length]; if (i && !(rand(q) && rand(q0))) { if (!run.length) run.push(q0); run.push(q); } else { if (run.length > 1) KS.push(run); run = []; } } if (run.length > 1) KS.push(run); }
         const KSD = KS.map(r => path(r, false)).join("");
-        for (const [w, c] of [[1100, "#24506f"], [500, "#2f6788"], [170, "#3f7f9e"]]) { const gb = el("g", { "clip-path": "url(#clipSpielWasser)", "pointer-events": "none" }, Gh); if (w > 200) gb.setAttribute("filter", "url(#saumGoo)"); el("path", { d: KSD, fill: "none", stroke: c, "stroke-width": w, "stroke-linejoin": "round", "stroke-linecap": "round" }, gb); }
-        el("path", { d: KSD, fill: "none", stroke: "#b8a77c", "stroke-width": 14, "stroke-linejoin": "round", "pointer-events": "none" }, Gh); }
+        // Saum der heutigen Küste in gemeinsamen Farbband-Gruppen (über der heutigen Welt, je Pfad aufs Spielwasser geschnitten); Arkham und Militärinsel hängen ihre Säume
+        // in dieselben Gruppen, damit der Goo-Filter sie verbindet (Nicolas 2026-11-23, Punkte -2605/1899 und -4075/1219: "die Ecken beim tiefen Wasser sind zu unnatürlich spitz")
+        GW.SG = {}; for (const [w, c] of [[1100, "#24506f"], [500, "#2f6788"], [170, "#3f7f9e"]]) { const gb = el("g", { "pointer-events": "none" }, Wg); if (w > 200) gb.setAttribute("filter", "url(#saumGoo)"); GW.SG[w] = gb; el("path", { d: KSD, fill: "none", stroke: c, "stroke-width": w, "stroke-linejoin": "round", "stroke-linecap": "round", "clip-path": "url(#clipSpielWasser)" }, gb); }
+        el("path", { d: KSD, fill: "none", stroke: "#b8a77c", "stroke-width": 14, "stroke-linejoin": "round", "pointer-events": "none", "clip-path": "url(#clipHeute)" }, Wg); }
       el("path", { d: path(WU, true), fill: "url(#neuLand)", mask: "url(#maskNeu)" }, Wg).dataset.info = "<b>Neues Land (Entwurf N54)</b><br>zuerst nur Gelände in Kacheln, ohne Bäume, ohne Strassen";
       { const ma = el("mask", { id: "maskAussen", maskUnits: "userSpaceOnUse", x: -40000, y: -40000, width: 80000, height: 80000 }, defs); el("rect", { x: -40000, y: -40000, width: 80000, height: 80000, fill: "#fff" }, ma); if (WA.spiel) el("circle", { cx: H.x, cy: H.z, r: H.r, fill: "#000" }, ma); }   // im Kreis gilt die Spiel-Kueste
       el("path", { d: KD, fill: "none", stroke: "#b8a77c", "stroke-width": 16, "stroke-linejoin": "round", mask: "url(#maskAussen)" }, Wg).dataset.info = `<b>Küste der Insel-Welt (Entwurf)</b><br>ca. ${((bx1 - bx0) / 1000).toFixed(1)} × ${((bz1 - bz0) / 1000).toFixed(1)} km, Fläche ca. ${Math.round(fl)} km²`;
@@ -267,7 +269,7 @@
         if (t.sub) { const s2 = el("text", { x: t.x, y: t.z + 210, "font-size": 140, fill: "#fff8", "text-anchor": "middle", "pointer-events": "none" }, Wg); s2.textContent = t.sub; } }
       // Arkham-Insel und Militaerinsel (Entwurf, Nicolas 2026-11-23): Saum, Land, Ufer, Bauten, Faehre bzw. Landebahn, Namen (ueber der heutigen Welt gezeichnet)
       { const rect = (x, z, w, d, dr, attrs) => { const c = Math.cos(dr), s2 = Math.sin(dr), P = [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]].map(([u, v]) => [x + u * c - v * s2, z + u * s2 + v * c]); return el("path", { d: path(P, true), ...attrs }, Wg); };
-        const insel = (I, info) => { const d = path(smooth(I.umriss, 20, true), true); for (const [w, c] of [[900, "#24506f"], [420, "#2f6788"], [150, "#3f7f9e"]]) { const gb = el("g", { filter: "url(#saumGoo)", "pointer-events": "none" }, Wg); el("path", { d, fill: c, stroke: c, "stroke-width": w, "stroke-linejoin": "round" }, gb); }
+        const insel = (I, info) => { const d = path(smooth(I.umriss, 20, true), true); for (const [w, c, k] of [[900, "#24506f", 1100], [420, "#2f6788", 500], [150, "#3f7f9e", 170]]) { let gb = GW.SG && GW.SG[k]; if (!gb) { gb = el("g", { filter: "url(#saumGoo)", "pointer-events": "none" }, Wg); } el("path", { d, fill: c, stroke: c, "stroke-width": w, "stroke-linejoin": "round" }, gb); }   // in die gemeinsamen Saum-Gruppen (GW.SG)
           el("path", { d, fill: "url(#neuLand)", stroke: "#b8a77c", "stroke-width": 12 }, Wg).dataset.info = info; };
         const txt = (x, z, t, fs, col = "#fff9") => { const e = el("text", { x, y: z, "font-size": fs, fill: col, "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, Wg); e.textContent = t; };
         const A = G.arkham, F = G.arkhamFaehre, Mi = G.militaerinsel;
@@ -683,9 +685,11 @@
     function drawUi() {
       const r = wrap.getBoundingClientRect(), k = vb.w / r.width; ui.innerHTML = "";
       const step = [50, 100, 250, 500, 1000, 2000].find(s => s / k > 90) || 2000, x0 = vb.x + 16 * k, y0 = vb.y + vb.h - 18 * k;
-      el("rect", { x: x0 - 6 * k, y: y0 - 22 * k, width: step + 12 * k, height: 30 * k, fill: "#000a", rx: 4 * k }, ui);
+      el("rect", { x: x0 - 6 * k, y: y0 - 22 * k, width: step <= 100 ? Math.max(step + 12 * k, 150 * k) : step + 12 * k, height: 30 * k, fill: "#000a", rx: 4 * k }, ui);
       el("line", { x1: x0, y1: y0, x2: x0 + step, y2: y0, stroke: "#fff", "stroke-width": 3 * k }, ui);
       el("text", { x: x0, y: y0 - 7 * k, "font-size": 12 * k, fill: "#fff" }, ui).textContent = step + " m";
+      // Bei 50/100 m zusätzlich die Länge eines Autos (4,6 m) in Gelb auf der Leiste und daneben (Nicolas 2026-11-23: "wenn hier 100 angezeigt werden, kannst du neben der Zahl noch in Gelb die Länge eines Autos anzeigen")
+      if (step <= 100) { el("line", { x1: x0, y1: y0, x2: x0 + 4.6, y2: y0, stroke: "#ffd54a", "stroke-width": 7 * k, "stroke-linecap": "butt" }, ui); el("text", { x: x0 + 52 * k, y: y0 - 7 * k, "font-size": 12 * k, fill: "#ffd54a" }, ui).textContent = "▮ Auto 4,6 m"; }
       // Kompass-Stern unten rechts (Nicolas 2026-11-12): Himmelsrichtungen wie im Spiel = wie bei Wayne Manor. Die Manor liegt in der Karte um
       // manorLage.dreh Grad im Uhrzeigersinn gedreht, also zeigt Norden (Spiel -z) hier um denselben Winkel gedreht. Buchstaben bleiben aufrecht.
       // Wie eine Kurbel (Nicolas 2026-11-12): Stern ziehen dreht die Karte mit; einmal klicken = Norden oben, nochmal = Ausgangslage
