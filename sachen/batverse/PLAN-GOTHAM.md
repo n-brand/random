@@ -230,6 +230,21 @@ Die alten Notizen in derselben Liste sind gegen "Stand der alten Notizen" und Ph
 | I3 | **gebaut 2026-11-23** (Berge nur in Gebirgszügen, Küste Steilufer oder Sandstrand) – Festland Nord, West und Ost: nur Gelände in Kacheln (gleiche Höhenformel wie heute, an der Kreisgrenze nahtlos), ohne Bäume, ohne Strassen und Gebäude; Brücken über den Westkanal kommen später |
 | I4 | später: Strassen, Orte, Bäume; Hafen neu (N53) an der Südspitze bzw. an der neuen Küste |
 
+### 2. Militärbasis, Zugnetz, Panzer-Transport (Nicolas 2026-11-23, Punkt 6096/3866)
+
+"Hier soll eine 2te kleinere Militärbasis hin, die an ein Zugnetz angekoppelt ist, welches über die ganze Insel geht – mit Transporthelikoptern soll man dann von der Insel Panzer nach dort und zurückfliegen können und auch Panzer mithilfe von Zügen über die Insel transportieren können."
+
+Entwurf auf der Planungskarte steht (gotham/daten.js `militaerbasis2`, `zugnetz`; Ebene "Zugnetz"). Im Spiel noch nichts. Schritte:
+
+| Schritt | Was |
+|---------|-----|
+| M1 | **Planung 2026-11-23** – Camp Ironwood (1,3 x 0,76 km an der Südostküste gegenüber Fort Graystone): 4 Heliplätze, Heli-Hangar, Werkstatt, Panzerhalle mit Abstellplatz, Kasernen, Kommando, Tanklager, Wachturm, Verladebahnhof mit 2 Ladegleisen und Kopframpe. Zugnetz "Gotham Island Railway": Hauptlinie Westfield – Northgate – Eastport – Southcliff (ca. 22 km), Stichstrecke in die Basis (ca. 4,4 km), Zweig Gotham North Junction am Rand der heutigen Welt (ca. 2,8 km); Strecken per Wegsuche über Land, ausserhalb der Manor-Welt |
+| M2 | Fort Graystone und Camp Ironwood im Spiel bauen (Gelände eben, Gebäude, Heliplätze, Panzer und Cougar abgestellt) |
+| M3 | Panzer per Heli: gibt es schon (Cougar, Seilwinde H hängt jedes Fahrzeug ein); prüfen, ob der Cougar den Panzer tragen darf (Gewicht/Tempo), Heliplätze als Landepunkte |
+| M4 | Gleise im Spiel: Bahndamm, Schienen, Schwellen, Bahnhöfe, Brücken/Einschnitte im Festland-Gelände (Kacheln) |
+| M5 | Güterzug: Lok und Flachwagen fahren nach Fahrplan (wie die U-Bahn, gotham-ubahn.js), Halt an allen Bahnhöfen |
+| M6 | Panzer verladen: über die Kopframpe auf einen Flachwagen fahren, dort festmachen (fährt mit dem Zug mit), am Ziel wieder herunter; selbst mitfahren wie in der U-Bahn |
+
 ## Nicht Teil von Wayne Manor
 
 - **„Rampe und Polytrack game“** – klingt nach einem eigenen Spiel (Strecke mit Rampen, Stil wie Polytrack). Vorschlag: eigenes Projekt unter `sachen/`, eigener Plan.
