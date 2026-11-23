@@ -198,7 +198,7 @@
     { const box = document.getElementById("layers"); for (const [k, H] of Object.entries(HAUPT)) { const lab = document.createElement("label"); lab.style.fontWeight = "700"; lab.innerHTML = `<input type="checkbox" checked> ${H.name}`; H.inp = lab.querySelector("input");
       H.inp.onchange = ev => { const an = ev.target.checked; svg.classList.toggle("ohne-" + k, !an); for (const q of H.ebenen) if (INP[q] && (an ? q !== "bus" : true)) { INP[q].checked = an; L[q].style.display = an ? "" : "none"; } };
       box.appendChild(lab); } const hr = document.createElement("hr"); hr.style.cssText = "border:0;border-top:1px solid #3a3d44;margin:4px 0"; box.appendChild(hr);
-      const st = document.createElement("style"); st.textContent = "#map.ohne-bau [data-bau], #map.ohne-weg [data-weg] { display: none }"; document.head.appendChild(st); }
+      const st = document.createElement("style"); st.textContent = "#map.ohne-bau [data-bau], #map.ohne-weg [data-weg], #map.ohne-mehr [data-mehr] { display: none }"; document.head.appendChild(st); }   // Bezirks- und Stationsnamen: data-mehr (Nicolas 2026-11-23: "mit Weiteres soll man auch die unnötigen Beschriftungen entfernen können")
     for (const [k, name, on] of LAYERS) {
       L[k] = el("g", { "data-layer": k }); if (!on) L[k].style.display = "none";
       const lab = document.createElement("label"); lab.innerHTML = `<input type="checkbox" ${on ? "checked" : ""}> ${name}`; INP[k] = lab.querySelector("input");
@@ -298,7 +298,7 @@
       const p = el("polygon", { points: pts(b.poly), fill: wealthCol(b.wohlstand), "fill-opacity": .45, stroke: "#0008", "stroke-width": 4, "clip-path": "url(#clipInsel)" }, L.bezirke);
       p.dataset.info = `<b>${b.name}</b><br>Wohlstand ${Math.round(b.wohlstand * 100)} %`;
       let cx = 0, cz = 0, n = 0; for (const q of b.poly) if (inIsland(q[0], q[1])) { cx += q[0]; cz += q[1]; n++; }
-      if (n) el("text", { x: cx / n, y: cz / n, "font-size": 46, fill: "#fff8", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none" }, L.namen).textContent = b.name;
+      if (n) el("text", { x: cx / n, y: cz / n, "font-size": 46, fill: "#fff8", "text-anchor": "middle", "font-weight": 700, "pointer-events": "none", "data-mehr": 1 }, L.namen).textContent = b.name;
     }
     const districtAt = (x, z) => G.bezirke.find(b => inPoly(x, z, b.poly));
 
@@ -499,7 +499,7 @@
       p.dataset.info = `<b>${f.name}</b><br>Fährroute ca. ${Math.round(lineLen(P))} m übers Wasser${f.notiz ? "<br>" + f.notiz : ""}`;
       const m = P[P.length >> 1], q = P[(P.length >> 1) + 1], an = Math.atan2(q[1] - m[1], q[0] - m[0]) * 180 / Math.PI;
       el("path", { d: "M-30 -9H20L32 0L20 9H-30Z", fill: "#e8c547", stroke: "#111", "stroke-width": 2, transform: `translate(${f1(m[0])} ${f1(m[1])}) rotate(${f1(an)})`, "pointer-events": "none" }, L.strassen);
-      el("text", { x: m[0] + 30, y: m[1] - 24, "font-size": 30, fill: "#fff", stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = f.name; }
+      el("text", { x: m[0] + 30, y: m[1] - 24, "font-size": 30, fill: "#fff", stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none", "data-weg": 1 }, L.namen).textContent = f.name; }
 
     // ---------- Kanalisation und Gullideckel ----------
     const K = G.kanal, KS = K.hauptsammler.map(id => roadById[id]).filter(Boolean);
@@ -558,7 +558,7 @@
       for (const s of R.stationen) { const [x, z] = stPos(R, s.a);
         const c = el("circle", { cx: x, cy: z, r: s.haupt ? 34 : 22, fill: "#fff", stroke: R.farbe, "stroke-width": 8 }, L.ubahn);
         c.dataset.info = `<b>U-Bahn: ${s.name}</b> (${R.name})${s.haupt ? " · Hauptbahnhof" : ""}<br>x ${Math.round(x)} / z ${Math.round(z)} · Bahnsteig 11 m unter der Strasse (Höhe Tiefgarage 2)${s.notiz ? "<br>" + s.notiz : ""}`;
-        el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: R.farbe, stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none" }, L.namen).textContent = "U " + s.name; } }
+        el("text", { x: x + 36, y: z + 10, "font-size": 30, fill: R.farbe, stroke: "#000", "stroke-width": 4, "paint-order": "stroke", "pointer-events": "none", "data-weg": 1, "data-mehr": 1 }, L.namen).textContent = "U " + s.name; } }
     for (const u of UMSTEIG) { const g = el("g", {}, L.ubahn);
       el("circle", { cx: u.p[0], cy: u.p[1], r: 30, fill: "#fff", stroke: "#111", "stroke-width": 6 }, g);
       for (const [k, R] of u.r.entries()) el("circle", { cx: u.p[0], cy: u.p[1], r: 30 - 9 - k * 9, fill: "none", stroke: R.farbe, "stroke-width": 7 }, g);

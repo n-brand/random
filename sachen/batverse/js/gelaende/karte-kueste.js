@@ -105,6 +105,7 @@ const INSEL = (() => { try {
   const a = L0.dreh * Math.PI / 180, ct = Math.cos(a), st = Math.sin(a), inv = ([X, Z]) => { const dx = X - L0.x, dz = Z - L0.z; return [dx * ct + dz * st, -dx * st + dz * ct]; };
   const P = [...W.umriss, ...[...WA.kuesteAlt].reverse().slice(1), ...[...WA.kueste].reverse()].map(inv), EI = (W.eilande || []).map(([x, z, r]) => [...inv([x, z]), r]);
   let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, rmax = 0; for (const [x, z] of P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); rmax = Math.max(rmax, Math.hypot(x, z)); }
+  for (const [x, z, r] of EI) { x0 = Math.min(x0, x - r); x1 = Math.max(x1, x + r); z0 = Math.min(z0, z - r); z1 = Math.max(z1, z + r); rmax = Math.max(rmax, Math.hypot(x, z) + r); }   // Inselchen weit draussen mit in den Rahmen (2026-11-23)
   const G = 50, M = 3000; x0 = Math.floor((x0 - M) / G) * G; z0 = Math.floor((z0 - M) / G) * G; const nx = Math.ceil((x1 + M - x0) / G) + 1, nz = Math.ceil((z1 + M - z0) / G) + 1, N = nx * nz;
   const land = new Uint8Array(N);
   for (let k = 0; k < nz; k++) { const z = z0 + k * G, xs = [];   // Zeile fuellen (gerade-ungerade)
