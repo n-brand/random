@@ -15,7 +15,7 @@ Ergaenzt die globalen Regeln in `C:\Source\CLAUDE.md` (Git-Identitaet, Footer-Cr
 - Tests/Experimente liegen ebenfalls unter `sachen/<name>/` (ein Ordner `tests/` existiert nicht; "Test" bestimmt nur `type` in `ENTRIES`)
 - `pruefung/<name>/` – eine Pruefungsvorbereitung (siehe unten)
 - `blockbench/<name>/` – ein Minecraft-Modell oder Resource Pack (siehe unten): `cowboyhut/`, `halloween/`, `viewer/`, `lokal/` (nicht im Repo)
-- Änderungsprotokoll (frühere Einträge vor "# random"): `docs/AENDERUNGEN.md`. Batverse-Einträge und -Regeln: `sachen/batverse/CLAUDE.md`.
+- Änderungsprotokoll (frühere Einträge vor "# random"): `docs/AENDERUNGEN.md`. Batverse-Regeln: `sachen/batverse/CLAUDE.md`, Batverse-Änderungsprotokoll: `docs/AENDERUNGEN-BATVERSE.md`.
 
 ## Pruefungsvorbereitung (eigener Bereich auf der Startseite)
 
@@ -119,7 +119,7 @@ Ein Eintrag kann zusaetzlich als eigene App installierbar sein (Beispiel `sachen
 
 ### Batverse (`sachen/batverse/`)
 
-Alle Regeln, Tasten, Grundlagen und Änderungen stehen in `sachen/batverse/CLAUDE.md` (Abschnitt "Grundlagen und Verlauf" = früherer Abschnitt hier).
+Regeln, Tasten und Grundlagen stehen in `sachen/batverse/CLAUDE.md`, das Änderungsprotokoll (auch der frühere Abschnitt hier) in `docs/AENDERUNGEN-BATVERSE.md`.
 
 ### Wayne-Berg 3D (`sachen/wayne-berg/`)
 - Kunst-Berg, ganz aus Code: Wayne Manor auf dem Gipfelplateau (y 46, um x 0 / z -70, Villa schaut nach Süden), Batcave als Halle unter dem Berg (Ellipse um (0, -44)). Der Berg ist rundum gleich sanft (`natH`, begehbar bis zur Villa, Zaun nur an der Südkante des Plateaus).

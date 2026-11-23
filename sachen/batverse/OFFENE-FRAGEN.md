@@ -97,7 +97,7 @@ Die Entscheidungen, die ich beim Bauen selbst treffe, stehen hier als Fragen, da
 
 ## Notizen 18.11.2026 (Phase 11)
 
-33. **Alte Änderungsliste:** Die Geschichte des Batverse steht bis 2026-11-17 in `C:\Source\random\CLAUDE.md`, Neues ab jetzt in `sachen/batverse/CLAUDE.md`. Soll ich die alten Batverse-Einträge auch dorthin verschieben?
+33. **Alte Änderungsliste:** Die Geschichte des Batverse steht bis 2026-11-17 in `C:\Source\random\CLAUDE.md`, Neues ab jetzt in `sachen/batverse/CLAUDE.md`. (Erledigt 2026-11-23: alles in `C:\Source\random\docs\AENDERUNGEN-BATVERSE.md`.) Soll ich die alten Batverse-Einträge auch dorthin verschieben?
     - *Bis dahin:* alte Einträge bleiben, Neues in der Batverse-Datei.
 34. **Tresor-Stufen (N23):** Vorschlag: 1 Kassette (Brechstange), 2 Wandtresor mit Zahlenschloss (Brechstange länger oder Code), 3 Stahlschrank wie im Casino (nur aufsprengen mit Gas + Feuerzeug), 4 Banktresor mit Rundtür (grösser, mehrere Ladungen oder Hacktool), 5 Batman-Tresor (nur Generalschlüssel/Hacktool). Passt das?
     - *Bis dahin:* diese 5 Stufen.
