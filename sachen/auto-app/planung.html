@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Auto-App – Planung</title>
+<style>
+  :root { --bg: #0b0d10; --karte: #14171c; --linie: #262b33; --text: #e9ecf0; --leise: #98a1ad; --akzent: #3ec6ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 18px 80px; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: -.01em; }
+  h2 { font-size: 20px; margin: 44px 0 12px; }
+  h3 { font-size: 16px; margin: 0 0 6px; }
+  p { margin: 0 0 10px; }
+  .unter { color: var(--leise); margin-bottom: 22px; }
+  .marke { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #0b0d10; background: var(--akzent); padding: 3px 9px; border-radius: 999px; margin-bottom: 12px; }
+  .raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 14px; padding: 16px; }
+  .hinweis { border-left: 3px solid #f2b84b; background: #1b1810; padding: 12px 14px; border-radius: 8px; color: #e8dcc0; }
+  ol, ul { margin: 0 0 10px; padding-left: 22px; }
+  li { margin: 3px 0; }
+  code { font: 13px ui-monospace, Consolas, monospace; background: #1d2128; padding: 1px 5px; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linie); vertical-align: top; }
+  th { color: var(--leise); font-weight: 600; font-size: 13px; }
+  .tabelle { overflow-x: auto; }
+  /* Logos */
+  .logo { background: radial-gradient(circle at 50% 35%, #1c2129, #0d0f13 70%); border-radius: 12px; height: 190px; display: grid; place-items: center; margin-bottom: 12px; }
+  .logo svg { width: 120px; height: 120px; }
+  .wort { font-weight: 800; letter-spacing: .32em; font-size: 18px; margin: 0 0 2px; }
+  .farben { display: flex; gap: 6px; margin: 8px 0 6px; }
+  .farben span { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #ffffff22; }
+  .nr { color: var(--leise); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+  /* Bildschirm-Skizzen */
+  .screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .handy { background: #07080a; border: 2px solid #2a2f37; border-radius: 26px; padding: 14px 12px; min-height: 330px; display: flex; flex-direction: column; gap: 8px; }
+  .handy b { font-size: 13px; }
+  .feld { background: #171b21; border-radius: 9px; padding: 8px 10px; font-size: 12px; color: var(--leise); }
+  .knopf { background: var(--akzent); color: #06121a; border-radius: 9px; padding: 8px; text-align: center; font-weight: 700; font-size: 12px; }
+  .auto { height: 70px; border-radius: 10px; background: linear-gradient(180deg, #1b2028, #0f1217); display: grid; place-items: center; }
+  .icons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .icons div { background: #171b21; border-radius: 9px; height: 40px; display: grid; place-items: center; font-size: 10px; color: var(--leise); }
+  .balken { height: 8px; border-radius: 99px; background: #1d222a; overflow: hidden; }
+  .balken i { display: block; height: 100%; width: 78%; background: linear-gradient(90deg, #2fd28b, #3ec6ff); }
+  .kl { font-size: 11px; color: var(--leise); }
+  .zurueck { color: var(--leise); text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 14px; }
+  footer { margin-top: 48px; color: var(--leise); font-size: 13px; } footer a { color: var(--text); }
+</style>
+</head>
+<body>
+<main>
+  <a class="zurueck" href="../../">← Übersicht</a><br>
+  <span class="marke">Testprojekt · Planung</span>
+  <h1>Auto-App für eine eigene Supersportwagen-Marke</h1>
+  <p class="unter">Eine Web-App im Stil der Tesla-App: Auto aus der Ferne öffnen, Klima, Laden, Standort. Eigenständig in random, hat nichts mit dem Batverse oder den anderen Projekten zu tun. Stand 2026-11-23, Entwurf von Claude, noch nichts gebaut.</p>
+
+  <h2>1. Idee und Umfang</h2>
+  <div class="raster">
+    <div class="karte"><h3>Was es ist</h3><p>Eine Handy-taugliche Seite unter <code>sachen/auto-app/</code>. Man meldet sich einmal an und steuert dann ein (simuliertes) Fahrzeug der eigenen Marke.</p></div>
+    <div class="karte"><h3>Was es nicht ist</h3><p>Keine Verbindung zu einem echten Auto, kein Server, keine echten Konten. Alle Werte (Ladestand, Temperatur, Standort) sind gespielt und bleiben im Browser.</p></div>
+    <div class="karte"><h3>Stil</h3><p>Dunkel, ruhig, viel Platz, grosses Fahrzeugbild oben, darunter Schnellknöpfe. Eine Akzentfarbe je nach Marke (siehe Abschnitt 4).</p></div>
+  </div>
+
+  <h2>2. Anmeldung: einmal anmelden, dann angemeldet bleiben</h2>
+  <div class="raster">
+    <div class="karte"><h3>Ablauf</h3>
+      <ol><li>Erster Besuch: „Konto anlegen“ mit E-Mail und Passwort (mind. 8 Zeichen, zweimal eingeben).</li>
+        <li>Danach: Anmeldeseite mit E-Mail und Passwort.</li>
+        <li>Nach der Anmeldung bleibt man über ein Cookie 30 Tage angemeldet, auch nach Schliessen des Browsers.</li>
+        <li>In den Einstellungen: „Abmelden“ löscht das Cookie, „Konto löschen“ entfernt alles.</li></ol></div>
+    <div class="karte"><h3>Technik (Vorschlag)</h3>
+      <ul><li>Das Passwort wird nie gespeichert, nur ein Hash (PBKDF2 mit Salz, Web Crypto) in <code>localStorage</code>.</li>
+        <li>Nach der Anmeldung: zufälliges Sitzungs-Token als Cookie <code>auto_sitzung</code> (Max-Age 30 Tage, <code>SameSite=Strict</code>, <code>Secure</code>); dasselbe Token liegt auch im Speicher, beim Öffnen wird verglichen.</li>
+        <li>Ohne gültiges Cookie: zurück zur Anmeldeseite.</li></ul></div>
+    <div class="karte"><h3>Wichtige Grenze</h3>
+      <p class="hinweis">random ist eine statische Seite ohne Server. Die Anmeldung schützt deshalb nur zum Schein: Das Konto gibt es nur in diesem einen Browser, und wer Zugriff auf den Browser hat, kann sie umgehen. Für das Testprojekt reicht das. Bitte dort <b>kein echtes Passwort</b> verwenden. Eine echte Anmeldung (mehrere Geräte, Passwort vergessen) bräuchte später einen Server, zum Beispiel einen Anmeldedienst.</p></div>
+  </div>
+
+  <h2>3. Bildschirme (Skizze)</h2>
+  <div class="screens">
+    <div class="handy"><b>Anmelden</b><div class="auto"><span class="kl">Logo der Marke</span></div><div class="feld">E-Mail</div><div class="feld">Passwort</div><div class="knopf">Anmelden</div><span class="kl">Noch kein Konto? Konto anlegen</span></div>
+    <div class="handy"><b>Start</b><div class="kl">Modellname · Geparkt · zuletzt vor 2 min</div><div class="auto"><span class="kl">Fahrzeugbild (3/4 von vorne)</span></div><div class="balken"><i></i></div><div class="kl">78 % · 412 km Reichweite</div><div class="icons"><div>Schloss</div><div>Klima</div><div>Laden</div><div>Frunk</div></div><div class="feld">Standort: Garage · 0,2 km</div></div>
+    <div class="handy"><b>Steuerung</b><div class="icons"><div>Frunk</div><div>Kofferraum</div><div>Licht</div><div>Hupe</div><div>Fenster</div><div>Türen</div><div>Spiegel</div><div>Wächter</div></div><div class="feld">Startmodus: Launch / Komfort / Sport</div><div class="feld">Fahrprofil, Höchstgeschwindigkeit begrenzen</div></div>
+    <div class="handy"><b>Klima</b><div class="auto"><span class="kl">21,5 °C innen · 9 °C aussen</span></div><div class="feld">Temperatur − / +</div><div class="icons"><div>Sitz L</div><div>Sitz R</div><div>Lenkrad</div><div>Enteisen</div></div><div class="knopf">Klima ein</div></div>
+    <div class="handy"><b>Laden</b><div class="balken"><i></i></div><div class="kl">78 % · Limit 90 %</div><div class="feld">Ladelimit (Schieberegler)</div><div class="feld">Geplante Abfahrt 07:30</div><div class="knopf">Ladeklappe öffnen</div></div>
+    <div class="handy"><b>Standort und Konto</b><div class="auto"><span class="kl">Karte (gezeichnet)</span></div><div class="feld">Hupen und Blinken zum Finden</div><div class="feld">Konto: E-Mail · Abmelden · Konto löschen</div></div>
+  </div>
+
+  <h2>4. Marke: Name und Logo (bitte eine wählen)</h2>
+  <p>Fünf eigene Entwürfe für eine Supersportwagen-Marke. Die Logos sind als SVG gezeichnet und lassen sich danach noch anpassen. Die Namen habe ich nicht im Markenregister geprüft; vor einer echten Nutzung müsste man das tun.</p>
+  <div class="raster">
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Veltaro">
+      <defs><linearGradient id="lv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f7fa"/><stop offset="1" stop-color="#8d98a6"/></linearGradient></defs>
+      <path d="M18 30 L52 30 L60 62 L68 30 L102 30 L66 96 L54 96 Z" fill="url(#lv)"/><path d="M60 62 L52 30 L44 30 L57 78 Z" fill="#0d0f13" opacity=".55"/><path d="M14 22 H106" stroke="#3ec6ff" stroke-width="3" stroke-linecap="round"/></svg></div>
+      <span class="nr">OPTION 1</span><p class="wort">VELTARO</p><p class="kl">Klingt italienisch, schnell und elegant. Logo: zwei geschliffene Klingen bilden ein V, darüber eine Lichtkante in Eisblau.</p>
+      <div class="farben"><span style="background:#d9dee4"></span><span style="background:#3ec6ff"></span><span style="background:#0d0f13"></span></div></div>
+
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Arcanis">
+      <circle cx="60" cy="60" r="40" fill="none" stroke="#d7b46a" stroke-width="7" stroke-dasharray="210 41" transform="rotate(-50 60 60)"/>
+      <path d="M66 22 L42 64 H60 L52 98 L80 52 H62 Z" fill="#f2d48c"/></svg></div>
+      <span class="nr">OPTION 2</span><p class="wort">ARCANIS</p><p class="kl">Von „arcanus“ (geheimnisvoll). Logo: offener Goldring, durch den ein Blitz schlägt – Elektro-Supersportwagen.</p>
+      <div class="farben"><span style="background:#d7b46a"></span><span style="background:#1a1a1a"></span><span style="background:#f2efe8"></span></div></div>
+
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Vyrex">
+      <path d="M60 10 L103 35 V85 L60 110 L17 85 V35 Z" fill="#16191e" stroke="#e0313b" stroke-width="5"/>
+      <path d="M36 38 L60 60 L84 38 M36 82 L60 60 L84 82" fill="none" stroke="#f1f3f5" stroke-width="9" stroke-linecap="square"/><path d="M60 60 L84 38" stroke="#e0313b" stroke-width="9"/></svg></div>
+      <span class="nr">OPTION 3</span><p class="wort">VYREX</p><p class="kl">Kurz, hart, aggressiv. Logo: Sechseck-Plakette mit einem X aus vier Pfeilspitzen, ein Arm in Rennrot.</p>
+      <div class="farben"><span style="background:#e0313b"></span><span style="background:#f1f3f5"></span><span style="background:#16191e"></span></div></div>
+
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Solenne">
+      <path d="M22 72 A38 38 0 0 1 98 72 Z" fill="#e48a4f"/><path d="M12 72 H108" stroke="#f6e3d3" stroke-width="3"/>
+      <g stroke="#f6e3d3" stroke-width="2.5" stroke-linecap="round"><path d="M14 84 H106"/><path d="M26 94 H94"/><path d="M40 104 H80"/></g></svg></div>
+      <span class="nr">OPTION 4</span><p class="wort">SOLENNE</p><p class="kl">Weich und luxuriös (Sonne, „solennel“). Logo: Sonne am Horizont, darunter Linien wie eine Strasse in der Ferne – eher Gran Turismo als Rennwagen.</p>
+      <div class="farben"><span style="background:#e48a4f"></span><span style="background:#f6e3d3"></span><span style="background:#22191a"></span></div></div>
+
+    <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Kairon">
+      <path d="M60 8 L100 22 V60 C100 86 82 102 60 112 C38 102 20 86 20 60 V22 Z" fill="#0f2a27" stroke="#33d1b0" stroke-width="4"/>
+      <path d="M44 34 V86" stroke="#e9fbf6" stroke-width="10"/><path d="M80 32 L54 60 L80 88" fill="none" stroke="#33d1b0" stroke-width="10" stroke-linejoin="miter"/></svg></div>
+      <span class="nr">OPTION 5</span><p class="wort">KAIRON</p><p class="kl">Von „kairos“ (der richtige Moment). Logo: Wappen mit einem K aus Balken und Pfeil, Türkis auf Dunkelgrün – technisch und modern.</p>
+      <div class="farben"><span style="background:#33d1b0"></span><span style="background:#e9fbf6"></span><span style="background:#0f2a27"></span></div></div>
+  </div>
+
+  <h2>5. Bauschritte</h2>
+  <div class="tabelle"><table>
+    <tr><th>Schritt</th><th>Was</th></tr>
+    <tr><td>A0</td><td>Diese Planung, Marke wählen</td></tr>
+    <tr><td>A1</td><td>Gerüst <code>sachen/auto-app/index.html</code>, Eintrag auf der Startseite von random, offline verfügbar</td></tr>
+    <tr><td>A2</td><td>Konto anlegen, Anmelden, Cookie 30 Tage, Abmelden, Konto löschen</td></tr>
+    <tr><td>A3</td><td>Startseite mit Fahrzeugbild, Ladestand, Reichweite, Schnellknöpfen</td></tr>
+    <tr><td>A4</td><td>Steuerung, Klima, Laden, Standort, Einstellungen (simulierte Werte, gespeichert im Browser)</td></tr>
+    <tr><td>A5</td><td>Feinschliff: Animationen (Türen, Frunk), Handy-Ansicht, Bild prüfen</td></tr>
+  </table></div>
+
+  <h2>6. Offen (deine Entscheidung)</h2>
+  <ul>
+    <li>Welche Marke (1–5), oder Mischung (z. B. Name von 1 mit Logo von 3)?</li>
+    <li>Modellname des Autos (z. B. Marke + Zahl wie „Veltaro V12“ oder ein eigener Name)?</li>
+    <li>Fahrzeugbild: selbst gezeichnetes SVG (schnell) oder drehbares 3D-Modell mit three.js (aufwändiger)?</li>
+    <li>Elektro oder Verbrenner? (Bestimmt Laden oder Tanken.)</li>
+  </ul>
+  <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
+</main>
+</body>
+</html>
