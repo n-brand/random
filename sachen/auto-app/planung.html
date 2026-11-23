@@ -45,6 +45,23 @@
   #detail .wort { font-size: 26px; margin-top: 4px; } #detail .kl { font-size: 14px; color: var(--text); opacity: .85; }
   #detail .farben span { width: 30px; height: 30px; }
   #detail .zu { float: right; background: none; border: 1px solid var(--linie); color: var(--text); border-radius: 8px; width: 34px; height: 34px; font-size: 18px; cursor: pointer; }
+  /* Schriftzug-Ansicht und Leiste unten */
+  body { padding-bottom: 86px; }
+  .wm { display: none; width: 100%; height: 100%; border-radius: 12px; place-items: center; }
+  .wm svg { width: 94%; height: auto; overflow: visible; }
+  body.schrift .logo > :not(.wm), body.schrift .gross-bild > :not(.wm) { display: none; }
+  body.schrift .logo > .wm, body.schrift .gross-bild > .wm { display: grid; }
+  body.schrift .logo, body.schrift #detail .gross-bild { background: none; padding: 0; }
+  #leiste { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+    background: #15181dee; backdrop-filter: blur(10px); border: 1px solid var(--linie); border-radius: 16px; padding: 8px 12px; box-shadow: 0 10px 30px #0008; max-width: calc(100vw - 24px); }
+  #leiste .seg { display: flex; background: #0c0e11; border-radius: 10px; padding: 3px; }
+  #leiste .seg button { font: 600 13px system-ui; color: var(--leise); background: none; border: 0; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+  #leiste .seg button[aria-pressed="true"] { background: var(--akzent); color: #06121a; }
+  #leiste .hg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--leise); }
+  #leiste .hg button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #ffffff33; cursor: pointer; padding: 0; }
+  #leiste .hg button[aria-pressed="true"] { border-color: var(--akzent); box-shadow: 0 0 0 2px #3ec6ff66; }
+  #leiste .hg.aus { opacity: .35; pointer-events: none; }
+  .carbon { background-color: #16181b; background-image: linear-gradient(45deg, #202328 25%, transparent 25%, transparent 75%, #202328 75%), linear-gradient(45deg, #202328 25%, transparent 25%, transparent 75%, #202328 75%); background-size: 8px 8px; background-position: 0 0, 4px 4px; }
   @media (max-width: 900px) { body.detail .logobereich { grid-template-columns: 1fr; } #detail { position: fixed; inset: 10px; max-height: none; z-index: 20; } }
   .nr { color: var(--leise); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
   /* Bildschirm-Skizzen */
@@ -104,7 +121,7 @@
 
   <h2>4. Marke: Name und Logo (bitte eine wählen)</h2>
   <p>26 eigene Entwürfe für eine Supersportwagen-Marke (1–5 erster Satz, 6–11 zweiter, 12–17 dritter, 18–26 aufwändige Wappen mit vielen Details). Die Logos sind als SVG gezeichnet und lassen sich danach noch anpassen. Die Namen habe ich nicht im Markenregister geprüft; vor einer echten Nutzung müsste man das tun.</p>
-  <p class="kl">Klick auf ein Logo: rechts gross ansehen (Klick auf ein anderes wechselt, nochmals auf dasselbe, Esc oder × schliesst).</p>
+  <p class="kl">Klick auf ein Logo: rechts gross ansehen (Klick auf ein anderes wechselt, nochmals auf dasselbe, Esc oder × schliesst). Die Leiste unten wechselt zwischen Logo und Schriftzug und ändert den Hintergrund des Schriftzugs.</p>
   <div class="logobereich"><div class="raster" id="logos">
     <div class="karte"><div class="logo"><svg viewBox="0 0 120 120" aria-label="Logo Veltaro">
       <defs><linearGradient id="lv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f7fa"/><stop offset="1" stop-color="#8d98a6"/></linearGradient></defs>
@@ -303,10 +320,19 @@
   </ul>
   <footer>Erstellt von <a href="https://n-brand.github.io/portfolio/" target="_blank" rel="noopener noreferrer">Nicolas Brand</a></footer>
 </main>
+<nav id="leiste" aria-label="Ansicht">
+  <div class="seg" role="group" aria-label="Ansicht"><button type="button" data-ansicht="logo" aria-pressed="true">Logo</button><button type="button" data-ansicht="schrift" aria-pressed="false">Schriftzug</button></div>
+  <div class="hg aus" role="group" aria-label="Hintergrund des Schriftzugs"><span>Hintergrund</span>
+    <button type="button" data-hg="schwarz" title="Schwarz" style="background:#0b0c0e" aria-pressed="true"></button>
+    <button type="button" data-hg="grau" title="Grau" style="background:#2b2f36" aria-pressed="false"></button>
+    <button type="button" data-hg="carbon" title="Carbon" class="carbon" aria-pressed="false"></button>
+    <button type="button" data-hg="weiss" title="Weiss" style="background:#f6f5f1" aria-pressed="false"></button>
+    <button type="button" data-hg="marke" title="Markenfarbe" style="background:conic-gradient(#e0313b,#d8ad4c,#33d1b0,#3b82f6,#8e6cf0,#e0313b)" aria-pressed="false"></button></div>
+</nav>
 <script>
   // Detailansicht: Klick auf ein Kaertchen zeigt es rechts gross; die Uebersicht bleibt links sichtbar
   const det = document.getElementById("detail");
-  function zeige(k) {
+  let zeige = function (k) {
     document.querySelectorAll("#logos .karte.aktiv").forEach(e => e.classList.remove("aktiv")); k.classList.add("aktiv");
     det.innerHTML = '<button type="button" class="zu" aria-label="Schliessen">×</button><span class="nr"></span><div class="gross-bild"></div><p class="wort"></p><p class="kl"></p>';
     det.querySelector(".nr").textContent = k.querySelector(".nr").textContent;
@@ -316,10 +342,71 @@
     det.appendChild(k.querySelector(".farben").cloneNode(true));
     det.querySelector(".zu").onclick = schliesse; det.hidden = false; document.body.classList.add("detail");
     if (innerWidth > 900) k.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }
+  };
   function schliesse() { det.hidden = true; document.body.classList.remove("detail"); document.querySelectorAll("#logos .karte.aktiv").forEach(e => e.classList.remove("aktiv")); }
   document.getElementById("logos").addEventListener("click", e => { const k = e.target.closest(".karte"); if (!k) return; if (k.classList.contains("aktiv")) schliesse(); else zeige(k); });
   addEventListener("keydown", e => { if (e.key === "Escape" && !det.hidden) schliesse(); });
+
+  // ---- Schriftzuege je Marke: Schrift, Gewicht, Abstand, kursiv, Farbe auf dunklem / hellem Grund, Akzent, Unterzeile ----
+  const SANS = "Bahnschrift, 'Segoe UI', system-ui, sans-serif", SERIF = "Georgia, 'Times New Roman', serif", PAL = "'Palatino Linotype', Palatino, Georgia, serif", ROM = "'Times New Roman', Times, serif", BLACK = "'Arial Black', 'Segoe UI Black', sans-serif", IMP = "Impact, 'Arial Black', sans-serif";
+  const WM = {
+    VELTARO: { f: SANS, w: 600, ls: 14, hell: "#e7ebef", dunkel: "#1d2430", akz: "#3ec6ff", tag: "AUTOMOBILI" },
+    ARCANIS: { f: SERIF, w: 700, ls: 10, hell: "#e6c879", dunkel: "#2a2312", akz: "#d7b46a", tag: "ELECTRIC HYPERCARS" },
+    VYREX: { f: IMP, w: 400, ls: 6, it: 1, hell: "#f1f3f5", dunkel: "#16191e", akz: "#e0313b", tag: "PERFORMANCE" },
+    SOLENNE: { f: PAL, w: 400, ls: 8, it: 1, hell: "#f6e3d3", dunkel: "#3a241a", akz: "#e48a4f", tag: "GRAN TURISMO" },
+    KAIRON: { f: SANS, w: 300, ls: 18, hell: "#e9fbf6", dunkel: "#0f2a27", akz: "#33d1b0", tag: "MOTORS" },
+    NOCTIS: { f: "'Segoe UI Light', 'Segoe UI', sans-serif", w: 300, ls: 20, hell: "#e3e5ee", dunkel: "#1c1830", akz: "#8e6cf0", tag: "NIGHT ENGINEERING" },
+    STRATON: { f: BLACK, w: 900, ls: 4, hell: "#e9ecef", dunkel: "#1b1d20", akz: "#f26b1d", tag: "RACING" },
+    AERIQ: { f: "'Segoe UI', system-ui, sans-serif", w: 200, ls: 12, it: 1, hell: "#eaf4ff", dunkel: "#0d1724", akz: "#3b82f6", tag: "AERODYNAMICS" },
+    MONZARI: { f: ROM, w: 700, ls: 8, hell: "#e9c66d", dunkel: "#1d1d1f", trikolore: 1, tag: "AUTOMOBILI" },
+    ZEPHRA: { f: "'Trebuchet MS', 'Segoe UI', sans-serif", w: 700, ls: 8, verlauf: ["#22d3ee", "#e040fb"], hell: "#f2e9ff", dunkel: "#120d1c", tag: "ELECTRIC" },
+    ORVANT: { f: SERIF, w: 400, ls: 22, hell: "#f3e7cf", dunkel: "#2a2416", akz: "#d9c39a", tag: "MAISON AUTOMOBILE" },
+    TALVOR: { f: SANS, w: 700, ls: 12, hell: "#e6edf3", dunkel: "#101820", akz: "#7fb2d6", tag: "ALPINE" },
+    FEROX: { f: IMP, w: 400, ls: 3, it: 1, hell: "#f2f2f2", dunkel: "#141414", akz: "#e3262f", tag: "HYPERCAR" },
+    LUMORA: { f: "'Segoe UI', system-ui, sans-serif", w: 300, ls: 24, hell: "#eaf6ff", dunkel: "#0b1118", akz: "#7dd3fc", tag: "LIGHT · SPEED" },
+    AXION: { f: "Consolas, 'Cascadia Mono', monospace", w: 700, ls: 10, hell: "#c6f432", dunkel: "#111409", akz: "#7fa61a", tag: "TECHNIK" },
+    HALVORA: { f: PAL, w: 600, ls: 6, it: 1, hell: "#e2b857", dunkel: "#2a210f", akz: "#fff3d1", tag: "ENDURANCE" },
+    DRAXEN: { f: BLACK, w: 900, ls: 6, hell: "#d6fff1", dunkel: "#08140f", akz: "#14b88a", tag: "MOTORWORKS" },
+    CASTELLARO: { f: SERIF, w: 700, ls: 8, hell: "#e9c66d", dunkel: "#161616", akz: "#b5121b", tag: "VALCORE" },
+    NORDHEIM: { f: ROM, w: 700, ls: 10, hell: "#dfe4ea", dunkel: "#0e1d3a", akz: "#d8ad4c", tag: "AUTOMOBILE · 1958" },
+    AURELIUS: { f: SERIF, w: 700, ls: 12, hell: "#e9c66d", dunkel: "#3b0a0e", akz: "#9e161d", tag: "IMPERIAL MOTORS" },
+    VALDORO: { f: PAL, w: 700, ls: 6, it: 1, hell: "#e9c66d", dunkel: "#1a2c5c", akz: "#8e1b1f", tag: "CORSE" },
+    KRONSTEIN: { f: ROM, w: 700, ls: 10, hell: "#efe9da", dunkel: "#141416", akz: "#9b1c22", tag: "GEGRÜNDET 1949" },
+    ALTAVERDE: { f: SERIF, w: 400, ls: 14, hell: "#e9c66d", dunkel: "#0b2419", akz: "#1f5a3f", tag: "GRAND TOURING" },
+    LEONIDA: { f: SERIF, w: 700, ls: 12, hell: "#e9c66d", dunkel: "#14060a", akz: "#e3b85a", tag: "AUTOMOBILI" },
+    STELLAMARE: { f: PAL, w: 400, ls: 6, it: 1, hell: "#e9c66d", dunkel: "#081a30", akz: "#5d8fc4", tag: "CANTIERE AUTOMOBILI" },
+    HOHENWALD: { f: ROM, w: 700, ls: 10, hell: "#e9c66d", dunkel: "#123d22", akz: "#3fae62", tag: "AUTOMOBILWERKE" },
+  };
+  const ZUST = { ansicht: "logo", hg: "schwarz" };
+  try { const z = JSON.parse(localStorage.getItem("auto-planung-ansicht") || "null"); if (z) Object.assign(ZUST, z); } catch (e) {}
+  const hex = c => { const m = /#([0-9a-f]{6})/i.exec(c || ""); return m ? m[1] : null; }, lum = c => { const h = hex(c); if (!h) return 0; const v = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+  const markenfarbe = k => { const sp = [...k.querySelectorAll(".farben span")].map(x => x.style.background).map(c => { const m = /rgb\((\d+), (\d+), (\d+)\)/.exec(c); return m ? "#" + [m[1], m[2], m[3]].map(n => (+n).toString(16).padStart(2, "0")).join("") : c; }); return sp.find(c => { const l = lum(c); return l > 0.08 && l < 0.85; }) || sp[0] || "#333"; };
+  let uid = 0;
+  function schriftzug(k) { const name = k.querySelector(".wort").textContent.trim(), W = WM[name] || { f: SANS, w: 700, ls: 8, hell: "#eee", dunkel: "#111", akz: "#3ec6ff" }, id = "wmv" + (++uid);
+    const hg = ZUST.hg, bg = hg === "schwarz" ? "#0b0c0e" : hg === "grau" ? "#2b2f36" : hg === "weiss" ? "#f6f5f1" : hg === "marke" ? markenfarbe(k) : "#16181b", hellGrund = lum(bg) > 0.5;
+    let farbe = hellGrund ? W.dunkel : W.hell; if (hg === "marke" && Math.abs(lum(farbe) - lum(bg)) < 0.35) farbe = hellGrund ? "#111" : "#fff";
+    const akz = hg === "marke" ? farbe : (W.akz || farbe), fill = W.verlauf && hg !== "marke" ? "url(#" + id + ")" : farbe;
+    const d = document.createElement("div"); d.className = "wm" + (hg === "carbon" ? " carbon" : ""); if (hg !== "carbon") d.style.background = bg;
+    d.innerHTML = '<svg viewBox="0 0 320 140" aria-label="Schriftzug ' + name + '">' + (W.verlauf ? '<defs><linearGradient id="' + id + '" x1="0" x2="1"><stop offset="0" stop-color="' + W.verlauf[0] + '"/><stop offset="1" stop-color="' + W.verlauf[1] + '"/></linearGradient></defs>' : "") +
+      '<text class="n" x="160" y="80" text-anchor="middle" font-family="' + W.f.replace(/"/g, "'") + '" font-weight="' + W.w + '" font-size="56" letter-spacing="' + W.ls + '"' + (W.it ? ' font-style="italic"' : "") + ' fill="' + fill + '">' + name + '</text>' +
+      (W.trikolore ? '<rect class="b" x="130" y="94" width="20" height="4" fill="#1f8a52"/><rect class="b" x="150" y="94" width="20" height="4" fill="#f4f1e8"/><rect class="b" x="170" y="94" width="20" height="4" fill="#d0242f"/>' : '<rect class="b" x="130" y="94" width="60" height="3" rx="1.5" fill="' + akz + '"/>') +
+      (W.tag ? '<text x="160" y="118" text-anchor="middle" font-family="' + SANS.replace(/"/g, "'") + '" font-weight="600" font-size="10.5" letter-spacing="5" fill="' + farbe + '" opacity=".75">' + W.tag + '</text>' : "") + '</svg>';
+    return d; }
+  // Schrift auf die Breite einpassen (erst messbar, wenn sichtbar)
+  function einpassen(root) { root.querySelectorAll(".wm svg").forEach(svg => { const t = svg.querySelector(".n"); if (!t || !t.getBBox) return; t.setAttribute("font-size", 56); const w = t.getBBox().width; if (w > 296) t.setAttribute("font-size", (56 * 296 / w).toFixed(1));
+    const b = t.getBBox(); svg.querySelectorAll(".b").forEach(r => { const y = b.y + b.height + 8; r.setAttribute("y", Math.min(100, y).toFixed(1)); }); }); }
+  function alleZeichnen() { document.querySelectorAll("#logos .karte").forEach(k => { const lg = k.querySelector(".logo"); lg.querySelector(".wm")?.remove(); lg.appendChild(schriftzug(k)); });
+    const a = document.querySelector("#logos .karte.aktiv"); if (a && !det.hidden) { const gb = det.querySelector(".gross-bild"); gb.querySelector(".wm")?.remove(); gb.appendChild(schriftzug(a)); }
+    if (ZUST.ansicht === "schrift") requestAnimationFrame(() => einpassen(document)); }
+  function anwenden() { document.body.classList.toggle("schrift", ZUST.ansicht === "schrift");
+    document.querySelectorAll("#leiste [data-ansicht]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.ansicht === ZUST.ansicht)));
+    document.querySelectorAll("#leiste [data-hg]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.hg === ZUST.hg)));
+    document.querySelector("#leiste .hg").classList.toggle("aus", ZUST.ansicht !== "schrift");
+    try { localStorage.setItem("auto-planung-ansicht", JSON.stringify(ZUST)); } catch (e) {} alleZeichnen(); }
+  document.getElementById("leiste").addEventListener("click", e => { const a = e.target.closest("[data-ansicht]"), h = e.target.closest("[data-hg]"); if (a) ZUST.ansicht = a.dataset.ansicht; if (h) ZUST.hg = h.dataset.hg; if (a || h) anwenden(); });
+  // Detailansicht zeigt je nach Ansicht Logo oder Schriftzug
+  { const z0 = zeige; zeige = function (k) { z0(k); det.querySelector(".gross-bild").appendChild(schriftzug(k)); if (ZUST.ansicht === "schrift") requestAnimationFrame(() => einpassen(det)); }; }
+  anwenden();
 </script>
 </body>
 </html>
