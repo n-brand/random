@@ -131,8 +131,29 @@ const INSEL = (() => { try {
     return (D[q] * (1 - u) + D[q + 1] * u) * (1 - w) + (D[q + nx] * (1 - u) + D[q + nx + 1] * u) * w; };
   return { d, x0, z0, x1: x0 + (nx - 1) * G, z1: z0 + (nz - 1) * G, rmax, G };
 } catch (e) { console.warn("Insel-Welt:", e); return null; } })();
+// Inseln innerhalb der heutigen Welt (Nicolas 2026-11-23: "bau das Terrain, also Land, nur ohne Gebaeude"): Fort Graystone (Militaerinsel, im Meer suedlich von Gotham) und
+// die Arkham-Insel (im Gotham-Wasser) aus gotham/daten.js. Eigenes Abstandsfeld (25-m-Raster, Abstand zu den Umriss-Kanten, > 0 = Meer); seaD nimmt das Minimum, damit bauen
+// genH0 (Klippe, Grund, Huegel), Boote und Baeume-Sperren sie wie Kueste. flach (0..1): Fort Graystone eben (Landebahn spaeter), ohne Berge; Arkham felsig mit Huegeln.
+const XI = (() => { try {
+  const G0 = typeof GOTHAM !== "undefined" ? GOTHAM : null, L0 = G0 && G0.manorLage; if (!L0) return null;
+  const a = L0.dreh * Math.PI / 180, ct = Math.cos(a), st = Math.sin(a), inv = ([X, Z]) => { const dx = X - L0.x, dz = Z - L0.z; return [dx * ct + dz * st, -dx * st + dz * ct]; };
+  const IS = [[G0.militaerinsel, 0.85], [G0.arkham, 0]].filter(([o]) => o && o.umriss).map(([o, flach]) => ({ P: o.umriss.map(inv), flach }));
+  if (!IS.length) return null; const G = 25, M = 700, OUT = [];
+  for (const I of IS) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (const [x, z] of I.P) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+    x0 = Math.floor((x0 - M) / G) * G; z0 = Math.floor((z0 - M) / G) * G; const nx = Math.ceil((x1 + M - x0) / G) + 1, nz = Math.ceil((z1 + M - z0) / G) + 1, D = new Float32Array(nx * nz), P = I.P, n = P.length;
+    for (let k = 0; k < nz; k++) { const z = z0 + k * G, xs = []; for (let i = 0, j = n - 1; i < n; j = i++) { const [ax, az] = P[j], [bx, bz] = P[i]; if ((az > z) !== (bz > z)) xs.push(ax + (bx - ax) * (z - az) / (bz - az)); } xs.sort((u, v) => u - v);
+      for (let i = 0; i < nx; i++) { const x = x0 + i * G; let m = 1e18; for (let q = 0, j = n - 1; q < n; j = q++) { const [ax, az] = P[j], [bx, bz] = P[q], ex = bx - ax, ez = bz - az, L = ex * ex + ez * ez; let u = L ? ((x - ax) * ex + (z - az) * ez) / L : 0; u = u < 0 ? 0 : u > 1 ? 1 : u; const dx = x - ax - u * ex, dz = z - az - u * ez, d2 = dx * dx + dz * dz; if (d2 < m) m = d2; }
+        let inn = false; for (let q = 0; q < xs.length; q++) if (xs[q] < x) inn = !inn; D[k * nx + i] = inn ? -Math.sqrt(m) : Math.sqrt(m); } }
+    OUT.push({ x0, z0, nx, nz, D, flach: I.flach }); }
+  const samp = (F, x, z) => { const fx = (x - F.x0) / G, fz = (z - F.z0) / G; if (fx < 0 || fz < 0 || fx >= F.nx - 1 || fz >= F.nz - 1) return 3000; const i = Math.floor(fx), k = Math.floor(fz), u = fx - i, w = fz - k, q = k * F.nx + i;
+    return (F.D[q] * (1 - u) + F.D[q + 1] * u) * (1 - w) + (F.D[q + F.nx] * (1 - u) + F.D[q + F.nx + 1] * u) * w; };
+  return { d: (x, z) => { let m = 3000; for (const F of OUT) m = Math.min(m, samp(F, x, z)); return m; },
+    flach: (x, z) => { let f = 0; for (const F of OUT) if (F.flach) f = Math.max(f, F.flach * sst(200, -60, samp(F, x, z))); return f; }, F: OUT };
+} catch (e) { console.warn("Inseln in der heutigen Welt:", e); return null; } })();
+const xiFlach = (x, z) => XI ? XI.flach(x, z) : 0;
 const INSEL_R0 = LIMIT_WORLD, INSEL_RB = 400;   // innerhalb heutige Kueste, dann 400 m Uebergang zur Inselkueste
-const seaD = (x, z) => { if (!INSEL) return seaD0(x, z); const r2 = x * x + z * z; if (r2 < INSEL_R0 * INSEL_R0) return seaD0(x, z);
+const seaD = (x, z) => { const b = seaDb(x, z); return XI ? Math.min(b, XI.d(x, z)) : b; };   // + Fort Graystone und Arkham (XI)
+const seaDb = (x, z) => { if (!INSEL) return seaD0(x, z); const r2 = x * x + z * z; if (r2 < INSEL_R0 * INSEL_R0) return seaD0(x, z);
   const w = sst(INSEL_R0, INSEL_R0 + INSEL_RB, Math.sqrt(r2)), di = INSEL.d(x, z); return w >= 1 ? di : lerp(seaD0(x, z), di, w); };
 // Neues Festland (ausserhalb der heutigen Welt): Berge nur in einzelnen Gebirgszuegen (sonst wuerde die Bergformel des Horizonts die ganze Insel zu einem
 // Felsplateau von 150-200 m machen), dazwischen gruene Huegel; Kueste abwechselnd Steilufer (wie heute) und flacher Sandstrand (inselStrand, genH0).

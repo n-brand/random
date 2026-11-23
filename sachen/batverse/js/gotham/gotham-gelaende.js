@@ -113,8 +113,9 @@ function gothamCut(x, z, g, land) {
 }
 // Hoehe mit Gotham (h = bisherige Hoehe aus genH0). Insel flach, Fluesse mit Kiesrand und Grund, Festland weich ansteigend bis zu den Bergen.
 function gothamH(x, z, h) {
-  const w = GOT.w(x, z); if (w <= 0) return h;
+  let w = GOT.w(x, z); if (w <= 0) return h;
   const [mx, mz] = GOT.toMap(x, z); if (!GOT.inField(mx, mz)) return h;
+  if (typeof XI !== "undefined" && XI) { const xd = XI.d(x, z); if (xd < 80) { w *= sst(-40, 80, xd); if (w <= 0) return h; } }   // Arkham-Insel im Gotham-Wasser: dort gilt genH0 (Kueste aus XI)
   let sd = GOT.sdi(mx, mz), g; if (Math.abs(sd) < 24) sd = GOT.edgeSD(x, z);   // am Ufer genau (G1d)
   if (sd < -6) g = GOT.STR;                                                    // Insel: Strassenebene; die letzten 6 m vor dem Ufer liegen unter der Kai-Platte (G1d)
   else { const dw = GOT.sdw(mx, mz);
